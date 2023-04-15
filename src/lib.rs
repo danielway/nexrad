@@ -1,14 +1,9 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+//! # NEXRAD
+//!
+//! Download and decode functions for NEXRAD radar data.
+//!
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub mod chunk;
+pub mod fetch;
+pub mod decode;
+pub mod result;

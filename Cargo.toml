@@ -10,6 +10,7 @@ exclude = [".github"]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
 aws-smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", branch = "main" }
 aws-sig-auth = { git = "https://github.com/awslabs/aws-sdk-rust", branch = "main" }
 aws-config = { git = "https://github.com/awslabs/aws-sdk-rust", branch = "main" }

@@ -1,10 +1,12 @@
 use chrono::NaiveDate;
 
+use serde::{Deserialize, Serialize};
+
 use crate::result::Result;
 
 /// Metadata to identify a particular NEXRAD WSR-88D radar chunk file. A meta is specific to a
 /// particular radar site, date, and identifier.
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChunkMeta {
     site: String,
     date: NaiveDate,
@@ -36,6 +38,7 @@ impl ChunkMeta {
 /// compressed, the data is compressed using BZIP2. See
 /// [decompress_chunk](crate::decompress::decompress_chunk) and
 /// [decode_chunk](crate::decode::decode_chunk).
+#[derive(Serialize, Deserialize)]
 pub struct EncodedChunk {
     meta: ChunkMeta,
     data: Vec<u8>,
@@ -66,6 +69,7 @@ impl EncodedChunk {
 }
 
 /// A decoded NEXRAD WSR-88D chunk file including sweep data.
+#[derive(Serialize, Deserialize)]
 pub struct Chunk {
     meta: ChunkMeta,
     // TODO

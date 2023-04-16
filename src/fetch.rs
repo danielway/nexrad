@@ -22,7 +22,7 @@ pub async fn list_chunks(site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>>
     let metas = objects.iter().map(|object| {
         let key = object.key().expect("object should have a key");
 
-        // Ex. 2023/04/06/KDMX/KDMX20230406_000215_V06
+        // E.g. 2023/04/06/KDMX/KDMX20230406_000215_V06
         //      date_string:    "2023_04_06"
         //      site:           "KDMX"
         //      identifier:     "KDMX20230406_000215_V06"
@@ -59,10 +59,10 @@ pub async fn fetch_chunk(meta: &ChunkMeta) -> Result<EncodedChunk> {
 
 /// Returns the bucket prefix corresponding to the specified site and date.
 fn get_bucket_prefix(date: &NaiveDate, site: &str) -> String {
-    // Pad month/date with leading zeros, Ex. 2023/04/06 instead of 2023/4/6
+    // Pad month/date with leading zeros, e.g. 2023/04/06 instead of 2023/4/6
     let date_prefix = format!("{}/{:0>2}/{:0>2}", date.year(), date.month(), date.day());
 
-    // Ex. 2023/04/06/KDMX
+    // E.g. 2023/04/06/KDMX
     format!("{}/{}", date_prefix, site)
 }
 

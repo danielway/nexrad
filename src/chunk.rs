@@ -1,17 +1,41 @@
-#[derive(Debug)]
-pub struct ChunkMetadata {}
+use chrono::NaiveDate;
 
-pub struct EncodedChunkFile {
-    meta: ChunkMetadata,
+#[derive(Clone, Debug)]
+pub struct ChunkMeta {
+    site: String,
+    date: NaiveDate,
+    identifier: String,
+}
+
+impl ChunkMeta {
+    pub fn new(site: String, date: NaiveDate, identifier: String) -> Self {
+        Self { site, date, identifier }
+    }
+
+    pub fn site(&self) -> &String {
+        &self.site
+    }
+
+    pub fn date(&self) -> &NaiveDate {
+        &self.date
+    }
+
+    pub fn identifier(&self) -> &String {
+        &self.identifier
+    }
+}
+
+pub struct EncodedChunk {
+    meta: ChunkMeta,
     data: Vec<u8>,
 }
 
-impl EncodedChunkFile {
-    pub fn new(meta: ChunkMetadata, data: Vec<u8>) -> Self {
+impl EncodedChunk {
+    pub fn new(meta: ChunkMeta, data: Vec<u8>) -> Self {
         Self { meta, data }
     }
 
-    pub fn meta(&self) -> &ChunkMetadata {
+    pub fn meta(&self) -> &ChunkMeta {
         &self.meta
     }
 
@@ -24,17 +48,17 @@ impl EncodedChunkFile {
     }
 }
 
-pub struct DecodedChunkFile {
-    meta: ChunkMetadata,
+pub struct Chunk {
+    meta: ChunkMeta,
     // TODO
 }
 
-impl DecodedChunkFile {
-    pub fn new(meta: ChunkMetadata) -> Self {
+impl Chunk {
+    pub fn new(meta: ChunkMeta) -> Self {
         Self { meta }
     }
 
-    pub fn meta(&self) -> &ChunkMetadata {
+    pub fn meta(&self) -> &ChunkMeta {
         &self.meta
     }
 }

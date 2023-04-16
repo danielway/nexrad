@@ -7,8 +7,6 @@ use std::fmt::Debug;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
-use crate::decode::decode_file_header;
-
 /// Metadata to identify a particular NEXRAD WSR-88D radar chunk file. A meta is specific to a
 /// particular radar site, date, and identifier.
 #[derive(Serialize, Deserialize, Eq, PartialEq, Clone, Debug)]
@@ -68,9 +66,7 @@ impl EncodedChunk {
     /// [decompressed](crate::decompress::decompress_chunk) before being
     /// [decoded](crate::decode::decode_chunk).
     pub fn compressed(&self) -> bool {
-        decode_file_header(self)
-            .map(|header| &header.compression.bzip_magic == b"BZ")
-            .unwrap_or(false)
+        self.data.len() >= 30 && &self.data[28..30] == b"BZ"
     }
 }
 
@@ -95,13 +91,6 @@ impl Chunk {
 #[repr(C)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileHeader {
-    pub title: Archive2Title,
-    pub compression: CompressionRecord,
-}
-
-#[repr(C)]
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Archive2Title {
     /// Filename of the archive.
     pub filename: [u8; 9],
 
@@ -116,17 +105,4 @@ pub struct Archive2Title {
 
     /// Unused field.
     pub unused1: [u8; 4],
-}
-
-#[repr(C)]
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CompressionRecord {
-    /// Unused field.
-    pub unused1: [u8; 4],
-
-    /// BZIP magic bytes, used to indicate compression.
-    pub bzip_magic: [u8; 2],
-
-    /// Unused field.
-    pub unused2: [u8; 6],
 }

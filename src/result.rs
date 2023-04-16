@@ -6,6 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
+    DecompressionError(String),
     FileError(std::io::Error),
     DeserializationError(bincode::Error),
     S3GeneralError(aws_sdk_s3::Error),

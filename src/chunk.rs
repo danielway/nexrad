@@ -95,38 +95,38 @@ impl Chunk {
 #[repr(C)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileHeader {
-    title: Archive2Title,
-    compression: CompressionRecord,
+    pub title: Archive2Title,
+    pub compression: CompressionRecord,
 }
 
 #[repr(C)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Archive2Title {
     /// Filename of the archive.
-    filename: [u8; 9],
+    pub filename: [u8; 9],
 
     /// File extension.
-    ext: [u8; 3],
+    pub ext: [u8; 3],
 
     /// Modified Julian date of the file.
-    file_date: u32,
+    pub file_date: u32,
 
     /// Milliseconds of day since midnight of the file.
-    file_time: u32,
+    pub file_time: u32,
 
     /// Unused field.
-    unused1: [u8; 4],
+    pub unused1: [u8; 4],
 }
 
 #[repr(C)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CompressionRecord {
     /// Unused field.
-    unused1: [u8; 4],
+    pub unused1: [u8; 4],
 
     /// BZIP magic bytes, used to indicate compression.
-    bzip_magic: [u8; 2],
+    pub bzip_magic: [u8; 2],
 
     /// Unused field.
-    unused2: [u8; 6],
+    pub unused2: [u8; 6],
 }

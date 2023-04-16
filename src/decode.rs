@@ -1,3 +1,7 @@
+//!
+//! Provides utilities like [decode_chunk] for decoding NEXRAD chunk data.
+//!
+
 use crate::chunk::{Chunk, EncodedChunk};
 use crate::result::Result;
 

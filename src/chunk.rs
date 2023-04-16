@@ -1,3 +1,8 @@
+//! 
+//! Struct definitions for chunk meta, encoded binary data, and decoded data structures.
+//! 
+
+use std::fmt::Debug;
 use chrono::NaiveDate;
 
 use serde::{Deserialize, Serialize};
@@ -6,7 +11,7 @@ use crate::result::Result;
 
 /// Metadata to identify a particular NEXRAD WSR-88D radar chunk file. A meta is specific to a
 /// particular radar site, date, and identifier.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Clone, Debug)]
 pub struct ChunkMeta {
     site: String,
     date: NaiveDate,

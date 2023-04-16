@@ -1,8 +1,12 @@
+//! 
+//! Fetches NEXRAD level-II chunk data from an AWS S3 bucket updated by NOAA.
+//! 
+
 use aws_config::from_env;
 use aws_sdk_s3::{Client, config::Region, types::Object};
 use aws_sig_auth::signer::{OperationSigningConfig, SigningRequirements};
 use aws_smithy_http::operation::Operation;
-use chrono::{Datelike, NaiveDate};
+use chrono::NaiveDate;
 
 use crate::chunk::{ChunkMeta, EncodedChunk};
 use crate::result::Result;
@@ -14,8 +18,8 @@ const BUCKET: &str = "noaa-nexrad-level2";
 /// which can then be individually fetched/downloaded.
 pub async fn list_chunks(site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>> {
     // Query S3 for objects matching the prefix (i.e. chunks for the specified site and date)
-    let client = get_client().await;
-    let objects = list_objects(&client, BUCKET, &get_bucket_prefix(date, site)).await?
+    let prefix = format!("{}/{}", date.format("%Y/%m/%d"), site);
+    let objects = list_objects(&get_client().await, BUCKET, &prefix).await?
         .expect("should return objects");
 
     // Pull the returned objects' keys and parse them into chunk metas
@@ -46,24 +50,13 @@ pub async fn list_chunks(site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>>
 /// contents which may then need to be decompressed and decoded.
 pub async fn fetch_chunk(meta: &ChunkMeta) -> Result<EncodedChunk> {
     // Reconstruct the S3 object key from the chunk meta
-    let prefix = get_bucket_prefix(meta.date(), meta.site());
-    let key = format!("{}/{}", prefix, meta.identifier());
+    let key = format!("{}/{}/{}", meta.date().format("%Y/%m/%d"), meta.site(), meta.identifier());
 
     // Fetch the object from S3
-    let client = get_client().await;
-    let data = get_object(&client, BUCKET, &key).await?;
+    let data = get_object(&get_client().await, BUCKET, &key).await?;
 
     // Wrap the object contents in an EncodedChunk
     Ok(EncodedChunk::new(meta.clone(), data))
-}
-
-/// Returns the bucket prefix corresponding to the specified site and date.
-fn get_bucket_prefix(date: &NaiveDate, site: &str) -> String {
-    // Pad month/date with leading zeros, e.g. 2023/04/06 instead of 2023/4/6
-    let date_prefix = format!("{}/{:0>2}/{:0>2}", date.year(), date.month(), date.day());
-
-    // E.g. 2023/04/06/KDMX
-    format!("{}/{}", date_prefix, site)
 }
 
 /// Fetches an object from S3 and returns only its contents. This will only work for

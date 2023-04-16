@@ -1,3 +1,7 @@
+//!
+//! Provides utilities like [decompress_chunk] for decompressing BZIP2-compressed NEXRAD chunk data.
+//!
+
 use crate::chunk::EncodedChunk;
 use crate::result::Result;
 

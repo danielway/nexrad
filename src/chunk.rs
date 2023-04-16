@@ -1,6 +1,6 @@
-//! 
+//!
 //! Struct definitions for chunk meta, encoded binary data, and decoded data structures.
-//! 
+//!
 
 use std::fmt::Debug;
 use chrono::NaiveDate;
@@ -64,12 +64,11 @@ impl EncodedChunk {
         &self.data
     }
 
-    /// Determines whether this chunk is compressed. This function may fail if the chunk's contents
-    /// are invalid/corrupted. If compressed, it should be
+    /// Determines whether this chunk is compressed. If compressed, it should be
     /// [decompressed](crate::decompress::decompress_chunk) before being
     /// [decoded](crate::decode::decode_chunk).
-    pub fn compressed(&self) -> Result<bool> {
-        todo!()
+    pub fn compressed(&self) -> bool {
+        self.data.len() > 30 && &self.data[28..30] == b"BZ"
     }
 }
 

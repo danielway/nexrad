@@ -20,7 +20,9 @@ async fn main() -> Result<()> {
     if let Some(meta) = metas.first() {
         println!("Downloading {}...", meta.identifier());
         let chunk = fetch_chunk(meta).await?;
-        println!("Downloaded {} bytes.", chunk.data().len());
+
+        println!("Chunk data size (bytes): {}", chunk.data().len());
+        println!("Chunk data is compressed: {}", chunk.compressed());
     } else {
         println!("No chunks found for the specified date/site to download.");
     }

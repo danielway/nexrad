@@ -3,6 +3,7 @@
 //! decompressing.
 //!
 
+use std::collections::HashSet;
 use std::fs::{create_dir_all, File, read_dir};
 use std::io::Write;
 use std::path::Path;
@@ -10,6 +11,7 @@ use std::path::Path;
 use chrono::NaiveDate;
 
 use crate::chunk::ChunkMeta;
+use crate::decompress::decompress_chunk;
 use crate::fetch::{fetch_chunk, list_chunks};
 use crate::result::Result;
 
@@ -68,7 +70,7 @@ pub async fn update_cache(
     }
 
     // Load any previously-cached chunks for this date/site
-    let mut cached_chunk_metas = Vec::new();
+    let mut cached_chunk_metas = HashSet::new();
     for entry in read_dir(&directory)? {
         let entry = entry?;
 
@@ -76,7 +78,7 @@ pub async fn update_cache(
             continue;
         }
 
-        cached_chunk_metas.push(ChunkMeta::new(
+        cached_chunk_metas.insert(ChunkMeta::new(
             site.to_string(),
             *date,
             entry.file_name().to_str().unwrap().to_string(),
@@ -91,14 +93,24 @@ pub async fn update_cache(
                 handler(&meta);
             }
 
-            let encoded_chunk = fetch_chunk(&meta).await?;
+            let chunk = fetch_chunk(&meta).await?;
 
             let mut file = File::create(format!("{}/{}", directory, meta.identifier()))?;
-            file.write_all(&encoded_chunk.data())?;
+            file.write_all(&chunk.data())?;
+
+            // Optionally decompress the chunk and save it to disk too
+            if config.decompress && chunk.compressed() {
+                if let Some(handler) = config.decompress_handler {
+                    handler(&meta);
+                }
+
+                let decompressed_chunk = decompress_chunk(&chunk)?;
+
+                let mut file = File::create(format!("{}/{}.decompressed", directory, meta.identifier()))?;
+                file.write_all(&decompressed_chunk.data())?;
+            }
         }
     }
-
-    // TODO: Decompress and save
 
     Ok(all_chunk_metas)
 }

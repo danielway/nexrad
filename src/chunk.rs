@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 /// Metadata to identify a particular NEXRAD WSR-88D radar chunk file. A meta is specific to a
 /// particular radar site, date, and identifier.
-#[derive(Serialize, Deserialize, Eq, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone, Debug)]
 pub struct ChunkMeta {
     site: String,
     date: NaiveDate,

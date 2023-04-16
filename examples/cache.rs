@@ -15,7 +15,9 @@ async fn main() -> Result<()> {
 
     println!("Updating cached chunks for {} on {}...", site, date);
     let config = CacheConfig::new("chunk_cache")
-        .fetch_handler(|meta| println!("Fetching {}...", meta.identifier()));
+        .decompress(true)
+        .fetch_handler(|meta| println!("Fetching {}...", meta.identifier()))
+        .decompress_handler(|meta| println!("Decompressing {}...", meta.identifier()));
     let metas = update_cache(site, &date, config).await?;
 
     println!("Found and cached {} chunks.", metas.len());

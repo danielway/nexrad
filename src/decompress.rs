@@ -14,12 +14,12 @@ pub fn decompress_chunk(chunk: &EncodedChunk) -> Result<EncodedChunk> {
         return Err(Error::DecompressionError("Cannot decompress uncompressed chunk".into()));
     }
 
-    let mut reader = chunk.data().as_slice();
     let mut decompressed_buffer = Vec::new();
 
     // Start the decompressed data by copying the file header, which is not compressed
     let header_size = std::mem::size_of::<FileHeader>();
-    decompressed_buffer.extend_from_slice(&chunk.data()[..header_size]);
+    let (header, mut reader) = chunk.data().as_slice().split_at(header_size);
+    decompressed_buffer.extend_from_slice(&header);
 
     loop {
         // Skip the first 4 bytes of the compressed block, which is the size of the block

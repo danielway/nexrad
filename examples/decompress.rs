@@ -1,10 +1,10 @@
-//! examples/fetch
+//! examples/decompress
 //!
-//! This example downloads a random chunk for some date/site and prints its size.
+//! This example downloads a random chunk for some date/site, decompresses it, and prints its size.
 //!
 
 use chrono::NaiveDate;
-
+use nexrad::decompress::decompress_chunk;
 use nexrad::fetch::{fetch_chunk, list_chunks};
 use nexrad::result::Result;
 
@@ -23,6 +23,10 @@ async fn main() -> Result<()> {
 
         println!("Chunk data size (bytes): {}", compressed_chunk.data().len());
         println!("Chunk data is compressed: {}", compressed_chunk.compressed());
+
+        let decompressed_chunk = decompress_chunk(&compressed_chunk)?;
+        println!("Decompressed chunk data size (bytes): {}", decompressed_chunk.data().len());
+        println!("Decompressed chunk data is compressed: {}", decompressed_chunk.compressed());
     } else {
         println!("No chunks found for the specified date/site to download.");
     }

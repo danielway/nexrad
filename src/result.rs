@@ -1,12 +1,13 @@
-//! 
+//!
 //! Contains the Result and Error types for NEXRAD operations.
-//! 
+//!
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
     FileError(std::io::Error),
+    DeserializationError(bincode::Error),
     S3GeneralError(aws_sdk_s3::Error),
     S3ListObjectsError(aws_smithy_http::result::SdkError<
         aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error
@@ -19,6 +20,12 @@ pub enum Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
         Error::FileError(err)
+    }
+}
+
+impl From<bincode::Error> for Error {
+    fn from(err: bincode::Error) -> Self {
+        Error::DeserializationError(err)
     }
 }
 

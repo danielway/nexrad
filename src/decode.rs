@@ -2,11 +2,29 @@
 //! Provides utilities like [decode_chunk] for decoding NEXRAD chunk data.
 //!
 
-use crate::chunk::{Chunk, EncodedChunk};
+use std::io::Read;
+
+use bincode::{DefaultOptions, Options};
+use serde::de::DeserializeOwned;
+
+use crate::chunk::{Chunk, EncodedChunk, FileHeader};
 use crate::result::Result;
 
 /// Given a chunk, decodes it and returns the decoded structure. If [decompress] is true it will
 /// decompress compressed chunks, otherwise it will fail if the chunk is compressed.
 pub fn decode_chunk(_chunk: &EncodedChunk, _decompress: bool) -> Result<Chunk> {
     todo!()
+}
+
+/// Given a chunk, decodes and returns just the file header.
+pub fn decode_file_header(chunk: &EncodedChunk) -> Result<FileHeader> {
+    Ok(deserialize(chunk.data().as_slice())?)
+}
+
+/// Attempts to deserialize some struct from the provided binary reader.
+fn deserialize<R: Read, S: DeserializeOwned>(t: R) -> Result<S> {
+    Ok(DefaultOptions::new()
+        .with_fixint_encoding()
+        .with_big_endian()
+        .deserialize_from(t)?)
 }

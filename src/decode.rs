@@ -10,10 +10,9 @@ use serde::de::DeserializeOwned;
 use crate::chunk::{Chunk, EncodedChunk, FileHeader};
 use crate::result::Result;
 
-/// Given a chunk, decodes it and returns the decoded structure. If [decompress] is true it will
-/// decompress compressed chunks, otherwise it will fail if the chunk is compressed.
-pub fn decode_chunk(_chunk: &EncodedChunk, _decompress: bool) -> Result<Chunk> {
-    todo!()
+/// Given a chunk, decodes it and returns the decoded structure.
+pub fn decode_chunk(encoded_chunk: &EncodedChunk) -> Result<Chunk> {
+    Ok(Chunk::new(encoded_chunk.meta().clone()))
 }
 
 /// Given a chunk, decodes and returns just the file header.

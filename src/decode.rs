@@ -12,7 +12,14 @@ use crate::result::Result;
 
 /// Given a chunk, decodes it and returns the decoded structure.
 pub fn decode_chunk(encoded_chunk: &EncodedChunk) -> Result<Chunk> {
-    Ok(Chunk::new(encoded_chunk.meta().clone()))
+    let mut reader = encoded_chunk.data().as_slice();
+    
+    let file_header: FileHeader = deserialize(&mut reader)?;
+
+    Ok(Chunk::new(
+        encoded_chunk.meta().clone(),
+        file_header,
+    ))
 }
 
 /// Given a chunk, decodes and returns just the file header.

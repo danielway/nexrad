@@ -74,12 +74,12 @@ impl EncodedChunk {
 #[derive(Serialize, Deserialize)]
 pub struct Chunk {
     meta: ChunkMeta,
-    // TODO
+    file_header: FileHeader,
 }
 
 impl Chunk {
-    pub(crate) fn new(meta: ChunkMeta) -> Self {
-        Self { meta }
+    pub(crate) fn new(meta: ChunkMeta, file_header: FileHeader) -> Self {
+        Self { meta, file_header }
     }
 
     /// The identifying metadata for this chunk.

@@ -5,7 +5,7 @@
 
 use chrono::NaiveDate;
 
-use nexrad::cache::{CacheConfig, update_cache};
+use nexrad::cache::{CacheConfig, get_cache, update_cache};
 use nexrad::result::Result;
 
 #[tokio::main]
@@ -21,6 +21,15 @@ async fn main() -> Result<()> {
     let metas = update_cache(site, &date, config).await?;
 
     println!("Found and cached {} chunks.", metas.len());
+
+    println!("Loading the first chunk from the cache...");
+    let chunk = get_cache("chunk_cache", &metas[0])?;
+
+    println!(
+        "Loaded {} chunk of size {} bytes.",
+        if chunk.compressed() { "compressed " } else { "decompressed" },
+        chunk.data().len()
+    );
 
     Ok(())
 }

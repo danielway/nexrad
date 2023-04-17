@@ -5,12 +5,12 @@
 
 use std::collections::HashSet;
 use std::fs::{create_dir_all, File, read_dir};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::Path;
 
 use chrono::NaiveDate;
 
-use crate::chunk::ChunkMeta;
+use crate::chunk::{ChunkMeta, EncodedChunk};
 use crate::decompress::decompress_chunk;
 use crate::fetch::{fetch_chunk, list_chunks};
 use crate::result::Result;
@@ -70,20 +70,7 @@ pub async fn update_cache(
     }
 
     // Load any previously-cached chunks for this date/site
-    let mut cached_chunk_metas = HashSet::new();
-    for entry in read_dir(&directory)? {
-        let entry = entry?;
-
-        if entry.file_type()?.is_dir() {
-            continue;
-        }
-
-        cached_chunk_metas.insert(ChunkMeta::new(
-            site.to_string(),
-            *date,
-            entry.file_name().to_str().unwrap().to_string(),
-        ));
-    }
+    let cached_chunk_metas = list_cache(&directory, site, date)?;
 
     // List all available chunks, and download and save any that are not cached
     let all_chunk_metas = list_chunks(site, date).await?;
@@ -113,4 +100,48 @@ pub async fn update_cache(
     }
 
     Ok(all_chunk_metas)
+}
+
+/// Loads a cached chunk from disk.
+pub fn get_cache(directory: &str, meta: &ChunkMeta) -> Result<EncodedChunk> {
+    let mut path = format!(
+        "{}/{}/{}/{}",
+        directory,
+        meta.date().format("%Y/%m/%d"),
+        meta.site(),
+        meta.identifier()
+    );
+
+    // Prefer a decompressed version of the chunk if it exists
+    if Path::exists(Path::new(&format!("{}.decompressed", path))) {
+        path += ".decompressed";
+    }
+
+    let mut file = File::open(&path)?;
+
+    let mut data = Vec::new();
+    file.read_to_end(&mut data)?;
+
+    Ok(EncodedChunk::new(meta.clone(), data))
+}
+
+/// Lists cached chunks for the specified date/site.
+pub fn list_cache(directory: &str, site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>> {
+    let mut cached_chunk_metas = HashSet::new();
+
+    for entry in read_dir(&directory)? {
+        let entry = entry?;
+
+        if entry.file_type()?.is_dir() {
+            continue;
+        }
+
+        cached_chunk_metas.insert(ChunkMeta::new(
+            site.to_string(),
+            *date,
+            entry.file_name().to_str().unwrap().to_string(),
+        ));
+    }
+
+    Ok(cached_chunk_metas.into_iter().collect())
 }

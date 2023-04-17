@@ -64,13 +64,13 @@ pub async fn update_cache(
     config: CacheConfig,
 ) -> Result<Vec<ChunkMeta>> {
     // Ensure the cache directory for this particular date/site exists
-    let directory = format!("{}/{}/{}", config.directory, date.format("%Y/%m/%d"), site);
+    let directory = get_cache_directory(&config.directory, date, site);
     if !Path::new(&directory).exists() {
         create_dir_all(&directory)?;
     }
 
     // Load any previously-cached chunks for this date/site
-    let cached_chunk_metas = list_cache(&directory, site, date)?;
+    let cached_chunk_metas = list_cache(&config.directory, site, date)?;
 
     // List all available chunks, and download and save any that are not cached
     let all_chunk_metas = list_chunks(site, date).await?;
@@ -126,10 +126,9 @@ pub fn get_cache(directory: &str, meta: &ChunkMeta) -> Result<EncodedChunk> {
 }
 
 /// Lists cached chunks for the specified date/site.
-pub fn list_cache(directory: &str, site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>> {
+pub fn list_cache(cache_directory: &str, site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>> {
     let mut cached_chunk_metas = HashSet::new();
-
-    for entry in read_dir(&directory)? {
+    for entry in read_dir(&get_cache_directory(cache_directory, date, site))? {
         let entry = entry?;
 
         if entry.file_type()?.is_dir() {
@@ -144,4 +143,9 @@ pub fn list_cache(directory: &str, site: &str, date: &NaiveDate) -> Result<Vec<C
     }
 
     Ok(cached_chunk_metas.into_iter().collect())
+}
+
+/// Returns the path to the cache directory for the specified date/site.
+fn get_cache_directory(cache_directory: &str, date: &NaiveDate, site: &str) -> String {
+    format!("{}/{}/{}", cache_directory, date.format("%Y/%m/%d"), site)
 }

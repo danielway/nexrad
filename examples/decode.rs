@@ -1,12 +1,12 @@
 //! examples/decode
 //!
-//! This example fetches a random chunk and decodes it.
+//! This example downloads a random chunk and decodes it.
 //!
 
 use chrono::NaiveDate;
 
 use nexrad::decode::decode_chunk;
-use nexrad::fetch::{fetch_chunk, list_chunks};
+use nexrad::download::{download_chunk, list_chunks};
 use nexrad::result::Result;
 
 #[tokio::main]
@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     let meta = metas.first().expect("at least one chunk on date");
     println!("Found {} chunks. Downloading {}...", metas.len(), meta.identifier());
 
-    let chunk = fetch_chunk(meta).await?;
+    let chunk = download_chunk(meta).await?;
     println!(
         "Downloaded {} chunk of size {} bytes.",
         if chunk.compressed() { "compressed " } else { "decompressed" },

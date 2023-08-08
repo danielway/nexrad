@@ -1,5 +1,5 @@
 //! 
-//! Fetches NEXRAD level-II chunk data from an AWS S3 bucket updated by NOAA.
+//! Downloads NEXRAD level-II chunk data from an AWS S3 bucket updated by NOAA.
 //! 
 
 use aws_config::from_env;
@@ -15,7 +15,7 @@ const REGION: &str = "us-east-1";
 const BUCKET: &str = "noaa-nexrad-level2";
 
 /// List chunk metas for the specified site and date. This effectively returns an index of chunks
-/// which can then be individually fetched/downloaded.
+/// which can then be individually downloaded.
 pub async fn list_chunks(site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>> {
     // Query S3 for objects matching the prefix (i.e. chunks for the specified site and date)
     let prefix = format!("{}/{}", date.format("%Y/%m/%d"), site);
@@ -46,22 +46,22 @@ pub async fn list_chunks(site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>>
     Ok(metas)
 }
 
-/// Fetch/download a chunk specified by its meta. This downloads and returns the chunk's encoded
-/// contents which may then need to be decompressed and decoded.
-pub async fn fetch_chunk(meta: &ChunkMeta) -> Result<EncodedChunk> {
+/// Download a chunk specified by its meta. Returns the downloaded chunk's encoded contents which
+/// may then need to be decompressed and decoded.
+pub async fn download_chunk(meta: &ChunkMeta) -> Result<EncodedChunk> {
     // Reconstruct the S3 object key from the chunk meta
     let key = format!("{}/{}/{}", meta.date().format("%Y/%m/%d"), meta.site(), meta.identifier());
 
-    // Fetch the object from S3
-    let data = get_object(&get_client().await, BUCKET, &key).await?;
+    // Download the object from S3
+    let data = download_object(&get_client().await, BUCKET, &key).await?;
 
     // Wrap the object contents in an EncodedChunk
     Ok(EncodedChunk::new(meta.clone(), data))
 }
 
-/// Fetches an object from S3 and returns only its contents. This will only work for
+/// Downloads an object from S3 and returns only its contents. This will only work for
 /// unauthenticated requests (requests are unsigned).
-async fn get_object(client: &Client, bucket: &str, key: &str) -> Result<Vec<u8>> {
+async fn download_object(client: &Client, bucket: &str, key: &str) -> Result<Vec<u8>> {
     let builder = client
         .get_object()
         .bucket(bucket)

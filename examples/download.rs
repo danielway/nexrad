@@ -1,11 +1,11 @@
-//! examples/fetch
+//! examples/download
 //!
 //! This example downloads a random chunk for some date/site and prints its size.
 //!
 
 use chrono::NaiveDate;
 
-use nexrad::fetch::{fetch_chunk, list_chunks};
+use nexrad::download::{download_chunk, list_chunks};
 use nexrad::result::Result;
 
 #[tokio::main]
@@ -19,7 +19,7 @@ async fn main() -> Result<()> {
     println!("Found {} chunks.", metas.len());
     if let Some(meta) = metas.first() {
         println!("Downloading {}...", meta.identifier());
-        let compressed_chunk = fetch_chunk(meta).await?;
+        let compressed_chunk = download_chunk(meta).await?;
 
         println!("Chunk data size (bytes): {}", compressed_chunk.data().len());
         println!("Chunk data is compressed: {}", compressed_chunk.compressed());

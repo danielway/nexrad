@@ -6,7 +6,7 @@
 extern crate core;
 
 pub mod chunk;
-pub mod fetch;
+pub mod download;
 pub mod decompress;
 pub mod decode;
 pub mod result;

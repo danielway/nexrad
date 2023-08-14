@@ -3,6 +3,8 @@
 //! This example downloads a random chunk for some date/site and prints its size.
 //!
 
+#![cfg(all(feature = "download"))]
+
 use chrono::NaiveDate;
 
 use nexrad::download::{download_chunk, list_chunks};

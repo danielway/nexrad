@@ -3,6 +3,8 @@
 //! This example downloads a random chunk and decodes it.
 //!
 
+#![cfg(all(feature = "download"))]
+
 use chrono::NaiveDate;
 
 use nexrad::decode::decode_chunk;

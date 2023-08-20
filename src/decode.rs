@@ -13,7 +13,7 @@ use crate::result::Result;
 
 /// Given an uncompressed data file, decodes it and returns the decoded structure.
 pub fn decode_file<R: Read + Seek>(reader: &mut R) -> Result<DataFile> {
-    let file_header: FileHeader = deserialize(reader)?;
+    let file_header: FileHeader = decode_file_header(reader)?;
 
     loop {
         let message_header: MessageHeader = deserialize(reader)?;

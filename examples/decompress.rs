@@ -3,8 +3,6 @@
 //! This example downloads a random file for some date/site, decompresses it, and prints its size.
 //!
 
-#![cfg(all(feature = "download"))]
-
 use chrono::NaiveDate;
 use nexrad::decompress::decompress_file;
 use nexrad::download::{download_file, list_files};

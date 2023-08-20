@@ -8,6 +8,21 @@ edition = "2021"
 repository = "https://github.com/danielway/nexrad"
 exclude = [".github"]
 
+[[example]]
+name = "decode"
+path = "examples/decode.rs"
+required-features = ["download"]
+
+[[example]]
+name = "decompress"
+path = "examples/decompress.rs"
+required-features = ["download"]
+
+[[example]]
+name = "download"
+path = "examples/download.rs"
+required-features = ["download"]
+
 [features]
 download = ["dep:aws-smithy-http", "dep:aws-sig-auth", "dep:aws-config", "dep:aws-sdk-s3"]
 

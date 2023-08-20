@@ -12,16 +12,18 @@ use crate::model::{DataFile, DataHeader, FileHeader, MessageHeader};
 use crate::result::Result;
 
 /// Given an uncompressed data file, decodes it and returns the decoded structure.
-pub fn decode_file<R: Read + Seek>(reader: &mut R) -> Result<DataFile> {
-    let file_header: FileHeader = decode_file_header(reader)?;
+pub fn decode_file(data: &Vec<u8>) -> Result<DataFile> {
+    let mut reader = std::io::Cursor::new(data);
+
+    let file_header: FileHeader = decode_file_header(&mut reader)?;
     println!("File header: {:?}", file_header);
 
-    loop {
-        let message_header: MessageHeader = deserialize(reader)?;
+    while reader.position() < data.len() as u64 {
+        let message_header: MessageHeader = deserialize(&mut reader)?;
         println!("Message header: {:?}", message_header);
 
         if message_header.msg_type == 31 {
-            let data_header: DataHeader = deserialize(reader)?;
+            let data_header: DataHeader = deserialize(&mut reader)?;
             println!("Data header: {:?}", data_header);
         } else {
             let ff_distance = 2432 - size_of::<MessageHeader>();

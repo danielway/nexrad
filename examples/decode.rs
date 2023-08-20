@@ -9,6 +9,7 @@ use chrono::NaiveDate;
 use std::io::Cursor;
 
 use nexrad::decode::decode_file;
+use nexrad::decompress::decompress_file;
 use nexrad::download::{download_file, list_files};
 use nexrad::file::is_compressed;
 use nexrad::result::Result;
@@ -28,18 +29,24 @@ async fn main() -> Result<()> {
         meta.identifier()
     );
 
-    let file = download_file(meta).await?;
+    let compressed_file = download_file(meta).await?;
     println!(
         "Downloaded {} file of size {} bytes.",
-        if is_compressed(file.as_slice()) {
+        if is_compressed(compressed_file.as_slice()) {
             "compressed"
         } else {
             "decompressed"
         },
-        file.len()
+        compressed_file.len()
     );
 
-    let mut cursor = Cursor::new(file);
+    let decompressed_file = decompress_file(&compressed_file)?;
+    println!(
+        "Decompressed file data size (bytes): {}",
+        decompressed_file.len()
+    );
+
+    let mut cursor = Cursor::new(decompressed_file);
     let decoded = decode_file(&mut cursor)?;
     println!("Decoded file: {:?}", decoded);
 

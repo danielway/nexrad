@@ -5,10 +5,10 @@
 
 extern crate core;
 
-pub mod chunk;
 pub mod decode;
 pub mod decompress;
 pub mod file;
+pub mod model;
 pub mod result;
 
 #[cfg(feature = "download")]

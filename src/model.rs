@@ -1,18 +1,18 @@
 //!
-//! Struct definitions for chunk meta, encoded binary data, and decoded data structures.
+//! Struct definitions for decoded NEXRAD Level II data structures.
 //!
 
 use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-/// A decoded NEXRAD WSR-88D chunk file including sweep data.
+/// A decoded NEXRAD WSR-88D data file including sweep data.
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Chunk {
+pub struct VolumeScan {
     file_header: FileHeader,
 }
 
-impl Chunk {
+impl VolumeScan {
     pub(crate) fn new(file_header: FileHeader) -> Self {
         Self { file_header }
     }

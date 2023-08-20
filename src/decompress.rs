@@ -1,9 +1,9 @@
 //!
-//! Provides utilities like [decompress_file] for decompressing BZIP2-compressed NEXRAD chunk data.
+//! Provides utilities like [decompress_file] for decompressing BZIP2-compressed NEXRAD data.
 //!
 
-use crate::chunk::FileHeader;
 use crate::file::is_compressed;
+use crate::model::FileHeader;
 use crate::result::{Error, Result};
 use std::io::Read;
 

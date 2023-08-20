@@ -1,6 +1,6 @@
 //! examples/decompress
 //!
-//! This example downloads a random chunk for some date/site, decompresses it, and prints its size.
+//! This example downloads a random file for some date/site, decompresses it, and prints its size.
 //!
 
 #![cfg(all(feature = "download"))]
@@ -16,31 +16,31 @@ async fn main() -> Result<()> {
     let site = "KDMX";
     let date = NaiveDate::from_ymd_opt(2023, 4, 6).expect("is valid date");
 
-    println!("Listing chunks for {} on {}...", site, date);
+    println!("Listing files for {} on {}...", site, date);
     let metas = list_files(site, &date).await?;
 
-    println!("Found {} chunks.", metas.len());
+    println!("Found {} files.", metas.len());
     if let Some(meta) = metas.first() {
         println!("Downloading {}...", meta.identifier());
-        let compressed_chunk = download_file(meta).await?;
+        let compressed_file = download_file(meta).await?;
 
-        println!("Chunk data size (bytes): {}", compressed_chunk.len());
+        println!("Data file size (bytes): {}", compressed_file.len());
         println!(
-            "Chunk data is compressed: {}",
-            is_compressed(compressed_chunk.as_slice())
+            "Data file is compressed: {}",
+            is_compressed(compressed_file.as_slice())
         );
 
-        let decompressed_chunk = decompress_file(&compressed_chunk)?;
+        let decompressed_file = decompress_file(&compressed_file)?;
         println!(
-            "Decompressed chunk data size (bytes): {}",
-            decompressed_chunk.len()
+            "Decompressed file data size (bytes): {}",
+            decompressed_file.len()
         );
         println!(
-            "Decompressed chunk data is compressed: {}",
-            is_compressed(decompressed_chunk.as_slice())
+            "Decompressed file data is compressed: {}",
+            is_compressed(decompressed_file.as_slice())
         );
     } else {
-        println!("No chunks found for the specified date/site to download.");
+        println!("No files found for the specified date/site to download.");
     }
 
     Ok(())

@@ -17,7 +17,7 @@ const BUCKET: &str = "noaa-nexrad-level2";
 /// List data files for the specified site and date. This effectively returns an index of data files
 /// which can then be individually downloaded.
 pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<NexradFileMetadata>> {
-    // Query S3 for objects matching the prefix (i.e. chunks for the specified site and date)
+    // Query S3 for objects matching the prefix (i.e. files for the specified site and date)
     let prefix = format!("{}/{}", date.format("%Y/%m/%d"), site);
     let objects = list_objects(&get_client().await, BUCKET, &prefix)
         .await?

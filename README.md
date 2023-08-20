@@ -27,51 +27,51 @@ The data is organized by site and date. Here is an example of downloading the fi
 let site = "KDMX";
 let date = NaiveDate::from_ymd_opt(2023, 4, 6).expect("is valid date");
 
-let metas = list_chunks(site, &date).await?;
+let metas = list_files(site, &date).await?;
 if let Some(meta) = metas.first() {
     println!("Downloading {}...", meta.identifier());
-    let compressed_chunk = download_chunk(meta).await?;
+    let compressed_file = download_file(meta).await?;
     
-    println!("Chunk data size (bytes): {}", compressed_chunk.data().len());
-    println!("Chunk data is compressed: {}", compressed_chunk.compressed());
+    println!("Data file size (bytes): {}", compressed_file.len());
+    println!("Data file is compressed: {}", is_compressed(compressed_file));
 } else {
-    println!("No chunks found for the specified date/site to download.");
+    println!("No files found for the specified date/site to download.");
 }
 ```
 
-In this example, `list_chunks` is being used to query which files are available for the specified site and date, and
-`download_chunk` is used to download the contents of the first file. The downloaded "chunk"/file will need to be
-decompressed and decoded before the data can be inspected.
+In this example, `list_files` is being used to query which files are available for the specified site and date, and
+`download_file` is used to download the contents of the first file. The downloaded file will need to be decompressed and
+decoded before the data can be inspected.
 
 ## Decompression
 
-Raw chunk files are compressed with bzip2 and must be decompressed prior to decoding. Here is an example of 
-decompressing a chunk file: 
+Raw data files are compressed with bzip2 and must be decompressed prior to decoding. Here is an example of 
+decompressing a file: 
 ```rust
-let compressed_chunk = ...;
+let compressed_file = ...;
 
-println!("Chunk data size (bytes): {}", compressed_chunk.data().len());
-println!("Chunk data is compressed: {}", compressed_chunk.compressed());
+println!("Data file size (bytes): {}", compressed_file.data().len());
+println!("Data file is compressed: {}", compressed_file.compressed());
 
-let decompressed_chunk = decompress_chunk(&compressed_chunk)?;
-println!("Decompressed chunk data size (bytes): {}", decompressed_chunk.data().len());
-println!("Decompressed chunk data is compressed: {}", decompressed_chunk.compressed());
+let decompressed_file = decompress_file(&compressed_file)?;
+println!("Decompressed data file size (bytes): {}", decompressed_file.data().len());
+println!("Decompressed data file is compressed: {}", decompressed_file.compressed());
 ```
 
 ## Decoding
 
-A decompressed chunk file consists of binary-encoded messages containing sweep data. Here is an example of decoding a 
-chunk file:
+A decompressed data file consists of binary-encoded messages containing sweep data. Here is an example of decoding a 
+file:
 ```rust
-let chunk = ...;
-let decoded = decode_chunk(&chunk)?;
-println!("Decoded chunk: {:?}", decoded);
+let data = ...;
+let decoded = decode_data(&data)?;
+println!("Decoded file: {:?}", decoded);
 ```
 
-Chunks contain a wide variety of data/message, but you may only be interested in a particular subset. To reduce the
-volume of data that needs to be stored or processed, you can apply a filter when decoding a chunk. For example:
+Data files contain a wide variety of data/messages, but you may only be interested in a particular subset. To reduce the
+volume of data that needs to be stored or processed, you can apply a filter when decoding a file. For example:
 ```rust
 // TODO
 ```
 
-The decoded chunk models are binary-serializable, so they can then be cached to disk for reuse later.
+The decoded models are binary-serializable, so they can then be cached to disk for reuse later.

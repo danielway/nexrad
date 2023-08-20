@@ -1,5 +1,5 @@
 //!
-//! Provides utilities like [decode_chunk] for decoding NEXRAD chunk data.
+//! Provides utilities like [decode_file] for decoding NEXRAD data.
 //!
 
 use std::io::Read;
@@ -7,25 +7,25 @@ use std::io::Read;
 use bincode::{DefaultOptions, Options};
 use serde::de::DeserializeOwned;
 
-use crate::chunk::{Chunk, FileHeader, MessageHeader};
+use crate::model::{FileHeader, MessageHeader, VolumeScan};
 use crate::result::Result;
 
-/// Given a chunk, decodes it and returns the decoded structure.
-pub fn decode_chunk(reader: &[u8]) -> Result<Chunk> {
-    let file_header: FileHeader = deserialize(reader)?;
+/// Given an uncompressed data file, decodes it and returns the decoded structure.
+pub fn decode_file(data: &[u8]) -> Result<VolumeScan> {
+    let file_header: FileHeader = deserialize(data)?;
 
     loop {
-        let message_header: MessageHeader = deserialize(reader)?;
+        let message_header: MessageHeader = deserialize(data)?;
 
         println!("Message type: {}", message_header.msg_type);
 
         break;
     }
 
-    Ok(Chunk::new(file_header))
+    Ok(VolumeScan::new(file_header))
 }
 
-/// Given a chunk, decodes and returns just the file header.
+/// Given a data file, decodes and returns just the file header.
 pub fn decode_file_header(data: &[u8]) -> Result<FileHeader> {
     Ok(deserialize(data)?)
 }

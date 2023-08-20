@@ -7,11 +7,11 @@ use std::io::Read;
 use bincode::{DefaultOptions, Options};
 use serde::de::DeserializeOwned;
 
-use crate::model::{FileHeader, MessageHeader, VolumeScan};
+use crate::model::{FileHeader, MessageHeader, DataFile};
 use crate::result::Result;
 
 /// Given an uncompressed data file, decodes it and returns the decoded structure.
-pub fn decode_file(data: &[u8]) -> Result<VolumeScan> {
+pub fn decode_file(data: &[u8]) -> Result<DataFile> {
     let file_header: FileHeader = deserialize(data)?;
 
     loop {
@@ -22,7 +22,7 @@ pub fn decode_file(data: &[u8]) -> Result<VolumeScan> {
         break;
     }
 
-    Ok(VolumeScan::new(file_header))
+    Ok(DataFile::new(file_header))
 }
 
 /// Given a data file, decodes and returns just the file header.

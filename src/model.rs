@@ -8,11 +8,11 @@ use serde::{Deserialize, Serialize};
 
 /// A decoded NEXRAD WSR-88D data file including sweep data.
 #[derive(Serialize, Deserialize, Debug)]
-pub struct VolumeScan {
+pub struct DataFile {
     file_header: FileHeader,
 }
 
-impl VolumeScan {
+impl DataFile {
     pub(crate) fn new(file_header: FileHeader) -> Self {
         Self { file_header }
     }

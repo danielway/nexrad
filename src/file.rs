@@ -5,13 +5,13 @@
 use chrono::NaiveDate;
 
 /// Metadata describing a NEXRAD WSR-88D radar data file.
-pub struct NexradFileMetadata {
+pub struct FileMetadata {
     site: String,
     date: NaiveDate,
     identifier: String,
 }
 
-impl NexradFileMetadata {
+impl FileMetadata {
     /// Create new file metadata.
     pub fn new(site: String, date: NaiveDate, identifier: String) -> Self {
         Self {

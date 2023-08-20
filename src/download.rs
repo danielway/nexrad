@@ -8,7 +8,7 @@ use aws_sig_auth::signer::{OperationSigningConfig, SigningRequirements};
 use aws_smithy_http::operation::Operation;
 use chrono::NaiveDate;
 
-use crate::file::NexradFileMetadata;
+use crate::file::FileMetadata;
 use crate::result::Result;
 
 const REGION: &str = "us-east-1";
@@ -16,7 +16,7 @@ const BUCKET: &str = "noaa-nexrad-level2";
 
 /// List data files for the specified site and date. This effectively returns an index of data files
 /// which can then be individually downloaded.
-pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<NexradFileMetadata>> {
+pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<FileMetadata>> {
     // Query S3 for objects matching the prefix (i.e. files for the specified site and date)
     let prefix = format!("{}/{}", date.format("%Y/%m/%d"), site);
     let objects = list_objects(&get_client().await, BUCKET, &prefix)
@@ -43,7 +43,7 @@ pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<NexradFileMe
             let site = parts[3];
             let identifier = parts[4..].join("");
 
-            NexradFileMetadata::new(site.to_string(), date, identifier)
+            FileMetadata::new(site.to_string(), date, identifier)
         })
         .collect();
 
@@ -52,7 +52,7 @@ pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<NexradFileMe
 
 /// Download a data file specified by its metadata. Returns the downloaded file's encoded contents
 /// which may then need to be decompressed and decoded.
-pub async fn download_file(meta: &NexradFileMetadata) -> Result<Vec<u8>> {
+pub async fn download_file(meta: &FileMetadata) -> Result<Vec<u8>> {
     // Reconstruct the S3 object key from the file's metadata
     let formatted_date = meta.date().format("%Y/%m/%d");
     let key = format!("{}/{}/{}", formatted_date, meta.site(), meta.identifier());

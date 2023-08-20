@@ -6,6 +6,7 @@
 #![cfg(all(feature = "download"))]
 
 use chrono::NaiveDate;
+use std::io::Cursor;
 
 use nexrad::decode::decode_file;
 use nexrad::download::{download_file, list_files};
@@ -38,7 +39,8 @@ async fn main() -> Result<()> {
         file.len()
     );
 
-    let decoded = decode_file(&file)?;
+    let mut cursor = Cursor::new(file);
+    let decoded = decode_file(&mut cursor)?;
     println!("Decoded file: {:?}", decoded);
 
     Ok(())

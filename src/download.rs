@@ -1,5 +1,5 @@
 //! 
-//! Downloads NEXRAD level-II chunk data from an AWS S3 bucket updated by NOAA.
+//! Downloads NEXRAD level-II data from an AWS S3 bucket populated by NOAA.
 //! 
 
 use aws_config::from_env;
@@ -8,21 +8,22 @@ use aws_sig_auth::signer::{OperationSigningConfig, SigningRequirements};
 use aws_smithy_http::operation::Operation;
 use chrono::NaiveDate;
 
-use crate::chunk::{ChunkMeta, EncodedChunk};
+use crate::chunk::EncodedChunk;
+use crate::file::NexradFileMetadata;
 use crate::result::Result;
 
 const REGION: &str = "us-east-1";
 const BUCKET: &str = "noaa-nexrad-level2";
 
-/// List chunk metas for the specified site and date. This effectively returns an index of chunks
+/// List data files for the specified site and date. This effectively returns an index of data files
 /// which can then be individually downloaded.
-pub async fn list_chunks(site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>> {
+pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<NexradFileMetadata>> {
     // Query S3 for objects matching the prefix (i.e. chunks for the specified site and date)
     let prefix = format!("{}/{}", date.format("%Y/%m/%d"), site);
     let objects = list_objects(&get_client().await, BUCKET, &prefix).await?
         .expect("should return objects");
 
-    // Pull the returned objects' keys and parse them into chunk metas
+    // Pull the returned objects' keys and parse them into metadata
     let metas = objects.iter().map(|object| {
         let key = object.key().expect("object should have a key");
 
@@ -35,12 +36,12 @@ pub async fn list_chunks(site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>>
 
         let date_string = parts[0..=2].join("/");
         let date = NaiveDate::parse_from_str(&date_string, "%Y/%m/%d")
-            .expect(&format!("chunk has valid date: \"{}\"", date_string));
+            .expect(&format!("file has valid date: \"{}\"", date_string));
 
         let site = parts[3];
         let identifier = parts[4..].join("");
 
-        ChunkMeta::new(site.to_string(), date, identifier)
+        NexradFileMetadata::new(site.to_string(), date, identifier)
     }).collect();
 
     Ok(metas)
@@ -48,7 +49,7 @@ pub async fn list_chunks(site: &str, date: &NaiveDate) -> Result<Vec<ChunkMeta>>
 
 /// Download a chunk specified by its meta. Returns the downloaded chunk's encoded contents which
 /// may then need to be decompressed and decoded.
-pub async fn download_chunk(meta: &ChunkMeta) -> Result<EncodedChunk> {
+pub async fn download_chunk(meta: &NexradFileMetadata) -> Result<EncodedChunk> {
     // Reconstruct the S3 object key from the chunk meta
     let key = format!("{}/{}/{}", meta.date().format("%Y/%m/%d"), meta.site(), meta.identifier());
 
@@ -56,7 +57,7 @@ pub async fn download_chunk(meta: &ChunkMeta) -> Result<EncodedChunk> {
     let data = download_object(&get_client().await, BUCKET, &key).await?;
 
     // Wrap the object contents in an EncodedChunk
-    Ok(EncodedChunk::new(meta.clone(), data))
+    Ok(EncodedChunk::new(data))
 }
 
 /// Downloads an object from S3 and returns only its contents. This will only work for

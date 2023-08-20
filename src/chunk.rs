@@ -4,38 +4,7 @@
 
 use std::fmt::Debug;
 
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-
-/// Metadata to identify a particular NEXRAD WSR-88D radar chunk file. A meta is specific to a
-/// particular radar site, date, and identifier.
-#[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone, Debug)]
-pub struct ChunkMeta {
-    site: String,
-    date: NaiveDate,
-    identifier: String,
-}
-
-impl ChunkMeta {
-    pub(crate) fn new(site: String, date: NaiveDate, identifier: String) -> Self {
-        Self { site, date, identifier }
-    }
-
-    /// The radar site this chunk was produced at, e.g. KDMX.
-    pub fn site(&self) -> &String {
-        &self.site
-    }
-
-    /// The date this chunk's data was collected on.
-    pub fn date(&self) -> &NaiveDate {
-        &self.date
-    }
-
-    /// The unique identifier for this chunk.
-    pub fn identifier(&self) -> &String {
-        &self.identifier
-    }
-}
 
 /// An encoded (and possibly-compressed) NEXRAD WSR-88D chunk file including sweep data. If
 /// compressed, the data is compressed using BZIP2. See
@@ -43,18 +12,12 @@ impl ChunkMeta {
 /// [decode_chunk](crate::decode::decode_chunk).
 #[derive(Serialize, Deserialize)]
 pub struct EncodedChunk {
-    meta: ChunkMeta,
     data: Vec<u8>,
 }
 
 impl EncodedChunk {
-    pub(crate) fn new(meta: ChunkMeta, data: Vec<u8>) -> Self {
-        Self { meta, data }
-    }
-
-    /// The identifying metadata for this chunk.
-    pub fn meta(&self) -> &ChunkMeta {
-        &self.meta
+    pub(crate) fn new(data: Vec<u8>) -> Self {
+        Self { data }
     }
 
     /// The raw, encoded, and possibly-compressed data for this chunk.
@@ -73,18 +36,12 @@ impl EncodedChunk {
 /// A decoded NEXRAD WSR-88D chunk file including sweep data.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Chunk {
-    meta: ChunkMeta,
     file_header: FileHeader,
 }
 
 impl Chunk {
-    pub(crate) fn new(meta: ChunkMeta, file_header: FileHeader) -> Self {
-        Self { meta, file_header }
-    }
-
-    /// The identifying metadata for this chunk.
-    pub fn meta(&self) -> &ChunkMeta {
-        &self.meta
+    pub(crate) fn new(file_header: FileHeader) -> Self {
+        Self { file_header }
     }
 }
 

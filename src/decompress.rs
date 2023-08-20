@@ -42,5 +42,5 @@ pub fn decompress_chunk(chunk: &EncodedChunk) -> Result<EncodedChunk> {
         }
     }
 
-    Ok(EncodedChunk::new(chunk.meta().clone(), decompressed_buffer))
+    Ok(EncodedChunk::new(decompressed_buffer))
 }

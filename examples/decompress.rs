@@ -7,7 +7,7 @@
 
 use chrono::NaiveDate;
 use nexrad::decompress::decompress_chunk;
-use nexrad::download::{download_chunk, list_chunks};
+use nexrad::download::{download_chunk, list_files};
 use nexrad::result::Result;
 
 #[tokio::main]
@@ -16,7 +16,7 @@ async fn main() -> Result<()> {
     let date = NaiveDate::from_ymd_opt(2023, 4, 6).expect("is valid date");
 
     println!("Listing chunks for {} on {}...", site, date);
-    let metas = list_chunks(site, &date).await?;
+    let metas = list_files(site, &date).await?;
 
     println!("Found {} chunks.", metas.len());
     if let Some(meta) = metas.first() {

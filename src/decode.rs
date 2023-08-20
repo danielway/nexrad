@@ -24,10 +24,7 @@ pub fn decode_chunk(encoded_chunk: &EncodedChunk) -> Result<Chunk> {
         break;
     }
 
-    Ok(Chunk::new(
-        encoded_chunk.meta().clone(),
-        file_header,
-    ))
+    Ok(Chunk::new(file_header))
 }
 
 /// Given a chunk, decodes and returns just the file header.

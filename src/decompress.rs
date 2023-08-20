@@ -1,25 +1,26 @@
 //!
-//! Provides utilities like [decompress_chunk] for decompressing BZIP2-compressed NEXRAD chunk data.
+//! Provides utilities like [decompress_file] for decompressing BZIP2-compressed NEXRAD chunk data.
 //!
 
-use std::io::Read;
-
-use crate::chunk::{EncodedChunk, FileHeader};
+use crate::chunk::FileHeader;
 use crate::file::is_compressed;
 use crate::result::{Error, Result};
+use std::io::Read;
 
-/// Given a compressed chunk, decompresses it and returns a new copy of the chunk with the
-/// decompressed data. Will fail if the chunk is already decompressed.
-pub fn decompress_chunk(chunk: &EncodedChunk) -> Result<EncodedChunk> {
-    if !is_compressed(chunk.data()) {
-        return Err(Error::DecompressionError("Cannot decompress uncompressed chunk".into()));
+/// Given a compressed data file, decompresses it and returns a new copy of the decompressed data.
+/// Will fail if the file is already decompressed.
+pub fn decompress_file(data: &[u8]) -> Result<Vec<u8>> {
+    if !is_compressed(data) {
+        return Err(Error::DecompressionError(
+            "Cannot decompress uncompressed data".into(),
+        ));
     };
 
     let mut decompressed_buffer = Vec::new();
 
     // Start the decompressed data by copying the file header, which is not compressed
     let header_size = std::mem::size_of::<FileHeader>();
-    let (header, mut reader) = chunk.data().as_slice().split_at(header_size);
+    let (header, mut reader) = data.split_at(header_size);
     decompressed_buffer.extend_from_slice(&header);
 
     loop {
@@ -43,5 +44,5 @@ pub fn decompress_chunk(chunk: &EncodedChunk) -> Result<EncodedChunk> {
         }
     }
 
-    Ok(EncodedChunk::new(decompressed_buffer))
+    Ok(decompressed_buffer)
 }

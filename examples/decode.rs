@@ -8,7 +8,7 @@
 use chrono::NaiveDate;
 
 use nexrad::decode::decode_chunk;
-use nexrad::download::{download_chunk, list_files};
+use nexrad::download::{download_file, list_files};
 use nexrad::file::is_compressed;
 use nexrad::result::Result;
 
@@ -21,13 +21,21 @@ async fn main() -> Result<()> {
     let metas = list_files(site, &date).await?;
 
     let meta = metas.first().expect("at least one chunk on date");
-    println!("Found {} chunks. Downloading {}...", metas.len(), meta.identifier());
+    println!(
+        "Found {} chunks. Downloading {}...",
+        metas.len(),
+        meta.identifier()
+    );
 
-    let chunk = download_chunk(meta).await?;
+    let chunk = download_file(meta).await?;
     println!(
         "Downloaded {} chunk of size {} bytes.",
-        if is_compressed(chunk.data()) { "compressed" } else { "decompressed" },
-        chunk.data().len()
+        if is_compressed(chunk.as_slice()) {
+            "compressed"
+        } else {
+            "decompressed"
+        },
+        chunk.len()
     );
 
     let decoded = decode_chunk(&chunk)?;

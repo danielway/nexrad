@@ -14,7 +14,11 @@ pub struct NexradFileMetadata {
 impl NexradFileMetadata {
     /// Create new file metadata.
     pub fn new(site: String, date: NaiveDate, identifier: String) -> Self {
-        Self { site, date, identifier }
+        Self {
+            site,
+            date,
+            identifier,
+        }
     }
 
     /// The radar site this file was produced at, e.g. KDMX.

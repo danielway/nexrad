@@ -6,26 +6,6 @@ use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
 
-/// An encoded (and possibly-compressed) NEXRAD WSR-88D chunk file including sweep data. If
-/// compressed, the data is compressed using BZIP2. See
-/// [decompress_chunk](crate::decompress::decompress_chunk) and
-/// [decode_chunk](crate::decode::decode_chunk).
-#[derive(Serialize, Deserialize)]
-pub struct EncodedChunk {
-    data: Vec<u8>,
-}
-
-impl EncodedChunk {
-    pub(crate) fn new(data: Vec<u8>) -> Self {
-        Self { data }
-    }
-
-    /// The raw, encoded, and possibly-compressed data for this chunk.
-    pub fn data(&self) -> &Vec<u8> {
-        &self.data
-    }
-}
-
 /// A decoded NEXRAD WSR-88D chunk file including sweep data.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Chunk {

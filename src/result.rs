@@ -12,13 +12,15 @@ pub enum Error {
     #[cfg(feature = "download")]
     S3GeneralError(aws_sdk_s3::Error),
     #[cfg(feature = "download")]
-    S3ListObjectsError(aws_smithy_http::result::SdkError<
-        aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error
-    >),
+    S3ListObjectsError(
+        aws_smithy_http::result::SdkError<
+            aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error,
+        >,
+    ),
     #[cfg(feature = "download")]
-    S3GetObjectError(aws_smithy_http::result::SdkError<
-        aws_sdk_s3::operation::get_object::GetObjectError
-    >),
+    S3GetObjectError(
+        aws_smithy_http::result::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>,
+    ),
 }
 
 impl From<std::io::Error> for Error {
@@ -41,15 +43,29 @@ impl From<aws_sdk_s3::Error> for Error {
 }
 
 #[cfg(feature = "download")]
-impl From<aws_smithy_http::result::SdkError<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error>> for Error {
-    fn from(err: aws_smithy_http::result::SdkError<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error>) -> Self {
+impl
+    From<
+        aws_smithy_http::result::SdkError<
+            aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error,
+        >,
+    > for Error
+{
+    fn from(
+        err: aws_smithy_http::result::SdkError<
+            aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error,
+        >,
+    ) -> Self {
         Error::S3ListObjectsError(err)
     }
 }
 
 #[cfg(feature = "download")]
-impl From<aws_smithy_http::result::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>> for Error {
-    fn from(err: aws_smithy_http::result::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>) -> Self {
+impl From<aws_smithy_http::result::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>>
+    for Error
+{
+    fn from(
+        err: aws_smithy_http::result::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>,
+    ) -> Self {
         Error::S3GetObjectError(err)
     }
 }

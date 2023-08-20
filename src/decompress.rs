@@ -5,14 +5,15 @@
 use std::io::Read;
 
 use crate::chunk::{EncodedChunk, FileHeader};
+use crate::file::is_compressed;
 use crate::result::{Error, Result};
 
 /// Given a compressed chunk, decompresses it and returns a new copy of the chunk with the
 /// decompressed data. Will fail if the chunk is already decompressed.
 pub fn decompress_chunk(chunk: &EncodedChunk) -> Result<EncodedChunk> {
-    if !chunk.compressed() {
+    if !is_compressed(chunk.data()) {
         return Err(Error::DecompressionError("Cannot decompress uncompressed chunk".into()));
-    }
+    };
 
     let mut decompressed_buffer = Vec::new();
 

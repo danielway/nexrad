@@ -32,3 +32,8 @@ impl NexradFileMetadata {
         &self.identifier
     }
 }
+
+/// Determines whether the provided NEXRAD data file is compressed.
+pub fn is_compressed(data: &[u8]) -> bool {
+    data.len() >= 30 && &data[28..30] == b"BZ"
+}

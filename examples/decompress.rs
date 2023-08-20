@@ -8,6 +8,7 @@
 use chrono::NaiveDate;
 use nexrad::decompress::decompress_chunk;
 use nexrad::download::{download_chunk, list_files};
+use nexrad::file::is_compressed;
 use nexrad::result::Result;
 
 #[tokio::main]
@@ -24,11 +25,11 @@ async fn main() -> Result<()> {
         let compressed_chunk = download_chunk(meta).await?;
 
         println!("Chunk data size (bytes): {}", compressed_chunk.data().len());
-        println!("Chunk data is compressed: {}", compressed_chunk.compressed());
+        println!("Chunk data is compressed: {}", is_compressed(compressed_chunk.data()));
 
         let decompressed_chunk = decompress_chunk(&compressed_chunk)?;
         println!("Decompressed chunk data size (bytes): {}", decompressed_chunk.data().len());
-        println!("Decompressed chunk data is compressed: {}", decompressed_chunk.compressed());
+        println!("Decompressed chunk data is compressed: {}", is_compressed(decompressed_chunk.data()));
     } else {
         println!("No chunks found for the specified date/site to download.");
     }

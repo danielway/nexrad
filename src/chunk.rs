@@ -24,13 +24,6 @@ impl EncodedChunk {
     pub fn data(&self) -> &Vec<u8> {
         &self.data
     }
-
-    /// Determines whether this chunk is compressed. If compressed, it should be
-    /// [decompressed](crate::decompress::decompress_chunk) before being
-    /// [decoded](crate::decode::decode_chunk).
-    pub fn compressed(&self) -> bool {
-        self.data.len() >= 30 && &self.data[28..30] == b"BZ"
-    }
 }
 
 /// A decoded NEXRAD WSR-88D chunk file including sweep data.

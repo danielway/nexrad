@@ -9,16 +9,6 @@ repository = "https://github.com/danielway/nexrad"
 exclude = [".github"]
 
 [[example]]
-name = "decode"
-path = "examples/decode.rs"
-required-features = ["download"]
-
-[[example]]
-name = "decompress"
-path = "examples/decompress.rs"
-required-features = ["download"]
-
-[[example]]
 name = "download"
 path = "examples/download.rs"
 required-features = ["download"]
@@ -38,3 +28,4 @@ aws-sdk-s3 = { git = "https://github.com/awslabs/aws-sdk-rust", branch = "main",
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
+femtovg = "0.7.1"

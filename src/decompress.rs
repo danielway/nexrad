@@ -3,7 +3,7 @@
 //!
 
 use crate::file::is_compressed;
-use crate::model::FileHeader;
+use crate::model::VolumeHeaderRecord;
 use crate::result::{Error, Result};
 use std::io::Read;
 
@@ -19,7 +19,7 @@ pub fn decompress_file(data: &[u8]) -> Result<Vec<u8>> {
     let mut decompressed_buffer = Vec::new();
 
     // Start the decompressed data by copying the file header, which is not compressed
-    let header_size = std::mem::size_of::<FileHeader>();
+    let header_size = std::mem::size_of::<VolumeHeaderRecord>();
     let (header, mut reader) = data.split_at(header_size);
     decompressed_buffer.extend_from_slice(&header);
 

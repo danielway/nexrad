@@ -6,12 +6,15 @@
 
 Download and decode functions for NEXRAD radar data.
 
-## Summary
+## Acknowledgements
 
-The U.S. operates a network of 160 WSR-88D weather radars as part of the NEXRAD (Next Generation Radar) system. Its 
-range and spatial resolution vary by data type, but it has a reflectivity range up to 460km and a base spatial 
-resolution of 1km x 1deg. The data from this system moves through three levels of processing that generate "products"
-which may be used for weather forecasting and research.
+I consulted the following resources when developing this library:
+
+https://github.com/bwiggs/go-nexrad
+
+https://trmm-fc.gsfc.nasa.gov/trmm_gv/software/rsl/
+
+## Summary
 
 This library provides functions to download and decode NEXRAD Level II data from AWS uploaded in near real-time by NOAA.
 
@@ -30,10 +33,10 @@ let date = NaiveDate::from_ymd_opt(2023, 4, 6).expect("is valid date");
 let metas = list_files(site, &date).await?;
 if let Some(meta) = metas.first() {
     println!("Downloading {}...", meta.identifier());
-    let compressed_file = download_file(meta).await?;
+    let downloaded_file = download_file(meta).await?;
     
-    println!("Data file size (bytes): {}", compressed_file.len());
-    println!("Data file is compressed: {}", is_compressed(compressed_file));
+    println!("Data file size (bytes): {}", downloaded_file.len());
+    println!("Data file is compressed: {}", is_compressed(downloaded_file));
 } else {
     println!("No files found for the specified date/site to download.");
 }
@@ -63,15 +66,8 @@ println!("Decompressed data file is compressed: {}", decompressed_file.compresse
 A decompressed data file consists of binary-encoded messages containing sweep data. Here is an example of decoding a 
 file:
 ```rust
-let data = ...;
-let decoded = decode_data(&data)?;
-println!("Decoded file: {:?}", decoded);
-```
+let decompressed_file = ...;
 
-Data files contain a wide variety of data/messages, but you may only be interested in a particular subset. To reduce the
-volume of data that needs to be stored or processed, you can apply a filter when decoding a file. For example:
-```rust
-// TODO
+let decoded = decode_file(&decompressed_file)?;
+println!("Decoded file with {} elevations.", decoded.elevation_scans().len());
 ```
-
-The decoded models are binary-serializable, so they can then be cached to disk for reuse later.

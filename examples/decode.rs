@@ -1,50 +1,45 @@
 //! examples/decode
 //!
-//! This example downloads a random data file and decodes it.
+//! This example loads a data file and decodes it.
 //!
 
-use chrono::NaiveDate;
+use std::env;
 
 use nexrad::decode::decode_file;
 use nexrad::decompress::decompress_file;
-use nexrad::download::{download_file, list_files};
 use nexrad::file::is_compressed;
 use nexrad::result::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let site = "KDMX";
-    let date = NaiveDate::from_ymd_opt(2023, 4, 6).expect("is valid date");
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        panic!("Usage: cargo run --example decode -- <file>");
+    }
 
-    println!("Listing files for {} on {}...", site, date);
-    let metas = list_files(site, &date).await?;
+    let file_name = &args[1];
+    let mut file = std::fs::read(file_name).expect("file exists");
 
-    let meta = metas.first().expect("at least one file on date");
     println!(
-        "Found {} files. Downloading {}...",
-        metas.len(),
-        meta.identifier()
-    );
-
-    let compressed_file = download_file(meta).await?;
-    println!(
-        "Downloaded {} file of size {} bytes.",
-        if is_compressed(compressed_file.as_slice()) {
+        "Loaded {} file of size {} bytes.",
+        if is_compressed(file.as_slice()) {
             "compressed"
         } else {
             "decompressed"
         },
-        compressed_file.len()
+        file.len()
     );
 
-    let decompressed_file = decompress_file(&compressed_file)?;
+    if is_compressed(file.as_slice()) {
+        file = decompress_file(&file)?;
+        println!("Decompressed file data size (bytes): {}", file.len());
+    }
+
+    let decoded = decode_file(&file)?;
     println!(
-        "Decompressed file data size (bytes): {}",
-        decompressed_file.len()
+        "Decoded file with {} elevations.",
+        decoded.elevation_scans().len()
     );
-
-    let decoded = decode_file(&decompressed_file)?;
-    println!("Decoded file: {:?}", decoded);
 
     Ok(())
 }

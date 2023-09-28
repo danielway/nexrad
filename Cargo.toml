@@ -21,10 +21,10 @@ chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 bincode = "1"
 bzip2 = "0.4"
-aws-smithy-http = { git = "https://github.com/awslabs/aws-sdk-rust", branch = "main", optional = true }
-aws-sig-auth = { git = "https://github.com/awslabs/aws-sdk-rust", branch = "main", optional = true }
-aws-config = { git = "https://github.com/awslabs/aws-sdk-rust", branch = "main", optional = true }
-aws-sdk-s3 = { git = "https://github.com/awslabs/aws-sdk-rust", branch = "main", optional = true }
+aws-smithy-http = { version = "0.56.1", optional = true }
+aws-sig-auth = { version = "0.56.1", optional = true }
+aws-config = { version = "0.56.1", optional = true }
+aws-sdk-s3 = { version = "0.31.2", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

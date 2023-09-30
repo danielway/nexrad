@@ -2,6 +2,8 @@
 //!
 //! This example loads a file, decompresses it, and prints its size.
 //!
+//! Usage: cargo run --example decompress -- <file>
+//!
 
 use nexrad::decompress::decompress_file;
 use nexrad::file::is_compressed;

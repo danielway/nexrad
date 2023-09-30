@@ -2,6 +2,8 @@
 //!
 //! This example loads a data file and decodes it.
 //!
+//! Usage: cargo run --example decode -- <file>
+//!
 
 use std::env;
 

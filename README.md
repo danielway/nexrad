@@ -6,17 +6,13 @@
 
 Download and decode functions for NEXRAD radar data.
 
-## Acknowledgements
-
-I consulted the following resources when developing this library:
-
-https://github.com/bwiggs/go-nexrad
-
-https://trmm-fc.gsfc.nasa.gov/trmm_gv/software/rsl/
-
 ## Summary
 
 This library provides functions to download and decode NEXRAD Level II data from AWS uploaded in near real-time by NOAA.
+
+<img src="https://raw.githubusercontent.com/danielway/nexrad/master/examples/render_kdmx_030522_1730.png" width="600" />
+
+_An EF4 tornado near Des Moines, IA on March 5, 2022 rendered using this library's "render" example._
 
 ## Downloading
 
@@ -71,3 +67,18 @@ let decompressed_file = ...;
 let decoded = decode_file(&decompressed_file)?;
 println!("Decoded file with {} elevations.", decoded.elevation_scans().len());
 ```
+
+## Rendering
+
+A downloaded file can be rendered to an image using the `render` example. Here is an example usage and the result:
+```
+cargo run --example render KDMX20220305_233003_V06
+```
+
+## Acknowledgements
+
+I consulted the following resources when developing this library:
+
+https://github.com/bwiggs/go-nexrad
+
+https://trmm-fc.gsfc.nasa.gov/trmm_gv/software/rsl/

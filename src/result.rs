@@ -15,12 +15,18 @@ pub enum Error {
     S3ListObjectsError(
         aws_smithy_http::result::SdkError<
             aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error,
+            aws_smithy_runtime_api::client::orchestrator::HttpResponse,
         >,
     ),
     #[cfg(feature = "download")]
     S3GetObjectError(
-        aws_smithy_http::result::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>,
+        aws_smithy_http::result::SdkError<
+            aws_sdk_s3::operation::get_object::GetObjectError,
+            aws_smithy_runtime_api::client::orchestrator::HttpResponse,
+        >
     ),
+    #[cfg(feature = "download")]
+    S3StreamingError(aws_smithy_http::byte_stream::error::Error),
 }
 
 impl From<std::io::Error> for Error {
@@ -47,12 +53,14 @@ impl
     From<
         aws_smithy_http::result::SdkError<
             aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error,
+            aws_smithy_runtime_api::client::orchestrator::HttpResponse,
         >,
     > for Error
 {
     fn from(
         err: aws_smithy_http::result::SdkError<
             aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error,
+            aws_smithy_runtime_api::client::orchestrator::HttpResponse,
         >,
     ) -> Self {
         Error::S3ListObjectsError(err)
@@ -60,12 +68,25 @@ impl
 }
 
 #[cfg(feature = "download")]
-impl From<aws_smithy_http::result::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>>
+impl From<aws_smithy_http::result::SdkError<
+    aws_sdk_s3::operation::get_object::GetObjectError,
+    aws_smithy_runtime_api::client::orchestrator::HttpResponse
+>>
     for Error
 {
     fn from(
-        err: aws_smithy_http::result::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>,
+        err: aws_smithy_http::result::SdkError<
+            aws_sdk_s3::operation::get_object::GetObjectError,
+            aws_smithy_runtime_api::client::orchestrator::HttpResponse
+        >,
     ) -> Self {
         Error::S3GetObjectError(err)
+    }
+}
+
+#[cfg(feature = "download")]
+impl From<aws_smithy_http::byte_stream::error::Error> for Error {
+    fn from(err: aws_smithy_http::byte_stream::error::Error) -> Self {
+        Error::S3StreamingError(err)
     }
 }

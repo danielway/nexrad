@@ -2,10 +2,7 @@
 //! Downloads NEXRAD level-II data from an AWS S3 bucket populated by NOAA.
 //!
 
-use aws_config::from_env;
-use aws_sdk_s3::{config::Region, types::Object, Client};
-use aws_sig_auth::signer::{OperationSigningConfig, SigningRequirements};
-use aws_smithy_http::operation::Operation;
+use aws_sdk_s3::{config::Region, types::Object, Client, Config};
 use chrono::NaiveDate;
 
 use crate::file::FileMetadata;
@@ -64,16 +61,10 @@ pub async fn download_file(meta: &FileMetadata) -> Result<Vec<u8>> {
 /// Downloads an object from S3 and returns only its contents. This will only work for
 /// unauthenticated requests (requests are unsigned).
 async fn download_object(client: &Client, bucket: &str, key: &str) -> Result<Vec<u8>> {
-    let builder = client.get_object().bucket(bucket).key(key);
-
-    let operation = builder
-        .customize()
-        .await?
-        .map_operation(make_unsigned)
-        .unwrap();
+    let operation = client.get_object().bucket(bucket).key(key);
 
     let response = operation.send().await?;
-    let bytes = response.body.collect().await.unwrap();
+    let bytes = response.body.collect().await?;
 
     Ok(bytes.to_vec())
 }
@@ -81,35 +72,17 @@ async fn download_object(client: &Client, bucket: &str, key: &str) -> Result<Vec
 /// Lists objects from a S3 bucket with the specified prefix. This will only work for
 /// unauthenticated requests (requests are unsigned).
 async fn list_objects(client: &Client, bucket: &str, prefix: &str) -> Result<Option<Vec<Object>>> {
-    let builder = client.list_objects_v2().bucket(bucket).prefix(prefix);
+    let operation = client.list_objects_v2().bucket(bucket).prefix(prefix);
 
-    let operation = builder
-        .customize()
-        .await?
-        .map_operation(make_unsigned)
-        .unwrap();
     let response = operation.send().await?;
-
     Ok(response.contents().map(|objects| objects.to_vec()))
 }
 
 /// Creates a new S3 client for a predetermined region.
 async fn get_client() -> Client {
-    let conf = from_env().region(Region::new(REGION)).load().await;
-    Client::new(&conf)
-}
-
-/// Disables signing requirements for unauthenticated S3 requests.
-fn make_unsigned<O, Retry>(
-    mut operation: Operation<O, Retry>,
-) -> std::result::Result<Operation<O, Retry>, std::convert::Infallible> {
-    {
-        let mut props = operation.properties_mut();
-        let mut signing_config = props
-            .get_mut::<OperationSigningConfig>()
-            .expect("has signing_config");
-        signing_config.signing_requirements = SigningRequirements::Disabled;
-    }
-
-    Ok(operation)
+    Client::from_conf(
+        Config::builder()
+            .region(Region::from_static(REGION))
+            .build()
+    )
 }

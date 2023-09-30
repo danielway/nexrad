@@ -14,17 +14,16 @@ path = "examples/download.rs"
 required-features = ["download"]
 
 [features]
-download = ["dep:aws-smithy-http", "dep:aws-sig-auth", "dep:aws-config", "dep:aws-sdk-s3"]
+download = ["dep:aws-sdk-s3", "dep:aws-smithy-http", "dep:aws-smithy-runtime-api"]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 bincode = "1"
 bzip2 = "0.4"
-aws-smithy-http = { version = "0.56.1", optional = true }
-aws-sig-auth = { version = "0.56.1", optional = true }
-aws-config = { version = "0.56.1", optional = true }
 aws-sdk-s3 = { version = "0.31.2", optional = true }
+aws-smithy-http = { version = "0.56.1", optional = true }
+aws-smithy-runtime-api = { version = "0.56.1", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

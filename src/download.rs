@@ -83,6 +83,6 @@ async fn get_client() -> Client {
     Client::from_conf(
         Config::builder()
             .region(Region::from_static(REGION))
-            .build()
+            .build(),
     )
 }

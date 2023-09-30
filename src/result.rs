@@ -23,7 +23,7 @@ pub enum Error {
         aws_smithy_http::result::SdkError<
             aws_sdk_s3::operation::get_object::GetObjectError,
             aws_smithy_runtime_api::client::orchestrator::HttpResponse,
-        >
+        >,
     ),
     #[cfg(feature = "download")]
     S3StreamingError(aws_smithy_http::byte_stream::error::Error),
@@ -68,16 +68,18 @@ impl
 }
 
 #[cfg(feature = "download")]
-impl From<aws_smithy_http::result::SdkError<
-    aws_sdk_s3::operation::get_object::GetObjectError,
-    aws_smithy_runtime_api::client::orchestrator::HttpResponse
->>
-    for Error
+impl
+    From<
+        aws_smithy_http::result::SdkError<
+            aws_sdk_s3::operation::get_object::GetObjectError,
+            aws_smithy_runtime_api::client::orchestrator::HttpResponse,
+        >,
+    > for Error
 {
     fn from(
         err: aws_smithy_http::result::SdkError<
             aws_sdk_s3::operation::get_object::GetObjectError,
-            aws_smithy_runtime_api::client::orchestrator::HttpResponse
+            aws_smithy_runtime_api::client::orchestrator::HttpResponse,
         >,
     ) -> Self {
         Error::S3GetObjectError(err)

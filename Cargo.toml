@@ -2,7 +2,7 @@
 description = "Download and decode functions for NEXRAD radar data."
 authors = ["Daniel Way <contact@danieldway.com>"]
 name = "nexrad"
-version = "0.0.1"
+version = "0.0.2"
 license = "MIT"
 edition = "2021"
 repository = "https://github.com/danielway/nexrad"

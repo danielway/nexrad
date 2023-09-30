@@ -10,7 +10,7 @@ Download and decode functions for NEXRAD radar data.
 
 This library provides functions to download and decode NEXRAD Level II data from AWS uploaded in near real-time by NOAA.
 
-<img src="https://raw.githubusercontent.com/danielway/nexrad/master/examples/render_kdmx_030522_1730.png" width="600" />
+<img src="https://raw.githubusercontent.com/danielway/nexrad/master/examples/render_kdmx_030522_1730.png" width="400" />
 
 _An EF4 tornado near Des Moines, IA on March 5, 2022 rendered using this library's "render" example._
 

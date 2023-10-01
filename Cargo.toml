@@ -2,7 +2,7 @@
 description = "Download and decode functions for NEXRAD radar data."
 authors = ["Daniel Way <contact@danieldway.com>"]
 name = "nexrad"
-version = "0.0.2"
+version = "0.0.3"
 license = "MIT"
 edition = "2021"
 repository = "https://github.com/danielway/nexrad"
@@ -14,7 +14,7 @@ path = "examples/download.rs"
 required-features = ["download"]
 
 [features]
-download = ["dep:aws-sdk-s3", "dep:aws-smithy-http", "dep:aws-smithy-runtime-api"]
+download = ["dep:aws-sdk-s3"]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
@@ -22,9 +22,6 @@ serde = { version = "1", features = ["derive"] }
 bincode = "1"
 bzip2 = "0.4"
 aws-sdk-s3 = { version = "0.31.2", optional = true }
-aws-smithy-http = { version = "0.56.1", optional = true }
-aws-smithy-runtime-api = { version = "0.56.1", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
-femtovg = "0.7.1"

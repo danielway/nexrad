@@ -4,11 +4,23 @@
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/rust_ci.yml/badge.svg?branch=master)](https://github.com/danielway/nexrad/actions/workflows/rust_ci.yml)
 [![Rust CD](https://github.com/danielway/nexrad/actions/workflows/rust_cd.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/rust_cd.yml)
 
-Download and decode functions for NEXRAD radar data.
+Decode and download functions for NEXRAD WSR-88D weather radar data.
 
 ## Summary
 
-This library provides functions to download and decode NEXRAD Level II data from AWS uploaded in near real-time by NOAA.
+This library provides data structures and decoding functionality for NEXRAD Archive Level II data. Optionally, it also
+provides decompression and download functionality for near real-time data uploaded to AWS by NOAA.
+
+The [NEXRAD system](https://www.ncei.noaa.gov/products/radar/next-generation-weather-radar) provides high-resolution
+weather radar data across North America and other regions. Data from these radars is processed and available at Level II
+which contains base data and Level III which contains a number of derived "products". Level II is the highest resolution
+data available including base data (reflectivity, mean radial velocity, and spectrum width) and dual polarization
+variables (differential reflectivity, correlation coefficient, and differential phase).
+
+Level II data is available through the Archive II interface described by NOAA's ICD 2620010H. Section 7 of the ICD
+specifies the format for this API. This data format is distributed through Unidata Local Data Manager (LDM) software.
+The data is organized into "volumes" (a file with binary data) which contain a number of compressed "LDR records", each
+of which contain "messages" that correspond to radials/rays from the radar with corresponding data and parameters.
 
 <img src="https://raw.githubusercontent.com/danielway/nexrad/master/examples/render_kdmx_030522_1730.png" width="400" />
 
@@ -16,7 +28,7 @@ _An EF4 tornado near Des Moines, IA on March 5, 2022 rendered using this library
 
 ## Downloading
 
-The `download` feature may be enabled to download NEXRAD Level II data from AWS. For more information on this data
+The `download` feature may be enabled to download NEXRAD Archive II data from AWS. For more information on this data
 source, see the [Registry of Open Data](https://registry.opendata.aws/noaa-nexrad/)'s page. As the radar rotates or
 "sweeps" it collects data which is aggregated into messages. The messages are broken into 5-minute "chunks" before being 
 compressed and uploaded to AWS.
@@ -79,6 +91,17 @@ cargo run --example render KDMX20220305_233003_V06
 
 I consulted the following resources when developing this library:
 
-https://github.com/bwiggs/go-nexrad
+NOAA NCEI, NEXRAD System and Product Description with Access Information:
+https://www.ncei.noaa.gov/products/radar/next-generation-weather-radar
 
+NOAA NWS, Radar Operations Center, NEXRAD WSR-88D Level II Data Information:
+https://www.roc.noaa.gov/wsr88d/level_ii/level2info.aspx
+
+NOAA NWS, Radar Operations Center, NEXRAD WSR-88D Interface Control Documents:
+https://www.roc.noaa.gov/wsr88d/BuildInfo/Files.aspx
+
+NASA TRMM, Radar Software Library:
 https://trmm-fc.gsfc.nasa.gov/trmm_gv/software/rsl/
+
+Brian Wigginton, a Go implementation of NEXRAD Level II decoding:
+https://github.com/bwiggs/go-nexrad

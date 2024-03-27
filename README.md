@@ -22,7 +22,7 @@ specifies the format for this API. This data format is distributed through Unida
 The data is organized into "volumes" (a file with binary data) which contain a number of compressed "LDR records", each
 of which contain "messages" that correspond to radials/rays from the radar with corresponding data and parameters.
 
-<img src="https://raw.githubusercontent.com/danielway/nexrad/master/examples/render_kdmx_030522_1730.png" width="400" />
+<img src="examples/render_kdmx_030522_1730.png" width="400" alt="An EF4 tornado near Des Moines, IA on March 5, 2022 rendered using this library's 'render' example." />
 
 _An EF4 tornado near Des Moines, IA on March 5, 2022 rendered using this library's "render" example._
 

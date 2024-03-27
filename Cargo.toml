@@ -9,18 +9,34 @@ repository = "https://github.com/danielway/nexrad"
 exclude = [".github"]
 
 [[example]]
+name = "decode"
+path = "examples/decode.rs"
+required-features = ["decompress"]
+
+[[example]]
+name = "decompress"
+path = "examples/decompress.rs"
+required-features = ["decompress"]
+
+[[example]]
 name = "download"
 path = "examples/download.rs"
 required-features = ["download"]
 
+[[example]]
+name = "render"
+path = "examples/render.rs"
+required-features = ["decompress"]
+
 [features]
 download = ["dep:aws-sdk-s3"]
+decompress = ["bzip2"]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 bincode = "1"
-bzip2 = "0.4"
+bzip2 = { version = "0.4", optional = true }
 aws-sdk-s3 = { version = "0.31.2", optional = true }
 
 [dev-dependencies]

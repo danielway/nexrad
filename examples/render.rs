@@ -10,8 +10,6 @@ use std::env;
 use std::f32::consts::PI;
 use std::fs::File;
 use std::io::{self, Write};
-use std::panic::panic_any;
-use tokio::io::AsyncReadExt;
 
 const IMAGE_SIZE: usize = 1024;
 

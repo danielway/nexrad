@@ -11,7 +11,9 @@ mod message_header;
 mod message_type;
 mod primitive_aliases;
 pub mod rda_status_data;
+mod digital_radar_data;
 mod definitions;
+
 use std::collections::HashMap;
 use std::fmt::Debug;
 

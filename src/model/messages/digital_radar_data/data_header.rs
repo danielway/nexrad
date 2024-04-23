@@ -1,10 +1,10 @@
 use crate::model::primitive_aliases::{Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger1};
 use crate::model::util::get_datetime;
-use crate::model::{CompressionIndicator, RadialStatus};
 use chrono::{DateTime, Duration, Utc};
 use uom::si::angle::degree;
 use uom::si::f64::{Angle, Information};
 use uom::si::information::byte;
+use crate::model::messages::digital_radar_data::{CompressionIndicator, RadialStatus};
 use crate::model::messages::digital_radar_data::spot_blanking_status::SpotBlankingStatus;
 
 /// The digital radar data message header block precedes base data information for a particular

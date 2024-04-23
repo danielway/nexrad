@@ -7,6 +7,7 @@
 //!
 
 mod data_header;
+pub use data_header::*;
 
 mod definitions;
 pub use definitions::*;

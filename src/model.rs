@@ -12,8 +12,7 @@ mod message_type;
 mod primitive_aliases;
 mod util;
 
-mod messages;
-pub use messages::*;
+pub mod messages;
 
 use std::collections::HashMap;
 use std::fmt::Debug;

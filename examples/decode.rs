@@ -7,8 +7,7 @@
 
 use std::env;
 
-use nexrad::decode::decode_file;
-use nexrad::decompress::decompress_file;
+use nexrad::decode::decode_archive2_header;
 use nexrad::file::is_compressed;
 use nexrad::result::Result;
 
@@ -33,15 +32,13 @@ async fn main() -> Result<()> {
     );
 
     if is_compressed(file.as_slice()) {
-        file = decompress_file(&file)?;
+        // todo
+        // file = decompress_file(&file)?;
         println!("Decompressed file data size (bytes): {}", file.len());
     }
 
-    let decoded = decode_file(&file)?;
-    println!(
-        "Decoded file with {} elevations.",
-        decoded.elevation_scans().len()
-    );
+    let decoded_archive2_header = decode_archive2_header(&mut file.as_slice())?;
+    println!("Decoded Archive2Header: {:?}", decoded_archive2_header);
 
     Ok(())
 }

@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::model::primitive_aliases::Code2;
 
 /// The RDA system's active alarm types.
@@ -46,5 +47,20 @@ impl Summary {
     /// Whether the signal processor alarm is active.
     pub fn signal_processor(&self) -> bool {
         self.0 & 0b1000000 != 0
+    }
+}
+
+impl Debug for Summary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Summary")
+            .field("none", &self.none())
+            .field("tower_utilities", &self.tower_utilities())
+            .field("pedestal", &self.pedestal())
+            .field("transmitter", &self.transmitter())
+            .field("receiver", &self.receiver())
+            .field("rda_control", &self.rda_control())
+            .field("communication", &self.communication())
+            .field("signal_processor", &self.signal_processor())
+            .finish()
     }
 }

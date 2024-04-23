@@ -9,7 +9,9 @@
 
 use chrono::{NaiveDate, NaiveTime};
 use std::env;
+use std::fs::{create_dir, File};
 use std::io::Write;
+use std::path::Path;
 
 use nexrad::download::{download_file, list_files};
 use nexrad::file::is_compressed;
@@ -79,8 +81,12 @@ async fn main() -> Result<()> {
     let is_compressed = is_compressed(downloaded_file.as_slice());
     println!("File data is compressed: {}", is_compressed);
 
+    if !Path::new("downloads").exists() {
+        create_dir("downloads").expect("create downloads directory");
+    }
+
     println!("Writing file to disk as: {}", meta.identifier());
-    let mut file = std::fs::File::create(meta.identifier()).expect("create file");
+    let mut file = File::create(format!("downloads/{}", meta.identifier())).expect("create file");
     file.write_all(downloaded_file.as_slice())
         .expect("write file");
 

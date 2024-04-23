@@ -1,6 +1,6 @@
 use crate::model::primitive_aliases::{Code1, Integer2, Integer4, Real4};
 use crate::model::util::get_datetime;
-use crate::model::CompressionIndicator;
+use crate::model::{CompressionIndicator, RadialStatus};
 use chrono::{DateTime, Duration, Utc};
 use uom::si::angle::degree;
 use uom::si::f64::{Angle, Information};
@@ -48,6 +48,17 @@ pub struct DataHeaderBlock {
     ///   1 = 0.5 degrees
     ///   2 = 1.0 degrees
     azimuth_resolution_spacing: Code1,
+    
+    /// The radial's status within the larger scan (e.g. first, last).
+    /// 
+    /// Statuses:
+    ///   0 = Start of elevation
+    ///   1 = Intermediate radial data
+    ///   2 = End of elevation
+    ///   3 = Start of volume scan
+    ///   4 = End of volume scan
+    ///   5 = Start of new elevation which is the last in the VCP
+    radial_status: Code1,
 }
 
 impl DataHeaderBlock {
@@ -84,5 +95,17 @@ impl DataHeaderBlock {
     /// Azimuthal spacing between adjacent radials.
     pub fn azimuth_resolution_spacing(&self) -> Angle {
         Angle::new::<degree>(self.azimuth_resolution_spacing as f64 * 0.5)
+    }
+    
+    /// The radial's status within the larger scan.
+    pub fn radial_status(&self) -> RadialStatus {
+        match self.radial_status {
+            0 => RadialStatus::ElevationStart,
+            1 => RadialStatus::IntermediateRadialData,
+            2 => RadialStatus::ElevationEnd,
+            3 => RadialStatus::VolumeScanStart,
+            4 => RadialStatus::VolumeScanEnd,
+            _ => RadialStatus::ElevationStartVCPFinal,
+        }
     }
 }

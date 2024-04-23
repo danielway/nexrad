@@ -1,9 +1,9 @@
-//! 
+//!
 //! Message type 2 "RDA Status Data" contains information about the current RDA state, system
 //! control, operating status, scanning strategy, performance parameters like transmitter power and
 //! calibration, and system alarms. This message is sent upon wideband connection, after state or
 //! control changes, at the beginning of each volume scan, and after an RPG request.
-//! 
+//!
 
 pub mod alarm;
 
@@ -16,8 +16,8 @@ pub use scan_data_flags::ScanDataFlags;
 mod definitions;
 pub use definitions::*;
 
-mod rda_status_message;
-pub use rda_status_message::RDAStatusData;
+mod message;
+pub use message::Message;
 
 mod volume_coverage_pattern;
 

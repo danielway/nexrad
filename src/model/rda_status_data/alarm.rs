@@ -1,6 +1,6 @@
-//! 
+//!
 //! The RDA system's alarm status data.
-//! 
+//!
 
 mod model;
 pub use model::*;

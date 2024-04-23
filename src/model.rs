@@ -5,6 +5,13 @@
 //! These API definitions should match the ICD 2620010H as of build 19.0.
 //!
 
+mod archive_2_header;
+mod util;
+mod message_header;
+mod message_type;
+mod primitive_aliases;
+pub mod rda_status_data;
+mod definitions;
 use std::collections::HashMap;
 use std::fmt::Debug;
 

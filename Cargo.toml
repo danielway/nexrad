@@ -38,6 +38,7 @@ serde = { version = "1", features = ["derive"] }
 bincode = "1"
 bzip2 = { version = "0.4", optional = true }
 aws-sdk-s3 = { version = "0.31.2", optional = true }
+uom = "0.36.0"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

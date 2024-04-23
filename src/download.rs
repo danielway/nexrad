@@ -63,8 +63,15 @@ pub async fn download_file(meta: &FileMetadata) -> Result<Vec<u8>> {
 async fn download_object(client: &Client, bucket: &str, key: &str) -> Result<Vec<u8>> {
     let operation = client.get_object().bucket(bucket).key(key);
 
-    let response = operation.send().await.map_err(|_err| Error::S3GetObjectError)?;
-    let bytes = response.body.collect().await.map_err(|_err| Error::S3StreamingError)?;
+    let response = operation
+        .send()
+        .await
+        .map_err(|_err| Error::S3GetObjectError)?;
+    let bytes = response
+        .body
+        .collect()
+        .await
+        .map_err(|_err| Error::S3StreamingError)?;
 
     Ok(bytes.to_vec())
 }
@@ -74,7 +81,11 @@ async fn download_object(client: &Client, bucket: &str, key: &str) -> Result<Vec
 async fn list_objects(client: &Client, bucket: &str, prefix: &str) -> Result<Option<Vec<Object>>> {
     let operation = client.list_objects_v2().bucket(bucket).prefix(prefix);
 
-    let response = operation.send().await.map_err(|_err| Error::S3ListObjectsError)?;
+    let response = operation
+        .send()
+        .await
+        .map_err(|_err| Error::S3ListObjectsError)?;
+    
     Ok(response.contents().map(|objects| objects.to_vec()))
 }
 

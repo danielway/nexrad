@@ -85,7 +85,7 @@ async fn list_objects(client: &Client, bucket: &str, prefix: &str) -> Result<Opt
         .send()
         .await
         .map_err(|_err| Error::S3ListObjectsError)?;
-    
+
     Ok(response.contents().map(|objects| objects.to_vec()))
 }
 

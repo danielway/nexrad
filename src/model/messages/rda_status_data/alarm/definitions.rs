@@ -1,4 +1,4 @@
-use crate::model::rda_status_data::alarm::{AlarmType, Device, Message, State};
+use crate::model::messages::rda_status_data::alarm::{AlarmType, Device, Message, State};
 
 /// Retrieves the RDA alarm message definition for the given code.
 pub fn get_alarm_message(code: u16) -> Option<Message> {

@@ -6,13 +6,14 @@
 //!
 
 mod archive_2_header;
-mod util;
+mod definitions;
 mod message_header;
 mod message_type;
 mod primitive_aliases;
-pub mod rda_status_data;
-mod digital_radar_data;
-mod definitions;
+mod util;
+
+mod messages;
+pub use messages::*;
 
 use std::collections::HashMap;
 use std::fmt::Debug;

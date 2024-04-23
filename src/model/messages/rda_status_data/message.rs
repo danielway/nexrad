@@ -1,16 +1,16 @@
 use crate::model::message_header::MessageHeader;
-use crate::model::primitive_aliases::{Code2, Integer2, SInteger2, ScaledInteger2};
-use crate::model::rda_status_data::alarm;
-use crate::model::rda_status_data::alarm::Summary;
-use crate::model::rda_status_data::data_transmission_enabled::DataTransmissionEnabled;
-use crate::model::rda_status_data::definitions::{
+use crate::model::messages::rda_status_data::alarm;
+use crate::model::messages::rda_status_data::alarm::Summary;
+use crate::model::messages::rda_status_data::data_transmission_enabled::DataTransmissionEnabled;
+use crate::model::messages::rda_status_data::definitions::{
     AuxiliaryPowerGeneratorState, ClutterMitigationDecisionStatus, CommandAcknowledgement,
     ControlAuthorization, ControlStatus, OperabilityStatus, OperationalMode,
     PerformanceCheckStatus, RDAStatus, RMSControlStatus, SpotBlankingStatus, SuperResolutionStatus,
     TransitionPowerSourceStatus,
 };
-use crate::model::rda_status_data::scan_data_flags::ScanDataFlags;
-use crate::model::rda_status_data::volume_coverage_pattern::VolumeCoveragePatternNumber;
+use crate::model::messages::rda_status_data::scan_data_flags::ScanDataFlags;
+use crate::model::messages::rda_status_data::volume_coverage_pattern::VolumeCoveragePatternNumber;
+use crate::model::primitive_aliases::{Code2, Integer2, SInteger2, ScaledInteger2};
 use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::fmt::Debug;

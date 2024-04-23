@@ -15,10 +15,8 @@ use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::fmt::Debug;
 
-/// Message type 2 "RDA Status Data" includes information about the current RDA state, system
-/// control, operating status, scanning strategy, performance parameters, calibration, and alarms.
-/// This message is included in a variety of scenarios including at the beginning of each volume
-/// scan.
+/// The RDA status data message includes various information about the current RDA system's state,
+/// including system operating status, performance parameters, and active alarms.
 pub struct Message {
     /// This message's header.
     pub header: MessageHeader,

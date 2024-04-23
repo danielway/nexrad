@@ -10,3 +10,6 @@ mod data_header;
 
 mod definitions;
 pub use definitions::*;
+
+mod spot_blanking_status;
+pub use spot_blanking_status::*;

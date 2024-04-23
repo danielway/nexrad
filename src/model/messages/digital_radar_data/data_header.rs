@@ -1,10 +1,11 @@
-use crate::model::primitive_aliases::{Code1, Integer2, Integer4, Real4};
+use crate::model::primitive_aliases::{Code1, Integer1, Integer2, Integer4, Real4};
 use crate::model::util::get_datetime;
 use crate::model::{CompressionIndicator, RadialStatus};
 use chrono::{DateTime, Duration, Utc};
 use uom::si::angle::degree;
 use uom::si::f64::{Angle, Information};
 use uom::si::information::byte;
+use crate::model::messages::digital_radar_data::spot_blanking_status::SpotBlankingStatus;
 
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
@@ -59,6 +60,24 @@ pub struct DataHeaderBlock {
     ///   4 = End of volume scan
     ///   5 = Start of new elevation which is the last in the VCP
     radial_status: Code1,
+    
+    /// The radial's elevation number within the volume scan.
+    elevation_number: Integer1,
+    
+    /// The sector number within cut. A value of 0 is only valid for continuous surveillance cuts.
+    cut_sector_number: Integer1,
+    
+    /// The radial's collection elevation angle.
+    elevation_angle: Real4,
+    
+    /// The spot blanking status for the current radial, elevation, and volume scan.
+    /// 
+    /// Statuses:
+    ///   0 = None
+    ///   1 = Radial
+    ///   2 = Elevation
+    ///   4 = Volume
+    radial_spot_blanking_status: Code1,
 }
 
 impl DataHeaderBlock {
@@ -107,5 +126,15 @@ impl DataHeaderBlock {
             4 => RadialStatus::VolumeScanEnd,
             _ => RadialStatus::ElevationStartVCPFinal,
         }
+    }
+    
+    /// The radial's collection elevation angle.
+    pub fn elevation_angle(&self) -> Angle {
+        Angle::new::<degree>(self.elevation_angle as f64)
+    }
+    
+    /// The spot blanking status for the current radial, elevation, and volume scan.
+    pub fn radial_spot_blanking_status(&self) -> SpotBlankingStatus {
+        SpotBlankingStatus::new(self.radial_spot_blanking_status)
     }
 }

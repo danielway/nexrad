@@ -1,6 +1,7 @@
-use crate::result::Result;
-use std::io::Read;
+use serde::{Deserialize, Serialize};
 
+#[repr(C)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Archive2Header {
     // 9 bytes for tape filename
     // ‘AR2V0 0xx.’*

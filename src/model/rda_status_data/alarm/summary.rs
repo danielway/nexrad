@@ -1,5 +1,5 @@
-use std::fmt::Debug;
 use crate::model::primitive_aliases::Code2;
+use std::fmt::Debug;
 
 /// The RDA system's active alarm types.
 pub struct Summary(Code2);

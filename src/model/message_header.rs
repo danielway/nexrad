@@ -1,10 +1,11 @@
-use crate::model::util::get_datetime;
+use crate::model::definitions::RedundantChannel;
 use crate::model::message_type::MessageType;
 use crate::model::primitive_aliases::{Integer1, Integer2, Integer4};
+use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
+use std::fmt::Debug;
 use uom::si::f64::Information;
 use uom::si::information::byte;
-use crate::model::definitions::RedundantChannel;
 
 /// Message and system configuration information appended to the beginning of all messages.
 ///
@@ -66,10 +67,7 @@ impl MessageHeader {
             8 => RedundantChannel::ORDASingleChannel,
             9 => RedundantChannel::ORDARedundantChannel1,
             10 => RedundantChannel::ORDARedundantChannel2,
-            _ => panic!(
-                "Invalid RDA redundant channel: {}",
-                self.redundant_channel
-            ),
+            _ => panic!("Invalid RDA redundant channel: {}", self.redundant_channel),
         }
     }
 
@@ -158,5 +156,20 @@ impl MessageHeader {
                 (segment_number << 16) | segment_size
             }
         }
+    }
+}
+
+impl Debug for MessageHeader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MessageHeader")
+            .field("segment_size", &self.segment_size())
+            .field("redundant_channel", &self.rda_redundant_channel())
+            .field("message_type", &self.message_type())
+            .field("sequence_number", &self.sequence_number)
+            .field("date_time", &self.date_time())
+            .field("segment_count", &self.segment_count())
+            .field("segment_number", &self.segment_number())
+            .field("message_size", &self.message_size())
+            .finish()
     }
 }

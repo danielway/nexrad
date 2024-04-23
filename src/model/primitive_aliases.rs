@@ -1,6 +1,6 @@
 //!
-//! Primitive aliases matching the types referenced in the ICD. 
-//! 
+//! Primitive aliases matching the types referenced in the ICD.
+//!
 
 pub type Code1 = u8;
 pub type Code2 = u16;

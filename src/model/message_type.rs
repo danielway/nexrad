@@ -1,4 +1,5 @@
 /// The types of data messages transferred between the RDA and RPG.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum MessageType {
     /// Replaced by message type 31.
     RDADigitalRadarData = 1,

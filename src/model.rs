@@ -6,6 +6,8 @@
 //!
 
 mod archive2_header;
+pub use archive2_header::Archive2Header;
+
 mod definitions;
 mod message_header;
 mod message_type;

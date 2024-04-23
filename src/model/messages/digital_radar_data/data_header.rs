@@ -1,11 +1,11 @@
+use crate::model::messages::digital_radar_data::spot_blanking_status::SpotBlankingStatus;
+use crate::model::messages::digital_radar_data::{CompressionIndicator, RadialStatus};
 use crate::model::primitive_aliases::{Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger1};
 use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use uom::si::angle::degree;
 use uom::si::f64::{Angle, Information};
 use uom::si::information::byte;
-use crate::model::messages::digital_radar_data::{CompressionIndicator, RadialStatus};
-use crate::model::messages::digital_radar_data::spot_blanking_status::SpotBlankingStatus;
 
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
@@ -49,9 +49,9 @@ pub struct DataHeaderBlock {
     ///   1 = 0.5 degrees
     ///   2 = 1.0 degrees
     azimuth_resolution_spacing: Code1,
-    
+
     /// The radial's status within the larger scan (e.g. first, last).
-    /// 
+    ///
     /// Statuses:
     ///   0 = Start of elevation
     ///   1 = Intermediate radial data
@@ -60,65 +60,65 @@ pub struct DataHeaderBlock {
     ///   4 = End of volume scan
     ///   5 = Start of new elevation which is the last in the VCP
     radial_status: Code1,
-    
+
     /// The radial's elevation number within the volume scan.
     elevation_number: Integer1,
-    
+
     /// The sector number within cut. A value of 0 is only valid for continuous surveillance cuts.
     cut_sector_number: Integer1,
-    
+
     /// The radial's collection elevation angle.
     elevation_angle: Real4,
-    
+
     /// The spot blanking status for the current radial, elevation, and volume scan.
-    /// 
+    ///
     /// Statuses:
     ///   0 = None
     ///   1 = Radial
     ///   2 = Elevation
     ///   4 = Volume
     radial_spot_blanking_status: Code1,
-    
+
     /// The azimuth indexing value (if keyed to constant angles).
-    /// 
+    ///
     /// Values:
     ///   0     = No indexing
     ///   1-100 = Indexing angle of 0.01 to 1.00 degrees
     azimuth_indexing_mode: ScaledInteger1,
-    
+
     /// The number of "data moment" blocks following this header block, from 4 to 10. There are
     /// always volume, elevation, and radial information blocks and a reflectivity data moment
     /// block. The following 6 data moment blocks are optional, depending on scanning mode. The next
     /// 10 fields on this header contain pointers to each block, if available in the message.
     data_block_count: Integer2,
-    
+
     /// Pointer to the volume data block.
     volume_data_block_pointer: Integer4,
-    
+
     /// Pointer to the elevation data block.
     elevation_data_block_pointer: Integer4,
-    
+
     /// Pointer to the radial data block.
     radial_data_block_pointer: Integer4,
-    
+
     /// Pointer to the reflectivity ("REF") data moment block.
     reflectivity_data_moment_block_pointer: Integer4,
-    
+
     /// Pointer to the velocity ("VEL") data moment block.
     velocity_data_moment_block_pointer: Integer4,
-    
+
     /// Pointer to the spectrum width ("SW") data moment block.
     spectrum_width_data_moment_block_pointer: Integer4,
-    
+
     /// Pointer to the differential reflectivity ("ZDR") data moment block.
     differential_reflectivity_data_moment_block_pointer: Integer4,
-    
+
     /// Pointer to the differential phase ("PHI") data moment block.
     differential_phase_data_moment_block_pointer: Integer4,
-    
+
     /// Pointer to the correlation coefficient ("RHO") data moment block.
     correlation_coefficient_data_moment_block_pointer: Integer4,
-    
+
     /// Pointer to the specific differential phase ("CFP") data moment block.
     specific_diff_phase_data_moment_block_pointer: Integer4,
 }
@@ -158,7 +158,7 @@ impl DataHeaderBlock {
     pub fn azimuth_resolution_spacing(&self) -> Angle {
         Angle::new::<degree>(self.azimuth_resolution_spacing as f64 * 0.5)
     }
-    
+
     /// The radial's status within the larger scan.
     pub fn radial_status(&self) -> RadialStatus {
         match self.radial_status {
@@ -170,23 +170,25 @@ impl DataHeaderBlock {
             _ => RadialStatus::ElevationStartVCPFinal,
         }
     }
-    
+
     /// The radial's collection elevation angle.
     pub fn elevation_angle(&self) -> Angle {
         Angle::new::<degree>(self.elevation_angle as f64)
     }
-    
+
     /// The spot blanking status for the current radial, elevation, and volume scan.
     pub fn radial_spot_blanking_status(&self) -> SpotBlankingStatus {
         SpotBlankingStatus::new(self.radial_spot_blanking_status)
     }
-    
+
     /// The azimuth indexing value (if keyed to constant angles).
     pub fn azimuth_indexing_module(&self) -> Option<Angle> {
         if self.azimuth_indexing_mode == 0 {
             None
         } else {
-            Some(Angle::new::<degree>(self.azimuth_indexing_mode as f64 * 0.01))
+            Some(Angle::new::<degree>(
+                self.azimuth_indexing_mode as f64 * 0.01,
+            ))
         }
     }
 }

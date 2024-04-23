@@ -5,7 +5,7 @@
 //! These API definitions should match the ICD 2620010H as of build 19.0.
 //!
 
-mod archive_2_header;
+mod archive2_header;
 mod definitions;
 mod message_header;
 mod message_type;

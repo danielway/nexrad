@@ -8,6 +8,7 @@ use bincode::{DefaultOptions, Options};
 use serde::de::DeserializeOwned;
 use std::io::Read;
 
+/// Decodes an Archive II header from the provided reader.
 pub fn decode_archive2_header<R: Read>(reader: &mut R) -> Result<Archive2Header> {
     deserialize(reader)
 }

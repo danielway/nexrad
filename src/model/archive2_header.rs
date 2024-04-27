@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 
+/// Header for an Archive II file containing metadata about the radar data. This header is located
+/// at the beginning of the file.
 #[repr(C)]
 #[derive(Serialize, Deserialize)]
 pub struct Archive2Header {

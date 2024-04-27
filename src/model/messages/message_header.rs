@@ -1,6 +1,6 @@
-use crate::model::definitions::RedundantChannel;
-use crate::model::message_type::MessageType;
-use crate::model::primitive_aliases::{Integer1, Integer2, Integer4};
+use crate::model::messages::definitions::RedundantChannel;
+use crate::model::messages::message_type::MessageType;
+use crate::model::messages::primitive_aliases::{Integer1, Integer2, Integer4};
 use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::fmt::Debug;

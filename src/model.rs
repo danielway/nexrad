@@ -8,10 +8,6 @@
 mod archive2_header;
 pub use archive2_header::Archive2Header;
 
-mod definitions;
-mod message_header;
-mod message_type;
-mod primitive_aliases;
-mod util;
-
 pub mod messages;
+
+mod util;

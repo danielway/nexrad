@@ -1,4 +1,4 @@
-use crate::model::primitive_aliases::Code2;
+use crate::model::messages::primitive_aliases::Code2;
 use std::fmt::Debug;
 
 /// The multiple flags for the RDA system's scan and data status.

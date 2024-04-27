@@ -1,4 +1,4 @@
-use crate::model::primitive_aliases::Code1;
+use crate::model::messages::primitive_aliases::Code1;
 
 pub struct SpotBlankingStatus(Code1);
 

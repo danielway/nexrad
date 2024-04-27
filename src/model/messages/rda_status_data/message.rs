@@ -1,4 +1,3 @@
-use crate::model::message_header::MessageHeader;
 use crate::model::messages::rda_status_data::alarm;
 use crate::model::messages::rda_status_data::alarm::Summary;
 use crate::model::messages::rda_status_data::data_transmission_enabled::DataTransmissionEnabled;
@@ -10,10 +9,11 @@ use crate::model::messages::rda_status_data::definitions::{
 };
 use crate::model::messages::rda_status_data::scan_data_flags::ScanDataFlags;
 use crate::model::messages::rda_status_data::volume_coverage_pattern::VolumeCoveragePatternNumber;
-use crate::model::primitive_aliases::{Code2, Integer2, SInteger2, ScaledInteger2};
+use crate::model::messages::primitive_aliases::{Code2, Integer2, SInteger2, ScaledInteger2};
 use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::fmt::Debug;
+use crate::model::messages::message_header::MessageHeader;
 
 /// The RDA status data message includes various information about the current RDA system's state,
 /// including system operating status, performance parameters, and active alarms.

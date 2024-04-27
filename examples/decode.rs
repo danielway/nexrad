@@ -5,6 +5,8 @@
 //! Usage: cargo run --example decode -- <file>
 //!
 
+#![cfg(all(feature = "decompress"))]
+
 use std::env;
 
 use nexrad::decode::decode_archive2_header;

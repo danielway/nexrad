@@ -5,7 +5,8 @@
 //! Usage: cargo run --example decompress -- <file>
 //!
 
-use nexrad::decompress::decompress_file;
+#![cfg(all(feature = "decompress"))]
+
 use nexrad::file::is_compressed;
 use nexrad::result::Result;
 use std::env;

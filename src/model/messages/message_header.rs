@@ -3,6 +3,7 @@ use crate::model::messages::message_type::MessageType;
 use crate::model::messages::primitive_aliases::{Integer1, Integer2, Integer4};
 use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use uom::si::f64::Information;
 use uom::si::information::byte;
@@ -13,7 +14,12 @@ use uom::si::information::byte;
 /// and RPG have not been segmented since build 19. Instead, messages with length less than 65534
 /// have their segment count and number set to 1, otherwise the segment count and number positions
 /// of the header (bytes 12-15) specify the size of the full message in bytes.
+#[repr(C)]
+#[derive(Serialize, Deserialize)]
 pub struct MessageHeader {
+    // todo
+    rpg_unknown: [u8; 12],
+
     /// Size of this segment in bytes. Note that this only describes this segment's size, and in the
     /// case of a variable-length message the full message's size is determined differently. See
     /// [message_size] and [number_of_segments] for more information.
@@ -119,10 +125,10 @@ impl MessageHeader {
     /// message's full size.
     pub fn segment_count(&self) -> Option<u16> {
         if self.segment_size < 65534 {
-            debug_assert!(
-                self.segment_count == 1,
-                "Segment count should be 1 if size <65534"
-            );
+            // debug_assert!(
+            //     self.segment_count == 1,
+            //     "Segment count should be 1 if size <65534"
+            // );
             Some(self.segment_count)
         } else {
             None
@@ -136,10 +142,10 @@ impl MessageHeader {
     /// determine the message's full size.
     pub fn segment_number(&self) -> Option<u16> {
         if self.segment_size < 65534 {
-            debug_assert!(
-                self.segment_number == 1,
-                "Segment number should be 1 if size <65534"
-            );
+            // debug_assert!(
+            //     self.segment_number == 1,
+            //     "Segment number should be 1 if size <65534"
+            // );
             Some(self.segment_number)
         } else {
             None

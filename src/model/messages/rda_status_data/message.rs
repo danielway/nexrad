@@ -377,16 +377,13 @@ impl Message {
     }
 
     /// Acknowledgement of command receipt by RDA system.
-    pub fn command_acknowledgement(&self) -> CommandAcknowledgement {
+    pub fn command_acknowledgement(&self) -> Option<CommandAcknowledgement> {
         match self.command_acknowledgement {
-            1 => CommandAcknowledgement::RemoteVCPReceived,
-            2 => CommandAcknowledgement::ClutterBypassMapReceived,
-            3 => CommandAcknowledgement::ClutterCensorZonesReceived,
-            4 => CommandAcknowledgement::RedundantChannelControlCommandAccepted,
-            _ => panic!(
-                "Invalid RDA command acknowledgement: {}",
-                self.command_acknowledgement
-            ),
+            1 => Some(CommandAcknowledgement::RemoteVCPReceived),
+            2 => Some(CommandAcknowledgement::ClutterBypassMapReceived),
+            3 => Some(CommandAcknowledgement::ClutterCensorZonesReceived),
+            4 => Some(CommandAcknowledgement::RedundantChannelControlCommandAccepted),
+            _ => None,
         }
     }
 

@@ -3,6 +3,7 @@
 //!
 
 use crate::model::messages::message_header::MessageHeader;
+use crate::model::messages::rda_status_data;
 use crate::model::Archive2Header;
 use crate::result::Result;
 use bincode::{DefaultOptions, Options};
@@ -16,6 +17,11 @@ pub fn decode_archive2_header<R: Read>(reader: &mut R) -> Result<Archive2Header>
 
 /// Decodes a message header from the provided reader.
 pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
+    deserialize(reader)
+}
+
+/// Decodes an RDA status message type 2 from the provided reader.
+pub fn decode_rda_status_message<R: Read>(reader: &mut R) -> Result<rda_status_data::Message> {
     deserialize(reader)
 }
 

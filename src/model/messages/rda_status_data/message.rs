@@ -465,6 +465,7 @@ impl Message {
     pub fn alarm_messages(&self) -> Vec<alarm::Message> {
         self.alarm_codes
             .iter()
+            .filter(|&code| *code != 0)
             .filter_map(|&code| alarm::get_alarm_message(code))
             .collect()
     }

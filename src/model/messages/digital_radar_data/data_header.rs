@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::model::messages::digital_radar_data::spot_blanking_status::SpotBlankingStatus;
 use crate::model::messages::digital_radar_data::{CompressionIndicator, RadialStatus};
 use crate::model::messages::primitive_aliases::{
@@ -5,12 +6,14 @@ use crate::model::messages::primitive_aliases::{
 };
 use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
 use uom::si::angle::degree;
 use uom::si::f64::{Angle, Information};
 use uom::si::information::byte;
 
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
+#[derive(Serialize, Deserialize)]
 pub struct DataHeaderBlock {
     /// ICAO radar identifier.
     radar_identifier: [u8; 4],
@@ -192,5 +195,27 @@ impl DataHeaderBlock {
                 self.azimuth_indexing_mode as f64 * 0.01,
             ))
         }
+    }
+}
+
+impl Debug for DataHeaderBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DataHeaderBlock")
+            .field("radar_identifier", &self.radar_identifier())
+            .field("date_time", &self.date_time())
+            .field("azimuth_number", &self.azimuth_number)
+            .field("azimuth_angle", &self.azimuth_angle())
+            .field("compression_indicator", &self.compression_indicator())
+            .field("radial_length", &self.radial_length())
+            .field("azimuth_resolution_spacing", &self.azimuth_resolution_spacing())
+            .field("radial_status", &self.radial_status())
+            .field("elevation_number", &self.elevation_number)
+            .field("cut_sector_number", &self.cut_sector_number)
+            .field("elevation_angle", &self.elevation_angle())
+            .field("radial_spot_blanking_status", &self.radial_spot_blanking_status())
+            .field("azimuth_indexing_mode", &self.azimuth_indexing_module())
+            .field("data_block_count", &self.data_block_count)
+            // todo: pointers
+            .finish()
     }
 }

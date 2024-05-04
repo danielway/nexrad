@@ -54,7 +54,7 @@ async fn main() -> Result<()> {
 
         let mut reader = Cursor::new(file.as_slice());
         let decoded_file = decompress_and_decode_archive2_file(&mut reader, file.len() as u64)?;
-        println!("Decoded file: {:?}", decoded_file.header);
+        println!("Decoded file: {:?}", decoded_file);
     }
 
     println!("Decoded {} files.", file_names.len());

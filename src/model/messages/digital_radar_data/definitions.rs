@@ -18,3 +18,18 @@ pub enum RadialStatus {
     /// Start of new elevation which is the last in the VCP.
     ElevationStartVCPFinal,
 }
+
+/// Flags indicating special control features.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum ControlFlags {
+    None,
+    RecombinedAzimuthalRadials,
+    RecombinedRangeGates,
+    RecombinedRadialsAndRangeGatesToLegacyResolution,
+}
+
+/// Processing status flags.
+pub enum ProcessingStatus {
+    RxRNoise,
+    CBT,
+}

@@ -25,7 +25,10 @@ impl GenericDataBlock {
     /// Creates a new generic data moment block from the decoded header.
     pub(crate) fn new(header: GenericDataBlockHeader) -> Self {
         Self {
-            data: vec![0; (header.number_of_data_moment_gates * header.data_word_size as u16) as usize],
+            data: vec![
+                0;
+                (header.number_of_data_moment_gates * header.data_word_size as u16) as usize
+            ],
             header,
         }
     }

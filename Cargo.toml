@@ -14,11 +14,6 @@ path = "examples/decode.rs"
 required-features = ["decompress"]
 
 [[example]]
-name = "decompress"
-path = "examples/decompress.rs"
-required-features = ["decompress"]
-
-[[example]]
 name = "download"
 path = "examples/download.rs"
 required-features = ["download"]

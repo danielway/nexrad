@@ -1,3 +1,4 @@
+//!
 //! examples/download
 //!
 //! This example downloads a data file for some date/site and prints its size.

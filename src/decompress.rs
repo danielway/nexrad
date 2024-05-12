@@ -1,5 +1,5 @@
 //!
-//! TODO
+//! Decompression functions for compressed LDM records containing radar data in Archive II files.
 //!
 
 use crate::decode::{
@@ -8,10 +8,10 @@ use crate::decode::{
 };
 use crate::model::messages::MessageWithHeader;
 use crate::model::messages::{Message, MessageType};
+use crate::model::Archive2File;
 use crate::result::Result;
 use bzip2::read::BzDecoder;
 use std::io::{Cursor, Read, Seek};
-use crate::model::Archive2File;
 
 /// Decompresses and decodes an Archive II file from the provided reader.
 pub fn decompress_and_decode_archive2_file<R: Read + Seek>(

@@ -1,28 +1,28 @@
+//!
 //! examples/decode
 //!
-//! This example loads a data file and decodes it.
+//! This example loads a data file, decompresses its records, and decodes its radar data.
 //!
 //! Usage: cargo run --example decode -- <file or directory>
 //!
 
 #![cfg(all(feature = "decompress"))]
 
-use std::io::Cursor;
-use std::{env, fs};
-
 use nexrad::decompress::decompress_and_decode_archive2_file;
 use nexrad::result::Result;
+use std::io::Cursor;
+use std::{env, fs};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
-        panic!("Usage: cargo run --example decode -- <file or directory>");
+
+    let mut path = "downloads/KDMX20220305_233003_V06";
+    if args.len() > 2 {
+        path = &args[1];
     }
 
-    let path = &args[1];
     let path_metadata = fs::metadata(path).expect("file exists");
-
     let file_names = if path_metadata.is_dir() {
         fs::read_dir(path)
             .expect("directory exists")
@@ -54,10 +54,10 @@ async fn main() -> Result<()> {
 
         let mut reader = Cursor::new(file.as_slice());
         let decoded_file = decompress_and_decode_archive2_file(&mut reader, file.len() as u64)?;
-        println!("Decoded file: {:?}", decoded_file);
+        println!("Decompressed and decoded file: {:?}", decoded_file);
     }
 
-    println!("Decoded {} files.", file_names.len());
+    println!("Decompressed and decoded {} files.", file_names.len());
 
     Ok(())
 }

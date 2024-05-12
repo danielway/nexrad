@@ -1,11 +1,9 @@
+//!
 //! examples/render
 //!
 //! This example loads a data file and renders it according to various options.
 //!
-use nexrad::decode::decode_file;
-use nexrad::decompress::decompress_file;
-use nexrad::file::is_compressed;
-use nexrad::model::DataFile;
+
 use std::env;
 use std::f32::consts::PI;
 use std::fs::File;
@@ -127,7 +125,7 @@ fn render_ppm_image(
 
         assert_eq!(data_moment.data().data_word_size(), 8);
         for (i, v) in data_moment.moment_data().iter().enumerate() {
-            raw_gates[i] = *v as u16;
+            raw_gates[i] = *v;
         }
 
         let mut scaled_gates: Vec<f32> = Vec::new();

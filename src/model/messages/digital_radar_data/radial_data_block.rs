@@ -4,34 +4,34 @@ use crate::model::messages::primitive_aliases::{Integer2, Real4, ScaledInteger2}
 /// A radial data moment block.
 pub struct RadialDataBlock {
     /// Data block type, "R".
-    data_block_type: u8,
+    pub data_block_type: u8,
     
     /// Data block name, e.g. "RAD".
-    data_block_name: [u8; 3],
+    pub data_block_name: [u8; 3],
     
     /// Size of data block in bytes.
-    lrtup: Integer2,
+    pub lrtup: Integer2,
     
     /// Unambiguous range, interval size, in km.
-    unambiguous_range: ScaledInteger2,
+    pub unambiguous_range: ScaledInteger2,
     
     /// Noise level for the horizontal channel in dBm.
-    horizontal_channel_noise_level: Real4,
+    pub horizontal_channel_noise_level: Real4,
     
     /// Noise level for the vertical channel in dBm.
-    vertical_channel_noise_level: Real4,
+    pub vertical_channel_noise_level: Real4,
     
     /// Nyquist velocity in m/s.
-    nyquist_velocity: ScaledInteger2,
+    pub nyquist_velocity: ScaledInteger2,
     
     /// Radial flags to support RPG processing.
-    radial_flags: Integer2,
+    pub radial_flags: Integer2,
     
     /// Calibration constant for the horizontal channel in dBZ.
-    horizontal_channel_calibration_constant: Real4,
+    pub horizontal_channel_calibration_constant: Real4,
     
     /// Calibration constant for the vertical channel in dBZ.
-    vertical_channel_calibration_constant: Real4,
+    pub vertical_channel_calibration_constant: Real4,
 }
 
 impl RadialDataBlock {

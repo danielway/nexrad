@@ -4,20 +4,20 @@ use crate::model::messages::primitive_aliases::{Integer2, Real4, ScaledSInteger2
 /// An elevation data block.
 pub struct ElevationDataBlock {
     /// Data block type, "E".
-    data_block_type: u8,
+    pub data_block_type: u8,
     
     /// Data block name, e.g. "ELV".
-    data_block_name: [u8; 3],
+    pub data_block_name: [u8; 3],
     
     /// Size of data block in bytes.
-    lrtup: Integer2,
+    pub lrtup: Integer2,
     
     /// Atmospheric attenuation factor in dB/km.
-    atmos: ScaledSInteger2,
+    pub atmos: ScaledSInteger2,
     
     /// Scaling constant used by the signal processor for this elevation to calculate reflectivity
     /// in dB.
-    calibration_constant: Real4,
+    pub calibration_constant: Real4,
 }
 
 impl ElevationDataBlock {

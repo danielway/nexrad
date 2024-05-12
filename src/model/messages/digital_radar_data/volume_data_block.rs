@@ -5,64 +5,64 @@ use crate::model::messages::primitive_aliases::{Integer1, Integer2, Real4, SInte
 /// A volume data moment block.
 pub struct VolumeDataBlock {
     /// Data block type, "R".
-    data_block_type: u8,
+    pub data_block_type: u8,
 
     /// Data block name, e.g. "VOL".
-    data_name: [u8; 3],
+    pub data_name: [u8; 3],
 
     /// Size of data block in bytes.
-    lrtup: Integer2,
+    pub lrtup: Integer2,
 
     /// Major version number.
-    major_version_number: Integer1,
+    pub major_version_number: Integer1,
 
     /// Minor version number.
-    minor_version_number: Integer1,
+    pub minor_version_number: Integer1,
 
     /// Latitude of radar in degrees.
-    latitude: Real4,
+    pub latitude: Real4,
 
     /// Longitude of radar in degrees.
-    longitude: Real4,
+    pub longitude: Real4,
 
     /// Height of site base above sea level in meters.
-    site_height: SInteger2,
+    pub site_height: SInteger2,
 
     /// Height of feedhorn above ground in meters.
-    feedhorn_height: Integer2,
+    pub feedhorn_height: Integer2,
 
     /// Reflectivity scaling factor without correction by ground noise scaling factors given in
     /// adaptation data message in dB.
-    calibration_constant: Real4,
+    pub calibration_constant: Real4,
 
     /// Transmitter power for horizontal channel in kW.
-    horizontal_shv_tx_power: Real4,
+    pub horizontal_shv_tx_power: Real4,
 
     /// Transmitter power for vertical channel in kW.
-    vertical_shv_tx_power: Real4,
+    pub vertical_shv_tx_power: Real4,
 
     /// Calibration of system ZDR in dB.
-    system_differential_reflectivity: Real4,
+    pub system_differential_reflectivity: Real4,
 
     /// Initial DP for the system in degrees.
-    initial_system_differential_phase: Real4,
+    pub initial_system_differential_phase: Real4,
 
     /// Identifies the volume coverage pattern in use.
     /// todo: Appendix C for available VCPs
-    volume_coverage_pattern_number: Integer2,
+    pub volume_coverage_pattern_number: Integer2,
 
     /// Processing option flags.
     ///
     /// Options:
     ///   0 = RxR noise
     ///   1 = CBT
-    processing_status: Integer2,
+    pub processing_status: Integer2,
 
     /// RPG weighted mean ZDR bias estimate in dB.
-    zdr_bias_estimate_weighted_mean: Integer2,
+    pub zdr_bias_estimate_weighted_mean: Integer2,
 
     /// Spare.
-    spare: [u8; 6],
+    pub spare: [u8; 6],
 }
 
 impl VolumeDataBlock {

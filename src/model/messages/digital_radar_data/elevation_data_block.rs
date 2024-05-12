@@ -1,7 +1,11 @@
 use crate::model::messages::primitive_aliases::{Integer2, Real4, ScaledSInteger2};
 use serde::Deserialize;
 use std::fmt::Debug;
+
+#[cfg(feature = "uom")]
 use uom::si::f64::Information;
+#[cfg(feature = "uom")]
+use uom::si::information::byte;
 
 /// An elevation data block.
 #[derive(Deserialize)]
@@ -35,11 +39,26 @@ impl ElevationDataBlock {
     }
 
     /// Size of data block.
+    #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
-        Information::new::<uom::si::information::byte>(self.lrtup as f64)
+        Information::new::<byte>(self.lrtup as f64)
     }
 }
 
+#[cfg(not(feature = "uom"))]
+impl Debug for ElevationDataBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ElevationDataBlock")
+            .field("data_block_type", &self.data_block_type())
+            .field("data_block_name", &self.data_block_name())
+            .field("lrtup", &self.lrtup)
+            .field("atmos", &self.atmos)
+            .field("calibration_constant", &self.calibration_constant)
+            .finish()
+    }
+}
+
+#[cfg(feature = "uom")]
 impl Debug for ElevationDataBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ElevationDataBlock")

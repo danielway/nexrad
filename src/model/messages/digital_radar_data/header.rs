@@ -10,8 +10,12 @@ use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 use std::fmt::Debug;
+
+#[cfg(feature = "uom")]
 use uom::si::angle::degree;
+#[cfg(feature = "uom")]
 use uom::si::f64::{Angle, Information};
+#[cfg(feature = "uom")]
 use uom::si::information::byte;
 
 /// The digital radar data message header block precedes base data information for a particular
@@ -143,6 +147,7 @@ impl Header {
     }
 
     /// Azimuth angle at which the radial was collected.
+    #[cfg(feature = "uom")]
     pub fn azimuth_angle(&self) -> Angle {
         Angle::new::<degree>(self.azimuth_angle as f64)
     }
@@ -158,11 +163,13 @@ impl Header {
     }
 
     /// Uncompressed length of the radial (including the data header block).
+    #[cfg(feature = "uom")]
     pub fn radial_length(&self) -> Information {
         Information::new::<byte>(self.radial_length as f64)
     }
 
     /// Azimuthal spacing between adjacent radials.
+    #[cfg(feature = "uom")]
     pub fn azimuth_resolution_spacing(&self) -> Angle {
         Angle::new::<degree>(self.azimuth_resolution_spacing as f64 * 0.5)
     }
@@ -180,6 +187,7 @@ impl Header {
     }
 
     /// The radial's collection elevation angle.
+    #[cfg(feature = "uom")]
     pub fn elevation_angle(&self) -> Angle {
         Angle::new::<degree>(self.elevation_angle as f64)
     }
@@ -190,7 +198,8 @@ impl Header {
     }
 
     /// The azimuth indexing value (if keyed to constant angles).
-    pub fn azimuth_indexing_module(&self) -> Option<Angle> {
+    #[cfg(feature = "uom")]
+    pub fn azimuth_indexing_mode(&self) -> Option<Angle> {
         if self.azimuth_indexing_mode == 0 {
             None
         } else {
@@ -284,9 +293,72 @@ impl Header {
     }
 }
 
+#[cfg(not(feature = "uom"))]
 impl Debug for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("DataHeaderBlock")
+        f.debug_struct("Header")
+            .field("radar_identifier", &self.radar_identifier())
+            .field("date_time", &self.date_time())
+            .field("azimuth_number", &self.azimuth_number)
+            .field("azimuth_angle", &self.azimuth_angle)
+            .field("compression_indicator", &self.compression_indicator())
+            .field("radial_length", &self.radial_length)
+            .field(
+                "azimuth_resolution_spacing",
+                &self.azimuth_resolution_spacing,
+            )
+            .field("radial_status", &self.radial_status())
+            .field("elevation_number", &self.elevation_number)
+            .field("cut_sector_number", &self.cut_sector_number)
+            .field("elevation_angle", &self.elevation_angle)
+            .field(
+                "radial_spot_blanking_status",
+                &self.radial_spot_blanking_status(),
+            )
+            .field("azimuth_indexing_mode", &self.azimuth_indexing_mode)
+            .field("data_block_count", &self.data_block_count)
+            .field("volume_data_block_pointer", &self.volume_data_block_pointer)
+            .field(
+                "elevation_data_block_pointer",
+                &self.elevation_data_block_pointer,
+            )
+            .field("radial_data_block_pointer", &self.radial_data_block_pointer)
+            .field(
+                "reflectivity_data_moment_block_pointer",
+                &self.reflectivity_data_moment_block_pointer,
+            )
+            .field(
+                "velocity_data_moment_block_pointer",
+                &self.velocity_data_moment_block_pointer,
+            )
+            .field(
+                "spectrum_width_data_moment_block_pointer",
+                &self.spectrum_width_data_moment_block_pointer,
+            )
+            .field(
+                "differential_reflectivity_data_moment_block_pointer",
+                &self.differential_reflectivity_data_moment_block_pointer,
+            )
+            .field(
+                "differential_phase_data_moment_block_pointer",
+                &self.differential_phase_data_moment_block_pointer,
+            )
+            .field(
+                "correlation_coefficient_data_moment_block_pointer",
+                &self.correlation_coefficient_data_moment_block_pointer,
+            )
+            .field(
+                "specific_diff_phase_data_moment_block_pointer",
+                &self.specific_diff_phase_data_moment_block_pointer,
+            )
+            .finish()
+    }
+}
+
+#[cfg(feature = "uom")]
+impl Debug for Header {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Header")
             .field("radar_identifier", &self.radar_identifier())
             .field("date_time", &self.date_time())
             .field("azimuth_number", &self.azimuth_number)
@@ -305,7 +377,7 @@ impl Debug for Header {
                 "radial_spot_blanking_status",
                 &self.radial_spot_blanking_status(),
             )
-            .field("azimuth_indexing_mode", &self.azimuth_indexing_module())
+            .field("azimuth_indexing_mode", &self.azimuth_indexing_mode())
             .field("data_block_count", &self.data_block_count)
             .field("volume_data_block_pointer", &self.volume_data_block_pointer)
             .field(

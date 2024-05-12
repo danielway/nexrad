@@ -5,7 +5,10 @@ use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 use std::fmt::Debug;
+
+#[cfg(feature = "uom")]
 use uom::si::f64::Information;
+#[cfg(feature = "uom")]
 use uom::si::information::byte;
 
 /// Message and system configuration information appended to the beginning of all messages.
@@ -60,6 +63,8 @@ pub struct MessageHeader {
 }
 
 impl MessageHeader {
+    /// Size of this segment.
+    #[cfg(feature = "uom")]
     pub fn segment_size(&self) -> Information {
         Information::new::<byte>(self.segment_size as f64)
     }
@@ -165,6 +170,23 @@ impl MessageHeader {
     }
 }
 
+#[cfg(not(feature = "uom"))]
+impl Debug for MessageHeader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MessageHeader")
+            .field("segment_size", &self.segment_size)
+            .field("redundant_channel", &self.rda_redundant_channel())
+            .field("message_type", &self.message_type())
+            .field("sequence_number", &self.sequence_number)
+            .field("date_time", &self.date_time())
+            .field("segment_count", &self.segment_count())
+            .field("segment_number", &self.segment_number())
+            .field("message_size", &self.message_size())
+            .finish()
+    }
+}
+
+#[cfg(feature = "uom")]
 impl Debug for MessageHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MessageHeader")

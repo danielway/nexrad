@@ -6,8 +6,11 @@
 //! the type of data associated with that strategy.
 //!
 
-mod data_header;
-pub use data_header::DataHeaderBlock;
+mod header;
+pub use header::Header;
+
+mod message;
+pub use message::Message;
 
 mod volume_data_block;
 pub use volume_data_block::VolumeDataBlock;
@@ -26,3 +29,6 @@ pub use definitions::*;
 
 mod spot_blanking_status;
 pub use spot_blanking_status::*;
+
+mod pointers;
+pub use pointers::*;

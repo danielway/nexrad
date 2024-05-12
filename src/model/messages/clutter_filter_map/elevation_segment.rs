@@ -7,7 +7,7 @@ pub struct ElevationSegment {
     /// This elevation segment's number from 1 to 5 (oftentimes there are only 2) in increasing
     /// elevation from the ground.
     pub elevation_segment_number: Integer1,
-    
+
     /// The azimuth segments defined in this elevation segment.
     pub azimuth_segments: Vec<AzimuthSegment>,
 }

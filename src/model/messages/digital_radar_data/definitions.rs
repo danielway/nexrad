@@ -29,7 +29,9 @@ pub enum ControlFlags {
 }
 
 /// Processing status flags.
+#[derive(Debug)]
 pub enum ProcessingStatus {
     RxRNoise,
     CBT,
+    Other(u16),
 }

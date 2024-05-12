@@ -1,12 +1,12 @@
+use crate::model::messages::primitive_aliases::{Code2, Integer2};
+use serde::Deserialize;
 use std::fmt::Debug;
-use serde::{Deserialize, Serialize};
 use uom::si::f64::Length;
 use uom::si::length::kilometer;
-use crate::model::messages::primitive_aliases::{Code2, Integer2};
 
 /// Defines a range segment of a particular elevation and azimuth with an operation type describing
 /// the clutter filter map behavior for the segment.
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct RangeZone {
     /// Bypass filter, bypass map in control force filter. E.g. 0, 1, or 2.
     // todo: define numeration of codes with meaning

@@ -1,20 +1,23 @@
-use std::fmt::Debug;
+use crate::model::messages::digital_radar_data::pointers::DataMomentPointer;
 use crate::model::messages::digital_radar_data::spot_blanking_status::SpotBlankingStatus;
-use crate::model::messages::digital_radar_data::{CompressionIndicator, RadialStatus};
+use crate::model::messages::digital_radar_data::{
+    CompressionIndicator, DataMomentGenericPointerType, DataMomentPointerType, RadialStatus,
+};
 use crate::model::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger1,
 };
 use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use std::fmt::Debug;
 use uom::si::angle::degree;
 use uom::si::f64::{Angle, Information};
 use uom::si::information::byte;
 
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
-#[derive(Serialize, Deserialize)]
-pub struct DataHeaderBlock {
+#[derive(Deserialize)]
+pub struct Header {
     /// ICAO radar identifier.
     pub radar_identifier: [u8; 4],
 
@@ -128,7 +131,7 @@ pub struct DataHeaderBlock {
     pub specific_diff_phase_data_moment_block_pointer: Integer4,
 }
 
-impl DataHeaderBlock {
+impl Header {
     /// ICAO radar identifier.
     pub fn radar_identifier(&self) -> String {
         String::from_utf8_lossy(&self.radar_identifier).to_string()
@@ -196,9 +199,92 @@ impl DataHeaderBlock {
             ))
         }
     }
+
+    /// Returns a list of pointers to the data blocks in this message
+    pub fn pointers(&self) -> Vec<DataMomentPointer> {
+        let mut pointers = Vec::with_capacity(10);
+
+        pointers.push(DataMomentPointer {
+            pointer: self.volume_data_block_pointer,
+            data_moment_type: DataMomentPointerType::Volume,
+        });
+
+        pointers.push(DataMomentPointer {
+            pointer: self.elevation_data_block_pointer,
+            data_moment_type: DataMomentPointerType::Elevation,
+        });
+
+        pointers.push(DataMomentPointer {
+            pointer: self.radial_data_block_pointer,
+            data_moment_type: DataMomentPointerType::Radial,
+        });
+
+        pointers.push(DataMomentPointer {
+            pointer: self.reflectivity_data_moment_block_pointer,
+            data_moment_type: DataMomentPointerType::Generic(
+                DataMomentGenericPointerType::Reflectivity,
+            ),
+        });
+
+        if self.data_block_count >= 5 {
+            pointers.push(DataMomentPointer {
+                pointer: self.velocity_data_moment_block_pointer,
+                data_moment_type: DataMomentPointerType::Generic(
+                    DataMomentGenericPointerType::Velocity,
+                ),
+            });
+        }
+
+        if self.data_block_count >= 6 {
+            pointers.push(DataMomentPointer {
+                pointer: self.spectrum_width_data_moment_block_pointer,
+                data_moment_type: DataMomentPointerType::Generic(
+                    DataMomentGenericPointerType::SpectrumWidth,
+                ),
+            });
+        }
+
+        if self.data_block_count >= 7 {
+            pointers.push(DataMomentPointer {
+                pointer: self.differential_reflectivity_data_moment_block_pointer,
+                data_moment_type: DataMomentPointerType::Generic(
+                    DataMomentGenericPointerType::DifferentialReflectivity,
+                ),
+            });
+        }
+
+        if self.data_block_count >= 8 {
+            pointers.push(DataMomentPointer {
+                pointer: self.differential_phase_data_moment_block_pointer,
+                data_moment_type: DataMomentPointerType::Generic(
+                    DataMomentGenericPointerType::DifferentialPhase,
+                ),
+            });
+        }
+
+        if self.data_block_count >= 9 {
+            pointers.push(DataMomentPointer {
+                pointer: self.correlation_coefficient_data_moment_block_pointer,
+                data_moment_type: DataMomentPointerType::Generic(
+                    DataMomentGenericPointerType::CorrelationCoefficient,
+                ),
+            });
+        }
+
+        if self.data_block_count >= 10 {
+            pointers.push(DataMomentPointer {
+                pointer: self.specific_diff_phase_data_moment_block_pointer,
+                data_moment_type: DataMomentPointerType::Generic(
+                    DataMomentGenericPointerType::SpecificDiffPhase,
+                ),
+            });
+        }
+
+        pointers
+    }
 }
 
-impl Debug for DataHeaderBlock {
+impl Debug for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DataHeaderBlock")
             .field("radar_identifier", &self.radar_identifier())
@@ -207,15 +293,54 @@ impl Debug for DataHeaderBlock {
             .field("azimuth_angle", &self.azimuth_angle())
             .field("compression_indicator", &self.compression_indicator())
             .field("radial_length", &self.radial_length())
-            .field("azimuth_resolution_spacing", &self.azimuth_resolution_spacing())
+            .field(
+                "azimuth_resolution_spacing",
+                &self.azimuth_resolution_spacing(),
+            )
             .field("radial_status", &self.radial_status())
             .field("elevation_number", &self.elevation_number)
             .field("cut_sector_number", &self.cut_sector_number)
             .field("elevation_angle", &self.elevation_angle())
-            .field("radial_spot_blanking_status", &self.radial_spot_blanking_status())
+            .field(
+                "radial_spot_blanking_status",
+                &self.radial_spot_blanking_status(),
+            )
             .field("azimuth_indexing_mode", &self.azimuth_indexing_module())
             .field("data_block_count", &self.data_block_count)
-            // todo: pointers
+            .field("volume_data_block_pointer", &self.volume_data_block_pointer)
+            .field(
+                "elevation_data_block_pointer",
+                &self.elevation_data_block_pointer,
+            )
+            .field("radial_data_block_pointer", &self.radial_data_block_pointer)
+            .field(
+                "reflectivity_data_moment_block_pointer",
+                &self.reflectivity_data_moment_block_pointer,
+            )
+            .field(
+                "velocity_data_moment_block_pointer",
+                &self.velocity_data_moment_block_pointer,
+            )
+            .field(
+                "spectrum_width_data_moment_block_pointer",
+                &self.spectrum_width_data_moment_block_pointer,
+            )
+            .field(
+                "differential_reflectivity_data_moment_block_pointer",
+                &self.differential_reflectivity_data_moment_block_pointer,
+            )
+            .field(
+                "differential_phase_data_moment_block_pointer",
+                &self.differential_phase_data_moment_block_pointer,
+            )
+            .field(
+                "correlation_coefficient_data_moment_block_pointer",
+                &self.correlation_coefficient_data_moment_block_pointer,
+            )
+            .field(
+                "specific_diff_phase_data_moment_block_pointer",
+                &self.specific_diff_phase_data_moment_block_pointer,
+            )
             .finish()
     }
 }

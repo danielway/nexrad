@@ -3,7 +3,7 @@ use crate::model::messages::message_type::MessageType;
 use crate::model::messages::primitive_aliases::{Integer1, Integer2, Integer4};
 use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::fmt::Debug;
 use uom::si::f64::Information;
 use uom::si::information::byte;
@@ -15,7 +15,7 @@ use uom::si::information::byte;
 /// have their segment count and number set to 1, otherwise the segment count and number positions
 /// of the header (bytes 12-15) specify the size of the full message in bytes.
 #[repr(C)]
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct MessageHeader {
     // todo
     rpg_unknown: [u8; 12],

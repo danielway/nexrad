@@ -1,11 +1,11 @@
-use std::fmt::Debug;
-use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
 use crate::model::messages::primitive_aliases::Integer2;
 use crate::model::util::get_datetime;
+use chrono::{DateTime, Duration, Utc};
+use serde::Deserialize;
+use std::fmt::Debug;
 
 /// Header information for a clutter filter map to be read directly from the Archive II file.
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct Header {
     /// The date the clutter filter map was generated represented as a count of days since 1 January
     /// 1970 00:00 GMT. It is also referred-to as a "modified Julian date" where it is the Julian
@@ -23,7 +23,10 @@ pub struct Header {
 impl Header {
     /// The date and time the clutter filter map was generated.
     pub fn date_time(&self) -> DateTime<Utc> {
-        get_datetime(self.map_generation_date, Duration::milliseconds(self.map_generation_time as i64))
+        get_datetime(
+            self.map_generation_date,
+            Duration::milliseconds(self.map_generation_time as i64),
+        )
     }
 }
 

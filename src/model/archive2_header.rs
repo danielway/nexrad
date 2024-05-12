@@ -1,13 +1,13 @@
 use crate::model::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 
 /// Header for an Archive II file containing metadata about the radar data. This header is located
 /// at the beginning of the file.
 #[repr(C)]
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct Archive2Header {
     /// The tape's filename which indicates the version of the data. Name is in the format
     /// `AR2V0 0xx.` where `xx` indicates the version of the data.

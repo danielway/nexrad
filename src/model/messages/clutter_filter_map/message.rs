@@ -1,9 +1,12 @@
+use std::fmt::Debug;
 use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
 use crate::model::messages::clutter_filter_map::elevation_segment::ElevationSegment;
 use crate::model::messages::primitive_aliases::Integer2;
 use crate::model::util::get_datetime;
 
 /// Header information for a clutter filter map to be read directly from the Archive II file.
+#[derive(Serialize, Deserialize)]
 pub struct Header {
     /// The date the clutter filter map was generated represented as a count of days since 1 January
     /// 1970 00:00 GMT. It is also referred-to as a "modified Julian date" where it is the Julian
@@ -25,12 +28,22 @@ impl Header {
     }
 }
 
-/// A clutter filter map describing elevations, azimuths, and ranges containing clutter to 
+impl Debug for Header {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Header")
+            .field("map_generation_date_time", &self.date_time())
+            .field("elevation_segment_count", &self.elevation_segment_count)
+            .finish()
+    }
+}
+
+/// A clutter filter map describing elevations, azimuths, and ranges containing clutter to
 /// filtered from radar products.
+#[derive(Debug)]
 pub struct Message {
     /// Decoded header information for this clutter filter map.
     pub header: Header,
-    
+
     /// The elevation segments defined in this clutter filter map.
     pub elevation_segments: Vec<ElevationSegment>,
 }

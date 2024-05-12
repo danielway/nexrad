@@ -2,7 +2,7 @@
 //! TODO
 //!
 
-use crate::decode::{decode_archive2_header, decode_digital_radar_data, decode_message_header, decode_rda_status_message};
+use crate::decode::{decode_archive2_header, decode_clutter_filter_map, decode_digital_radar_data, decode_message_header, decode_rda_status_message};
 use crate::model::messages::MessageWithHeader;
 use crate::model::messages::{Message, MessageType};
 use crate::model::Archive2Header;
@@ -36,6 +36,9 @@ pub fn decompress_and_decode_archive2_file<R: Read + Seek>(
                     ),
                     MessageType::RDADigitalRadarDataGenericFormat => Message::DigitalRadarData(
                         decode_digital_radar_data(&mut decompressed_data.as_slice())?,
+                    ),
+                    MessageType::RDAClutterFilterMap => Message::ClutterFilterMap(
+                        decode_clutter_filter_map(&mut decompressed_data.as_slice())?,
                     ),
                     _ => Message::Other,
                 };

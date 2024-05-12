@@ -8,6 +8,9 @@
 mod archive2_header;
 pub use archive2_header::Archive2Header;
 
+mod archive_2_file;
+pub use archive_2_file::Archive2File;
+
 pub mod messages;
 
 mod util;

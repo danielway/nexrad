@@ -8,16 +8,10 @@ use crate::decode::{
 };
 use crate::model::messages::MessageWithHeader;
 use crate::model::messages::{Message, MessageType};
-use crate::model::Archive2Header;
 use crate::result::Result;
 use bzip2::read::BzDecoder;
 use std::io::{Cursor, Read, Seek};
-
-#[derive(Debug)]
-pub struct Archive2File {
-    pub header: Archive2Header,
-    pub records: Vec<MessageWithHeader>,
-}
+use crate::model::Archive2File;
 
 /// Decompresses and decodes an Archive II file from the provided reader.
 pub fn decompress_and_decode_archive2_file<R: Read + Seek>(

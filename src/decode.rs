@@ -37,7 +37,7 @@ pub fn decode_rda_status_message<R: Read>(
 /// Decodes a digital radar data message type 31 from the provided reader.
 pub fn decode_digital_radar_data<R: Read>(
     reader: &mut R,
-) -> Result<digital_radar_data::DataHeaderBlock> {
+) -> Result<digital_radar_data::Header> {
     deserialize(reader)
 }
 

@@ -4,8 +4,11 @@
 //! azimuth, and range zones that define the clutter filter behavior for radar products.
 //! 
 
+mod header;
+pub use header::Header;
+
 mod message;
-pub use message::{Message, Header};
+pub use message::Message;
 
 mod elevation_segment;
 pub use elevation_segment::ElevationSegment;
@@ -14,4 +17,5 @@ mod azimuth_segment;
 pub use azimuth_segment::{AzimuthSegment, AzimuthSegmentHeader};
 
 mod range_zone;
+
 pub use range_zone::RangeZone;

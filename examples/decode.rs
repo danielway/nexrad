@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
 
     let mut path = "downloads/KDMX20220305_233003_V06";
-    if args.len() > 2 {
+    if args.len() >= 2 {
         path = &args[1];
     }
 

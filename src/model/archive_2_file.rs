@@ -7,6 +7,9 @@ pub struct Archive2File {
     /// The volume scan header.
     pub header: Archive2Header,
 
+    // todo: are these actually records? are there record headers or just message headers?
+    //       the archive II docs mention a "metadata record" with multiple messages; are we handling
+    //       that correctly?
     /// The decoded messages.
-    pub records: Vec<MessageWithHeader>,
+    pub messages: Vec<MessageWithHeader>,
 }

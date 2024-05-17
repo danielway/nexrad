@@ -29,18 +29,18 @@ pub fn decompress_and_decode_archive2_file<R: Read + Seek>(
         if position >= size {
             break;
         }
-        
+
         let mut record_size = [0; 4];
         reader.read_exact(&mut record_size)?;
         let record_size = i32::from_be_bytes(record_size).abs();
         reader.seek(SeekFrom::Current(-4))?;
-        
+
         let mut compressed_data = vec![0; record_size as usize + 4];
         reader.read_exact(&mut compressed_data)?;
-        
+
         compressed_records.push(compressed_data);
     }
-    
+
     let messages = decompress_and_decode_messages(compressed_records)?;
 
     Ok(Archive2File {
@@ -50,7 +50,9 @@ pub fn decompress_and_decode_archive2_file<R: Read + Seek>(
 }
 
 #[cfg(not(feature = "rayon"))]
-fn decompress_and_decode_messages(compressed_records: Vec<Vec<u8>>) -> Result<Vec<MessageWithHeader>> {
+fn decompress_and_decode_messages(
+    compressed_records: Vec<Vec<u8>>,
+) -> Result<Vec<MessageWithHeader>> {
     compressed_records
         .iter()
         .map(|compressed_data| decompress_and_decode_message(&mut compressed_data.as_slice()))
@@ -58,7 +60,9 @@ fn decompress_and_decode_messages(compressed_records: Vec<Vec<u8>>) -> Result<Ve
 }
 
 #[cfg(feature = "rayon")]
-fn decompress_and_decode_messages(compressed_records: Vec<Vec<u8>>) -> Result<Vec<MessageWithHeader>> {
+fn decompress_and_decode_messages(
+    compressed_records: Vec<Vec<u8>>,
+) -> Result<Vec<MessageWithHeader>> {
     compressed_records
         .par_iter()
         .map(|compressed_data| decompress_and_decode_message(&mut compressed_data.as_slice()))
@@ -69,7 +73,7 @@ fn decompress_and_decode_messages(compressed_records: Vec<Vec<u8>>) -> Result<Ve
 pub fn decompress_and_decode_message<R: Read>(reader: &mut R) -> Result<MessageWithHeader> {
     let decompressed_data = decompress_ldm_record(reader)?;
     let mut cursor = Cursor::new(decompressed_data.as_slice());
-    
+
     let header = decode_message_header(&mut cursor)?;
 
     let message = match header.message_type() {
@@ -84,7 +88,7 @@ pub fn decompress_and_decode_message<R: Read>(reader: &mut R) -> Result<MessageW
         }
         _ => Message::Other,
     };
-    
+
     Ok(MessageWithHeader { header, message })
 }
 

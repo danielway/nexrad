@@ -35,3 +35,13 @@ pub enum ProcessingStatus {
     CBT,
     Other(u16),
 }
+
+/// Volume coverage pattern (VCP) definitions.
+pub enum VolumeCoveragePattern {
+    VCP12,
+    VCP31,
+    VCP35,
+    VCP112,
+    VCP212,
+    VCP215,
+}

@@ -1,4 +1,4 @@
-use crate::model::messages::digital_radar_data::ProcessingStatus;
+use crate::model::messages::digital_radar_data::{ProcessingStatus, VolumeCoveragePattern};
 use crate::model::messages::primitive_aliases::{Integer1, Integer2, Real4, SInteger2};
 use serde::Deserialize;
 use std::fmt::Debug;
@@ -53,7 +53,6 @@ pub struct VolumeDataBlock {
     pub initial_system_differential_phase: Real4,
 
     /// Identifies the volume coverage pattern in use.
-    /// todo: Appendix C for available VCPs
     pub volume_coverage_pattern_number: Integer2,
 
     /// Processing option flags.
@@ -129,7 +128,21 @@ impl VolumeDataBlock {
         Angle::new::<uom::si::angle::degree>(self.initial_system_differential_phase as f64)
     }
 
-    // todo: vcp number
+    /// Identifies the volume coverage pattern in use.
+    pub fn volume_coverage_pattern(&self) -> VolumeCoveragePattern {
+        match self.volume_coverage_pattern_number {
+            12 => VolumeCoveragePattern::VCP12,
+            31 => VolumeCoveragePattern::VCP31,
+            35 => VolumeCoveragePattern::VCP35,
+            112 => VolumeCoveragePattern::VCP112,
+            212 => VolumeCoveragePattern::VCP212,
+            215 => VolumeCoveragePattern::VCP215,
+            _ => panic!(
+                "Invalid volume coverage pattern number: {}",
+                self.volume_coverage_pattern_number
+            ),
+        }
+    }
 
     /// Processing option flags.
     pub fn processing_status(&self) -> ProcessingStatus {

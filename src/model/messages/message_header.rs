@@ -20,7 +20,6 @@ use uom::si::information::byte;
 #[repr(C)]
 #[derive(Deserialize)]
 pub struct MessageHeader {
-    // todo
     rpg_unknown: [u8; 12],
 
     /// Size of this segment in bytes. Note that this only describes this segment's size, and in the

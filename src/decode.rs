@@ -1,5 +1,5 @@
 //!
-//! TODO
+//! Decoding functions for NEXRAD Archive II radar data files.
 //!
 
 use crate::model::messages::clutter_filter_map;

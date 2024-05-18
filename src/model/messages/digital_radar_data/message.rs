@@ -2,7 +2,8 @@ use crate::model::messages::digital_radar_data::{
     ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, VolumeDataBlock,
 };
 
-/// The digital radar data message includes base radar data for various products.
+/// The digital radar data message includes base radar data from a single radial for various
+/// products.
 #[derive(Debug)]
 pub struct Message {
     /// The decoded digital radar data header.

@@ -1,14 +1,11 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+mod image;
+mod product;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+use crate::image::Image;
+use crate::product::Product;
+use nexrad::model::messages::digital_radar_data;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+/// Render a radial's product as an image.
+pub fn render_radial(radial: &digital_radar_data::Message, product: Product) -> Image {
+    todo!()
 }

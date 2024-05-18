@@ -2,11 +2,11 @@ use crate::model::messages::primitive_aliases::{Code2, Integer2};
 use serde::Deserialize;
 use std::fmt::Debug;
 
+use crate::model::messages::clutter_filter_map::OpCode;
 #[cfg(feature = "uom")]
 use uom::si::f64::Length;
 #[cfg(feature = "uom")]
 use uom::si::length::kilometer;
-use crate::model::messages::clutter_filter_map::OpCode;
 
 /// Defines a range segment of a particular elevation and azimuth with an operation type describing
 /// the clutter filter map behavior for the segment.
@@ -30,7 +30,7 @@ impl RangeZone {
             _ => panic!("Invalid OpCode: {}", self.op_code),
         }
     }
-    
+
     /// Stop range per zone. There are 20 possible zones and not all need to be defined. The last
     /// zone must have an end range of 511km.
     #[cfg(feature = "uom")]

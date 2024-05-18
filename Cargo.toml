@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 nexrad = { path = "../nexrad" }
+piet = "0.6.2"
+piet-common = "0.6.2"

@@ -17,5 +17,7 @@ mod azimuth_segment;
 pub use azimuth_segment::{AzimuthSegment, AzimuthSegmentHeader};
 
 mod range_zone;
-
 pub use range_zone::RangeZone;
+
+mod definitions;
+pub use definitions::*;

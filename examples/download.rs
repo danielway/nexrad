@@ -6,7 +6,7 @@
 //! Usage: cargo run --example download -- [site] [date] [start_time] [stop_time]
 //!
 
-#![cfg(all(feature = "download", feature = "decompress"))]
+#![cfg(all(feature = "download"))]
 
 use chrono::{NaiveDate, NaiveTime};
 use std::env;

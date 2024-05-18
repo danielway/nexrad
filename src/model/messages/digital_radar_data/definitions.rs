@@ -37,6 +37,7 @@ pub enum ProcessingStatus {
 }
 
 /// Volume coverage pattern (VCP) definitions.
+#[derive(Debug)]
 pub enum VolumeCoveragePattern {
     VCP12,
     VCP31,

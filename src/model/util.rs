@@ -8,5 +8,5 @@ pub(crate) fn get_datetime(modified_julian_date: u16, past_midnight: Duration) -
 
     let time = NaiveTime::from_num_seconds_from_midnight_opt(0, 0).unwrap() + past_midnight;
 
-    DateTime::from_utc(NaiveDateTime::new(date, time), Utc)
+    DateTime::from_naive_utc_and_offset(NaiveDateTime::new(date, time), Utc)
 }

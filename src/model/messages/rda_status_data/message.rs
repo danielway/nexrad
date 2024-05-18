@@ -1,4 +1,3 @@
-use crate::model::messages::message_header::MessageHeader;
 use crate::model::messages::primitive_aliases::{Code2, Integer2, SInteger2, ScaledInteger2};
 use crate::model::messages::rda_status_data::alarm;
 use crate::model::messages::rda_status_data::alarm::Summary;
@@ -21,9 +20,6 @@ use std::fmt::Debug;
 #[repr(C)]
 #[derive(Deserialize)]
 pub struct Message {
-    /// This message's header.
-    pub header: MessageHeader,
-
     /// The RDA system's status.
     ///
     /// Statuses:
@@ -474,7 +470,6 @@ impl Message {
 impl Debug for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Message")
-            .field("header", &self.header)
             .field("rda_status", &self.rda_status())
             .field("operability_status", &self.operability_status())
             .field("control_status", &self.control_status())

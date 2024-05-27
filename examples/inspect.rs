@@ -7,9 +7,10 @@
 //!
 
 use nexrad::decompress::decompress_and_decode_archive2_file;
-use nexrad::model::messages::MessageType;
+use nexrad::model::messages::MessageType::RDADigitalRadarDataGenericFormat;
+use nexrad::model::messages::{Message, MessageType};
 use nexrad::model::Archive2File;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::{env, fs};
 
@@ -63,6 +64,7 @@ fn main() {
 
             let decoded_file =
                 decompress_and_decode_archive2_file(&mut cursor, size).expect("decodes file");
+
             println!(
                 "Decoded file with {} messages.",
                 decoded_file.messages.len()
@@ -102,6 +104,55 @@ fn main() {
         println!("  Message counts by type:");
         for (message_type, count) in ordered_counts_by_message_type {
             println!("    {:?}: {}", message_type, count);
+
+            if message_type == RDADigitalRadarDataGenericFormat {
+                let mut radar_data_messages = decoded_file
+                    .messages
+                    .iter()
+                    .filter(|m| m.header.message_type() == RDADigitalRadarDataGenericFormat);
+
+                let example_message = radar_data_messages.next().expect("has message 31");
+
+                let mut elevations = HashSet::new();
+                let mut products = HashSet::new();
+
+                if let Message::DigitalRadarData(message) = &example_message.message {
+                    elevations.insert(message.header.elevation_number);
+
+                    if message.reflectivity_data_block.is_some() {
+                        products.insert("REF");
+                    }
+
+                    if message.velocity_data_block.is_some() {
+                        products.insert("VEL");
+                    }
+
+                    if message.spectrum_width_data_block.is_some() {
+                        products.insert("SW");
+                    }
+
+                    if message.differential_reflectivity_data_block.is_some() {
+                        products.insert("ZDR");
+                    }
+
+                    if message.differential_phase_data_block.is_some() {
+                        products.insert("PHI");
+                    }
+
+                    if message.correlation_coefficient_data_block.is_some() {
+                        products.insert("RHO");
+                    }
+
+                    if message.specific_diff_phase_data_block.is_some() {
+                        products.insert("CFP");
+                    }
+                }
+
+                println!(
+                    "      Sample: elevations={:?}, products={:?}",
+                    elevations, products
+                );
+            }
         }
     }
 }

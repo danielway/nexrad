@@ -12,11 +12,14 @@ pub use header::Header;
 mod message;
 pub use message::Message;
 
+mod data_block_id;
+pub use data_block_id::DataBlockId;
+
 mod volume_data_block;
 pub use volume_data_block::VolumeDataBlock;
 
 mod generic_data_block;
-pub use generic_data_block::GenericDataBlock;
+pub use generic_data_block::{GenericDataBlock, GenericDataBlockHeader};
 
 mod elevation_data_block;
 pub use elevation_data_block::ElevationDataBlock;

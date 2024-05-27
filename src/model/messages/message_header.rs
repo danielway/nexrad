@@ -113,7 +113,7 @@ impl MessageHeader {
             31 => MessageType::RDADigitalRadarDataGenericFormat,
             32 => MessageType::RDAPRFData,
             33 => MessageType::RDALogData,
-            _ => panic!("Invalid message type: {}", self.message_type),
+            _ => MessageType::Unknown,
         }
     }
 

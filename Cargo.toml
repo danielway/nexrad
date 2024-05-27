@@ -19,6 +19,11 @@ path = "examples/download.rs"
 required-features = ["download"]
 
 [[example]]
+name = "inspect"
+path = "examples/inspect.rs"
+required-features = ["decompress"]
+
+[[example]]
 name = "render"
 path = "examples/render.rs"
 required-features = ["decompress"]

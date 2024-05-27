@@ -1,3 +1,4 @@
+use crate::model::messages::digital_radar_data::DataBlockId;
 use crate::model::messages::primitive_aliases::{Integer2, Real4, ScaledInteger2};
 use serde::Deserialize;
 use std::fmt::Debug;
@@ -8,11 +9,8 @@ use uom::si::f64::{Information, Length, Velocity};
 /// A radial data moment block.
 #[derive(Deserialize)]
 pub struct RadialDataBlock {
-    /// Data block type, "R".
-    pub data_block_type: u8,
-
-    /// Data block name, e.g. "RAD".
-    pub data_block_name: [u8; 3],
+    /// Data block identifier.
+    pub data_block_id: DataBlockId,
 
     /// Size of data block in bytes.
     pub lrtup: Integer2,
@@ -40,16 +38,6 @@ pub struct RadialDataBlock {
 }
 
 impl RadialDataBlock {
-    /// Data block type, "R".
-    pub fn data_block_type(&self) -> char {
-        self.data_block_type as char
-    }
-
-    /// Data block name, e.g. "RAD".
-    pub fn data_block_name(&self) -> String {
-        String::from_utf8_lossy(&self.data_block_name).to_string()
-    }
-
     /// Size of data block.
     #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
@@ -73,8 +61,7 @@ impl RadialDataBlock {
 impl Debug for RadialDataBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RadialDataBlock")
-            .field("data_block_type", &self.data_block_type())
-            .field("data_block_name", &self.data_block_name())
+            .field("data_block_id", &self.data_block_id)
             .field("lrtup", &self.lrtup)
             .field("unambiguous_range", &self.unambiguous_range)
             .field(
@@ -103,8 +90,7 @@ impl Debug for RadialDataBlock {
 impl Debug for RadialDataBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RadialDataBlock")
-            .field("data_block_type", &self.data_block_type())
-            .field("data_block_name", &self.data_block_name())
+            .field("data_block_id", &self.data_block_id)
             .field("lrtup", &self.lrtup())
             .field("unambiguous_range", &self.unambiguous_range())
             .field(

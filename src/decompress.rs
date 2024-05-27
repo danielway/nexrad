@@ -2,16 +2,15 @@
 //! Decompression functions for compressed LDM records containing radar data in Archive II files.
 //!
 
-use crate::decode::{
-    decode_archive2_header, decode_clutter_filter_map, decode_digital_radar_data,
-    decode_message_header, decode_rda_status_message,
-};
+use crate::decode::{decode_archive2_header, decode_digital_radar_data, decode_message_header};
+use crate::model::messages::message_header::MessageHeader;
 use crate::model::messages::MessageWithHeader;
 use crate::model::messages::{Message, MessageType};
 use crate::model::Archive2File;
 use crate::result::Result;
 use bzip2::read::BzDecoder;
 use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::mem::size_of;
 
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
@@ -53,43 +52,64 @@ pub fn decompress_and_decode_archive2_file<R: Read + Seek>(
 fn decompress_and_decode_messages(
     compressed_records: Vec<Vec<u8>>,
 ) -> Result<Vec<MessageWithHeader>> {
-    compressed_records
+    let decoded_messages = compressed_records
         .iter()
         .map(|compressed_data| decompress_and_decode_message(&mut compressed_data.as_slice()))
-        .collect::<Result<Vec<MessageWithHeader>>>()
+        .collect::<Result<Vec<Vec<MessageWithHeader>>>>()?;
+
+    Ok(decoded_messages
+        .into_iter()
+        .flatten()
+        .collect::<Vec<MessageWithHeader>>())
 }
 
 #[cfg(feature = "rayon")]
 fn decompress_and_decode_messages(
     compressed_records: Vec<Vec<u8>>,
 ) -> Result<Vec<MessageWithHeader>> {
-    compressed_records
+    let decoded_messages = compressed_records
         .par_iter()
         .map(|compressed_data| decompress_and_decode_message(&mut compressed_data.as_slice()))
-        .collect::<Result<Vec<MessageWithHeader>>>()
+        .collect::<Result<Vec<Vec<MessageWithHeader>>>>()?;
+
+    Ok(decoded_messages
+        .into_iter()
+        .flatten()
+        .collect::<Vec<MessageWithHeader>>())
 }
 
 /// Decompresses and decodes a message from the provided reader.
-pub fn decompress_and_decode_message<R: Read>(reader: &mut R) -> Result<MessageWithHeader> {
+pub fn decompress_and_decode_message<R: Read>(reader: &mut R) -> Result<Vec<MessageWithHeader>> {
     let decompressed_data = decompress_ldm_record(reader)?;
     let mut cursor = Cursor::new(decompressed_data.as_slice());
 
-    let header = decode_message_header(&mut cursor)?;
+    let mut messages = Vec::new();
+    while cursor.position() < decompressed_data.len() as u64 {
+        let header = decode_message_header(&mut cursor)?;
 
-    let message = match header.message_type() {
-        MessageType::RDAStatusData => {
-            Message::RDAStatusData(decode_rda_status_message(&mut cursor)?)
-        }
-        MessageType::RDADigitalRadarDataGenericFormat => {
-            Message::DigitalRadarData(decode_digital_radar_data(&mut cursor)?)
-        }
-        MessageType::RDAClutterFilterMap => {
-            Message::ClutterFilterMap(decode_clutter_filter_map(&mut cursor)?)
-        }
-        _ => Message::Other,
-    };
+        let message = match header.message_type() {
+            // todo: this is reading more data than it should be. needs to be debugged.
+            // MessageType::RDAStatusData => {
+            //     Message::RDAStatusData(decode_rda_status_message(&mut cursor)?)
+            // }
+            MessageType::RDADigitalRadarDataGenericFormat => {
+                Message::DigitalRadarData(decode_digital_radar_data(&mut cursor)?)
+            }
+            // todo: this is reading more data than it should be. needs to be debugged.
+            // MessageType::RDAClutterFilterMap => {
+            //     Message::ClutterFilterMap(decode_clutter_filter_map(&mut cursor)?)
+            // }
+            _ => {
+                let fast_forward_distance = 2432 - size_of::<MessageHeader>();
+                cursor.seek(SeekFrom::Current(fast_forward_distance as i64))?;
+                Message::Other
+            }
+        };
 
-    Ok(MessageWithHeader { header, message })
+        messages.push(MessageWithHeader { header, message });
+    }
+
+    Ok(messages)
 }
 
 /// Decompresses an LDM record from the provided reader.

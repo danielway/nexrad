@@ -6,7 +6,7 @@ use crate::model::messages::clutter_filter_map;
 use crate::model::messages::clutter_filter_map::ElevationSegment;
 use crate::model::messages::digital_radar_data;
 use crate::model::messages::digital_radar_data::{
-    DataMomentGenericPointerType, DataMomentPointerType, GenericDataBlock,
+    DataBlockId, GenericDataBlock, GenericDataBlockHeader,
 };
 use crate::model::messages::message_header::MessageHeader;
 use crate::model::messages::rda_status_data;
@@ -15,6 +15,7 @@ use crate::result::Result;
 use bincode::{DefaultOptions, Options};
 use serde::de::DeserializeOwned;
 use std::io::{Read, Seek, SeekFrom};
+use std::mem::size_of;
 
 /// Decodes an Archive II header from the provided reader.
 pub fn decode_archive2_header<R: Read>(reader: &mut R) -> Result<Archive2Header> {
@@ -36,58 +37,64 @@ pub fn decode_digital_radar_data<R: Read + Seek>(
     reader: &mut R,
 ) -> Result<digital_radar_data::Message> {
     let start_position = reader.stream_position()?;
-    let seek_to_pointer = |reader: &mut R, pointer: u32| -> Result<()> {
-        if pointer as u64 != reader.stream_position()? {
-            reader.seek(SeekFrom::Start(start_position + pointer as u64))?;
-        }
-        Ok(())
-    };
 
     let header = deserialize(reader)?;
     let mut message = digital_radar_data::Message::new(header);
-    for pointer in message.header.pointers() {
-        match pointer.data_moment_type {
-            DataMomentPointerType::Volume => {
-                seek_to_pointer(reader, pointer.pointer)?;
+
+    let pointers_space = message.header.data_block_count as usize * size_of::<u32>();
+    let mut pointers_raw = vec![0; pointers_space];
+    reader.read_exact(&mut pointers_raw).unwrap();
+
+    let pointers = pointers_raw
+        .chunks_exact(size_of::<u32>())
+        .map(|v| <u32>::from_be_bytes(v.try_into().unwrap()))
+        .collect::<Vec<_>>();
+
+    for pointer in pointers {
+        reader.seek(SeekFrom::Start(start_position + pointer as u64))?;
+
+        let data_block_id: DataBlockId = deserialize(reader)?;
+        reader.seek(SeekFrom::Current(-4))?;
+
+        match data_block_id.data_block_name().as_str() {
+            "VOL" => {
                 message.volume_data_block = Some(deserialize(reader)?);
             }
-            DataMomentPointerType::Elevation => {
-                seek_to_pointer(reader, pointer.pointer)?;
+            "ELV" => {
                 message.elevation_data_block = Some(deserialize(reader)?);
             }
-            DataMomentPointerType::Radial => {
-                seek_to_pointer(reader, pointer.pointer)?;
+            "RAD" => {
                 message.radial_data_block = Some(deserialize(reader)?);
             }
-            DataMomentPointerType::Generic(generic_type) => {
-                seek_to_pointer(reader, pointer.pointer)?;
-                let generic_header = deserialize(reader)?;
+            _ => {
+                let generic_header: GenericDataBlockHeader = deserialize(reader)?;
 
                 let mut generic_data_block = GenericDataBlock::new(generic_header);
                 reader.read_exact(&mut generic_data_block.data)?;
 
-                match generic_type {
-                    DataMomentGenericPointerType::Reflectivity => {
+                match data_block_id.data_block_name().as_str() {
+                    "REF" => {
                         message.reflectivity_data_block = Some(generic_data_block);
                     }
-                    DataMomentGenericPointerType::Velocity => {
+                    "VEL" => {
                         message.velocity_data_block = Some(generic_data_block);
                     }
-                    DataMomentGenericPointerType::SpectrumWidth => {
+                    "SW " => {
                         message.spectrum_width_data_block = Some(generic_data_block);
                     }
-                    DataMomentGenericPointerType::DifferentialReflectivity => {
+                    "ZDR" => {
                         message.differential_reflectivity_data_block = Some(generic_data_block);
                     }
-                    DataMomentGenericPointerType::DifferentialPhase => {
+                    "PHI" => {
                         message.differential_phase_data_block = Some(generic_data_block);
                     }
-                    DataMomentGenericPointerType::CorrelationCoefficient => {
+                    "RHO" => {
                         message.correlation_coefficient_data_block = Some(generic_data_block);
                     }
-                    DataMomentGenericPointerType::SpecificDiffPhase => {
+                    "CFP" => {
                         message.specific_diff_phase_data_block = Some(generic_data_block);
                     }
+                    _ => panic!("Unknown generic data block type: {:?}", data_block_id),
                 }
             }
         }

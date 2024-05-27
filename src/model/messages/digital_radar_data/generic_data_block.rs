@@ -1,4 +1,4 @@
-use crate::model::messages::digital_radar_data::ControlFlags;
+use crate::model::messages::digital_radar_data::{ControlFlags, DataBlockId};
 use crate::model::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger2,
 };
@@ -27,7 +27,8 @@ impl GenericDataBlock {
         Self {
             data: vec![
                 0;
-                (header.number_of_data_moment_gates * header.data_word_size as u16) as usize
+                header.number_of_data_moment_gates as usize * header.data_word_size as usize
+                    / 8
             ],
             header,
         }
@@ -46,11 +47,8 @@ impl Debug for GenericDataBlock {
 /// A generic data moment block's decoded header.
 #[derive(Deserialize)]
 pub struct GenericDataBlockHeader {
-    /// Data moment type, "D".
-    pub data_block_type: u8,
-
-    /// Data moment name, e.g. "VEL", "REF", "SW".
-    pub data_block_name: [u8; 3],
+    /// Data block identifier.
+    pub data_block_id: DataBlockId,
 
     /// Reserved.
     pub reserved: Integer4,
@@ -91,16 +89,6 @@ pub struct GenericDataBlockHeader {
 }
 
 impl GenericDataBlockHeader {
-    /// Data moment type, "D".
-    pub fn data_block_type(&self) -> char {
-        self.data_block_type as char
-    }
-
-    /// Data moment name, e.g. "VEL", "REF", "SW".
-    pub fn data_block_name(&self) -> String {
-        String::from_utf8_lossy(&self.data_block_name).to_string()
-    }
-
     /// Range to center of first range gate.
     #[cfg(feature = "uom")]
     pub fn data_moment_range(&self) -> Length {
@@ -137,8 +125,7 @@ impl GenericDataBlockHeader {
 impl Debug for GenericDataBlockHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("GenericDataBlockHeader")
-            .field("data_block_type", &self.data_block_type())
-            .field("data_block_name", &self.data_block_name())
+            .field("data_block_id", &self.data_block_id)
             .field("reserved", &self.reserved)
             .field(
                 "number_of_data_moment_gates",
@@ -163,8 +150,7 @@ impl Debug for GenericDataBlockHeader {
 impl Debug for GenericDataBlockHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("GenericDataBlockHeader")
-            .field("data_block_type", &self.data_block_type())
-            .field("data_block_name", &self.data_block_name())
+            .field("data_block_id", &self.data_block_id)
             .field("reserved", &self.reserved)
             .field(
                 "number_of_data_moment_gates",

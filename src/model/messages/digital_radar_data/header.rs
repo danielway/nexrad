@@ -103,36 +103,6 @@ pub struct Header {
     /// block. The following 6 data moment blocks are optional, depending on scanning mode. The next
     /// 10 fields on this header contain pointers to each block, if available in the message.
     pub data_block_count: Integer2,
-
-    /// Pointer to the volume data block.
-    pub volume_data_block_pointer: Integer4,
-
-    /// Pointer to the elevation data block.
-    pub elevation_data_block_pointer: Integer4,
-
-    /// Pointer to the radial data block.
-    pub radial_data_block_pointer: Integer4,
-
-    /// Pointer to the reflectivity ("REF") data moment block.
-    pub reflectivity_data_moment_block_pointer: Integer4,
-
-    /// Pointer to the velocity ("VEL") data moment block.
-    pub velocity_data_moment_block_pointer: Integer4,
-
-    /// Pointer to the spectrum width ("SW") data moment block.
-    pub spectrum_width_data_moment_block_pointer: Integer4,
-
-    /// Pointer to the differential reflectivity ("ZDR") data moment block.
-    pub differential_reflectivity_data_moment_block_pointer: Integer4,
-
-    /// Pointer to the differential phase ("PHI") data moment block.
-    pub differential_phase_data_moment_block_pointer: Integer4,
-
-    /// Pointer to the correlation coefficient ("RHO") data moment block.
-    pub correlation_coefficient_data_moment_block_pointer: Integer4,
-
-    /// Pointer to the specific differential phase ("CFP") data moment block.
-    pub specific_diff_phase_data_moment_block_pointer: Integer4,
 }
 
 impl Header {
@@ -208,89 +178,6 @@ impl Header {
             ))
         }
     }
-
-    /// Returns a list of pointers to the data blocks in this message
-    pub fn pointers(&self) -> Vec<DataMomentPointer> {
-        let mut pointers = Vec::with_capacity(10);
-
-        pointers.push(DataMomentPointer {
-            pointer: self.volume_data_block_pointer,
-            data_moment_type: DataMomentPointerType::Volume,
-        });
-
-        pointers.push(DataMomentPointer {
-            pointer: self.elevation_data_block_pointer,
-            data_moment_type: DataMomentPointerType::Elevation,
-        });
-
-        pointers.push(DataMomentPointer {
-            pointer: self.radial_data_block_pointer,
-            data_moment_type: DataMomentPointerType::Radial,
-        });
-
-        pointers.push(DataMomentPointer {
-            pointer: self.reflectivity_data_moment_block_pointer,
-            data_moment_type: DataMomentPointerType::Generic(
-                DataMomentGenericPointerType::Reflectivity,
-            ),
-        });
-
-        if self.data_block_count >= 5 {
-            pointers.push(DataMomentPointer {
-                pointer: self.velocity_data_moment_block_pointer,
-                data_moment_type: DataMomentPointerType::Generic(
-                    DataMomentGenericPointerType::Velocity,
-                ),
-            });
-        }
-
-        if self.data_block_count >= 6 {
-            pointers.push(DataMomentPointer {
-                pointer: self.spectrum_width_data_moment_block_pointer,
-                data_moment_type: DataMomentPointerType::Generic(
-                    DataMomentGenericPointerType::SpectrumWidth,
-                ),
-            });
-        }
-
-        if self.data_block_count >= 7 {
-            pointers.push(DataMomentPointer {
-                pointer: self.differential_reflectivity_data_moment_block_pointer,
-                data_moment_type: DataMomentPointerType::Generic(
-                    DataMomentGenericPointerType::DifferentialReflectivity,
-                ),
-            });
-        }
-
-        if self.data_block_count >= 8 {
-            pointers.push(DataMomentPointer {
-                pointer: self.differential_phase_data_moment_block_pointer,
-                data_moment_type: DataMomentPointerType::Generic(
-                    DataMomentGenericPointerType::DifferentialPhase,
-                ),
-            });
-        }
-
-        if self.data_block_count >= 9 {
-            pointers.push(DataMomentPointer {
-                pointer: self.correlation_coefficient_data_moment_block_pointer,
-                data_moment_type: DataMomentPointerType::Generic(
-                    DataMomentGenericPointerType::CorrelationCoefficient,
-                ),
-            });
-        }
-
-        if self.data_block_count >= 10 {
-            pointers.push(DataMomentPointer {
-                pointer: self.specific_diff_phase_data_moment_block_pointer,
-                data_moment_type: DataMomentPointerType::Generic(
-                    DataMomentGenericPointerType::SpecificDiffPhase,
-                ),
-            });
-        }
-
-        pointers
-    }
 }
 
 #[cfg(not(feature = "uom"))]
@@ -317,40 +204,6 @@ impl Debug for Header {
             )
             .field("azimuth_indexing_mode", &self.azimuth_indexing_mode)
             .field("data_block_count", &self.data_block_count)
-            .field("volume_data_block_pointer", &self.volume_data_block_pointer)
-            .field(
-                "elevation_data_block_pointer",
-                &self.elevation_data_block_pointer,
-            )
-            .field("radial_data_block_pointer", &self.radial_data_block_pointer)
-            .field(
-                "reflectivity_data_moment_block_pointer",
-                &self.reflectivity_data_moment_block_pointer,
-            )
-            .field(
-                "velocity_data_moment_block_pointer",
-                &self.velocity_data_moment_block_pointer,
-            )
-            .field(
-                "spectrum_width_data_moment_block_pointer",
-                &self.spectrum_width_data_moment_block_pointer,
-            )
-            .field(
-                "differential_reflectivity_data_moment_block_pointer",
-                &self.differential_reflectivity_data_moment_block_pointer,
-            )
-            .field(
-                "differential_phase_data_moment_block_pointer",
-                &self.differential_phase_data_moment_block_pointer,
-            )
-            .field(
-                "correlation_coefficient_data_moment_block_pointer",
-                &self.correlation_coefficient_data_moment_block_pointer,
-            )
-            .field(
-                "specific_diff_phase_data_moment_block_pointer",
-                &self.specific_diff_phase_data_moment_block_pointer,
-            )
             .finish()
     }
 }
@@ -379,40 +232,6 @@ impl Debug for Header {
             )
             .field("azimuth_indexing_mode", &self.azimuth_indexing_mode())
             .field("data_block_count", &self.data_block_count)
-            .field("volume_data_block_pointer", &self.volume_data_block_pointer)
-            .field(
-                "elevation_data_block_pointer",
-                &self.elevation_data_block_pointer,
-            )
-            .field("radial_data_block_pointer", &self.radial_data_block_pointer)
-            .field(
-                "reflectivity_data_moment_block_pointer",
-                &self.reflectivity_data_moment_block_pointer,
-            )
-            .field(
-                "velocity_data_moment_block_pointer",
-                &self.velocity_data_moment_block_pointer,
-            )
-            .field(
-                "spectrum_width_data_moment_block_pointer",
-                &self.spectrum_width_data_moment_block_pointer,
-            )
-            .field(
-                "differential_reflectivity_data_moment_block_pointer",
-                &self.differential_reflectivity_data_moment_block_pointer,
-            )
-            .field(
-                "differential_phase_data_moment_block_pointer",
-                &self.differential_phase_data_moment_block_pointer,
-            )
-            .field(
-                "correlation_coefficient_data_moment_block_pointer",
-                &self.correlation_coefficient_data_moment_block_pointer,
-            )
-            .field(
-                "specific_diff_phase_data_moment_block_pointer",
-                &self.specific_diff_phase_data_moment_block_pointer,
-            )
             .finish()
     }
 }

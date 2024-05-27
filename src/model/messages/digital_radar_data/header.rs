@@ -1,8 +1,5 @@
-use crate::model::messages::digital_radar_data::pointers::DataMomentPointer;
 use crate::model::messages::digital_radar_data::spot_blanking_status::SpotBlankingStatus;
-use crate::model::messages::digital_radar_data::{
-    CompressionIndicator, DataMomentGenericPointerType, DataMomentPointerType, RadialStatus,
-};
+use crate::model::messages::digital_radar_data::{CompressionIndicator, RadialStatus};
 use crate::model::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger1,
 };

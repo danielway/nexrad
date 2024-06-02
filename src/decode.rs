@@ -70,7 +70,7 @@ pub fn decode_digital_radar_data<R: Read + Seek>(
                 let generic_header: GenericDataBlockHeader = deserialize(reader)?;
 
                 let mut generic_data_block = GenericDataBlock::new(generic_header);
-                reader.read_exact(&mut generic_data_block.data)?;
+                reader.read_exact(&mut generic_data_block.encoded_data)?;
 
                 match data_block_id.data_block_name().as_str() {
                     "REF" => {

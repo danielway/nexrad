@@ -1,4 +1,4 @@
-use crate::model::messages::digital_radar_data::{ControlFlags, DataBlockId};
+use crate::model::messages::digital_radar_data::{ControlFlags, DataBlockId, ScaledMomentValue};
 use crate::model::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger2,
 };
@@ -17,21 +17,49 @@ pub struct GenericDataBlock {
     /// The generic data block's header information.
     pub header: GenericDataBlockHeader,
 
-    /// The generic data block's moment data.
-    pub data: Vec<u8>,
+    /// The generic data block's encoded moment data.
+    pub encoded_data: Vec<u8>,
 }
 
 impl GenericDataBlock {
     /// Creates a new generic data moment block from the decoded header.
     pub(crate) fn new(header: GenericDataBlockHeader) -> Self {
+        let word_size_bytes = header.data_word_size as usize / 8;
+        let encoded_data_size = header.number_of_data_moment_gates as usize * word_size_bytes;
         Self {
-            data: vec![
-                0;
-                header.number_of_data_moment_gates as usize * header.data_word_size as usize
-                    / 8
-            ],
+            encoded_data: vec![0; encoded_data_size],
             header,
         }
+    }
+
+    /// Raw gate values for this moment/radial ordered in ascending distance from the radar. These
+    /// values are stored in a fixed-point representation using the `DataMomentHeader.offset` and
+    /// `DataMomentHeader.scale` fields. `decoded_data` provides decoded floating-point values.  
+    pub fn encoded_values(&self) -> &[u8] {
+        &self.encoded_data
+    }
+
+    /// Decodes raw moment values from `encoded_data` from their fixed-point representation into
+    /// their floating point representation. Additionally, identifies special values such as "below
+    /// threshold" and "range folded".
+    pub fn decoded_values(&self) -> Vec<ScaledMomentValue> {
+        self.encoded_data
+            .iter()
+            .copied()
+            .map(|raw_value| {
+                if self.header.scale == 0.0 {
+                    return ScaledMomentValue::Value(raw_value as f32);
+                }
+
+                match raw_value {
+                    0 => ScaledMomentValue::BelowThreshold,
+                    1 => ScaledMomentValue::RangeFolded,
+                    _ => ScaledMomentValue::Value(
+                        (raw_value as f32 - self.header.offset) / self.header.scale,
+                    ),
+                }
+            })
+            .collect()
     }
 }
 
@@ -39,7 +67,7 @@ impl Debug for GenericDataBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("GenericDataBlock")
             .field("header", &self.header)
-            .field("data", &self.data.len())
+            .field("data", &self.encoded_data.len())
             .finish()
     }
 }

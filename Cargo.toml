@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-nexrad = { path = "../nexrad" }
-piet = "0.6.2"
-piet-common = "0.6.2"
+nexrad = { path = "../nexrad", features = ["uom", "decompress", "rayon"] }
+piet = { version = "0.6.2" , features = ["png"]}
+piet-common = { version = "0.6.2", features = ["png"] }
+uom = "0.36.0"

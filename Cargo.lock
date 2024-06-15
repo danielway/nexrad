@@ -577,6 +577,7 @@ dependencies = [
  "nexrad",
  "piet",
  "piet-common",
+ "rayon",
  "uom",
 ]
 

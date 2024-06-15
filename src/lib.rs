@@ -1,9 +1,13 @@
+mod color;
+pub use crate::color::*;
+
 use nexrad::model::messages::digital_radar_data;
 use nexrad::model::messages::digital_radar_data::{GenericDataBlock, ScaledMomentValue};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::{Arc, Point, Vec2};
 use piet_common::{BitmapTarget, Device};
 use std::cmp::max;
+use std::f64::consts::PI;
 use uom::si::angle::radian;
 
 /// Radar data products to render.
@@ -23,6 +27,7 @@ pub fn render_radial<'a>(
     device: &'a mut Device,
     radials: &Vec<digital_radar_data::Message>,
     product: Product,
+    scale: &DiscreteColorScale,
     size: (usize, usize),
 ) -> BitmapTarget<'a> {
     let mut target = device
@@ -57,15 +62,18 @@ pub fn render_radial<'a>(
                 let gate_midpoint = gate_distance - gate_interval / 2.0;
                 let scaled_gate_midpoint = render_scale * gate_midpoint;
 
+                // Rotate 90 degrees to align North with the top
+                let rotated_azimuth = azimuth.get::<radian>() - PI / 2.0;
+
                 render_context.stroke(
                     Arc::new(
                         image_center,
                         Vec2::new(scaled_gate_midpoint.value, scaled_gate_midpoint.value),
-                        azimuth.get::<radian>(),
+                        rotated_azimuth,
                         radial.header.azimuth_resolution_spacing().get::<radian>(),
                         0.0,
                     ),
-                    &get_color(value, ""),
+                    &scale.get_color(value),
                     scaled_gate_interval.value,
                 );
             }
@@ -91,40 +99,4 @@ fn get_radial_moment(product: Product, radial: &digital_radar_data::Message) -> 
     }
     .as_ref()
     .expect("has requested product moment")
-}
-
-fn get_color(value: f32, _product: &str) -> Color {
-    // todo: separate color schemes for each product
-    // todo: make colors vary continuously, rather than in discrete steps
-    if value < 5.0 {
-        Color::rgb8(0, 0, 0)
-    } else if value >= 5.0 && value < 10.0 {
-        Color::rgb8(0x40, 0xe8, 0xe3)
-    } else if value >= 10.0 && value < 15.0 {
-        Color::rgb8(0x26, 0xa4, 0xfa)
-    } else if value >= 15.0 && value < 20.0 {
-        Color::rgb8(0x00, 0x30, 0xed)
-    } else if value >= 20.0 && value < 25.0 {
-        Color::rgb8(0x49, 0xfb, 0x3e)
-    } else if value >= 25.0 && value < 30.0 {
-        Color::rgb8(0x36, 0xc2, 0x2e)
-    } else if value >= 30.0 && value < 35.0 {
-        Color::rgb8(0x27, 0x8c, 0x1e)
-    } else if value >= 35.0 && value < 40.0 {
-        Color::rgb8(0xfe, 0xf5, 0x43)
-    } else if value >= 40.0 && value < 45.0 {
-        Color::rgb8(0xeb, 0xb4, 0x33)
-    } else if value >= 45.0 && value < 50.0 {
-        Color::rgb8(0xf6, 0x95, 0x2e)
-    } else if value >= 50.0 && value < 55.0 {
-        Color::rgb8(0xf8, 0x0a, 0x26)
-    } else if value >= 55.0 && value < 60.0 {
-        Color::rgb8(0xcb, 0x05, 0x16)
-    } else if value >= 60.0 && value < 65.0 {
-        Color::rgb8(0xa9, 0x08, 0x13)
-    } else if value >= 65.0 && value < 70.0 {
-        Color::rgb8(0xee, 0x34, 0xfa)
-    } else {
-        Color::rgb8(0xff, 0xff, 0xFF)
-    }
 }

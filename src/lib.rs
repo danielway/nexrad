@@ -23,7 +23,7 @@ pub enum Product {
 }
 
 /// Render the specified radials to an image.
-pub fn render_radial<'a>(
+pub fn render_radials<'a>(
     device: &'a mut Device,
     radials: &Vec<digital_radar_data::Message>,
     product: Product,

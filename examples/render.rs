@@ -1,6 +1,6 @@
 use nexrad::decompress::decompress_and_decode_archive2_file;
 use nexrad::model::messages::Message;
-use nexrad_renderer::{render_radial, Product, get_nws_reflectivity_scale};
+use nexrad_renderer::{render_radials, Product, get_nws_reflectivity_scale};
 use piet_common::Device;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -89,7 +89,7 @@ fn main() {
 
     let color_scale = get_nws_reflectivity_scale();
     let mut render_product = |product: Product| {
-        let image = render_radial(
+        let image = render_radials(
             &mut device,
             arbitrary_elevation_messages,
             product,

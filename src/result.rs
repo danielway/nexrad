@@ -17,11 +17,11 @@ pub enum Error {
     S3GeneralError(#[from] aws_sdk_s3::Error),
     #[cfg(feature = "download")]
     #[error("error listing AWS S3 objects")]
-    S3ListObjectsError,
+    S3ListObjectsError(#[from] aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error>),
     #[cfg(feature = "download")]
     #[error("error getting AWS S3 object")]
-    S3GetObjectError,
+    S3GetObjectError(#[from] aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>),
     #[cfg(feature = "download")]
     #[error("error streaming/downloading AWS S3 object")]
-    S3StreamingError,
+    S3StreamingError(#[from] aws_sdk_s3::primitives::ByteStreamError),
 }

@@ -28,9 +28,10 @@ path = "examples/render.rs"
 required-features = ["decompress"]
 
 [features]
+default = ["download", "decompress"]
 download = ["reqwest", "xml"]
-decompress = ["bzip2"]
-decompress-wasm = ["bzip2-rs"]
+decompress = ["bzip2"] # efficient but WASM-incompatible implementation
+decompress-wasm = ["bzip2-rs"] # less efficient but WASM-compatible implementation
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }

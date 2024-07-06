@@ -76,20 +76,18 @@ async fn list_objects(bucket: &str, prefix: &str) -> Result<Vec<BucketObject>> {
     let mut field: Option<BucketObjectField> = None;
     for event in parser {
         match event {
-            Ok(XmlEvent::StartElement { name, .. }) => {
-                match name.local_name.as_ref() {
-                    "Contents" => {
-                        object = Some(BucketObject {
-                            key: String::new(),
-                            last_modified: Utc::now(),
-                            size: 0,
-                        });
-                    }
-                    "Key" => field = Some(BucketObjectField::Key),
-                    "LastModified" => field = Some(BucketObjectField::LastModified),
-                    "Size" => field = Some(BucketObjectField::Size),
-                    _ => field = None,
+            Ok(XmlEvent::StartElement { name, .. }) => match name.local_name.as_ref() {
+                "Contents" => {
+                    object = Some(BucketObject {
+                        key: String::new(),
+                        last_modified: Utc::now(),
+                        size: 0,
+                    });
                 }
+                "Key" => field = Some(BucketObjectField::Key),
+                "LastModified" => field = Some(BucketObjectField::LastModified),
+                "Size" => field = Some(BucketObjectField::Size),
+                _ => field = None,
             },
             Ok(XmlEvent::Characters(chars)) => {
                 if let Some(field) = field.as_ref() {

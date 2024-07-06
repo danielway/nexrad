@@ -10,7 +10,7 @@ pub mod file;
 pub mod model;
 pub mod result;
 
-#[cfg(feature = "decompress")]
+#[cfg(any(feature = "decompress", feature = "decompress-wasm"))]
 pub mod decompress;
 
 #[cfg(feature = "download")]

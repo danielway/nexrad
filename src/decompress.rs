@@ -8,9 +8,14 @@ use crate::model::messages::MessageWithHeader;
 use crate::model::messages::{Message, MessageType};
 use crate::model::Archive2File;
 use crate::result::Result;
-use bzip2::read::BzDecoder;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::mem::size_of;
+
+#[cfg(not(feature = "decompress-wasm"))]
+use bzip2::read::BzDecoder;
+
+#[cfg(feature = "decompress-wasm")]
+use bzip2_rs::DecoderReader;
 
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
@@ -119,7 +124,19 @@ pub fn decompress_ldm_record<R: Read>(reader: &mut R) -> Result<Vec<u8>> {
     let record_size = i32::from_be_bytes(record_size).abs();
 
     let mut decompressed_data = Vec::new();
-    BzDecoder::new(reader.take(record_size as u64)).read_to_end(&mut decompressed_data)?;
+    decompress(&mut reader.take(record_size as u64), &mut decompressed_data)?;
 
     Ok(decompressed_data)
+}
+
+#[cfg(not(feature = "decompress-wasm"))]
+fn decompress<R: Read>(reader: &mut R, decompressed_data: &mut Vec<u8>) -> Result<()> {
+    BzDecoder::new(reader).read_to_end(decompressed_data)?;
+    Ok(())
+}
+
+#[cfg(feature = "decompress-wasm")]
+fn decompress<R: Read>(reader: &mut R, decompressed_data: &mut Vec<u8>) -> Result<()> {
+    DecoderReader::new(reader).read_to_end(decompressed_data)?;
+    Ok(())
 }

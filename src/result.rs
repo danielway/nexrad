@@ -13,15 +13,12 @@ pub enum Error {
     #[error("file deserialization error")]
     DeserializationError(#[from] bincode::Error),
     #[cfg(feature = "download")]
-    #[error("AWS API error")]
-    S3GeneralError(#[from] aws_sdk_s3::Error),
-    #[cfg(feature = "download")]
     #[error("error listing AWS S3 objects")]
-    S3ListObjectsError(#[from] aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::list_objects_v2::ListObjectsV2Error>),
+    S3ListObjectsError(reqwest::Error),
     #[cfg(feature = "download")]
     #[error("error getting AWS S3 object")]
-    S3GetObjectError(#[from] aws_sdk_s3::error::SdkError<aws_sdk_s3::operation::get_object::GetObjectError>),
+    S3GetObjectError(reqwest::Error),
     #[cfg(feature = "download")]
     #[error("error streaming/downloading AWS S3 object")]
-    S3StreamingError(#[from] aws_sdk_s3::primitives::ByteStreamError),
+    S3StreamingError(reqwest::Error),
 }

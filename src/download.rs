@@ -2,36 +2,29 @@
 //! Downloads NEXRAD level-II data from an AWS S3 bucket populated by NOAA.
 //!
 
-use aws_sdk_s3::{config::Region, types::Object, Client, Config};
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate, Utc};
+use xml::reader::XmlEvent;
+use xml::EventReader;
 
 use crate::file::FileMetadata;
-use crate::result::Result;
+use crate::result::{Error, Result};
 
-const REGION: &str = "us-east-1";
-const BUCKET: &str = "noaa-nexrad-level2";
+const ARCHIVE_BUCKET: &str = "noaa-nexrad-level2";
 
 /// List data files for the specified site and date. This effectively returns an index of data files
 /// which can then be individually downloaded.
 pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<FileMetadata>> {
-    // Query S3 for objects matching the prefix (i.e. files for the specified site and date)
     let prefix = format!("{}/{}", date.format("%Y/%m/%d"), site);
-    let objects = list_objects(&get_client().await, BUCKET, &prefix)
-        .await?
-        .expect("should return objects");
+    let objects = list_objects(ARCHIVE_BUCKET, &prefix).await?;
 
-    // Pull the returned objects' keys and parse them into metadata
     let metas = objects
         .iter()
         .map(|object| {
-            let key = object.key().expect("object should have a key");
-
             // E.g. 2023/04/06/KDMX/KDMX20230406_000215_V06
             //      date_string:    "2023_04_06"
             //      site:           "KDMX"
             //      identifier:     "KDMX20230406_000215_V06"
-
-            let parts: Vec<&str> = key.split("/").collect();
+            let parts: Vec<&str> = object.key.split("/").collect();
 
             let date_string = parts[0..=2].join("/");
             let date = NaiveDate::parse_from_str(&date_string, "%Y/%m/%d")
@@ -50,36 +43,94 @@ pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<FileMetadata
 /// Download a data file specified by its metadata. Returns the downloaded file's encoded contents
 /// which may then need to be decompressed and decoded.
 pub async fn download_file(meta: &FileMetadata) -> Result<Vec<u8>> {
-    // Reconstruct the S3 object key from the file's metadata
     let formatted_date = meta.date().format("%Y/%m/%d");
     let key = format!("{}/{}/{}", formatted_date, meta.site(), meta.identifier());
 
-    // Download the object from S3
-    Ok(download_object(&get_client().await, BUCKET, &key).await?)
+    download_object(ARCHIVE_BUCKET, &key).await
 }
 
 /// Downloads an object from S3 and returns only its contents. This will only work for
 /// unauthenticated requests (requests are unsigned).
-async fn download_object(client: &Client, bucket: &str, key: &str) -> Result<Vec<u8>> {
-    let operation = client.get_object().bucket(bucket).key(key);
-    let response = operation.send().await?;
-    let bytes = response.body.collect().await?;
+async fn download_object(bucket: &str, key: &str) -> Result<Vec<u8>> {
+    let path = format!("https://{}.s3.amazonaws.com/{}", bucket, key);
+    let response = reqwest::get(path).await.map_err(Error::S3GetObjectError)?;
+
+    let bytes = response.bytes().await.map_err(Error::S3StreamingError)?;
     Ok(bytes.to_vec())
 }
 
 /// Lists objects from a S3 bucket with the specified prefix. This will only work for
 /// unauthenticated requests (requests are unsigned).
-async fn list_objects(client: &Client, bucket: &str, prefix: &str) -> Result<Option<Vec<Object>>> {
-    let operation = client.list_objects_v2().bucket(bucket).prefix(prefix);
-    let response = operation.send().await?;
-    Ok(response.contents().map(|objects| objects.to_vec()))
+async fn list_objects(bucket: &str, prefix: &str) -> Result<Vec<BucketObject>> {
+    let path = format!("https://{}.s3.amazonaws.com?prefix={}", bucket, prefix);
+    let response = reqwest::get(path)
+        .await
+        .map_err(Error::S3ListObjectsError)?;
+
+    let body = response.text().await.map_err(Error::S3ListObjectsError)?;
+    let parser = EventReader::new(body.as_bytes());
+
+    let mut objects = Vec::new();
+    let mut object: Option<BucketObject> = None;
+
+    let mut field: Option<BucketObjectField> = None;
+    for event in parser {
+        match event {
+            Ok(XmlEvent::StartElement { name, .. }) => {
+                match name.local_name.as_ref() {
+                    "Contents" => {
+                        object = Some(BucketObject {
+                            key: String::new(),
+                            last_modified: Utc::now(),
+                            size: 0,
+                        });
+                    }
+                    "Key" => field = Some(BucketObjectField::Key),
+                    "LastModified" => field = Some(BucketObjectField::LastModified),
+                    "Size" => field = Some(BucketObjectField::Size),
+                    _ => field = None,
+                }
+            },
+            Ok(XmlEvent::Characters(chars)) => {
+                if let Some(field) = field.as_ref() {
+                    let item = object.as_mut().expect("item should exist");
+                    match field {
+                        BucketObjectField::Key => item.key.push_str(&chars),
+                        BucketObjectField::LastModified => {
+                            item.last_modified = DateTime::parse_from_rfc3339(&chars)
+                                .expect("should parse date")
+                                .with_timezone(&Utc);
+                        }
+                        BucketObjectField::Size => {
+                            item.size = chars.parse().expect("should parse size")
+                        }
+                    }
+                }
+            }
+            Ok(XmlEvent::EndElement { name }) => {
+                if name.local_name == "Contents" {
+                    if let Some(item) = object.take() {
+                        objects.push(item);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    Ok(objects)
 }
 
-/// Creates a new S3 client for a predetermined region.
-async fn get_client() -> Client {
-    Client::from_conf(
-        Config::builder()
-            .region(Region::from_static(REGION))
-            .build(),
-    )
+/// A field describing an S3 bucket object.
+enum BucketObjectField {
+    Key,
+    LastModified,
+    Size,
+}
+
+/// A bucket object returned from an S3 list objects request.
+struct BucketObject {
+    key: String,
+    last_modified: DateTime<Utc>,
+    size: u64,
 }

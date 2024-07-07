@@ -24,11 +24,11 @@ pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<FileMetadata
             //      date_string:    "2023_04_06"
             //      site:           "KDMX"
             //      identifier:     "KDMX20230406_000215_V06"
-            let parts: Vec<&str> = object.key.split("/").collect();
+            let parts: Vec<&str> = object.key.split('/').collect();
 
             let date_string = parts[0..=2].join("/");
             let date = NaiveDate::parse_from_str(&date_string, "%Y/%m/%d")
-                .expect(&format!("file has valid date: \"{}\"", date_string));
+                .unwrap_or_else(|_| panic!("file has valid date: \"{date_string}\""));
 
             let site = parts[3];
             let identifier = parts[4..].join("");
@@ -52,7 +52,7 @@ pub async fn download_file(meta: &FileMetadata) -> Result<Vec<u8>> {
 /// Downloads an object from S3 and returns only its contents. This will only work for
 /// unauthenticated requests (requests are unsigned).
 async fn download_object(bucket: &str, key: &str) -> Result<Vec<u8>> {
-    let path = format!("https://{}.s3.amazonaws.com/{}", bucket, key);
+    let path = format!("https://{bucket}.s3.amazonaws.com/{key}");
     let response = reqwest::get(path).await.map_err(Error::S3GetObjectError)?;
 
     let bytes = response.bytes().await.map_err(Error::S3StreamingError)?;
@@ -62,7 +62,7 @@ async fn download_object(bucket: &str, key: &str) -> Result<Vec<u8>> {
 /// Lists objects from a S3 bucket with the specified prefix. This will only work for
 /// unauthenticated requests (requests are unsigned).
 async fn list_objects(bucket: &str, prefix: &str) -> Result<Vec<BucketObject>> {
-    let path = format!("https://{}.s3.amazonaws.com?prefix={}", bucket, prefix);
+    let path = format!("https://{bucket}.s3.amazonaws.com?prefix={prefix}");
     let response = reqwest::get(path)
         .await
         .map_err(Error::S3ListObjectsError)?;

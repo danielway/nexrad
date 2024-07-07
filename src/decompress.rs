@@ -95,14 +95,14 @@ pub fn decompress_and_decode_message<R: Read>(reader: &mut R) -> Result<Vec<Mess
         let message = match header.message_type() {
             // todo: this is reading more data than it should be. needs to be debugged.
             // MessageType::RDAStatusData => {
-            //     Message::RDAStatusData(decode_rda_status_message(&mut cursor)?)
+            //     Message::RDAStatusData(Box::new(decode_rda_status_message(&mut cursor)?))
             // }
             MessageType::RDADigitalRadarDataGenericFormat => {
-                Message::DigitalRadarData(decode_digital_radar_data(&mut cursor)?)
+                Message::DigitalRadarData(Box::new(decode_digital_radar_data(&mut cursor)?))
             }
             // todo: this is reading more data than it should be. needs to be debugged.
             // MessageType::RDAClutterFilterMap => {
-            //     Message::ClutterFilterMap(decode_clutter_filter_map(&mut cursor)?)
+            //     Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(&mut cursor)?))
             // }
             _ => {
                 let fast_forward_distance = 2432 - size_of::<MessageHeader>();

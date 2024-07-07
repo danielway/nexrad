@@ -13,8 +13,8 @@ pub struct MessageWithHeader {
 /// A decoded NEXRAD Level II message.
 #[derive(Debug)]
 pub enum Message {
-    RDAStatusData(rda_status_data::Message),
-    DigitalRadarData(digital_radar_data::Message),
-    ClutterFilterMap(clutter_filter_map::Message),
+    RDAStatusData(Box<rda_status_data::Message>),
+    DigitalRadarData(Box<digital_radar_data::Message>),
+    ClutterFilterMap(Box<clutter_filter_map::Message>),
     Other,
 }

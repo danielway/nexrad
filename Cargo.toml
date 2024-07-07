@@ -22,11 +22,6 @@ required-features = ["download"]
 name = "inspect"
 path = "examples/inspect.rs"
 
-[[example]]
-name = "render"
-path = "examples/render.rs"
-required-features = ["decompress"]
-
 [features]
 default = ["download", "decompress"]
 download = ["reqwest", "xml"]

@@ -5,4 +5,10 @@
 //!
 
 /// A radar site's metadata including a variety of infrequently-changing properties.
-pub struct Site;
+pub struct Site {
+    identifier: [u8; 4],
+    latitude: f32,
+    longitude: f32,
+    height_meters: i16,
+    feedhorn_height_meters: u16,
+}

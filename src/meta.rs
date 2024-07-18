@@ -4,8 +4,12 @@
 //! is represented separately to avoid duplication in storage.
 //!
 
-use uom::si::angle::degree;
-use uom::si::f32::Angle;
+#[cfg(feature = "uom")]
+use uom::si::{
+    angle::degree,
+    f32::{Angle, Length},
+    length::meter,
+};
 
 /// A radar site's metadata including a variety of infrequently-changing properties.
 pub struct Site {
@@ -47,5 +51,27 @@ impl Site {
     #[cfg(feature = "uom")]
     pub fn longitude(&self) -> Angle {
         Angle::new::<degree>(self.longitude)
+    }
+
+    /// The height of the radar site above sea level in meters.
+    pub fn height_meters(&self) -> i16 {
+        self.height_meters
+    }
+
+    /// The height of the radar site above sea level.
+    #[cfg(feature = "uom")]
+    pub fn height(&self) -> Length {
+        Length::new::<meter>(self.height_meters as f32)
+    }
+
+    /// The height of the radar site's feedhorn above sea level in meters.
+    pub fn feedhorn_height_meters(&self) -> u16 {
+        self.feedhorn_height_meters
+    }
+
+    /// The height of the radar site's feedhorn above sea level.
+    #[cfg(feature = "uom")]
+    pub fn feedhorn_height(&self) -> Length {
+        Length::new::<meter>(self.feedhorn_height_meters as f32)
     }
 }

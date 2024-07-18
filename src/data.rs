@@ -5,7 +5,6 @@
 //!
 //! todo: note optional uom interfaces
 //! todo: note serialization support
-//! todo: note filtering capability
 //!
 
 /// A single radar scan composed of a series of sweeps. This represents a single volume scan which

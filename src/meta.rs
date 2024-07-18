@@ -12,3 +12,15 @@ pub struct Site {
     height_meters: i16,
     feedhorn_height_meters: u16,
 }
+
+impl Site {
+    /// The four-letter ICAO identifier for the radar site.
+    pub fn identifier(&self) -> &[u8; 4] {
+        &self.identifier
+    }
+
+    /// The four-letter ICAO identifier for the radar site as a string.
+    pub fn identifier_string(&self) -> String {
+        String::from_utf8_lossy(&self.identifier).to_string()
+    }
+}

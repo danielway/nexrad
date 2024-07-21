@@ -27,7 +27,23 @@ pub struct Scan;
 /// spectrum width) for each azimuth angle in that sweep. The resolution of the sweep dictates the
 /// azimuthal distance between rays and thus and number of rays in the sweep. Multiple sweeps are
 /// taken at different elevation angles to create a volume scan.
-pub struct Sweep;
+pub struct Sweep {
+    elevation_number: u8,
+    radials: Vec<Radial>,
+}
+
+impl Sweep {
+    /// The index number for this radial's elevation in the volume scan. The precise elevation angle
+    /// varies and can be found in individual radials.
+    pub fn elevation_number(&self) -> u8 {
+        self.elevation_number
+    }
+
+    /// The radials comprising this sweep.
+    pub fn radials(&self) -> &Vec<Radial> {
+        self.radials.as_ref()
+    }
+}
 
 /// A single radar ray composed of a series of gates. This represents a single azimuth angle and
 /// elevation angle pair at a point in time and contains the Level II data (reflectivity, velocity,
@@ -42,7 +58,6 @@ pub struct Radial {
 
     radial_status: RadialStatus,
 
-    elevation_number: u8,
     elevation_angle_degrees: f32,
 }
 
@@ -89,11 +104,6 @@ impl Radial {
     /// The radial's position in the sequence of radials making up a scan.
     pub fn radial_status(&self) -> RadialStatus {
         self.radial_status
-    }
-
-    /// The index number for this radial's elevation in the volume scan.
-    pub fn elevation_number(&self) -> u8 {
-        self.elevation_number
     }
 
     /// Elevation angle this radial's data was collected at in degrees.

@@ -2,10 +2,7 @@
 use chrono::{DateTime, Utc};
 
 #[cfg(feature = "uom")]
-use uom::si::{
-    angle::degree,
-    f32::Angle,
-};
+use uom::si::{angle::degree, f32::Angle};
 
 /// A single radar ray composed of a series of gates. This represents a single azimuth angle and
 /// elevation angle pair at a point in time and contains the Level II data (reflectivity, velocity,

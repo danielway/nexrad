@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 
 #[cfg(feature = "uom")]
 use uom::si::{angle::degree, f32::Angle};
+use crate::data::MomentData;
 
 /// A single radar ray composed of a series of gates. This represents a single azimuth angle and
 /// elevation angle pair at a point in time and contains the Level II data (reflectivity, velocity,
@@ -18,6 +19,14 @@ pub struct Radial {
     radial_status: RadialStatus,
 
     elevation_angle_degrees: f32,
+
+    reflectivity: Option<MomentData>,
+    velocity: Option<MomentData>,
+    spectrum_width: Option<MomentData>,
+    differential_reflectivity: Option<MomentData>,
+    differential_phase: Option<MomentData>,
+    correlation_coefficient: Option<MomentData>,
+    specific_differential_phase: Option<MomentData>,
 }
 
 impl Radial {
@@ -73,6 +82,41 @@ impl Radial {
     /// Elevation angle this radial's data was collected at.
     pub fn elevation_angle(&self) -> Angle {
         Angle::new::<degree>(self.elevation_angle_degrees)
+    }
+
+    /// Reflectivity data for this radial if available.
+    pub fn reflectivity(&self) -> Option<&MomentData> {
+        self.reflectivity.as_ref()
+    }
+
+    /// Velocity data for this radial if available.
+    pub fn velocity(&self) -> Option<&MomentData> {
+        self.velocity.as_ref()
+    }
+
+    /// Spectrum width data for this radial if available.
+    pub fn spectrum_width(&self) -> Option<&MomentData> {
+        self.spectrum_width.as_ref()
+    }
+
+    /// Differential reflectivity data for this radial if available.
+    pub fn differential_reflectivity(&self) -> Option<&MomentData> {
+        self.differential_reflectivity.as_ref()
+    }
+
+    /// Differential phase data for this radial if available.
+    pub fn differential_phase(&self) -> Option<&MomentData> {
+        self.differential_phase.as_ref()
+    }
+
+    /// Correlation coefficient data for this radial if available.
+    pub fn correlation_coefficient(&self) -> Option<&MomentData> {
+        self.correlation_coefficient.as_ref()
+    }
+
+    /// Specific differential phase data for this radial if available.
+    pub fn specific_differential_phase(&self) -> Option<&MomentData> {
+        self.specific_differential_phase.as_ref()
     }
 }
 

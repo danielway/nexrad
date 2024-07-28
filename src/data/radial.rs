@@ -7,10 +7,14 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "uom")]
 use uom::si::{angle::degree, f32::Angle};
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// A single radar ray composed of a series of gates. This represents a single azimuth angle and
 /// elevation angle pair at a point in time and contains the Level II data (reflectivity, velocity,
 /// and spectrum width) for each range gate in that ray. The range of the radar and gate interval
 /// distance determines the resolution of the ray and the number of gates in the ray.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Radial {
     collection_timestamp: i64,
 
@@ -210,6 +214,7 @@ impl Debug for Radial {
 
 /// Describe a radial's position within the sequence of radials comprising a scan.
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum RadialStatus {
     ElevationStart,
     IntermediateRadialData,

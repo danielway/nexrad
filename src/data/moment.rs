@@ -1,6 +1,10 @@
 use std::fmt::Debug;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// Moment data from a radial for a particular product where each value corresponds to a gate.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MomentData {
     scale: f32,
     offset: f32,

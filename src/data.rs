@@ -6,8 +6,6 @@
 //! Optionally, the `uom` feature provides APIs that use the `uom` crate for type-safe units of
 //! measure.
 //!
-//! todo: note serialization support
-//!
 
 mod sweep;
 pub use sweep::*;

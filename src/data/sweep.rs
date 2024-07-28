@@ -1,11 +1,15 @@
 use crate::data::Radial;
 use std::fmt::Debug;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// A single radar sweep composed of a series of radials. This represents a full rotation of the
 /// radar at some elevation angle and contains the Level II data (reflectivity, velocity, and
 /// spectrum width) for each azimuth angle in that sweep. The resolution of the sweep dictates the
 /// azimuthal distance between rays and thus and number of rays in the sweep. Multiple sweeps are
 /// taken at different elevation angles to create a volume scan.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Sweep {
     elevation_number: u8,
     radials: Vec<Radial>,

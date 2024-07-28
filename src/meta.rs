@@ -5,10 +5,15 @@
 //!
 
 use std::fmt::Debug;
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "uom")]
 use uom::si::{f32::Length, length::meter};
 
 /// A radar site's metadata including a variety of infrequently-changing properties.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Site {
     identifier: [u8; 4],
     latitude: f32,

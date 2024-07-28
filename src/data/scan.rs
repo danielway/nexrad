@@ -1,10 +1,14 @@
 use crate::data::Sweep;
 use std::fmt::Debug;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// A single radar scan composed of a series of sweeps. This represents a single volume scan which
 /// is composed of multiple sweeps at different elevations. The pattern of sweeps, including
 /// elevations and resolution, is determined by the scanning strategy of the radar. This is
 /// referred to as the Volume Coverage Pattern.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Scan {
     coverage_pattern_number: u16,
     sweeps: Vec<Sweep>,

@@ -1,2 +1,2 @@
-mod data;
-mod meta;
+pub mod data;
+pub mod meta;

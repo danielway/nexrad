@@ -113,6 +113,7 @@ impl Radial {
     }
 
     /// Elevation angle this radial's data was collected at.
+    #[cfg(feature = "uom")]
     pub fn elevation_angle(&self) -> Angle {
         Angle::new::<degree>(self.elevation_angle_degrees)
     }

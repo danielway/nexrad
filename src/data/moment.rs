@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 /// Moment data from a radial for a particular product where each value corresponds to a gate.
 pub struct MomentData {
     scale: f32,
@@ -35,8 +37,17 @@ impl MomentData {
     }
 }
 
+impl Debug for MomentData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MomentData")
+            .field("values", &self.values())
+            .finish()
+    }
+}
+
 /// The data moment value for a product in a radial's gate. The value may be a floating-point number
 /// or a special case such as "below threshold" or "range folded".
+#[derive(Debug)]
 enum MomentValue {
     /// The data moment value for a gate.
     Value(f32),

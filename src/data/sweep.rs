@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::data::Radial;
 
 /// A single radar sweep composed of a series of radials. This represents a full rotation of the
@@ -28,5 +29,14 @@ impl Sweep {
     /// The radials comprising this sweep.
     pub fn radials(&self) -> &Vec<Radial> {
         self.radials.as_ref()
+    }
+}
+
+impl Debug for Sweep {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Sweep")
+            .field("elevation_number", &self.elevation_number())
+            .field("radials", &self.radials())
+            .finish()
     }
 }

@@ -4,10 +4,10 @@
 //! is represented separately to avoid duplication in storage.
 //!
 
+use std::fmt::Debug;
 #[cfg(feature = "uom")]
 use uom::si::{
-    angle::degree,
-    f32::{Angle, Length},
+    f32::Length,
     length::meter,
 };
 
@@ -49,25 +49,13 @@ impl Site {
     }
 
     /// The latitude of the radar site in degrees.
-    pub fn latitude_degrees(&self) -> f32 {
+    pub fn latitude(&self) -> f32 {
         self.latitude
     }
 
-    /// The latitude of the radar site.
-    #[cfg(feature = "uom")]
-    pub fn latitude(&self) -> Angle {
-        Angle::new::<degree>(self.latitude)
-    }
-
     /// The longitude of the radar site in degrees.
-    pub fn longitude_degrees(&self) -> f32 {
+    pub fn longitude(&self) -> f32 {
         self.longitude
-    }
-
-    /// The longitude of the radar site.
-    #[cfg(feature = "uom")]
-    pub fn longitude(&self) -> Angle {
-        Angle::new::<degree>(self.longitude)
     }
 
     /// The height of the radar site above sea level in meters.
@@ -90,5 +78,29 @@ impl Site {
     #[cfg(feature = "uom")]
     pub fn feedhorn_height(&self) -> Length {
         Length::new::<meter>(self.feedhorn_height_meters as f32)
+    }
+}
+
+impl Debug for Site {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut debug = f.debug_struct("Site");
+
+        debug.field("identifier", &self.identifier_string());
+
+        debug.field("latitude_degrees", &self.latitude());
+
+        debug.field("longitude_degrees", &self.longitude());
+
+        debug.field("height_meters", &self.height_meters());
+
+        #[cfg(feature = "uom")]
+        debug.field("height", &self.height());
+
+        debug.field("feedhorn_height_meters", &self.feedhorn_height_meters());
+
+        #[cfg(feature = "uom")]
+        debug.field("feedhorn_height", &self.feedhorn_height());
+
+        debug.finish()
     }
 }

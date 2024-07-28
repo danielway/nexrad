@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::data::Sweep;
 
 /// A single radar scan composed of a series of sweeps. This represents a single volume scan which
@@ -26,5 +27,14 @@ impl Scan {
     /// The elevation sweeps comprising this scan.
     pub fn sweeps(&self) -> &Vec<Sweep> {
         self.sweeps.as_ref()
+    }
+}
+
+impl Debug for Scan {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Scan")
+            .field("coverage_pattern_number", &self.coverage_pattern_number())
+            .field("sweeps", &self.sweeps())
+            .finish()
     }
 }

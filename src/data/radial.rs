@@ -30,6 +30,39 @@ pub struct Radial {
 }
 
 impl Radial {
+    /// Create a new radial with the given properties.
+    pub fn new(
+        collection_timestamp: i64,
+        azimuth_number: u16,
+        azimuth_angle_degrees: f32,
+        azimuth_spacing_degrees: f32,
+        radial_status: RadialStatus,
+        elevation_angle_degrees: f32,
+        reflectivity: Option<MomentData>,
+        velocity: Option<MomentData>,
+        spectrum_width: Option<MomentData>,
+        differential_reflectivity: Option<MomentData>,
+        differential_phase: Option<MomentData>,
+        correlation_coefficient: Option<MomentData>,
+        specific_differential_phase: Option<MomentData>,
+    ) -> Self {
+        Self {
+            collection_timestamp,
+            azimuth_number,
+            azimuth_angle_degrees,
+            azimuth_spacing_degrees,
+            radial_status,
+            elevation_angle_degrees,
+            reflectivity,
+            velocity,
+            spectrum_width,
+            differential_reflectivity,
+            differential_phase,
+            correlation_coefficient,
+            specific_differential_phase,
+        }
+    }
+
     /// The collection timestamp in milliseconds since midnight Jan 1, 1970 (epoch/UNIX timestamp).
     pub fn collection_timestamp(&self) -> i64 {
         self.collection_timestamp

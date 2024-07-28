@@ -11,6 +11,14 @@ pub struct Sweep {
 }
 
 impl Sweep {
+    /// Create a new radar sweep with the given elevation number and radials.
+    pub fn new(elevation_number: u8, radials: Vec<Radial>) -> Self {
+        Self {
+            elevation_number,
+            radials,
+        }
+    }
+
     /// The index number for this radial's elevation in the volume scan. The precise elevation angle
     /// varies and can be found in individual radials.
     pub fn elevation_number(&self) -> u8 {

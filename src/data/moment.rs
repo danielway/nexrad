@@ -6,6 +6,15 @@ pub struct MomentData {
 }
 
 impl MomentData {
+    /// Create new moment data from fixed-point encoding.
+    pub fn from_fixed_point(scale: f32, offset: f32, values: Vec<u8>) -> Self {
+        Self {
+            scale,
+            offset,
+            values,
+        }
+    }
+
     /// Values from this data moment corresponding to gates in the radial.
     pub fn values(&self) -> Vec<MomentValue> {
         let copied_values = self.values.iter().copied();

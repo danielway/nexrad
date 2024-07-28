@@ -10,6 +10,14 @@ pub struct Scan {
 }
 
 impl Scan {
+    /// Create a new radar scan with the given coverage pattern number and sweeps.
+    pub fn new(coverage_pattern_number: u16, sweeps: Vec<Sweep>) -> Self {
+        Self {
+            coverage_pattern_number,
+            sweeps,
+        }
+    }
+
     /// This scan's volume coverage pattern number.
     pub fn coverage_pattern_number(&self) -> u16 {
         self.coverage_pattern_number

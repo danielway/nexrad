@@ -21,6 +21,23 @@ pub struct Site {
 }
 
 impl Site {
+    /// Create new radar site metadata with the given properties.
+    pub fn new(
+        identifier: [u8; 4],
+        latitude: f32,
+        longitude: f32,
+        height_meters: i16,
+        feedhorn_height_meters: u16,
+    ) -> Self {
+        Self {
+            identifier,
+            latitude,
+            longitude,
+            height_meters,
+            feedhorn_height_meters,
+        }
+    }
+
     /// The four-letter ICAO identifier for the radar site.
     pub fn identifier(&self) -> &[u8; 4] {
         &self.identifier

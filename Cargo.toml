@@ -9,3 +9,5 @@ exclude = [".github"]
 edition = "2021"
 
 [dependencies]
+reqwest = { version = "0.12" }
+xml = { version = "0.8" }

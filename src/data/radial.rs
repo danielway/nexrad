@@ -1,10 +1,11 @@
+use crate::data::MomentData;
 use std::fmt::Debug;
+
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
 
 #[cfg(feature = "uom")]
 use uom::si::{angle::degree, f32::Angle};
-use crate::data::MomentData;
 
 /// A single radar ray composed of a series of gates. This represents a single azimuth angle and
 /// elevation angle pair at a point in time and contains the Level II data (reflectivity, velocity,
@@ -189,13 +190,19 @@ impl Debug for Radial {
 
         debug.field("spectrum_width", &self.spectrum_width());
 
-        debug.field("differential_reflectivity", &self.differential_reflectivity());
+        debug.field(
+            "differential_reflectivity",
+            &self.differential_reflectivity(),
+        );
 
         debug.field("differential_phase", &self.differential_phase());
 
         debug.field("correlation_coefficient", &self.correlation_coefficient());
 
-        debug.field("specific_differential_phase", &self.specific_differential_phase());
+        debug.field(
+            "specific_differential_phase",
+            &self.specific_differential_phase(),
+        );
 
         debug.finish()
     }

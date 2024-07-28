@@ -6,10 +6,7 @@
 
 use std::fmt::Debug;
 #[cfg(feature = "uom")]
-use uom::si::{
-    f32::Length,
-    length::meter,
-};
+use uom::si::{f32::Length, length::meter};
 
 /// A radar site's metadata including a variety of infrequently-changing properties.
 pub struct Site {

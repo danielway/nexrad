@@ -1,5 +1,5 @@
-use std::fmt::Debug;
 use crate::data::Sweep;
+use std::fmt::Debug;
 
 /// A single radar scan composed of a series of sweeps. This represents a single volume scan which
 /// is composed of multiple sweeps at different elevations. The pattern of sweeps, including

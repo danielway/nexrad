@@ -1,5 +1,5 @@
-use crate::aws::archive::identifier::Identifier;
-use crate::aws::archive::{Header, Record};
+use crate::archive::identifier::Identifier;
+use crate::archive::{Header, Record};
 
 /// A NEXRAD Archive II data file with identifier, decoded header,
 pub struct File<'a>(Identifier, Header, Vec<Record<'a>>);

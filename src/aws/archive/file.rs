@@ -1,9 +1,9 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 
-/// Metadata for a NEXRAD ∂file data file.
-pub struct File(String);
+/// Identifying metadata for a NEXRAD data file.
+pub struct FileIdentifier(String);
 
-impl File {
+impl FileIdentifier {
     /// The file name.
     pub fn name(&self) -> &str {
         &self.0

@@ -7,5 +7,7 @@ pub use header::*;
 mod record;
 pub use record::*;
 
-mod util;
+mod decompress;
+pub use decompress::*;
 
+mod util;

@@ -10,8 +10,15 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("data file IO error")]
     FileError(#[from] std::io::Error),
-    #[error("error decompressed uncompressed data")]
+    #[cfg(feature = "aws")]
+    #[error("error decompressing uncompressed data")]
     UncompressedDataError,
+    #[cfg(feature = "aws")]
+    #[error("error decoding date/time")]
+    DateTimeError(String),
+    #[cfg(feature = "aws")]
+    #[error("invalid radar site identifier")]
+    InvalidSiteIdentifier(String),
     #[cfg(feature = "aws")]
     #[error("ldm record decompression error")]
     DecompressionError(#[from] bzip2::Error),

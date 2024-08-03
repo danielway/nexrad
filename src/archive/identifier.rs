@@ -4,6 +4,10 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 pub struct Identifier(String);
 
 impl Identifier {
+    pub(crate) fn new(name: String) -> Self {
+        Identifier(name)
+    }
+
     /// The file name.
     pub fn name(&self) -> &str {
         &self.0

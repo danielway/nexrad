@@ -9,5 +9,3 @@ pub mod aws;
 pub mod archive;
 
 pub mod result;
-
-mod file;

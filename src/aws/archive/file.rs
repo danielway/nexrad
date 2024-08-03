@@ -1,4 +1,8 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use crate::aws::archive::{Archive2Header, LDMRecord};
+
+/// A NEXRAD Archive II data file with identifier, decoded header, 
+pub struct File<'a>(FileIdentifier, Archive2Header, Vec<LDMRecord<'a>>);
 
 /// Identifying metadata for a NEXRAD data file.
 pub struct FileIdentifier(String);

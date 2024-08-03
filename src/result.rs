@@ -10,6 +10,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("data file IO error")]
     FileError(#[from] std::io::Error),
+    #[error("error decompressed uncompressed data")]
+    UncompressedDataError,
+    #[cfg(feature = "aws")]
+    #[error("ldm record decompression error")]
+    DecompressionError(#[from] bzip2::Error),
     #[cfg(feature = "aws")]
     #[error("file deserialization error")]
     DeserializationError(#[from] bincode::Error),

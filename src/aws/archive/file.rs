@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveTime, NaiveDateTime, DateTime, Utc};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 
 /// Metadata for a NEXRAD ∂file data file.
 pub struct File(String);
@@ -8,12 +8,12 @@ impl File {
     pub fn name(&self) -> &str {
         &self.0
     }
-    
+
     /// The radar site this file was produced at, e.g. KDMX.
     pub fn site(&self) -> Option<&str> {
         self.0.get(0..4)
     }
-    
+
     /// This file's data collection time.
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
         let date_string = self.0.get(4..12)?;
@@ -24,7 +24,7 @@ impl File {
                 return Some(DateTime::from_naive_utc_and_offset(naive_datetime, Utc));
             }
         }
-        
+
         None
     }
 }

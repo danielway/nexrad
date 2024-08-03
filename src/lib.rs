@@ -7,5 +7,5 @@
 pub mod aws;
 
 pub mod result;
-mod file;
 
+mod file;

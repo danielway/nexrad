@@ -8,7 +8,7 @@ enum LDMRecordData<'a> {
 }
 
 /// Represents a single LDM record with its data which may be compressed.
-/// 
+///
 /// The Unidata Local Data Manager (LDM) is a data distribution system used by the NWS to distribute
 /// NEXRAD archival radar data. A NEXRAD "Archive II" file starts with an
 /// [crate::aws::archive::Archive2Header] followed by a series of compressed LDM records, each
@@ -20,7 +20,7 @@ impl<'a> LDMRecord<'a> {
     pub fn new(data: Vec<u8>) -> Self {
         LDMRecord(LDMRecordData::Owned(data))
     }
-    
+
     /// Creates a new LDM record with the provided data slice.
     pub fn from_slice(data: &'a [u8]) -> Self {
         LDMRecord(LDMRecordData::Borrowed(data))
@@ -33,12 +33,12 @@ impl<'a> LDMRecord<'a> {
             LDMRecordData::Owned(data) => data,
         }
     }
-    
+
     /// Whether this LDM record's data is compressed.
     pub fn compressed(&self) -> bool {
         self.data().len() >= 2 && self.data()[0..2].as_ref() == b"BZ"
     }
-    
+
     /// Decompresses this LDM record's data.
     pub fn decompress(&self) -> Result<LDMRecord> {
         if !self.compressed() {
@@ -66,7 +66,9 @@ fn split_records(data: &Vec<u8>) -> Vec<LDMRecord> {
         let record_size = i32::from_be_bytes(record_size).abs();
 
         let whole_record_size = record_size as usize + 4;
-        records.push(LDMRecord::from_slice(&data[position..position + whole_record_size]));
+        records.push(LDMRecord::from_slice(
+            &data[position..position + whole_record_size],
+        ));
         position += whole_record_size;
     }
 

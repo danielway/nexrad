@@ -11,7 +11,7 @@ use std::io::Read;
 /// at the beginning of the file.
 #[repr(C)]
 #[derive(Deserialize)]
-pub struct Archive2Header {
+pub struct Header {
     /// The tape's filename which indicates the version of the data. Name is in the format
     /// `AR2V0 0xx.` where `xx` indicates the version of the data.
     ///
@@ -23,24 +23,24 @@ pub struct Archive2Header {
     ///   06 = Super Resolution (RDA Build 12.0 and later)
     ///   07 = Recombined Super Resolution (RDA Build 12.0 and later)
     /// NOTE: Dual-pol data introduced in RDA Build 12.0
-    pub tape_filename: [u8; 9],
+    tape_filename: [u8; 9],
 
     /// Sequential number assigned to each volume of radar data in the queue, rolling over to 001
     /// after 999.
-    pub extension_number: [u8; 3],
+    extension_number: [u8; 3],
 
     /// This archive's date represented as a count of days since 1 January 1970 00:00 GMT. It is
     /// also referred-to as a "modified Julian date" where it is the Julian date - 2440586.5.
-    pub date: u32,
+    date: u32,
 
     /// Milliseconds past midnight, GMT.
-    pub time: u32,
+    time: u32,
 
     /// The ICAO identifier of the radar site.
-    pub icao_of_radar: [u8; 4],
+    icao_of_radar: [u8; 4],
 }
 
-impl Archive2Header {
+impl Header {
     /// Deserializes an Archive II header from the provided reader.
     pub fn deserialize<R: Read>(reader: &mut R) -> Result<Self> {
         Ok(DefaultOptions::new()
@@ -81,7 +81,7 @@ impl Archive2Header {
     }
 }
 
-impl Debug for Archive2Header {
+impl Debug for Header {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("Archive2Header")
             .field("tape_filename", &self.tape_filename())

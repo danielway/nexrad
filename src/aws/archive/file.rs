@@ -1,11 +1,11 @@
 use crate::aws::archive::identifier::Identifier;
-use crate::aws::archive::{Archive2Header, LDMRecord};
+use crate::aws::archive::{Header, Record};
 
 /// A NEXRAD Archive II data file with identifier, decoded header,
-pub struct File<'a>(Identifier, Archive2Header, Vec<LDMRecord<'a>>);
+pub struct File<'a>(Identifier, Header, Vec<Record<'a>>);
 
 impl<'a> File<'a> {
-    fn new(identifier: Identifier, header: Archive2Header, records: Vec<LDMRecord<'a>>) -> Self {
+    fn new(identifier: Identifier, header: Header, records: Vec<Record<'a>>) -> Self {
         File(identifier, header, records)
     }
 
@@ -15,12 +15,12 @@ impl<'a> File<'a> {
     }
 
     /// The file's Archive II header.
-    pub fn header(&self) -> &Archive2Header {
+    pub fn header(&self) -> &Header {
         &self.1
     }
 
     /// The file's LDM records.
-    pub fn records(&self) -> &[LDMRecord<'a>] {
+    pub fn records(&self) -> &[Record<'a>] {
         &self.2
     }
 }

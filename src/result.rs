@@ -10,10 +10,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("data file IO error")]
     FileError(#[from] std::io::Error),
+    #[cfg(feature = "aws")]
     #[error("error listing AWS S3 objects")]
     S3ListObjectsError(reqwest::Error),
+    #[cfg(feature = "aws")]
     #[error("error getting AWS S3 object")]
     S3GetObjectError(reqwest::Error),
+    #[cfg(feature = "aws")]
     #[error("error streaming/downloading AWS S3 object")]
     S3StreamingError(reqwest::Error),
 }

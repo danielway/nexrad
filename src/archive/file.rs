@@ -1,12 +1,15 @@
 use crate::archive::identifier::Identifier;
-use crate::archive::{Header, Record};
+use crate::archive::{split_records, Header, Record};
+use crate::result::Result;
 
 /// A NEXRAD Archive II data file with identifier, decoded header,
-pub struct File<'a>(Identifier, Header, Vec<Record<'a>>);
+pub struct File(Identifier, Header, Vec<u8>);
 
-impl<'a> File<'a> {
-    fn new(identifier: Identifier, header: Header, records: Vec<Record<'a>>) -> Self {
-        File(identifier, header, records)
+impl File {
+    /// Creates a new Archive II file with the provided identifier and data.
+    pub fn new(identifier: Identifier, data: Vec<u8>) -> Result<Self> {
+        let header = Header::deserialize(&mut data.as_slice())?;
+        Ok(File(identifier, header, data))
     }
 
     /// The file's identifier.
@@ -20,7 +23,7 @@ impl<'a> File<'a> {
     }
 
     /// The file's LDM records.
-    pub fn records(&self) -> &[Record<'a>] {
-        &self.2
+    pub fn records(&self) -> Vec<Record> {
+        split_records(&self.2)
     }
 }

@@ -1,6 +1,8 @@
 use crate::result::{Error, Result};
-use bzip2::read::BzDecoder;
 use std::io::Read;
+
+#[cfg(feature = "bzip2")]
+use bzip2::read::BzDecoder;
 
 enum RecordData<'a> {
     Borrowed(&'a [u8]),
@@ -40,6 +42,7 @@ impl<'a> Record<'a> {
     }
 
     /// Decompresses this LDM record's data.
+    #[cfg(feature = "bzip2")]
     pub fn decompress(&self) -> Result<Record> {
         if !self.compressed() {
             return Err(Error::UncompressedDataError);

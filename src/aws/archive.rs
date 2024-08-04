@@ -1,4 +1,4 @@
-use crate::archive::Identifier;
+use crate::archive::{File, Identifier};
 use crate::result::{Error, Result};
 use chrono::{DateTime, NaiveDate, Utc};
 use xml::reader::XmlEvent;
@@ -27,7 +27,7 @@ pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<Identifier>>
 
 /// Download a data file specified by its metadata. Returns the downloaded file's encoded contents
 /// which may then need to be decompressed and decoded.
-pub async fn download_file(identifier: &Identifier) -> Result<Vec<u8>> {
+pub async fn download_file(identifier: Identifier) -> Result<File> {
     let date = identifier
         .date_time()
         .ok_or_else(|| Error::DateTimeError(identifier.name().to_string()))?;
@@ -37,7 +37,9 @@ pub async fn download_file(identifier: &Identifier) -> Result<Vec<u8>> {
         .ok_or_else(|| Error::InvalidSiteIdentifier(identifier.name().to_string()))?;
 
     let key = format!("{}/{}/{}", date.format("%Y/%m/%d"), site, identifier.name());
-    download_object(ARCHIVE_BUCKET, &key).await
+    let data = download_object(ARCHIVE_BUCKET, &key).await?;
+
+    Ok(File::new(identifier, data))
 }
 
 /// Downloads an object from S3 and returns only its contents. This will only work for

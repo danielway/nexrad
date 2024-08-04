@@ -1,4 +1,11 @@
-#![cfg(all(feature = "aws"))]
+//!
+//! examples/aws
+//!
+//! This example downloads data files from the AWS Open Data bucket. Optionally, a site, date, and
+//! time range may be specified.
+//!
+//! Usage: cargo run --features=aws --example aws -- [site] [date] [start_time] [stop_time]
+//!
 
 use chrono::{NaiveDate, NaiveTime};
 use nexrad_data::archive::Identifier;
@@ -37,49 +44,51 @@ async fn main() -> Result<()> {
     }
 
     println!("Listing files for {} on {}...", site, date);
-    let files = list_files(site, &date).await?;
+    let file_ids = list_files(site, &date).await?;
 
-    if files.is_empty() {
+    if file_ids.is_empty() {
         println!("No files found for the specified date/site to download.");
         return Ok(());
     }
 
-    println!("Found {} files.", files.len());
+    println!("Found {} files.", file_ids.len());
 
-    let start_index = get_nearest_file_index(&files, start_time);
+    let start_index = get_nearest_file_index(&file_ids, start_time);
     println!(
         "Nearest file to start of {:?} is {:?}.",
         start_time,
-        files[start_index].name()
+        file_ids[start_index].name()
     );
 
-    let stop_index = get_nearest_file_index(&files, stop_time);
+    let stop_index = get_nearest_file_index(&file_ids, stop_time);
     println!(
         "Nearest file to stop of {:?} is {:?}.",
         stop_time,
-        files[stop_index].name()
+        file_ids[stop_index].name()
     );
 
     println!("Downloading {} files...", stop_index - start_index + 1);
 
-    for file in files
+    for file_id in file_ids
         .iter()
         .skip(start_index)
         .take(stop_index - start_index + 1)
     {
-        println!("Downloading file \"{}\"...", file.name());
-        let downloaded_file = download_file(file).await?;
+        println!("Downloading file \"{}\"...", file_id.name());
+        let file = download_file(file_id.clone()).await?;
 
-        println!("Data file size (bytes): {}", downloaded_file.len());
+        println!("Data file size (bytes): {}", file.data().len());
 
         if !Path::new("downloads").exists() {
             println!("Creating downloads directory...");
             create_dir("downloads").expect("create downloads directory");
         }
 
-        println!("Writing file to disk as: {}", file.name());
-        let mut file = File::create(format!("downloads/{}", file.name())).expect("create file");
-        file.write_all(downloaded_file.as_slice())
+        println!("Writing file to disk as: {}", file_id.name());
+        let mut downloaded_file =
+            File::create(format!("downloads/{}", file_id.name())).expect("create file");
+        downloaded_file
+            .write_all(file.data().as_slice())
             .expect("write file");
     }
 

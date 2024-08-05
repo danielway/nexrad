@@ -11,6 +11,9 @@ pub enum Error {
     #[error("data file IO error")]
     FileError(#[from] std::io::Error),
     #[cfg(feature = "aws")]
+    #[error("unexpected truncated S3 list objects response")]
+    TruncatedListObjectsResponse,
+    #[cfg(feature = "aws")]
     #[error("error decompressing uncompressed data")]
     UncompressedDataError,
     #[cfg(feature = "aws")]

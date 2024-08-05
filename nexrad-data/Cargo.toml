@@ -1,0 +1,25 @@
+[package]
+name = "nexrad-data"
+version = "0.1.0"
+description = "Download and processing functions for NEXRAD weather radar data.."
+authors = ["Daniel Way <contact@danieldway.com>"]
+repository = "https://github.com/danielway/nexrad-data"
+license = "MIT"
+exclude = [".github"]
+edition = "2021"
+
+[features]
+default = ["aws"]
+aws = ["reqwest", "xml", "bzip2"]
+
+[dependencies]
+thiserror = "1.0"
+chrono = "0.4"
+serde = { version = "1.0.204", features = ["derive"] }
+bincode = { version = "1" }
+reqwest = { version = "0.12", optional = true }
+xml = { version = "0.8", optional = true }
+bzip2 = { version = "0.4", optional = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }

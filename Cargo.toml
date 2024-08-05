@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "nexrad-model",
+    "nexrad-decode",
+    "nexrad-data"
+]

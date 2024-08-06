@@ -4,6 +4,7 @@ use crate::messages::digital_radar_data::{
 
 #[cfg(feature = "nexrad-model")]
 use nexrad_model::data::{Radial, RadialStatus};
+#[cfg(feature = "nexrad-model")]
 use nexrad_model::meta::Site;
 
 /// The digital radar data message includes base radar data from a single radial for various

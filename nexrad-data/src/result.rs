@@ -10,6 +10,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("data file IO error")]
     FileError(#[from] std::io::Error),
+    #[error("file deserialization error")]
+    DeserializationError(#[from] bincode::Error),
     #[cfg(feature = "aws")]
     #[error("unexpected truncated S3 list objects response")]
     TruncatedListObjectsResponse,
@@ -25,9 +27,6 @@ pub enum Error {
     #[cfg(feature = "aws")]
     #[error("ldm record decompression error")]
     DecompressionError(#[from] bzip2::Error),
-    #[cfg(feature = "aws")]
-    #[error("file deserialization error")]
-    DeserializationError(#[from] bincode::Error),
     #[cfg(feature = "aws")]
     #[error("error listing AWS S3 objects")]
     S3ListObjectsError(reqwest::Error),

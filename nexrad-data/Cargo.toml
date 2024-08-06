@@ -20,6 +20,7 @@ bincode = { workspace = true }
 reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
 bzip2 = { workspace = true, optional = true }
+clap = { workspace = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

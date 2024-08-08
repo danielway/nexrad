@@ -13,5 +13,5 @@ thiserror = { workspace = true }
 bincode = { workspace = true }
 serde = { workspace = true }
 chrono = { workspace = true }
-nexrad-model = { path = "../nexrad-model" }
+nexrad-model = { path = "../nexrad-model", optional = true }
 uom = { workspace = true, optional = true  }

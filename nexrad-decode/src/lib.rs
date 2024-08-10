@@ -12,5 +12,7 @@
 #![warn(clippy::correctness)]
 #![allow(clippy::too_many_arguments)]
 
-pub mod model;
+pub mod messages;
 pub mod result;
+
+mod util;

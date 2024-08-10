@@ -10,7 +10,6 @@ extern crate core;
 
 pub mod decode;
 pub mod file;
-pub mod model;
 pub mod result;
 
 #[cfg(any(feature = "decompress", feature = "decompress-wasm"))]

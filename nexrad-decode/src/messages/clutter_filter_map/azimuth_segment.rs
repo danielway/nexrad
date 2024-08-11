@@ -1,5 +1,5 @@
-use crate::model::messages::clutter_filter_map::range_zone::RangeZone;
-use crate::model::messages::primitive_aliases::Integer2;
+use crate::messages::clutter_filter_map::range_zone::RangeZone;
+use crate::messages::primitive_aliases::Integer2;
 use serde::Deserialize;
 
 /// Header information for an azimuth segment to be read directly from the Archive II file.

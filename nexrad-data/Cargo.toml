@@ -13,13 +13,13 @@ default = ["aws"]
 aws = ["reqwest", "xml", "bzip2"]
 
 [dependencies]
-thiserror = "1.0"
-chrono = "0.4"
-serde = { version = "1.0.204", features = ["derive"] }
-bincode = { version = "1" }
-reqwest = { version = "0.12", optional = true }
-xml = { version = "0.8", optional = true }
-bzip2 = { version = "0.4", optional = true }
+thiserror = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+bincode = { workspace = true }
+reqwest = { workspace = true, optional = true }
+xml = { workspace = true, optional = true }
+bzip2 = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

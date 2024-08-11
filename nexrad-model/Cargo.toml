@@ -9,6 +9,6 @@ exclude = [".github"]
 edition = "2021"
 
 [dependencies]
-chrono = { version = "0.4", optional = true }
-uom = { version = "0.36", optional = true }
-serde = { version = "1.0", optional = true, features = ["derive"] }
+chrono = { workspace = true, optional = true }
+uom = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }

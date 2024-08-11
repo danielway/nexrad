@@ -1,5 +1,5 @@
-use crate::model::messages::digital_radar_data::DataBlockId;
-use crate::model::messages::primitive_aliases::{Integer2, Real4, ScaledInteger2};
+use crate::messages::digital_radar_data::DataBlockId;
+use crate::messages::primitive_aliases::{Integer2, Real4, ScaledInteger2};
 use serde::Deserialize;
 use std::fmt::Debug;
 

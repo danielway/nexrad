@@ -1,4 +1,4 @@
-use crate::model::messages::primitive_aliases::Code1;
+use crate::messages::primitive_aliases::Code1;
 use std::fmt::{Debug, Formatter};
 
 pub struct SpotBlankingStatus(Code1);

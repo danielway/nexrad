@@ -29,16 +29,16 @@ decompress = ["bzip2"] # efficient but WASM-incompatible implementation
 decompress-wasm = ["bzip2-rs"] # less efficient but WASM-compatible implementation
 
 [dependencies]
-chrono = { version = "0.4", features = ["serde"] }
-serde = { version = "1", features = ["derive"] }
-bincode = "1"
-thiserror = "1.0.61"
-bzip2 = { version = "0.4", optional = true }
-bzip2-rs = { version = "0.1", optional = true }
-uom = { version = "0.36.0", optional = true }
-rayon = { version = "1.10.0", optional = true }
-reqwest = { version = "0.12", optional = true }
-xml = { version = "0.8", optional = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+bincode = { workspace = true }
+thiserror = { workspace = true }
+bzip2 = { workspace = true, optional = true }
+bzip2-rs = { workspace = true, optional = true }
+uom = { workspace = true, optional = true }
+rayon = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+xml = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

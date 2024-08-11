@@ -1,5 +1,5 @@
-use crate::model::messages::clutter_filter_map::elevation_segment::ElevationSegment;
-use crate::model::messages::clutter_filter_map::header::Header;
+use crate::messages::clutter_filter_map::elevation_segment::ElevationSegment;
+use crate::messages::clutter_filter_map::header::Header;
 use std::fmt::Debug;
 
 /// A clutter filter map describing elevations, azimuths, and ranges containing clutter to

@@ -3,10 +3,10 @@
 //!
 
 use crate::decode::{decode_archive2_header, decode_digital_radar_data, decode_message_header};
-use crate::model::messages::message_header::MessageHeader;
-use crate::model::messages::MessageWithHeader;
-use crate::model::messages::{Message, MessageType};
-use crate::model::Archive2File;
+use crate::messages::message_header::MessageHeader;
+use crate::messages::MessageWithHeader;
+use crate::messages::{Message, MessageType};
+use crate::Archive2File;
 use crate::result::Result;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::mem::size_of;

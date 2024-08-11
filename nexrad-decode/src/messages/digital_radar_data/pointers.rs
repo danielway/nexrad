@@ -1,4 +1,4 @@
-use crate::model::messages::primitive_aliases::Integer4;
+use crate::messages::primitive_aliases::Integer4;
 
 /// A pointer to a data moment within a digital radar data message.
 pub struct DataMomentPointer {

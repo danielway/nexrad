@@ -1,8 +1,8 @@
-use crate::model::messages::primitive_aliases::{Code2, Integer2};
+use crate::messages::primitive_aliases::{Code2, Integer2};
 use serde::Deserialize;
 use std::fmt::Debug;
 
-use crate::model::messages::clutter_filter_map::OpCode;
+use crate::messages::clutter_filter_map::OpCode;
 #[cfg(feature = "uom")]
 use uom::si::f64::Length;
 #[cfg(feature = "uom")]

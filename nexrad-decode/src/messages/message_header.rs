@@ -1,7 +1,7 @@
-use crate::model::messages::definitions::RedundantChannel;
-use crate::model::messages::message_type::MessageType;
-use crate::model::messages::primitive_aliases::{Integer1, Integer2, Integer4};
-use crate::model::util::get_datetime;
+use crate::messages::definitions::RedundantChannel;
+use crate::messages::message_type::MessageType;
+use crate::messages::primitive_aliases::{Integer1, Integer2, Integer4};
+use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 use std::fmt::Debug;

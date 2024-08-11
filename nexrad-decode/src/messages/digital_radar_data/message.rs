@@ -1,4 +1,4 @@
-use crate::model::messages::digital_radar_data::{
+use crate::messages::digital_radar_data::{
     ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, VolumeDataBlock,
 };
 

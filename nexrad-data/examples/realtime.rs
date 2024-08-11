@@ -17,7 +17,7 @@ async fn main() -> Result<()> {
 
     let chunks = list_chunks("KDMX", latest.unwrap(), 1000).await?;
     println!("Found {} chunks.", chunks.len());
-    
+
     for (name, date) in chunks {
         println!("{}: {}", name, date);
     }

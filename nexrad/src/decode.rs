@@ -2,15 +2,15 @@
 //! Decoding functions for NEXRAD Archive II radar data files.
 //!
 
-use crate::model::messages::clutter_filter_map;
-use crate::model::messages::clutter_filter_map::ElevationSegment;
-use crate::model::messages::digital_radar_data;
-use crate::model::messages::digital_radar_data::{
+use crate::messages::clutter_filter_map;
+use crate::messages::clutter_filter_map::ElevationSegment;
+use crate::messages::digital_radar_data;
+use crate::messages::digital_radar_data::{
     DataBlockId, GenericDataBlock, GenericDataBlockHeader,
 };
-use crate::model::messages::message_header::MessageHeader;
-use crate::model::messages::rda_status_data;
-use crate::model::Archive2Header;
+use crate::messages::message_header::MessageHeader;
+use crate::messages::rda_status_data;
+use crate::Archive2Header;
 use crate::result::Result;
 use bincode::{DefaultOptions, Options};
 use serde::de::DeserializeOwned;

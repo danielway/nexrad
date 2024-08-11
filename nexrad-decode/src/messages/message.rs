@@ -1,7 +1,7 @@
-use crate::model::messages::clutter_filter_map;
-use crate::model::messages::digital_radar_data;
-use crate::model::messages::message_header::MessageHeader;
-use crate::model::messages::rda_status_data;
+use crate::messages::clutter_filter_map;
+use crate::messages::digital_radar_data;
+use crate::messages::message_header::MessageHeader;
+use crate::messages::rda_status_data;
 
 /// A decoded NEXRAD Level II message with its metadata header.
 #[derive(Debug)]

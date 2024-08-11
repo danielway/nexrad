@@ -1,5 +1,5 @@
-use crate::model::messages::primitive_aliases::Integer2;
-use crate::model::util::get_datetime;
+use crate::messages::primitive_aliases::Integer2;
+use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 use std::fmt::Debug;

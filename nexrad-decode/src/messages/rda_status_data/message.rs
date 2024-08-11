@@ -1,16 +1,16 @@
-use crate::model::messages::primitive_aliases::{Code2, Integer2, SInteger2, ScaledInteger2};
-use crate::model::messages::rda_status_data::alarm;
-use crate::model::messages::rda_status_data::alarm::Summary;
-use crate::model::messages::rda_status_data::data_transmission_enabled::DataTransmissionEnabled;
-use crate::model::messages::rda_status_data::definitions::{
+use crate::messages::primitive_aliases::{Code2, Integer2, SInteger2, ScaledInteger2};
+use crate::messages::rda_status_data::alarm;
+use crate::messages::rda_status_data::alarm::Summary;
+use crate::messages::rda_status_data::data_transmission_enabled::DataTransmissionEnabled;
+use crate::messages::rda_status_data::definitions::{
     AuxiliaryPowerGeneratorState, ClutterMitigationDecisionStatus, CommandAcknowledgement,
     ControlAuthorization, ControlStatus, OperabilityStatus, OperationalMode,
     PerformanceCheckStatus, RDAStatus, RMSControlStatus, SpotBlankingStatus, SuperResolutionStatus,
     TransitionPowerSourceStatus,
 };
-use crate::model::messages::rda_status_data::scan_data_flags::ScanDataFlags;
-use crate::model::messages::rda_status_data::volume_coverage_pattern::VolumeCoveragePatternNumber;
-use crate::model::util::get_datetime;
+use crate::messages::rda_status_data::scan_data_flags::ScanDataFlags;
+use crate::messages::rda_status_data::volume_coverage_pattern::VolumeCoveragePatternNumber;
+use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 use std::fmt::Debug;

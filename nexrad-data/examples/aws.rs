@@ -1,11 +1,18 @@
 use chrono::{NaiveDate, NaiveTime};
 use clap::Parser;
 use nexrad_data::archive::Identifier;
-use nexrad_data::aws::archive::{download_file, list_files};
 use nexrad_data::result::Result;
 use std::fs::{create_dir, File};
 use std::io::Write;
 use std::path::Path;
+
+#[cfg(feature = "aws")]
+use nexrad_data::aws::archive::{download_file, list_files};
+
+#[cfg(not(feature = "aws"))]
+fn main() {
+    println!("This example requires the \"aws\" feature to be enabled.");
+}
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -27,6 +34,7 @@ struct Cli {
     stop_time: String,
 }
 
+#[cfg(feature = "aws")]
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();

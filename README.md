@@ -1,7 +1,7 @@
 # NEXRAD
 
-[![Rust CI](https://github.com/danielway/nexrad/actions/workflows/rust_ci.yml/badge.svg?branch=master)](https://github.com/danielway/nexrad/actions/workflows/rust_ci.yml)
-[![Rust CD](https://github.com/danielway/nexrad/actions/workflows/rust_cd.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/rust_cd.yml)
+[![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![Rust CD](https://github.com/danielway/nexrad/actions/workflows/cd.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/cd.yml)
 
 A suite of tools for working with NEXRAD WSR-88D weather radar data.
 

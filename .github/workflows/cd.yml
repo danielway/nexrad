@@ -45,4 +45,4 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO }}
         run: |
-          cargo publish --manifest-path ./${{ steps.extract.outputs.crate }}/Cargo.toml
+          cargo publish --all-features --manifest-path ./${{ steps.extract.outputs.crate }}/Cargo.toml

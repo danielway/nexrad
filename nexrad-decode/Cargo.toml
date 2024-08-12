@@ -1,9 +1,9 @@
 [package]
 name = "nexrad-decode"
-version = "0.0.0"
+version = "0.1.0"
 description = "Decoding functions and models for NEXRAD weather radar data."
 authors = ["Daniel Way <contact@danieldway.com>"]
-repository = "https://github.com/danielway/nexrad-decode"
+repository = "https://github.com/danielway/nexrad"
 license = "MIT"
 exclude = [".github"]
 edition = "2021"
@@ -13,5 +13,5 @@ thiserror = { workspace = true }
 bincode = { workspace = true }
 serde = { workspace = true }
 chrono = { workspace = true }
-nexrad-model = { path = "../nexrad-model", optional = true }
+nexrad-model = { workspace = true, optional = true }
 uom = { workspace = true, optional = true }

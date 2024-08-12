@@ -19,3 +19,4 @@ xml = { version = "0.8" }
 bzip2 = { version = "0.4" }
 bzip2-rs = { version = "0.1" }
 rayon = { version = "1.10" }
+nexrad-model = { version = "0.1.0-rc1", path = "./nexrad-model" }

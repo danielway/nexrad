@@ -5,13 +5,11 @@
 use crate::messages::clutter_filter_map;
 use crate::messages::clutter_filter_map::ElevationSegment;
 use crate::messages::digital_radar_data;
-use crate::messages::digital_radar_data::{
-    DataBlockId, GenericDataBlock, GenericDataBlockHeader,
-};
+use crate::messages::digital_radar_data::{DataBlockId, GenericDataBlock, GenericDataBlockHeader};
 use crate::messages::message_header::MessageHeader;
 use crate::messages::rda_status_data;
-use crate::Archive2Header;
 use crate::result::Result;
+use crate::Archive2Header;
 use bincode::{DefaultOptions, Options};
 use serde::de::DeserializeOwned;
 use std::io::{Read, Seek, SeekFrom};

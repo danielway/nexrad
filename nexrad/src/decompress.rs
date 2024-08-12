@@ -6,8 +6,8 @@ use crate::decode::{decode_archive2_header, decode_digital_radar_data, decode_me
 use crate::messages::message_header::MessageHeader;
 use crate::messages::MessageWithHeader;
 use crate::messages::{Message, MessageType};
-use crate::Archive2File;
 use crate::result::Result;
+use crate::Archive2File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::mem::size_of;
 

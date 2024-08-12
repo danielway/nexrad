@@ -8,6 +8,7 @@ on:
 
 jobs:
   fmt:
+    name: Formatting check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -20,6 +21,7 @@ jobs:
         run: cargo fmt --all -- --check
 
   feature-check:
+    name: Feature check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

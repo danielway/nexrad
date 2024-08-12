@@ -1,47 +1,49 @@
-//!
-//! examples/aws
-//!
-//! This example downloads data files from the AWS Open Data bucket. Optionally, a site, date, and
-//! time range may be specified.
-//!
-//! Usage: cargo run --features=aws --example aws -- [site] [date] [start_time] [stop_time]
-//!
-
 use chrono::{NaiveDate, NaiveTime};
+use clap::Parser;
 use nexrad_data::archive::Identifier;
-use nexrad_data::aws::archive::{download_file, list_files};
 use nexrad_data::result::Result;
-use std::env;
 use std::fs::{create_dir, File};
 use std::io::Write;
 use std::path::Path;
 
+#[cfg(feature = "aws")]
+use nexrad_data::aws::archive::{download_file, list_files};
+
+#[cfg(not(feature = "aws"))]
+fn main() {
+    println!("This example requires the \"aws\" feature to be enabled.");
+}
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    /// Site identifier (e.g., KDMX)
+    #[arg(default_value = "KDMX")]
+    site: String,
+
+    /// Date in YYYY-MM-DD format
+    #[arg(default_value = "2022-03-05")]
+    date: String,
+
+    /// Start time in HH:MM format
+    #[arg(default_value = "23:30")]
+    start_time: String,
+
+    /// Stop time in HH:MM format
+    #[arg(default_value = "23:30")]
+    stop_time: String,
+}
+
+#[cfg(feature = "aws")]
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args: Vec<String> = env::args().collect();
+    let cli = Cli::parse();
 
-    let mut site = "KDMX";
-    if args.len() > 1 {
-        site = &args[1];
-    }
-
-    let mut date = NaiveDate::from_ymd_opt(2022, 3, 5).expect("is valid date");
-    if args.len() > 2 {
-        let date_str = &args[2];
-        date = NaiveDate::parse_from_str(date_str, "%Y-%m-%d").expect("is valid date");
-    }
-
-    let mut start_time = NaiveTime::from_hms_opt(23, 30, 0).expect("is valid time");
-    if args.len() > 3 {
-        let time_str = &args[3];
-        start_time = NaiveTime::parse_from_str(time_str, "%H:%M").expect("start is valid time");
-    }
-
-    let mut stop_time = start_time;
-    if args.len() > 4 {
-        let time_str = &args[4];
-        stop_time = NaiveTime::parse_from_str(time_str, "%H:%M").expect("stop is valid time");
-    }
+    let site = &cli.site;
+    let date = NaiveDate::parse_from_str(&cli.date, "%Y-%m-%d").expect("is valid date");
+    let start_time =
+        NaiveTime::parse_from_str(&cli.start_time, "%H:%M").expect("start is valid time");
+    let stop_time = NaiveTime::parse_from_str(&cli.stop_time, "%H:%M").expect("stop is valid time");
 
     println!("Listing files for {} on {}...", site, date);
     let file_ids = list_files(site, &date).await?;

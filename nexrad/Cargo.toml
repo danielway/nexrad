@@ -1,44 +1,11 @@
 [package]
-description = "Download and decode functions for NEXRAD radar data."
-authors = ["Daniel Way <contact@danieldway.com>"]
 name = "nexrad"
 version = "0.0.3"
-license = "MIT"
-edition = "2021"
+description = "Download and decode functions for NEXRAD radar data."
+authors = ["Daniel Way <contact@danieldway.com>"]
 repository = "https://github.com/danielway/nexrad"
+license = "MIT"
 exclude = [".github"]
-
-[[example]]
-name = "decode"
-path = "examples/decode.rs"
-required-features = ["decompress"]
-
-[[example]]
-name = "download"
-path = "examples/download.rs"
-required-features = ["download"]
-
-[[example]]
-name = "inspect"
-path = "examples/inspect.rs"
-
-[features]
-default = ["download", "decompress"]
-download = ["reqwest", "xml"]
-decompress = ["bzip2"] # efficient but WASM-incompatible implementation
-decompress-wasm = ["bzip2-rs"] # less efficient but WASM-compatible implementation
+edition = "2021"
 
 [dependencies]
-chrono = { workspace = true }
-serde = { workspace = true }
-bincode = { workspace = true }
-thiserror = { workspace = true }
-bzip2 = { workspace = true, optional = true }
-bzip2-rs = { workspace = true, optional = true }
-uom = { workspace = true, optional = true }
-rayon = { workspace = true, optional = true }
-reqwest = { workspace = true, optional = true }
-xml = { workspace = true, optional = true }
-
-[dev-dependencies]
-tokio = { version = "1", features = ["full"] }

@@ -2,8 +2,8 @@
 
 [![Crates.io](https://img.shields.io/crates/v/nexrad-model)](https://crates.io/crates/nexrad-model)
 [![Docs.rs](https://docs.rs/nexrad-model/badge.svg)](https://docs.rs/nexrad-model)
-[![Rust CI](https://github.com/danielway/nexrad-model/actions/workflows/rust_ci.yml/badge.svg?branch=master)](https://github.com/danielway/nexrad-model/actions/workflows/rust_ci.yml)
-[![Rust CD](https://github.com/danielway/nexrad-model/actions/workflows/rust_cd.yml/badge.svg)](https://github.com/danielway/nexrad-model/actions/workflows/rust_cd.yml)
+[![Rust CI](https://github.com/danielway/nexrad/actions/workflows/rust_ci.yml/badge.svg?branch=master)](https://github.com/danielway/nexrad/actions/workflows/rust_ci.yml)
+[![Rust CD](https://github.com/danielway/nexrad/actions/workflows/rust_cd.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/rust_cd.yml)
 
 A common model for representing NEXRAD weather radar data. Provides an ergonomic API which is documented for an audience
 who is not necessarily familiar with the NOAA Archive II format.

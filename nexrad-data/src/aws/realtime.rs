@@ -27,67 +27,17 @@
 //! to the next volume when the active one is filled.
 //!
 
+mod volume;
+pub use volume::Volume;
+
+mod chunk;
+pub use chunk::Chunk;
+
 use crate::aws::s3::list_objects;
 use crate::aws::search::binary_search_greatest;
 use crate::result::Result;
-use chrono::{DateTime, Utc};
-use std::fmt::Display;
 
 const REALTIME_BUCKET: &str = "unidata-nexrad-level2-chunks";
-
-/// Represents a volume index in the AWS S3 bucket containing NEXRAD chunk data.
-#[derive(Clone, Copy)]
-pub struct Volume(usize);
-
-impl Volume {
-    fn new(volume: usize) -> Self {
-        Self(volume)
-    }
-
-    /// This volume's index.
-    pub fn number(&self) -> usize {
-        self.0
-    }
-}
-
-impl Display for Volume {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:03}", self.0)
-    }
-}
-
-/// Represents a chunk of NEXRAD data within a volume.
-#[derive(Clone)]
-pub struct Chunk {
-    volume: Volume,
-    identifier: String,
-    date_time: DateTime<Utc>,
-}
-
-impl Chunk {
-    fn new(volume: Volume, identifier: String, date_time: DateTime<Utc>) -> Self {
-        Self {
-            volume,
-            identifier,
-            date_time,
-        }
-    }
-
-    /// The volume containing this chunk.
-    pub fn volume(&self) -> Volume {
-        self.volume
-    }
-
-    /// The unique identifier for this chunk.
-    pub fn identifier(&self) -> &str {
-        &self.identifier
-    }
-
-    /// The date and time this chunk was uploaded.
-    pub fn date_time(&self) -> DateTime<Utc> {
-        self.date_time
-    }
-}
 
 /// Identifies the volume index with the most recent data for the specified radar site. Real-time
 /// NEXRAD data is uploaded to a series of rotating volumes 0..=999, each containing ~55 chunks.

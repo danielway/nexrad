@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/nexrad-decode)](https://crates.io/crates/nexrad-decode)
 [![Docs.rs](https://docs.rs/nexrad-decode/badge.svg)](https://docs.rs/nexrad-decode)
-[![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
 [![Rust CD](https://github.com/danielway/nexrad/actions/workflows/cd.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/cd.yml)
 
 Decoding functions and models for NEXRAD weather radar data. Decoder and struct definitions are in accordance with

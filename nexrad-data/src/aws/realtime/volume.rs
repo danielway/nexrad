@@ -17,6 +17,6 @@ impl Volume {
 
 impl Display for Volume {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:03}", self.0)
+        write!(f, "{}", self.0)
     }
 }

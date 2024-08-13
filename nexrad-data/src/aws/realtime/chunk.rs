@@ -32,9 +32,26 @@ impl Chunk {
     pub fn identifier(&self) -> Option<&str> {
         self.key.split('/').last()
     }
+    
+    /// The position of this chunk within the volume.
+    pub fn chunk_type(&self) -> Option<ChunkType> {
+        match self.key.chars().last() {
+            Some('S') => Some(ChunkType::Start),
+            Some('I') => Some(ChunkType::Intermediate),
+            Some('E') => Some(ChunkType::End),
+            _ => None,
+        }
+    }
 
     /// The date and time this chunk was uploaded.
     pub fn date_time(&self) -> DateTime<Utc> {
         self.date_time
     }
+}
+
+/// The position of this chunk within the volume.
+pub enum ChunkType {
+    Start,
+    Intermediate,
+    End,
 }

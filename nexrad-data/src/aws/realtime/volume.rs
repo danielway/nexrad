@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 /// Represents a volume index in the AWS S3 bucket containing NEXRAD chunk data.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Volume(usize);
 
 impl Volume {

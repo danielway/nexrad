@@ -31,11 +31,13 @@ mod volume;
 pub use volume::Volume;
 
 mod chunk;
-pub use chunk::Chunk;
+mod file;
 
-use crate::aws::s3::list_objects;
+use crate::aws::realtime::file::File;
+use crate::aws::s3::{download_object, list_objects};
 use crate::aws::search::binary_search_greatest;
 use crate::result::Result;
+pub use chunk::Chunk;
 
 const REALTIME_BUCKET: &str = "unidata-nexrad-level2-chunks";
 
@@ -64,4 +66,11 @@ pub async fn list_chunks(site: &str, volume: Volume, max_keys: usize) -> Result<
         .collect();
 
     Ok(metas)
+}
+
+/// Downloads the specified chunk from the real-time NEXRAD data bucket.
+pub async fn download_chunk(_site: &str, chunk: &Chunk) -> Result<File> {
+    let data = download_object(REALTIME_BUCKET, chunk.key()).await?;
+
+    Ok(File::new(chunk.clone(), data))
 }

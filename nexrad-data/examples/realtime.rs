@@ -1,9 +1,9 @@
-use std::io::Cursor;
 use nexrad_data::result::Result;
 use nexrad_decode::messages::decode_message_header;
+use std::io::Cursor;
 
 #[cfg(feature = "aws")]
-use nexrad_data::aws::realtime::{get_latest_volume, list_chunks, download_chunk};
+use nexrad_data::aws::realtime::{download_chunk, get_latest_volume, list_chunks};
 
 #[cfg(not(feature = "aws"))]
 fn main() {
@@ -39,6 +39,6 @@ async fn main() -> Result<()> {
     let mut cursor = Cursor::new(file.data());
     let message_header = decode_message_header(&mut cursor).unwrap();
     println!("Decoded message header: {:?}", message_header);
-    
+
     Ok(())
 }

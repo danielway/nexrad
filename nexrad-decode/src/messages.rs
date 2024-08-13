@@ -8,8 +8,8 @@ mod primitive_aliases;
 
 mod message_type;
 
-use std::io::Read;
 pub use message_type::MessageType;
+use std::io::Read;
 
 mod message;
 pub use message::{Message, MessageWithHeader};

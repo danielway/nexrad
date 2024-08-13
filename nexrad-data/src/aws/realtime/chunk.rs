@@ -32,7 +32,7 @@ impl Chunk {
     pub fn identifier(&self) -> Option<&str> {
         self.key.split('/').last()
     }
-    
+
     /// The position of this chunk within the volume.
     pub fn chunk_type(&self) -> Option<ChunkType> {
         match self.key.chars().last() {

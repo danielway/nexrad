@@ -7,7 +7,18 @@ mod definitions;
 mod primitive_aliases;
 
 mod message_type;
+
+use std::io::Read;
 pub use message_type::MessageType;
 
 mod message;
 pub use message::{Message, MessageWithHeader};
+
+use crate::messages::message_header::MessageHeader;
+use crate::result::Result;
+use crate::util::deserialize;
+
+/// Decode a NEXRAD Level II message from a reader.
+pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
+    deserialize(reader)
+}

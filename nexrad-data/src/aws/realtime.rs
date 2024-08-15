@@ -27,17 +27,10 @@
 //! to the next volume when the active one is filled.
 //!
 
-mod volume;
-pub use volume::Volume;
-
-mod chunk;
-mod file;
-
-use crate::aws::realtime::file::File;
 use crate::aws::s3::{download_object, list_objects};
 use crate::aws::search::binary_search_greatest;
+use crate::realtime::{Chunk, File, Volume};
 use crate::result::Result;
-pub use chunk::Chunk;
 
 const REALTIME_BUCKET: &str = "unidata-nexrad-level2-chunks";
 

@@ -1,4 +1,4 @@
-use crate::aws::realtime::volume::Volume;
+use crate::realtime::Volume;
 use chrono::{DateTime, Utc};
 
 /// Represents a chunk of NEXRAD data within a volume.

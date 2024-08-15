@@ -1,4 +1,4 @@
-use crate::aws::realtime::Chunk;
+use crate::realtime::Chunk;
 
 /// Represents a chunk data file stored in the NEXRAD real-time bucket.
 pub struct File {

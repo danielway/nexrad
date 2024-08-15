@@ -7,5 +7,6 @@
 pub mod aws;
 
 pub mod archive;
+pub mod realtime;
 
 pub mod result;

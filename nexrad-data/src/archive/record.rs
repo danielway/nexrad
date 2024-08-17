@@ -54,8 +54,9 @@ impl<'a> Record<'a> {
     }
 }
 
-/// Splits compressed LDM record data into individual records.
-pub(crate) fn split_records(data: &[u8]) -> Vec<Record> {
+/// Splits compressed LDM record data into individual records. Will omit the record size prefix from
+/// each record.
+pub fn split_compressed_records(data: &[u8]) -> Vec<Record> {
     let mut records = Vec::new();
 
     let mut position = 0;

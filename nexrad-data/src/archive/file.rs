@@ -1,5 +1,5 @@
 use crate::archive::identifier::Identifier;
-use crate::archive::{split_records, Header, Record};
+use crate::archive::{split_compressed_records, Header, Record};
 use crate::result::Result;
 
 /// A NEXRAD Archive II volume data file.
@@ -33,6 +33,6 @@ impl File {
 
     /// The file's LDM records.
     pub fn records(&self) -> Vec<Record> {
-        split_records(&self.1[size_of::<Header>()..])
+        split_compressed_records(&self.1[size_of::<Header>()..])
     }
 }

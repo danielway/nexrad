@@ -43,7 +43,7 @@ impl<'a> Record<'a> {
 
     /// Decompresses this LDM record's data.
     #[cfg(feature = "bzip2")]
-    pub fn decompress(&self) -> Result<Record> {
+    pub fn decompress<'b>(&self) -> Result<Record<'b>> {
         if !self.compressed() {
             return Err(Error::UncompressedDataError);
         }

@@ -55,7 +55,7 @@ impl<'a> Record<'a> {
 }
 
 /// Splits compressed LDM record data into individual records.
-pub(crate) fn split_records(data: &Vec<u8>) -> Vec<Record> {
+pub(crate) fn split_records(data: &[u8]) -> Vec<Record> {
     let mut records = Vec::new();
 
     let mut position = 0;
@@ -66,13 +66,11 @@ pub(crate) fn split_records(data: &Vec<u8>) -> Vec<Record> {
 
         let mut record_size = [0; 4];
         record_size.copy_from_slice(&data[position..position + 4]);
-        let record_size = i32::from_be_bytes(record_size).abs();
+        let record_size = i32::from_be_bytes(record_size).abs() as usize;
+        position += 4;
 
-        let whole_record_size = record_size as usize + 4;
-        records.push(Record::from_slice(
-            &data[position..position + whole_record_size],
-        ));
-        position += whole_record_size;
+        records.push(Record::from_slice(&data[position..position + record_size]));
+        position += record_size;
     }
 
     records

@@ -5,7 +5,7 @@ use crate::volume::{split_compressed_records, Header, Record};
 pub struct File(Vec<u8>);
 
 impl File {
-    /// Creates a new Archive II file with the provided data.
+    /// Creates a new Archive II volume file with the provided data.
     pub fn new(data: Vec<u8>) -> Self {
         Self(data)
     }
@@ -15,7 +15,7 @@ impl File {
         &self.0
     }
 
-    /// The file's decoded Archive II header.
+    /// The file's decoded Archive II volume header.
     pub fn header(&self) -> Result<Header> {
         Header::deserialize(&mut self.0.as_slice())
     }

@@ -7,8 +7,8 @@ use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::io::Read;
 
-/// Header for an Archive II file containing metadata about the radar data. This header is located
-/// at the beginning of the file.
+/// Header for an Archive II volume file containing metadata about the radar data. This header is
+/// located at the beginning of the file.
 #[repr(C)]
 #[derive(Deserialize)]
 pub struct Header {
@@ -83,7 +83,7 @@ impl Header {
 
 impl Debug for Header {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Archive2Header")
+        f.debug_struct("Header")
             .field("tape_filename", &self.tape_filename())
             .field("extension_number", &self.extension_number())
             .field("date_time", &self.date_time())

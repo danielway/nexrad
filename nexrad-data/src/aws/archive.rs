@@ -46,5 +46,5 @@ pub async fn download_file(identifier: Identifier) -> Result<File> {
     let key = format!("{}/{}/{}", date.format("%Y/%m/%d"), site, identifier.name());
     let data = download_object(ARCHIVE_BUCKET, &key).await?;
 
-    Ok(File::new_with_identifier(identifier, data))
+    Ok(File::new(data))
 }

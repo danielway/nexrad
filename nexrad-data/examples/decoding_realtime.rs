@@ -15,13 +15,15 @@ fn main() {
 #[cfg(feature = "aws")]
 fn main() {
     let files = read_dir("downloads").unwrap();
-    for file in files {
-        let path = file.unwrap().path();
-        let file = path.to_str().unwrap();
+    let file_names = files
+        .map(|file| file.unwrap().path().to_str().unwrap().to_string())
+        .collect::<Vec<_>>();
+
+    for file in file_names {
         if file.ends_with("S") {
-            decode_start_chunk(file);
+            decode_start_chunk(&file);
         } else {
-            decode_non_start_chunk(file);
+            decode_non_start_chunk(&file);
         }
     }
 }
@@ -48,7 +50,7 @@ fn decode_non_start_chunk(file: &str) {
     let data = read(file).unwrap();
 
     // Non-start chunks are just records without a volume header
-    let record = Record::new(data);
+    let record = Record::from_slice(&data[4..]);
     decode_record(record);
 
     println!("  Decoded all messages in chunk file.\n");
@@ -64,18 +66,17 @@ fn decode_record(mut record: Record) {
 
     let mut message_type_counts = HashMap::new();
 
+    // println!("    Headers:");
     let mut reader = Cursor::new(record.data());
     while reader.position() < reader.get_ref().len() as u64 {
         let message_header = decode_message_header(&mut reader).unwrap();
+        // println!("      {:?}", message_header);
 
         let message_type = message_header.message_type();
         let count = message_type_counts.get(&message_type).unwrap_or(&0) + 1;
         message_type_counts.insert(message_type, count);
 
-        if message_header.message_type() == MessageType::RDADigitalRadarData {
-            // todo: message type counts are off and we're having a read error on an M31 for
-            //       downloads/20240813-123330-005-I
-
+        if message_header.message_type() == MessageType::RDADigitalRadarDataGenericFormat {
             // Decoding the message will advance the reader
             decode_digital_radar_data(&mut reader).unwrap();
         } else {
@@ -86,7 +87,8 @@ fn decode_record(mut record: Record) {
         }
     }
 
+    println!("    Message type counts:");
     for (message_type, count) in message_type_counts {
-        println!("    {:?}: {}", message_type, count);
+        println!("      {:?}: {}", message_type, count);
     }
 }

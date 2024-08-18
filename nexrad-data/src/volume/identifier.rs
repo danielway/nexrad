@@ -1,6 +1,6 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 
-/// Identifying metadata for a NEXRAD archive file.
+/// Identifying metadata for a NEXRAD volume file.
 #[derive(Clone)]
 pub struct Identifier(String);
 

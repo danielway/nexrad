@@ -1,5 +1,5 @@
-use crate::archive::util::get_datetime;
 use crate::result::Result;
+use crate::volume::util::get_datetime;
 use bincode::{DefaultOptions, Options};
 use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
@@ -29,7 +29,7 @@ pub struct Header {
     /// after 999.
     extension_number: [u8; 3],
 
-    /// This archive's date represented as a count of days since 1 January 1970 00:00 GMT. It is
+    /// This volume's date represented as a count of days since 1 January 1970 00:00 GMT. It is
     /// also referred-to as a "modified Julian date" where it is the Julian date - 2440586.5.
     date: u32,
 
@@ -70,7 +70,7 @@ impl Header {
         String::from_utf8(self.extension_number.to_vec()).unwrap()
     }
 
-    /// Returns the date and time of the archive.
+    /// Returns the date and time of the volume.
     pub fn date_time(&self) -> DateTime<Utc> {
         get_datetime(self.date as u16, Duration::milliseconds(self.time as i64))
     }

@@ -13,7 +13,7 @@ enum RecordData<'a> {
 ///
 /// The Unidata Local Data Manager (LDM) is a data distribution system used by the NWS to distribute
 /// NEXRAD archival radar data. A NEXRAD "Archive II" file starts with an
-/// [crate::archive::Header] followed by a series of compressed LDM records, each
+/// [crate::volume::Header] followed by a series of compressed LDM records, each
 /// containing messages with radar data.
 pub struct Record<'a>(RecordData<'a>);
 

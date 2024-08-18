@@ -1,5 +1,5 @@
-use crate::archive::{split_compressed_records, Header, Record};
 use crate::result::Result;
+use crate::volume::{split_compressed_records, Header, Record};
 
 /// A NEXRAD Archive II volume data file.
 pub struct File(Vec<u8>);

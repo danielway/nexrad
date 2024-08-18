@@ -1,10 +1,10 @@
 //!
-//! TODO: explain how the archive bucket is structured/works
+//! TODO: explain how the volume bucket is structured/works
 //!
 
-use crate::archive::{File, Identifier};
 use crate::aws::s3::{download_object, list_objects};
 use crate::result::{Error, Result};
+use crate::volume::{File, Identifier};
 use chrono::NaiveDate;
 
 const ARCHIVE_BUCKET: &str = "noaa-nexrad-level2";

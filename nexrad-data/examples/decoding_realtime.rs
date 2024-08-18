@@ -1,5 +1,5 @@
-use nexrad_data::archive;
-use nexrad_data::archive::Record;
+use nexrad_data::volume;
+use nexrad_data::volume::Record;
 use nexrad_decode::messages::digital_radar_data::decode_digital_radar_data;
 use nexrad_decode::messages::message_header::MessageHeader;
 use nexrad_decode::messages::{decode_message_header, MessageType};
@@ -31,7 +31,7 @@ fn main() {
 fn decode_start_chunk(file: &str) {
     println!("Decoding start chunk: {}", file);
     let start = read(file).unwrap();
-    let file = archive::File::new(start);
+    let file = volume::File::new(start);
 
     println!("  Archive header: {:?}", file.header().unwrap());
 

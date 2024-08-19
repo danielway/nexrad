@@ -25,18 +25,12 @@ async fn main() -> Result<()> {
 
     let latest = chunks.last().unwrap();
     let file = download_chunk("KDMX", latest).await?;
-    println!("Downloaded chunk size: {}", file.data().len());
+    println!("Downloaded chunk size: {}", file.len());
 
-    println!(
-        "Writing chunk to downloads/{}...",
-        latest.identifier().unwrap()
-    );
-    std::fs::write(
-        format!("downloads/{}", latest.identifier().unwrap()),
-        file.data(),
-    )?;
+    println!("Writing chunk to downloads/{}...", latest.name());
+    std::fs::write(format!("downloads/{}", latest.name()), &file)?;
 
-    let mut cursor = Cursor::new(file.data());
+    let mut cursor = Cursor::new(file);
     let message_header = decode_message_header(&mut cursor).unwrap();
     println!("Decoded message header: {:?}", message_header);
 

@@ -28,6 +28,7 @@ fn main() {
     }
 }
 
+#[cfg(feature = "aws")]
 fn decode_start_chunk(file: &str) {
     println!("Decoding start chunk: {}", file);
     let start = read(file).unwrap();
@@ -45,6 +46,7 @@ fn decode_start_chunk(file: &str) {
     println!("  Decoded all messages in start of volume file.\n");
 }
 
+#[cfg(feature = "aws")]
 fn decode_non_start_chunk(file: &str) {
     println!("Decoding chunk: {}", file);
     let data = read(file).unwrap();
@@ -56,6 +58,7 @@ fn decode_non_start_chunk(file: &str) {
     println!("  Decoded all messages in chunk file.\n");
 }
 
+#[cfg(feature = "aws")]
 fn decode_record(mut record: Record) {
     println!("  Decoding record...");
     if record.compressed() {

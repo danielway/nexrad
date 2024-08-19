@@ -6,7 +6,6 @@
 #[cfg(feature = "aws")]
 pub mod aws;
 
-pub mod realtime;
 pub mod volume;
 
 pub mod result;

@@ -1,4 +1,4 @@
-use nexrad_data::volume;
+use nexrad_data::aws::realtime::Chunk;
 use nexrad_data::volume::Record;
 use nexrad_decode::messages::digital_radar_data::decode_digital_radar_data;
 use nexrad_decode::messages::message_header::MessageHeader;
@@ -20,44 +20,26 @@ fn main() {
         .collect::<Vec<_>>();
 
     for file in file_names {
-        if file.ends_with("S") {
-            decode_start_chunk(&file);
-        } else if file.ends_with("I") || file.ends_with("E") {
-            decode_non_start_chunk(&file);
-        } else {
-            println!("Skipping file: {}", file);
+        println!("Reading chunk file: {}", file);
+        match Chunk::new(read(&file).unwrap()) {
+            Ok(chunk) => match chunk {
+                Chunk::Start(file) => {
+                    println!("  Start chunk, volume header: {:?}", file.header());
+
+                    let records = file.records();
+                    let first_record = records.into_iter().next().unwrap();
+                    decode_record(first_record);
+                }
+                Chunk::IntermediateOrEnd(record) => {
+                    println!("  Intermediate or end chunk:");
+                    decode_record(record);
+                }
+            },
+            Err(e) => {
+                println!("Error reading chunk file: {:?}", e);
+            }
         }
     }
-}
-
-#[cfg(feature = "aws")]
-fn decode_start_chunk(file: &str) {
-    println!("Decoding start chunk: {}", file);
-    let start = read(file).unwrap();
-    let file = volume::File::new(start);
-
-    println!("  Archive header: {:?}", file.header().unwrap());
-
-    let records = file.records();
-    println!("  Found {} records in start of volume file.", records.len());
-
-    for record in records {
-        decode_record(record);
-    }
-
-    println!("  Decoded all messages in start of volume file.\n");
-}
-
-#[cfg(feature = "aws")]
-fn decode_non_start_chunk(file: &str) {
-    println!("Decoding chunk: {}", file);
-    let data = read(file).unwrap();
-
-    // Non-start chunks are just records without a volume header
-    let record = Record::from_slice(&data);
-    decode_record(record);
-
-    println!("  Decoded all messages in chunk file.\n");
 }
 
 #[cfg(feature = "aws")]

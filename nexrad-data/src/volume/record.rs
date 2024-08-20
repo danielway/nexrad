@@ -1,3 +1,4 @@
+use crate::result::aws::AWSError::UncompressedDataError;
 use crate::result::{Error, Result};
 use std::io::Read;
 
@@ -45,7 +46,7 @@ impl<'a> Record<'a> {
     #[cfg(feature = "bzip2")]
     pub fn decompress<'b>(&self) -> Result<Record<'b>> {
         if !self.compressed() {
-            return Err(Error::UncompressedDataError);
+            return Err(Error::AWS(UncompressedDataError));
         }
 
         let mut decompressed_data = Vec::new();

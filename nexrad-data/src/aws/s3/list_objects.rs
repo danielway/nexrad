@@ -1,7 +1,7 @@
 use crate::aws::s3::bucket_list_result::BucketListResult;
 use crate::aws::s3::bucket_object::BucketObject;
 use crate::aws::s3::bucket_object_field::BucketObjectField;
-use crate::result::Error;
+use crate::result::aws::AWSError::S3ListObjectsError;
 use chrono::{DateTime, Utc};
 use xml::reader::XmlEvent;
 use xml::EventReader;
@@ -18,11 +18,9 @@ pub async fn list_objects(
         path.push_str(&format!("&max-keys={}", max_keys));
     }
 
-    let response = reqwest::get(path)
-        .await
-        .map_err(Error::S3ListObjectsError)?;
+    let response = reqwest::get(path).await.map_err(S3ListObjectsError)?;
 
-    let body = response.text().await.map_err(Error::S3ListObjectsError)?;
+    let body = response.text().await.map_err(S3ListObjectsError)?;
     let parser = EventReader::new(body.as_bytes());
 
     let mut objects = Vec::new();

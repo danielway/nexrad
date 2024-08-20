@@ -13,27 +13,31 @@ pub enum Error {
     #[error("file deserialization error")]
     DeserializationError(#[from] bincode::Error),
     #[cfg(feature = "aws")]
-    #[error("unexpected truncated S3 list objects response")]
-    TruncatedListObjectsResponse,
-    #[cfg(feature = "aws")]
-    #[error("error decompressing uncompressed data")]
-    UncompressedDataError,
-    #[cfg(feature = "aws")]
-    #[error("error decoding date/time")]
-    DateTimeError(String),
-    #[cfg(feature = "aws")]
-    #[error("invalid radar site identifier")]
-    InvalidSiteIdentifier(String),
-    #[cfg(feature = "aws")]
-    #[error("ldm record decompression error")]
-    DecompressionError(#[from] bzip2::Error),
-    #[cfg(feature = "aws")]
-    #[error("error listing AWS S3 objects")]
-    S3ListObjectsError(reqwest::Error),
-    #[cfg(feature = "aws")]
-    #[error("error getting AWS S3 object")]
-    S3GetObjectError(reqwest::Error),
-    #[cfg(feature = "aws")]
-    #[error("error streaming/downloading AWS S3 object")]
-    S3StreamingError(reqwest::Error),
+    #[error(transparent)]
+    AWS(#[from] aws::AWSError),
+}
+
+#[cfg(feature = "aws")]
+pub mod aws {
+    use thiserror::Error as ThisError;
+
+    #[derive(ThisError, Debug)]
+    pub enum AWSError {
+        #[error("unexpected truncated S3 list objects response")]
+        TruncatedListObjectsResponse,
+        #[error("error decompressing uncompressed data")]
+        UncompressedDataError,
+        #[error("error decoding date/time")]
+        DateTimeError(String),
+        #[error("invalid radar site identifier")]
+        InvalidSiteIdentifier(String),
+        #[error("ldm record decompression error")]
+        DecompressionError(#[from] bzip2::Error),
+        #[error("error listing AWS S3 objects")]
+        S3ListObjectsError(reqwest::Error),
+        #[error("error getting AWS S3 object")]
+        S3GetObjectError(reqwest::Error),
+        #[error("error streaming/downloading AWS S3 object")]
+        S3StreamingError(reqwest::Error),
+    }
 }

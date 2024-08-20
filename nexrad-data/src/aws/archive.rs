@@ -3,7 +3,11 @@
 //!
 
 use crate::aws::s3::{download_object, list_objects};
-use crate::result::{Error, Result};
+use crate::result::aws::AWSError::{
+    DateTimeError, InvalidSiteIdentifier, TruncatedListObjectsResponse,
+};
+use crate::result::Error::AWS;
+use crate::result::Result;
 use crate::volume::{File, Identifier};
 use chrono::NaiveDate;
 
@@ -15,7 +19,7 @@ pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<Identifier>>
     let prefix = format!("{}/{}", date.format("%Y/%m/%d"), site);
     let list_result = list_objects(ARCHIVE_BUCKET, &prefix, None).await?;
     if list_result.truncated {
-        return Err(Error::TruncatedListObjectsResponse);
+        return Err(AWS(TruncatedListObjectsResponse));
     }
 
     let metas = list_result
@@ -37,11 +41,11 @@ pub async fn list_files(site: &str, date: &NaiveDate) -> Result<Vec<Identifier>>
 pub async fn download_file(identifier: Identifier) -> Result<File> {
     let date = identifier
         .date_time()
-        .ok_or_else(|| Error::DateTimeError(identifier.name().to_string()))?;
+        .ok_or_else(|| DateTimeError(identifier.name().to_string()))?;
 
     let site = identifier
         .site()
-        .ok_or_else(|| Error::InvalidSiteIdentifier(identifier.name().to_string()))?;
+        .ok_or_else(|| InvalidSiteIdentifier(identifier.name().to_string()))?;
 
     let key = format!("{}/{}/{}", date.format("%Y/%m/%d"), site, identifier.name());
     let data = download_object(ARCHIVE_BUCKET, &key).await?;

@@ -31,6 +31,8 @@ pub mod aws {
         DateTimeError(String),
         #[error("invalid radar site identifier")]
         InvalidSiteIdentifier(String),
+        #[error("chunk data in unrecognized format")]
+        UnrecognizedChunkFormat,
         #[error("ldm record decompression error")]
         DecompressionError(#[from] bzip2::Error),
         #[error("error listing AWS S3 objects")]

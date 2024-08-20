@@ -39,7 +39,7 @@ impl<'a> Record<'a> {
 
     /// Whether this LDM record's data is compressed.
     pub fn compressed(&self) -> bool {
-        self.data().len() >= 2 && self.data()[0..2].as_ref() == b"BZ"
+        self.data().len() >= 6 && self.data()[4..6].as_ref() == b"BZ"
     }
 
     /// Decompresses this LDM record's data.
@@ -49,8 +49,12 @@ impl<'a> Record<'a> {
             return Err(Error::AWS(UncompressedDataError));
         }
 
+        // Skip the four-byte record size prefix
+        let data = self.data().split_at(4).1;
+
         let mut decompressed_data = Vec::new();
-        BzDecoder::new(self.data()).read_to_end(&mut decompressed_data)?;
+        BzDecoder::new(data).read_to_end(&mut decompressed_data)?;
+
         Ok(Record::new(decompressed_data))
     }
 }

@@ -22,8 +22,10 @@ fn main() {
     for file in file_names {
         if file.ends_with("S") {
             decode_start_chunk(&file);
-        } else {
+        } else if file.ends_with("I") || file.ends_with("E") {
             decode_non_start_chunk(&file);
+        } else {
+            println!("Skipping file: {}", file);
         }
     }
 }
@@ -52,7 +54,7 @@ fn decode_non_start_chunk(file: &str) {
     let data = read(file).unwrap();
 
     // Non-start chunks are just records without a volume header
-    let record = Record::from_slice(&data[4..]);
+    let record = Record::from_slice(&data);
     decode_record(record);
 
     println!("  Decoded all messages in chunk file.\n");

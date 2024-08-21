@@ -1,12 +1,3 @@
-use nexrad_data::aws::realtime::Chunk;
-use nexrad_data::volume::Record;
-use nexrad_decode::messages::digital_radar_data::decode_digital_radar_data;
-use nexrad_decode::messages::message_header::MessageHeader;
-use nexrad_decode::messages::{decode_message_header, MessageType};
-use std::collections::HashMap;
-use std::fs::{read, read_dir};
-use std::io::{Cursor, Seek, SeekFrom};
-
 #[cfg(not(feature = "aws"))]
 fn main() {
     println!("This example requires the \"aws\" feature to be enabled.");
@@ -14,6 +5,9 @@ fn main() {
 
 #[cfg(feature = "aws")]
 fn main() {
+    use nexrad_data::aws::realtime::Chunk;
+    use std::fs::{read, read_dir};
+
     let files = read_dir("downloads").unwrap();
     let file_names = files
         .map(|file| file.unwrap().path().to_str().unwrap().to_string())
@@ -43,7 +37,13 @@ fn main() {
 }
 
 #[cfg(feature = "aws")]
-fn decode_record(mut record: Record) {
+fn decode_record(mut record: nexrad_data::volume::Record) {
+    use nexrad_decode::messages::digital_radar_data::decode_digital_radar_data;
+    use nexrad_decode::messages::message_header::MessageHeader;
+    use nexrad_decode::messages::{decode_message_header, MessageType};
+    use std::collections::HashMap;
+    use std::io::{Cursor, Seek, SeekFrom};
+
     println!("  Decoding record...");
     if record.compressed() {
         println!("    Decompressing record...");

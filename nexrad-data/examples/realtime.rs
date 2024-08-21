@@ -1,7 +1,3 @@
-use nexrad_data::result::Result;
-use nexrad_decode::messages::decode_message_header;
-use std::io::Cursor;
-
 #[cfg(feature = "aws")]
 use nexrad_data::aws::realtime::{download_chunk, get_latest_volume, list_chunks, Chunk};
 
@@ -12,7 +8,10 @@ fn main() {
 
 #[cfg(feature = "aws")]
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> nexrad_data::result::Result<()> {
+    use nexrad_decode::messages::decode_message_header;
+    use std::io::Cursor;
+
     let latest = get_latest_volume("KDMX").await?;
     println!("Most recent volume: {:?}", latest);
 

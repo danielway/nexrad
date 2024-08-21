@@ -1,13 +1,4 @@
-use chrono::{NaiveDate, NaiveTime};
 use clap::Parser;
-use nexrad_data::result::Result;
-use nexrad_data::volume::Identifier;
-use std::fs::{create_dir, File};
-use std::io::Write;
-use std::path::Path;
-
-#[cfg(feature = "aws")]
-use nexrad_data::aws::archive::{download_file, list_files};
 
 #[cfg(not(feature = "aws"))]
 fn main() {
@@ -36,7 +27,13 @@ struct Cli {
 
 #[cfg(feature = "aws")]
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> nexrad_data::result::Result<()> {
+    use chrono::{NaiveDate, NaiveTime};
+    use nexrad_data::aws::archive::{download_file, list_files};
+    use std::fs::{create_dir, File};
+    use std::io::Write;
+    use std::path::Path;
+
     let cli = Cli::parse();
 
     let site = &cli.site;
@@ -100,7 +97,11 @@ async fn main() -> Result<()> {
 }
 
 /// Returns the index of the file with the nearest time to the provided start time.
-fn get_nearest_file_index(files: &Vec<Identifier>, start_time: NaiveTime) -> usize {
+#[cfg(feature = "aws")]
+fn get_nearest_file_index(
+    files: &Vec<nexrad_data::volume::Identifier>,
+    start_time: chrono::NaiveTime,
+) -> usize {
     let first_file = files.first().expect("find at least one file");
     let first_file_time = first_file
         .date_time()

@@ -5,7 +5,7 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 pub struct Identifier(String);
 
 impl Identifier {
-    pub(crate) fn new(name: String) -> Self {
+    pub fn new(name: String) -> Self {
         Identifier(name)
     }
 

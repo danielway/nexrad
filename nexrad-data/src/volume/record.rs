@@ -1,6 +1,3 @@
-use crate::result::{Error, Result};
-use std::io::Read;
-
 #[cfg(feature = "bzip2")]
 use bzip2::read::BzDecoder;
 
@@ -43,9 +40,11 @@ impl<'a> Record<'a> {
 
     /// Decompresses this LDM record's data.
     #[cfg(feature = "bzip2")]
-    pub fn decompress<'b>(&self) -> Result<Record<'b>> {
+    pub fn decompress<'b>(&self) -> crate::result::Result<Record<'b>> {
+        use std::io::Read;
+
         if !self.compressed() {
-            return Err(Error::UncompressedDataError);
+            return Err(crate::result::Error::UncompressedDataError);
         }
 
         // Skip the four-byte record size prefix

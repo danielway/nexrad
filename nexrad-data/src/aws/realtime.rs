@@ -39,58 +39,13 @@ pub use chunk_type::*;
 mod chunk_identifier;
 pub use chunk_identifier::*;
 
-use crate::aws::s3::{download_object, list_objects};
-use crate::aws::search::binary_search_greatest;
-use crate::result::Result;
+mod download_chunk;
+pub use download_chunk::*;
+
+mod get_latest_volume;
+pub use get_latest_volume::*;
+
+mod list_chunks;
+pub use list_chunks::*;
 
 const REALTIME_BUCKET: &str = "unidata-nexrad-level2-chunks";
-
-/// Identifies the volume index with the most recent data for the specified radar site. Real-time
-/// NEXRAD data is uploaded to a series of rotating volumes 0..=999, each containing ~55 chunks.
-/// This function performs a binary search to find the most recent volume with data.
-pub async fn get_latest_volume(site: &str) -> Result<Option<VolumeIndex>> {
-    binary_search_greatest(1, 999, |volume| async move {
-        let chunks = list_chunks(site, VolumeIndex::new(volume), 1).await?;
-        Ok(chunks.first().map(|chunk| chunk.date_time()))
-    })
-    .await
-    .map(|volume| volume.map(VolumeIndex::new))
-}
-
-/// Lists the chunks for the specified radar site and volume. The `max_keys` parameter can be used
-/// to limit the number of chunks returned.
-pub async fn list_chunks(
-    site: &str,
-    volume: VolumeIndex,
-    max_keys: usize,
-) -> Result<Vec<ChunkIdentifier>> {
-    let prefix = format!("{}/{}/", site, volume.as_number());
-    let list_result = list_objects(REALTIME_BUCKET, &prefix, Some(max_keys)).await?;
-
-    let metas = list_result
-        .objects
-        .iter()
-        .map(|object| {
-            let identifier_segment = object.key.split('/').last();
-            let identifier = identifier_segment
-                .unwrap_or_else(|| object.key.as_ref())
-                .to_string();
-
-            ChunkIdentifier::new(
-                site.to_string(),
-                volume,
-                identifier,
-                object.last_modified.clone(),
-            )
-        })
-        .collect();
-
-    Ok(metas)
-}
-
-/// Downloads the specified chunk from the real-time NEXRAD data bucket.
-pub async fn download_chunk<'a>(site: &str, chunk: &ChunkIdentifier) -> Result<Chunk<'a>> {
-    let key = format!("{}/{}/{}", site, chunk.volume().as_number(), chunk.name());
-    let data = download_object(REALTIME_BUCKET, &key).await?;
-    Chunk::new(data)
-}

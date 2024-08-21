@@ -1,4 +1,3 @@
-use crate::result::aws::AWSError::UncompressedDataError;
 use crate::result::{Error, Result};
 use std::io::Read;
 
@@ -46,7 +45,7 @@ impl<'a> Record<'a> {
     #[cfg(feature = "bzip2")]
     pub fn decompress<'b>(&self) -> Result<Record<'b>> {
         if !self.compressed() {
-            return Err(Error::AWS(UncompressedDataError));
+            return Err(Error::UncompressedDataError);
         }
 
         // Skip the four-byte record size prefix

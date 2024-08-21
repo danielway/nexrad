@@ -12,6 +12,9 @@ pub enum Error {
     FileError(#[from] std::io::Error),
     #[error("file deserialization error")]
     DeserializationError(#[from] bincode::Error),
+    #[cfg(feature = "bzip2")]
+    #[error("error decompressing uncompressed data")]
+    UncompressedDataError,
     #[cfg(feature = "aws")]
     #[error(transparent)]
     AWS(#[from] aws::AWSError),
@@ -25,8 +28,6 @@ pub mod aws {
     pub enum AWSError {
         #[error("unexpected truncated S3 list objects response")]
         TruncatedListObjectsResponse,
-        #[error("error decompressing uncompressed data")]
-        UncompressedDataError,
         #[error("error decoding date/time")]
         DateTimeError(String),
         #[error("invalid radar site identifier")]

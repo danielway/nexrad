@@ -1,5 +1,5 @@
 #[cfg(feature = "aws")]
-use nexrad_data::aws::realtime::{download_chunk, get_latest_volume, list_chunks, Chunk};
+use nexrad_data::aws::realtime::{download_chunk, get_latest_volume, list_chunks_in_volume, Chunk};
 
 #[cfg(not(feature = "aws"))]
 fn main() {

@@ -3,7 +3,7 @@ use crate::aws::s3::list_objects;
 
 /// Lists the chunks for the specified radar site and volume. The `max_keys` parameter can be used
 /// to limit the number of chunks returned.
-pub async fn list_chunks(
+pub async fn list_chunks_in_volume(
     site: &str,
     volume: VolumeIndex,
     max_keys: usize,

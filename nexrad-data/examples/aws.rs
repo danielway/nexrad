@@ -99,7 +99,7 @@ async fn main() -> nexrad_data::result::Result<()> {
 /// Returns the index of the file with the nearest time to the provided start time.
 #[cfg(feature = "aws")]
 fn get_nearest_file_index(
-    files: &Vec<nexrad_data::volume::Identifier>,
+    files: &Vec<nexrad_data::aws::archive::Identifier>,
     start_time: chrono::NaiveTime,
 ) -> usize {
     let first_file = files.first().expect("find at least one file");

@@ -1,10 +1,11 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 
-/// Identifying metadata for a NEXRAD volume file.
+/// Identifying metadata for a NEXRAD archive volume file.
 #[derive(Clone)]
 pub struct Identifier(String);
 
 impl Identifier {
+    /// Constructs a new identifier from the provided name.
     pub fn new(name: String) -> Self {
         Identifier(name)
     }

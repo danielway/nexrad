@@ -45,9 +45,7 @@ pub use download_chunk::*;
 mod get_latest_volume;
 pub use get_latest_volume::*;
 
-mod get_next_chunk;
 mod list_chunks_in_volume;
-
 pub use list_chunks_in_volume::*;
 
 const REALTIME_BUCKET: &str = "unidata-nexrad-level2-chunks";

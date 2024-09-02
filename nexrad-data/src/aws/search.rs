@@ -1,208 +1,412 @@
 use std::future::Future;
 
-/// Performs a binary search from `min` to `max` inclusive to find the index with the greatest
-/// value. If no values are found, `None` is returned.
-pub(crate) async fn binary_search_greatest<F, V>(
-    min: usize,
-    max: usize,
+/// Performs an efficient search of elements to locate the nearest element to `target` without going
+/// over. Assumes there are `element_count` elements in a rotated sorted array with zero or many
+/// `None` values at the pivot point. Returns `None` if there are no values less than the `target`.
+pub(crate) async fn search<F, V>(
+    element_count: usize,
+    target: V,
     mut f: impl FnMut(usize) -> F,
 ) -> crate::result::Result<Option<usize>>
 where
     F: Future<Output = crate::result::Result<Option<V>>>,
     V: PartialOrd + Clone,
 {
-    let mut low = min;
-    let mut low_value = f(low).await?;
-    if low_value.is_none() {
-        let original_low = low;
-        low += 1;
-        let mut high = max + 1;
-        while low < high {
-            let mid = low + (high - low) / 2;
-            match f(mid).await? {
-                Some(_) => high = mid,
-                None => low = mid + 1,
-            };
-        }
-        if low != original_low {
-            low_value = f(low).await?;
-        }
-    }
-
-    if low_value.is_none() {
+    if element_count == 0 {
         return Ok(None);
     }
 
-    let mut high = max + 1;
+    let some_target = Some(&target);
+    let mut nearest = None;
+
+    let first_value = f(0).await?;
+    let first_value_ref = first_value.as_ref();
+
+    if first_value_ref == some_target {
+        return Ok(Some(0));
+    }
+
+    let mut low = 0;
+    let mut high = element_count;
+
+    // First, locate any value in the array to use as a reference point via repeated bisection
+    let mut stack = vec![(0, element_count - 1)];
+    while !stack.is_empty() {
+        let (start, end) = stack.pop().unwrap();
+        if start > end {
+            continue;
+        }
+
+        let mid = (start + end) / 2;
+        let mid_value = f(mid).await?;
+        let mid_value_ref = mid_value.as_ref();
+
+        // If this value is None, continue the bisection
+        if mid_value_ref.is_none() {
+            stack.push((mid + 1, end));
+            if mid > 0 {
+                stack.push((start, mid - 1));
+            }
+            continue;
+        }
+
+        if mid_value_ref <= some_target {
+            nearest = Some(mid);
+        }
+
+        if mid_value_ref == some_target {
+            return Ok(nearest);
+        }
+
+        if should_search_right(first_value_ref, mid_value_ref, some_target) {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
+
+        break;
+    }
+
+    // Now that we have a reference point, we can perform a binary search for the target
     while low < high {
         let mid = low + (high - low) / 2;
 
-        match f(mid).await? {
-            None => {
-                high = mid;
-                continue;
-            }
-            Some(mid_value) => {
-                if &mid_value < low_value.as_ref().unwrap() {
-                    high = mid;
-                    continue;
-                }
-            }
+        let value = f(mid).await?;
+        let value_ref = value.as_ref();
+
+        if value_ref.is_some() && value_ref <= some_target {
+            nearest = Some(mid);
         }
 
-        low = mid + 1;
+        if value_ref == some_target {
+            return Ok(Some(mid));
+        }
+
+        if should_search_right(first_value_ref, value_ref, some_target) {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
     }
 
-    Ok(Some(low - 1))
+    Ok(nearest)
+}
+
+/// Returns `true` if the search should continue right, `false` if it should continue left.
+fn should_search_right<V>(first: V, value: V, target: V) -> bool
+where
+    V: PartialOrd,
+{
+    if value < target {
+        value >= first || target < first
+    } else {
+        target < first
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    mod binary_search_greatest {
+    mod binary_search {
         use super::*;
-        use chrono::{DateTime, NaiveDateTime, Utc};
 
-        // Volumes are one-indexed in AWS, so apply an offset to assert indexes are shifted properly
-        const VOLUME_OFFSET: usize = 0;
-
-        macro_rules! assert_binary_search_greatest {
-            ($test_cases:expr, $expected:expr) => {
-                let mut end = VOLUME_OFFSET;
-                if $test_cases.len() > 0 {
-                    end += $test_cases.len() - 1;
+        macro_rules! test {
+            ($name:ident, $elements:expr, $target:expr, $expected:expr) => {
+                #[tokio::test]
+                async fn $name() {
+                    let result =
+                        search(
+                            $elements.len(),
+                            $target,
+                            |i| async move { Ok($elements[i]) },
+                        )
+                        .await
+                        .unwrap();
+                    assert_eq!(result, $expected);
                 }
-
-                let result = binary_search_greatest(VOLUME_OFFSET, end, |i| async move {
-                    println!("Testing index {}", i);
-                    Ok($test_cases.get(i - VOLUME_OFFSET).cloned().flatten())
-                })
-                .await;
-
-                assert!(result.is_ok());
-                assert_eq!(result.unwrap(), $expected);
             };
         }
 
-        macro_rules! date_time {
-            ($date_time_string:expr) => {
-                Some(
-                    NaiveDateTime::parse_from_str($date_time_string, "%Y/%m/%d %H:%M:%S")
-                        .unwrap()
-                        .and_utc(),
-                )
+        test!(empty, vec![] as Vec<Option<usize>>, 0, None);
+        test!(single, vec![Some(0)], 0, Some(0));
+        test!(single_under, vec![Some(1)], 0, None);
+        test!(single_over, vec![Some(0)], 1, Some(0));
+
+        test!(double_match, vec![Some(0), Some(1)], 0, Some(0));
+
+        test!(double_over, vec![Some(0), Some(1)], 2, Some(1));
+
+        test!(double_under, vec![Some(1), Some(2)], 0, None);
+
+        test!(double_middle, vec![Some(0), Some(2)], 1, Some(0));
+
+        test!(double_middle_over, vec![Some(0), Some(2)], 3, Some(1));
+
+        test!(
+            filled,
+            vec![
+                Some(0),
+                Some(1),
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+                Some(6),
+                Some(7),
+                Some(8),
+                Some(9),
+            ],
+            5,
+            Some(5)
+        );
+
+        test!(
+            filled_nonmatch,
+            vec![
+                Some(0),
+                Some(1),
+                Some(2),
+                Some(3),
+                Some(6),
+                Some(7),
+                Some(8),
+                Some(9),
+            ],
+            5,
+            Some(3)
+        );
+
+        test!(
+            none_end,
+            vec![
+                Some(0),
+                Some(1),
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+                Some(6),
+                None,
+                None,
+                None,
+            ],
+            8,
+            Some(6)
+        );
+
+        test!(
+            none_beginning_no_match,
+            vec![
+                None,
+                None,
+                None,
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+                Some(6),
+                Some(7),
+                Some(8),
+            ],
+            1,
+            None
+        );
+
+        test!(
+            none_beginning_match,
+            vec![
+                None,
+                None,
+                None,
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+                Some(6),
+                Some(7),
+                Some(8),
+            ],
+            3,
+            Some(4)
+        );
+
+        test!(
+            none_wrapping_match,
+            vec![
+                None,
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+                Some(6),
+                Some(7),
+                Some(8),
+                None,
+                None,
+            ],
+            3,
+            Some(2)
+        );
+
+        test!(
+            none_wrapping_no_match,
+            vec![
+                None,
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+                Some(6),
+                Some(7),
+                Some(8),
+                None,
+                None,
+            ],
+            1,
+            None
+        );
+
+        test!(
+            none_wrapping_non_exact_match,
+            vec![
+                None,
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+                Some(6),
+                Some(7),
+                Some(8),
+                None,
+                None,
+            ],
+            10,
+            Some(7)
+        );
+
+        test!(
+            wrapping_match_start,
+            vec![
+                Some(6),
+                Some(7),
+                Some(8),
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+            ],
+            7,
+            Some(1)
+        );
+
+        test!(
+            wrapping_match_end,
+            vec![
+                Some(6),
+                Some(7),
+                Some(8),
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+            ],
+            4,
+            Some(5)
+        );
+
+        test!(
+            wrapping_no_match,
+            vec![
+                Some(6),
+                Some(7),
+                Some(8),
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+            ],
+            1,
+            None
+        );
+
+        test!(
+            wrapping_none_match_start,
+            vec![
+                Some(6),
+                Some(7),
+                Some(8),
+                None,
+                None,
+                None,
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+            ],
+            7,
+            Some(1)
+        );
+
+        test!(
+            wrapping_none_no_match,
+            vec![
+                Some(6),
+                Some(7),
+                Some(8),
+                None,
+                None,
+                None,
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+            ],
+            1,
+            None
+        );
+
+        test!(
+            wrapping_none_match_end,
+            vec![
+                Some(6),
+                Some(7),
+                Some(8),
+                None,
+                None,
+                None,
+                Some(2),
+                Some(3),
+                Some(4),
+                Some(5),
+            ],
+            2,
+            Some(6)
+        );
+
+        test!(
+            all_none,
+            vec![None, None, None, None] as Vec<Option<usize>>,
+            5,
+            None
+        );
+    }
+
+    mod should_search_right {
+        use super::*;
+
+        macro_rules! test {
+            ($name:ident, $first:expr, $value:expr, $target:expr, $expected:expr) => {
+                #[test]
+                fn $name() {
+                    assert_eq!(should_search_right($first, $value, $target), $expected);
+                }
             };
         }
 
-        #[tokio::test]
-        async fn test_incrementing() {
-            assert_binary_search_greatest!(
-                [
-                    date_time!("2024/08/03 00:00:00"),
-                    date_time!("2024/08/03 01:00:00"),
-                    date_time!("2024/08/03 02:00:00"),
-                    date_time!("2024/08/04 00:00:00"),
-                    date_time!("2024/08/04 01:00:00"),
-                    date_time!("2024/08/04 02:00:00"),
-                ],
-                Some(VOLUME_OFFSET + 5)
-            );
-        }
-
-        #[tokio::test]
-        async fn test_end_gap() {
-            assert_binary_search_greatest!(
-                [
-                    date_time!("2024/08/03 00:00:00"),
-                    date_time!("2024/08/03 01:00:00"),
-                    date_time!("2024/08/03 02:00:00"),
-                    date_time!("2024/08/04 00:00:00"),
-                    None,
-                    None,
-                ],
-                Some(VOLUME_OFFSET + 3)
-            );
-        }
-
-        #[tokio::test]
-        async fn test_start_gap() {
-            assert_binary_search_greatest!(
-                [
-                    None,
-                    None,
-                    date_time!("2024/08/03 00:00:00"),
-                    date_time!("2024/08/03 01:00:00"),
-                    date_time!("2024/08/03 02:00:00"),
-                    date_time!("2024/08/04 00:00:00"),
-                ],
-                Some(VOLUME_OFFSET + 5)
-            );
-        }
-
-        #[tokio::test]
-        async fn test_start_end_gaps() {
-            assert_binary_search_greatest!(
-                [
-                    None,
-                    date_time!("2024/08/03 00:00:00"),
-                    date_time!("2024/08/03 01:00:00"),
-                    date_time!("2024/08/03 02:00:00"),
-                    date_time!("2024/08/04 00:00:00"),
-                    None,
-                ],
-                Some(VOLUME_OFFSET + 4)
-            );
-        }
-
-        #[tokio::test]
-        async fn test_wrapping() {
-            assert_binary_search_greatest!(
-                [
-                    date_time!("2024/08/04 01:00:00"),
-                    date_time!("2024/08/04 02:00:00"),
-                    date_time!("2024/08/03 00:00:00"),
-                    date_time!("2024/08/03 01:00:00"),
-                    date_time!("2024/08/03 02:00:00"),
-                    date_time!("2024/08/04 00:00:00"),
-                ],
-                Some(VOLUME_OFFSET + 1)
-            );
-        }
-
-        #[tokio::test]
-        async fn test_wrapping_gap() {
-            assert_binary_search_greatest!(
-                [
-                    date_time!("2024/08/04 01:00:00"),
-                    date_time!("2024/08/04 02:00:00"),
-                    None,
-                    None,
-                    date_time!("2024/08/03 02:00:00"),
-                    date_time!("2024/08/04 00:00:00"),
-                ],
-                Some(VOLUME_OFFSET + 1)
-            );
-        }
-
-        #[tokio::test]
-        async fn test_empty_list() {
-            let empty: [Option<DateTime<Utc>>; 0] = [];
-            assert_binary_search_greatest!(empty, None);
-        }
-
-        #[tokio::test]
-        async fn test_single_list() {
-            assert_binary_search_greatest!(
-                [date_time!("2024/08/04 00:00:00")],
-                Some(VOLUME_OFFSET)
-            );
-        }
-
-        #[tokio::test]
-        async fn test_list_of_empty() {
-            let empties: [Option<DateTime<Utc>>; 5] = [None; 5];
-            assert_binary_search_greatest!(empties, None);
-        }
+        test!(simple, 2, 5, 8, true);
+        test!(repeated, 2, 2, 5, true);
+        test!(wrapped_below_pivot, 8, 2, 5, true);
+        test!(wrapped_above_pivot, 8, 5, 9, false);
     }
 }

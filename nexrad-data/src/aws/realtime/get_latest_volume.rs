@@ -12,5 +12,5 @@ pub async fn get_latest_volume(site: &str) -> crate::result::Result<Option<Volum
         Ok(chunks.first().map(|chunk| chunk.date_time()))
     })
     .await
-    .map(|volume| volume.map(VolumeIndex::new))
+    .map(|volume| volume.map(|index| VolumeIndex::new(index + 1)))
 }

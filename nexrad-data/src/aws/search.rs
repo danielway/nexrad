@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::future::Future;
 
 /// Performs an efficient search of elements to locate the nearest element to `target` without going
@@ -10,7 +11,7 @@ pub(crate) async fn search<F, V>(
 ) -> crate::result::Result<Option<usize>>
 where
     F: Future<Output = crate::result::Result<Option<V>>>,
-    V: PartialOrd + Clone,
+    V: PartialOrd + Clone + Debug,
 {
     if element_count == 0 {
         return Ok(None);
@@ -19,8 +20,8 @@ where
     let some_target = Some(&target);
     let mut nearest = None;
 
-    let first_value = f(0).await?;
-    let first_value_ref = first_value.as_ref();
+    let mut first_value = f(0).await?;
+    let mut first_value_ref = first_value.as_ref();
 
     if first_value_ref == some_target {
         return Ok(Some(0));
@@ -66,6 +67,14 @@ where
 
         break;
     }
+
+    if low >= high {
+        return Ok(nearest);
+    }
+
+    // Move the low pointer to the first non-None value
+    first_value = f(low).await?;
+    first_value_ref = first_value.as_ref();
 
     // Now that we have a reference point, we can perform a binary search for the target
     while low < high {
@@ -115,14 +124,13 @@ mod tests {
             ($name:ident, $elements:expr, $target:expr, $expected:expr) => {
                 #[tokio::test]
                 async fn $name() {
-                    let result =
-                        search(
-                            $elements.len(),
-                            $target,
-                            |i| async move { Ok($elements[i]) },
-                        )
-                        .await
-                        .unwrap();
+                    let result = search(
+                        $elements.len(),
+                        $target,
+                        |i| async move { Ok($elements[i]) },
+                    )
+                    .await
+                    .unwrap();
                     assert_eq!(result, $expected);
                 }
             };
@@ -389,6 +397,13 @@ mod tests {
             vec![None, None, None, None] as Vec<Option<usize>>,
             5,
             None
+        );
+
+        test!(
+            none_middle,
+            vec![None, Some(1), Some(3), None, None, None, None, None],
+            100,
+            Some(2)
         );
     }
 

@@ -37,6 +37,11 @@ impl ChunkIdentifier {
         &self.name
     }
     
+    /// The chunk's name prefix.
+    pub fn name_prefix(&self) -> &str {
+        &self.name[..15]
+    }
+    
     /// The sequence number of this chunk within the volume.
     pub fn sequence(&self) -> Option<usize> {
         self.name.split('-').nth(2).and_then(|s| s.parse().ok())
@@ -81,6 +86,7 @@ mod tests {
         assert_eq!(chunk.site(), site);
         assert_eq!(chunk.volume().as_number(), 50);
         assert_eq!(chunk.name(), name);
+        assert_eq!(chunk.name_prefix(), "20240813-123330");
         assert_eq!(chunk.chunk_type(), Some(ChunkType::Intermediate));
         assert_eq!(chunk.sequence(), Some(14));
         assert_eq!(chunk.date_time(), date_time);

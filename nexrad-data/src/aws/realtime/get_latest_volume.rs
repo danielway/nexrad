@@ -1,6 +1,6 @@
 use crate::aws::realtime::list_chunks_in_volume::list_chunks_in_volume;
+use crate::aws::realtime::search::search;
 use crate::aws::realtime::VolumeIndex;
-use crate::aws::search::search;
 use chrono::{DateTime, Utc};
 
 /// Identifies the volume index with the most recent data for the specified radar site. Real-time

@@ -52,3 +52,31 @@ impl ChunkIdentifier {
         self.date_time
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    use chrono::TimeZone;
+
+    #[test]
+    fn test_chunk_identifier() {
+        let site = "KTLX";
+        let volume = 50;
+        let name = "20240813-123330-014-I";
+        let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
+        
+        let chunk = ChunkIdentifier::new(
+            site.to_string(), 
+            VolumeIndex::new(volume), 
+            name.to_string(),
+            date_time,
+        );
+
+        assert_eq!(chunk.site(), site);
+        assert_eq!(chunk.volume().as_number(), 50);
+        assert_eq!(chunk.name(), name);
+        assert_eq!(chunk.chunk_type(), Some(ChunkType::Intermediate));
+        assert_eq!(chunk.date_time(), date_time);
+    }
+}

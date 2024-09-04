@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::collections::VecDeque;
 use std::future::Future;
 
 /// Performs an efficient search of elements to locate the nearest element to `target` without going
@@ -11,7 +11,7 @@ pub(crate) async fn search<F, V>(
 ) -> crate::result::Result<Option<usize>>
 where
     F: Future<Output = crate::result::Result<Option<V>>>,
-    V: PartialOrd + Clone + Debug,
+    V: PartialOrd + Clone,
 {
     if element_count == 0 {
         return Ok(None);
@@ -31,9 +31,9 @@ where
     let mut high = element_count;
 
     // First, locate any value in the array to use as a reference point via repeated bisection
-    let mut stack = vec![(0, element_count - 1)];
-    while !stack.is_empty() {
-        let (start, end) = stack.pop().unwrap();
+    let mut queue = VecDeque::from([(0, element_count - 1)]);
+    while !queue.is_empty() {
+        let (start, end) = queue.pop_front().unwrap();
         if start > end {
             continue;
         }
@@ -44,9 +44,9 @@ where
 
         // If this value is None, continue the bisection
         if mid_value_ref.is_none() {
-            stack.push((mid + 1, end));
+            queue.push_back((mid + 1, end));
             if mid > 0 {
-                stack.push((start, mid - 1));
+                queue.push_back((start, mid - 1));
             }
             continue;
         }

@@ -106,10 +106,13 @@ fn should_search_right<V>(first: V, value: V, target: V) -> bool
 where
     V: PartialOrd,
 {
+    let first_wrapped = first > value;
+    let target_wrapped = target < first;
+
     if value < target {
-        value >= first || target < first
+        !first_wrapped || target_wrapped
     } else {
-        target < first
+        first_wrapped && !target_wrapped
     }
 }
 
@@ -421,7 +424,9 @@ mod tests {
 
         test!(simple, 2, 5, 8, true);
         test!(repeated, 2, 2, 5, true);
+        test!(preceding, 1, 8, 2, false);
         test!(wrapped_below_pivot, 8, 2, 5, true);
         test!(wrapped_above_pivot, 8, 5, 9, false);
+        test!(wrapped_preceding, 6, 5, 2, false);
     }
 }

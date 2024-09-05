@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 pub async fn get_latest_volume(site: &str) -> crate::result::Result<Option<VolumeIndex>> {
     search(998, DateTime::<Utc>::MAX_UTC, |volume| async move {
         let chunks = list_chunks_in_volume(site, VolumeIndex::new(volume + 1), 1).await?;
-        Ok(chunks.first().map(|chunk| chunk.date_time()))
+        Ok(chunks.first().map(|chunk| chunk.date_time()).flatten())
     })
     .await
     .map(|volume| volume.map(|index| VolumeIndex::new(index + 1)))

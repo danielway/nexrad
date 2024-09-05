@@ -8,12 +8,17 @@ pub struct ChunkIdentifier {
     site: String,
     volume: VolumeIndex,
     name: String,
-    date_time: DateTime<Utc>,
+    date_time: Option<DateTime<Utc>>,
 }
 
 impl ChunkIdentifier {
     /// Creates a new chunk identifier.
-    pub fn new(site: String, volume: VolumeIndex, name: String, date_time: DateTime<Utc>) -> Self {
+    pub fn new(
+        site: String,
+        volume: VolumeIndex,
+        name: String,
+        date_time: Option<DateTime<Utc>>,
+    ) -> Self {
         Self {
             site,
             volume,
@@ -58,7 +63,7 @@ impl ChunkIdentifier {
     }
 
     /// The date and time this chunk was uploaded.
-    pub fn date_time(&self) -> DateTime<Utc> {
+    pub fn date_time(&self) -> Option<DateTime<Utc>> {
         self.date_time
     }
 }
@@ -80,7 +85,7 @@ mod tests {
             site.to_string(),
             VolumeIndex::new(volume),
             name.to_string(),
-            date_time,
+            Some(date_time),
         );
 
         assert_eq!(chunk.site(), site);
@@ -89,6 +94,6 @@ mod tests {
         assert_eq!(chunk.name_prefix(), "20240813-123330");
         assert_eq!(chunk.chunk_type(), Some(ChunkType::Intermediate));
         assert_eq!(chunk.sequence(), Some(14));
-        assert_eq!(chunk.date_time(), date_time);
+        assert_eq!(chunk.date_time(), Some(date_time));
     }
 }

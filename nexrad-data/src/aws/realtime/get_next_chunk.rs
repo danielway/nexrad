@@ -36,12 +36,7 @@ pub fn get_next_chunk(site: &str, chunk: ChunkIdentifier) -> Option<ChunkIdentif
         }
     );
 
-    Some(ChunkIdentifier::new(
-        site.to_string(),
-        volume,
-        name,
-        chunk.date_time(),
-    ))
+    Some(ChunkIdentifier::new(site.to_string(), volume, name, None))
 }
 
 #[cfg(test)]
@@ -57,7 +52,8 @@ mod tests {
         let name = "20240813-123330-001-S";
         let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
 
-        let chunk = ChunkIdentifier::new(site.to_string(), volume, name.to_string(), date_time);
+        let chunk =
+            ChunkIdentifier::new(site.to_string(), volume, name.to_string(), Some(date_time));
 
         let next_chunk = get_next_chunk(site, chunk).unwrap();
         assert_eq!(next_chunk.site(), site);
@@ -66,7 +62,7 @@ mod tests {
         assert_eq!(next_chunk.name_prefix(), "20240813-123330");
         assert_eq!(next_chunk.sequence(), Some(2));
         assert_eq!(next_chunk.chunk_type(), Some(ChunkType::Intermediate));
-        assert_eq!(next_chunk.date_time(), date_time);
+        assert_eq!(next_chunk.date_time(), None);
     }
 
     #[tokio::test]
@@ -76,7 +72,8 @@ mod tests {
         let name = "20240813-123330-014-I";
         let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
 
-        let chunk = ChunkIdentifier::new(site.to_string(), volume, name.to_string(), date_time);
+        let chunk =
+            ChunkIdentifier::new(site.to_string(), volume, name.to_string(), Some(date_time));
 
         let next_chunk = get_next_chunk(site, chunk).unwrap();
         assert_eq!(next_chunk.site(), site);
@@ -85,7 +82,7 @@ mod tests {
         assert_eq!(next_chunk.name_prefix(), "20240813-123330");
         assert_eq!(next_chunk.sequence(), Some(15));
         assert_eq!(next_chunk.chunk_type(), Some(ChunkType::Intermediate));
-        assert_eq!(next_chunk.date_time(), date_time);
+        assert_eq!(next_chunk.date_time(), None);
     }
 
     #[tokio::test]
@@ -95,7 +92,8 @@ mod tests {
         let name = "20240813-123330-055-E";
         let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
 
-        let chunk = ChunkIdentifier::new(site.to_string(), volume, name.to_string(), date_time);
+        let chunk =
+            ChunkIdentifier::new(site.to_string(), volume, name.to_string(), Some(date_time));
 
         let next_chunk = get_next_chunk(site, chunk).unwrap();
         assert_eq!(next_chunk.site(), site);
@@ -104,7 +102,7 @@ mod tests {
         assert_eq!(next_chunk.name_prefix(), "20240813-123330");
         assert_eq!(next_chunk.sequence(), Some(1));
         assert_eq!(next_chunk.chunk_type(), Some(ChunkType::Start));
-        assert_eq!(next_chunk.date_time(), date_time);
+        assert_eq!(next_chunk.date_time(), None);
     }
 
     #[tokio::test]
@@ -114,7 +112,8 @@ mod tests {
         let name = "20240813-123330-055-E";
         let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
 
-        let chunk = ChunkIdentifier::new(site.to_string(), volume, name.to_string(), date_time);
+        let chunk =
+            ChunkIdentifier::new(site.to_string(), volume, name.to_string(), Some(date_time));
 
         let next_chunk = get_next_chunk(site, chunk).unwrap();
         assert_eq!(next_chunk.site(), site);
@@ -123,6 +122,6 @@ mod tests {
         assert_eq!(next_chunk.name_prefix(), "20240813-123330");
         assert_eq!(next_chunk.sequence(), Some(1));
         assert_eq!(next_chunk.chunk_type(), Some(ChunkType::Start));
-        assert_eq!(next_chunk.date_time(), date_time);
+        assert_eq!(next_chunk.date_time(), None);
     }
 }

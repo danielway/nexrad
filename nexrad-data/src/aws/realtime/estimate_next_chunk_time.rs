@@ -1,14 +1,19 @@
-use chrono::{DateTime, Utc};
 use crate::aws::realtime::ChunkIdentifier;
+use chrono::{DateTime, Utc};
 
 /// Attempts to estimate the time at which the next chunk will be available given 2 or more
-/// preceding chunks. 
-pub fn estimate_next_chunk_time(chunks: Vec<&ChunkIdentifier>) -> Option<DateTime<Utc>> {
+/// preceding chunks.
+pub fn estimate_next_chunk_time(chunks: &[&ChunkIdentifier]) -> Option<DateTime<Utc>> {
     if chunks.len() < 2 {
         return None;
     }
 
-    let mut times: Vec<DateTime<Utc>> = chunks.iter().filter_map(|chunk| chunk.date_time()).collect();
+    let mut times: Vec<DateTime<Utc>> = chunks
+        .iter()
+        .filter_map(|chunk| chunk.date_time())
+        .collect();
+    println!("times: {:?}", times);
+
     times.sort();
 
     let mut millisecond_spacings: Vec<i64> = Vec::new();
@@ -20,17 +25,17 @@ pub fn estimate_next_chunk_time(chunks: Vec<&ChunkIdentifier>) -> Option<DateTim
 
     let sum = millisecond_spacings.iter().sum::<i64>();
     let average = sum / millisecond_spacings.len() as i64;
-    
+
     let last_time = times[times.len() - 1];
     Some(last_time + chrono::Duration::milliseconds(average))
 }
 
 #[cfg(test)]
 mod tests {
-    use chrono::TimeZone;
     use super::*;
     use crate::aws::realtime::VolumeIndex;
-    
+    use chrono::TimeZone;
+
     macro_rules! chunk_identifier {
         ($date_time:expr) => {
             ChunkIdentifier::new(
@@ -48,7 +53,10 @@ mod tests {
         let chunk2 = chunk_identifier!(Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 2).unwrap());
         let chunk3 = chunk_identifier!(Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 4).unwrap());
 
-        let result = estimate_next_chunk_time(vec![&chunk1, &chunk2, &chunk3]);
-        assert_eq!(result, Some(Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 6).unwrap()));
+        let result = estimate_next_chunk_time(vec![&chunk1, &chunk2, &chunk3].as_ref());
+        assert_eq!(
+            result,
+            Some(Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 6).unwrap())
+        );
     }
 }

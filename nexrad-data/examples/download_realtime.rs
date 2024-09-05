@@ -1,8 +1,13 @@
+use chrono::Utc;
+use std::collections::VecDeque;
 use std::time::Duration;
+use tokio::time::{sleep, sleep_until, Instant};
 
 #[cfg(feature = "aws")]
-use nexrad_data::aws::realtime::{download_chunk, get_latest_volume};
-use nexrad_data::aws::realtime::{list_chunks_in_volume, ChunkIdentifier, NextChunk, VolumeIndex};
+use nexrad_data::aws::realtime::{
+    estimate_next_chunk_time, get_latest_volume, list_chunks_in_volume, ChunkIdentifier, NextChunk,
+    VolumeIndex,
+};
 
 #[cfg(not(feature = "aws"))]
 fn main() {
@@ -23,8 +28,38 @@ async fn main() -> nexrad_data::result::Result<()> {
     println!("  Latest chunk: {:?}", latest_chunk);
 
     let mut downloaded_chunks = 0;
+    let mut previous_chunks: VecDeque<ChunkIdentifier> = VecDeque::new();
     let mut next_chunk = latest_chunk.clone();
     loop {
+        let mut next_chunk_time = None;
+        if previous_chunks.len() >= 2 {
+            let previous_chunk_identifiers: Vec<&ChunkIdentifier> =
+                previous_chunks.iter().collect();
+            next_chunk_time = estimate_next_chunk_time(&previous_chunk_identifiers);
+
+            if let Some(time) = next_chunk_time {
+                println!("Estimated next chunk time: {:?}", time);
+            }
+        }
+
+        let time_until_next_chunk = next_chunk_time
+            .map(|time| time.signed_duration_since(Utc::now()).to_std().ok())
+            .flatten();
+
+        match time_until_next_chunk {
+            Some(time_until) => {
+                println!(
+                    "Next chunk estimated to be available in {:?}; sleeping",
+                    time_until
+                );
+                sleep_until(Instant::now() + time_until).await;
+            }
+            None => {
+                println!("Unable to estimate next chunk time; sleeping five seconds");
+                sleep(Duration::from_secs(5)).await;
+            }
+        }
+
         match next_chunk.next_chunk() {
             Some(next) => match next {
                 NextChunk::Sequence(next_chunk_identifier) => {
@@ -42,9 +77,14 @@ async fn main() -> nexrad_data::result::Result<()> {
             }
         }
 
-        attempt_chunk_download(&next_chunk).await?;
+        next_chunk = attempt_get_chunk(&next_chunk).await?;
+        previous_chunks.push_back(next_chunk.clone());
+        if previous_chunks.len() > 5 {
+            previous_chunks.pop_front();
+        }
 
-        if downloaded_chunks >= 5 {
+        downloaded_chunks += 1;
+        if downloaded_chunks >= 20 {
             break;
         }
     }
@@ -55,7 +95,9 @@ async fn main() -> nexrad_data::result::Result<()> {
 }
 
 #[cfg(feature = "aws")]
-async fn attempt_next_volume(next_volume: VolumeIndex) -> nexrad_data::result::Result<ChunkIdentifier> {
+async fn attempt_next_volume(
+    next_volume: VolumeIndex,
+) -> nexrad_data::result::Result<ChunkIdentifier> {
     for attempt in 0..5 {
         println!(
             "  Looking for chunks in volume {:?}, attempt {}/5...",
@@ -81,35 +123,46 @@ async fn attempt_next_volume(next_volume: VolumeIndex) -> nexrad_data::result::R
             }
         }
 
-        tokio::time::sleep(Duration::from_secs(2)).await;
+        let wait = 500 * 2u64.pow(attempt);
+        println!("    No chunks found in volume yet, retrying in {}ms", wait);
+        tokio::time::sleep(Duration::from_millis(wait)).await;
     }
 
     panic!("Unable to find chunk in volume");
 }
 
 #[cfg(feature = "aws")]
-async fn attempt_chunk_download(next_chunk: &ChunkIdentifier) -> nexrad_data::result::Result<()> {
+async fn attempt_get_chunk(
+    next_chunk: &ChunkIdentifier,
+) -> nexrad_data::result::Result<ChunkIdentifier> {
     for attempt in 0..5 {
         println!(
-            "  Downloading chunk {}, attempt {}/5...",
+            "  Getting chunk {}, attempt {}/5...",
             next_chunk.name(),
             attempt + 1
         );
-        match download_chunk("KDMX", &next_chunk).await {
-            Ok(chunk) => {
-                println!("    Downloaded chunk: {} bytes", chunk.data().len());
-                return Ok(());
+
+        let chunks = list_chunks_in_volume("KDMX", next_chunk.volume().clone(), 100).await?;
+        let matching_chunks = chunks
+            .into_iter()
+            .filter(|chunk| chunk.name() == next_chunk.name())
+            .collect::<Vec<_>>();
+        match matching_chunks.first() {
+            Some(chunk) => {
+                let latency = Utc::now().signed_duration_since(chunk.date_time().unwrap());
+                println!("    Found chunk: {:?} Latency: {:?}", chunk, latency);
+                return Ok(chunk.clone());
             }
-            Err(e) => {
-                println!("    Error downloading chunk: {:?}", e);
-                if attempt == 4 {
-                    return Err(e);
-                }
-            }
+            None => {}
         }
 
-        tokio::time::sleep(Duration::from_secs(2)).await;
+        let wait = 500 * 2u64.pow(attempt);
+        println!(
+            "    No matching chunk found in volume yet, retrying in {}ms",
+            wait
+        );
+        tokio::time::sleep(Duration::from_millis(wait)).await;
     }
 
-    panic!("Unable to download chunk");
+    panic!("Unable to find chunk");
 }

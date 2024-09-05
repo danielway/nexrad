@@ -1,6 +1,6 @@
 /// A volume's index in the AWS real-time NEXRAD bucket. These indexes are rotated-through as chunks
 /// are accumulated and finally combined into full volumes to be archived.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct VolumeIndex(usize);
 
 impl VolumeIndex {

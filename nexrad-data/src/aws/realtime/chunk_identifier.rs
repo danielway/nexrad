@@ -36,12 +36,12 @@ impl ChunkIdentifier {
     pub fn name(&self) -> &str {
         &self.name
     }
-    
+
     /// The chunk's name prefix.
     pub fn name_prefix(&self) -> &str {
         &self.name[..15]
     }
-    
+
     /// The sequence number of this chunk within the volume.
     pub fn sequence(&self) -> Option<usize> {
         self.name.split('-').nth(2).and_then(|s| s.parse().ok())
@@ -66,7 +66,7 @@ impl ChunkIdentifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use chrono::TimeZone;
 
     #[test]
@@ -75,10 +75,10 @@ mod tests {
         let volume = 50;
         let name = "20240813-123330-014-I";
         let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
-        
+
         let chunk = ChunkIdentifier::new(
-            site.to_string(), 
-            VolumeIndex::new(volume), 
+            site.to_string(),
+            VolumeIndex::new(volume),
             name.to_string(),
             date_time,
         );

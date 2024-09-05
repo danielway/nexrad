@@ -38,8 +38,12 @@ pub mod aws {
         DecompressionError(#[from] bzip2::Error),
         #[error("error listing AWS S3 objects")]
         S3ListObjectsError(reqwest::Error),
+        #[error("error requesting AWS S3 object")]
+        S3GetObjectRequestError(reqwest::Error),
         #[error("error getting AWS S3 object")]
-        S3GetObjectError(reqwest::Error),
+        S3GetObjectError(Option<String>),
+        #[error("AWS S3 object not found")]
+        S3ObjectNotFoundError,
         #[error("error streaming/downloading AWS S3 object")]
         S3StreamingError(reqwest::Error),
     }

@@ -1,5 +1,4 @@
 use chrono::Utc;
-use std::collections::VecDeque;
 use std::time::Duration;
 use tokio::time::{sleep, sleep_until, Instant};
 
@@ -28,35 +27,24 @@ async fn main() -> nexrad_data::result::Result<()> {
     println!("  Latest chunk: {:?}", latest_chunk);
 
     let mut downloaded_chunks = 0;
-    let mut previous_chunks: VecDeque<ChunkIdentifier> = VecDeque::new();
     let mut next_chunk = latest_chunk.clone();
     loop {
-        let mut next_chunk_time = None;
-        if previous_chunks.len() >= 2 {
-            let previous_chunk_identifiers: Vec<&ChunkIdentifier> =
-                previous_chunks.iter().collect();
-            next_chunk_time = estimate_next_chunk_time(&previous_chunk_identifiers);
-
-            if let Some(time) = next_chunk_time {
-                println!("Estimated next chunk time: {:?}", time);
-            }
-        }
-
-        let time_until_next_chunk = next_chunk_time
+        let time_until_next_chunk = estimate_next_chunk_time(&next_chunk)
             .map(|time| time.signed_duration_since(Utc::now()).to_std().ok())
             .flatten();
 
         match time_until_next_chunk {
             Some(time_until) => {
                 println!(
-                    "Next chunk estimated to be available in {:?}; sleeping",
-                    time_until
+                    "Next chunk estimated to be available in {:?} at {:?}; sleeping",
+                    time_until,
+                    Utc::now() + time_until
                 );
                 sleep_until(Instant::now() + time_until).await;
             }
             None => {
-                println!("Unable to estimate next chunk time; sleeping five seconds");
-                sleep(Duration::from_secs(5)).await;
+                println!("Unable to estimate next chunk time; sleeping two seconds");
+                sleep(Duration::from_secs(2)).await;
             }
         }
 
@@ -78,13 +66,9 @@ async fn main() -> nexrad_data::result::Result<()> {
         }
 
         next_chunk = attempt_get_chunk(&next_chunk).await?;
-        previous_chunks.push_back(next_chunk.clone());
-        if previous_chunks.len() > 5 {
-            previous_chunks.pop_front();
-        }
 
         downloaded_chunks += 1;
-        if downloaded_chunks >= 20 {
+        if downloaded_chunks >= 100 {
             break;
         }
     }
@@ -112,7 +96,6 @@ async fn attempt_next_volume(
                 }
                 None => {
                     println!("    No chunks found in volume.");
-                    continue;
                 }
             },
             Err(e) => {

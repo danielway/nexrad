@@ -25,6 +25,28 @@ impl Sweep {
         }
     }
 
+    /// Create a new radar sweep from a list of radials by splitting them by elevation.
+    pub fn from_radials(radials: Vec<Radial>) -> Vec<Self> {
+        let mut sweeps = Vec::new();
+
+        let mut sweep_elevation_number = None;
+        let mut sweep_radials = Vec::new();
+
+        for radial in radials {
+            if let Some(elevation_number) = sweep_elevation_number {
+                if elevation_number != radial.elevation_number() {
+                    sweeps.push(Sweep::new(elevation_number, sweep_radials));
+                    sweep_radials = Vec::new();
+                }
+            }
+
+            sweep_elevation_number = Some(radial.elevation_number());
+            sweep_radials.push(radial);
+        }
+
+        sweeps
+    }
+
     /// The index number for this radial's elevation in the volume scan. The precise elevation angle
     /// varies and can be found in individual radials.
     pub fn elevation_number(&self) -> u8 {

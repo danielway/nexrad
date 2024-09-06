@@ -30,63 +30,38 @@ impl File {
     #[cfg(feature = "decode")]
     pub fn scan(&self) -> Result<nexrad_model::data::Scan> {
         use crate::result::Error;
-        use nexrad_decode::messages::Message;
-        use nexrad_model::data::{Radial, Scan, Sweep};
+        use nexrad_model::data::{Scan, Sweep};
 
-        let mut coverage_pattern = None;
         let mut sweeps = Vec::new();
-
-        let mut sweep_elevation_number = None;
-        let mut sweep_radials = Vec::new();
+        let mut current_sweep: Option<Sweep> = None;
 
         for mut record in self.records() {
             if record.compressed() {
                 record = record.decompress()?;
             }
 
-            let radials: Vec<Radial> = record
-                .messages()?
-                .into_iter()
-                .filter_map(|message| match message.message {
-                    Message::DigitalRadarData(radar_data_message) => {
-                        if coverage_pattern.is_none() {
-                            coverage_pattern = radar_data_message
-                                .volume_data_block
-                                .as_ref()
-                                .map(|block| block.volume_coverage_pattern_number);
-                        }
-
-                        radar_data_message.into_radial().ok()
-                    }
-                    _ => None,
-                })
-                .collect();
-
-            for radial in radials {
-                match sweep_elevation_number {
-                    Some(current_sweep_elevation_number) => {
-                        if current_sweep_elevation_number != radial.elevation_number() {
-                            sweeps.push(Sweep::new(current_sweep_elevation_number, sweep_radials));
-
-                            sweep_elevation_number = Some(radial.elevation_number());
-                            sweep_radials = Vec::new();
-                        }
-                    }
-                    None => {
-                        sweep_elevation_number = Some(radial.elevation_number());
+            for sweep in record.sweeps()? {
+                let elevation = current_sweep.as_ref().map(|sweep| sweep.elevation_number());
+                if elevation != Some(sweep.elevation_number()) {
+                    if let Some(current_sweep) = current_sweep.take() {
+                        sweeps.push(current_sweep);
                     }
                 }
 
-                sweep_radials.push(radial);
+                if let Some(old_sweep) = current_sweep.take() {
+                    current_sweep = Some(old_sweep.merge(sweep)?);
+                } else {
+                    current_sweep = Some(sweep);
+                }
             }
         }
 
-        if let Some(elevation_number) = sweep_elevation_number {
-            sweeps.push(Sweep::new(elevation_number, sweep_radials));
+        if let Some(current_sweep) = current_sweep.take() {
+            sweeps.push(current_sweep);
         }
 
         Ok(Scan::new(
-            coverage_pattern.ok_or(Error::MissingCoveragePattern)?,
+            1, // TODO: coverage_pattern.ok_or(Error::MissingCoveragePattern)?
             sweeps,
         ))
     }

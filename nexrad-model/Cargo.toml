@@ -8,6 +8,7 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
+thiserror = "1.0"
 chrono = { workspace = true, optional = true }
 uom = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }

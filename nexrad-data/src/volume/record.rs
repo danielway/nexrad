@@ -71,10 +71,9 @@ pub fn split_compressed_records(data: &[u8]) -> Vec<Record> {
         let mut record_size = [0; 4];
         record_size.copy_from_slice(&data[position..position + 4]);
         let record_size = i32::from_be_bytes(record_size).unsigned_abs() as usize;
-        position += 4;
 
-        records.push(Record::from_slice(&data[position..position + record_size]));
-        position += record_size;
+        records.push(Record::from_slice(&data[position..position + record_size + 4]));
+        position += record_size + 4;
     }
 
     records

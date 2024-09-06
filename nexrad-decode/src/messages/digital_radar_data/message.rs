@@ -80,6 +80,7 @@ impl Message {
                 RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
                 RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
             },
+            self.header.elevation_number,
             self.header.elevation_angle,
             self.reflectivity_data_block
                 .as_ref()
@@ -126,6 +127,7 @@ impl Message {
                 RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
                 RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
             },
+            self.header.elevation_number,
             self.header.elevation_angle,
             self.reflectivity_data_block
                 .map(|block| block.into_moment_data()),

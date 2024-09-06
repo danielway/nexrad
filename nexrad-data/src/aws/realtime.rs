@@ -55,6 +55,8 @@ mod poll_chunks;
 pub use poll_chunks::*;
 
 mod poll_stats;
+pub use poll_stats::*;
+
 mod search;
 
 const REALTIME_BUCKET: &str = "unidata-nexrad-level2-chunks";

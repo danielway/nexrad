@@ -1,3 +1,4 @@
+use crate::aws::realtime::poll_stats::PollStats;
 use crate::aws::realtime::{
     download_chunk, estimate_next_chunk_time, get_latest_volume, list_chunks_in_volume, Chunk,
     ChunkIdentifier, NextChunk, VolumeIndex,
@@ -13,13 +14,20 @@ use tokio::time::{sleep, sleep_until, Instant};
 pub async fn poll_chunks<'a>(
     site: &str,
     tx: Sender<(ChunkIdentifier, Chunk<'a>)>,
+    stats_tx: Option<Sender<PollStats>>,
     stop_rx: Receiver<bool>,
 ) -> Result<()> {
     let latest_volume_result = get_latest_volume(site).await?;
+    if let Some(stats_tx) = &stats_tx {
+        stats_tx
+            .send(PollStats::LatestVolumeCalls(latest_volume_result.calls))
+            .map_err(|_| AWSError::PollingAsyncError)?;
+    }
+
     let latest_volume = latest_volume_result
         .volume
         .ok_or(AWSError::LatestVolumeNotFound)?;
-    
+
     let latest_chunk_id = get_latest_chunk(site, latest_volume)
         .await?
         .ok_or(AWSError::ExpectedChunkNotFound)?;

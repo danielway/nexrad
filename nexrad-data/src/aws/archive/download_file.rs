@@ -16,7 +16,7 @@ pub async fn download_file(identifier: Identifier) -> crate::result::Result<File
         .ok_or_else(|| InvalidSiteIdentifier(identifier.name().to_string()))?;
 
     let key = format!("{}/{}/{}", date.format("%Y/%m/%d"), site, identifier.name());
-    let data = download_object(ARCHIVE_BUCKET, &key).await?;
+    let downloaded_object = download_object(ARCHIVE_BUCKET, &key).await?;
 
-    Ok(File::new(data))
+    Ok(File::new(downloaded_object.data))
 }

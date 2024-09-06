@@ -7,3 +7,4 @@ pub(crate) use download_object::download_object;
 mod bucket_list_result;
 mod bucket_object;
 mod bucket_object_field;
+mod downloaded_bucket_object;

@@ -20,12 +20,7 @@ pub async fn list_chunks_in_volume(
                 .unwrap_or_else(|| object.key.as_ref())
                 .to_string();
 
-            ChunkIdentifier::new(
-                site.to_string(),
-                volume,
-                identifier,
-                object.last_modified,
-            )
+            ChunkIdentifier::new(site.to_string(), volume, identifier, object.last_modified)
         })
         .collect();
 

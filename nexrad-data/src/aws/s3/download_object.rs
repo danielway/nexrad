@@ -53,10 +53,9 @@ fn get_last_modified_header(response_headers: &HeaderMap) -> Option<DateTime<Utc
     let header = response_headers.get("Last-Modified");
     let date_string = header.and_then(|value| value.to_str().ok());
 
-    date_string
-        .and_then(|string| {
-            DateTime::parse_from_rfc2822(string)
-                .ok()
-                .map(|date_time| date_time.with_timezone(&Utc))
-        })
+    date_string.and_then(|string| {
+        DateTime::parse_from_rfc2822(string)
+            .ok()
+            .map(|date_time| date_time.with_timezone(&Utc))
+    })
 }

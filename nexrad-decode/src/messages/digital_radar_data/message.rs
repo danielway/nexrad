@@ -1,6 +1,7 @@
 use crate::messages::digital_radar_data::{
-    ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, VolumeDataBlock,
+    ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, RadialStatus, VolumeDataBlock,
 };
+use crate::result::{Error, Result};
 
 /// The digital radar data message includes base radar data from a single radial for various
 /// products.
@@ -56,5 +57,47 @@ impl Message {
             correlation_coefficient_data_block: None,
             specific_diff_phase_data_block: None,
         }
+    }
+
+    /// Get a radial from this digital radar data message.
+    #[cfg(feature = "nexrad-model")]
+    pub fn radial(&self) -> Result<nexrad_model::data::Radial> {
+        use nexrad_model::data::{MomentData, Radial, RadialStatus as ModelRadialStatus};
+
+        let get_moment_data = |data_block: Option<&GenericDataBlock>| -> Option<MomentData> {
+            data_block.map(|block| {
+                MomentData::from_fixed_point(
+                    block.header.scale,
+                    block.header.offset,
+                    block.encoded_data.clone(),
+                )
+            })
+        };
+
+        Ok(Radial::new(
+            self.header
+                .date_time()
+                .ok_or(Error::MessageMissingDateError)?
+                .timestamp_millis(),
+            self.header.azimuth_number,
+            self.header.azimuth_angle,
+            self.header.azimuth_resolution_spacing as f32 * 0.5,
+            match self.header.radial_status() {
+                RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
+                RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
+                RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
+                RadialStatus::VolumeScanStart => ModelRadialStatus::VolumeScanStart,
+                RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
+                RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
+            },
+            self.header.elevation_angle,
+            get_moment_data(self.reflectivity_data_block.as_ref()),
+            get_moment_data(self.velocity_data_block.as_ref()),
+            get_moment_data(self.spectrum_width_data_block.as_ref()),
+            get_moment_data(self.differential_reflectivity_data_block.as_ref()),
+            get_moment_data(self.differential_phase_data_block.as_ref()),
+            get_moment_data(self.correlation_coefficient_data_block.as_ref()),
+            get_moment_data(self.specific_diff_phase_data_block.as_ref()),
+        ))
     }
 }

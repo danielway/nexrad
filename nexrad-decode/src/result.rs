@@ -14,4 +14,6 @@ pub enum Error {
     DeserializationError(#[from] bincode::Error),
     #[error("file decoding error: {0}")]
     DecodingError(String),
+    #[error("message is missing collection date/time")]
+    MessageMissingDateError,
 }

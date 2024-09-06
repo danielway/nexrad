@@ -35,19 +35,16 @@ use std::time::Duration;
 use tokio::task;
 
 use nexrad_data::volume::Record;
-use nexrad_decode::messages::digital_radar_data::decode_digital_radar_data;
-use nexrad_decode::messages::message_header::MessageHeader;
-use nexrad_decode::messages::{decode_message_header, MessageType};
 
-#[cfg(feature = "aws")]
+#[cfg(all(feature = "aws", feature = "decode"))]
 use nexrad_data::aws::realtime::{poll_chunks, Chunk, ChunkIdentifier, PollStats};
 
-#[cfg(not(feature = "aws"))]
+#[cfg(not(all(feature = "aws", feature = "decode")))]
 fn main() {
     info!("This example requires the \"aws\" feature to be enabled.");
 }
 
-#[cfg(feature = "aws")]
+#[cfg(all(feature = "aws", feature = "decode"))]
 #[tokio::main]
 async fn main() -> nexrad_data::result::Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
@@ -129,8 +126,12 @@ async fn main() -> nexrad_data::result::Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "aws")]
+#[cfg(all(feature = "aws", feature = "decode"))]
 fn decode_record(mut record: Record, download_time: DateTime<Utc>) {
+    use nexrad_decode::messages::digital_radar_data::decode_digital_radar_data;
+    use nexrad_decode::messages::message_header::MessageHeader;
+    use nexrad_decode::messages::{decode_message_header, MessageType};
+
     if record.compressed() {
         trace!("Decompressing LDM record...");
         record = record.decompress().expect("Failed to decompress record");

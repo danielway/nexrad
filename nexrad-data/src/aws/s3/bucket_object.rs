@@ -5,7 +5,7 @@ pub struct BucketObject {
     /// The key of the object.
     pub key: String,
     /// The last modified time of the object.
-    pub last_modified: DateTime<Utc>,
+    pub last_modified: Option<DateTime<Utc>>,
     /// The size of the object.
     pub size: u64,
 }

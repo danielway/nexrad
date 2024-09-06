@@ -20,7 +20,7 @@ pub async fn download_chunk<'a>(
             site.to_string(),
             *chunk_id.volume(),
             chunk_id.name().to_string(),
-            downloaded_object.last_modified,
+            downloaded_object.metadata.last_modified,
         ),
         Chunk::new(downloaded_object.data)?,
     ))

@@ -43,7 +43,7 @@ pub async fn list_objects(
                 "Contents" => {
                     object = Some(BucketObject {
                         key: String::new(),
-                        last_modified: Utc::now(),
+                        last_modified: None,
                         size: 0,
                     });
                 }
@@ -65,8 +65,8 @@ pub async fn list_objects(
                         BucketObjectField::Key => item.key.push_str(&chars),
                         BucketObjectField::LastModified => {
                             item.last_modified = DateTime::parse_from_rfc3339(&chars)
-                                .expect("should parse date")
-                                .with_timezone(&Utc);
+                                .ok()
+                                .map(|date_time| date_time.with_timezone(&Utc));
                         }
                         BucketObjectField::Size => {
                             item.size = chars.parse().expect("should parse size")

@@ -1,3 +1,4 @@
+use crate::aws::s3::bucket_object::BucketObject;
 use crate::aws::s3::downloaded_bucket_object::DownloadedBucketObject;
 use crate::result::aws::AWSError;
 use crate::result::aws::AWSError::{S3GetObjectError, S3GetObjectRequestError, S3StreamingError};
@@ -35,8 +36,11 @@ pub async fn download_object(
             trace!("  Object \"{}\" data length: {}", key, data.len());
 
             Ok(DownloadedBucketObject {
-                key: key.to_string(),
-                last_modified,
+                metadata: BucketObject {
+                    key: key.to_string(),
+                    last_modified,
+                    size: data.len() as u64,
+                },
                 data,
             })
         }

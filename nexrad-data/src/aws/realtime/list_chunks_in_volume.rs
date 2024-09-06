@@ -24,7 +24,7 @@ pub async fn list_chunks_in_volume(
                 site.to_string(),
                 volume,
                 identifier,
-                Some(object.last_modified.clone()),
+                object.last_modified.clone(),
             )
         })
         .collect();

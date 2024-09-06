@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 /// Statistics from the polling process.
 #[derive(Debug)]
 pub enum PollStats {
@@ -5,6 +7,15 @@ pub enum PollStats {
     LatestVolumeCalls(usize),
     /// The number of network calls made to find a new volume.
     NewVolumeCalls(usize),
+    /// Statistics for a new chunk.
+    NewChunk(NewChunkStats),
+}
+
+/// Statistics for a new chunk.
+#[derive(Debug)]
+pub struct NewChunkStats {
     /// The number of network calls made to find a new chunk.
-    NewChunkCalls(usize),
+    pub calls: usize,
+    /// The latency between when a chunk was uploaded to S3 and when it was downloaded.
+    pub latency: Option<Duration>,
 }

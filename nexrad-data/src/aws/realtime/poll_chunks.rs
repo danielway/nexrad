@@ -1,7 +1,7 @@
 use crate::aws::realtime::poll_stats::PollStats;
 use crate::aws::realtime::{
     download_chunk, estimate_next_chunk_time, get_latest_volume, list_chunks_in_volume, Chunk,
-    ChunkIdentifier, NextChunk, VolumeIndex,
+    ChunkIdentifier, NewChunkStats, NextChunk, VolumeIndex,
 };
 use crate::result::{aws::AWSError, Result};
 use chrono::Utc;
@@ -43,7 +43,7 @@ pub async fn poll_chunks<'a>(
         }
 
         let next_chunk_time = estimate_next_chunk_time(&previous_chunk_id);
-        if next_chunk_time < Utc::now() {
+        if next_chunk_time > Utc::now() {
             let time_until = next_chunk_time
                 .signed_duration_since(Utc::now())
                 .to_std()
@@ -75,13 +75,21 @@ pub async fn poll_chunks<'a>(
         let (attempts, next_chunk) =
             try_resiliently(|| download_chunk(site, &next_chunk_id), 500, 5).await;
 
+        let (next_chunk_id, next_chunk) = next_chunk.ok_or(AWSError::ExpectedChunkNotFound)?;
+
         if let Some(stats_tx) = &stats_tx {
+            let latency = next_chunk_id
+                .date_time()
+                .map(|date_time| Utc::now().signed_duration_since(date_time).to_std().ok())
+                .flatten();
+
             stats_tx
-                .send(PollStats::NewChunkCalls(attempts))
+                .send(PollStats::NewChunk(NewChunkStats {
+                    calls: attempts,
+                    latency,
+                }))
                 .map_err(|_| AWSError::PollingAsyncError)?;
         }
-
-        let (next_chunk_id, next_chunk) = next_chunk.ok_or(AWSError::ExpectedChunkNotFound)?;
 
         tx.send((next_chunk_id.clone(), next_chunk))
             .map_err(|_| AWSError::PollingAsyncError)?;

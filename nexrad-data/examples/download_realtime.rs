@@ -34,7 +34,7 @@ async fn main() -> nexrad_data::result::Result<()> {
 
     let timeout_stop_tx = stop_tx.clone();
     task::spawn(async move {
-        tokio::time::sleep(Duration::from_secs(30)).await;
+        tokio::time::sleep(Duration::from_secs(60)).await;
 
         info!("Timeout reached, stopping...");
         timeout_stop_tx.send(true).unwrap();

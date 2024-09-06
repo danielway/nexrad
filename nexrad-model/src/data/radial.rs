@@ -190,7 +190,7 @@ impl Debug for Radial {
         debug.field("azimuth_spacing", &self.azimuth_spacing());
 
         debug.field("radial_status", &self.radial_status());
-        
+
         debug.field("elevation_number", &self.elevation_number());
 
         debug.field("elevation_angle_degrees", &self.elevation_angle_degrees());

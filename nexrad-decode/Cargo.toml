@@ -7,6 +7,9 @@ repository = "https://github.com/danielway/nexrad"
 license = "MIT"
 edition = "2021"
 
+[features]
+default = ["uom", "nexrad-model"]
+
 [dependencies]
 thiserror = { workspace = true }
 bincode = { workspace = true }

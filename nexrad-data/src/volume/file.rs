@@ -1,7 +1,7 @@
-use nexrad_decode::messages::Message;
-use nexrad_model::data::Radial;
 use crate::result::{Error, Result};
 use crate::volume::{split_compressed_records, Header, Record};
+use nexrad_decode::messages::Message;
+use nexrad_model::data::Radial;
 
 /// A NEXRAD Archive II volume data file.
 pub struct File(Vec<u8>);
@@ -44,14 +44,23 @@ impl File {
                 record = record.decompress()?;
             }
 
-            let radials: Vec<Radial> = record.messages()?.into_iter().filter_map(|message| {
-                match message.message {
+            let radials: Vec<Radial> = record
+                .messages()?
+                .into_iter()
+                .filter_map(|message| match message.message {
                     Message::DigitalRadarData(radar_data_message) => {
+                        if coverage_pattern.is_none() {
+                            coverage_pattern = radar_data_message
+                                .volume_data_block
+                                .as_ref()
+                                .map(|block| block.volume_coverage_pattern_number);
+                        }
+
                         radar_data_message.into_radial().ok()
                     }
                     _ => None,
-                }
-            }).collect();
+                })
+                .collect();
 
             for radial in radials {
                 match sweep_elevation_number {

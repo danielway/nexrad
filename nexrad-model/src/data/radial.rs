@@ -115,7 +115,7 @@ impl Radial {
     pub fn radial_status(&self) -> RadialStatus {
         self.radial_status
     }
-    
+
     /// The elevation number for this radial in the volume scan.
     pub fn elevation_number(&self) -> u8 {
         self.elevation_number

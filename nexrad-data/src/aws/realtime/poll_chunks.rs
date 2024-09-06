@@ -59,17 +59,29 @@ pub async fn poll_chunks<'a>(
         {
             NextChunk::Sequence(next_chunk_id) => next_chunk_id,
             NextChunk::Volume(next_volume) => {
-                try_resiliently(|| get_latest_chunk(site, next_volume), 500, 5)
-                    .await
-                    .flatten()
-                    .ok_or(AWSError::ExpectedChunkNotFound)?
+                let (attempts, chunk_id) =
+                    try_resiliently(|| get_latest_chunk(site, next_volume), 500, 5).await;
+
+                if let Some(stats_tx) = &stats_tx {
+                    stats_tx
+                        .send(PollStats::NewVolumeCalls(attempts))
+                        .map_err(|_| AWSError::PollingAsyncError)?;
+                }
+
+                chunk_id.flatten().ok_or(AWSError::ExpectedChunkNotFound)?
             }
         };
 
-        let (next_chunk_id, next_chunk) =
-            try_resiliently(|| download_chunk(site, &next_chunk_id), 500, 5)
-                .await
-                .ok_or(AWSError::ExpectedChunkNotFound)?;
+        let (attempts, next_chunk) =
+            try_resiliently(|| download_chunk(site, &next_chunk_id), 500, 5).await;
+
+        if let Some(stats_tx) = &stats_tx {
+            stats_tx
+                .send(PollStats::NewChunkCalls(attempts))
+                .map_err(|_| AWSError::PollingAsyncError)?;
+        }
+
+        let (next_chunk_id, next_chunk) = next_chunk.ok_or(AWSError::ExpectedChunkNotFound)?;
 
         tx.send((next_chunk_id.clone(), next_chunk))
             .map_err(|_| AWSError::PollingAsyncError)?;
@@ -91,18 +103,18 @@ async fn try_resiliently<F, R>(
     action: impl Fn() -> F,
     wait_millis: u64,
     attempts: usize,
-) -> Option<R>
+) -> (usize, Option<R>)
 where
     F: Future<Output = Result<R>>,
 {
     for attempt in 0..attempts {
         if let Ok(result) = action().await {
-            return Some(result);
+            return (attempt + 1, Some(result));
         }
 
         let wait = wait_millis * 2u64.pow(attempt as u32);
         sleep(Duration::from_millis(wait)).await;
     }
 
-    None
+    (attempts, None)
 }

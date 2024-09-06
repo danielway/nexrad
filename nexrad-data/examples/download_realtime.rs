@@ -1,5 +1,5 @@
 use chrono::Utc;
-use log::{error, info, LevelFilter};
+use log::{info, LevelFilter};
 use std::sync::mpsc;
 use std::time::Duration;
 use tokio::task;

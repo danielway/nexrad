@@ -130,6 +130,7 @@ async fn main() -> nexrad_data::result::Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "aws")]
 fn decode_record(mut record: Record, download_time: DateTime<Utc>) {
     if record.compressed() {
         trace!("Decompressing LDM record...");

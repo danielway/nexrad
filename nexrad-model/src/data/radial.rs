@@ -24,6 +24,7 @@ pub struct Radial {
 
     radial_status: RadialStatus,
 
+    elevation_number: u8,
     elevation_angle_degrees: f32,
 
     reflectivity: Option<MomentData>,
@@ -43,6 +44,7 @@ impl Radial {
         azimuth_angle_degrees: f32,
         azimuth_spacing_degrees: f32,
         radial_status: RadialStatus,
+        elevation_number: u8,
         elevation_angle_degrees: f32,
         reflectivity: Option<MomentData>,
         velocity: Option<MomentData>,
@@ -58,6 +60,7 @@ impl Radial {
             azimuth_angle_degrees,
             azimuth_spacing_degrees,
             radial_status,
+            elevation_number,
             elevation_angle_degrees,
             reflectivity,
             velocity,
@@ -111,6 +114,11 @@ impl Radial {
     /// The radial's position in the sequence of radials making up a scan.
     pub fn radial_status(&self) -> RadialStatus {
         self.radial_status
+    }
+    
+    /// The elevation number for this radial in the volume scan.
+    pub fn elevation_number(&self) -> u8 {
+        self.elevation_number
     }
 
     /// Elevation angle this radial's data was collected at in degrees.

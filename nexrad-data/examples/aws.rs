@@ -1,4 +1,5 @@
 use clap::Parser;
+use log::{debug, info, trace, LevelFilter};
 
 #[cfg(not(feature = "aws"))]
 fn main() {
@@ -28,11 +29,16 @@ struct Cli {
 #[cfg(feature = "aws")]
 #[tokio::main]
 async fn main() -> nexrad_data::result::Result<()> {
+    use chrono::Utc;
     use chrono::{NaiveDate, NaiveTime};
     use nexrad_data::aws::archive::{download_file, list_files};
     use std::fs::{create_dir, File};
     use std::io::Write;
     use std::path::Path;
+
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
+        .filter_module("reqwest::connect", LevelFilter::Info)
+        .init();
 
     let cli = Cli::parse();
 
@@ -89,6 +95,17 @@ async fn main() -> nexrad_data::result::Result<()> {
         downloaded_file
             .write_all(file.data().as_slice())
             .expect("write file");
+
+        let records = file.records();
+        debug!(
+            "Volume start chunk with {} records. Header: {:?}",
+            records.len(),
+            file.header()
+        );
+
+        records
+            .into_iter()
+            .for_each(|record| decode_record(record, Utc::now()));
     }
 
     println!("Downloaded {} files.", stop_index - start_index + 1);
@@ -127,4 +144,147 @@ fn get_nearest_file_index(
     }
 
     min_index
+}
+
+#[cfg(feature = "aws")]
+fn decode_record(
+    mut record: nexrad_data::volume::Record,
+    download_time: chrono::DateTime<chrono::Utc>,
+) {
+    use nexrad_decode::messages::digital_radar_data::decode_digital_radar_data;
+    use nexrad_decode::messages::message_header::MessageHeader;
+    use nexrad_decode::messages::{decode_message_header, MessageType};
+    use std::collections::HashMap;
+    use std::io::{Cursor, Seek, SeekFrom};
+
+    if record.compressed() {
+        trace!("Decompressing LDM record...");
+        record = record.decompress().expect("Failed to decompress record");
+    } else {
+        trace!("Decompressed LDM record");
+    }
+
+    let mut message_type_counts = HashMap::new();
+
+    let mut all_scans = Vec::new();
+    let mut first_message_time = None;
+    let mut coverage_pattern = None;
+    let mut scan_data: Option<ScanData> = None;
+
+    let mut reader = Cursor::new(record.data());
+    while reader.position() < reader.get_ref().len() as u64 {
+        let message_header =
+            decode_message_header(&mut reader).expect("Failed to decode message header");
+
+        if first_message_time.is_none() {
+            first_message_time = message_header.date_time();
+        }
+
+        let message_type = message_header.message_type();
+        let count = message_type_counts.get(&message_type).unwrap_or(&0) + 1;
+        message_type_counts.insert(message_type, count);
+
+        if message_header.message_type() == MessageType::RDADigitalRadarDataGenericFormat {
+            let m31 = decode_digital_radar_data(&mut reader).expect("Failed to decode M31 message");
+
+            if coverage_pattern.is_none() {
+                coverage_pattern = Some(
+                    m31.volume_data_block
+                        .expect("No volume data block")
+                        .volume_coverage_pattern_number,
+                );
+            }
+
+            if let Some(current_scan_data) = scan_data.as_mut() {
+                if current_scan_data.elevation == m31.header.elevation_number {
+                    current_scan_data.end_azimuth = m31.header.azimuth_angle;
+
+                    let mut increment_count = |data_type: &str| {
+                        let count = current_scan_data.data_types.get(data_type).unwrap_or(&0) + 1;
+                        current_scan_data
+                            .data_types
+                            .insert(data_type.to_string(), count);
+                    };
+
+                    if m31.reflectivity_data_block.is_some() {
+                        increment_count("Reflectivity");
+                    }
+                    if m31.velocity_data_block.is_some() {
+                        increment_count("Velocity");
+                    }
+                    if m31.spectrum_width_data_block.is_some() {
+                        increment_count("Spectrum Width");
+                    }
+                    if m31.differential_reflectivity_data_block.is_some() {
+                        increment_count("Differential Reflectivity");
+                    }
+                    if m31.differential_phase_data_block.is_some() {
+                        increment_count("Differential Phase");
+                    }
+                    if m31.correlation_coefficient_data_block.is_some() {
+                        increment_count("Correlation Coefficient");
+                    }
+                    if m31.specific_diff_phase_data_block.is_some() {
+                        increment_count("Specific Differential Phase");
+                    }
+                } else {
+                    all_scans.push(format!("{}", current_scan_data));
+                    scan_data = None;
+                }
+            }
+
+            if scan_data.is_none() {
+                scan_data = Some(ScanData {
+                    start_azimuth: m31.header.azimuth_angle,
+                    end_azimuth: m31.header.azimuth_angle,
+                    elevation: m31.header.elevation_number,
+                    data_types: HashMap::new(),
+                });
+            }
+        } else {
+            if let Some(scan_data) = scan_data.take() {
+                all_scans.push(format!("{}", scan_data));
+            }
+
+            // Non-M31 messages are 2432 bytes long, including the header
+            reader
+                .seek(SeekFrom::Current(2432 - size_of::<MessageHeader>() as i64))
+                .unwrap();
+        }
+    }
+
+    if let Some(scan_info) = scan_data.take() {
+        all_scans.push(format!("{}", scan_info));
+    }
+
+    debug!(
+        "Message latency: {:?}, Coverage pattern: {:?}",
+        first_message_time.map(|time| download_time - time),
+        coverage_pattern
+    );
+
+    for (message_type, count) in message_type_counts {
+        debug!("Message type {:?} has {} messages", message_type, count);
+
+        if message_type == MessageType::RDADigitalRadarDataGenericFormat {
+            info!("{}", all_scans.join(", "));
+        }
+    }
+}
+
+struct ScanData {
+    start_azimuth: f32,
+    end_azimuth: f32,
+    elevation: u8,
+    data_types: std::collections::HashMap<String, usize>,
+}
+
+impl std::fmt::Display for ScanData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ScanData {{ azimuth: {:.0}-{:.0}, elevation: {}, data_types: {:?} }}",
+            self.start_azimuth, self.end_azimuth, self.elevation, self.data_types
+        )
+    }
 }

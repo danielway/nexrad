@@ -25,7 +25,7 @@ async fn main() -> nexrad_data::result::Result<()> {
     let latest = chunks.last().unwrap();
     println!("Downloading chunk: {:?}", latest);
 
-    let chunk = download_chunk("KDMX", latest).await?;
+    let (_, chunk) = download_chunk("KDMX", latest).await?;
     println!("  Downloaded chunk size: {}", chunk.data().len());
 
     println!("  Writing chunk to downloads/{}...", latest.name());

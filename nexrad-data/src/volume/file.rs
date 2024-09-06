@@ -52,13 +52,13 @@ impl File {
                     _ => None,
                 }
             }).collect();
-            
+
             for radial in radials {
                 match sweep_elevation_number {
                     Some(current_sweep_elevation_number) => {
                         if current_sweep_elevation_number != radial.elevation_number() {
                             sweeps.push(Sweep::new(current_sweep_elevation_number, sweep_radials));
-                            
+
                             sweep_elevation_number = Some(radial.elevation_number());
                             sweep_radials = Vec::new();
                         }
@@ -67,11 +67,11 @@ impl File {
                         sweep_elevation_number = Some(radial.elevation_number());
                     }
                 }
-                
+
                 sweep_radials.push(radial);
             }
         }
-        
+
         if let Some(elevation_number) = sweep_elevation_number {
             sweeps.push(Sweep::new(elevation_number, sweep_radials));
         }

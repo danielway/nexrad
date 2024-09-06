@@ -10,7 +10,7 @@ edition = "2021"
 [features]
 default = ["aws", "decode"]
 aws = ["reqwest", "xml", "bzip2", "tokio"]
-decode = ["nexrad-decode", "nexrad-model"]
+decode = ["nexrad-model", "nexrad-decode"]
 
 [dependencies]
 log = { version = "0.4" }
@@ -29,5 +29,3 @@ nexrad-decode = { workspace = true, optional = true }
 [dev-dependencies]
 env_logger = { version = "0.11" }
 tokio = { version = "1", features = ["full"] }
-nexrad-model = { workspace = true, optional = true }
-nexrad-decode = { workspace = true, optional = true }

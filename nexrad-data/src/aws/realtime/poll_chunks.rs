@@ -15,9 +15,11 @@ pub async fn poll_chunks<'a>(
     tx: Sender<(ChunkIdentifier, Chunk<'a>)>,
     stop_rx: Receiver<bool>,
 ) -> Result<()> {
-    let latest_volume = get_latest_volume(site)
-        .await?
+    let latest_volume_result = get_latest_volume(site).await?;
+    let latest_volume = latest_volume_result
+        .volume
         .ok_or(AWSError::LatestVolumeNotFound)?;
+    
     let latest_chunk_id = get_latest_chunk(site, latest_volume)
         .await?
         .ok_or(AWSError::ExpectedChunkNotFound)?;

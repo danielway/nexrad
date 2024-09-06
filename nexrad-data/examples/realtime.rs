@@ -12,7 +12,7 @@ async fn main() -> nexrad_data::result::Result<()> {
     use nexrad_decode::messages::decode_message_header;
     use std::io::Cursor;
 
-    let latest = get_latest_volume("KDMX").await?;
+    let latest = get_latest_volume("KDMX").await?.volume;
     println!("Most recent volume: {:?}", latest);
 
     let chunks = list_chunks_in_volume("KDMX", latest.unwrap(), 1000).await?;

@@ -41,16 +41,13 @@ async fn main() -> nexrad_data::result::Result<()> {
     });
 
     let stats_handle = task::spawn(async move {
-        loop {
-            let stats = stats_rx.recv().expect("Failed to receive stats");
+        while let Ok(stats) = stats_rx.recv() {
             info!("Polling statistics: {:?}", stats);
         }
     });
 
     let update_handle = task::spawn(async move {
-        loop {
-            let (chunk_id, chunk) = update_rx.recv().expect("Failed to receive update");
-
+        while let Ok((chunk_id, chunk)) = update_rx.recv() {
             info!(
                 "Downloaded chunk {} from {:?} at {:?} of size {}",
                 chunk_id.name(),

@@ -46,5 +46,13 @@ pub mod aws {
         S3ObjectNotFoundError,
         #[error("error streaming/downloading AWS S3 object")]
         S3StreamingError(reqwest::Error),
+        #[error("failed to locate latest volume")]
+        LatestVolumeNotFound,
+        #[error("a chunk was not found as expected")]
+        ExpectedChunkNotFound,
+        #[error("error sending chunk to receiver")]
+        PollingAsyncError,
+        #[error("failed to determine next chunk")]
+        FailedToDetermineNextChunk,
     }
 }

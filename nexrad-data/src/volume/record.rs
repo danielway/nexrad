@@ -1,7 +1,3 @@
-use crate::result::{Error, Result};
-use nexrad_decode::messages::{decode_messages, MessageWithHeader};
-use std::io::Cursor;
-
 enum RecordData<'a> {
     Borrowed(&'a [u8]),
     Owned(Vec<u8>),
@@ -41,7 +37,8 @@ impl<'a> Record<'a> {
 
     /// Decompresses this LDM record's data.
     #[cfg(feature = "bzip2")]
-    pub fn decompress<'b>(&self) -> Result<Record<'b>> {
+    pub fn decompress<'b>(&self) -> crate::result::Result<Record<'b>> {
+        use crate::result::Error;
         use bzip2::read::BzDecoder;
         use std::io::Read;
 
@@ -60,7 +57,13 @@ impl<'a> Record<'a> {
 
     /// Decodes the NEXRAD level II messages contained in this LDM record.
     #[cfg(feature = "decode")]
-    pub fn messages(&self) -> Result<Vec<MessageWithHeader>> {
+    pub fn messages(
+        &self,
+    ) -> crate::result::Result<Vec<nexrad_decode::messages::MessageWithHeader>> {
+        use crate::result::Error;
+        use nexrad_decode::messages::decode_messages;
+        use std::io::Cursor;
+
         if self.compressed() {
             return Err(Error::CompressedDataError);
         }

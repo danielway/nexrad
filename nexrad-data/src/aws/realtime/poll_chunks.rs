@@ -80,8 +80,7 @@ pub async fn poll_chunks<'a>(
         if let Some(stats_tx) = &stats_tx {
             let latency = next_chunk_id
                 .date_time()
-                .map(|date_time| Utc::now().signed_duration_since(date_time).to_std().ok())
-                .flatten();
+                .and_then(|date_time| Utc::now().signed_duration_since(date_time).to_std().ok());
 
             stats_tx
                 .send(PollStats::NewChunk(NewChunkStats {

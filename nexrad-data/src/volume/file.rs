@@ -1,7 +1,5 @@
-use crate::result::{Error, Result};
+use crate::result::Result;
 use crate::volume::{split_compressed_records, Header, Record};
-use nexrad_decode::messages::Message;
-use nexrad_model::data::Radial;
 
 /// A NEXRAD Archive II volume data file.
 pub struct File(Vec<u8>);
@@ -31,7 +29,9 @@ impl File {
     /// data.
     #[cfg(feature = "decode")]
     pub fn scan(&self) -> Result<nexrad_model::data::Scan> {
-        use nexrad_model::data::{Scan, Sweep};
+        use crate::result::Error;
+        use nexrad_decode::messages::Message;
+        use nexrad_model::data::{Radial, Scan, Sweep};
 
         let mut coverage_pattern = None;
         let mut sweeps = Vec::new();

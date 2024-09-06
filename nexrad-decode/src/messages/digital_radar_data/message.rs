@@ -1,7 +1,6 @@
 use crate::messages::digital_radar_data::{
-    ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, RadialStatus, VolumeDataBlock,
+    ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, VolumeDataBlock,
 };
-use crate::result::{Error, Result};
 
 /// The digital radar data message includes base radar data from a single radial for various
 /// products.
@@ -61,7 +60,9 @@ impl Message {
 
     /// Get a radial from this digital radar data message.
     #[cfg(feature = "nexrad-model")]
-    pub fn radial(&self) -> Result<nexrad_model::data::Radial> {
+    pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
+        use crate::messages::digital_radar_data::RadialStatus;
+        use crate::result::Error;
         use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
 
         Ok(Radial::new(
@@ -108,7 +109,9 @@ impl Message {
 
     /// Convert this digital radar data message into a common model radial, minimizing data copy.
     #[cfg(feature = "nexrad-model")]
-    pub fn into_radial(self) -> Result<nexrad_model::data::Radial> {
+    pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
+        use crate::messages::digital_radar_data::RadialStatus;
+        use crate::result::Error;
         use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
 
         Ok(Radial::new(

@@ -71,6 +71,48 @@ impl<'a> Record<'a> {
         let mut reader = Cursor::new(self.data());
         Ok(decode_messages(&mut reader)?)
     }
+
+    /// Decodes the NEXRAD level II sweeps contained in this LDM record. Note that these sweeps may
+    /// be incomplete, requiring multiple records' radials to be combined to form a complete sweep.
+    #[cfg(feature = "decode")]
+    pub fn sweeps(&self) -> crate::result::Result<Vec<nexrad_model::data::Sweep>> {
+        use nexrad_decode::messages::Message;
+
+        let mut sweeps = Vec::new();
+
+        let mut sweep_elevation_number = None;
+        let mut sweep_radials = Vec::new();
+
+        for message in self.messages()? {
+            match message.message {
+                Message::DigitalRadarData(radar_data_message) => {
+                    if let Some(elevation_number) = sweep_elevation_number {
+                        if elevation_number != radar_data_message.header.elevation_number {
+                            sweeps.push(nexrad_model::data::Sweep::new(
+                                elevation_number,
+                                sweep_radials,
+                            ));
+
+                            sweep_radials = Vec::new();
+                        }
+                    }
+
+                    sweep_elevation_number = Some(radar_data_message.header.elevation_number);
+                    sweep_radials.push(radar_data_message.into_radial()?);
+                }
+                _ => {}
+            }
+        }
+
+        if let Some(elevation_number) = sweep_elevation_number {
+            sweeps.push(nexrad_model::data::Sweep::new(
+                elevation_number,
+                sweep_radials,
+            ));
+        }
+
+        Ok(sweeps)
+    }
 }
 
 /// Splits compressed LDM record data into individual records. Will omit the record size prefix from

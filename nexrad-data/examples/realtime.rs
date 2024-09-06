@@ -1,14 +1,14 @@
-#[cfg(feature = "aws")]
-use nexrad_data::aws::realtime::{download_chunk, get_latest_volume, list_chunks_in_volume, Chunk};
-
-#[cfg(not(feature = "aws"))]
+#[cfg(not(all(feature = "aws", feature = "decode")))]
 fn main() {
     println!("This example requires the \"aws\" feature to be enabled.");
 }
 
-#[cfg(feature = "aws")]
+#[cfg(all(feature = "aws", feature = "decode"))]
 #[tokio::main]
 async fn main() -> nexrad_data::result::Result<()> {
+    use nexrad_data::aws::realtime::{
+        download_chunk, get_latest_volume, list_chunks_in_volume, Chunk,
+    };
     use nexrad_decode::messages::decode_message_header;
     use std::io::Cursor;
 

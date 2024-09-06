@@ -1,9 +1,9 @@
-#[cfg(not(feature = "aws"))]
+#[cfg(not(all(feature = "aws", feature = "decode")))]
 fn main() {
     println!("This example requires the \"aws\" feature to be enabled.");
 }
 
-#[cfg(feature = "aws")]
+#[cfg(all(feature = "aws", feature = "decode"))]
 fn main() {
     use nexrad_data::aws::realtime::Chunk;
     use std::fs::{read, read_dir};
@@ -36,7 +36,7 @@ fn main() {
     }
 }
 
-#[cfg(feature = "aws")]
+#[cfg(all(feature = "aws", feature = "decode"))]
 fn decode_record(mut record: nexrad_data::volume::Record) {
     use nexrad_decode::messages::digital_radar_data::decode_digital_radar_data;
     use nexrad_decode::messages::message_header::MessageHeader;

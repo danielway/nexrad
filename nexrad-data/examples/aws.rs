@@ -1,7 +1,7 @@
 use clap::Parser;
 use log::{debug, info, trace, LevelFilter};
 
-#[cfg(not(feature = "aws"))]
+#[cfg(not(all(feature = "aws", feature = "decode")))]
 fn main() {
     println!("This example requires the \"aws\" feature to be enabled.");
 }
@@ -26,7 +26,7 @@ struct Cli {
     stop_time: String,
 }
 
-#[cfg(feature = "aws")]
+#[cfg(all(feature = "aws", feature = "decode"))]
 #[tokio::main]
 async fn main() -> nexrad_data::result::Result<()> {
     use chrono::Utc;
@@ -146,7 +146,7 @@ fn get_nearest_file_index(
     min_index
 }
 
-#[cfg(feature = "aws")]
+#[cfg(all(feature = "aws", feature = "decode"))]
 fn decode_record(
     mut record: nexrad_data::volume::Record,
     download_time: chrono::DateTime<chrono::Utc>,

@@ -1,6 +1,6 @@
 use crate::data::Radial;
 use crate::result::{Error, Result};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -73,6 +73,23 @@ impl Sweep {
             elevation_number: self.elevation_number,
             radials,
         })
+    }
+}
+
+impl Display for Sweep {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let (Some(first), Some(last)) = (self.radials.first(), self.radials.last()) {
+            write!(
+                f,
+                "Sweep ({:.1}-{:.1} deg, {} radials, {} deg spacing)",
+                first.azimuth_angle_degrees(),
+                last.azimuth_angle_degrees(),
+                self.radials.len(),
+                first.azimuth_spacing_degrees()
+            )
+        } else {
+            write!(f, "Sweep (no radials)")
+        }
     }
 }
 

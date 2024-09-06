@@ -34,14 +34,13 @@ use std::sync::mpsc;
 use std::time::Duration;
 use tokio::task;
 
-use nexrad_data::aws::realtime::PollStats;
 use nexrad_data::volume::Record;
 use nexrad_decode::messages::digital_radar_data::decode_digital_radar_data;
 use nexrad_decode::messages::message_header::MessageHeader;
 use nexrad_decode::messages::{decode_message_header, MessageType};
 
 #[cfg(feature = "aws")]
-use nexrad_data::aws::realtime::{poll_chunks, Chunk, ChunkIdentifier};
+use nexrad_data::aws::realtime::{poll_chunks, Chunk, ChunkIdentifier, PollStats};
 
 #[cfg(not(feature = "aws"))]
 fn main() {

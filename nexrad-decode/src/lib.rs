@@ -9,6 +9,8 @@
 //!
 
 #![forbid(unsafe_code)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
 #![allow(clippy::too_many_arguments)]
 

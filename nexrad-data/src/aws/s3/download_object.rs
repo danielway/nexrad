@@ -51,13 +51,12 @@ pub async fn download_object(
 /// Extracts the `Last-Modified` header from a response and returns it as a `DateTime<Utc>`.
 fn get_last_modified_header(response_headers: &HeaderMap) -> Option<DateTime<Utc>> {
     let header = response_headers.get("Last-Modified");
-    let date_string = header.map(|value| value.to_str().ok()).flatten();
+    let date_string = header.and_then(|value| value.to_str().ok());
 
     date_string
-        .map(|string| {
+        .and_then(|string| {
             DateTime::parse_from_rfc2822(string)
                 .ok()
                 .map(|date_time| date_time.with_timezone(&Utc))
         })
-        .flatten()
 }

@@ -16,6 +16,6 @@ pub fn estimate_next_chunk_time(previous_chunk: &ChunkIdentifier) -> DateTime<Ut
         };
     }
 
-    let previous_time = previous_chunk.date_time().unwrap_or_else(|| Utc::now());
+    let previous_time = previous_chunk.date_time().unwrap_or_else(Utc::now);
     previous_time.add(Duration::from_millis(estimated_wait_time.as_millis() as u64))
 }

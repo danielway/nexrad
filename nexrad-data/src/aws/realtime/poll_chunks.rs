@@ -86,9 +86,8 @@ where
     F: Future<Output = Result<R>>,
 {
     for attempt in 0..attempts {
-        match action().await {
-            Ok(result) => return Some(result),
-            Err(_) => {}
+        if let Ok(result) = action().await {
+            return Some(result);
         }
 
         let wait = wait_millis * 2u64.pow(attempt as u32);

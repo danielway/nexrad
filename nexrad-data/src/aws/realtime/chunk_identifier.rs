@@ -43,7 +43,7 @@ impl ChunkIdentifier {
 
         Self {
             site: self.site.clone(),
-            volume: self.volume.clone(),
+            volume: self.volume,
             name,
             date_time: None,
         }

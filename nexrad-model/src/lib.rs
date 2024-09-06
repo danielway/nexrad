@@ -17,5 +17,4 @@
 
 pub mod data;
 pub mod meta;
-
-mod result;
+pub mod result;

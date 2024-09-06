@@ -402,7 +402,7 @@ impl Message {
     }
 
     /// The bypass map generation date and time in UTC.
-    pub fn bypass_map_generation_date_time(&self) -> DateTime<Utc> {
+    pub fn bypass_map_generation_date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(
             self.bypass_map_generation_date,
             Duration::minutes(self.bypass_map_generation_time as i64),
@@ -410,7 +410,7 @@ impl Message {
     }
 
     /// The clutter filter map generation date and time in UTC.
-    pub fn clutter_filter_map_generation_date_time(&self) -> DateTime<Utc> {
+    pub fn clutter_filter_map_generation_date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(
             self.clutter_filter_map_generation_date,
             Duration::minutes(self.clutter_filter_map_generation_time as i64),

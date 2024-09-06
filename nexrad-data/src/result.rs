@@ -54,5 +54,7 @@ pub mod aws {
         PollingAsyncError,
         #[error("failed to determine next chunk")]
         FailedToDetermineNextChunk,
+        #[error("error decoding S3 list objects response")]
+        S3ListObjectsDecodingError,
     }
 }

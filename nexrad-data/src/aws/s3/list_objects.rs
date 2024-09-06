@@ -1,9 +1,10 @@
 use crate::aws::s3::bucket_list_result::BucketListResult;
 use crate::aws::s3::bucket_object::BucketObject;
 use crate::aws::s3::bucket_object_field::BucketObjectField;
+use crate::result::aws::AWSError;
 use crate::result::aws::AWSError::S3ListObjectsError;
 use chrono::{DateTime, Utc};
-use log::{debug, trace};
+use log::{debug, trace, warn};
 use xml::reader::XmlEvent;
 use xml::EventReader;
 
@@ -56,11 +57,16 @@ pub async fn list_objects(
                 if let Some(field) = field.as_ref() {
                     if field == &BucketObjectField::IsTruncated {
                         truncated = chars == "true";
-                        trace!("  List objects truncated: {}", truncated);
+                        if truncated {
+                            trace!("  List objects truncated: {}", truncated);
+                        }
                         continue;
                     }
 
-                    let item = object.as_mut().expect("item should exist");
+                    let item = object.as_mut().ok_or_else(|| {
+                        warn!("Expected item for object field: {:?}", field);
+                        AWSError::S3ListObjectsDecodingError
+                    })?;
                     match field {
                         BucketObjectField::Key => item.key.push_str(&chars),
                         BucketObjectField::LastModified => {
@@ -69,7 +75,10 @@ pub async fn list_objects(
                                 .map(|date_time| date_time.with_timezone(&Utc));
                         }
                         BucketObjectField::Size => {
-                            item.size = chars.parse().expect("should parse size")
+                            item.size = chars.parse().map_err(|_| {
+                                warn!("Error parsing object size: {}", chars);
+                                AWSError::S3ListObjectsDecodingError
+                            })?;
                         }
                         _ => {}
                     }

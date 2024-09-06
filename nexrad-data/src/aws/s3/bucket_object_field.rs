@@ -1,5 +1,5 @@
 /// A field in the S3 list objects response. These are not necessarily part of the same object.
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum BucketObjectField {
     /// Whether the list of objects is truncated. Child of `ListBucketResult`.
     IsTruncated,

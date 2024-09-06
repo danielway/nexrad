@@ -22,7 +22,7 @@ pub struct Header {
 
 impl Header {
     /// The date and time the clutter filter map was generated.
-    pub fn date_time(&self) -> DateTime<Utc> {
+    pub fn date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(
             self.map_generation_date,
             Duration::milliseconds(self.map_generation_time as i64),

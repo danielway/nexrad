@@ -118,7 +118,7 @@ impl MessageHeader {
     }
 
     /// This message's date and time in UTC.
-    pub fn date_time(&self) -> DateTime<Utc> {
+    pub fn date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(self.date, Duration::milliseconds(self.time as i64))
     }
 

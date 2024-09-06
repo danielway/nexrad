@@ -33,36 +33,37 @@ where
     // First, locate any value in the array to use as a reference point via repeated bisection
     let mut queue = VecDeque::from([(0, element_count - 1)]);
     while !queue.is_empty() {
-        let (start, end) = queue.pop_front().unwrap();
-        if start > end {
-            continue;
-        }
-
-        let mid = (start + end) / 2;
-        let mid_value = f(mid).await?;
-        let mid_value_ref = mid_value.as_ref();
-
-        // If this value is None, continue the bisection
-        if mid_value_ref.is_none() {
-            queue.push_back((mid + 1, end));
-            if mid > 0 {
-                queue.push_back((start, mid - 1));
+        if let Some((start, end)) = queue.pop_front() {
+            if start > end {
+                continue;
             }
-            continue;
-        }
 
-        if mid_value_ref <= some_target {
-            nearest = Some(mid);
-        }
+            let mid = (start + end) / 2;
+            let mid_value = f(mid).await?;
+            let mid_value_ref = mid_value.as_ref();
 
-        if mid_value_ref == some_target {
-            return Ok(nearest);
-        }
+            // If this value is None, continue the bisection
+            if mid_value_ref.is_none() {
+                queue.push_back((mid + 1, end));
+                if mid > 0 {
+                    queue.push_back((start, mid - 1));
+                }
+                continue;
+            }
 
-        if should_search_right(first_value_ref, mid_value_ref, some_target) {
-            low = mid + 1;
-        } else {
-            high = mid;
+            if mid_value_ref <= some_target {
+                nearest = Some(mid);
+            }
+
+            if mid_value_ref == some_target {
+                return Ok(nearest);
+            }
+
+            if should_search_right(first_value_ref, mid_value_ref, some_target) {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
         }
 
         break;

@@ -60,24 +60,24 @@ impl Header {
     ///   06 = Super Resolution (RDA Build 12.0 and later)
     ///   07 = Recombined Super Resolution (RDA Build 12.0 and later)
     /// NOTE: Dual-pol data introduced in RDA Build 12.0
-    pub fn tape_filename(&self) -> String {
-        String::from_utf8(self.tape_filename.to_vec()).unwrap()
+    pub fn tape_filename(&self) -> Option<String> {
+        String::from_utf8(self.tape_filename.to_vec()).ok()
     }
 
     /// Sequential number assigned to each volume of radar data in the queue, rolling over to 001
     /// after 999.
-    pub fn extension_number(&self) -> String {
-        String::from_utf8(self.extension_number.to_vec()).unwrap()
+    pub fn extension_number(&self) -> Option<String> {
+        String::from_utf8(self.extension_number.to_vec()).ok()
     }
 
     /// Returns the date and time of the volume.
-    pub fn date_time(&self) -> DateTime<Utc> {
+    pub fn date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(self.date as u16, Duration::milliseconds(self.time as i64))
     }
 
     /// The ICAO identifier of the radar site.
-    pub fn icao_of_radar(&self) -> String {
-        String::from_utf8(self.icao_of_radar.to_vec()).unwrap()
+    pub fn icao_of_radar(&self) -> Option<String> {
+        String::from_utf8(self.icao_of_radar.to_vec()).ok()
     }
 }
 

@@ -36,7 +36,7 @@ pub use spot_blanking_status::*;
 mod pointers;
 pub use pointers::*;
 
-use crate::result::Result;
+use crate::result::{Error, Result};
 use crate::util::deserialize;
 use std::io::{Read, Seek, SeekFrom};
 
@@ -49,12 +49,16 @@ pub fn decode_digital_radar_data<R: Read + Seek>(reader: &mut R) -> Result<Messa
 
     let pointers_space = message.header.data_block_count as usize * size_of::<u32>();
     let mut pointers_raw = vec![0; pointers_space];
-    reader.read_exact(&mut pointers_raw).unwrap();
+    reader.read_exact(&mut pointers_raw)?;
 
     let pointers = pointers_raw
         .chunks_exact(size_of::<u32>())
-        .map(|v| <u32>::from_be_bytes(v.try_into().unwrap()))
-        .collect::<Vec<_>>();
+        .map(|v| {
+            v.try_into()
+                .map_err(|_| Error::DecodingError("message pointers".to_string()))
+                .map(u32::from_be_bytes)
+        })
+        .collect::<Result<Vec<_>>>()?;
 
     for pointer in pointers {
         reader.seek(SeekFrom::Start(start_position + pointer as u64))?;

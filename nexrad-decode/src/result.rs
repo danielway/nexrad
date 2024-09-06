@@ -12,4 +12,6 @@ pub enum Error {
     FileError(#[from] std::io::Error),
     #[error("file deserialization error")]
     DeserializationError(#[from] bincode::Error),
+    #[error("file decoding error: {0}")]
+    DecodingError(String),
 }

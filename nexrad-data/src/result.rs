@@ -18,6 +18,12 @@ pub enum Error {
     #[cfg(feature = "aws")]
     #[error(transparent)]
     AWS(#[from] aws::AWSError),
+    #[cfg(feature = "decode")]
+    #[error("error decoding NEXRAD data")]
+    Decode(#[from] nexrad_decode::result::Error),
+    #[cfg(feature = "decode")]
+    #[error("compressed data cannot be decoded")]
+    CompressedDataError,
 }
 
 #[cfg(feature = "aws")]

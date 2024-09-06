@@ -1,5 +1,6 @@
-#[cfg(feature = "bzip2")]
-use bzip2::read::BzDecoder;
+use crate::result::{Error, Result};
+use nexrad_decode::messages::{decode_messages, MessageWithHeader};
+use std::io::Cursor;
 
 enum RecordData<'a> {
     Borrowed(&'a [u8]),
@@ -40,11 +41,12 @@ impl<'a> Record<'a> {
 
     /// Decompresses this LDM record's data.
     #[cfg(feature = "bzip2")]
-    pub fn decompress<'b>(&self) -> crate::result::Result<Record<'b>> {
+    pub fn decompress<'b>(&self) -> Result<Record<'b>> {
+        use bzip2::read::BzDecoder;
         use std::io::Read;
 
         if !self.compressed() {
-            return Err(crate::result::Error::UncompressedDataError);
+            return Err(Error::UncompressedDataError);
         }
 
         // Skip the four-byte record size prefix
@@ -54,6 +56,17 @@ impl<'a> Record<'a> {
         BzDecoder::new(data).read_to_end(&mut decompressed_data)?;
 
         Ok(Record::new(decompressed_data))
+    }
+
+    /// Decodes the NEXRAD level II messages contained in this LDM record.
+    #[cfg(feature = "decode")]
+    pub fn messages(&self) -> Result<Vec<MessageWithHeader>> {
+        if self.compressed() {
+            return Err(Error::CompressedDataError);
+        }
+
+        let mut reader = Cursor::new(self.data());
+        Ok(decode_messages(&mut reader)?)
     }
 }
 
@@ -72,7 +85,9 @@ pub fn split_compressed_records(data: &[u8]) -> Vec<Record> {
         record_size.copy_from_slice(&data[position..position + 4]);
         let record_size = i32::from_be_bytes(record_size).unsigned_abs() as usize;
 
-        records.push(Record::from_slice(&data[position..position + record_size + 4]));
+        records.push(Record::from_slice(
+            &data[position..position + record_size + 4],
+        ));
         position += record_size + 4;
     }
 

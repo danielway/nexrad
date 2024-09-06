@@ -8,8 +8,9 @@ license = "MIT"
 edition = "2021"
 
 [features]
-default = ["aws"]
+default = ["aws", "decode"]
 aws = ["reqwest", "xml", "bzip2", "tokio"]
+decode = ["nexrad-decode"]
 
 [dependencies]
 log = { version = "0.4" }
@@ -22,6 +23,8 @@ xml = { workspace = true, optional = true }
 bzip2 = { workspace = true, optional = true }
 clap = { workspace = true }
 tokio = { version = "1", optional = true }
+nexrad-model = { workspace = true, optional = true }
+nexrad-decode = { workspace = true, optional = true }
 
 [dev-dependencies]
 env_logger = { version = "0.11" }

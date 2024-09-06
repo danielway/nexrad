@@ -3,6 +3,7 @@ use crate::aws::s3::bucket_object::BucketObject;
 use crate::aws::s3::bucket_object_field::BucketObjectField;
 use crate::result::aws::AWSError::S3ListObjectsError;
 use chrono::{DateTime, Utc};
+use log::{debug, trace};
 use xml::reader::XmlEvent;
 use xml::EventReader;
 
@@ -17,10 +18,17 @@ pub async fn list_objects(
     if let Some(max_keys) = max_keys {
         path.push_str(&format!("&max-keys={}", max_keys));
     }
+    debug!(
+        "Listing objects in bucket \"{}\" with prefix \"{}\"",
+        bucket, prefix
+    );
 
     let response = reqwest::get(path).await.map_err(S3ListObjectsError)?;
+    trace!("  List objects response status: {}", response.status());
 
     let body = response.text().await.map_err(S3ListObjectsError)?;
+    trace!("  List objects response body length: {}", body.len());
+
     let parser = EventReader::new(body.as_bytes());
 
     let mut objects = Vec::new();
@@ -48,6 +56,7 @@ pub async fn list_objects(
                 if let Some(field) = field.as_ref() {
                     if field == &BucketObjectField::IsTruncated {
                         truncated = chars == "true";
+                        trace!("  List objects truncated: {}", truncated);
                         continue;
                     }
 
@@ -76,6 +85,8 @@ pub async fn list_objects(
             _ => {}
         }
     }
+
+    trace!("  List objects found: {}", objects.len());
 
     Ok(BucketListResult { truncated, objects })
 }

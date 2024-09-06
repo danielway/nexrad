@@ -1,4 +1,5 @@
 use chrono::Utc;
+use log::{info, LevelFilter};
 use std::sync::mpsc;
 use std::time::Duration;
 use tokio::task;
@@ -8,12 +9,16 @@ use nexrad_data::aws::realtime::{poll_chunks, Chunk, ChunkIdentifier};
 
 #[cfg(not(feature = "aws"))]
 fn main() {
-    println!("This example requires the \"aws\" feature to be enabled.");
+    info!("This example requires the \"aws\" feature to be enabled.");
 }
 
 #[cfg(feature = "aws")]
 #[tokio::main]
 async fn main() -> nexrad_data::result::Result<()> {
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
+        .filter_module("reqwest::connect", LevelFilter::Info)
+        .init();
+
     let mut downloaded_chunks = 0;
 
     let (update_tx, update_rx) = mpsc::channel::<(ChunkIdentifier, Chunk)>();
@@ -29,7 +34,7 @@ async fn main() -> nexrad_data::result::Result<()> {
     task::spawn(async move {
         tokio::time::sleep(Duration::from_secs(30)).await;
 
-        println!("Timeout reached, stopping...");
+        info!("Timeout reached, stopping...");
         timeout_stop_tx.send(true).unwrap();
     });
 
@@ -37,7 +42,7 @@ async fn main() -> nexrad_data::result::Result<()> {
         loop {
             let (chunk_id, chunk) = update_rx.recv().expect("Failed to receive update");
 
-            println!(
+            info!(
                 "Downloaded chunk {} from {:?} at {:?} of size {}",
                 chunk_id.name(),
                 chunk_id.date_time(),
@@ -47,7 +52,7 @@ async fn main() -> nexrad_data::result::Result<()> {
 
             downloaded_chunks += 1;
             if downloaded_chunks >= 10 {
-                println!("Downloaded 10 chunks, stopping...");
+                info!("Downloaded 10 chunks, stopping...");
                 stop_tx.send(true).expect("Failed to send stop signal");
                 break;
             }
@@ -56,7 +61,7 @@ async fn main() -> nexrad_data::result::Result<()> {
 
     handle.await.expect("Failed to join handle");
 
-    println!("Finished downloading chunks");
+    info!("Finished downloading chunks");
 
     Ok(())
 }

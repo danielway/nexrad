@@ -6,8 +6,8 @@
 //! downloading the chunks within that volume.
 //!
 //! A fixed number (999) volumes exist in the S3 bucket which are rotated through in a round-robin
-//! fashion. Chunks are added to each volume approximately every 3 seconds with very little latency
-//! from the data's collection time. TODO: quantify this using the message timestamps.
+//! fashion. Chunks are added to each volume approximately every 4-12 seconds with little latency
+//! from the data's collection time (usually approximately 15 seconds from collection time).
 //!
 //! There may be gaps in the volume data, as illustrated in the real example below from KDMX:
 //! ```text

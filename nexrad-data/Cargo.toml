@@ -9,7 +9,7 @@ edition = "2021"
 
 [features]
 default = ["aws"]
-aws = ["reqwest", "xml", "bzip2"]
+aws = ["reqwest", "xml", "bzip2", "tokio"]
 
 [dependencies]
 thiserror = { workspace = true }
@@ -20,6 +20,7 @@ reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
 bzip2 = { workspace = true, optional = true }
 clap = { workspace = true }
+tokio = { version = "1", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

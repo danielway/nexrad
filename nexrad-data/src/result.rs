@@ -24,6 +24,9 @@ pub enum Error {
     #[cfg(feature = "decode")]
     #[error("compressed data cannot be decoded")]
     CompressedDataError,
+    #[cfg(feature = "decode")]
+    #[error("volume missing coverage pattern number")]
+    MissingCoveragePattern,
 }
 
 #[cfg(feature = "aws")]

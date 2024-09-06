@@ -62,17 +62,7 @@ impl Message {
     /// Get a radial from this digital radar data message.
     #[cfg(feature = "nexrad-model")]
     pub fn radial(&self) -> Result<nexrad_model::data::Radial> {
-        use nexrad_model::data::{MomentData, Radial, RadialStatus as ModelRadialStatus};
-
-        let get_moment_data = |data_block: Option<&GenericDataBlock>| -> Option<MomentData> {
-            data_block.map(|block| {
-                MomentData::from_fixed_point(
-                    block.header.scale,
-                    block.header.offset,
-                    block.encoded_data.clone(),
-                )
-            })
-        };
+        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
 
         Ok(Radial::new(
             self.header
@@ -91,13 +81,66 @@ impl Message {
                 RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
             },
             self.header.elevation_angle,
-            get_moment_data(self.reflectivity_data_block.as_ref()),
-            get_moment_data(self.velocity_data_block.as_ref()),
-            get_moment_data(self.spectrum_width_data_block.as_ref()),
-            get_moment_data(self.differential_reflectivity_data_block.as_ref()),
-            get_moment_data(self.differential_phase_data_block.as_ref()),
-            get_moment_data(self.correlation_coefficient_data_block.as_ref()),
-            get_moment_data(self.specific_diff_phase_data_block.as_ref()),
+            self.reflectivity_data_block
+                .as_ref()
+                .map(|block| block.moment_data()),
+            self.velocity_data_block
+                .as_ref()
+                .map(|block| block.moment_data()),
+            self.spectrum_width_data_block
+                .as_ref()
+                .map(|block| block.moment_data()),
+            self.differential_reflectivity_data_block
+                .as_ref()
+                .map(|block| block.moment_data()),
+            self.differential_phase_data_block
+                .as_ref()
+                .map(|block| block.moment_data()),
+            self.correlation_coefficient_data_block
+                .as_ref()
+                .map(|block| block.moment_data()),
+            self.specific_diff_phase_data_block
+                .as_ref()
+                .map(|block| block.moment_data()),
+        ))
+    }
+
+    /// Convert this digital radar data message into a common model radial, minimizing data copy.
+    #[cfg(feature = "nexrad-model")]
+    pub fn into_radial(self) -> Result<nexrad_model::data::Radial> {
+        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
+
+        Ok(Radial::new(
+            self.header
+                .date_time()
+                .ok_or(Error::MessageMissingDateError)?
+                .timestamp_millis(),
+            self.header.azimuth_number,
+            self.header.azimuth_angle,
+            self.header.azimuth_resolution_spacing as f32 * 0.5,
+            match self.header.radial_status() {
+                RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
+                RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
+                RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
+                RadialStatus::VolumeScanStart => ModelRadialStatus::VolumeScanStart,
+                RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
+                RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
+            },
+            self.header.elevation_angle,
+            self.reflectivity_data_block
+                .map(|block| block.into_moment_data()),
+            self.velocity_data_block
+                .map(|block| block.into_moment_data()),
+            self.spectrum_width_data_block
+                .map(|block| block.into_moment_data()),
+            self.differential_reflectivity_data_block
+                .map(|block| block.into_moment_data()),
+            self.differential_phase_data_block
+                .map(|block| block.into_moment_data()),
+            self.correlation_coefficient_data_block
+                .map(|block| block.into_moment_data()),
+            self.specific_diff_phase_data_block
+                .map(|block| block.into_moment_data()),
         ))
     }
 }

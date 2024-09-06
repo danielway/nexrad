@@ -61,6 +61,26 @@ impl GenericDataBlock {
             })
             .collect()
     }
+
+    /// Get moment data from this generic data block. Note that this will clone the underlying data.
+    #[cfg(feature = "nexrad-model")]
+    pub fn moment_data(&self) -> nexrad_model::data::MomentData {
+        nexrad_model::data::MomentData::from_fixed_point(
+            self.header.scale,
+            self.header.offset,
+            self.encoded_data.clone(),
+        )
+    }
+
+    /// Convert this generic data block into common model moment data, minimizing data copies.
+    #[cfg(feature = "nexrad-model")]
+    pub fn into_moment_data(self) -> nexrad_model::data::MomentData {
+        nexrad_model::data::MomentData::from_fixed_point(
+            self.header.scale,
+            self.header.offset,
+            self.encoded_data,
+        )
+    }
 }
 
 impl Debug for GenericDataBlock {

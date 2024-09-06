@@ -30,39 +30,34 @@ impl File {
     #[cfg(feature = "decode")]
     pub fn scan(&self) -> Result<nexrad_model::data::Scan> {
         use crate::result::Error;
+        use nexrad_decode::messages::Message;
         use nexrad_model::data::{Scan, Sweep};
 
-        let mut sweeps = Vec::new();
-        let mut current_sweep: Option<Sweep> = None;
-
+        let mut coverage_pattern_number = None;
+        let mut radials = Vec::new();
         for mut record in self.records() {
             if record.compressed() {
                 record = record.decompress()?;
             }
 
-            for sweep in record.sweeps()? {
-                let elevation = current_sweep.as_ref().map(|sweep| sweep.elevation_number());
-                if elevation != Some(sweep.elevation_number()) {
-                    if let Some(current_sweep) = current_sweep.take() {
-                        sweeps.push(current_sweep);
+            let messages = record.messages()?;
+            for message in messages {
+                if let Message::DigitalRadarData(radar_data_message) = message.message {
+                    if coverage_pattern_number.is_none() {
+                        if let Some(volume_block) = &radar_data_message.volume_data_block {
+                            coverage_pattern_number =
+                                Some(volume_block.volume_coverage_pattern_number);
+                        }
                     }
-                }
 
-                if let Some(old_sweep) = current_sweep.take() {
-                    current_sweep = Some(old_sweep.merge(sweep)?);
-                } else {
-                    current_sweep = Some(sweep);
+                    radials.push(radar_data_message.into_radial()?);
                 }
             }
         }
 
-        if let Some(current_sweep) = current_sweep.take() {
-            sweeps.push(current_sweep);
-        }
-
         Ok(Scan::new(
-            1, // TODO: coverage_pattern.ok_or(Error::MissingCoveragePattern)?
-            sweeps,
+            coverage_pattern_number.ok_or(Error::MissingCoveragePattern)?,
+            Sweep::from_radials(radials),
         ))
     }
 }

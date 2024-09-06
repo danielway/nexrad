@@ -1,4 +1,5 @@
 use crate::data::Radial;
+use crate::result::{Error, Result};
 use std::fmt::Debug;
 
 #[cfg(feature = "serde")]
@@ -33,6 +34,23 @@ impl Sweep {
     /// The radials comprising this sweep.
     pub fn radials(&self) -> &Vec<Radial> {
         self.radials.as_ref()
+    }
+
+    /// Merges this sweep with another sweep, combining their radials into a single sweep. The
+    /// sweeps must be at the same elevation, and they should not have duplicate azimuth radials.
+    pub fn merge(self, other: Self) -> Result<Self> {
+        if self.elevation_number != other.elevation_number {
+            return Err(Error::ElevationMismatchError);
+        }
+
+        let mut radials = self.radials;
+        radials.extend(other.radials);
+        radials.sort_by(|a, b| a.azimuth_number().cmp(&b.azimuth_number()));
+
+        Ok(Self {
+            elevation_number: self.elevation_number,
+            radials,
+        })
     }
 }
 

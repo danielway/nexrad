@@ -11,20 +11,24 @@ use uom::si::f64::Information;
 #[cfg(feature = "uom")]
 use uom::si::information::byte;
 
+/// This value in the [segment_size] field of a message header indicates that the message is
+/// variable-length rather than segmented.
+pub const VARIABLE_LENGTH_MESSAGE_SIZE: u16 = 65535;
+
 /// Message and system configuration information appended to the beginning of all messages.
 ///
-/// Note that several of this header's fields refer to segmentation, but messages between the RDA
-/// and RPG have not been segmented since build 19. Instead, messages with length less than 65534
-/// have their segment count and number set to 1, otherwise the segment count and number positions
-/// of the header (bytes 12-15) specify the size of the full message in bytes.
+/// Note that messages with a segment size of [VARIABLE_LENGTH_MESSAGE_SIZE] are not segmented and
+/// instead variable-length, with the segment count and segment number positions of the header
+/// (bytes 12-15) specifying the size of the full message in bytes.
 #[repr(C)]
 #[derive(Deserialize)]
 pub struct MessageHeader {
     rpg_unknown: [u8; 12],
 
-    /// Size of this segment in bytes. Note that this only describes this segment's size, and in the
-    /// case of a variable-length message the full message's size is determined differently. See
-    /// [message_size] and [number_of_segments] for more information.
+    /// Size of this segment in half-words. Note that this only describes this segment's size,
+    /// though there could be multiple segments. In the case of a variable-length message (indicated
+    /// by this field being set to [VARIABLE_LENGTH_MESSAGE_SIZE]), the full message's size is
+    /// determined differently. See [message_size] and [number_of_segments] for more information.
     pub segment_size: Integer2,
 
     /// Whether the RDA is operating on a redundant channel.
@@ -52,20 +56,27 @@ pub struct MessageHeader {
     /// Milliseconds past midnight, GMT.
     pub time: Integer4,
 
-    /// Number of segments in this message. If the [segment_size] field is less than 65534, this
-    /// field is set to 1. Otherwise, bytes 12-15 specify the size of the message in bytes.
+    /// Number of segments in this message. If the [segment_size] is less than
+    /// [VARIABLE_LENGTH_MESSAGE_SIZE], this field is meaningful, otherwise bytes 12-15 (this field
+    /// and [segment_number]) specify the size of the message in bytes.
     pub segment_count: Integer2,
 
-    /// This message segment's number. If the [segment_size] is less than 65534, this field is set
-    /// to 1. Otherwise, bytes 12-15 specify the size of the message in bytes.
+    /// This message segment's number. If the [segment_size] is less than
+    /// [VARIABLE_LENGTH_MESSAGE_SIZE], this field is meaningful, otherwise, bytes 12-15 (this field
+    /// and [segment_number]) specify the size of the message in bytes.
     pub segment_number: Integer2,
 }
 
 impl MessageHeader {
-    /// Size of this segment.
+    /// If this message is [segmented], this indicates this message segment's size. Otherwise, this
+    /// returns [None] and [message_size] should be used to determine the message's full size.
     #[cfg(feature = "uom")]
-    pub fn segment_size(&self) -> Information {
-        Information::new::<byte>(self.segment_size as f64)
+    pub fn segment_size(&self) -> Option<Information> {
+        if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
+            Some(Information::new::<byte>((self.segment_size * 2) as f64))
+        } else {
+            None
+        }
     }
 
     /// Whether the RDA is operating on a redundant channel.
@@ -121,49 +132,64 @@ impl MessageHeader {
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(self.date, Duration::milliseconds(self.time as i64))
     }
+    
+    /// Whether this message is segmented or variable-length. If the message is segmented, multiple
+    /// message segments compose the full message. If the message is variable-length as indicated by
+    /// the [segment_size] field being set to [VARIABLE_LENGTH_MESSAGE_SIZE], the full message size
+    /// is determined by the [message_size] field. 
+    pub fn segmented(&self) -> bool {
+        self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE
+    }
 
-    /// Number of segments in the message. In earlier builds messages were segmented into fixed-size
-    /// chunks, but in the current build a variable-size format is used for messages which exceed a
-    /// single segment's size. For that reason, this function returns one if the [segment_size]
-    /// is <65534 and [None] otherwise. In that case, [message_size] can be used to determine the
-    /// message's full size.
+    /// If the message is [segmented], this indicates the number of segments in the full message,
+    /// otherwise this returns [None]. [message_size] can be used to determine the message's full
+    /// size.
     pub fn segment_count(&self) -> Option<u16> {
-        if self.segment_size < 65534 {
-            // debug_assert!(
-            //     self.segment_count == 1,
-            //     "Segment count should be 1 if size <65534"
-            // );
+        if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
             Some(self.segment_count)
         } else {
             None
         }
     }
 
-    /// This segment's number in the message. In earlier builds messages were segmented into
-    /// fixed-size chunks, but in the current build a variable-size format is used for messages
-    /// which exceed a single segment's size. For that reason, this function returns one if the
-    /// [segment_size] is <65534 and [None] otherwise. In that case, [message_size] can be used to
-    /// determine the message's full size.
+    /// If the message is [segmented], this indicates this segment's number/sequence in the message,
+    /// otherwise this returns [None]. [message_size] can be used to determine the message's full
+    /// size.
     pub fn segment_number(&self) -> Option<u16> {
-        if self.segment_size < 65534 {
-            // debug_assert!(
-            //     self.segment_number == 1,
-            //     "Segment number should be 1 if size <65534"
-            // );
+        if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
             Some(self.segment_number)
         } else {
             None
         }
     }
 
-    /// The full size of the message in bytes.
-    pub fn message_size(&self) -> u32 {
+    /// The full size of the message in bytes. If the message is [segmented] then this is the
+    /// segment size, otherwise this is the full variable-length message size.
+    pub fn message_size_bytes(&self) -> u32 {
         match self.segment_count() {
-            Some(_) => self.segment_size as u32,
+            Some(_) => self.segment_size as u32 * 2,
             None => {
                 let segment_number = self.segment_number as u32;
                 let segment_size = self.segment_size as u32;
-                (segment_number << 16) | segment_size
+                (segment_number << 16) | (segment_size << 1)
+            }
+        }
+    }
+
+    /// The full size of the message. If the message is [segmented] then this is the segment size,
+    /// otherwise this is the full variable-length message size.
+    #[cfg(feature = "uom")]
+    pub fn message_size(&self) -> Information {
+        match self.segment_count() {
+            Some(_) => { 
+                let segment_size_bytes = self.segment_size << 1;
+                Information::new::<byte>(segment_size_bytes as f64) 
+            },
+            None => {
+                let segment_number = self.segment_number as u32;
+                let segment_size = self.segment_size as u32;
+                let message_size_bytes = (segment_number << 16) | segment_size;
+                Information::new::<byte>(message_size_bytes as f64)
             }
         }
     }
@@ -180,7 +206,7 @@ impl Debug for MessageHeader {
             .field("date_time", &self.date_time())
             .field("segment_count", &self.segment_count())
             .field("segment_number", &self.segment_number())
-            .field("message_size", &self.message_size())
+            .field("message_size_bytes", &self.message_size_bytes())
             .finish()
     }
 }

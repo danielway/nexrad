@@ -13,7 +13,7 @@ aws = ["reqwest", "xml", "bzip2", "tokio"]
 decode = ["nexrad-model", "nexrad-decode"]
 
 [dependencies]
-log = { version = "0.4" }
+log = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }

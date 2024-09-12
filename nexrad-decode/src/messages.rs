@@ -12,12 +12,12 @@ pub use message::{Message, MessageWithHeader};
 mod definitions;
 mod primitive_aliases;
 
-use crate::messages::clutter_filter_map::decode_clutter_filter_map;
 use crate::messages::digital_radar_data::decode_digital_radar_data;
 use crate::messages::message_header::MessageHeader;
 use crate::messages::rda_status_data::decode_rda_status_message;
 use crate::result::Result;
 use crate::util::deserialize;
+use log::{debug, trace};
 use std::io::{Read, Seek};
 
 /// Decode a NEXRAD Level II message from a reader.
@@ -27,11 +27,23 @@ pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
 
 /// Decode a series of NEXRAD Level II messages from a reader.
 pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<MessageWithHeader>> {
+    debug!("Decoding messages");
+
     let mut messages = Vec::new();
     while let Ok(header) = decode_message_header(reader) {
-        let message = decode_message(reader, header.message_type())?;
+        let message_type = header.message_type();
+        let position = reader.stream_position();
+        trace!("Decoding message type {:?} at {:?}", message_type, position);
+
+        let message = decode_message(reader, message_type)?;
         messages.push(MessageWithHeader { header, message });
     }
+
+    debug!(
+        "Decoded {} messages ending at {:?}",
+        messages.len(),
+        reader.stream_position()
+    );
     Ok(messages)
 }
 

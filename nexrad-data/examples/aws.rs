@@ -32,7 +32,9 @@ async fn main() -> nexrad_data::result::Result<()> {
     use chrono::Utc;
     use chrono::{NaiveDate, NaiveTime};
     use nexrad_data::aws::archive::{download_file, list_files};
-    use std::fs::{create_dir, File};
+    use nexrad_data::volume::File;
+    use std::fs::create_dir;
+    use std::io::Read;
     use std::io::Write;
     use std::path::Path;
 
@@ -79,22 +81,43 @@ async fn main() -> nexrad_data::result::Result<()> {
         .skip(start_index)
         .take(stop_index - start_index + 1)
     {
-        println!("Downloading file \"{}\"...", file_id.name());
-        let file = download_file(file_id.clone()).await?;
+        let file = if Path::new(&format!("downloads/{}", file_id.name())).exists() {
+            println!("File \"{}\" already downloaded.", file_id.name());
+            let mut file =
+                std::fs::File::open(format!("downloads/{}", file_id.name())).expect("open file");
+
+            let mut buffer = Vec::new();
+            file.read_to_end(&mut buffer).expect("read file");
+
+            File::new(buffer)
+        } else {
+            println!("Downloading file \"{}\"...", file_id.name());
+            let file = download_file(file_id.clone()).await?;
+
+            println!("Data file size (bytes): {}", file.data().len());
+            if !Path::new("downloads").exists() {
+                println!("Creating downloads directory...");
+                create_dir("downloads").expect("create downloads directory");
+            }
+
+            if !Path::new("downloads").exists() {
+                println!("Creating downloads directory...");
+                create_dir("downloads").expect("create downloads directory");
+            }
+
+            println!("Writing file to disk as: {}", file_id.name());
+            let mut downloaded_file =
+                std::fs::File::create(format!("downloads/{}", file_id.name()))
+                    .expect("create file");
+
+            downloaded_file
+                .write_all(file.data().as_slice())
+                .expect("write file");
+
+            file
+        };
 
         println!("Data file size (bytes): {}", file.data().len());
-
-        if !Path::new("downloads").exists() {
-            println!("Creating downloads directory...");
-            create_dir("downloads").expect("create downloads directory");
-        }
-
-        println!("Writing file to disk as: {}", file_id.name());
-        let mut downloaded_file =
-            File::create(format!("downloads/{}", file_id.name())).expect("create file");
-        downloaded_file
-            .write_all(file.data().as_slice())
-            .expect("write file");
 
         let records = file.records();
         debug!(

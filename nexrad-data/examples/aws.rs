@@ -1,6 +1,5 @@
 use clap::Parser;
 use log::{debug, info, trace, LevelFilter};
-use nexrad_decode::messages::{decode_messages, Message};
 
 #[cfg(not(all(feature = "aws", feature = "decode")))]
 fn main() {
@@ -176,6 +175,7 @@ fn decode_record(
     download_time: chrono::DateTime<chrono::Utc>,
 ) {
     use nexrad_decode::messages::MessageType;
+    use nexrad_decode::messages::{decode_messages, Message};
     use std::collections::HashMap;
     use std::io::Cursor;
 

@@ -65,9 +65,10 @@ pub fn decode_message<R: Read + Seek>(
         MessageType::RDAStatusData => {
             Message::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
         }
-        MessageType::RDAClutterFilterMap => {
-            Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(message_reader)?))
-        }
+        // TODO: this message type is segmented which is not supported well currently
+        // MessageType::RDAClutterFilterMap => {
+        //     Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(message_reader)?))
+        // }
         _ => Message::Other,
     })
 }

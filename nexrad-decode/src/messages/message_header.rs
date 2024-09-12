@@ -132,11 +132,11 @@ impl MessageHeader {
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(self.date, Duration::milliseconds(self.time as i64))
     }
-    
+
     /// Whether this message is segmented or variable-length. If the message is segmented, multiple
     /// message segments compose the full message. If the message is variable-length as indicated by
     /// the [segment_size] field being set to [VARIABLE_LENGTH_MESSAGE_SIZE], the full message size
-    /// is determined by the [message_size] field. 
+    /// is determined by the [message_size] field.
     pub fn segmented(&self) -> bool {
         self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE
     }
@@ -181,10 +181,10 @@ impl MessageHeader {
     #[cfg(feature = "uom")]
     pub fn message_size(&self) -> Information {
         match self.segment_count() {
-            Some(_) => { 
+            Some(_) => {
                 let segment_size_bytes = self.segment_size << 1;
-                Information::new::<byte>(segment_size_bytes as f64) 
-            },
+                Information::new::<byte>(segment_size_bytes as f64)
+            }
             None => {
                 let segment_number = self.segment_number as u32;
                 let segment_size = self.segment_size as u32;

@@ -31,11 +31,7 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<MessageWith
 
     let mut messages = Vec::new();
     while let Ok(header) = decode_message_header(reader) {
-        let message_type = header.message_type();
-        let position = reader.stream_position();
-        trace!("Decoding message type {:?} at {:?}", message_type, position);
-
-        let message = decode_message(reader, message_type)?;
+        let message = decode_message(reader, header.message_type())?;
         messages.push(MessageWithHeader { header, message });
     }
 
@@ -44,6 +40,7 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<MessageWith
         messages.len(),
         reader.stream_position()
     );
+
     Ok(messages)
 }
 
@@ -52,6 +49,9 @@ pub fn decode_message<R: Read + Seek>(
     reader: &mut R,
     message_type: MessageType,
 ) -> Result<Message> {
+    let position = reader.stream_position();
+    trace!("Decoding message type {:?} at {:?}", message_type, position);
+
     if message_type == MessageType::RDADigitalRadarDataGenericFormat {
         let decoded_message = decode_digital_radar_data(reader)?;
         return Ok(Message::DigitalRadarData(Box::new(decoded_message)));

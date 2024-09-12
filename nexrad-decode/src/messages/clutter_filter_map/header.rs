@@ -12,7 +12,7 @@ pub struct Header {
     /// date - 2440586.5.
     pub map_generation_date: Integer2,
 
-    /// The time the clutter filter map was generated in milliseconds past midnight, GMT.
+    /// The time the clutter filter map was generated in minutes past midnight, GMT.
     pub map_generation_time: Integer2,
 
     /// The number of elevation segments defined in this clutter filter map. There may be 1 to 5,
@@ -25,7 +25,7 @@ impl Header {
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(
             self.map_generation_date,
-            Duration::milliseconds(self.map_generation_time as i64),
+            Duration::minutes(self.map_generation_time as i64),
         )
     }
 }

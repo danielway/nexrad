@@ -67,7 +67,7 @@ impl Sweep {
 
         let mut radials = self.radials;
         radials.extend(other.radials);
-        radials.sort_by(|a, b| a.azimuth_number().cmp(&b.azimuth_number()));
+        radials.sort_by_key(|radial| radial.azimuth_number());
 
         Ok(Self {
             elevation_number: self.elevation_number,

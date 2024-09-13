@@ -12,12 +12,12 @@
 //!
 
 mod identifier;
-pub use identifier::*;
+pub use identifier::Identifier;
 
 mod download_file;
-pub use download_file::*;
+pub use download_file::download_file;
 
 mod list_files;
-pub use list_files::*;
+pub use list_files::list_files;
 
 const ARCHIVE_BUCKET: &str = "noaa-nexrad-level2";

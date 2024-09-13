@@ -8,9 +8,9 @@ license = "MIT"
 edition = "2021"
 
 [features]
-default = ["aws", "decode"]
-aws = ["reqwest", "xml", "bzip2", "tokio"]
-decode = ["nexrad-model", "nexrad-decode"]
+default = ["aws", "decode", "nexrad-model"]
+decode = ["nexrad-decode", "bzip2"]
+aws = ["reqwest", "xml", "tokio"]
 
 [dependencies]
 log = { workspace = true }

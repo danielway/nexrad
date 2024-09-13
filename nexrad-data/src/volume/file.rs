@@ -27,7 +27,7 @@ impl File {
 
     /// Decodes this volume file into a common model scan containing sweeps and radials with moment
     /// data.
-    #[cfg(all(feature = "decode", feature = "bzip2"))]
+    #[cfg(all(feature = "nexrad-model", feature = "decode", feature = "bzip2"))]
     pub fn scan(&self) -> Result<nexrad_model::data::Scan> {
         use crate::result::Error;
         use nexrad_decode::messages::Message;

@@ -30,6 +30,9 @@ pub enum Error {
     #[cfg(feature = "decode")]
     #[error("volume missing coverage pattern number")]
     MissingCoveragePattern,
+    #[cfg(feature = "bzip2")]
+    #[error("ldm record decompression error")]
+    DecompressionError(#[from] bzip2::Error),
 }
 
 #[cfg(feature = "aws")]
@@ -46,8 +49,6 @@ pub mod aws {
         InvalidSiteIdentifier(String),
         #[error("chunk data in unrecognized format")]
         UnrecognizedChunkFormat,
-        #[error("ldm record decompression error")]
-        DecompressionError(#[from] bzip2::Error),
         #[error("error listing AWS S3 objects")]
         S3ListObjectsError(reqwest::Error),
         #[error("error requesting AWS S3 object")]

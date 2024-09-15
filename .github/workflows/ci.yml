@@ -17,17 +17,17 @@ jobs:
       - name: Install rustfmt
         run: rustup component add rustfmt
 
-      - name: Check Formatting
+      - name: Check formatting
         run: cargo fmt --all -- --check
 
   feature-check:
-    name: Feature check
+    name: Build and documentation check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Rust Stable
+      - name: Install Rust stable
         run: rustup default stable
 
       - name: Install cargo-hack
@@ -35,8 +35,13 @@ jobs:
         with:
           tool: cargo-hack
 
-      - name: Check Feature Matrix
+      - name: Check feature matrix
         run: cargo hack check --workspace --all-targets --feature-powerset --release
+
+      - name: Check documentation feature matrix
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo hack doc --no-deps --feature-powerset --release
 
   test:
     name: Test (rust-toolchain.toml)
@@ -45,10 +50,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Rust Stable
+      - name: Install Rust stable
         run: rustup default stable
 
-      - name: Run Tests
+      - name: Run tests
         run: cargo test --all-features --workspace
 
   test-matrixed:
@@ -64,5 +69,5 @@ jobs:
       - name: Install Rust ${{ matrix.rust_version }}
         run: rustup install ${{ matrix.rust_version }}
 
-      - name: Run Tests
+      - name: Run tests
         run: cargo +${{ matrix.rust_version }} test --all-features --workspace

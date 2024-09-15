@@ -21,7 +21,7 @@
 //! ...
 //! Volume 999: 2024-08-04 10:06:37 UTC
 //! ```
-//! The [get_latest_volume] function will find the volume with the most recent data using a binary
+//! The [get_latest_volume()] function will find the volume with the most recent data using a binary
 //! search approach to minimize the number of network calls made. Once the latest volume is found
 //! for a session, a different routine should be used to poll new data for that volume and advance
 //! to the next volume when the active one is filled.

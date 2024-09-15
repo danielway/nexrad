@@ -11,8 +11,8 @@ use uom::si::f64::Information;
 #[cfg(feature = "uom")]
 use uom::si::information::byte;
 
-/// This value in the [segment_size] field of a message header indicates that the message is
-/// variable-length rather than segmented.
+/// This value in the [MessageHeader::segment_size] field of a message header indicates that the
+/// message is variable-length rather than segmented.
 pub const VARIABLE_LENGTH_MESSAGE_SIZE: u16 = 65535;
 
 /// Message and system configuration information appended to the beginning of all messages.
@@ -28,7 +28,8 @@ pub struct MessageHeader {
     /// Size of this segment in half-words. Note that this only describes this segment's size,
     /// though there could be multiple segments. In the case of a variable-length message (indicated
     /// by this field being set to [VARIABLE_LENGTH_MESSAGE_SIZE]), the full message's size is
-    /// determined differently. See [message_size] and [number_of_segments] for more information.
+    /// determined differently. See [MessageHeader::message_size_bytes] and
+    /// [MessageHeader::segment_count] for more information.
     pub segment_size: Integer2,
 
     /// Whether the RDA is operating on a redundant channel.
@@ -56,20 +57,21 @@ pub struct MessageHeader {
     /// Milliseconds past midnight, GMT.
     pub time: Integer4,
 
-    /// Number of segments in this message. If the [segment_size] is less than
+    /// Number of segments in this message. If the [MessageHeader::segment_size] is less than
     /// [VARIABLE_LENGTH_MESSAGE_SIZE], this field is meaningful, otherwise bytes 12-15 (this field
-    /// and [segment_number]) specify the size of the message in bytes.
+    /// and [MessageHeader::segment_number]) specify the size of the message in bytes.
     pub segment_count: Integer2,
 
-    /// This message segment's number. If the [segment_size] is less than
+    /// This message segment's number. If the [MessageHeader::segment_size] is less than
     /// [VARIABLE_LENGTH_MESSAGE_SIZE], this field is meaningful, otherwise, bytes 12-15 (this field
-    /// and [segment_number]) specify the size of the message in bytes.
+    /// and [MessageHeader::segment_number]) specify the size of the message in bytes.
     pub segment_number: Integer2,
 }
 
 impl MessageHeader {
-    /// If this message is [segmented], this indicates this message segment's size. Otherwise, this
-    /// returns [None] and [message_size] should be used to determine the message's full size.
+    /// If this message is [MessageHeader::segmented], this indicates this message segment's size.
+    /// Otherwise, this returns [None] and [MessageHeader::message_size] should be used to determine
+    /// the message's full size.
     #[cfg(feature = "uom")]
     pub fn segment_size(&self) -> Option<Information> {
         if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
@@ -135,15 +137,15 @@ impl MessageHeader {
 
     /// Whether this message is segmented or variable-length. If the message is segmented, multiple
     /// message segments compose the full message. If the message is variable-length as indicated by
-    /// the [segment_size] field being set to [VARIABLE_LENGTH_MESSAGE_SIZE], the full message size
-    /// is determined by the [message_size] field.
+    /// the [MessageHeader::segment_size] field being set to [VARIABLE_LENGTH_MESSAGE_SIZE], the
+    /// full message size can be retrieved by [MessageHeader::message_size_bytes].
     pub fn segmented(&self) -> bool {
         self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE
     }
 
-    /// If the message is [segmented], this indicates the number of segments in the full message,
-    /// otherwise this returns [None]. [message_size] can be used to determine the message's full
-    /// size.
+    /// If the message is [MessageHeader::segmented], this indicates the number of segments in the
+    /// full message, otherwise this returns [None]. [MessageHeader::message_size_bytes] can be used
+    /// to determine the message's full size.
     pub fn segment_count(&self) -> Option<u16> {
         if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
             Some(self.segment_count)
@@ -152,9 +154,9 @@ impl MessageHeader {
         }
     }
 
-    /// If the message is [segmented], this indicates this segment's number/sequence in the message,
-    /// otherwise this returns [None]. [message_size] can be used to determine the message's full
-    /// size.
+    /// If the message is [MessageHeader::segmented], this indicates this segment's number/sequence
+    /// in the message, otherwise this returns [None]. [MessageHeader::message_size_bytes] can be
+    /// used to determine the message's full size.
     pub fn segment_number(&self) -> Option<u16> {
         if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
             Some(self.segment_number)
@@ -163,8 +165,8 @@ impl MessageHeader {
         }
     }
 
-    /// The full size of the message in bytes. If the message is [segmented] then this is the
-    /// segment size, otherwise this is the full variable-length message size.
+    /// The full size of the message in bytes. If the message is [MessageHeader::segmented] then
+    /// this is the segment size, otherwise this is the full variable-length message size.
     pub fn message_size_bytes(&self) -> u32 {
         match self.segment_count() {
             Some(_) => self.segment_size as u32 * 2,
@@ -176,8 +178,8 @@ impl MessageHeader {
         }
     }
 
-    /// The full size of the message. If the message is [segmented] then this is the segment size,
-    /// otherwise this is the full variable-length message size.
+    /// The full size of the message. If the message is [MessageHeader::segmented] then this is the
+    /// segment size, otherwise this is the full variable-length message size.
     #[cfg(feature = "uom")]
     pub fn message_size(&self) -> Information {
         match self.segment_count() {

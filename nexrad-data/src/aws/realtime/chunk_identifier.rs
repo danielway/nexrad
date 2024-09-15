@@ -130,13 +130,13 @@ impl ChunkIdentifier {
 pub enum NextChunk {
     /// The next chunk is expected to be located in the same volume at this sequence. The
     /// [ChunkIdentifier::with_sequence] method can be used to create the next chunk's identifier
-    /// and it can be downloaded using the [crate::aws::realtime::download_chunk] function. You
+    /// and it can be downloaded using the [crate::aws::realtime::download_chunk()] function. You
     /// may need to poll by checking if that function returns
     /// [crate::result::aws::AWSError::S3ObjectNotFoundError].
     Sequence(ChunkIdentifier),
 
     /// The chunk is expected to be located in the next volume. The next volume's chunks can be
-    /// listed using the [crate::aws::realtime::list_chunks_in_volume] function.
+    /// listed using the [crate::aws::realtime::list_chunks_in_volume()] function.
     Volume(VolumeIndex),
 }
 

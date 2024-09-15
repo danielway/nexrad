@@ -36,7 +36,8 @@ jobs:
           tool: cargo-hack
 
       - name: Check Feature Matrix
-        run: cargo hack check --all --all-targets --feature-powerset --release
+        run: cargo hack check --workspace --all-targets --feature-powerset --release
+
   test:
     name: Test (rust-toolchain.toml)
     runs-on: ubuntu-latest

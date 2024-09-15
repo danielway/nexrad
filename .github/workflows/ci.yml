@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  fmt:
+  formatting:
     name: Formatting check
     runs-on: ubuntu-latest
     steps:
@@ -20,8 +20,8 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-  feature-check:
-    name: Build and documentation check
+  build:
+    name: Build check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -38,12 +38,27 @@ jobs:
       - name: Check feature matrix
         run: cargo hack check --workspace --all-targets --feature-powerset --release
 
+  documentation:
+    name: Documentation check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust stable
+        run: rustup default stable
+
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hack
+
       - name: Check documentation feature matrix
         env:
           RUSTDOCFLAGS: "-D warnings"
         run: cargo hack doc --no-deps --feature-powerset --release
 
-  test:
+  test-toolchain:
     name: Test (rust-toolchain.toml)
     runs-on: ubuntu-latest
     steps:
@@ -56,7 +71,7 @@ jobs:
       - name: Run tests
         run: cargo test --all-features --workspace
 
-  test-matrixed:
+  test-nightly:
     name: Test ${{ matrix.rust_version }}
     runs-on: ubuntu-latest
     strategy:

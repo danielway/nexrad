@@ -9,15 +9,15 @@ edition = "2021"
 
 [features]
 default = ["aws", "decode", "nexrad-model"]
-decode = ["nexrad-decode", "bzip2"]
+decode = ["nexrad-decode", "bzip2", "serde", "bincode"]
 aws = ["reqwest", "xml", "tokio"]
 
 [dependencies]
 log = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true }
-serde = { workspace = true }
-bincode = { workspace = true }
+serde = { workspace = true, optional = true }
+bincode = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
 bzip2 = { workspace = true, optional = true }

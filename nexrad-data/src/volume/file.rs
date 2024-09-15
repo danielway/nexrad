@@ -16,6 +16,7 @@ impl File {
     }
 
     /// The file's decoded Archive II volume header.
+    #[cfg(all(feature = "serde", feature = "bincode"))]
     pub fn header(&self) -> Result<Header> {
         Header::deserialize(&mut self.0.as_slice())
     }

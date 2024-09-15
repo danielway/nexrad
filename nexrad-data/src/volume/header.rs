@@ -1,8 +1,6 @@
 use crate::result::Result;
 use crate::volume::util::get_datetime;
-use bincode::{DefaultOptions, Options};
 use chrono::{DateTime, Duration, Utc};
-use serde::Deserialize;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::io::Read;
@@ -10,7 +8,7 @@ use std::io::Read;
 /// Header for an Archive II volume file containing metadata about the radar data. This header is
 /// located at the beginning of the file.
 #[repr(C)]
-#[derive(Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub struct Header {
     /// The tape's filename which indicates the version of the data. Name is in the format
     /// `AR2V0 0xx.` where `xx` indicates the version of the data.
@@ -42,7 +40,9 @@ pub struct Header {
 
 impl Header {
     /// Deserializes an Archive II header from the provided reader.
+    #[cfg(all(feature = "serde", feature = "bincode"))]
     pub fn deserialize<R: Read>(reader: &mut R) -> Result<Self> {
+        use bincode::{DefaultOptions, Options};
         Ok(DefaultOptions::new()
             .with_fixint_encoding()
             .with_big_endian()

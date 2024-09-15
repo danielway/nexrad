@@ -11,6 +11,7 @@ pub enum Error {
     #[error("data file IO error")]
     FileError(#[from] std::io::Error),
     #[error("file deserialization error")]
+    #[cfg(feature = "bincode")]
     DeserializationError(#[from] bincode::Error),
     #[cfg(feature = "bzip2")]
     #[error("error decompressing uncompressed data")]

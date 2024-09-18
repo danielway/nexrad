@@ -1,4 +1,3 @@
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum RecordData<'a> {
     Borrowed(&'a [u8]),
     Owned(Vec<u8>),
@@ -10,7 +9,6 @@ enum RecordData<'a> {
 /// NEXRAD archival radar data. A NEXRAD "Archive II" file starts with an
 /// [crate::volume::Header] followed by a series of compressed LDM records, each
 /// containing messages with radar data.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Record<'a>(RecordData<'a>);
 
 impl<'a> Record<'a> {

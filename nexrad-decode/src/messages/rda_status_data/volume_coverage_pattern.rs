@@ -24,3 +24,13 @@ impl VolumeCoveragePatternNumber {
         self.0 > 0
     }
 }
+
+impl Debug for VolumeCoveragePatternNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VolumeCoveragePatternNumber")
+            .field("number", &self.number())
+            .field("local", &self.local())
+            .field("remote", &self.remote())
+            .finish()
+    }
+}

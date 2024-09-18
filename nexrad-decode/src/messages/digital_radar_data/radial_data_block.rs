@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use uom::si::f64::{Information, Length, Velocity};
 
 /// A radial data moment block.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Deserialize)]
 pub struct RadialDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,
@@ -54,5 +54,63 @@ impl RadialDataBlock {
     #[cfg(feature = "uom")]
     pub fn nyquist_velocity(&self) -> Velocity {
         Velocity::new::<uom::si::velocity::meter_per_second>(self.nyquist_velocity as f64)
+    }
+}
+
+#[cfg(not(feature = "uom"))]
+impl Debug for RadialDataBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RadialDataBlock")
+            .field("data_block_id", &self.data_block_id)
+            .field("lrtup", &self.lrtup)
+            .field("unambiguous_range", &self.unambiguous_range)
+            .field(
+                "horizontal_channel_noise_level",
+                &self.horizontal_channel_noise_level,
+            )
+            .field(
+                "vertical_channel_noise_level",
+                &self.vertical_channel_noise_level,
+            )
+            .field("nyquist_velocity", &self.nyquist_velocity)
+            .field("radial_flags", &self.radial_flags)
+            .field(
+                "horizontal_channel_calibration_constant",
+                &self.horizontal_channel_calibration_constant,
+            )
+            .field(
+                "vertical_channel_calibration_constant",
+                &self.vertical_channel_calibration_constant,
+            )
+            .finish()
+    }
+}
+
+#[cfg(feature = "uom")]
+impl Debug for RadialDataBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RadialDataBlock")
+            .field("data_block_id", &self.data_block_id)
+            .field("lrtup", &self.lrtup())
+            .field("unambiguous_range", &self.unambiguous_range())
+            .field(
+                "horizontal_channel_noise_level",
+                &self.horizontal_channel_noise_level,
+            )
+            .field(
+                "vertical_channel_noise_level",
+                &self.vertical_channel_noise_level,
+            )
+            .field("nyquist_velocity", &self.nyquist_velocity())
+            .field("radial_flags", &self.radial_flags)
+            .field(
+                "horizontal_channel_calibration_constant",
+                &self.horizontal_channel_calibration_constant,
+            )
+            .field(
+                "vertical_channel_calibration_constant",
+                &self.vertical_channel_calibration_constant,
+            )
+            .finish()
     }
 }

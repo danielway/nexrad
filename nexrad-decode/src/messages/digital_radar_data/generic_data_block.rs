@@ -6,14 +6,13 @@ use serde::Deserialize;
 use std::fmt::Debug;
 
 #[cfg(feature = "uom")]
-use uom::{
-    si::f64::{Information, Length},
-    si::information::byte,
-    si::length::kilometer,
-};
+use uom::si::f64::{Information, Length};
+#[cfg(feature = "uom")]
+use uom::si::information::byte;
+#[cfg(feature = "uom")]
+use uom::si::length::kilometer;
 
 /// A generic data moment block.
-#[derive(Debug, Clone, PartialEq)]
 pub struct GenericDataBlock {
     /// The generic data block's header information.
     pub header: GenericDataBlockHeader,
@@ -84,8 +83,17 @@ impl GenericDataBlock {
     }
 }
 
+impl Debug for GenericDataBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GenericDataBlock")
+            .field("header", &self.header)
+            .field("data", &self.encoded_data.len())
+            .finish()
+    }
+}
+
 /// A generic data moment block's decoded header.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Deserialize)]
 pub struct GenericDataBlockHeader {
     /// Data block identifier.
     pub data_block_id: DataBlockId,
@@ -158,5 +166,55 @@ impl GenericDataBlockHeader {
         Information::new::<byte>(
             self.number_of_data_moment_gates as f64 * self.data_word_size as f64 / 8.0,
         )
+    }
+}
+
+#[cfg(not(feature = "uom"))]
+impl Debug for GenericDataBlockHeader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GenericDataBlockHeader")
+            .field("data_block_id", &self.data_block_id)
+            .field("reserved", &self.reserved)
+            .field(
+                "number_of_data_moment_gates",
+                &self.number_of_data_moment_gates,
+            )
+            .field("data_moment_range", &self.data_moment_range)
+            .field(
+                "data_moment_range_sample_interval",
+                &self.data_moment_range_sample_interval,
+            )
+            .field("tover", &self.tover)
+            .field("snr_threshold", &self.snr_threshold)
+            .field("control_flags", &self.control_flags())
+            .field("data_word_size", &self.data_word_size)
+            .field("scale", &self.scale)
+            .field("offset", &self.offset)
+            .finish()
+    }
+}
+
+#[cfg(feature = "uom")]
+impl Debug for GenericDataBlockHeader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GenericDataBlockHeader")
+            .field("data_block_id", &self.data_block_id)
+            .field("reserved", &self.reserved)
+            .field(
+                "number_of_data_moment_gates",
+                &self.number_of_data_moment_gates,
+            )
+            .field("data_moment_range", &self.data_moment_range())
+            .field(
+                "data_moment_range_sample_interval",
+                &self.data_moment_range_sample_interval(),
+            )
+            .field("tover", &self.tover)
+            .field("snr_threshold", &self.snr_threshold)
+            .field("control_flags", &self.control_flags())
+            .field("data_word_size", &self.data_word_size)
+            .field("scale", &self.scale)
+            .field("offset", &self.offset)
+            .finish()
     }
 }

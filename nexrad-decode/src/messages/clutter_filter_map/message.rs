@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 /// A clutter filter map describing elevations, azimuths, and ranges containing clutter to
 /// filtered from radar products.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug)]
 pub struct Message {
     /// Decoded header information for this clutter filter map.
     pub header: Header,

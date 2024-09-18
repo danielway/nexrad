@@ -1,5 +1,5 @@
 /// An RDA alarm message definition to be referenced by an RDA status data message.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Message {
     code: u16,
     state: Option<State>,
@@ -60,7 +60,7 @@ impl Message {
 }
 
 /// The status of the RDA as a result of the alarm.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum State {
     MaintenanceMandatory,
     MaintenanceRequired,
@@ -70,7 +70,7 @@ pub enum State {
 }
 
 /// The different classifications of alarms.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum AlarmType {
     /// Alarm failed consecutively enough times to meet the alarm reporting count/sample threshold.
     EdgeDetected,
@@ -81,7 +81,7 @@ pub enum AlarmType {
 }
 
 /// The hardware device area where the alarm originated.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Device {
     Control,
     Pedestal,

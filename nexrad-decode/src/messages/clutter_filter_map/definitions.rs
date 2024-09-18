@@ -1,4 +1,5 @@
 /// Control codes indicating behavior of the clutter filter map for a range segment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OpCode {
     /// The clutter filter is bypassed for the range segment.
     BypassFilter,

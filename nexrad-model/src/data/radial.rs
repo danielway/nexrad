@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 /// elevation angle pair at a point in time and contains the Level II data (reflectivity, velocity,
 /// and spectrum width) for each range gate in that ray. The range of the radar and gate interval
 /// distance determines the resolution of the ray and the number of gates in the ray.
+#[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Radial {
     collection_timestamp: i64,
@@ -223,7 +224,7 @@ impl Debug for Radial {
 }
 
 /// Describe a radial's position within the sequence of radials comprising a scan.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum RadialStatus {
     ElevationStart,

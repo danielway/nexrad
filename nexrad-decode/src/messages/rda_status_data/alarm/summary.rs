@@ -2,6 +2,7 @@ use crate::messages::primitive_aliases::Code2;
 use std::fmt::Debug;
 
 /// The RDA system's active alarm types.
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Summary(Code2);
 
 impl Summary {

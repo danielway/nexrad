@@ -2,6 +2,7 @@ use crate::messages::primitive_aliases::Code2;
 use std::fmt::Debug;
 
 /// The types of data that have transmission enabled.
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct DataTransmissionEnabled(Code2);
 
 impl DataTransmissionEnabled {

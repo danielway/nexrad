@@ -28,6 +28,7 @@ pub async fn get_latest_volume(site: &str) -> crate::result::Result<LatestVolume
 }
 
 /// Represents the most recent volume index and the number of network calls made to find it.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LatestVolumeResult {
     /// The most recent volume index, if found.
     pub volume: Option<VolumeIndex>,

@@ -1,6 +1,7 @@
 use crate::messages::primitive_aliases::Code1;
 use std::fmt::{Debug, Formatter};
 
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct SpotBlankingStatus(Code1);
 
 /// Statuses:

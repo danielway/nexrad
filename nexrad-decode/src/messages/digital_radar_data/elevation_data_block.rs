@@ -9,7 +9,7 @@ use uom::si::f64::Information;
 use uom::si::information::byte;
 
 /// An elevation data block.
-#[derive(Deserialize)]
+#[derive(Clone, PartialEq, Deserialize)]
 pub struct ElevationDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,

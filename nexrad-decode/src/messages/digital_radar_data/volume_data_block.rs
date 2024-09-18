@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use uom::si::f64::{Angle, Energy, Information, Length};
 
 /// A volume data moment block.
-#[derive(Deserialize)]
+#[derive(Clone, PartialEq, Deserialize)]
 pub struct VolumeDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,

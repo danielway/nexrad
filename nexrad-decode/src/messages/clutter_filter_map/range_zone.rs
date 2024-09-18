@@ -10,7 +10,7 @@ use uom::si::length::kilometer;
 
 /// Defines a range segment of a particular elevation and azimuth with an operation type describing
 /// the clutter filter map behavior for the segment.
-#[derive(Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct RangeZone {
     /// Operation code for the range zone.
     pub op_code: Code2,

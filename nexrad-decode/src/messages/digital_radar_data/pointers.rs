@@ -10,7 +10,7 @@ pub struct DataMomentPointer {
 }
 
 /// The type of data moment that the pointer references.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DataMomentPointerType {
     Volume,
     Elevation,
@@ -19,7 +19,7 @@ pub enum DataMomentPointerType {
 }
 
 /// The type of generic data moment that the pointer references.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DataMomentGenericPointerType {
     Reflectivity,
     Velocity,

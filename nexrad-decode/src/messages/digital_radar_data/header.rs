@@ -17,7 +17,7 @@ use uom::si::information::byte;
 
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
-#[derive(Deserialize)]
+#[derive(Clone, PartialEq, Deserialize)]
 pub struct Header {
     /// ICAO radar identifier.
     pub radar_identifier: [u8; 4],

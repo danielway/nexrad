@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 /// elevation angle pair at a point in time and contains the Level II data (reflectivity, velocity,
 /// and spectrum width) for each range gate in that ray. The range of the radar and gate interval
 /// distance determines the resolution of the ray and the number of gates in the ray.
-#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Radial {
     collection_timestamp: i64,
@@ -169,8 +168,62 @@ impl Radial {
     }
 }
 
+impl Debug for Radial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut debug = f.debug_struct("Radial");
+
+        debug.field("collection_timestamp", &self.collection_timestamp());
+
+        #[cfg(feature = "chrono")]
+        debug.field("collection_time", &self.collection_time());
+
+        debug.field("azimuth_number", &self.azimuth_number());
+
+        debug.field("azimuth_angle_degrees", &self.azimuth_angle_degrees());
+
+        #[cfg(feature = "uom")]
+        debug.field("azimuth_angle", &self.azimuth());
+
+        debug.field("azimuth_spacing_degrees", &self.azimuth_spacing_degrees());
+
+        #[cfg(feature = "uom")]
+        debug.field("azimuth_spacing", &self.azimuth_spacing());
+
+        debug.field("radial_status", &self.radial_status());
+
+        debug.field("elevation_number", &self.elevation_number());
+
+        debug.field("elevation_angle_degrees", &self.elevation_angle_degrees());
+
+        #[cfg(feature = "uom")]
+        debug.field("elevation_angle", &self.elevation_angle());
+
+        debug.field("reflectivity", &self.reflectivity());
+
+        debug.field("velocity", &self.velocity());
+
+        debug.field("spectrum_width", &self.spectrum_width());
+
+        debug.field(
+            "differential_reflectivity",
+            &self.differential_reflectivity(),
+        );
+
+        debug.field("differential_phase", &self.differential_phase());
+
+        debug.field("correlation_coefficient", &self.correlation_coefficient());
+
+        debug.field(
+            "specific_differential_phase",
+            &self.specific_differential_phase(),
+        );
+
+        debug.finish()
+    }
+}
+
 /// Describe a radial's position within the sequence of radials comprising a scan.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum RadialStatus {
     ElevationStart,

@@ -1,7 +1,6 @@
 use crate::messages::primitive_aliases::Code1;
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SpotBlankingStatus(Code1);
 
 /// Statuses:
@@ -33,5 +32,16 @@ impl SpotBlankingStatus {
     /// Whether spot blanking is active for the volume.
     pub fn volume(&self) -> bool {
         self.0 & 0b0100 != 0
+    }
+}
+
+impl Debug for SpotBlankingStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SpotBlankingStatus")
+            .field("none", &self.none())
+            .field("radial", &self.radial())
+            .field("elevation", &self.elevation())
+            .field("volume", &self.volume())
+            .finish()
     }
 }

@@ -2,7 +2,6 @@ use crate::messages::primitive_aliases::Code2;
 use std::fmt::Debug;
 
 /// The types of data that have transmission enabled.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DataTransmissionEnabled(Code2);
 
 impl DataTransmissionEnabled {
@@ -28,5 +27,16 @@ impl DataTransmissionEnabled {
     /// Whether spectrum width data has transmission enabled.
     pub fn spectrum_width(&self) -> bool {
         self.0 & 0b1000 != 0
+    }
+}
+
+impl Debug for DataTransmissionEnabled {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DataTransmissionEnabled")
+            .field("none", &self.none())
+            .field("reflectivity", &self.reflectivity())
+            .field("velocity", &self.velocity())
+            .field("spectrum_width", &self.spectrum_width())
+            .finish()
     }
 }

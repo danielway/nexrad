@@ -22,7 +22,7 @@ reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
 bzip2 = { workspace = true, optional = true }
 clap = { workspace = true }
-tokio = { version = "1", optional = true }
+tokio = { workspace = true, optional = true }
 nexrad-model = { workspace = true, optional = true }
 nexrad-decode = { workspace = true, optional = true }
 

@@ -21,7 +21,7 @@ pub const VARIABLE_LENGTH_MESSAGE_SIZE: u16 = 65535;
 /// instead variable-length, with the segment count and segment number positions of the header
 /// (bytes 12-15) specifying the size of the full message in bytes.
 #[repr(C)]
-#[derive(Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct MessageHeader {
     rpg_unknown: [u8; 12],
 
@@ -194,37 +194,5 @@ impl MessageHeader {
                 Information::new::<byte>(message_size_bytes as f64)
             }
         }
-    }
-}
-
-#[cfg(not(feature = "uom"))]
-impl Debug for MessageHeader {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MessageHeader")
-            .field("segment_size", &self.segment_size)
-            .field("redundant_channel", &self.rda_redundant_channel())
-            .field("message_type", &self.message_type())
-            .field("sequence_number", &self.sequence_number)
-            .field("date_time", &self.date_time())
-            .field("segment_count", &self.segment_count())
-            .field("segment_number", &self.segment_number())
-            .field("message_size_bytes", &self.message_size_bytes())
-            .finish()
-    }
-}
-
-#[cfg(feature = "uom")]
-impl Debug for MessageHeader {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MessageHeader")
-            .field("segment_size", &self.segment_size())
-            .field("redundant_channel", &self.rda_redundant_channel())
-            .field("message_type", &self.message_type())
-            .field("sequence_number", &self.sequence_number)
-            .field("date_time", &self.date_time())
-            .field("segment_count", &self.segment_count())
-            .field("segment_number", &self.segment_number())
-            .field("message_size", &self.message_size())
-            .finish()
     }
 }

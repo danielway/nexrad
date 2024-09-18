@@ -2,6 +2,7 @@ use crate::result::Result;
 use crate::volume::{split_compressed_records, Header, Record};
 
 /// A NEXRAD Archive II volume data file.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct File(Vec<u8>);
 
 impl File {

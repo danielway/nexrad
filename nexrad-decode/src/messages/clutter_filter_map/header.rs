@@ -5,7 +5,7 @@ use serde::Deserialize;
 use std::fmt::Debug;
 
 /// Header information for a clutter filter map to be read directly from the Archive II file.
-#[derive(Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct Header {
     /// The date the clutter filter map was generated represented as a count of days since 1 January
     /// 1970 00:00 GMT. It is also referred-to as a "modified Julian date" where it is the Julian
@@ -27,14 +27,5 @@ impl Header {
             self.map_generation_date,
             Duration::minutes(self.map_generation_time as i64),
         )
-    }
-}
-
-impl Debug for Header {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Header")
-            .field("map_generation_date_time", &self.date_time())
-            .field("elevation_segment_count", &self.elevation_segment_count)
-            .finish()
     }
 }

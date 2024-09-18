@@ -4,12 +4,10 @@ use serde::Deserialize;
 use std::fmt::Debug;
 
 #[cfg(feature = "uom")]
-use uom::si::f64::Information;
-#[cfg(feature = "uom")]
-use uom::si::information::byte;
+use uom::{si::f64::Information, si::information::byte};
 
 /// An elevation data block.
-#[derive(Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct ElevationDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,
@@ -30,29 +28,5 @@ impl ElevationDataBlock {
     #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
         Information::new::<byte>(self.lrtup as f64)
-    }
-}
-
-#[cfg(not(feature = "uom"))]
-impl Debug for ElevationDataBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ElevationDataBlock")
-            .field("data_block_id", &self.data_block_id)
-            .field("lrtup", &self.lrtup)
-            .field("atmos", &self.atmos)
-            .field("calibration_constant", &self.calibration_constant)
-            .finish()
-    }
-}
-
-#[cfg(feature = "uom")]
-impl Debug for ElevationDataBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ElevationDataBlock")
-            .field("data_block_id", &self.data_block_id)
-            .field("lrtup", &self.lrtup())
-            .field("atmos", &self.atmos)
-            .field("calibration_constant", &self.calibration_constant)
-            .finish()
     }
 }

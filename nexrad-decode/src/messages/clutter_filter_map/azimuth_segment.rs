@@ -3,14 +3,14 @@ use crate::messages::primitive_aliases::Integer2;
 use serde::Deserialize;
 
 /// Header information for an azimuth segment to be read directly from the Archive II file.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct AzimuthSegmentHeader {
     /// The number of range zones defined in this azimuth segment, from 1 to 20.
     pub range_zone_count: Integer2,
 }
 
 /// A segment of the clutter filter map for a specific elevation and azimuth containing range zones.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AzimuthSegment {
     /// Header information for this azimuth segment. This is the portion of an azimuth segment that
     /// is read directly from the Archive II file.

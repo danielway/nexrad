@@ -1,13 +1,13 @@
 use crate::result::Result;
 use crate::volume::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use std::fmt;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::io::Read;
 
 /// Header for an Archive II volume file containing metadata about the radar data. This header is
 /// located at the beginning of the file.
 #[repr(C)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub struct Header {
     /// The tape's filename which indicates the version of the data. Name is in the format
@@ -78,16 +78,5 @@ impl Header {
     /// The ICAO identifier of the radar site.
     pub fn icao_of_radar(&self) -> Option<String> {
         String::from_utf8(self.icao_of_radar.to_vec()).ok()
-    }
-}
-
-impl Debug for Header {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Header")
-            .field("tape_filename", &self.tape_filename())
-            .field("extension_number", &self.extension_number())
-            .field("date_time", &self.date_time())
-            .field("icao_of_radar", &self.icao_of_radar())
-            .finish()
     }
 }

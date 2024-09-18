@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use uom::si::{f32::Length, length::meter};
 
 /// A radar site's metadata including a variety of infrequently-changing properties.
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Site {
     identifier: [u8; 4],
@@ -80,29 +81,5 @@ impl Site {
     #[cfg(feature = "uom")]
     pub fn feedhorn_height(&self) -> Length {
         Length::new::<meter>(self.feedhorn_height_meters as f32)
-    }
-}
-
-impl Debug for Site {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut debug = f.debug_struct("Site");
-
-        debug.field("identifier", &self.identifier_string());
-
-        debug.field("latitude_degrees", &self.latitude());
-
-        debug.field("longitude_degrees", &self.longitude());
-
-        debug.field("height_meters", &self.height_meters());
-
-        #[cfg(feature = "uom")]
-        debug.field("height", &self.height());
-
-        debug.field("feedhorn_height_meters", &self.feedhorn_height_meters());
-
-        #[cfg(feature = "uom")]
-        debug.field("feedhorn_height", &self.feedhorn_height());
-
-        debug.finish()
     }
 }

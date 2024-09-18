@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::fmt::Debug;
 
 /// A digital radar data block's identifier.
-#[derive(Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct DataBlockId {
     /// Data block type, e.g. "R".
     pub data_block_type: u8,

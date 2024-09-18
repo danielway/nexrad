@@ -1,5 +1,5 @@
 /// Acknowledgement of command receipt by RDA system.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum CommandAcknowledgement {
     RemoteVCPReceived,
     ClutterBypassMapReceived,
@@ -8,7 +8,7 @@ pub enum CommandAcknowledgement {
 }
 
 /// The possible RDA system clutter mitigation decision statuses.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub enum ClutterMitigationDecisionStatus {
     Disabled,
     Enabled,
@@ -17,7 +17,7 @@ pub enum ClutterMitigationDecisionStatus {
 }
 
 /// The possible RDA system auxiliary power generator states.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum AuxiliaryPowerGeneratorState {
     SwitchedToAuxiliaryPower,
     UtilityPowerAvailable,
@@ -27,7 +27,7 @@ pub enum AuxiliaryPowerGeneratorState {
 }
 
 /// The possible RDA system control authorizations.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum ControlAuthorization {
     NoAction,
     LocalControlRequested,
@@ -35,7 +35,7 @@ pub enum ControlAuthorization {
 }
 
 /// The possible RDA system control statuses.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum ControlStatus {
     LocalControlOnly,
     RemoteControlOnly,
@@ -43,7 +43,7 @@ pub enum ControlStatus {
 }
 
 /// The possible RDA system operability statuses.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum OperabilityStatus {
     OnLine,
     MaintenanceActionRequired,
@@ -53,14 +53,14 @@ pub enum OperabilityStatus {
 }
 
 /// The possible RDA system operational modes.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum OperationalMode {
     Operational,
     Maintenance,
 }
 
 /// The RDA system's performance check status.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum PerformanceCheckStatus {
     NoCommandPending,
     ForcePerformanceCheckPending,
@@ -68,7 +68,7 @@ pub enum PerformanceCheckStatus {
 }
 
 /// The RDA system's RMS control status.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum RMSControlStatus {
     NonRMS,
     RMSInControl,
@@ -76,7 +76,7 @@ pub enum RMSControlStatus {
 }
 
 /// Indicates whether this is the RDA system's controlling channel.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum SpotBlankingStatus {
     NotInstalled,
     Enabled,
@@ -84,7 +84,7 @@ pub enum SpotBlankingStatus {
 }
 
 /// The possible RDA system statuses.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum RDAStatus {
     StartUp,
     Standby,
@@ -94,14 +94,14 @@ pub enum RDAStatus {
 }
 
 /// Whether the RDA system has super resolution enabled.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum SuperResolutionStatus {
     Enabled,
     Disabled,
 }
 
 /// The possible RDA system transition power source statuses.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum TransitionPowerSourceStatus {
     NotInstalled,
     Off,

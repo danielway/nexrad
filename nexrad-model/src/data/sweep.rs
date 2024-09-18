@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 /// spectrum width) for each azimuth angle in that sweep. The resolution of the sweep dictates the
 /// azimuthal distance between rays and thus and number of rays in the sweep. Multiple sweeps are
 /// taken at different elevation angles to create a volume scan.
+#[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Sweep {
     elevation_number: u8,

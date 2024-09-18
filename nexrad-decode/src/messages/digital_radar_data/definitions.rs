@@ -1,5 +1,5 @@
 /// Indicates whether the message is compressed and what type of compression was used.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum CompressionIndicator {
     Uncompressed,
     CompressedBZIP2,
@@ -8,7 +8,7 @@ pub enum CompressionIndicator {
 }
 
 /// Possible statuses for a radial describing its position within the larger scan.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum RadialStatus {
     ElevationStart,
     IntermediateRadialData,
@@ -20,7 +20,7 @@ pub enum RadialStatus {
 }
 
 /// Flags indicating special control features.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum ControlFlags {
     None,
     RecombinedAzimuthalRadials,
@@ -29,7 +29,7 @@ pub enum ControlFlags {
 }
 
 /// Processing status flags.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProcessingStatus {
     RxRNoise,
     CBT,
@@ -37,7 +37,7 @@ pub enum ProcessingStatus {
 }
 
 /// Volume coverage pattern (VCP) definitions.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VolumeCoveragePattern {
     VCP12,
     VCP31,
@@ -49,6 +49,7 @@ pub enum VolumeCoveragePattern {
 
 /// The value for a data moment/radial, gate, and product. The value may be a floating-point number
 /// or a special case such as "below threshold" or "range folded".
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ScaledMomentValue {
     /// The converted floating-point representation of the data moment value for a gate.
     Value(f32),

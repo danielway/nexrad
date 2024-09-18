@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 
 /// Identifies a volume chunk within the real-time NEXRAD data bucket. These chunks are uploaded
 /// every few seconds and contain a portion of the radar data for a specific volume.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChunkIdentifier {
     site: String,
     volume: VolumeIndex,
@@ -127,6 +127,7 @@ impl ChunkIdentifier {
 }
 
 /// Identifies where to find the next expected chunk.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum NextChunk {
     /// The next chunk is expected to be located in the same volume at this sequence. The
     /// [ChunkIdentifier::with_sequence] method can be used to create the next chunk's identifier

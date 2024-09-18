@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use uom::si::{f32::Length, length::meter};
 
 /// A radar site's metadata including a variety of infrequently-changing properties.
+#[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Site {
     identifier: [u8; 4],

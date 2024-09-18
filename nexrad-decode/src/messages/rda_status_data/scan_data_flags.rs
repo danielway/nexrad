@@ -2,6 +2,7 @@ use crate::messages::primitive_aliases::Code2;
 use std::fmt::Debug;
 
 /// The multiple flags for the RDA system's scan and data status.
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct ScanDataFlags(Code2);
 
 impl ScanDataFlags {

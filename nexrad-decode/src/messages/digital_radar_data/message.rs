@@ -4,7 +4,7 @@ use crate::messages::digital_radar_data::{
 
 /// The digital radar data message includes base radar data from a single radial for various
 /// products.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Message {
     /// The decoded digital radar data header.
     pub header: Header,

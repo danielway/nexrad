@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 /// is composed of multiple sweeps at different elevations. The pattern of sweeps, including
 /// elevations and resolution, is determined by the scanning strategy of the radar. This is
 /// referred to as the Volume Coverage Pattern.
+#[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Scan {
     coverage_pattern_number: u16,

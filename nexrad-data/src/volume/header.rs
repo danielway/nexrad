@@ -8,6 +8,7 @@ use std::io::Read;
 /// Header for an Archive II volume file containing metadata about the radar data. This header is
 /// located at the beginning of the file.
 #[repr(C)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub struct Header {
     /// The tape's filename which indicates the version of the data. Name is in the format

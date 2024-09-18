@@ -18,7 +18,7 @@ use std::fmt::Debug;
 /// The RDA status data message includes various information about the current RDA system's state,
 /// including system operating status, performance parameters, and active alarms.
 #[repr(C)]
-#[derive(Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct Message {
     /// The RDA system's status.
     ///

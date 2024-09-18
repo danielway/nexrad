@@ -21,7 +21,7 @@ pub const VARIABLE_LENGTH_MESSAGE_SIZE: u16 = 65535;
 /// instead variable-length, with the segment count and segment number positions of the header
 /// (bytes 12-15) specifying the size of the full message in bytes.
 #[repr(C)]
-#[derive(Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct MessageHeader {
     rpg_unknown: [u8; 12],
 

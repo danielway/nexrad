@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use serde::{Deserialize, Serialize};
 
 /// Moment data from a radial for a particular product where each value corresponds to a gate.
+#[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MomentData {
     scale: f32,
@@ -51,7 +52,7 @@ impl Debug for MomentData {
 
 /// The data moment value for a product in a radial's gate. The value may be a floating-point number
 /// or a special case such as "below threshold" or "range folded".
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MomentValue {
     /// The data moment value for a gate.
     Value(f32),

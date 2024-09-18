@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 /// Statistics from the polling process.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PollStats {
     /// The number of network calls made to find the most recent volume.
     LatestVolumeCalls(usize),
@@ -12,7 +12,7 @@ pub enum PollStats {
 }
 
 /// Statistics for a new chunk.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NewChunkStats {
     /// The number of network calls made to find a new chunk.
     pub calls: usize,

@@ -1,9 +1,9 @@
 [package]
 name = "nexrad-data"
 version = "0.1.0-rc1"
-description = "Download and processing functions for NEXRAD weather radar data."
+description = "Models and functions for accessing NEXRAD data from public sources."
 authors = ["Daniel Way <contact@danieldway.com>"]
-repository = "https://github.com/danielway/nexrad-data"
+repository = "https://github.com/danielway/nexrad/nexrad-data"
 license = "MIT"
 edition = "2021"
 

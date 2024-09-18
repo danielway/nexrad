@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use serde::{Deserialize, Serialize};
 
 /// Moment data from a radial for a particular product where each value corresponds to a gate.
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MomentData {
     scale: f32,
@@ -38,14 +39,6 @@ impl MomentData {
                 _ => MomentValue::Value((raw_value as f32 - self.offset) / self.scale),
             })
             .collect()
-    }
-}
-
-impl Debug for MomentData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MomentData")
-            .field("values", &self.values())
-            .finish()
     }
 }
 

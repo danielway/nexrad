@@ -2,7 +2,7 @@ use crate::messages::clutter_filter_map::azimuth_segment::AzimuthSegment;
 use crate::messages::primitive_aliases::Integer1;
 
 /// A segment of the clutter filter map for a specific elevation containing azimuth segments.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ElevationSegment {
     /// This elevation segment's number from 1 to 5 (oftentimes there are only 2) in increasing
     /// elevation from the ground.

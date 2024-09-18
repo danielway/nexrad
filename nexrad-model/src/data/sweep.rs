@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 /// spectrum width) for each azimuth angle in that sweep. The resolution of the sweep dictates the
 /// azimuthal distance between rays and thus and number of rays in the sweep. Multiple sweeps are
 /// taken at different elevation angles to create a volume scan.
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Sweep {
     elevation_number: u8,
@@ -73,31 +74,5 @@ impl Sweep {
             elevation_number: self.elevation_number,
             radials,
         })
-    }
-}
-
-impl Display for Sweep {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let (Some(first), Some(last)) = (self.radials.first(), self.radials.last()) {
-            write!(
-                f,
-                "Sweep ({:.1}-{:.1} deg, {} radials, {} deg spacing)",
-                first.azimuth_angle_degrees(),
-                last.azimuth_angle_degrees(),
-                self.radials.len(),
-                first.azimuth_spacing_degrees()
-            )
-        } else {
-            write!(f, "Sweep (no radials)")
-        }
-    }
-}
-
-impl Debug for Sweep {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Sweep")
-            .field("elevation_number", &self.elevation_number())
-            .field("radials", &self.radials())
-            .finish()
     }
 }

@@ -1,5 +1,5 @@
 //!
-//! # Archive II Volumes
+//! Model definitions and decompression and decoding logic for NEXRAD Level II radar data volumes.
 //!
 //! Archival NEXRAD weather radar data is distributed using an archive format built atop Unidata's
 //! ["Local Data Manager" (or LDM)](https://www.unidata.ucar.edu/software/ldm/) system. Archive

@@ -10,7 +10,10 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration;
 use tokio::time::{sleep, sleep_until, Instant};
 
-/// Polls for the latest real-time chunks from the AWS S3 bucket.
+/// Polls for the latest real-time chunks from the AWS S3 bucket. When new chunks are identified,
+/// they will be downloaded and sent to the provided `Sender`. If a statistics `Sender` is provided,
+/// statistics from the polling process such as how many requests are being sent will be sent to it.
+/// The polling process will stop when a message is received on the provided `Receiver`.
 pub async fn poll_chunks<'a>(
     site: &str,
     tx: Sender<(ChunkIdentifier, Chunk<'a>)>,

@@ -1,8 +1,9 @@
 use crate::result::Result;
 use crate::volume::{split_compressed_records, Header, Record};
+use std::fmt::Debug;
 
 /// A NEXRAD Archive II volume data file.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct File(Vec<u8>);
 
 impl File {
@@ -61,5 +62,20 @@ impl File {
             coverage_pattern_number.ok_or(Error::MissingCoveragePattern)?,
             Sweep::from_radials(radials),
         ))
+    }
+}
+
+impl Debug for File {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut debug = f.debug_struct("File");
+        debug.field("data.len()", &self.data().len());
+
+        #[cfg(all(feature = "serde", feature = "bincode"))]
+        debug.field("header", &self.header());
+
+        #[cfg(all(feature = "nexrad-model", feature = "decode"))]
+        debug.field("records.len()", &self.records().len());
+
+        debug.finish()
     }
 }

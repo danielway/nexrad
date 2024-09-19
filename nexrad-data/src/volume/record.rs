@@ -1,7 +1,18 @@
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+use std::fmt::Debug;
+
+#[derive(Clone, PartialEq, Eq, Hash)]
 enum RecordData<'a> {
     Borrowed(&'a [u8]),
     Owned(Vec<u8>),
+}
+
+impl Debug for RecordData<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RecordData::Borrowed(data) => write!(f, "RecordData::Borrowed({} bytes)", data.len()),
+            RecordData::Owned(data) => write!(f, "RecordData::Owned({} bytes)", data.len()),
+        }
+    }
 }
 
 /// Represents a single LDM record with its data which may be compressed.
@@ -10,7 +21,7 @@ enum RecordData<'a> {
 /// NEXRAD archival radar data. A NEXRAD "Archive II" file starts with an
 /// [crate::volume::Header] followed by a series of compressed LDM records, each
 /// containing messages with radar data.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Record<'a>(RecordData<'a>);
 
 impl<'a> Record<'a> {
@@ -72,6 +83,29 @@ impl<'a> Record<'a> {
 
         let mut reader = Cursor::new(self.data());
         Ok(decode_messages(&mut reader)?)
+    }
+}
+
+impl Debug for Record<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut debug = f.debug_struct("Record");
+        debug.field("data.len()", &self.data().len());
+        debug.field(
+            "borrowed",
+            match &self.0 {
+                RecordData::Borrowed(_) => &true,
+                RecordData::Owned(_) => &false,
+            },
+        );
+        debug.field("compressed", &self.compressed());
+
+        #[cfg(feature = "decode")]
+        debug.field(
+            "messages.len()",
+            &self.messages().map(|messages| messages.len()),
+        );
+
+        debug.finish()
     }
 }
 

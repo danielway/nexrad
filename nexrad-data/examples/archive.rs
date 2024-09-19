@@ -3,7 +3,7 @@ use log::{debug, info, trace, LevelFilter};
 
 #[cfg(not(all(feature = "aws", feature = "decode")))]
 fn main() {
-    println!("This example requires the \"aws\" feature to be enabled.");
+    println!("This example requires the \"aws\" and \"decode\" features to be enabled.");
 }
 
 #[derive(Parser)]

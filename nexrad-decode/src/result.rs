@@ -16,4 +16,6 @@ pub enum Error {
     DecodingError(String),
     #[error("message is missing collection date/time")]
     MessageMissingDateError,
+    #[error("unexpected message segmentation")]
+    MessageSegmentationError,
 }

@@ -7,14 +7,14 @@ use crate::messages::rda_status_data;
 #[derive(Debug, Clone, PartialEq)]
 pub struct MessageWithHeader {
     pub header: MessageHeader,
-    pub message: Message,
+    pub message: MessageContents,
 }
 
 /// A decoded NEXRAD Level II message.
 #[derive(Debug, Clone, PartialEq)]
-pub enum Message {
+pub enum MessageContents {
     RDAStatusData(Box<rda_status_data::Message>),
     DigitalRadarData(Box<digital_radar_data::Message>),
-    ClutterFilterMap(Box<clutter_filter_map::Message>),
+    ClutterFilterMap(Box<clutter_filter_map::Segment>),
     Other,
 }

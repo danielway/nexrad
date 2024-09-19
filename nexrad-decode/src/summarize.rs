@@ -1,5 +1,5 @@
 use crate::messages::digital_radar_data;
-use crate::messages::{Message, MessageType, MessageWithHeader};
+use crate::messages::{MessageContents, MessageType, MessageWithHeader};
 use chrono::{DateTime, Utc};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -120,7 +120,7 @@ fn process_message(
     }
 
     match &message_with_header.message {
-        Message::DigitalRadarData(message) => {
+        MessageContents::DigitalRadarData(message) => {
             process_digital_radar_data_message(summary, scan_summary, message);
             return;
         }

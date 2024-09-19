@@ -7,7 +7,7 @@ mod message_type;
 pub use message_type::MessageType;
 
 mod message;
-pub use message::{Message, MessageWithHeader};
+pub use message::{MessageContents, MessageWithHeader};
 
 mod definitions;
 mod primitive_aliases;
@@ -48,13 +48,13 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<MessageWith
 pub fn decode_message<R: Read + Seek>(
     reader: &mut R,
     message_type: MessageType,
-) -> Result<Message> {
+) -> Result<MessageContents> {
     let position = reader.stream_position();
     trace!("Decoding message type {:?} at {:?}", message_type, position);
 
     if message_type == MessageType::RDADigitalRadarDataGenericFormat {
         let decoded_message = decode_digital_radar_data(reader)?;
-        return Ok(Message::DigitalRadarData(Box::new(decoded_message)));
+        return Ok(MessageContents::DigitalRadarData(Box::new(decoded_message)));
     }
 
     let mut message_buffer = [0; 2432 - size_of::<MessageHeader>()];
@@ -63,12 +63,12 @@ pub fn decode_message<R: Read + Seek>(
     let message_reader = &mut message_buffer.as_ref();
     Ok(match message_type {
         MessageType::RDAStatusData => {
-            Message::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
+            MessageContents::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
         }
         // TODO: this message type is segmented which is not supported well currently
         // MessageType::RDAClutterFilterMap => {
         //     Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(message_reader)?))
         // }
-        _ => Message::Other,
+        _ => MessageContents::Other,
     })
 }

@@ -1,5 +1,5 @@
 use crate::messages::digital_radar_data;
-use crate::messages::{MessageContents, MessageType, MessageWithHeader};
+use crate::messages::{Message, MessageBody, MessageType};
 use chrono::{DateTime, Utc};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -78,7 +78,7 @@ impl Debug for ScanSummary {
 }
 
 /// Provides a summary of the given messages.
-pub fn messages(messages: &[MessageWithHeader]) -> MessageSummary {
+pub fn messages(messages: &[Message]) -> MessageSummary {
     let mut summary = MessageSummary {
         volume_coverage_patterns: HashSet::new(),
         message_types: Vec::new(),
@@ -88,7 +88,7 @@ pub fn messages(messages: &[MessageWithHeader]) -> MessageSummary {
     };
 
     if let Some(first_message) = messages.first() {
-        summary.earliest_collection_time = first_message.header.date_time();
+        summary.earliest_collection_time = first_message.header().date_time();
     }
 
     let mut scan_summary = None;
@@ -106,9 +106,9 @@ pub fn messages(messages: &[MessageWithHeader]) -> MessageSummary {
 fn process_message(
     summary: &mut MessageSummary,
     scan_summary: &mut Option<ScanSummary>,
-    message_with_header: &MessageWithHeader,
+    message_with_header: &Message,
 ) {
-    let message_type = message_with_header.header.message_type();
+    let message_type = message_with_header.header().message_type();
     if let Some((last_message_type, count)) = summary.message_types.last_mut() {
         if *last_message_type == message_type {
             *count += 1;
@@ -119,8 +119,8 @@ fn process_message(
         summary.message_types.push((message_type, 1));
     }
 
-    match &message_with_header.message {
-        MessageContents::DigitalRadarData(message) => {
+    match message_with_header.contents() {
+        MessageBody::DigitalRadarData(message) => {
             process_digital_radar_data_message(summary, scan_summary, message);
             return;
         }

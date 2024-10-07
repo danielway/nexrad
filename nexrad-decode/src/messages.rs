@@ -7,7 +7,7 @@ mod message_type;
 pub use message_type::MessageType;
 
 mod message;
-pub use message::{MessageContents, MessageWithHeader};
+pub use message::{Message, MessageBody};
 
 mod definitions;
 mod primitive_aliases;
@@ -26,13 +26,13 @@ pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
 }
 
 /// Decode a series of NEXRAD Level II messages from a reader.
-pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<MessageWithHeader>> {
+pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
     debug!("Decoding messages");
 
     let mut messages = Vec::new();
     while let Ok(header) = decode_message_header(reader) {
         let message = decode_message(reader, header.message_type())?;
-        messages.push(MessageWithHeader { header, message });
+        messages.push(Message::new(header, message));
     }
 
     debug!(
@@ -44,17 +44,18 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<MessageWith
     Ok(messages)
 }
 
-/// Decode a NEXRAD Level II message of the specified type from a reader.
+/// Decode a NEXRAD Level II message of the specified type from a reader. Note that segmented
+/// messages will be read fully from the reader.
 pub fn decode_message<R: Read + Seek>(
     reader: &mut R,
     message_type: MessageType,
-) -> Result<MessageContents> {
+) -> Result<MessageBody> {
     let position = reader.stream_position();
     trace!("Decoding message type {:?} at {:?}", message_type, position);
 
     if message_type == MessageType::RDADigitalRadarDataGenericFormat {
         let decoded_message = decode_digital_radar_data(reader)?;
-        return Ok(MessageContents::DigitalRadarData(Box::new(decoded_message)));
+        return Ok(MessageBody::DigitalRadarData(Box::new(decoded_message)));
     }
 
     let mut message_buffer = [0; 2432 - size_of::<MessageHeader>()];
@@ -63,12 +64,12 @@ pub fn decode_message<R: Read + Seek>(
     let message_reader = &mut message_buffer.as_ref();
     Ok(match message_type {
         MessageType::RDAStatusData => {
-            MessageContents::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
+            MessageBody::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
         }
         // TODO: this message type is segmented which is not supported well currently
         // MessageType::RDAClutterFilterMap => {
         //     Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(message_reader)?))
         // }
-        _ => MessageContents::Other,
+        _ => MessageBody::Other,
     })
 }

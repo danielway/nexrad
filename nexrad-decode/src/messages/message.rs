@@ -48,12 +48,12 @@ impl Message {
     }
 
     /// This message's contents.
-    pub fn contents(&self) -> Option<&MessageBody> {
+    pub fn body(&self) -> Option<&MessageBody> {
         self.body.as_ref()
     }
 
     /// Take this message's contents, consuming the message.
-    pub fn take_contents(self) -> Option<MessageBody> {
+    pub fn take_body(self) -> Option<MessageBody> {
         self.body
     }
 }

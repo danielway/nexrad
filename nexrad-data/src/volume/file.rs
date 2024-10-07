@@ -45,8 +45,8 @@ impl File {
 
             let messages = record.messages()?;
             for message in messages {
-                let contents = message.take_contents();
-                if let Some(MessageBody::DigitalRadarData(radar_data_message)) = contents {
+                let message_body = message.take_body();
+                if let Some(MessageBody::DigitalRadarData(radar_data_message)) = message_body {
                     if coverage_pattern_number.is_none() {
                         if let Some(volume_block) = &radar_data_message.volume_data_block {
                             coverage_pattern_number =

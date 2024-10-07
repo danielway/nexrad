@@ -119,7 +119,7 @@ fn process_message(
         summary.message_types.push((message_type, 1));
     }
 
-    if let Some(MessageBody::DigitalRadarData(message)) = message.contents() {
+    if let Some(MessageBody::DigitalRadarData(message)) = message.body() {
         process_digital_radar_data_message(summary, scan_summary, message);
         return;
     }

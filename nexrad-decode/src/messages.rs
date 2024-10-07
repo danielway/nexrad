@@ -12,6 +12,7 @@ pub use message::{Message, MessageBody};
 mod definitions;
 mod primitive_aliases;
 
+use crate::messages::clutter_filter_map::decode_clutter_filter_map;
 use crate::messages::digital_radar_data::decode_digital_radar_data;
 use crate::messages::message_header::MessageHeader;
 use crate::messages::rda_status_data::decode_rda_status_message;
@@ -83,14 +84,20 @@ fn decode_fixed_length_message<R: Read + Seek>(
     let mut message_buffer = [0; 2432 - size_of::<MessageHeader>()];
     reader.read_exact(&mut message_buffer)?;
 
-    if header.message_type() != MessageType::RDAStatusData {
-        return Ok(Message::header_only(header));
-    }
-
-    trace!("Decoding RDA status message (type 2)");
     let message_reader = &mut message_buffer.as_ref();
-    let message_body =
-        MessageBody::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?));
+    let message_body = match header.message_type() {
+        MessageType::RDAStatusData => {
+            trace!("Decoding RDA status message (type 2)");
+            MessageBody::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
+        }
+        MessageType::RDAClutterFilterMap => {
+            trace!("Decoding clutter filter map message (type 15)");
+            MessageBody::ClutterFilterMap(Box::new(decode_clutter_filter_map(reader)?))
+        }
+        _ => {
+            return Ok(Message::header_only(header));
+        }
+    };
 
     Ok(Message::unsegmented(header, message_body))
 }

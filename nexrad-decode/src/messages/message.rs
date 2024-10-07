@@ -74,5 +74,5 @@ pub enum MessageBody {
 
     /// Message type 15 "Clutter Filter Map" contains information about clutter filter maps that are
     /// used to filter clutter from radar products
-    ClutterFilterMap(Box<clutter_filter_map::Segment>),
+    ClutterFilterMap(Box<clutter_filter_map::Message>),
 }

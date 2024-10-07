@@ -63,15 +63,16 @@ fn decode_variable_length_message<R: Read + Seek>(
     reader: &mut R,
     header: MessageHeader,
 ) -> Result<Message> {
-    let message_body = if header.message_type() == MessageType::RDADigitalRadarDataGenericFormat {
-        trace!("Decoding digital radar data message (type 31)");
-        let radar_data_message = decode_digital_radar_data(reader)?;
-        MessageBody::DigitalRadarData(Box::new(radar_data_message))
-    } else {
-        MessageBody::Other
-    };
+    if header.message_type() != MessageType::RDADigitalRadarDataGenericFormat {
+        return Ok(Message::header_only(header));
+    }
 
-    Ok(Message::new(header, message_body))
+    trace!("Decoding digital radar data message (type 31)");
+    let radar_data_message = decode_digital_radar_data(reader)?;
+    Ok(Message::unsegmented(
+        header,
+        MessageBody::DigitalRadarData(Box::new(radar_data_message)),
+    ))
 }
 
 /// Decodes a fixed-length message, such as message type 2 "RDA status data".
@@ -82,18 +83,14 @@ fn decode_fixed_length_message<R: Read + Seek>(
     let mut message_buffer = [0; 2432 - size_of::<MessageHeader>()];
     reader.read_exact(&mut message_buffer)?;
 
-    let message_reader = &mut message_buffer.as_ref();
-    let message_body = match header.message_type() {
-        MessageType::RDAStatusData => {
-            trace!("Decoding RDA status message (type 2)");
-            MessageBody::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
-        }
-        // TODO: this message type is segmented which is not supported well currently
-        // MessageType::RDAClutterFilterMap => {
-        //     Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(message_reader)?))
-        // }
-        _ => MessageBody::Other,
-    };
+    if header.message_type() != MessageType::RDAStatusData {
+        return Ok(Message::header_only(header));
+    }
 
-    Ok(Message::new(header, message_body))
+    trace!("Decoding RDA status message (type 2)");
+    let message_reader = &mut message_buffer.as_ref();
+    let message_body =
+        MessageBody::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?));
+
+    Ok(Message::unsegmented(header, message_body))
 }

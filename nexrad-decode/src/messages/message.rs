@@ -9,16 +9,25 @@ use crate::messages::rda_status_data;
 pub struct Message {
     first_header: MessageHeader,
     subsequent_headers: Option<Vec<MessageHeader>>,
-    body: MessageBody,
+    body: Option<MessageBody>,
 }
 
 impl Message {
-    /// Create a new unsegmented message.
-    pub(crate) fn new(header: MessageHeader, body: MessageBody) -> Self {
+    /// Create a new message with only a header.
+    pub(crate) fn header_only(header: MessageHeader) -> Self {
         Self {
             first_header: header,
             subsequent_headers: None,
-            body,
+            body: None,
+        }
+    }
+
+    /// Create a new unsegmented message.
+    pub(crate) fn unsegmented(header: MessageHeader, body: MessageBody) -> Self {
+        Self {
+            first_header: header,
+            subsequent_headers: None,
+            body: Some(body),
         }
     }
 
@@ -39,12 +48,12 @@ impl Message {
     }
 
     /// This message's contents.
-    pub fn contents(&self) -> &MessageBody {
-        &self.body
+    pub fn contents(&self) -> Option<&MessageBody> {
+        self.body.as_ref()
     }
 
     /// Take this message's contents, consuming the message.
-    pub fn take_contents(self) -> MessageBody {
+    pub fn take_contents(self) -> Option<MessageBody> {
         self.body
     }
 }
@@ -66,6 +75,4 @@ pub enum MessageBody {
     /// Message type 15 "Clutter Filter Map" contains information about clutter filter maps that are
     /// used to filter clutter from radar products
     ClutterFilterMap(Box<clutter_filter_map::Segment>),
-
-    Other,
 }

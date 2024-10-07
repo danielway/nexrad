@@ -50,14 +50,35 @@ pub fn decode_message<R: Read + Seek>(reader: &mut R) -> Result<Message> {
     trace!("Decoding message header at {:?}", position);
 
     let header = decode_message_header(reader)?;
+    let decoding_function = match header.message_type() {
+        MessageType::RDADigitalRadarDataGenericFormat => decode_variable_length_message,
+        _ => decode_fixed_length_message,
+    };
 
-    if header.message_type() == MessageType::RDADigitalRadarDataGenericFormat {
+    decoding_function(reader, header)
+}
+
+/// Decodes a variable-length message, such as message type 31 "Digital radar data".
+fn decode_variable_length_message<R: Read + Seek>(
+    reader: &mut R,
+    header: MessageHeader,
+) -> Result<Message> {
+    let message_body = if header.message_type() == MessageType::RDADigitalRadarDataGenericFormat {
         trace!("Decoding digital radar data message (type 31)");
         let radar_data_message = decode_digital_radar_data(reader)?;
-        let message_body = MessageBody::DigitalRadarData(Box::new(radar_data_message));
-        return Ok(Message::new(header, message_body));
-    }
+        MessageBody::DigitalRadarData(Box::new(radar_data_message))
+    } else {
+        MessageBody::Other
+    };
 
+    Ok(Message::new(header, message_body))
+}
+
+/// Decodes a fixed-length message, such as message type 2 "RDA status data".
+fn decode_fixed_length_message<R: Read + Seek>(
+    reader: &mut R,
+    header: MessageHeader,
+) -> Result<Message> {
     let mut message_buffer = [0; 2432 - size_of::<MessageHeader>()];
     reader.read_exact(&mut message_buffer)?;
 

@@ -92,8 +92,8 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
     }
 
     let mut scan_summary = None;
-    for message_with_header in messages {
-        process_message(&mut summary, &mut scan_summary, message_with_header);
+    for message in messages {
+        process_message(&mut summary, &mut scan_summary, message);
     }
 
     if let Some(scan_summary) = scan_summary.take() {
@@ -106,9 +106,9 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
 fn process_message(
     summary: &mut MessageSummary,
     scan_summary: &mut Option<ScanSummary>,
-    message_with_header: &Message,
+    message: &Message,
 ) {
-    let message_type = message_with_header.header().message_type();
+    let message_type = message.header().message_type();
     if let Some((last_message_type, count)) = summary.message_types.last_mut() {
         if *last_message_type == message_type {
             *count += 1;
@@ -119,7 +119,7 @@ fn process_message(
         summary.message_types.push((message_type, 1));
     }
 
-    if let MessageBody::DigitalRadarData(message) = message_with_header.contents() {
+    if let MessageBody::DigitalRadarData(message) = message.contents() {
         process_digital_radar_data_message(summary, scan_summary, message);
         return;
     }

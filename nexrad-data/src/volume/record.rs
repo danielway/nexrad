@@ -80,7 +80,7 @@ impl<'a> Record<'a> {
         }
 
         let mut reader = Cursor::new(self.data());
-        Ok(decode_messages(&mut reader)?)
+        Ok(decode_messages(&mut reader, self.data().len() as u64)?)
     }
 }
 

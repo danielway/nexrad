@@ -26,13 +26,12 @@ pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
 }
 
 /// Decode a series of NEXRAD Level II messages from a reader.
-pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
+pub fn decode_messages<R: Read + Seek>(reader: &mut R, data_length: u64) -> Result<Vec<Message>> {
     debug!("Decoding messages");
 
     let mut messages = Vec::new();
-    while let Ok(header) = decode_message_header(reader) {
-        let message = decode_message(reader, header.message_type())?;
-        messages.push(Message::new(header, message));
+    while reader.stream_position()? < data_length {
+        messages.push(decode_message(reader)?);
     }
 
     debug!(
@@ -44,26 +43,28 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
     Ok(messages)
 }
 
-/// Decode a NEXRAD Level II message of the specified type from a reader. Note that segmented
-/// messages will be read fully from the reader.
-pub fn decode_message<R: Read + Seek>(
-    reader: &mut R,
-    message_type: MessageType,
-) -> Result<MessageBody> {
-    let position = reader.stream_position();
-    trace!("Decoding message type {:?} at {:?}", message_type, position);
+/// Decode a NEXRAD Level II message from a reader. Note that segmented messages will be read fully
+/// from the reader.
+pub fn decode_message<R: Read + Seek>(reader: &mut R) -> Result<Message> {
+    let position = reader.stream_position()?;
+    trace!("Decoding message header at {:?}", position);
 
-    if message_type == MessageType::RDADigitalRadarDataGenericFormat {
-        let decoded_message = decode_digital_radar_data(reader)?;
-        return Ok(MessageBody::DigitalRadarData(Box::new(decoded_message)));
+    let header = decode_message_header(reader)?;
+
+    if header.message_type() == MessageType::RDADigitalRadarDataGenericFormat {
+        trace!("Decoding digital radar data message (type 31)");
+        let radar_data_message = decode_digital_radar_data(reader)?;
+        let message_body = MessageBody::DigitalRadarData(Box::new(radar_data_message));
+        return Ok(Message::new(header, message_body));
     }
 
     let mut message_buffer = [0; 2432 - size_of::<MessageHeader>()];
     reader.read_exact(&mut message_buffer)?;
 
     let message_reader = &mut message_buffer.as_ref();
-    Ok(match message_type {
+    let message_body = match header.message_type() {
         MessageType::RDAStatusData => {
+            trace!("Decoding RDA status message (type 2)");
             MessageBody::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
         }
         // TODO: this message type is segmented which is not supported well currently
@@ -71,5 +72,7 @@ pub fn decode_message<R: Read + Seek>(
         //     Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(message_reader)?))
         // }
         _ => MessageBody::Other,
-    })
+    };
+
+    Ok(Message::new(header, message_body))
 }

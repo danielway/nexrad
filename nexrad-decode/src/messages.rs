@@ -2,6 +2,7 @@ pub mod clutter_filter_map;
 pub mod digital_radar_data;
 pub mod message_header;
 pub mod rda_status_data;
+pub mod volume_coverage_pattern;
 
 mod message_type;
 pub use message_type::MessageType;
@@ -15,6 +16,7 @@ mod primitive_aliases;
 use crate::messages::digital_radar_data::decode_digital_radar_data;
 use crate::messages::message_header::MessageHeader;
 use crate::messages::rda_status_data::decode_rda_status_message;
+use crate::messages::volume_coverage_pattern::decode_volume_coverage_pattern;
 use crate::result::Result;
 use crate::util::deserialize;
 use log::{debug, trace};
@@ -55,6 +57,11 @@ pub fn decode_message<R: Read + Seek>(
     if message_type == MessageType::RDADigitalRadarDataGenericFormat {
         let decoded_message = decode_digital_radar_data(reader)?;
         return Ok(Message::DigitalRadarData(Box::new(decoded_message)));
+    }
+
+    if message_type == MessageType::RDAVolumeCoveragePattern {
+        let decoded_message = decode_volume_coverage_pattern(reader)?;
+        return Ok(Message::VolumeCoveragePattern(Box::new(decoded_message)));
     }
 
     let mut message_buffer = [0; 2432 - size_of::<MessageHeader>()];

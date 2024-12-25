@@ -5,6 +5,9 @@
 //! type and other metadata.
 //! 
 
+mod definitions;
+pub use definitions::*;
+
 mod header;
 use std::io::Read;
 

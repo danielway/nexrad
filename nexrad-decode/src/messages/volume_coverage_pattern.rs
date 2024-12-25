@@ -6,7 +6,7 @@
 //! 
 
 mod header;
-use std::io::{Read, Seek};
+use std::io::Read;
 
 pub use header::Header;
 
@@ -20,7 +20,7 @@ use crate::result::Result;
 use crate::util::deserialize;
 
 /// Decodes a volume coverage pattern message type 5 from the provided reader.
-pub fn decode_volume_coverage_pattern<R: Read + Seek>(reader: &mut R) -> Result<Message> {
+pub fn decode_volume_coverage_pattern<R: Read>(reader: &mut R) -> Result<Message> {
     let header: Header = deserialize(reader)?;
 
     let mut elevations: Vec<ElevationDataBlock> = Vec::new();

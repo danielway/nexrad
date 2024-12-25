@@ -59,11 +59,6 @@ pub fn decode_message<R: Read + Seek>(
         return Ok(Message::DigitalRadarData(Box::new(decoded_message)));
     }
 
-    if message_type == MessageType::RDAVolumeCoveragePattern {
-        let decoded_message = decode_volume_coverage_pattern(reader)?;
-        return Ok(Message::VolumeCoveragePattern(Box::new(decoded_message)));
-    }
-
     let mut message_buffer = [0; 2432 - size_of::<MessageHeader>()];
     reader.read_exact(&mut message_buffer)?;
 
@@ -71,6 +66,9 @@ pub fn decode_message<R: Read + Seek>(
     Ok(match message_type {
         MessageType::RDAStatusData => {
             Message::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
+        }
+        MessageType::RDAVolumeCoveragePattern => {
+            Message::VolumeCoveragePattern(Box::new(decode_volume_coverage_pattern(message_reader)?))
         }
         // TODO: this message type is segmented which is not supported well currently
         // MessageType::RDAClutterFilterMap => {

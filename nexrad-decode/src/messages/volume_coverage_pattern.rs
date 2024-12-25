@@ -3,7 +3,7 @@
 //! the number of elevation cuts and metadata about the entire volume, as well as a data
 //! block for each elevation with metadata about that specific cut such as the waveform
 //! type and other metadata.
-//! 
+//!
 
 mod definitions;
 pub use definitions::*;

@@ -102,7 +102,6 @@ pub struct ElevationDataBlock {
     pub reserved: Integer2,
 }
 
-
 impl Debug for ElevationDataBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ElevationDataBlock")
@@ -111,25 +110,55 @@ impl Debug for ElevationDataBlock {
             .field("waveform_types", &self.waveform_types)
             .field("super_resolution_control", &self.super_resolution_control)
             .field("surveillance_prf_number", &self.surveillance_prf_number)
-            .field("surveillance_prf_pulse_count_radial", &self.surveillance_prf_pulse_count_radial)
+            .field(
+                "surveillance_prf_pulse_count_radial",
+                &self.surveillance_prf_pulse_count_radial,
+            )
             .field("azimuth_rate", &self.azimuth_rate)
             .field("reflectivity_threshold", &self.reflectivity_threshold)
             .field("velocity_threshold", &self.velocity_threshold)
             .field("spectrum_width_threshold", &self.spectrum_width_threshold)
-            .field("differential_reflectivity_threshold", &self.differential_reflectivity_threshold)
-            .field("differential_phase_threshold", &self.differential_phase_threshold)
-            .field("correlation_coefficient_threshold", &self.correlation_coefficient_threshold)
+            .field(
+                "differential_reflectivity_threshold",
+                &self.differential_reflectivity_threshold,
+            )
+            .field(
+                "differential_phase_threshold",
+                &self.differential_phase_threshold,
+            )
+            .field(
+                "correlation_coefficient_threshold",
+                &self.correlation_coefficient_threshold,
+            )
             .field("sector_1_edge_angle", &self.sector_1_edge_angle)
-            .field("sector_1_doppler_prf_number", &self.sector_1_doppler_prf_number)
-            .field("sector_1_doppler_prf_pulse_count_radial", &self.sector_1_doppler_prf_pulse_count_radial)
+            .field(
+                "sector_1_doppler_prf_number",
+                &self.sector_1_doppler_prf_number,
+            )
+            .field(
+                "sector_1_doppler_prf_pulse_count_radial",
+                &self.sector_1_doppler_prf_pulse_count_radial,
+            )
             .field("vcp_supplemental_data", &self.vcp_supplemental_data)
             .field("sector_2_edge_angle", &self.sector_2_edge_angle)
-            .field("sector_2_doppler_prf_number", &self.sector_2_doppler_prf_number)
-            .field("sector_2_doppler_prf_pulse_count_radial", &self.sector_2_doppler_prf_pulse_count_radial)
+            .field(
+                "sector_2_doppler_prf_number",
+                &self.sector_2_doppler_prf_number,
+            )
+            .field(
+                "sector_2_doppler_prf_pulse_count_radial",
+                &self.sector_2_doppler_prf_pulse_count_radial,
+            )
             .field("ebc_angle", &self.ebc_angle)
             .field("sector_3_edge_angle", &self.sector_3_edge_angle)
-            .field("sector_3_doppler_prf_number", &self.sector_3_doppler_prf_number)
-            .field("sector_3_doppler_prf_pulse_count_radial", &self.sector_3_doppler_prf_pulse_count_radial)
+            .field(
+                "sector_3_doppler_prf_number",
+                &self.sector_3_doppler_prf_number,
+            )
+            .field(
+                "sector_3_doppler_prf_pulse_count_radial",
+                &self.sector_3_doppler_prf_pulse_count_radial,
+            )
             .field("reserved", &self.reserved)
             .finish()
     }

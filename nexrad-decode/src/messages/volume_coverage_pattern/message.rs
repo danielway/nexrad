@@ -14,9 +14,6 @@ pub struct Message {
 impl Message {
     /// Create a new volume coverage pattern message
     pub(crate) fn new(header: Header, elevations: Vec<ElevationDataBlock>) -> Self {
-        Self {
-            header,
-            elevations,
-        }
+        Self { header, elevations }
     }
 }

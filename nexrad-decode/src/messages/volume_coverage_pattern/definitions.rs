@@ -12,4 +12,3 @@ pub enum PulseWidth {
     Long,
     Unknown,
 }
-

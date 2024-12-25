@@ -1,8 +1,6 @@
 use serde::Deserialize;
 
-use crate::messages::primitive_aliases::{
-    Code1, Code2, Integer1, Integer2, Integer4,
-};
+use crate::messages::primitive_aliases::{Code1, Code2, Integer1, Integer2, Integer4};
 
 use std::fmt::Debug;
 
@@ -151,22 +149,58 @@ impl Debug for Header {
             .field("number_of_elevation_cuts", &self.number_of_elevation_cuts)
             .field("version", &self.version)
             .field("clutter_map_group_number", &self.clutter_map_group_number)
-            .field("doppler_velocity_resolution", &self.doppler_velocity_resolution)
+            .field(
+                "doppler_velocity_resolution",
+                &self.doppler_velocity_resolution,
+            )
             .field("pulse_width", &self.pulse_width())
             .field("reserved_1", &self.reserved_1)
             .field("vcp_sequencing_raw", &self.vcp_sequencing)
-            .field("vcp_sequencing_number_of_elevations", &self.vcp_sequencing_number_of_elevations())
-            .field("vcp_sequencing_maximum_sails_cuts", &self.vcp_sequencing_maximum_sails_cuts())
-            .field("vcp_sequencing_sequence_active", &self.vcp_sequencing_sequence_active())
-            .field("vcp_sequencing_truncated_vcp", &self.vcp_sequencing_truncated_vcp())
+            .field(
+                "vcp_sequencing_number_of_elevations",
+                &self.vcp_sequencing_number_of_elevations(),
+            )
+            .field(
+                "vcp_sequencing_maximum_sails_cuts",
+                &self.vcp_sequencing_maximum_sails_cuts(),
+            )
+            .field(
+                "vcp_sequencing_sequence_active",
+                &self.vcp_sequencing_sequence_active(),
+            )
+            .field(
+                "vcp_sequencing_truncated_vcp",
+                &self.vcp_sequencing_truncated_vcp(),
+            )
             .field("vcp_supplemental_data_raw", &self.vcp_supplemental_data)
-            .field("vcp_supplemental_data_sails_vcp", &self.vcp_supplemental_data_sails_vcp())
-            .field("vcp_supplemental_data_number_sails_cuts", &self.vcp_supplemental_data_number_sails_cuts())
-            .field("vcp_supplemental_data_mrle_vcp", &self.vcp_supplemental_data_mrle_vcp())
-            .field("vcp_supplemental_data_number_mrle_cuts", &self.vcp_supplemental_data_number_mrle_cuts())
-            .field("vcp_supplemental_data_mpda_vcp", &self.vcp_supplemental_data_mpda_vcp())
-            .field("vcp_supplemental_data_base_tilt_vcp", &self.vcp_supplemental_data_base_tilt_vcp())
-            .field("vcp_supplemental_data_base_tilts", &self.vcp_supplemental_data_base_tilts())
+            .field(
+                "vcp_supplemental_data_sails_vcp",
+                &self.vcp_supplemental_data_sails_vcp(),
+            )
+            .field(
+                "vcp_supplemental_data_number_sails_cuts",
+                &self.vcp_supplemental_data_number_sails_cuts(),
+            )
+            .field(
+                "vcp_supplemental_data_mrle_vcp",
+                &self.vcp_supplemental_data_mrle_vcp(),
+            )
+            .field(
+                "vcp_supplemental_data_number_mrle_cuts",
+                &self.vcp_supplemental_data_number_mrle_cuts(),
+            )
+            .field(
+                "vcp_supplemental_data_mpda_vcp",
+                &self.vcp_supplemental_data_mpda_vcp(),
+            )
+            .field(
+                "vcp_supplemental_data_base_tilt_vcp",
+                &self.vcp_supplemental_data_base_tilt_vcp(),
+            )
+            .field(
+                "vcp_supplemental_data_base_tilts",
+                &self.vcp_supplemental_data_base_tilts(),
+            )
             .field("reserved_2", &self.reserved_2)
             .finish()
     }
@@ -182,22 +216,58 @@ impl Debug for Header {
             .field("number_of_elevation_cuts", &self.number_of_elevation_cuts)
             .field("version", &self.version)
             .field("clutter_map_group_number", &self.clutter_map_group_number)
-            .field("doppler_velocity_resolution", &self.doppler_velocity_resolution())
+            .field(
+                "doppler_velocity_resolution",
+                &self.doppler_velocity_resolution(),
+            )
             .field("pulse_width", &self.pulse_width())
             .field("reserved_1", &self.reserved_1)
             .field("vcp_sequencing_raw", &self.vcp_sequencing)
-            .field("vcp_sequencing_number_of_elevations", &self.vcp_sequencing_number_of_elevations())
-            .field("vcp_sequencing_maximum_sails_cuts", &self.vcp_sequencing_maximum_sails_cuts())
-            .field("vcp_sequencing_sequence_active", &self.vcp_sequencing_sequence_active())
-            .field("vcp_sequencing_truncated_vcp", &self.vcp_sequencing_truncated_vcp())
+            .field(
+                "vcp_sequencing_number_of_elevations",
+                &self.vcp_sequencing_number_of_elevations(),
+            )
+            .field(
+                "vcp_sequencing_maximum_sails_cuts",
+                &self.vcp_sequencing_maximum_sails_cuts(),
+            )
+            .field(
+                "vcp_sequencing_sequence_active",
+                &self.vcp_sequencing_sequence_active(),
+            )
+            .field(
+                "vcp_sequencing_truncated_vcp",
+                &self.vcp_sequencing_truncated_vcp(),
+            )
             .field("vcp_supplemental_data_raw", &self.vcp_supplemental_data)
-            .field("vcp_supplemental_data_sails_vcp", &self.vcp_supplemental_data_sails_vcp())
-            .field("vcp_supplemental_data_number_sails_cuts", &self.vcp_supplemental_data_number_sails_cuts())
-            .field("vcp_supplemental_data_mrle_vcp", &self.vcp_supplemental_data_mrle_vcp())
-            .field("vcp_supplemental_data_number_mrle_cuts", &self.vcp_supplemental_data_number_mrle_cuts())
-            .field("vcp_supplemental_data_mpda_vcp", &self.vcp_supplemental_data_mpda_vcp())
-            .field("vcp_supplemental_data_base_tilt_vcp", &self.vcp_supplemental_data_base_tilt_vcp())
-            .field("vcp_supplemental_data_base_tilts", &self.vcp_supplemental_data_base_tilts())
+            .field(
+                "vcp_supplemental_data_sails_vcp",
+                &self.vcp_supplemental_data_sails_vcp(),
+            )
+            .field(
+                "vcp_supplemental_data_number_sails_cuts",
+                &self.vcp_supplemental_data_number_sails_cuts(),
+            )
+            .field(
+                "vcp_supplemental_data_mrle_vcp",
+                &self.vcp_supplemental_data_mrle_vcp(),
+            )
+            .field(
+                "vcp_supplemental_data_number_mrle_cuts",
+                &self.vcp_supplemental_data_number_mrle_cuts(),
+            )
+            .field(
+                "vcp_supplemental_data_mpda_vcp",
+                &self.vcp_supplemental_data_mpda_vcp(),
+            )
+            .field(
+                "vcp_supplemental_data_base_tilt_vcp",
+                &self.vcp_supplemental_data_base_tilt_vcp(),
+            )
+            .field(
+                "vcp_supplemental_data_base_tilts",
+                &self.vcp_supplemental_data_base_tilts(),
+            )
             .field("reserved_2", &self.reserved_2)
             .finish()
     }

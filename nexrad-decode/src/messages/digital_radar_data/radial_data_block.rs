@@ -53,7 +53,7 @@ impl RadialDataBlock {
     /// Nyquist velocity.
     #[cfg(feature = "uom")]
     pub fn nyquist_velocity(&self) -> Velocity {
-        Velocity::new::<uom::si::velocity::meter_per_second>(self.nyquist_velocity as f64)
+        Velocity::new::<uom::si::velocity::meter_per_second>(self.nyquist_velocity as f64 * 0.01)
     }
 }
 

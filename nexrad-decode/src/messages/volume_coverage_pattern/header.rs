@@ -1,9 +1,7 @@
 use serde::Deserialize;
-
-use crate::messages::primitive_aliases::{Code1, Code2, Integer1, Integer2, Integer4};
-
 use std::fmt::Debug;
 
+use crate::messages::primitive_aliases::{Code1, Code2, Integer1, Integer2, Integer4};
 use crate::messages::volume_coverage_pattern::definitions::*;
 
 #[cfg(feature = "uom")]
@@ -11,8 +9,7 @@ use uom::si::f64::Velocity;
 #[cfg(feature = "uom")]
 use uom::si::velocity::meter_per_second;
 
-/// The volume coverage pattern header block which contains information about the volume coverage pattern
-/// and the following data for each elevation
+/// The volume coverage pattern header block
 #[derive(Clone, PartialEq, Deserialize)]
 pub struct Header {
     /// Total message size in halfwords, including the header and all elevation blocks
@@ -21,13 +18,13 @@ pub struct Header {
     /// Pattern type is always 2
     pub pattern_type: Code2,
 
-    /// VCP Pattern Number
+    /// Volume Coverage Pattern Number
     pub pattern_number: Integer2,
 
-    /// Number of elevation cuts in one complete volume scan
+    /// Number of elevation cuts in the complete volume scan
     pub number_of_elevation_cuts: Integer2,
 
-    /// VCP version number
+    /// Volume Coverage Pattern Version Number
     pub version: Integer1,
 
     /// Clutter map groups are not currently implemented
@@ -77,6 +74,7 @@ impl Header {
         }
     }
 
+    /// The doppler velocity resolution of this coverage pattern
     #[cfg(feature = "uom")]
     pub fn doppler_velocity_resolution(&self) -> Option<Velocity> {
         match self.doppler_velocity_resolution {
@@ -86,6 +84,7 @@ impl Header {
         }
     }
 
+    /// The pulse width for this VCP
     pub fn pulse_width(&self) -> PulseWidth {
         match self.pulse_width {
             2 => PulseWidth::Short,
@@ -94,46 +93,57 @@ impl Header {
         }
     }
 
+    /// The number of elevations in the VCP
     pub fn vcp_sequencing_number_of_elevations(&self) -> u8 {
         (self.vcp_sequencing & 0x001F) as u8
     }
 
+    /// The maximum number of SAILS cuts allowed in this VCP
     pub fn vcp_sequencing_maximum_sails_cuts(&self) -> u8 {
         ((self.vcp_sequencing & 0x0060) >> 5) as u8
     }
 
+    /// Whether this VCP is a part of an active VCP sequence
     pub fn vcp_sequencing_sequence_active(&self) -> bool {
         ((self.vcp_sequencing & 0x2000) >> 13) == 1
     }
 
+    /// Whether this VCP is truncated
     pub fn vcp_sequencing_truncated_vcp(&self) -> bool {
         ((self.vcp_sequencing & 0x4000) >> 14) == 1
     }
 
+    /// Whether this VCP uses SAILS cuts
     pub fn vcp_supplemental_data_sails_vcp(&self) -> bool {
         (self.vcp_supplemental_data & 0x0001) == 1
     }
 
+    /// The number of SAILS cuts used by this VCP
     pub fn vcp_supplemental_data_number_sails_cuts(&self) -> u8 {
         ((self.vcp_supplemental_data & 0x000E) >> 1) as u8
     }
 
+    /// Whether this VCP uses MRLE cuts
     pub fn vcp_supplemental_data_mrle_vcp(&self) -> bool {
         ((self.vcp_supplemental_data & 0x0010) >> 4) == 1
     }
 
+    /// The number of MRLE cuts used by this VCP
     pub fn vcp_supplemental_data_number_mrle_cuts(&self) -> u8 {
         ((self.vcp_supplemental_data & 0x00E0) >> 5) as u8
     }
 
+    /// Whether this VCP is a Multi-PRF Dealiasing Algorithm (MPDA) VCP
     pub fn vcp_supplemental_data_mpda_vcp(&self) -> bool {
         ((self.vcp_supplemental_data & 0x0800) >> 11) == 1
     }
 
+    /// Whether this VCP contains BASE TILTS
     pub fn vcp_supplemental_data_base_tilt_vcp(&self) -> bool {
         ((self.vcp_supplemental_data & 0x1000) >> 12) == 1
     }
 
+    /// The number of BASE TILTS in this VCP
     pub fn vcp_supplemental_data_base_tilts(&self) -> u8 {
         ((self.vcp_supplemental_data & 0xE000) >> 13) as u8
     }

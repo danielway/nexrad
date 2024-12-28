@@ -1,4 +1,4 @@
-/// Possible values for pattern types
+/// Possible values for the VCP pattern type
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum PatternType {
     Constant,
@@ -25,15 +25,10 @@ pub enum ChannelConfiguration {
 /// Possible values for waveform type
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum WaveformType {
-    CS,
-    /// Contiguous Surveillance
-    CDW,
-    /// Contiguous Doppler w/ Ambiguity Resolution
-    CDWO,
-    /// Contiguous Doppler w/o Ambiguity Resolution
-    B,
-    /// Batch
-    SPP,
-    /// Staggered Pulse Pair
+    CS,   // Contiguous Surveillance
+    CDW,  // Contiguous Doppler with Ambiguity Resolution
+    CDWO, // Contiguous Doppler without Ambiguity Resolution
+    B,    // Batch
+    SPP,  // Staggered Pulse Pair
     Unknown,
 }

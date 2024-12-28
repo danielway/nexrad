@@ -1,4 +1,8 @@
 use serde::Deserialize;
+use std::fmt::Debug;
+
+use crate::messages::primitive_aliases::{Code1, Code2, Integer1, Integer2, ScaledSInteger2};
+use crate::messages::volume_coverage_pattern::definitions::{ChannelConfiguration, WaveformType};
 
 #[cfg(feature = "uom")]
 use uom::si::angle::degree;
@@ -7,13 +11,7 @@ use uom::si::angular_velocity::degree_per_second;
 #[cfg(feature = "uom")]
 use uom::si::f64::{Angle, AngularVelocity};
 
-use crate::messages::primitive_aliases::{Code1, Code2, Integer1, Integer2, ScaledSInteger2};
-
-use std::fmt::Debug;
-
-use crate::messages::volume_coverage_pattern::definitions::{ChannelConfiguration, WaveformType};
-
-/// A radial data moment block.
+/// A data block for a single elevation cut.
 #[derive(Clone, PartialEq, Deserialize)]
 pub struct ElevationDataBlock {
     /// The elevation angle for this cut
@@ -111,7 +109,7 @@ pub struct ElevationDataBlock {
     pub reserved: Integer2,
 }
 
-/// Decodes an angle as defined in table III-A of the 2620002W ICD
+/// Decodes an angle as defined in table III-A of ICD 2620002W
 fn decode_angle(raw: Code2) -> Angle {
     let mut angle: f64 = 0.0;
     for i in 3..16 {
@@ -123,7 +121,7 @@ fn decode_angle(raw: Code2) -> Angle {
     Angle::new::<degree>(angle)
 }
 
-/// Decodes an angular velocity as defined in table XI-D of the 2620002W ICD
+/// Decodes an angular velocity as defined in table XI-D of ICD 2620002W
 fn decode_angular_velocity(raw: Code2) -> AngularVelocity {
     let mut angular_velocity: f64 = 0.0;
 
@@ -141,10 +139,12 @@ fn decode_angular_velocity(raw: Code2) -> AngularVelocity {
 }
 
 impl ElevationDataBlock {
+    /// The elevation angle for this cut
     pub fn elevation_angle(&self) -> Angle {
         decode_angle(self.elevation_angle)
     }
 
+    /// The channel configuration for this cut
     pub fn channel_configuration(&self) -> ChannelConfiguration {
         match self.channel_configuration {
             0 => ChannelConfiguration::ConstantPhase,
@@ -154,6 +154,7 @@ impl ElevationDataBlock {
         }
     }
 
+    /// The waveform type for this cut
     pub fn waveform_type(&self) -> WaveformType {
         match self.waveform_type {
             0 => WaveformType::CS,
@@ -165,86 +166,107 @@ impl ElevationDataBlock {
         }
     }
 
+    /// Whether this cut uses super resolution 0.5 degree azimuth
     pub fn super_resolution_control_half_degree_azimuth(&self) -> bool {
         (self.super_resolution_control & 0x1) == 1
     }
 
+    /// Whether this cut uses super resolution 0.25 km reflectivity
     pub fn super_resolution_control_quarter_km_reflectivity(&self) -> bool {
         ((self.super_resolution_control >> 1) & 0x1) == 1
     }
 
+    /// Whether this cut uses super resolution doppler to 300 km
     pub fn super_resolution_control_doppler_to_300km(&self) -> bool {
         ((self.super_resolution_control >> 2) & 0x1) == 1
     }
 
+    /// Whether this cut uses super resolution dual polarization to 300km
     pub fn super_resolution_control_dual_polarization_to_300km(&self) -> bool {
         ((self.super_resolution_control >> 3) & 0x1) == 1
     }
 
+    /// The azimuth rate used for this cut
     pub fn azimuth_rate(&self) -> AngularVelocity {
         decode_angular_velocity(self.azimuth_rate)
     }
 
+    /// The reflectivity threshold for this cut
     pub fn reflectivity_threshold(&self) -> f64 {
         self.reflectivity_threshold as f64 * 0.125
     }
 
+    /// The velocity threshold for this cut
     pub fn velocity_threshold(&self) -> f64 {
         self.velocity_threshold as f64 * 0.125
     }
 
+    /// The spectrum width threshold for this cut
     pub fn spectrum_width_threshold(&self) -> f64 {
         self.spectrum_width_threshold as f64 * 0.125
     }
 
+    /// The differential reflectivity threshold for this cut
     pub fn differential_reflectivity_threshold(&self) -> f64 {
         self.differential_reflectivity_threshold as f64 * 0.125
     }
 
+    /// The differential phase threshold for this cut
     pub fn differential_phase_threshold(&self) -> f64 {
         self.differential_phase_threshold as f64 * 0.125
     }
 
+    /// The correlation coefficient threshold for this cut
     pub fn correlation_coefficient_threshold(&self) -> f64 {
         self.correlation_coefficient_threshold as f64 * 0.125
     }
 
+    /// Sector 1 Azimuth Clockwise Edge Angle (denotes start angle)
     pub fn sector_1_edge_angle(&self) -> Angle {
         decode_angle(self.sector_1_edge_angle)
     }
 
+    /// Sector 2 Azimuth Clockwise Edge Angle (denotes start angle)
     pub fn sector_2_edge_angle(&self) -> Angle {
         decode_angle(self.sector_2_edge_angle)
     }
 
+    /// Sector 3 Azimuth Clockwise Edge Angle (denotes start angle)
     pub fn sector_3_edge_angle(&self) -> Angle {
         decode_angle(self.sector_3_edge_angle)
     }
 
+    /// The correction added to the elevation angle for this cut
     pub fn ebc_angle(&self) -> Angle {
         decode_angle(self.ebc_angle)
     }
 
+    /// Whether this cut is a SAILS cut
     pub fn supplemental_data_sails_cut(&self) -> bool {
         (self.supplemental_data & 0x0001) == 1
     }
 
+    /// The SAILS sequence number of this cut
     pub fn supplemental_data_sails_sequence_number(&self) -> u8 {
         ((self.supplemental_data & 0x000E) >> 1) as u8
     }
 
+    /// Whether this cut is an MRLE cut
     pub fn supplemental_data_mrle_cut(&self) -> bool {
         ((self.supplemental_data & 0x0010) >> 4) == 1
     }
 
+    /// The MRLE sequence number of this cut
     pub fn supplemental_data_mrle_sequence_number(&self) -> u8 {
         ((self.supplemental_data & 0x00E0) >> 5) as u8
     }
 
+    /// Whether this cut is an MPDA cut
     pub fn supplemental_data_mpda_cut(&self) -> bool {
         ((self.supplemental_data & 0x0200) >> 9) == 1
     }
 
+    /// Whether this cut is a BASE TILT cut
     pub fn supplemental_data_base_tilt_cut(&self) -> bool {
         ((self.supplemental_data & 0x0400) >> 10) == 1
     }

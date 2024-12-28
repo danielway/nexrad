@@ -1,16 +1,18 @@
 //!
-//! Message type 5 "Volume Coverage Pattern" consists of base VCP information such as
-//! the number of elevation cuts and metadata about the entire volume, as well as a data
-//! block for each elevation with metadata about that specific cut such as the waveform
-//! type and other metadata.
+//! Message type 5 "Volume Coverage Pattern" provides details about the volume
+//! coverage pattern being used. The RDA sends the Volume Coverage Pattern message
+//! upon wideband connection and at the beginning of each volume scan. The volume
+//! coverage pattern message includes a header which describes how the volume is being
+//! collected as well as a block for each elevation cut detailing the radar settings
+//! being used for that cut.
 //!
+
+use std::io::Read;
 
 mod definitions;
 pub use definitions::*;
 
 mod header;
-use std::io::Read;
-
 pub use header::Header;
 
 mod message;

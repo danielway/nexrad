@@ -157,11 +157,11 @@ impl ElevationDataBlock {
     /// The waveform type for this cut
     pub fn waveform_type(&self) -> WaveformType {
         match self.waveform_type {
-            0 => WaveformType::CS,
-            1 => WaveformType::CDW,
+            1 => WaveformType::CS,
             2 => WaveformType::CDW,
-            3 => WaveformType::B,
-            4 => WaveformType::SPP,
+            3 => WaveformType::CDWO,
+            4 => WaveformType::B,
+            5 => WaveformType::SPP,
             _ => WaveformType::Unknown,
         }
     }

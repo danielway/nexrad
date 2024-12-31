@@ -25,10 +25,15 @@ pub enum ChannelConfiguration {
 /// Possible values for waveform type
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum WaveformType {
-    CS,   // Contiguous Surveillance
-    CDW,  // Contiguous Doppler with Ambiguity Resolution
-    CDWO, // Contiguous Doppler without Ambiguity Resolution
-    B,    // Batch
-    SPP,  // Staggered Pulse Pair
+    /// Contiguous Surveillance
+    CS,
+    /// Contiguous Doppler with Ambiguity Resolution
+    CDW,
+    /// Contiguous Doppler without Ambiguity Resolution
+    CDWO,
+    /// Batch
+    B,
+    /// Staggered Pulse Pair
+    SPP,
     Unknown,
 }

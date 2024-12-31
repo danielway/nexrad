@@ -5,11 +5,11 @@ use crate::messages::primitive_aliases::{Code1, Code2, Integer1, Integer2, Scale
 use crate::messages::volume_coverage_pattern::definitions::{ChannelConfiguration, WaveformType};
 
 #[cfg(feature = "uom")]
-use uom::si::angle::degree;
-#[cfg(feature = "uom")]
-use uom::si::angular_velocity::degree_per_second;
-#[cfg(feature = "uom")]
-use uom::si::f64::{Angle, AngularVelocity};
+use uom::si::{
+    angle::degree,
+    angular_velocity::degree_per_second,
+    f64::{Angle, AngularVelocity},
+};
 
 /// A data block for a single elevation cut.
 #[derive(Clone, PartialEq, Deserialize)]
@@ -110,7 +110,7 @@ pub struct ElevationDataBlock {
 }
 
 /// Decodes an angle as defined in table III-A of ICD 2620002W
-fn decode_angle(raw: Code2) -> Angle {
+fn decode_angle(raw: Code2) -> f64 {
     let mut angle: f64 = 0.0;
     for i in 3..16 {
         if ((raw >> i) & 1) == 1 {
@@ -118,11 +118,11 @@ fn decode_angle(raw: Code2) -> Angle {
         }
     }
 
-    Angle::new::<degree>(angle)
+    return angle;
 }
 
 /// Decodes an angular velocity as defined in table XI-D of ICD 2620002W
-fn decode_angular_velocity(raw: Code2) -> AngularVelocity {
+fn decode_angular_velocity(raw: Code2) -> f64 {
     let mut angular_velocity: f64 = 0.0;
 
     for i in 3..15 {
@@ -135,12 +135,18 @@ fn decode_angular_velocity(raw: Code2) -> AngularVelocity {
         angular_velocity = -angular_velocity
     }
 
-    AngularVelocity::new::<degree_per_second>(angular_velocity)
+    return angular_velocity;
 }
 
 impl ElevationDataBlock {
     /// The elevation angle for this cut
+    #[cfg(feature = "uom")]
     pub fn elevation_angle(&self) -> Angle {
+        Angle::new::<degree>(decode_angle(self.elevation_angle))
+    }
+
+    /// The elevation angle for this cut, in degrees
+    pub fn elevation_angle_degrees(&self) -> f64 {
         decode_angle(self.elevation_angle)
     }
 
@@ -187,7 +193,13 @@ impl ElevationDataBlock {
     }
 
     /// The azimuth rate used for this cut
+    #[cfg(feature = "uom")]
     pub fn azimuth_rate(&self) -> AngularVelocity {
+        AngularVelocity::new::<degree_per_second>(decode_angular_velocity(self.azimuth_rate))
+    }
+
+    /// The azimuth rate used for this cut, in degrees per second
+    pub fn azimuth_rate_degrees_per_second(&self) -> f64 {
         decode_angular_velocity(self.azimuth_rate)
     }
 
@@ -222,22 +234,46 @@ impl ElevationDataBlock {
     }
 
     /// Sector 1 Azimuth Clockwise Edge Angle (denotes start angle)
+    #[cfg(feature = "uom")]
     pub fn sector_1_edge_angle(&self) -> Angle {
+        Angle::new::<degree>(decode_angle(self.sector_1_edge_angle))
+    }
+
+    /// Sector 1 Azimuth Clockwise Edge Angle (denotes start angle), in degrees
+    pub fn sector_1_edge_angle_degrees(&self) -> f64 {
         decode_angle(self.sector_1_edge_angle)
     }
 
     /// Sector 2 Azimuth Clockwise Edge Angle (denotes start angle)
+    #[cfg(feature = "uom")]
     pub fn sector_2_edge_angle(&self) -> Angle {
+        Angle::new::<degree>(decode_angle(self.sector_2_edge_angle))
+    }
+
+    /// Sector 2 Azimuth Clockwise Edge Angle (denotes start angle), in degrees
+    pub fn sector_2_edge_angle_degrees(&self) -> f64 {
         decode_angle(self.sector_2_edge_angle)
     }
 
     /// Sector 3 Azimuth Clockwise Edge Angle (denotes start angle)
+    #[cfg(feature = "uom")]
     pub fn sector_3_edge_angle(&self) -> Angle {
+        Angle::new::<degree>(decode_angle(self.sector_3_edge_angle))
+    }
+
+    /// Sector 3 Azimuth Clockwise Edge Angle (denotes start angle), in degrees
+    pub fn sector_3_edge_angle_degrees(&self) -> f64 {
         decode_angle(self.sector_3_edge_angle)
     }
 
     /// The correction added to the elevation angle for this cut
+    #[cfg(feature = "uom")]
     pub fn ebc_angle(&self) -> Angle {
+        Angle::new::<degree>(decode_angle(self.ebc_angle))
+    }
+
+    /// The correction added to the elevation angle for this cut, in degrees
+    pub fn ebc_angle_degrees(&self) -> f64 {
         decode_angle(self.ebc_angle)
     }
 
@@ -272,214 +308,141 @@ impl ElevationDataBlock {
     }
 }
 
-#[cfg(not(feature = "uom"))]
 impl Debug for ElevationDataBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ElevationDataBlock")
-            .field("elevation_angle", &self.elevation_angle)
-            .field("channel_configuration", &self.channel_configuration())
-            .field("waveform_type", &self.waveform_type())
-            .field(
-                "super_resolution_control_raw",
-                &self.super_resolution_control,
-            )
-            .field(
-                "super_resolution_control_half_degree_azimuth",
-                &self.super_resolution_control_half_degree_azimuth(),
-            )
-            .field(
-                "super_resolution_control_quarter_km_reflectivity",
-                &self.super_resolution_control_quarter_km_reflectivity(),
-            )
-            .field(
-                "super_resolution_control_doppler_to_300km",
-                &self.super_resolution_control_doppler_to_300km(),
-            )
-            .field(
-                "super_resolution_control_dual_polarization_to_300km",
-                &self.super_resolution_control_dual_polarization_to_300km(),
-            )
-            .field("surveillance_prf_number", &self.surveillance_prf_number)
-            .field(
-                "surveillance_prf_pulse_count_radial",
-                &self.surveillance_prf_pulse_count_radial,
-            )
-            .field("azimuth_rate", &self.azimuth_rate)
-            .field("reflectivity_threshold", &self.reflectivity_threshold())
-            .field("velocity_threshold", &self.velocity_threshold())
-            .field("spectrum_width_threshold", &self.spectrum_width_threshold())
-            .field(
-                "differential_reflectivity_threshold",
-                &self.differential_reflectivity_threshold(),
-            )
-            .field(
-                "differential_phase_threshold",
-                &self.differential_phase_threshold(),
-            )
-            .field(
-                "correlation_coefficient_threshold",
-                &self.correlation_coefficient_threshold(),
-            )
-            .field("sector_1_edge_angle", &self.sector_1_edge_angle)
-            .field(
-                "sector_1_doppler_prf_number",
-                &self.sector_1_doppler_prf_number,
-            )
-            .field(
-                "sector_1_doppler_prf_pulse_count_radial",
-                &self.sector_1_doppler_prf_pulse_count_radial,
-            )
-            .field("sector_2_edge_angle", &self.sector_2_edge_angle)
-            .field(
-                "sector_2_doppler_prf_number",
-                &self.sector_2_doppler_prf_number,
-            )
-            .field(
-                "sector_2_doppler_prf_pulse_count_radial",
-                &self.sector_2_doppler_prf_pulse_count_radial,
-            )
-            .field("sector_3_edge_angle", &self.sector_3_edge_angle)
-            .field(
-                "sector_3_doppler_prf_number",
-                &self.sector_3_doppler_prf_number,
-            )
-            .field(
-                "sector_3_doppler_prf_pulse_count_radial",
-                &self.sector_3_doppler_prf_pulse_count_radial,
-            )
-            .field("ebc_angle", &self.ebc_angle)
-            .field("supplemental_data", &self.supplemental_data)
-            .field(
-                "supplemental_data_sails_cut",
-                &self.supplemental_data_sails_cut(),
-            )
-            .field(
-                "supplemental_data_sails_sequence_number",
-                &self.supplemental_data_sails_sequence_number(),
-            )
-            .field(
-                "supplemental_data_mrle_cut",
-                &self.supplemental_data_mrle_cut(),
-            )
-            .field(
-                "supplemental_data_mrle_sequence_number",
-                &self.supplemental_data_mrle_sequence_number(),
-            )
-            .field(
-                "supplemental_data_mpda_cut",
-                &self.supplemental_data_mpda_cut(),
-            )
-            .field(
-                "supplemental_data_base_tilt_cut",
-                &self.supplemental_data_base_tilt_cut(),
-            )
-            .field("reserved", &self.reserved)
-            .finish()
-    }
-}
+        let mut debug = f.debug_struct("ElevationDataBlock");
 
-#[cfg(feature = "uom")]
-impl Debug for ElevationDataBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ElevationDataBlock")
-            .field("elevation_angle", &self.elevation_angle())
-            .field("channel_configuration", &self.channel_configuration())
-            .field("waveform_type", &self.waveform_type())
-            .field(
-                "super_resolution_control_raw",
-                &self.super_resolution_control,
-            )
-            .field(
-                "super_resolution_control_half_degree_azimuth",
-                &self.super_resolution_control_half_degree_azimuth(),
-            )
-            .field(
-                "super_resolution_control_quarter_km_reflectivity",
-                &self.super_resolution_control_quarter_km_reflectivity(),
-            )
-            .field(
-                "super_resolution_control_doppler_to_300km",
-                &self.super_resolution_control_doppler_to_300km(),
-            )
-            .field(
-                "super_resolution_control_dual_polarization_to_300km",
-                &self.super_resolution_control_dual_polarization_to_300km(),
-            )
-            .field("surveillance_prf_number", &self.surveillance_prf_number)
-            .field(
-                "surveillance_prf_pulse_count_radial",
-                &self.surveillance_prf_pulse_count_radial,
-            )
-            .field("azimuth_rate", &self.azimuth_rate())
-            .field("reflectivity_threshold", &self.reflectivity_threshold())
-            .field("velocity_threshold", &self.velocity_threshold())
-            .field("spectrum_width_threshold", &self.spectrum_width_threshold())
-            .field(
-                "differential_reflectivity_threshold",
-                &self.differential_reflectivity_threshold(),
-            )
-            .field(
-                "differential_phase_threshold",
-                &self.differential_phase_threshold(),
-            )
-            .field(
-                "correlation_coefficient_threshold",
-                &self.correlation_coefficient_threshold(),
-            )
-            .field("sector_1_edge_angle", &self.sector_1_edge_angle())
-            .field(
-                "sector_1_doppler_prf_number",
-                &self.sector_1_doppler_prf_number,
-            )
-            .field(
-                "sector_1_doppler_prf_pulse_count_radial",
-                &self.sector_1_doppler_prf_pulse_count_radial,
-            )
-            .field("sector_2_edge_angle", &self.sector_2_edge_angle())
-            .field(
-                "sector_2_doppler_prf_number",
-                &self.sector_2_doppler_prf_number,
-            )
-            .field(
-                "sector_2_doppler_prf_pulse_count_radial",
-                &self.sector_2_doppler_prf_pulse_count_radial,
-            )
-            .field("sector_3_edge_angle", &self.sector_3_edge_angle())
-            .field(
-                "sector_3_doppler_prf_number",
-                &self.sector_3_doppler_prf_number,
-            )
-            .field(
-                "sector_3_doppler_prf_pulse_count_radial",
-                &self.sector_3_doppler_prf_pulse_count_radial,
-            )
-            .field("ebc_angle", &self.ebc_angle())
-            .field("supplemental_data", &self.supplemental_data)
-            .field(
-                "supplemental_data_sails_cut",
-                &self.supplemental_data_sails_cut(),
-            )
-            .field(
-                "supplemental_data_sails_sequence_number",
-                &self.supplemental_data_sails_sequence_number(),
-            )
-            .field(
-                "supplemental_data_mrle_cut",
-                &self.supplemental_data_mrle_cut(),
-            )
-            .field(
-                "supplemental_data_mrle_sequence_number",
-                &self.supplemental_data_mrle_sequence_number(),
-            )
-            .field(
-                "supplemental_data_mpda_cut",
-                &self.supplemental_data_mpda_cut(),
-            )
-            .field(
-                "supplemental_data_base_tilt_cut",
-                &self.supplemental_data_base_tilt_cut(),
-            )
-            .field("reserved", &self.reserved)
-            .finish()
+        #[cfg(feature = "uom")]
+        debug.field("elevation_angle", &self.elevation_angle());
+        #[cfg(not(feature = "uom"))]
+        debug.field("elevation_angle", &self.elevation_angle_degrees());
+
+        debug.field("channel_configuration", &self.channel_configuration());
+        debug.field("waveform_type", &self.waveform_type());
+
+        debug.field(
+            "super_resolution_control_raw",
+            &self.super_resolution_control,
+        );
+        debug.field(
+            "super_resolution_control_half_degree_azimuth",
+            &self.super_resolution_control_half_degree_azimuth(),
+        );
+        debug.field(
+            "super_resolution_control_quarter_km_reflectivity",
+            &self.super_resolution_control_quarter_km_reflectivity(),
+        );
+        debug.field(
+            "super_resolution_control_doppler_to_300km",
+            &self.super_resolution_control_doppler_to_300km(),
+        );
+        debug.field(
+            "super_resolution_control_dual_polarization_to_300km",
+            &self.super_resolution_control_dual_polarization_to_300km(),
+        );
+
+        debug.field("surveillance_prf_number", &self.surveillance_prf_number);
+        debug.field(
+            "surveillance_prf_pulse_count_radial",
+            &self.surveillance_prf_pulse_count_radial,
+        );
+
+        #[cfg(feature = "uom")]
+        debug.field("azimuth_rate", &self.azimuth_rate());
+        #[cfg(not(feature = "uom"))]
+        debug.field("azimuth_rate", &self.azimuth_rate_degrees_per_second());
+
+        debug.field("reflectivity_threshold", &self.reflectivity_threshold());
+        debug.field("velocity_threshold", &self.velocity_threshold());
+        debug.field("spectrum_width_threshold", &self.spectrum_width_threshold());
+        debug.field(
+            "differential_reflectivity_threshold",
+            &self.differential_reflectivity_threshold(),
+        );
+        debug.field(
+            "differential_phase_threshold",
+            &self.differential_phase_threshold(),
+        );
+        debug.field(
+            "correlation_coefficient_threshold",
+            &self.correlation_coefficient_threshold(),
+        );
+
+        #[cfg(feature = "uom")]
+        debug.field("sector_1_edge_angle", &self.sector_1_edge_angle());
+        #[cfg(not(feature = "uom"))]
+        debug.field("sector_1_edge_angle", &self.sector_1_edge_angle_degrees());
+
+        debug.field(
+            "sector_1_doppler_prf_number",
+            &self.sector_1_doppler_prf_number,
+        );
+        debug.field(
+            "sector_1_doppler_prf_pulse_count_radial",
+            &self.sector_1_doppler_prf_pulse_count_radial,
+        );
+
+        #[cfg(feature = "uom")]
+        debug.field("sector_2_edge_angle", &self.sector_2_edge_angle());
+        #[cfg(not(feature = "uom"))]
+        debug.field("sector_2_edge_angle", &self.sector_2_edge_angle_degrees());
+
+        debug.field(
+            "sector_2_doppler_prf_number",
+            &self.sector_2_doppler_prf_number,
+        );
+        debug.field(
+            "sector_2_doppler_prf_pulse_count_radial",
+            &self.sector_2_doppler_prf_pulse_count_radial,
+        );
+
+        #[cfg(feature = "uom")]
+        debug.field("sector_3_edge_angle", &self.sector_3_edge_angle());
+        #[cfg(not(feature = "uom"))]
+        debug.field("sector_3_edge_angle", &self.sector_3_edge_angle_degrees());
+
+        debug.field(
+            "sector_3_doppler_prf_number",
+            &self.sector_3_doppler_prf_number,
+        );
+        debug.field(
+            "sector_3_doppler_prf_pulse_count_radial",
+            &self.sector_3_doppler_prf_pulse_count_radial,
+        );
+
+        #[cfg(feature = "uom")]
+        debug.field("ebc_angle", &self.ebc_angle());
+        #[cfg(not(feature = "uom"))]
+        debug.field("ebc_angle", &self.ebc_angle_degrees());
+
+        debug.field("supplemental_data", &self.supplemental_data);
+        debug.field(
+            "supplemental_data_sails_cut",
+            &self.supplemental_data_sails_cut(),
+        );
+        debug.field(
+            "supplemental_data_sails_sequence_number",
+            &self.supplemental_data_sails_sequence_number(),
+        );
+        debug.field(
+            "supplemental_data_mrle_cut",
+            &self.supplemental_data_mrle_cut(),
+        );
+        debug.field(
+            "supplemental_data_mrle_sequence_number",
+            &self.supplemental_data_mrle_sequence_number(),
+        );
+        debug.field(
+            "supplemental_data_mpda_cut",
+            &self.supplemental_data_mpda_cut(),
+        );
+        debug.field(
+            "supplemental_data_base_tilt_cut",
+            &self.supplemental_data_base_tilt_cut(),
+        );
+
+        debug.field("reserved", &self.reserved);
+
+        debug.finish()
     }
 }

@@ -2,6 +2,7 @@ pub mod clutter_filter_map;
 pub mod digital_radar_data;
 pub mod message_header;
 pub mod rda_status_data;
+pub mod volume_coverage_pattern;
 
 mod message_type;
 pub use message_type::MessageType;
@@ -15,6 +16,7 @@ mod primitive_aliases;
 use crate::messages::digital_radar_data::decode_digital_radar_data;
 use crate::messages::message_header::MessageHeader;
 use crate::messages::rda_status_data::decode_rda_status_message;
+use crate::messages::volume_coverage_pattern::decode_volume_coverage_pattern;
 use crate::result::Result;
 use crate::util::deserialize;
 use log::{debug, trace};
@@ -65,6 +67,9 @@ pub fn decode_message<R: Read + Seek>(
         MessageType::RDAStatusData => {
             Message::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
         }
+        MessageType::RDAVolumeCoveragePattern => Message::VolumeCoveragePattern(Box::new(
+            decode_volume_coverage_pattern(message_reader)?,
+        )),
         // TODO: this message type is segmented which is not supported well currently
         // MessageType::RDAClutterFilterMap => {
         //     Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(message_reader)?))

@@ -20,8 +20,8 @@ on:
         required: false
 
 jobs:
-  publish:
-    name: Publish Crate
+  release:
+    name: Release
     runs-on: ubuntu-latest
 
     steps:

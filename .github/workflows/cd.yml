@@ -50,20 +50,20 @@ jobs:
             --workspace \
             --package ${{ github.event.inputs.crate }} \
             --tag-prefix "${{ github.event.inputs.crate }}@" \
-            --execute
+            --dry-run
+          echo "Simulated release for ${{ github.event.inputs.crate }} as ${{ github.event.inputs.version_type }}"
 
       - name: Extract version
         id: extract_version
         run: |
           NEW_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name=="${{ github.event.inputs.crate }}") | .version')
           echo "::set-output name=version::$NEW_VERSION"
+          echo "Simulated new version: $NEW_VERSION"
 
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
-        with:
-          tag_name: "${{ steps.extract_version.outputs.version }}"
-          release_name: "${{ steps.extract_version.outputs.version }}"
-          body: "${{ github.event.inputs.release_notes }}"
-          prerelease: ${{ github.event.inputs.version_type == 'rc' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Simulate GitHub Release
+        run: |
+          echo "Simulating GitHub Release..."
+          echo "Tag Name: ${{ steps.extract_version.outputs.version }}"
+          echo "Release Name: ${{ steps.extract_version.outputs.version }}"
+          echo "Release Notes: ${{ github.event.inputs.release_notes }}"
+          echo "Pre-release: ${{ github.event.inputs.version_type == 'rc' }}"

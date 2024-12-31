@@ -1,0 +1,9 @@
+[release]
+push = true
+publish = true
+tag = true
+
+tag_message = "Release version {{version}}"
+
+[workspaces]
+inherit = true

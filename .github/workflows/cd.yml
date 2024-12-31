@@ -1,48 +1,69 @@
 name: Rust CD
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      crate:
+        description: "Crate to release"
+        required: true
+      version_type:
+        description: "Version type"
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - rc
+      release_notes:
+        description: "Release notes"
+        required: false
 
 jobs:
   publish:
-    name: Publish
+    name: Publish Crate
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true
+          fetch-depth: 0
 
-      - name: Install Rust Stable
-        run: rustup default stable
-
-      - name: Extract release info
-        id: extract
+      - name: Install Rust Stable + cargo-release
         run: |
-          RELEASE_TITLE="${{ github.event.release.tag_name }}"
-          if [[ $RELEASE_TITLE =~ ^([a-zA-Z0-9_-]+)@([0-9]+\.[0-9]+\.[0-9]+.*) ]]; then
-            echo "::set-output name=crate::${BASH_REMATCH[1]}"
-            echo "::set-output name=version::${BASH_REMATCH[2]}"
-          else
-            echo "Invalid release title. Expected format: crate@version"
-            exit 1
-          fi
+          rustup default stable
+          cargo install cargo-release
 
-      - name: Update Cargo.toml version
-        run: |
-          CRATE_PATH="./${{ steps.extract.outputs.crate }}"
-          VERSION="${{ steps.extract.outputs.version }}"
-          sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" "${CRATE_PATH}/Cargo.toml"
-
-      - name: Commit version update
+      - name: Configure Git
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add ./${{ steps.extract.outputs.crate }}/Cargo.toml
-          git commit -m "Release ${{ steps.extract.outputs.crate }} ${{ steps.extract.outputs.version }}"
 
-      - name: Publish crate to crates.io
+      - name: Run cargo-release
+        id: cargo_release
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO }}
         run: |
-          cargo publish --all-features --manifest-path ./${{ steps.extract.outputs.crate }}/Cargo.toml
+          cargo release ${{ github.event.inputs.version_type }} \
+            --workspace \
+            --package ${{ github.event.inputs.crate }} \
+            --tag-prefix "${{ github.event.inputs.crate }}@" \
+            --execute
+
+      - name: Extract version
+        id: extract_version
+        run: |
+          NEW_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name=="${{ github.event.inputs.crate }}") | .version')
+          echo "::set-output name=version::$NEW_VERSION"
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: "${{ steps.extract_version.outputs.version }}"
+          release_name: "${{ steps.extract_version.outputs.version }}"
+          body: "${{ github.event.inputs.release_notes }}"
+          prerelease: ${{ github.event.inputs.version_type == 'rc' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

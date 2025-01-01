@@ -1,5 +1,5 @@
 use crate::messages::digital_radar_data;
-use crate::messages::{Message, MessageType, MessageWithHeader};
+use crate::messages::{Message, MessageContents, MessageType};
 use chrono::{DateTime, Utc};
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -78,7 +78,7 @@ impl Debug for ScanSummary {
 }
 
 /// Provides a summary of the given messages.
-pub fn messages(messages: &[MessageWithHeader]) -> MessageSummary {
+pub fn messages(messages: &[Message]) -> MessageSummary {
     let mut summary = MessageSummary {
         volume_coverage_patterns: HashSet::new(),
         message_types: Vec::new(),
@@ -92,8 +92,8 @@ pub fn messages(messages: &[MessageWithHeader]) -> MessageSummary {
     }
 
     let mut scan_summary = None;
-    for message_with_header in messages {
-        process_message(&mut summary, &mut scan_summary, message_with_header);
+    for message in messages {
+        process_message(&mut summary, &mut scan_summary, message);
     }
 
     if let Some(scan_summary) = scan_summary.take() {
@@ -106,9 +106,9 @@ pub fn messages(messages: &[MessageWithHeader]) -> MessageSummary {
 fn process_message(
     summary: &mut MessageSummary,
     scan_summary: &mut Option<ScanSummary>,
-    message_with_header: &MessageWithHeader,
+    message: &Message,
 ) {
-    let message_type = message_with_header.header.message_type();
+    let message_type = message.header.message_type();
     if let Some((last_message_type, count)) = summary.message_types.last_mut() {
         if *last_message_type == message_type {
             *count += 1;
@@ -119,9 +119,9 @@ fn process_message(
         summary.message_types.push((message_type, 1));
     }
 
-    match &message_with_header.message {
-        Message::DigitalRadarData(message) => {
-            process_digital_radar_data_message(summary, scan_summary, message);
+    match &message.contents {
+        MessageContents::DigitalRadarData(radar_data_message) => {
+            process_digital_radar_data_message(summary, scan_summary, radar_data_message);
             return;
         }
         _ => {}

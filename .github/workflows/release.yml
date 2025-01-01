@@ -1,0 +1,67 @@
+name: Release Crate
+
+on:
+  workflow_dispatch:
+    inputs:
+      crate:
+        description: "Crate to release"
+        required: true
+      version_type:
+        description: "Version type"
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - rc
+      release_notes:
+        description: "Release notes"
+        required: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Install Rust Stable + cargo-release
+        run: |
+          rustup default stable
+          cargo install cargo-release
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Run cargo-release
+        id: cargo_release
+        run: |
+          cargo release ${{ github.event.inputs.version_type }} \
+            --workspace \
+            --package ${{ github.event.inputs.crate }} \
+            --tag-prefix "${{ github.event.inputs.crate }}@" \
+            --dry-run
+          echo "Simulated release for ${{ github.event.inputs.crate }} as ${{ github.event.inputs.version_type }}"
+
+      - name: Extract version
+        id: extract_version
+        run: |
+          NEW_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name=="${{ github.event.inputs.crate }}") | .version')
+          echo "::set-output name=version::$NEW_VERSION"
+          echo "Simulated new version: $NEW_VERSION"
+
+      - name: Simulate GitHub Release
+        run: |
+          echo "Simulating GitHub Release..."
+          echo "Tag Name: ${{ steps.extract_version.outputs.version }}"
+          echo "Release Name: ${{ steps.extract_version.outputs.version }}"
+          echo "Release Notes: ${{ github.event.inputs.release_notes }}"
+          echo "Pre-release: ${{ github.event.inputs.version_type == 'rc' }}"

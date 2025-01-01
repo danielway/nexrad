@@ -2,6 +2,7 @@ pub mod clutter_filter_map;
 pub mod digital_radar_data;
 pub mod message_header;
 pub mod rda_status_data;
+pub mod volume_coverage_pattern;
 
 mod message_type;
 pub use message_type::MessageType;
@@ -16,6 +17,7 @@ use crate::messages::clutter_filter_map::decode_clutter_filter_map;
 use crate::messages::digital_radar_data::decode_digital_radar_data;
 use crate::messages::message_header::MessageHeader;
 use crate::messages::rda_status_data::decode_rda_status_message;
+use crate::messages::volume_coverage_pattern::decode_volume_coverage_pattern;
 use crate::result::Result;
 use crate::util::deserialize;
 use log::{debug, trace};
@@ -89,6 +91,10 @@ fn decode_fixed_length_message<R: Read + Seek>(
         MessageType::RDAStatusData => {
             trace!("Decoding RDA status message (type 2)");
             MessageBody::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
+        }
+        MessageType::RDAVolumeCoveragePattern => {
+            trace!("Decoding volume coverage pattern message (type 2)");
+            MessageBody::VolumeCoveragePattern(Box::new(decode_volume_coverage_pattern(message_reader)?))
         }
         MessageType::RDAClutterFilterMap => {
             trace!("Decoding clutter filter map message (type 15)");

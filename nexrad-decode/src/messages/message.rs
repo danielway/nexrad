@@ -2,6 +2,7 @@ use crate::messages::clutter_filter_map;
 use crate::messages::digital_radar_data;
 use crate::messages::message_header::MessageHeader;
 use crate::messages::rda_status_data;
+use crate::messages::volume_coverage_pattern;
 
 /// A decoded NEXRAD Level II message. Note that segmented messages will be represented with a
 /// single [Message].
@@ -75,4 +76,8 @@ pub enum MessageBody {
     /// Message type 15 "Clutter Filter Map" contains information about clutter filter maps that are
     /// used to filter clutter from radar products
     ClutterFilterMap(Box<clutter_filter_map::Message>),
+
+    /// Message type 5 "Volume Coverage Pattern" provides details about the volume
+    /// coverage pattern being used, including detailed settings for each elevation.
+    VolumeCoveragePattern(Box<volume_coverage_pattern::Message>),
 }

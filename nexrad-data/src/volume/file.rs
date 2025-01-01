@@ -33,7 +33,7 @@ impl File {
     #[cfg(all(feature = "nexrad-model", feature = "decode"))]
     pub fn scan(&self) -> Result<nexrad_model::data::Scan> {
         use crate::result::Error;
-        use nexrad_decode::messages::Message;
+        use nexrad_decode::messages::MessageBody;
         use nexrad_model::data::{Scan, Sweep};
 
         let mut coverage_pattern_number = None;
@@ -45,7 +45,8 @@ impl File {
 
             let messages = record.messages()?;
             for message in messages {
-                if let Message::DigitalRadarData(radar_data_message) = message.message {
+                let message_body = message.take_body();
+                if let Some(MessageBody::DigitalRadarData(radar_data_message)) = message_body {
                     if coverage_pattern_number.is_none() {
                         if let Some(volume_block) = &radar_data_message.volume_data_block {
                             coverage_pattern_number =

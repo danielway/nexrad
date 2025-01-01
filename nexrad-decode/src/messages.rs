@@ -8,11 +8,12 @@ mod message_type;
 pub use message_type::MessageType;
 
 mod message;
-pub use message::{Message, MessageWithHeader};
+pub use message::{Message, MessageBody};
 
 mod definitions;
 mod primitive_aliases;
 
+use crate::messages::clutter_filter_map::decode_clutter_filter_map;
 use crate::messages::digital_radar_data::decode_digital_radar_data;
 use crate::messages::message_header::MessageHeader;
 use crate::messages::rda_status_data::decode_rda_status_message;
@@ -28,13 +29,12 @@ pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
 }
 
 /// Decode a series of NEXRAD Level II messages from a reader.
-pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<MessageWithHeader>> {
+pub fn decode_messages<R: Read + Seek>(reader: &mut R, data_length: u64) -> Result<Vec<Message>> {
     debug!("Decoding messages");
 
     let mut messages = Vec::new();
-    while let Ok(header) = decode_message_header(reader) {
-        let message = decode_message(reader, header.message_type())?;
-        messages.push(MessageWithHeader { header, message });
+    while reader.stream_position()? < data_length {
+        messages.push(decode_message(reader)?);
     }
 
     debug!(
@@ -46,34 +46,64 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<MessageWith
     Ok(messages)
 }
 
-/// Decode a NEXRAD Level II message of the specified type from a reader.
-pub fn decode_message<R: Read + Seek>(
-    reader: &mut R,
-    message_type: MessageType,
-) -> Result<Message> {
-    let position = reader.stream_position();
-    trace!("Decoding message type {:?} at {:?}", message_type, position);
+/// Decode a NEXRAD Level II message from a reader. Note that segmented messages will be read fully
+/// from the reader.
+pub fn decode_message<R: Read + Seek>(reader: &mut R) -> Result<Message> {
+    let position = reader.stream_position()?;
+    trace!("Decoding message header at {:?}", position);
 
-    if message_type == MessageType::RDADigitalRadarDataGenericFormat {
-        let decoded_message = decode_digital_radar_data(reader)?;
-        return Ok(Message::DigitalRadarData(Box::new(decoded_message)));
+    let header = decode_message_header(reader)?;
+    let decoding_function = match header.message_type() {
+        MessageType::RDADigitalRadarDataGenericFormat => decode_variable_length_message,
+        _ => decode_fixed_length_message,
+    };
+
+    decoding_function(reader, header)
+}
+
+/// Decodes a variable-length message, such as message type 31 "Digital radar data".
+fn decode_variable_length_message<R: Read + Seek>(
+    reader: &mut R,
+    header: MessageHeader,
+) -> Result<Message> {
+    if header.message_type() != MessageType::RDADigitalRadarDataGenericFormat {
+        return Ok(Message::header_only(header));
     }
 
+    trace!("Decoding digital radar data message (type 31)");
+    let radar_data_message = decode_digital_radar_data(reader)?;
+    Ok(Message::unsegmented(
+        header,
+        MessageBody::DigitalRadarData(Box::new(radar_data_message)),
+    ))
+}
+
+/// Decodes a fixed-length message, such as message type 2 "RDA status data".
+fn decode_fixed_length_message<R: Read + Seek>(
+    reader: &mut R,
+    header: MessageHeader,
+) -> Result<Message> {
     let mut message_buffer = [0; 2432 - size_of::<MessageHeader>()];
     reader.read_exact(&mut message_buffer)?;
 
     let message_reader = &mut message_buffer.as_ref();
-    Ok(match message_type {
+    let message_body = match header.message_type() {
         MessageType::RDAStatusData => {
-            Message::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
+            trace!("Decoding RDA status message (type 2)");
+            MessageBody::RDAStatusData(Box::new(decode_rda_status_message(message_reader)?))
         }
-        MessageType::RDAVolumeCoveragePattern => Message::VolumeCoveragePattern(Box::new(
-            decode_volume_coverage_pattern(message_reader)?,
-        )),
-        // TODO: this message type is segmented which is not supported well currently
-        // MessageType::RDAClutterFilterMap => {
-        //     Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(message_reader)?))
-        // }
-        _ => Message::Other,
-    })
+        MessageType::RDAVolumeCoveragePattern => {
+            trace!("Decoding volume coverage pattern message (type 2)");
+            MessageBody::VolumeCoveragePattern(Box::new(decode_volume_coverage_pattern(message_reader)?))
+        }
+        MessageType::RDAClutterFilterMap => {
+            trace!("Decoding clutter filter map message (type 15)");
+            MessageBody::ClutterFilterMap(Box::new(decode_clutter_filter_map(reader)?))
+        }
+        _ => {
+            return Ok(Message::header_only(header));
+        }
+    };
+
+    Ok(Message::unsegmented(header, message_body))
 }

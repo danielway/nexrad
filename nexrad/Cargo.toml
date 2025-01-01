@@ -1,6 +1,6 @@
 [package]
 name = "nexrad"
-version = "0.0.3"
+version = "0.1.0-rc1"
 description = "Download and decode functions for NEXRAD radar data."
 authors = ["Daniel Way <contact@danieldway.com>"]
 repository = "https://github.com/danielway/nexrad"

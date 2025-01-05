@@ -22,11 +22,6 @@ use crate::util::deserialize;
 use log::{debug, trace};
 use std::io::{Read, Seek};
 
-/// Decode a NEXRAD Level II message from a reader.
-pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
-    deserialize(reader)
-}
-
 /// Decode a series of NEXRAD Level II messages from a reader.
 pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
     debug!("Decoding messages");
@@ -44,6 +39,11 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
     );
 
     Ok(messages)
+}
+
+/// Decode a NEXRAD Level II message from a reader.
+pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
+    deserialize(reader)
 }
 
 /// Decode the content of a NEXRAD Level II message of the specified type from a reader.

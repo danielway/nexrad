@@ -1,3 +1,4 @@
+use crate::messages::digital_radar_data::data_block::DataBlock;
 use crate::messages::digital_radar_data::{
     ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, VolumeDataBlock,
 };
@@ -10,34 +11,34 @@ pub struct Message {
     pub header: Header,
 
     /// Volume data if included in the message.
-    pub volume_data_block: Option<VolumeDataBlock>,
+    pub volume_data_block: Option<DataBlock<VolumeDataBlock>>,
 
     /// Elevation data if included in the message.
-    pub elevation_data_block: Option<ElevationDataBlock>,
+    pub elevation_data_block: Option<DataBlock<ElevationDataBlock>>,
 
     /// Radial data if included in the message.
-    pub radial_data_block: Option<RadialDataBlock>,
+    pub radial_data_block: Option<DataBlock<RadialDataBlock>>,
 
     /// Reflectivity data if included in the message.
-    pub reflectivity_data_block: Option<GenericDataBlock>,
+    pub reflectivity_data_block: Option<DataBlock<GenericDataBlock>>,
 
     /// Velocity data if included in the message.
-    pub velocity_data_block: Option<GenericDataBlock>,
+    pub velocity_data_block: Option<DataBlock<GenericDataBlock>>,
 
     /// Spectrum width data if included in the message.
-    pub spectrum_width_data_block: Option<GenericDataBlock>,
+    pub spectrum_width_data_block: Option<DataBlock<GenericDataBlock>>,
 
     /// Differential reflectivity data if included in the message.
-    pub differential_reflectivity_data_block: Option<GenericDataBlock>,
+    pub differential_reflectivity_data_block: Option<DataBlock<GenericDataBlock>>,
 
     /// Differential phase data if included in the message.
-    pub differential_phase_data_block: Option<GenericDataBlock>,
+    pub differential_phase_data_block: Option<DataBlock<GenericDataBlock>>,
 
     /// Correlation coefficient data if included in the message.
-    pub correlation_coefficient_data_block: Option<GenericDataBlock>,
+    pub correlation_coefficient_data_block: Option<DataBlock<GenericDataBlock>>,
 
     /// Specific differential phase data if included in the message.
-    pub specific_diff_phase_data_block: Option<GenericDataBlock>,
+    pub specific_diff_phase_data_block: Option<DataBlock<GenericDataBlock>>,
 }
 
 impl Message {
@@ -85,25 +86,25 @@ impl Message {
             self.header.elevation_angle,
             self.reflectivity_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.data.moment_data()),
             self.velocity_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.data.moment_data()),
             self.spectrum_width_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.data.moment_data()),
             self.differential_reflectivity_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.data.moment_data()),
             self.differential_phase_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.data.moment_data()),
             self.correlation_coefficient_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.data.moment_data()),
             self.specific_diff_phase_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.data.moment_data()),
         ))
     }
 
@@ -133,19 +134,19 @@ impl Message {
             self.header.elevation_number,
             self.header.elevation_angle,
             self.reflectivity_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.data.into_moment_data()),
             self.velocity_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.data.into_moment_data()),
             self.spectrum_width_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.data.into_moment_data()),
             self.differential_reflectivity_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.data.into_moment_data()),
             self.differential_phase_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.data.into_moment_data()),
             self.correlation_coefficient_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.data.into_moment_data()),
             self.specific_diff_phase_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.data.into_moment_data()),
         ))
     }
 }

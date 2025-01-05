@@ -50,7 +50,7 @@ impl File {
                     if coverage_pattern_number.is_none() {
                         if let Some(volume_block) = &radar_data_message.volume_data_block {
                             coverage_pattern_number =
-                                Some(volume_block.volume_coverage_pattern_number);
+                                Some(volume_block.data.volume_coverage_pattern_number);
                         }
                     }
 

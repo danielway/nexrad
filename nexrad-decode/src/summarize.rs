@@ -88,7 +88,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
     };
 
     if let Some(first_message) = messages.first() {
-        summary.earliest_collection_time = first_message.header().date_time();
+        summary.earliest_collection_time = first_message.first_header().date_time();
     }
 
     let mut scan_summary = None;
@@ -108,7 +108,7 @@ fn process_message(
     scan_summary: &mut Option<ScanSummary>,
     message: &Message,
 ) {
-    let message_type = message.header().message_type();
+    let message_type = message.first_header().message_type();
     if let Some((last_message_type, count)) = summary.message_types.last_mut() {
         if *last_message_type == message_type {
             *count += 1;
@@ -119,12 +119,9 @@ fn process_message(
         summary.message_types.push((message_type, 1));
     }
 
-    match message.contents() {
-        MessageContents::DigitalRadarData(radar_data_message) => {
-            process_digital_radar_data_message(summary, scan_summary, radar_data_message);
-            return;
-        }
-        _ => {}
+    if let MessageContents::DigitalRadarData(radar_data_message) = message.contents() {
+        process_digital_radar_data_message(summary, scan_summary, radar_data_message);
+        return;
     }
 
     if let Some(scan_summary) = scan_summary.take() {
@@ -179,7 +176,7 @@ fn process_digital_radar_data_message(
     if let Some(volume_data) = &message.volume_data_block {
         summary
             .volume_coverage_patterns
-            .insert(volume_data.volume_coverage_pattern());
+            .insert(volume_data.data.volume_coverage_pattern());
     }
 
     scan_summary.end_azimuth = message.header.azimuth_angle;

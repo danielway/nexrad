@@ -108,7 +108,7 @@ pub struct GenericDataBlockHeader {
     /// Range to center of first range gate in 0.000-scaled kilometers.
     pub data_moment_range: ScaledInteger2,
 
-    /// Size of data moment sample interval in 0.00-scaled kilometers from 0.25 to 4.0.
+    /// Size of data moment sample interval in 0.000-scaled kilometers from 0.25 to 4.0.
     pub data_moment_range_sample_interval: ScaledInteger2,
 
     /// Threshold parameter specifying the minimum difference in echo power between two resolution
@@ -147,7 +147,7 @@ impl GenericDataBlockHeader {
     /// Size of data moment sample interval.
     #[cfg(feature = "uom")]
     pub fn data_moment_range_sample_interval(&self) -> Length {
-        Length::new::<kilometer>(self.data_moment_range_sample_interval as f64 * 0.01)
+        Length::new::<kilometer>(self.data_moment_range_sample_interval as f64 * 0.001)
     }
 
     /// Flags indicating special control features.

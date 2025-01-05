@@ -7,8 +7,33 @@ use crate::messages::volume_coverage_pattern;
 /// A decoded NEXRAD Level II message with its metadata header.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message {
-    pub header: MessageHeader,
-    pub contents: MessageContents,
+    header: MessageHeader,
+    contents: MessageContents,
+}
+
+impl Message {
+    /// Create a new unsegmented message.
+    pub(crate) fn unsegmented(header: MessageHeader, contents: MessageContents) -> Self {
+        Self {
+            header,
+            contents,
+        }
+    }
+    
+    /// This message's header.
+    pub fn header(&self) -> &MessageHeader {
+        &self.header
+    }
+
+    /// This message's contents.
+    pub fn contents(&self) -> &MessageContents {
+        &self.contents
+    }
+
+    /// Consume this message, returning ownership of its contents.
+    pub fn into_contents(self) -> MessageContents {
+        self.contents
+    }
 }
 
 /// A decoded NEXRAD Level II message's contents.

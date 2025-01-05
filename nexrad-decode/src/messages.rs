@@ -33,11 +33,8 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
 
     let mut messages = Vec::new();
     while let Ok(header) = decode_message_header(reader) {
-        let message = decode_message_contents(reader, header.message_type())?;
-        messages.push(Message {
-            header,
-            contents: message,
-        });
+        let contents = decode_message_contents(reader, header.message_type())?;
+        messages.push(Message::unsegmented(header, contents));
     }
 
     debug!(

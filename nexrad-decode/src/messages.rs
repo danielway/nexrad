@@ -27,9 +27,10 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
     debug!("Decoding messages");
 
     let mut messages = Vec::new();
-    while let Ok(header) = decode_message_header(reader) {
-        let contents = decode_message_contents(reader, header.message_type())?;
-        messages.push(Message::unsegmented(header, contents));
+
+    // TODO: scrutinize this error more
+    while let Ok(message) = decode_message(reader) {
+        messages.push(message);
     }
 
     debug!(
@@ -42,6 +43,13 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
 }
 
 /// Decode a NEXRAD Level II message from a reader.
+pub fn decode_message<R: Read + Seek>(reader: &mut R) -> Result<Message> {
+    let header = decode_message_header(reader)?;
+    let contents = decode_message_contents(reader, header.message_type())?;
+    Ok(Message::unsegmented(header, contents))
+}
+
+/// Decode a NEXRAD Level II message header from a reader.
 pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
     deserialize(reader)
 }

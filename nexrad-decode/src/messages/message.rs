@@ -14,12 +14,9 @@ pub struct Message {
 impl Message {
     /// Create a new unsegmented message.
     pub(crate) fn unsegmented(header: MessageHeader, contents: MessageContents) -> Self {
-        Self {
-            header,
-            contents,
-        }
+        Self { header, contents }
     }
-    
+
     /// This message's header.
     pub fn header(&self) -> &MessageHeader {
         &self.header
@@ -57,6 +54,6 @@ pub enum MessageContents {
     /// Message type 5 "Volume Coverage Pattern" provides details about the volume
     /// coverage pattern being used, including detailed settings for each elevation.
     VolumeCoveragePattern(Box<volume_coverage_pattern::Message>),
-    
+
     Other,
 }

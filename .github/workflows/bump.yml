@@ -1,0 +1,70 @@
+name: Release Bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      crate:
+        description: "Crate to release"
+        type: choice
+        options:
+          - nexrad
+          - nexrad-data
+          - nexrad-decode
+          - nexrad-model
+      version_type:
+        description: "Version type"
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+          - rc
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+  bump-version:
+    name: Bump version
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Install Rust stable
+        run: rustup default stable
+
+      - name: Install cargo-release
+        run: cargo install cargo-release
+
+      - name: Bump version and tag
+        id: cargo_release
+        run: |
+          cargo release ${{ github.event.inputs.version_type }} \
+            --package ${{ github.event.inputs.crate }} \
+            --tag-prefix "${{ github.event.inputs.crate }}@" \
+            --no-publish \
+            --execute
+
+      - name: Get the newly created tag
+        id: get_tag
+        run: |
+          NEW_TAG=$(git describe --tags --abbrev=0)
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create draft GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          draft: true
+          prerelease: ${{ github.event.inputs.version_type == 'rc' }}
+          body: |
+            ## Release Notes
+            A draft release was automatically created. 
+            Please edit this text to add a changelog before publishing.

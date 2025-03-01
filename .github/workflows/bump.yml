@@ -48,7 +48,9 @@ jobs:
         run: |
           cargo release ${{ github.event.inputs.version_type }} \
             --package ${{ github.event.inputs.crate }} \
-            --tag-prefix "${{ github.event.inputs.crate }}@" \
+            --tag-prefix "{{crate_name}}" \
+            --tag-name "{{prefix}}@{{version}}" \
+            --no-confirm \
             --no-publish \
             --execute
 

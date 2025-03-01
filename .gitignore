@@ -3,3 +3,4 @@ target/
 **/*.rs.bk
 .idea/
 downloads/
+**/*.DS_Store

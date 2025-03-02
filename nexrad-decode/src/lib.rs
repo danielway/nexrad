@@ -18,4 +18,5 @@ pub mod messages;
 pub mod result;
 pub mod summarize;
 
+mod reader;
 mod util;

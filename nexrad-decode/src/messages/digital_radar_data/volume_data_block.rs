@@ -1,4 +1,4 @@
-use crate::messages::digital_radar_data::{DataBlockId, ProcessingStatus, VolumeCoveragePattern};
+use crate::messages::digital_radar_data::{ProcessingStatus, VolumeCoveragePattern};
 use crate::messages::primitive_aliases::{Integer1, Integer2, Real4, SInteger2};
 use serde::Deserialize;
 use std::fmt::Debug;
@@ -9,9 +9,6 @@ use uom::si::f64::{Angle, Energy, Information, Length};
 /// A volume data moment block.
 #[derive(Clone, PartialEq, Deserialize)]
 pub struct VolumeDataBlock {
-    /// Data block identifier.
-    pub data_block_id: DataBlockId,
-
     /// Size of data block in bytes.
     pub lrtup: Integer2,
 
@@ -145,7 +142,6 @@ impl VolumeDataBlock {
 impl Debug for VolumeDataBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("VolumeDataBlock")
-            .field("data_block_id", &self.data_block_id)
             .field("lrtup", &self.lrtup)
             .field("major_version_number", &self.major_version_number)
             .field("minor_version_number", &self.minor_version_number)
@@ -182,7 +178,6 @@ impl Debug for VolumeDataBlock {
 impl Debug for VolumeDataBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("VolumeDataBlock")
-            .field("data_block_id", &self.data_block_id)
             .field("lrtup", &self.lrtup())
             .field("major_version_number", &self.major_version_number)
             .field("minor_version_number", &self.minor_version_number)

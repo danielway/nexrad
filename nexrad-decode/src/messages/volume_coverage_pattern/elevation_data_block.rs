@@ -118,7 +118,7 @@ fn decode_angle(raw: Code2) -> f64 {
         }
     }
 
-    return angle;
+    angle
 }
 
 /// Decodes an angular velocity as defined in table XI-D of ICD 2620002W
@@ -135,7 +135,7 @@ fn decode_angular_velocity(raw: Code2) -> f64 {
         angular_velocity = -angular_velocity
     }
 
-    return angular_velocity;
+    angular_velocity
 }
 
 impl ElevationDataBlock {

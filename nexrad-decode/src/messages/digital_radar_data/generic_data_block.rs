@@ -1,4 +1,4 @@
-use crate::messages::digital_radar_data::{ControlFlags, DataBlockId, ScaledMomentValue};
+use crate::messages::digital_radar_data::{ControlFlags, ScaledMomentValue};
 use crate::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger2,
 };
@@ -96,9 +96,6 @@ impl Debug for GenericDataBlock {
 /// A generic data moment block's decoded header.
 #[derive(Clone, PartialEq, Deserialize)]
 pub struct GenericDataBlockHeader {
-    /// Data block identifier.
-    pub data_block_id: DataBlockId,
-
     /// Reserved.
     pub reserved: Integer4,
 
@@ -174,7 +171,6 @@ impl GenericDataBlockHeader {
 impl Debug for GenericDataBlockHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("GenericDataBlockHeader")
-            .field("data_block_id", &self.data_block_id)
             .field("reserved", &self.reserved)
             .field(
                 "number_of_data_moment_gates",
@@ -199,7 +195,6 @@ impl Debug for GenericDataBlockHeader {
 impl Debug for GenericDataBlockHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("GenericDataBlockHeader")
-            .field("data_block_id", &self.data_block_id)
             .field("reserved", &self.reserved)
             .field(
                 "number_of_data_moment_gates",

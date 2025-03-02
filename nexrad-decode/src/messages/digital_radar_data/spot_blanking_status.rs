@@ -1,14 +1,13 @@
 use crate::messages::primitive_aliases::Code1;
 use std::fmt::{Debug, Formatter};
 
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct SpotBlankingStatus(Code1);
-
 /// Statuses:
 ///   0 = None
 ///   1 = Radial
 ///   2 = Elevation
 ///   4 = Volume
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct SpotBlankingStatus(Code1);
 
 impl SpotBlankingStatus {
     pub(crate) fn new(code: Code1) -> Self {

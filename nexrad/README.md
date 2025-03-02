@@ -3,7 +3,6 @@
 [![Crate](https://img.shields.io/crates/v/nexrad.svg)](https://crates.io/crates/nexrad)
 [![Docs.rs](https://docs.rs/nexrad/badge.svg)](https://docs.rs/nexrad)
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
-[![Rust CD](https://github.com/danielway/nexrad/actions/workflows/cd.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/cd.yml)
 
 Decode and download functions for NEXRAD WSR-88D weather radar data.
 

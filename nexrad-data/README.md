@@ -3,7 +3,6 @@
 [![Crates.io](https://img.shields.io/crates/v/nexrad-data)](https://crates.io/crates/nexrad-data)
 [![Docs.rs](https://docs.rs/nexrad-data/badge.svg)](https://docs.rs/nexrad-data)
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
-[![Rust CD](https://github.com/danielway/nexrad/actions/workflows/cd.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/cd.yml)
 
 Provides structure definitions and decoding functions for NEXRAD Archive II volume files, along with functions for 
 downloading both archival and real-time data from open cloud providers like AWS OpenData.

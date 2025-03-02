@@ -24,7 +24,7 @@ bzip2 = { workspace = true, optional = true }
 clap = { workspace = true }
 tokio = { workspace = true, optional = true }
 nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }
-nexrad-decode = { version = "0.1.0", path = "../nexrad-decode", optional = true }
+nexrad-decode = { version = "0.1.1", path = "../nexrad-decode", optional = true }
 
 [dev-dependencies]
 env_logger = { version = "0.11" }

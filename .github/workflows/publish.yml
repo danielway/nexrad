@@ -22,9 +22,6 @@ jobs:
       - name: Install Rust stable
         run: rustup default stable
 
-      - name: Install cargo-release
-        run: cargo install cargo-release
-
       - name: Extract crate name
         id: extract
         run: |
@@ -40,9 +37,4 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO }}
         run: |
-          cargo release release \
-            --package ${{ steps.extract.outputs.crate }} \
-            --skip-bump \
-            --skip-tag \
-            --publish \
-            --execute
+          cargo publish --all-features --manifest-path ./${{ steps.extract.outputs.crate }}/Cargo.toml

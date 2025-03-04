@@ -20,8 +20,8 @@ use crate::messages::volume_coverage_pattern::decode_volume_coverage_pattern;
 use crate::reader::SegmentedMessageReader;
 use crate::result::Result;
 use crate::util::deserialize;
-use log::{debug, trace};
 use clutter_filter_map::decode_clutter_filter_map;
+use log::{debug, trace};
 use std::io::{Read, Seek};
 
 /// Decode a series of NEXRAD Level II messages from a reader.

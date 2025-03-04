@@ -21,11 +21,12 @@ use crate::reader::SegmentedMessageReader;
 use crate::result::Result;
 use crate::util::deserialize;
 use log::{debug, trace};
-use std::io::Read;
+use clutter_filter_map::decode_clutter_filter_map;
+use std::io::{Read, Seek};
 
 /// Decode a series of NEXRAD Level II messages from a reader.
-pub fn decode_messages<R: Read>(reader: &mut R) -> Result<Vec<Message>> {
-    debug!("Decoding messages");
+pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
+    trace!("Decoding messages");
 
     let mut messages = Vec::new();
 
@@ -34,16 +35,16 @@ pub fn decode_messages<R: Read>(reader: &mut R) -> Result<Vec<Message>> {
         messages.push(message);
     }
 
-    debug!("Decoded {} messages", messages.len());
+    trace!("Decoded {} messages", messages.len());
 
     Ok(messages)
 }
 
 /// Decode a NEXRAD Level II message from a reader.
-pub fn decode_message<R: Read>(reader: &mut R) -> Result<Message> {
+pub fn decode_message<R: Read + Seek>(reader: &mut R) -> Result<Message> {
     let (mut message_reader, message_type) = SegmentedMessageReader::new(reader)?;
 
-    trace!("Decoding message type {:?}", message_type);
+    debug!("Decoding message type {:?}", message_type);
     let contents = match message_type {
         MessageType::RDADigitalRadarDataGenericFormat => MessageContents::DigitalRadarData(
             Box::new(decode_digital_radar_data(&mut message_reader)?),
@@ -54,14 +55,13 @@ pub fn decode_message<R: Read>(reader: &mut R) -> Result<Message> {
         MessageType::RDAVolumeCoveragePattern => MessageContents::VolumeCoveragePattern(Box::new(
             decode_volume_coverage_pattern(&mut message_reader)?,
         )),
-        // TODO: this message type is segmented which is not supported well currently
-        // MessageType::RDAClutterFilterMap => {
-        //     Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(message_reader)?))
-        // }
+        MessageType::RDAClutterFilterMap => MessageContents::ClutterFilterMap(Box::new(
+            decode_clutter_filter_map(&mut message_reader)?,
+        )),
         _ => MessageContents::Other,
     };
 
-    Ok(Message::new(message_reader.into_headers(), contents))
+    Ok(Message::new(message_reader.into_headers()?, contents))
 }
 
 /// Decode a NEXRAD Level II message header from a reader.

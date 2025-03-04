@@ -48,12 +48,12 @@ const POINTER_SIZE: usize = size_of::<u32>();
 const BLOCK_ID_SIZE: usize = size_of::<DataBlockId>();
 const VOLUME_DATA_BLOCK_SIZE: usize = size_of::<VolumeDataBlock>();
 const ELEVATION_DATA_BLOCK_SIZE: usize = size_of::<ElevationDataBlock>();
-const RADIAL_DATA_BLOCK_SIZE: usize = size_of::<GenericDataBlock>();
+const RADIAL_DATA_BLOCK_SIZE: usize = size_of::<RadialDataBlock>();
 const GENERIC_DATA_HEADER_SIZE: usize = size_of::<GenericDataBlockHeader>();
 
 /// Decodes a digital radar data message type 31 from the provided reader.
 pub fn decode_digital_radar_data<R: Read>(reader: &mut R) -> Result<Message> {
-    let header = deserialize(reader)?;
+    let header: Header = deserialize(reader)?;
     let mut message = Message::new(header);
 
     let pointers_space = message.header.data_block_count as usize * POINTER_SIZE;

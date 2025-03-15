@@ -31,7 +31,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Processing file: {}", file_path);
 
     // Read the file
-    let mut file = File::open(file_path).expect(&format!("Failed to open file: {}", file_path));
+    let mut file =
+        File::open(file_path).unwrap_or_else(|_| panic!("Failed to open file: {}", file_path));
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer)?;
 

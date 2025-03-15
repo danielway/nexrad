@@ -14,9 +14,9 @@ use tokio::time::{sleep, sleep_until, Instant};
 /// they will be downloaded and sent to the provided `Sender`. If a statistics `Sender` is provided,
 /// statistics from the polling process such as how many requests are being sent will be sent to it.
 /// The polling process will stop when a message is received on the provided `Receiver`.
-pub async fn poll_chunks<'a>(
+pub async fn poll_chunks(
     site: &str,
-    tx: Sender<(ChunkIdentifier, Chunk<'a>)>,
+    tx: Sender<(ChunkIdentifier, Chunk<'_>)>,
     stats_tx: Option<Sender<PollStats>>,
     stop_rx: Receiver<bool>,
 ) -> Result<()> {

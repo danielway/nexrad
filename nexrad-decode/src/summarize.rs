@@ -119,12 +119,9 @@ fn process_message(
         summary.message_types.push((message_type, 1));
     }
 
-    match message.contents() {
-        MessageContents::DigitalRadarData(radar_data_message) => {
-            process_digital_radar_data_message(summary, scan_summary, radar_data_message);
-            return;
-        }
-        _ => {}
+    if let MessageContents::DigitalRadarData(radar_data_message) = message.contents() {
+        process_digital_radar_data_message(summary, scan_summary, radar_data_message);
+        return;
     }
 
     if let Some(scan_summary) = scan_summary.take() {

@@ -18,3 +18,13 @@ serde = { workspace = true }
 chrono = { workspace = true }
 nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }
 uom = { workspace = true, optional = true }
+
+[dev-dependencies]
+clap = { workspace = true }
+env_logger = { workspace = true }
+tokio = { workspace = true }
+nexrad-data = { workspace = true }
+
+[[example]]
+name = "elevation_angles"
+path = "examples/elevation_angles.rs"

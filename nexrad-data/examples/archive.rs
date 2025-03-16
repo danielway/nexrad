@@ -79,6 +79,11 @@ async fn main() -> nexrad_data::result::Result<()> {
         .skip(start_index)
         .take(stop_index - start_index + 1)
     {
+        if file_id.name().ends_with("_MDM") {
+            debug!("Skipping MDM file: {}", file_id.name());
+            continue;
+        }
+
         let file = if Path::new(&format!("downloads/{}", file_id.name())).exists() {
             debug!("File \"{}\" already downloaded.", file_id.name());
             let mut file =

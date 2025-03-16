@@ -126,7 +126,7 @@ impl MessageHeader {
             31 => MessageType::RDADigitalRadarDataGenericFormat,
             32 => MessageType::RDAPRFData,
             33 => MessageType::RDALogData,
-            _ => MessageType::Unknown,
+            _ => MessageType::Unknown(self.message_type),
         }
     }
 

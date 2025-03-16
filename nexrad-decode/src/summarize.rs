@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
 /// Summary of a set of messages.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct MessageSummary {
     /// The distinct volume coverage patterns found in these messages.
     pub volume_coverage_patterns: HashSet<digital_radar_data::VolumeCoveragePattern>,
@@ -21,28 +21,8 @@ pub struct MessageSummary {
     pub latest_collection_time: Option<DateTime<Utc>>,
 }
 
-impl Debug for MessageSummary {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut debug = f.debug_struct("MessageSummary");
-        debug.field("volume_coverage_patterns", &self.volume_coverage_patterns);
-
-        let message_types_string = self
-            .message_types
-            .iter()
-            .map(|(k, v)| format!("{:?}: {}", k, v))
-            .collect::<Vec<_>>();
-
-        debug.field("message_types", &message_types_string);
-
-        debug.field("scans", &self.scans);
-        debug.field("earliest_collection_time", &self.earliest_collection_time);
-        debug.field("latest_collection_time", &self.latest_collection_time);
-        debug.finish()
-    }
-}
-
 /// Summary of a single scan.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ScanSummary {
     pub start_time: Option<DateTime<Utc>>,
     pub end_time: Option<DateTime<Utc>>,
@@ -54,27 +34,6 @@ pub struct ScanSummary {
 
     /// The number of messages containing a given radar data type.
     pub data_types: HashMap<String, usize>,
-}
-
-impl Debug for ScanSummary {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut debug = f.debug_struct("ScanSummary");
-        debug.field("start_time", &self.start_time);
-        debug.field("end_time", &self.end_time);
-        debug.field("elevation", &self.elevation);
-        debug.field("start_azimuth", &self.start_azimuth);
-        debug.field("end_azimuth", &self.end_azimuth);
-
-        let data_types_string = self
-            .data_types
-            .iter()
-            .map(|(k, v)| format!("{}: {}", k, v))
-            .collect::<Vec<_>>();
-
-        debug.field("data_types", &data_types_string);
-
-        debug.finish()
-    }
 }
 
 /// Provides a summary of the given messages.

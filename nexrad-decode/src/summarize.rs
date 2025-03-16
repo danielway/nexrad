@@ -31,10 +31,15 @@ impl Display for MessageSummary {
         }
         
         if let Some(end) = self.latest_collection_time {
-            writeln!(f, ", End: {}", end.format("%Y-%m-%d %H:%M:%S%.3f UTC"))?;
+            write!(f, ", End: {}", end.format("%Y-%m-%d %H:%M:%S%.3f UTC"))?;
+            if let Some(start) = self.earliest_collection_time {
+                let duration = end.signed_duration_since(start);
+                write!(f, " ({:.2}m)", duration.num_milliseconds() as f64 / 60000.0)?;
+            }
         } else {
-            writeln!(f, ", End: unknown")?;
+            write!(f, ", End: unknown")?;
         }
+        writeln!(f)?;
         
         // Volume coverage patterns
         write!(f, "VCPs: ")?;
@@ -101,6 +106,8 @@ impl Display for ScanSummary {
             if let Some(end) = self.end_time {
                 if start != end {
                     write!(f, " to {}", end.format("%H:%M:%S%.3f"))?;
+                    let duration = end.signed_duration_since(start);
+                    write!(f, " ({:.2}s)", duration.num_milliseconds() as f64 / 1000.0)?;
                 }
             }
         }

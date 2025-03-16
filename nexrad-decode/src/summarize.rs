@@ -73,19 +73,27 @@ pub struct ScanSummary {
     pub start_time: Option<DateTime<Utc>>,
     pub end_time: Option<DateTime<Utc>>,
 
-    pub elevation: u8,
+    pub elevation_number: u8,
+    pub elevation_angle: Option<f32>,
 
     pub start_azimuth: f32,
     pub end_azimuth: f32,
 
     /// The number of messages containing a given radar data type.
     pub data_types: HashMap<String, usize>,
+    
+    message_count: usize,
 }
 
 impl Display for ScanSummary {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(f, "Elevation: {}°, Azimuth: {:.1}° to {:.1}°", 
-               self.elevation, self.start_azimuth, self.end_azimuth)?;
+        write!(f, "Elevation: #{}", self.elevation_number)?;
+        
+        if let Some(elev_angle) = self.elevation_angle {
+            write!(f, " ({:.2}°)", elev_angle)?;
+        }
+        
+        write!(f, ", Azimuth: {:.1}° to {:.1}°", self.start_azimuth, self.end_azimuth)?;
         
         if let Some(start) = self.start_time {
             write!(f, ", Time: {}", start.format("%H:%M:%S%.3f"))?;
@@ -122,10 +130,6 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
         earliest_collection_time: None,
         latest_collection_time: None,
     };
-
-    if let Some(first_message) = messages.first() {
-        summary.earliest_collection_time = first_message.header().date_time();
-    }
 
     let mut scan_summary = None;
     for message in messages {
@@ -171,7 +175,7 @@ fn process_digital_radar_data_message(
     message: &digital_radar_data::Message,
 ) {
     let elevation_changed =
-        |summary: &mut ScanSummary| summary.elevation != message.header.elevation_number;
+        |summary: &mut ScanSummary| summary.elevation_number != message.header.elevation_number;
 
     if let Some(scan_summary) = scan_summary.take_if(elevation_changed) {
         summary.scans.push(scan_summary);
@@ -180,11 +184,18 @@ fn process_digital_radar_data_message(
     let scan_summary = scan_summary.get_or_insert_with(|| ScanSummary {
         start_time: message.header.date_time(),
         end_time: message.header.date_time(),
-        elevation: message.header.elevation_number,
+        elevation_number: message.header.elevation_number,
+        elevation_angle: None,
         start_azimuth: message.header.azimuth_angle,
         end_azimuth: message.header.azimuth_angle,
         data_types: HashMap::new(),
+        message_count: 0,
     });
+
+    scan_summary.message_count += 1;
+    if scan_summary.elevation_angle.is_none() && scan_summary.message_count > 50 {
+        scan_summary.elevation_angle = Some(message.header.elevation_angle);
+    }
 
     if message.header.date_time().is_some() {
         if summary.earliest_collection_time.is_none()

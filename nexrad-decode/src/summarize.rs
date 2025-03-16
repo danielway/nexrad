@@ -20,20 +20,22 @@ pub struct MessageSummary {
 impl Display for MessageSummary {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         // Time information
+        write!(f, "Scans from ")?;
         if let Some(start) = self.earliest_collection_time {
-            write!(f, "Start: {}", start.format("%Y-%m-%d %H:%M:%S%.3f UTC"))?;
+            write!(f, "{}", start.format("%Y-%m-%d %H:%M:%S%.3f UTC"))?;
         } else {
-            write!(f, "Start: unknown")?;
+            write!(f, "unknown")?;
         }
 
+        write!(f, " to ")?;
         if let Some(end) = self.latest_collection_time {
-            write!(f, ", End: {}", end.format("%Y-%m-%d %H:%M:%S%.3f UTC"))?;
+            write!(f, "{}", end.format("%Y-%m-%d %H:%M:%S%.3f UTC"))?;
             if let Some(start) = self.earliest_collection_time {
                 let duration = end.signed_duration_since(start);
                 write!(f, " ({:.2}m)", duration.num_milliseconds() as f64 / 60000.0)?;
             }
         } else {
-            write!(f, ", End: unknown")?;
+            write!(f, "unknown")?;
         }
         writeln!(f)?;
 
@@ -171,10 +173,10 @@ impl Display for MessageGroupSummary {
                 write!(f, " ({})", self.message_count)?;
             }
             if let Some(start) = self.start_time {
-                write!(f, ", Time: {}", start.format("%H:%M:%S%.3f"))?;
+                write!(f, ", Time: {}", start.format("%Y-%m-%d %H:%M:%S%.3f"))?;
                 if let Some(end) = self.end_time {
                     if start != end {
-                        write!(f, " to {}", end.format("%H:%M:%S%.3f"))?;
+                        write!(f, " to {}", end.format("%Y-%m-%d %H:%M:%S%.3f"))?;
                     }
                 }
             }

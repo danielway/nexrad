@@ -118,9 +118,9 @@ async fn main() -> nexrad_data::result::Result<()> {
             file.header()
         );
 
+        debug!("Decoding {} records...", records.len());
         let mut messages = Vec::new();
         for mut record in records {
-            debug!("Decoding record...");
             if record.compressed() {
                 trace!("Decompressing LDM record...");
                 record = record.decompress().expect("Failed to decompress record");

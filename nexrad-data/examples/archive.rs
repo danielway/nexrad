@@ -130,7 +130,7 @@ async fn main() -> nexrad_data::result::Result<()> {
         }
 
         let summary = nexrad_decode::summarize::messages(messages.as_slice());
-        info!("Volume summary:\n{:#?}", summary);
+        info!("Volume summary:\n{}", summary);
     }
 
     Ok(())

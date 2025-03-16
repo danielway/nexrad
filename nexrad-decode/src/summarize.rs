@@ -2,7 +2,7 @@ use crate::messages::digital_radar_data;
 use crate::messages::{Message, MessageContents, MessageType};
 use chrono::{DateTime, Utc};
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
 /// Summary of a set of messages.
 #[derive(Clone, PartialEq, Debug)]
@@ -21,6 +21,52 @@ pub struct MessageSummary {
     pub latest_collection_time: Option<DateTime<Utc>>,
 }
 
+impl Display for MessageSummary {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        // Time information
+        if let Some(start) = self.earliest_collection_time {
+            write!(f, "Start: {}", start.format("%Y-%m-%d %H:%M:%S%.3f UTC"))?;
+        } else {
+            write!(f, "Start: unknown")?;
+        }
+        
+        if let Some(end) = self.latest_collection_time {
+            writeln!(f, ", End: {}", end.format("%Y-%m-%d %H:%M:%S%.3f UTC"))?;
+        } else {
+            writeln!(f, ", End: unknown")?;
+        }
+        
+        // Volume coverage patterns
+        write!(f, "VCPs: ")?;
+        if self.volume_coverage_patterns.is_empty() {
+            writeln!(f, "none")?;
+        } else {
+            let vcps: Vec<_> = self.volume_coverage_patterns.iter().collect();
+            for (i, vcp) in vcps.iter().enumerate() {
+                if i > 0 {
+                    write!(f, ", ")?;
+                }
+                write!(f, "{:?}", vcp)?;
+            }
+            writeln!(f)?;
+        }
+        
+        // Message types
+        writeln!(f, "Message types:")?;
+        for (msg_type, count) in &self.message_types {
+            writeln!(f, "  {:?}: {}", msg_type, count)?;
+        }
+        
+        // Scans
+        writeln!(f, "Scans: {}", self.scans.len())?;
+        for (i, scan) in self.scans.iter().enumerate() {
+            writeln!(f, "  Scan {}: {}", i + 1, scan)?;
+        }
+        
+        Ok(())
+    }
+}
+
 /// Summary of a single scan.
 #[derive(Clone, PartialEq, Debug)]
 pub struct ScanSummary {
@@ -34,6 +80,37 @@ pub struct ScanSummary {
 
     /// The number of messages containing a given radar data type.
     pub data_types: HashMap<String, usize>,
+}
+
+impl Display for ScanSummary {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "Elevation: {}°, Azimuth: {:.1}° to {:.1}°", 
+               self.elevation, self.start_azimuth, self.end_azimuth)?;
+        
+        if let Some(start) = self.start_time {
+            write!(f, ", Time: {}", start.format("%H:%M:%S%.3f"))?;
+            
+            if let Some(end) = self.end_time {
+                if start != end {
+                    write!(f, " to {}", end.format("%H:%M:%S%.3f"))?;
+                }
+            }
+        }
+        
+        if !self.data_types.is_empty() {
+            writeln!(f, "")?;
+            write!(f, "    Data types: ")?;
+            let data_types: Vec<_> = self.data_types.iter().collect();
+            for (i, (data_type, count)) in data_types.iter().enumerate() {
+                if i > 0 {
+                    write!(f, ", ")?;
+                }
+                write!(f, "{} ({})", data_type, count)?;
+            }
+        }
+        
+        Ok(())
+    }
 }
 
 /// Provides a summary of the given messages.

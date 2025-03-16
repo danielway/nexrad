@@ -197,21 +197,22 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
         let message_type = message.header().message_type();
         let message_time = message.header().date_time();
 
-        if let Some(time) = message_time {
-            if summary.earliest_collection_time.is_none()
-                || summary.earliest_collection_time > Some(time)
-            {
-                summary.earliest_collection_time = Some(time);
-            }
-            if summary.latest_collection_time.is_none()
-                || summary.latest_collection_time < Some(time)
-            {
-                summary.latest_collection_time = Some(time);
-            }
-        }
-
         match message.contents() {
             MessageContents::DigitalRadarData(radar_data) => {
+                if let Some(time) = message_time {
+                    if (summary.earliest_collection_time.is_none()
+                        || summary.earliest_collection_time > Some(time))
+                        && time.timestamp_millis() > 0
+                    {
+                        summary.earliest_collection_time = Some(time);
+                    }
+                    if summary.latest_collection_time.is_none()
+                        || summary.latest_collection_time < Some(time)
+                    {
+                        summary.latest_collection_time = Some(time);
+                    }
+                }
+
                 let elevation_number = radar_data.header.elevation_number;
 
                 let can_continue = if let Some(group) = &current_group {

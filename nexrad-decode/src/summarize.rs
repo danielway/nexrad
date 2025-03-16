@@ -109,11 +109,25 @@ impl Display for ScanSummary {
             writeln!(f, "")?;
             write!(f, "    Data types: ")?;
             let data_types: Vec<_> = self.data_types.iter().collect();
+            
             for (i, (data_type, count)) in data_types.iter().enumerate() {
                 if i > 0 {
                     write!(f, ", ")?;
                 }
-                write!(f, "{} ({})", data_type, count)?;
+                
+                // Use abbreviated names for common data types
+                let abbr = match data_type.as_str() {
+                    "Reflectivity" => "REF",
+                    "Velocity" => "VEL",
+                    "Spectrum Width" => "SW",
+                    "Differential Reflectivity" => "ZDR",
+                    "Differential Phase" => "DP",
+                    "Correlation Coefficient" => "CC",
+                    "Specific Differential Phase" => "KDP",
+                    _ => data_type, // Keep other names unchanged
+                };
+                
+                write!(f, "{} ({})", abbr, count)?;
             }
         }
         

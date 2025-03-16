@@ -161,11 +161,6 @@ fn process_message(
 
     if let MessageContents::DigitalRadarData(radar_data_message) = message.contents() {
         process_digital_radar_data_message(summary, scan_summary, radar_data_message);
-        return;
-    }
-
-    if let Some(scan_summary) = scan_summary.take() {
-        summary.scans.push(scan_summary);
     }
 }
 

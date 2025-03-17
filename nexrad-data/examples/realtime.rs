@@ -137,9 +137,12 @@ fn decode_record(
     info!("Record summary:\n{}", summary);
 
     info!(
-        "Message latency: {:?}",
+        "Message latency: earliest {:?}, latest {:?}",
         summary
             .earliest_collection_time
+            .map(|time| download_time - time),
+        summary
+            .latest_collection_time
             .map(|time| download_time - time),
     );
 }

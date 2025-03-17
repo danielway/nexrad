@@ -3,6 +3,7 @@ use crate::aws::realtime::{
     download_chunk, estimate_next_chunk_time, get_latest_volume, list_chunks_in_volume, Chunk,
     ChunkIdentifier, NewChunkStats, NextChunk, VolumeIndex,
 };
+use crate::result::Error;
 use crate::result::{aws::AWSError, Result};
 use chrono::Utc;
 use std::future::Future;
@@ -14,12 +15,15 @@ use tokio::time::{sleep, sleep_until, Instant};
 /// they will be downloaded and sent to the provided `Sender`. If a statistics `Sender` is provided,
 /// statistics from the polling process such as how many requests are being sent will be sent to it.
 /// The polling process will stop when a message is received on the provided `Receiver`.
+#[cfg(feature = "nexrad-decode")]
 pub async fn poll_chunks(
     site: &str,
     tx: Sender<(ChunkIdentifier, Chunk<'_>)>,
     stats_tx: Option<Sender<PollStats>>,
     stop_rx: Receiver<bool>,
 ) -> Result<()> {
+    use log::debug;
+
     let latest_volume_result = get_latest_volume(site).await?;
     if let Some(stats_tx) = &stats_tx {
         stats_tx
@@ -39,13 +43,17 @@ pub async fn poll_chunks(
     tx.send((latest_chunk_id.clone(), latest_chunk))
         .map_err(|_| AWSError::PollingAsyncError)?;
 
+    let vcp = get_volume_coverage_pattern(site, &latest_chunk_id).await?;
+    debug!("VCP: {}", vcp.header.pattern_number);
+
     let mut previous_chunk_id = latest_chunk_id;
     loop {
         if stop_rx.try_recv().is_ok() {
             break;
         }
 
-        let next_chunk_time = estimate_next_chunk_time(&previous_chunk_id);
+        let next_chunk_time = estimate_next_chunk_time(&previous_chunk_id, &vcp);
+        debug!("Estimated next chunk time: {}", next_chunk_time);
         if next_chunk_time > Utc::now() {
             let time_until = next_chunk_time
                 .signed_duration_since(Utc::now())
@@ -106,6 +114,43 @@ pub async fn poll_chunks(
 async fn get_latest_chunk(site: &str, volume: VolumeIndex) -> Result<Option<ChunkIdentifier>> {
     let chunks = list_chunks_in_volume(site, volume, 100).await?;
     Ok(chunks.last().cloned())
+}
+
+/// Gets the volume coverage pattern from the latest metadata chunk.
+#[cfg(feature = "nexrad-decode")]
+async fn get_volume_coverage_pattern(
+    site: &str,
+    latest_chunk_id: &ChunkIdentifier,
+) -> Result<nexrad_decode::messages::volume_coverage_pattern::Message> {
+    let (_, latest_metadata) = download_chunk(site, &latest_chunk_id.with_sequence(1)).await?;
+
+    let mut messages = Vec::new();
+    match latest_metadata {
+        Chunk::Start(file) => {
+            for mut record in file.records() {
+                if record.compressed() {
+                    record = record.decompress()?;
+                }
+
+                messages.append(&mut record.messages()?);
+            }
+        }
+        Chunk::IntermediateOrEnd(mut record) => {
+            if record.compressed() {
+                record = record.decompress()?;
+            }
+
+            messages.append(&mut record.messages()?);
+        }
+    }
+
+    for message in messages {
+        if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) = message.contents() {
+            return Ok(*vcp.clone());
+        }
+    }
+
+    Err(Error::MissingCoveragePattern)
 }
 
 /// Attempts an action with retries on an exponential backoff.

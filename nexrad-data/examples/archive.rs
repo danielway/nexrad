@@ -79,6 +79,11 @@ async fn main() -> nexrad_data::result::Result<()> {
         .skip(start_index)
         .take(stop_index - start_index + 1)
     {
+        if file_id.name().ends_with("_MDM") {
+            debug!("Skipping MDM file: {}", file_id.name());
+            continue;
+        }
+
         let file = if Path::new(&format!("downloads/{}", file_id.name())).exists() {
             debug!("File \"{}\" already downloaded.", file_id.name());
             let mut file =
@@ -118,9 +123,9 @@ async fn main() -> nexrad_data::result::Result<()> {
             file.header()
         );
 
+        debug!("Decoding {} records...", records.len());
         let mut messages = Vec::new();
         for mut record in records {
-            debug!("Decoding record...");
             if record.compressed() {
                 trace!("Decompressing LDM record...");
                 record = record.decompress().expect("Failed to decompress record");
@@ -130,7 +135,7 @@ async fn main() -> nexrad_data::result::Result<()> {
         }
 
         let summary = nexrad_decode::summarize::messages(messages.as_slice());
-        info!("Volume summary:\n{:#?}", summary);
+        info!("Volume summary:\n{}", summary);
     }
 
     Ok(())

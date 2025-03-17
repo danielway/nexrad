@@ -19,7 +19,7 @@ use crate::messages::rda_status_data::decode_rda_status_message;
 use crate::messages::volume_coverage_pattern::decode_volume_coverage_pattern;
 use crate::result::Result;
 use crate::util::deserialize;
-use log::{debug, trace};
+use log::trace;
 use std::io::{Read, Seek};
 
 /// Decode a NEXRAD Level II message from a reader.
@@ -29,7 +29,7 @@ pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
 
 /// Decode a series of NEXRAD Level II messages from a reader.
 pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
-    debug!("Decoding messages");
+    trace!("Decoding messages");
 
     let mut messages = Vec::new();
     while let Ok(header) = decode_message_header(reader) {
@@ -37,7 +37,7 @@ pub fn decode_messages<R: Read + Seek>(reader: &mut R) -> Result<Vec<Message>> {
         messages.push(Message::unsegmented(header, contents));
     }
 
-    debug!(
+    trace!(
         "Decoded {} messages ending at {:?}",
         messages.len(),
         reader.stream_position()

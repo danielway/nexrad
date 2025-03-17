@@ -164,7 +164,7 @@ fn decode_record(
 
     let messages = record.messages().expect("Failed to decode messages");
     let summary = nexrad_decode::summarize::messages(messages.as_slice());
-    info!("Record summary:\n{:#?}", summary);
+    info!("Record summary:\n{}", summary);
 
     info!(
         "Message latency: {:?}",

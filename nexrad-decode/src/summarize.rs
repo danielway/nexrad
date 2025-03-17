@@ -13,22 +13,6 @@
 //! * Logical groupings of related messages
 //! * Time range of the data collection
 //! * Detailed information about radar status, scan strategies, and data types
-//!
-//! ## Usage Example
-//!
-//! ```rust
-//! use nexrad_decode::messages::Message;
-//! use nexrad_decode::summarize;
-//!
-//! // Assuming you have parsed messages from a NEXRAD file
-//! let messages: Vec<Message> = /* ... */;
-//!
-//! // Generate a summary
-//! let summary = summarize::messages(&messages);
-//!
-//! // Print the summary
-//! println!("{}", summary);
-//! ```
 
 use crate::messages::{Message, MessageContents, MessageType};
 use std::collections::{HashMap, HashSet};

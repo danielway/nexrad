@@ -107,6 +107,9 @@ pub struct MessageGroupSummary {
     // For RDAStatusData messages
     pub rda_status_info: Option<RDAStatusInfo>,
 
+    // For VolumeCoveragePattern messages
+    pub vcp_info: Option<VCPInfo>,
+
     // Indicates if this group continues from a previous group
     pub is_continued: bool,
 
@@ -131,6 +134,29 @@ pub struct RDAStatusInfo {
     pub has_alarms: bool,
     pub active_alarms: Vec<String>,
     pub scan_data_info: Vec<String>,
+}
+
+/// Contains information from the Volume Coverage Pattern message
+#[derive(Clone, PartialEq, Debug)]
+pub struct VCPInfo {
+    pub pattern_number: u16,
+    pub version: u8,
+    pub number_of_elevation_cuts: u16,
+    pub pulse_width: String,
+    pub doppler_velocity_resolution: Option<f64>,
+    pub vcp_features: Vec<String>,
+    pub elevations: Vec<VCPElevationInfo>,
+}
+
+/// Information about a single elevation cut in a VCP
+#[derive(Clone, PartialEq, Debug)]
+pub struct VCPElevationInfo {
+    pub elevation_angle: f64,
+    pub channel_configuration: String,
+    pub waveform_type: String,
+    pub azimuth_rate: f64,
+    pub super_resolution_features: Vec<String>,
+    pub special_cut_type: Option<String>,
 }
 
 impl Display for MessageGroupSummary {
@@ -267,6 +293,82 @@ impl Display for MessageGroupSummary {
                     write!(f, " ({})", self.message_count)?;
                 }
             }
+        } else if self.message_type == MessageType::RDAVolumeCoveragePattern {
+            if let Some(vcp_info) = &self.vcp_info {
+                write!(
+                    f,
+                    "VCP: #{}, Version: {}",
+                    vcp_info.pattern_number, vcp_info.version
+                )?;
+
+                // Show general VCP information
+                writeln!(f)?;
+                write!(
+                    f,
+                    "    {} elevation cuts, Pulse width: {}",
+                    vcp_info.number_of_elevation_cuts, vcp_info.pulse_width
+                )?;
+
+                if let Some(doppler_res) = vcp_info.doppler_velocity_resolution {
+                    write!(f, ", Doppler resolution: {:.1} m/s", doppler_res)?;
+                }
+
+                // VCP features
+                if !vcp_info.vcp_features.is_empty() {
+                    writeln!(f)?;
+                    write!(f, "    Features: ")?;
+                    for (i, feature) in vcp_info.vcp_features.iter().enumerate() {
+                        if i > 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{}", feature)?;
+                    }
+                }
+
+                // Show all elevation cuts on separate lines
+                if !vcp_info.elevations.is_empty() {
+                    writeln!(f)?;
+                    writeln!(f, "    Elevation cuts:")?;
+
+                    for (i, elev) in vcp_info.elevations.iter().enumerate() {
+                        write!(f, "      Cut #{}: {:.2}°", i + 1, elev.elevation_angle)?;
+
+                        if let Some(cut_type) = &elev.special_cut_type {
+                            write!(f, " ({})", cut_type)?;
+                        }
+
+                        // Show waveform and channel configuration
+                        write!(
+                            f,
+                            ", {}, {}",
+                            elev.waveform_type, elev.channel_configuration
+                        )?;
+
+                        // Show azimuth rate
+                        write!(f, ", {:.1}°/s", elev.azimuth_rate)?;
+
+                        // Show super resolution features if any
+                        if !elev.super_resolution_features.is_empty() {
+                            write!(f, ", Super res: ")?;
+                            for (j, feature) in elev.super_resolution_features.iter().enumerate() {
+                                if j > 0 {
+                                    write!(f, ", ")?;
+                                }
+                                write!(f, "{}", feature)?;
+                            }
+                        }
+
+                        if i < vcp_info.elevations.len() - 1 {
+                            writeln!(f)?;
+                        }
+                    }
+                }
+            } else {
+                write!(f, "Volume Coverage Pattern")?;
+                if self.message_count > 1 {
+                    write!(f, " ({})", self.message_count)?;
+                }
+            }
         } else {
             write!(f, "{:?}", self.message_type)?;
             if self.message_count > 1 {
@@ -369,6 +471,92 @@ fn extract_rda_status_info(message: &crate::messages::rda_status_data::Message) 
     info
 }
 
+/// Helper function to extract Volume Coverage Pattern information from a message
+fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Message) -> VCPInfo {
+    let mut vcp_features = Vec::new();
+
+    // Add VCP features
+    if message.header.vcp_supplemental_data_sails_vcp() {
+        let sails_cuts = message.header.vcp_supplemental_data_number_sails_cuts();
+        vcp_features.push(format!("SAILS ({} cuts)", sails_cuts));
+    }
+
+    if message.header.vcp_supplemental_data_mrle_vcp() {
+        let mrle_cuts = message.header.vcp_supplemental_data_number_mrle_cuts();
+        vcp_features.push(format!("MRLE ({} cuts)", mrle_cuts));
+    }
+
+    if message.header.vcp_supplemental_data_mpda_vcp() {
+        vcp_features.push("MPDA".to_string());
+    }
+
+    if message.header.vcp_supplemental_data_base_tilt_vcp() {
+        let base_tilts = message.header.vcp_supplemental_data_base_tilts();
+        vcp_features.push(format!("Base tilts ({} cuts)", base_tilts));
+    }
+
+    if message.header.vcp_sequencing_sequence_active() {
+        vcp_features.push("VCP sequence active".to_string());
+    }
+
+    if message.header.vcp_sequencing_truncated_vcp() {
+        vcp_features.push("Truncated VCP".to_string());
+    }
+
+    // Create elevations info
+    let mut elevations = Vec::new();
+    for elev in &message.elevations {
+        let mut super_res_features = Vec::new();
+        if elev.super_resolution_control_half_degree_azimuth() {
+            super_res_features.push("0.5° azimuth".to_string());
+        }
+        if elev.super_resolution_control_quarter_km_reflectivity() {
+            super_res_features.push("0.25 km reflectivity".to_string());
+        }
+        if elev.super_resolution_control_doppler_to_300km() {
+            super_res_features.push("Doppler to 300 km".to_string());
+        }
+        if elev.super_resolution_control_dual_polarization_to_300km() {
+            super_res_features.push("Dual pol to 300 km".to_string());
+        }
+
+        // Determine special cut type
+        let mut special_cut_type = None;
+        if elev.supplemental_data_sails_cut() {
+            let seq = elev.supplemental_data_sails_sequence_number();
+            special_cut_type = Some(format!("SAILS {}", seq));
+        } else if elev.supplemental_data_mrle_cut() {
+            let seq = elev.supplemental_data_mrle_sequence_number();
+            special_cut_type = Some(format!("MRLE {}", seq));
+        } else if elev.supplemental_data_mpda_cut() {
+            special_cut_type = Some("MPDA".to_string());
+        } else if elev.supplemental_data_base_tilt_cut() {
+            special_cut_type = Some("Base tilt".to_string());
+        }
+
+        elevations.push(VCPElevationInfo {
+            elevation_angle: elev.elevation_angle_degrees(),
+            channel_configuration: format!("{:?}", elev.channel_configuration()),
+            waveform_type: format!("{:?}", elev.waveform_type()),
+            azimuth_rate: elev.azimuth_rate_degrees_per_second(),
+            super_resolution_features: super_res_features,
+            special_cut_type,
+        });
+    }
+
+    VCPInfo {
+        pattern_number: message.header.pattern_number,
+        version: message.header.version,
+        number_of_elevation_cuts: message.header.number_of_elevation_cuts,
+        pulse_width: format!("{:?}", message.header.pulse_width()),
+        doppler_velocity_resolution: message
+            .header
+            .doppler_velocity_resolution_meters_per_second(),
+        vcp_features,
+        elevations,
+    }
+}
+
 /// Provides a summary of the given messages.
 pub fn messages(messages: &[Message]) -> MessageSummary {
     let mut summary = MessageSummary {
@@ -424,6 +612,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                         end_azimuth: Some(radar_data.header.azimuth_angle),
                         data_types: Some(HashMap::new()),
                         rda_status_info: None,
+                        vcp_info: None,
                         is_continued: !summary.message_groups.is_empty()
                             && summary.message_groups.iter().rev().any(|g| {
                                 g.message_type == MessageType::RDADigitalRadarDataGenericFormat
@@ -507,6 +696,30 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                     end_azimuth: None,
                     data_types: None,
                     rda_status_info: Some(extract_rda_status_info(status_data)),
+                    vcp_info: None,
+                    is_continued: false,
+                    start_message_index: i,
+                    end_message_index: i,
+                });
+            }
+            MessageContents::VolumeCoveragePattern(vcp_data) => {
+                // Each Volume Coverage Pattern message is treated individually
+                if let Some(group) = current_group.take() {
+                    summary.message_groups.push(group);
+                }
+
+                current_group = Some(MessageGroupSummary {
+                    message_type: MessageType::RDAVolumeCoveragePattern,
+                    start_time: message_time,
+                    end_time: message_time,
+                    message_count: 1,
+                    elevation_number: None,
+                    elevation_angle: None,
+                    start_azimuth: None,
+                    end_azimuth: None,
+                    data_types: None,
+                    rda_status_info: None,
+                    vcp_info: Some(extract_vcp_info(vcp_data)),
                     is_continued: false,
                     start_message_index: i,
                     end_message_index: i,
@@ -535,6 +748,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                         end_azimuth: None,
                         data_types: None,
                         rda_status_info: None,
+                        vcp_info: None,
                         is_continued: false,
                         start_message_index: i,
                         end_message_index: i,

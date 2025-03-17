@@ -104,12 +104,33 @@ pub struct MessageGroupSummary {
     pub end_azimuth: Option<f32>,
     pub data_types: Option<HashMap<String, usize>>,
 
+    // For RDAStatusData messages
+    pub rda_status_info: Option<RDAStatusInfo>,
+
     // Indicates if this group continues from a previous group
     pub is_continued: bool,
 
     // Absolute message indices
     pub start_message_index: usize,
     pub end_message_index: usize,
+}
+
+/// Contains information from the RDA Status Data message
+#[derive(Clone, PartialEq, Debug)]
+pub struct RDAStatusInfo {
+    pub rda_status: String,
+    pub operability_status: String,
+    pub control_status: String,
+    pub operational_mode: String,
+    pub vcp_number: Option<i16>,
+    pub vcp_is_local: bool,
+    pub average_transmitter_power: u16,
+    pub reflectivity_calibration: f32,
+    pub super_resolution_status: String,
+    pub data_transmission_enabled: Vec<String>,
+    pub has_alarms: bool,
+    pub active_alarms: Vec<String>,
+    pub scan_data_info: Vec<String>,
 }
 
 impl Display for MessageGroupSummary {
@@ -167,6 +188,85 @@ impl Display for MessageGroupSummary {
                     }
                 }
             }
+        } else if self.message_type == MessageType::RDAStatusData {
+            if let Some(status_info) = &self.rda_status_info {
+                write!(
+                    f,
+                    "RDA Status: {}, Operability: {}",
+                    status_info.rda_status, status_info.operability_status
+                )?;
+
+                writeln!(f)?;
+                write!(
+                    f,
+                    "    Control: {}, Mode: {}",
+                    status_info.control_status, status_info.operational_mode
+                )?;
+
+                if let Some(vcp) = status_info.vcp_number {
+                    let source = if status_info.vcp_is_local {
+                        "local"
+                    } else {
+                        "remote"
+                    };
+                    write!(f, ", VCP: {} ({})", vcp, source)?;
+                }
+
+                writeln!(f)?;
+                write!(
+                    f,
+                    "    Transmitter power: {} W, Reflectivity cal: {:.2} dB",
+                    status_info.average_transmitter_power, status_info.reflectivity_calibration
+                )?;
+
+                writeln!(f)?;
+                write!(
+                    f,
+                    "    Super resolution: {}",
+                    status_info.super_resolution_status
+                )?;
+
+                // Data transmission
+                if !status_info.data_transmission_enabled.is_empty() {
+                    writeln!(f)?;
+                    write!(f, "    Data enabled: ")?;
+                    for (i, data_type) in status_info.data_transmission_enabled.iter().enumerate() {
+                        if i > 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{}", data_type)?;
+                    }
+                }
+
+                // Scan flags
+                if !status_info.scan_data_info.is_empty() {
+                    writeln!(f)?;
+                    write!(f, "    Scan settings: ")?;
+                    for (i, flag) in status_info.scan_data_info.iter().enumerate() {
+                        if i > 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{}", flag)?;
+                    }
+                }
+
+                // Alarms
+                if status_info.has_alarms {
+                    writeln!(f)?;
+                    write!(f, "    Alarms: ")?;
+                    for (i, alarm) in status_info.active_alarms.iter().enumerate() {
+                        if i > 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{}", alarm)?;
+                    }
+                }
+            } else {
+                write!(f, "RDA Status Data")?;
+                if self.message_count > 1 {
+                    write!(f, " ({})", self.message_count)?;
+                }
+            }
         } else {
             write!(f, "{:?}", self.message_type)?;
             if self.message_count > 1 {
@@ -183,6 +283,90 @@ impl Display for MessageGroupSummary {
         }
         Ok(())
     }
+}
+
+/// Helper function to extract RDA status information from a message
+fn extract_rda_status_info(message: &crate::messages::rda_status_data::Message) -> RDAStatusInfo {
+    let mut info = RDAStatusInfo {
+        rda_status: format!("{:?}", message.rda_status()),
+        operability_status: format!("{:?}", message.operability_status()),
+        control_status: format!("{:?}", message.control_status()),
+        operational_mode: format!("{:?}", message.operational_mode()),
+        vcp_number: message.volume_coverage_pattern().map(|vcp| vcp.number()),
+        vcp_is_local: message
+            .volume_coverage_pattern()
+            .map(|vcp| vcp.local())
+            .unwrap_or(false),
+        average_transmitter_power: message.average_transmitter_power,
+        reflectivity_calibration: message.horizontal_reflectivity_calibration_correction(),
+        super_resolution_status: format!("{:?}", message.super_resolution_status()),
+        data_transmission_enabled: Vec::new(),
+        has_alarms: !message.rda_alarm_summary().none(),
+        active_alarms: Vec::new(),
+        scan_data_info: Vec::new(),
+    };
+
+    // Data transmission enabled
+    let data_enabled = message.data_transmission_enabled();
+    if data_enabled.none() {
+        info.data_transmission_enabled.push("None".to_string());
+    } else {
+        if data_enabled.reflectivity() {
+            info.data_transmission_enabled
+                .push("Reflectivity".to_string());
+        }
+        if data_enabled.velocity() {
+            info.data_transmission_enabled.push("Velocity".to_string());
+        }
+        if data_enabled.spectrum_width() {
+            info.data_transmission_enabled
+                .push("Spectrum Width".to_string());
+        }
+    }
+
+    // Scan data flags
+    let flags = message.rda_scan_and_data_flags();
+    if flags.avset_enabled() {
+        info.scan_data_info.push("AVSET enabled".to_string());
+    } else {
+        info.scan_data_info.push("AVSET disabled".to_string());
+    }
+    if flags.ebc_enabled() {
+        info.scan_data_info.push("EBC enabled".to_string());
+    }
+    if flags.rda_log_data_enabled() {
+        info.scan_data_info.push("Log data enabled".to_string());
+    }
+    if flags.time_series_data_recording_enabled() {
+        info.scan_data_info
+            .push("Time series recording enabled".to_string());
+    }
+
+    // Alarms
+    let alarms = message.rda_alarm_summary();
+    if alarms.tower_utilities() {
+        info.active_alarms.push("Tower/utilities".to_string());
+    }
+    if alarms.pedestal() {
+        info.active_alarms.push("Pedestal".to_string());
+    }
+    if alarms.transmitter() {
+        info.active_alarms.push("Transmitter".to_string());
+    }
+    if alarms.receiver() {
+        info.active_alarms.push("Receiver".to_string());
+    }
+    if alarms.rda_control() {
+        info.active_alarms.push("RDA control".to_string());
+    }
+    if alarms.communication() {
+        info.active_alarms.push("Communication".to_string());
+    }
+    if alarms.signal_processor() {
+        info.active_alarms.push("Signal processor".to_string());
+    }
+
+    info
 }
 
 /// Provides a summary of the given messages.
@@ -239,6 +423,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                         start_azimuth: Some(radar_data.header.azimuth_angle),
                         end_azimuth: Some(radar_data.header.azimuth_angle),
                         data_types: Some(HashMap::new()),
+                        rda_status_info: None,
                         is_continued: !summary.message_groups.is_empty()
                             && summary.message_groups.iter().rev().any(|g| {
                                 g.message_type == MessageType::RDADigitalRadarDataGenericFormat
@@ -291,6 +476,42 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                         .insert(volume_data.volume_coverage_pattern());
                 }
             }
+            MessageContents::RDAStatusData(status_data) => {
+                if let Some(time) = message_time {
+                    if (summary.earliest_collection_time.is_none()
+                        || summary.earliest_collection_time > Some(time))
+                        && time.timestamp_millis() > 0
+                    {
+                        summary.earliest_collection_time = Some(time);
+                    }
+                    if summary.latest_collection_time.is_none()
+                        || summary.latest_collection_time < Some(time)
+                    {
+                        summary.latest_collection_time = Some(time);
+                    }
+                }
+
+                // Each RDA status message is treated individually
+                if let Some(group) = current_group.take() {
+                    summary.message_groups.push(group);
+                }
+
+                current_group = Some(MessageGroupSummary {
+                    message_type: MessageType::RDAStatusData,
+                    start_time: message_time,
+                    end_time: message_time,
+                    message_count: 1,
+                    elevation_number: None,
+                    elevation_angle: None,
+                    start_azimuth: None,
+                    end_azimuth: None,
+                    data_types: None,
+                    rda_status_info: Some(extract_rda_status_info(status_data)),
+                    is_continued: false,
+                    start_message_index: i,
+                    end_message_index: i,
+                });
+            }
             _ => {
                 let can_combine = if let Some(group) = &current_group {
                     group.message_type == message_type
@@ -313,6 +534,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                         start_azimuth: None,
                         end_azimuth: None,
                         data_types: None,
+                        rda_status_info: None,
                         is_continued: false,
                         start_message_index: i,
                         end_message_index: i,

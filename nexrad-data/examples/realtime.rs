@@ -2,41 +2,11 @@ use clap::Parser;
 use log::{debug, info, trace, LevelFilter};
 
 // Example output from a real-time chunk:
-//
-//     MessageSummary {
-//         volume_coverage_patterns: {
-//             VCP35,
-//         },
-//         message_types: [
-//             "RDADigitalRadarDataGenericFormat: 120",
-//         ],
-//         scans: [
-//             ScanSummary {
-//                 start_time: Some(
-//                     2024-09-19T03:24:59.799Z,
-//                 ),
-//                 end_time: Some(
-//                     2024-09-19T03:25:11.629Z,
-//                 ),
-//                 elevation: 3,
-//                 start_azimuth: 273.25195,
-//                 end_azimuth: 332.75116,
-//                 data_types: [
-//                     "Reflectivity: 120",
-//                     "Differential Phase: 120",
-//                     "Specific Differential Phase: 120",
-//                     "Differential Reflectivity: 120",
-//                     "Correlation Coefficient: 120",
-//                 ],
-//             },
-//         ],
-//         earliest_collection_time: Some(
-//             2024-09-19T03:24:59.799Z,
-//         ),
-//         latest_collection_time: Some(
-//             2024-09-19T03:25:11.629Z,
-//         ),
-//     }
+//   Scans from 2025-03-17 01:31:40.449 UTC to 2025-03-17 01:31:44.491 UTC (0.07m)
+//   VCPs: VCP35
+//   Messages:
+//     Msg 1-120: Elevation: #6 (1.36°), Azimuth: 108.2° to 167.7°, Time: 01:31:40.449 to 01:31:44.491 (4.04s)
+//       Data types: REF (120), SW (120), VEL (120)
 
 #[cfg(not(all(feature = "aws", feature = "decode")))]
 fn main() {

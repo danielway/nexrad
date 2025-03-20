@@ -52,8 +52,23 @@ pub async fn poll_chunks(
             break;
         }
 
-        let next_chunk_time = estimate_next_chunk_time(&previous_chunk_id, &vcp);
-        debug!("Estimated next chunk time: {}", next_chunk_time);
+        let next_chunk_estimate = estimate_next_chunk_time(&previous_chunk_id, &vcp);
+
+        let next_chunk_time = if let Some(next_chunk_estimate) = next_chunk_estimate {
+            debug!(
+                "Estimated next chunk time: {} ({}s)",
+                next_chunk_estimate,
+                next_chunk_estimate
+                    .signed_duration_since(Utc::now())
+                    .num_milliseconds() as f64
+                    / 1000.0
+            );
+            next_chunk_estimate
+        } else {
+            debug!("Unable to estimate next chunk time, using current time");
+            Utc::now()
+        };
+
         if next_chunk_time > Utc::now() {
             let time_until = next_chunk_time
                 .signed_duration_since(Utc::now())
@@ -145,7 +160,9 @@ async fn get_volume_coverage_pattern(
     }
 
     for message in messages {
-        if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) = message.contents() {
+        if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) =
+            message.contents()
+        {
             return Ok(*vcp.clone());
         }
     }

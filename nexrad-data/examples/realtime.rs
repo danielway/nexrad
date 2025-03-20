@@ -96,11 +96,11 @@ async fn main() -> nexrad_data::result::Result<()> {
 
                     records
                         .into_iter()
-                        .for_each(|record| decode_record(record, download_time));
+                        .for_each(|record| decode_record(&chunk_id, record, download_time));
                 }
                 Chunk::IntermediateOrEnd(record) => {
                     debug!("Intermediate or end volume chunk.");
-                    decode_record(record, download_time);
+                    decode_record(&chunk_id, record, download_time);
                 }
             }
 
@@ -123,6 +123,7 @@ async fn main() -> nexrad_data::result::Result<()> {
 
 #[cfg(all(feature = "aws", feature = "decode"))]
 fn decode_record(
+    chunk_id: &nexrad_data::aws::realtime::ChunkIdentifier,
     mut record: nexrad_data::volume::Record,
     download_time: chrono::DateTime<chrono::Utc>,
 ) {
@@ -137,12 +138,15 @@ fn decode_record(
     info!("Record summary:\n{}", summary);
 
     info!(
-        "Message latency: earliest {:?}, latest {:?}",
+        "Message latency: earliest {:?}, latest {:?}, uploaded: {:?}",
         summary
             .earliest_collection_time
-            .map(|time| download_time - time),
+            .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
         summary
             .latest_collection_time
-            .map(|time| download_time - time),
+            .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
+        chunk_id
+            .date_time()
+            .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
     );
 }

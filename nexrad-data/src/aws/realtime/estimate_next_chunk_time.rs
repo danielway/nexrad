@@ -18,6 +18,15 @@ pub fn estimate_next_chunk_time(
             return None;
         }
 
+        if previous_sequence == 55 {
+            return Some(
+                previous_chunk
+                    .date_time()
+                    .unwrap_or_else(Utc::now)
+                    .add(Duration::from_secs(10)),
+            );
+        }
+
         let elevation =
             get_elevation_from_chunk(previous_sequence + 1, &volume_coverage_pattern.elevations);
 

@@ -86,7 +86,7 @@ pub async fn poll_chunks(
             NextChunk::Sequence(next_chunk_id) => next_chunk_id,
             NextChunk::Volume(next_volume) => {
                 let (attempts, chunk_id) =
-                    try_resiliently(|| get_latest_chunk_or_error(site, next_volume), 500, 5).await;
+                    try_resiliently(|| get_latest_chunk_or_error(site, next_volume), 500, 10).await;
 
                 if let Some(stats_tx) = &stats_tx {
                     stats_tx

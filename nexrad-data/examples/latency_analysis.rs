@@ -104,7 +104,7 @@ async fn main() -> nexrad_data::result::Result<()> {
         "Last Radial",
         "Attempts"
     );
-    println!("{:-<124}", "");
+    println!("{:-<128}", "");
 
     // Task to receive downloaded chunks
     let update_handle = task::spawn(async move {

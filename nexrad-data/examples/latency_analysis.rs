@@ -86,7 +86,16 @@ async fn main() -> nexrad_data::result::Result<()> {
     });
 
     println!(
-        "{:<25} | {:<25} | {:<12} | {:<12} | {:<12} | {:<12} | {:<8}",
+        "{:<25} | {:<25} | {:<13} | {:<15} {:<29} | {:<8}",
+        "",
+        "",
+        "Time Since",
+        "",
+        "Latency Since",
+        ""
+    );
+    println!(
+        "{:<25} | {:<25} | {:<13} | {:<13} | {:<13} | {:<13} | {:<8}",
         "Chunk",
         "Downloaded",
         "Last Chunk",
@@ -182,7 +191,7 @@ fn process_record(
     // Compare chunk_id.date_time() with last_chunk_time, though either could be None
     let time_since_last_chunk = match (chunk_id.date_time(), last_chunk_time) {
         (Some(current), Some(last)) => format!(
-            "{:.3}s",
+            "{}",
             (current - last).num_milliseconds() as f64 / 1000.0
         ),
         _ => String::from("N/A"),
@@ -206,7 +215,7 @@ fn process_record(
 
     // Print concise output in a single line
     println!(
-        "{:<25} | {:<25} | {:<12} | {:<12} | {:<12} | {:<12} | {:<8}",
+        "{:<25} | {:<25} | {:<12}s | {:<12}s | {:<12}s | {:<12}s | {:<8}",
         chunk_id.name(),
         download_time.format("%Y-%m-%d %H:%M:%S%.3f"),
         time_since_last_chunk,

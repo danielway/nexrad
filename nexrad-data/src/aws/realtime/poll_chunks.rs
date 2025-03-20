@@ -86,7 +86,7 @@ pub async fn poll_chunks(
             NextChunk::Sequence(next_chunk_id) => next_chunk_id,
             NextChunk::Volume(next_volume) => {
                 let (attempts, chunk_id) =
-                    try_resiliently(|| get_latest_chunk(site, next_volume), 500, 5).await;
+                    try_resiliently(|| get_latest_chunk_or_error(site, next_volume), 500, 5).await;
 
                 if let Some(stats_tx) = &stats_tx {
                     stats_tx
@@ -94,7 +94,7 @@ pub async fn poll_chunks(
                         .map_err(|_| AWSError::PollingAsyncError)?;
                 }
 
-                chunk_id.flatten().ok_or(AWSError::ExpectedChunkNotFound)?
+                chunk_id.ok_or(AWSError::ExpectedChunkNotFound)?
             }
         };
 
@@ -123,6 +123,15 @@ pub async fn poll_chunks(
     }
 
     Ok(())
+}
+
+/// Queries for the latest chunk in the specified volume. If no chunk is found, an error is returned.
+async fn get_latest_chunk_or_error(site: &str, volume: VolumeIndex) -> Result<ChunkIdentifier> {
+    let chunks = list_chunks_in_volume(site, volume, 100).await?;
+    chunks
+        .last()
+        .cloned()
+        .ok_or(Error::AWS(AWSError::ExpectedChunkNotFound))
 }
 
 /// Queries for the latest chunk in the specified volume.

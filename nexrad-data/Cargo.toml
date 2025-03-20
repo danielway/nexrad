@@ -37,3 +37,7 @@ path = "examples/realtime.rs"
 [[example]]
 name = "archive"
 path = "examples/archive.rs"
+
+[[example]]
+name = "latency_analysis"
+path = "examples/latency_analysis.rs"

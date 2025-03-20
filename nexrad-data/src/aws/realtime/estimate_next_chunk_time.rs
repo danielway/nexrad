@@ -22,7 +22,7 @@ pub fn estimate_next_chunk_time(
             get_elevation_from_chunk(previous_sequence + 1, &volume_coverage_pattern.elevations);
 
         if let Some(elevation) = elevation {
-            // Contiguous Surveillance: ~4 seconds, other waveform types: ~11 seconds
+            // Estimate based on elevation's waveform and channel configuration
             let estimated_wait_time = if elevation.waveform_type() == WaveformType::CS {
                 Duration::from_secs(11)
             } else if elevation.channel_configuration() == ChannelConfiguration::ConstantPhase {

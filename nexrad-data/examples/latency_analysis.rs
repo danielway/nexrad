@@ -216,7 +216,7 @@ fn process_record(
     // Print concise output in a single line
     println!(
         "{:<25} | {:<25} | {:<12}s | {:<12}s | {:<12}s | {:<12}s | {:<8}",
-        chunk_id.name(),
+        format!("{}/{}", chunk_id.volume().as_number(), chunk_id.name()),
         download_time.format("%Y-%m-%d %H:%M:%S%.3f"),
         time_since_last_chunk,
         aws_latency,

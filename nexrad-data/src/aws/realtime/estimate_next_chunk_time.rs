@@ -14,7 +14,7 @@ pub fn estimate_next_chunk_time(
     use nexrad_decode::messages::volume_coverage_pattern::{ChannelConfiguration, WaveformType};
 
     if let Some(previous_sequence) = previous_chunk.sequence() {
-        if !((1..55).contains(&previous_sequence)) {
+        if !((1..=55).contains(&previous_sequence)) {
             return None;
         }
 

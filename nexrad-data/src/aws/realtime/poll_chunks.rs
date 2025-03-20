@@ -65,7 +65,7 @@ pub async fn poll_chunks(
             );
             next_chunk_estimate
         } else {
-            debug!("Unable to estimate next chunk time, using current time");
+            debug!("Unable to estimate next chunk time, trying immediately");
             Utc::now()
         };
 

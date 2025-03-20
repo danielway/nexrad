@@ -44,7 +44,7 @@ pub async fn poll_chunks(
         .map_err(|_| AWSError::PollingAsyncError)?;
 
     let vcp = get_volume_coverage_pattern(site, &latest_chunk_id).await?;
-    debug!("VCP: {}", vcp.header.pattern_number);
+    debug!("Polling volume with VCP: {}", vcp.header.pattern_number);
 
     let mut previous_chunk_id = latest_chunk_id;
     loop {
@@ -104,14 +104,11 @@ pub async fn poll_chunks(
         let (next_chunk_id, next_chunk) = next_chunk.ok_or(AWSError::ExpectedChunkNotFound)?;
 
         if let Some(stats_tx) = &stats_tx {
-            let latency = next_chunk_id
-                .date_time()
-                .and_then(|date_time| Utc::now().signed_duration_since(date_time).to_std().ok());
-
             stats_tx
                 .send(PollStats::NewChunk(NewChunkStats {
                     calls: attempts,
-                    latency,
+                    download_time: Some(Utc::now()),
+                    upload_time: next_chunk_id.date_time(),
                 }))
                 .map_err(|_| AWSError::PollingAsyncError)?;
         }

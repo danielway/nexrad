@@ -1,4 +1,4 @@
-use std::time::Duration;
+use chrono::{DateTime, TimeDelta, Utc};
 
 /// Statistics from the polling process.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -16,6 +16,16 @@ pub enum PollStats {
 pub struct NewChunkStats {
     /// The number of network calls made to find a new chunk.
     pub calls: usize,
-    /// The latency between when a chunk was uploaded to S3 and when it was downloaded.
-    pub latency: Option<Duration>,
+    /// The time when the chunk was downloaded.
+    pub download_time: Option<DateTime<Utc>>,
+    /// The time when the chunk was uploaded to S3.
+    pub upload_time: Option<DateTime<Utc>>,
 }
+
+impl NewChunkStats {
+    /// The latency between when a chunk was downloaded and when it was uploaded to S3.
+    pub fn latency(&self) -> Option<TimeDelta> {
+        self.download_time.and_then(|download_time| self.upload_time.map(|upload_time| upload_time.signed_duration_since(download_time)))
+    }
+}
+

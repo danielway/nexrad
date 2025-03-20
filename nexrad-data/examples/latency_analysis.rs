@@ -74,9 +74,13 @@ async fn main() -> nexrad_data::result::Result<()> {
                     debug!("New chunk download attempts: {}", new_chunk_stats.calls);
                     attempts_clone
                         .fetch_add(new_chunk_stats.calls, Ordering::SeqCst);
+
+                    if new_chunk_stats.download_time < new_chunk_stats.upload_time {
+                        warn!("Chunk download time is less than upload time: {:?}", new_chunk_stats);
+                    }
                 }
                 PollStats::NewVolumeCalls(new_volume_stats) => {
-                    debug!("New volume download attempts: {}", new_volume_stats);
+                    debug!("New volume waiting attempts: {}", new_volume_stats);
                     attempts_clone
                         .fetch_add(new_volume_stats, Ordering::SeqCst);
                 }

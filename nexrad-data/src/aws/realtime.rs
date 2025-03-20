@@ -51,6 +51,9 @@ pub use list_chunks_in_volume::*;
 mod estimate_next_chunk_time;
 pub use estimate_next_chunk_time::*;
 
+mod get_elevation_from_chunk;
+pub use get_elevation_from_chunk::*;
+
 mod poll_chunks;
 pub use poll_chunks::*;
 

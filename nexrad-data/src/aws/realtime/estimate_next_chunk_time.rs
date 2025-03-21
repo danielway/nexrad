@@ -1,7 +1,7 @@
-use crate::aws::realtime::ChunkIdentifier;
+use crate::aws::realtime::{ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType};
+use chrono::Duration as ChronoDuration;
 use chrono::{DateTime, Utc};
 use std::ops::Add;
-use std::time::Duration;
 
 /// Attempts to estimate the time at which the next chunk will be available given the previous chunk.
 /// A None result indicates that the chunk is already available or that an estimate cannot be made.
@@ -9,9 +9,9 @@ use std::time::Duration;
 pub fn estimate_next_chunk_time(
     previous_chunk: &ChunkIdentifier,
     volume_coverage_pattern: &nexrad_decode::messages::volume_coverage_pattern::Message,
+    timing_stats: Option<&ChunkTimingStats>,
 ) -> Option<DateTime<Utc>> {
     use super::get_elevation_from_chunk;
-    use nexrad_decode::messages::volume_coverage_pattern::{ChannelConfiguration, WaveformType};
 
     if let Some(previous_sequence) = previous_chunk.sequence() {
         if !((1..=55).contains(&previous_sequence)) {
@@ -23,29 +23,69 @@ pub fn estimate_next_chunk_time(
                 previous_chunk
                     .date_time()
                     .unwrap_or_else(Utc::now)
-                    .add(Duration::from_secs(10)),
+                    .add(ChronoDuration::seconds(10)),
             );
         }
 
+        // Get the next sequence and corresponding elevation
+        let next_sequence = previous_sequence + 1;
         let elevation =
-            get_elevation_from_chunk(previous_sequence + 1, &volume_coverage_pattern.elevations);
+            get_elevation_from_chunk(next_sequence, &volume_coverage_pattern.elevations);
 
         if let Some(elevation) = elevation {
-            // Estimate based on elevation's waveform and channel configuration
-            let estimated_wait_time = if elevation.waveform_type() == WaveformType::CS {
-                Duration::from_secs(11)
-            } else if elevation.channel_configuration() == ChannelConfiguration::ConstantPhase {
-                Duration::from_secs(7)
+            // Determine chunk characteristics to look up timing
+            let next_chunk_type = if next_sequence == 1 {
+                ChunkType::Start
+            } else if next_sequence == 55 {
+                ChunkType::End
             } else {
-                Duration::from_secs(4)
+                ChunkType::Intermediate
+            };
+
+            let waveform_type = elevation.waveform_type();
+            let channel_config = elevation.channel_configuration();
+
+            let characteristics = ChunkCharacteristics {
+                chunk_type: next_chunk_type,
+                waveform_type,
+                channel_configuration: channel_config,
+            };
+
+            // Check if we have historical timing data for this combination
+            let estimated_wait_time = if let Some(stats) = timing_stats {
+                if let Some(avg_timing) = stats.get_average_timing(&characteristics) {
+                    // Use historical average if available
+                    avg_timing
+                } else {
+                    // Fall back to the static estimation
+                    get_default_wait_time(waveform_type, channel_config)
+                }
+            } else {
+                // No timing stats provided, use static estimation
+                get_default_wait_time(waveform_type, channel_config)
             };
 
             let previous_time = previous_chunk.date_time().unwrap_or_else(Utc::now);
-            return Some(
-                previous_time.add(Duration::from_millis(estimated_wait_time.as_millis() as u64)),
-            );
+            return Some(previous_time.add(estimated_wait_time));
         }
     }
 
     None
+}
+
+/// Gets the default wait time based on waveform type and channel configuration
+#[cfg(feature = "nexrad-decode")]
+fn get_default_wait_time(
+    waveform_type: nexrad_decode::messages::volume_coverage_pattern::WaveformType,
+    channel_config: nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration,
+) -> ChronoDuration {
+    use nexrad_decode::messages::volume_coverage_pattern::{ChannelConfiguration, WaveformType};
+
+    if waveform_type == WaveformType::CS {
+        ChronoDuration::seconds(11)
+    } else if channel_config == ChannelConfiguration::ConstantPhase {
+        ChronoDuration::seconds(7)
+    } else {
+        ChronoDuration::seconds(4)
+    }
 }

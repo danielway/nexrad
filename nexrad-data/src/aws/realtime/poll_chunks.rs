@@ -1,14 +1,15 @@
 use crate::aws::realtime::poll_stats::PollStats;
 use crate::aws::realtime::{
     download_chunk, estimate_next_chunk_time, get_latest_volume, list_chunks_in_volume, Chunk,
-    ChunkIdentifier, NewChunkStats, NextChunk, VolumeIndex,
+    ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType, NewChunkStats, NextChunk,
+    VolumeIndex,
 };
 use crate::result::Error;
 use crate::result::{aws::AWSError, Result};
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use std::future::Future;
 use std::sync::mpsc::{Receiver, Sender};
-use std::time::Duration;
+use std::time::Duration as StdDuration;
 use tokio::time::{sleep, sleep_until, Instant};
 
 /// Polls for the latest real-time chunks from the AWS S3 bucket. When new chunks are identified,
@@ -22,8 +23,8 @@ pub async fn poll_chunks(
     stats_tx: Option<Sender<PollStats>>,
     stop_rx: Receiver<bool>,
 ) -> Result<()> {
-    use log::debug;
     use crate::aws::realtime::ChunkType;
+    use log::debug;
 
     let latest_volume_result = get_latest_volume(site).await?;
     if let Some(stats_tx) = &stats_tx {
@@ -48,13 +49,19 @@ pub async fn poll_chunks(
     let mut vcp = get_volume_coverage_pattern(&latest_metadata)?;
     debug!("Polling volume with VCP: {}", vcp.header.pattern_number);
 
+    // Create timing statistics for improved predictions
+    let mut timing_stats = ChunkTimingStats::new();
+
     let mut previous_chunk_id = latest_chunk_id;
+    let mut previous_chunk_time = None;
+
     loop {
         if stop_rx.try_recv().is_ok() {
             break;
         }
 
-        let next_chunk_estimate = estimate_next_chunk_time(&previous_chunk_id, &vcp);
+        let next_chunk_estimate =
+            estimate_next_chunk_time(&previous_chunk_id, &vcp, Some(&timing_stats));
 
         let next_chunk_time = if let Some(next_chunk_estimate) = next_chunk_estimate {
             debug!(
@@ -103,6 +110,13 @@ pub async fn poll_chunks(
         let (attempts, next_chunk) =
             try_resiliently(|| download_chunk(site, &next_chunk_id), 500, 5).await;
 
+        if let (Some(chunk_time), Some(previous_chunk_time)) =
+            (next_chunk_id.date_time(), previous_chunk_time)
+        {
+            let chunk_duration = chunk_time.signed_duration_since(previous_chunk_time);
+            update_timing_stats(&mut timing_stats, &previous_chunk_id, &vcp, chunk_duration);
+        }
+
         let (next_chunk_id, next_chunk) = next_chunk.ok_or(AWSError::ExpectedChunkNotFound)?;
 
         if next_chunk_id.chunk_type() == Some(ChunkType::Start) {
@@ -126,10 +140,47 @@ pub async fn poll_chunks(
         tx.send((next_chunk_id.clone(), next_chunk))
             .map_err(|_| AWSError::PollingAsyncError)?;
 
+        previous_chunk_time = next_chunk_id.date_time();
         previous_chunk_id = next_chunk_id;
     }
 
     Ok(())
+}
+
+/// Helper function to update timing statistics for a downloaded chunk
+#[cfg(feature = "nexrad-decode")]
+fn update_timing_stats(
+    timing_stats: &mut ChunkTimingStats,
+    chunk_id: &ChunkIdentifier,
+    vcp: &nexrad_decode::messages::volume_coverage_pattern::Message,
+    duration: Duration,
+) {
+    use log::debug;
+
+    if let Some(sequence) = chunk_id.sequence() {
+        if let Some(elevation) = super::get_elevation_from_chunk(sequence, &vcp.elevations) {
+            let chunk_type = if sequence == 1 {
+                ChunkType::Start
+            } else if sequence == 55 {
+                ChunkType::End
+            } else {
+                ChunkType::Intermediate
+            };
+
+            let characteristics = ChunkCharacteristics {
+                chunk_type,
+                waveform_type: elevation.waveform_type(),
+                channel_configuration: elevation.channel_configuration(),
+            };
+
+            timing_stats.add_timing(characteristics, duration);
+            debug!(
+                "Updated timing statistics for {:?}: {}s",
+                &characteristics as &dyn std::fmt::Debug,
+                &(duration.num_milliseconds() as f64 / 1000.0) as &dyn std::fmt::Display,
+            );
+        }
+    }
 }
 
 /// Queries for the latest chunk in the specified volume. If no chunk is found, an error is returned.
@@ -186,7 +237,7 @@ where
         }
 
         let wait = wait_millis * 2u64.pow(attempt as u32);
-        sleep(Duration::from_millis(wait)).await;
+        sleep(StdDuration::from_millis(wait)).await;
     }
 
     (attempts, None)

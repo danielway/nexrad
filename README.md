@@ -19,6 +19,15 @@ Ergonomic APIs for accessing, decoding, and processing NEXRAD weather radar data
 A common model for representing NEXRAD weather radar data. Provides an ergonomic API which is documented for an audience
 who is not necessarily familiar with the NOAA Archive II format.
 
+## `nexrad-netcdf`
+
+[![Crate](https://img.shields.io/crates/v/nexrad-netcdf.svg)](https://crates.io/crates/nexrad-netcdf)
+[![Docs.rs](https://docs.rs/nexrad-netcdf/badge.svg)](https://docs.rs/nexrad-netcdf)
+
+A library for converting NEXRAD weather radar data to NetCDF format. Provides functions for
+converting NEXRAD data to NetCDF formats such as `CfRadial2`.
+
+
 ## `nexrad-decode`
 
 [![Crate](https://img.shields.io/crates/v/nexrad-decode.svg)](https://crates.io/crates/nexrad-decode)

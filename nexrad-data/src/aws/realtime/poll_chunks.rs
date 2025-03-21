@@ -23,6 +23,7 @@ pub async fn poll_chunks(
     stop_rx: Receiver<bool>,
 ) -> Result<()> {
     use log::debug;
+    use crate::aws::realtime::ChunkType;
 
     let latest_volume_result = get_latest_volume(site).await?;
     if let Some(stats_tx) = &stats_tx {
@@ -43,7 +44,8 @@ pub async fn poll_chunks(
     tx.send((latest_chunk_id.clone(), latest_chunk))
         .map_err(|_| AWSError::PollingAsyncError)?;
 
-    let vcp = get_volume_coverage_pattern(site, &latest_chunk_id).await?;
+    let (_, latest_metadata) = download_chunk(site, &latest_chunk_id.with_sequence(1)).await?;
+    let mut vcp = get_volume_coverage_pattern(&latest_metadata)?;
     debug!("Polling volume with VCP: {}", vcp.header.pattern_number);
 
     let mut previous_chunk_id = latest_chunk_id;
@@ -103,6 +105,14 @@ pub async fn poll_chunks(
 
         let (next_chunk_id, next_chunk) = next_chunk.ok_or(AWSError::ExpectedChunkNotFound)?;
 
+        if next_chunk_id.chunk_type() == Some(ChunkType::Start) {
+            vcp = get_volume_coverage_pattern(&next_chunk)?;
+            debug!(
+                "Updated polling volume's VCP to: {}",
+                vcp.header.pattern_number
+            );
+        }
+
         if let Some(stats_tx) = &stats_tx {
             stats_tx
                 .send(PollStats::NewChunk(NewChunkStats {
@@ -139,37 +149,22 @@ async fn get_latest_chunk(site: &str, volume: VolumeIndex) -> Result<Option<Chun
 
 /// Gets the volume coverage pattern from the latest metadata chunk.
 #[cfg(feature = "nexrad-decode")]
-async fn get_volume_coverage_pattern(
-    site: &str,
-    latest_chunk_id: &ChunkIdentifier,
+fn get_volume_coverage_pattern(
+    latest_metadata: &Chunk<'_>,
 ) -> Result<nexrad_decode::messages::volume_coverage_pattern::Message> {
-    let (_, latest_metadata) = download_chunk(site, &latest_chunk_id.with_sequence(1)).await?;
-
-    let mut messages = Vec::new();
-    match latest_metadata {
-        Chunk::Start(file) => {
-            for mut record in file.records() {
-                if record.compressed() {
-                    record = record.decompress()?;
-                }
-
-                messages.append(&mut record.messages()?);
-            }
-        }
-        Chunk::IntermediateOrEnd(mut record) => {
+    if let Chunk::Start(file) = latest_metadata {
+        for mut record in file.records() {
             if record.compressed() {
                 record = record.decompress()?;
             }
 
-            messages.append(&mut record.messages()?);
-        }
-    }
-
-    for message in messages {
-        if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) =
-            message.contents()
-        {
-            return Ok(*vcp.clone());
+            for message in record.messages()? {
+                if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) =
+                    message.contents()
+                {
+                    return Ok(*vcp.clone());
+                }
+            }
         }
     }
 

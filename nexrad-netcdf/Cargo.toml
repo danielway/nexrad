@@ -1,0 +1,22 @@
+[package]
+name = "nexrad-netcdf"
+version = "0.1.0"
+description = "NetCDF file format support for NEXRAD data."
+authors = ["Daniel Way <contact@danieldway.com>"]
+repository = "https://github.com/danielway/nexrad/nexrad-netcdf"
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+log = { workspace = true }
+thiserror = { workspace = true }
+nexrad-decode = { workspace = true }
+
+[dev-dependencies]
+clap = { workspace = true }
+env_logger = { workspace = true }
+tokio = { workspace = true }
+
+[[example]]
+name = "convert_latest"
+path = "examples/convert_latest.rs"

@@ -12,6 +12,9 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration as StdDuration;
 use tokio::time::{sleep, sleep_until, Instant};
 
+/// The number of chunks to wait before emitting timing statistics.
+const CHUNKS_UNTIL_TIMING_STATS: usize = 10;
+
 /// Polls for the latest real-time chunks from the AWS S3 bucket. When new chunks are identified,
 /// they will be downloaded and sent to the provided `Sender`. If a statistics `Sender` is provided,
 /// statistics from the polling process such as how many requests are being sent will be sent to it.
@@ -54,6 +57,8 @@ pub async fn poll_chunks(
 
     let mut previous_chunk_id = latest_chunk_id;
     let mut previous_chunk_time = None;
+
+    let mut chunks_until_timing_stats = CHUNKS_UNTIL_TIMING_STATS;
 
     loop {
         if stop_rx.try_recv().is_ok() {
@@ -141,6 +146,16 @@ pub async fn poll_chunks(
                     upload_time: next_chunk_id.date_time(),
                 }))
                 .map_err(|_| AWSError::PollingAsyncError)?;
+
+            if chunks_until_timing_stats == 0 {
+                stats_tx
+                    .send(PollStats::ChunkTimings(timing_stats))
+                    .map_err(|_| AWSError::PollingAsyncError)?;
+                timing_stats = ChunkTimingStats::new();
+                chunks_until_timing_stats = CHUNKS_UNTIL_TIMING_STATS;
+            } else {
+                chunks_until_timing_stats -= 1;
+            }
         }
 
         tx.send((next_chunk_id.clone(), next_chunk))

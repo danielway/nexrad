@@ -1,7 +1,9 @@
 use chrono::{DateTime, TimeDelta, Utc};
 
+use super::ChunkTimingStats;
+
 /// Statistics from the polling process.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub enum PollStats {
     /// The number of network calls made to find the most recent volume.
     LatestVolumeCalls(usize),
@@ -9,6 +11,8 @@ pub enum PollStats {
     NewVolumeCalls(usize),
     /// Statistics for a new chunk.
     NewChunk(NewChunkStats),
+    /// Perodic timing statistics for chunks by-type.
+    ChunkTimings(ChunkTimingStats),
 }
 
 /// Statistics for a new chunk.

@@ -98,6 +98,41 @@ async fn main() -> nexrad_data::result::Result<()> {
                     debug!("New volume found: attempts={}", new_volume_stats);
                     attempts_clone.fetch_add(new_volume_stats, Ordering::SeqCst);
                 }
+                PollStats::ChunkTimings(chunk_timings) => {
+                    info!("Chunk Timing Statistics:");
+                    info!("{:-<100}", "");
+                    info!(
+                        "{:<15} | {:<20} | {:<20} | {:<15} | {:<15}",
+                        "Chunk Type",
+                        "Waveform Type",
+                        "Channel Config",
+                        "Avg Duration",
+                        "Avg Attempts"
+                    );
+                    info!("{:-<100}", "");
+
+                    for (characteristics, avg_duration, avg_attempts) in
+                        chunk_timings.get_statistics()
+                    {
+                        let duration_str = avg_duration.map_or("N/A".to_string(), |d| {
+                            format!("{:.2}s", d.num_milliseconds() as f64 / 1000.0)
+                        });
+
+                        let attempts_str =
+                            avg_attempts.map_or("N/A".to_string(), |a| format!("{:.2}", a));
+
+                        info!(
+                            "{:<15} | {:<20} | {:<20} | {:<15} | {:<15}",
+                            format!("{:?}", characteristics.chunk_type),
+                            format!("{:?}", characteristics.waveform_type),
+                            format!("{:?}", characteristics.channel_configuration),
+                            duration_str,
+                            attempts_str
+                        );
+                    }
+
+                    info!("{:-<100}", "");
+                }
                 _ => {}
             }
         }

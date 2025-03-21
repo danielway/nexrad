@@ -33,7 +33,24 @@ tokio = { workspace = true }
 [[example]]
 name = "realtime"
 path = "examples/realtime.rs"
+required-features = ["aws", "decode"]
 
 [[example]]
 name = "archive"
 path = "examples/archive.rs"
+required-features = ["aws", "decode"]
+
+[[example]]
+name = "latency_analysis"
+path = "examples/latency_analysis.rs"
+required-features = ["aws", "decode"]
+
+[[example]]
+name = "chunk_timing"
+path = "examples/chunk_timing.rs"
+required-features = ["aws", "decode"]
+
+[[example]]
+name = "chunk_csv"
+path = "examples/chunk_csv.rs"
+required-features = ["aws", "decode"]

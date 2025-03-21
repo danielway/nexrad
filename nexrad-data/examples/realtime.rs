@@ -1,47 +1,24 @@
+#![cfg(all(feature = "aws", feature = "decode"))]
+
+use chrono::{DateTime, Utc};
 use clap::Parser;
+use env_logger::{Builder, Env};
 use log::{debug, info, trace, LevelFilter};
+use nexrad_data::result::Result;
+use nexrad_data::{
+    aws::realtime::{self, poll_chunks, Chunk, ChunkIdentifier, PollStats},
+    volume,
+};
+use nexrad_decode::summarize;
+use std::{sync::mpsc, time::Duration};
+use tokio::{task, time::sleep};
 
 // Example output from a real-time chunk:
-//
-//     MessageSummary {
-//         volume_coverage_patterns: {
-//             VCP35,
-//         },
-//         message_types: [
-//             "RDADigitalRadarDataGenericFormat: 120",
-//         ],
-//         scans: [
-//             ScanSummary {
-//                 start_time: Some(
-//                     2024-09-19T03:24:59.799Z,
-//                 ),
-//                 end_time: Some(
-//                     2024-09-19T03:25:11.629Z,
-//                 ),
-//                 elevation: 3,
-//                 start_azimuth: 273.25195,
-//                 end_azimuth: 332.75116,
-//                 data_types: [
-//                     "Reflectivity: 120",
-//                     "Differential Phase: 120",
-//                     "Specific Differential Phase: 120",
-//                     "Differential Reflectivity: 120",
-//                     "Correlation Coefficient: 120",
-//                 ],
-//             },
-//         ],
-//         earliest_collection_time: Some(
-//             2024-09-19T03:24:59.799Z,
-//         ),
-//         latest_collection_time: Some(
-//             2024-09-19T03:25:11.629Z,
-//         ),
-//     }
-
-#[cfg(not(all(feature = "aws", feature = "decode")))]
-fn main() {
-    println!("This example requires the \"aws\" and \"decode\" features to be enabled.");
-}
+//   Scans from 2025-03-17 01:31:40.449 UTC to 2025-03-17 01:31:44.491 UTC (0.07m)
+//   VCPs: VCP35
+//   Messages:
+//     Msg 1-120: Elevation: #6 (1.36°), Azimuth: 108.2° to 167.7°, Time: 01:31:40.449 to 01:31:44.491 (4.04s)
+//       Data types: REF (120), SW (120), VEL (120)
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -55,17 +32,9 @@ struct Cli {
     chunk_count: usize,
 }
 
-#[cfg(all(feature = "aws", feature = "decode"))]
 #[tokio::main]
-async fn main() -> nexrad_data::result::Result<()> {
-    use chrono::Utc;
-    use nexrad_data::aws::realtime::Chunk;
-    use nexrad_data::aws::realtime::{poll_chunks, ChunkIdentifier, PollStats};
-    use std::sync::mpsc;
-    use std::time::Duration;
-    use tokio::task;
-
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
+async fn main() -> Result<()> {
+    Builder::from_env(Env::default().default_filter_or("debug"))
         .filter_module("reqwest::connect", LevelFilter::Info)
         .init();
 
@@ -89,7 +58,7 @@ async fn main() -> nexrad_data::result::Result<()> {
     // Task to timeout polling at 60 seconds
     let timeout_stop_tx = stop_tx.clone();
     task::spawn(async move {
-        tokio::time::sleep(Duration::from_secs(60)).await;
+        sleep(Duration::from_secs(60)).await;
 
         info!("Timeout reached, stopping...");
         timeout_stop_tx.send(true).unwrap();
@@ -126,11 +95,11 @@ async fn main() -> nexrad_data::result::Result<()> {
 
                     records
                         .into_iter()
-                        .for_each(|record| decode_record(record, download_time));
+                        .for_each(|record| decode_record(&chunk_id, record, download_time));
                 }
                 Chunk::IntermediateOrEnd(record) => {
                     debug!("Intermediate or end volume chunk.");
-                    decode_record(record, download_time);
+                    decode_record(&chunk_id, record, download_time);
                 }
             }
 
@@ -151,10 +120,10 @@ async fn main() -> nexrad_data::result::Result<()> {
     Ok(())
 }
 
-#[cfg(all(feature = "aws", feature = "decode"))]
 fn decode_record(
-    mut record: nexrad_data::volume::Record,
-    download_time: chrono::DateTime<chrono::Utc>,
+    chunk_id: &realtime::ChunkIdentifier,
+    mut record: volume::Record,
+    download_time: DateTime<Utc>,
 ) {
     debug!("Decoding LDM record...");
     if record.compressed() {
@@ -163,13 +132,19 @@ fn decode_record(
     }
 
     let messages = record.messages().expect("Failed to decode messages");
-    let summary = nexrad_decode::summarize::messages(messages.as_slice());
+    let summary = summarize::messages(messages.as_slice());
     info!("Record summary:\n{}", summary);
 
     info!(
-        "Message latency: {:?}",
+        "Message latency: earliest {:?}, latest {:?}, uploaded: {:?}",
         summary
             .earliest_collection_time
-            .map(|time| download_time - time),
+            .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
+        summary
+            .latest_collection_time
+            .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
+        chunk_id
+            .date_time()
+            .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
     );
 }

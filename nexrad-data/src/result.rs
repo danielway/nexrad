@@ -19,16 +19,16 @@ pub enum Error {
     #[cfg(feature = "aws")]
     #[error(transparent)]
     AWS(#[from] aws::AWSError),
-    #[cfg(feature = "decode")]
+    #[cfg(feature = "nexrad-decode")]
     #[error("error decoding NEXRAD data")]
     Decode(#[from] nexrad_decode::result::Error),
     #[cfg(feature = "nexrad-model")]
     #[error("error in common model")]
     Model(#[from] nexrad_model::result::Error),
-    #[cfg(feature = "decode")]
+    #[cfg(feature = "nexrad-decode")]
     #[error("compressed data cannot be decoded")]
     CompressedDataError,
-    #[cfg(feature = "decode")]
+    #[cfg(feature = "nexrad-decode")]
     #[error("volume missing coverage pattern number")]
     MissingCoveragePattern,
     #[cfg(feature = "bzip2")]

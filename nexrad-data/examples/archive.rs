@@ -1,10 +1,16 @@
-use clap::Parser;
-use log::{debug, info, trace, warn, LevelFilter};
+#![cfg(all(feature = "aws", feature = "decode"))]
 
-#[cfg(not(all(feature = "aws", feature = "decode")))]
-fn main() {
-    println!("This example requires the \"aws\" and \"decode\" features to be enabled.");
-}
+use chrono::{NaiveDate, NaiveTime};
+use clap::Parser;
+use env_logger::{Builder, Env};
+use log::{debug, info, trace, warn, LevelFilter};
+use nexrad_data::aws::archive::{self, download_file, list_files};
+use nexrad_data::result::Result;
+use nexrad_data::volume::File;
+use std::fs::create_dir;
+use std::io::Read;
+use std::io::Write;
+use std::path::Path;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -26,18 +32,9 @@ struct Cli {
     stop_time: String,
 }
 
-#[cfg(all(feature = "aws", feature = "decode"))]
 #[tokio::main]
-async fn main() -> nexrad_data::result::Result<()> {
-    use chrono::{NaiveDate, NaiveTime};
-    use nexrad_data::aws::archive::{download_file, list_files};
-    use nexrad_data::volume::File;
-    use std::fs::create_dir;
-    use std::io::Read;
-    use std::io::Write;
-    use std::path::Path;
-
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
+async fn main() -> Result<()> {
+    Builder::from_env(Env::default().default_filter_or("debug"))
         .filter_module("reqwest::connect", LevelFilter::Info)
         .init();
 
@@ -142,9 +139,8 @@ async fn main() -> nexrad_data::result::Result<()> {
 }
 
 /// Returns the index of the file with the nearest time to the provided start time.
-#[cfg(feature = "aws")]
 fn get_nearest_file_index(
-    files: &Vec<nexrad_data::aws::archive::Identifier>,
+    files: &Vec<archive::Identifier>,
     start_time: chrono::NaiveTime,
 ) -> usize {
     let first_file = files.first().expect("find at least one file");

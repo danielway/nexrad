@@ -25,7 +25,9 @@ pub struct NewChunkStats {
 impl NewChunkStats {
     /// The latency between when a chunk was downloaded and when it was uploaded to S3.
     pub fn latency(&self) -> Option<TimeDelta> {
-        self.download_time.and_then(|download_time| self.upload_time.map(|upload_time| upload_time.signed_duration_since(download_time)))
+        self.download_time.and_then(|download_time| {
+            self.upload_time
+                .map(|upload_time| upload_time.signed_duration_since(download_time))
+        })
     }
 }
-

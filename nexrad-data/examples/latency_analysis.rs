@@ -29,7 +29,8 @@ async fn main() -> nexrad_data::result::Result<()> {
     use nexrad_data::aws::realtime::Chunk;
     use nexrad_data::aws::realtime::{poll_chunks, ChunkIdentifier, PollStats};
     use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::sync::{mpsc, Arc};
+    use std::sync::{mpsc, Arc, Mutex};
+    use std::time::Duration;
     use tokio::task;
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -46,8 +47,9 @@ async fn main() -> nexrad_data::result::Result<()> {
     let (stats_tx, stats_rx) = mpsc::channel::<PollStats>();
     let (stop_tx, stop_rx) = mpsc::channel::<bool>();
 
-    // Track download attempts using an atomic counter
+    // Pass download attempts and timing to the update handle
     let attempts = Arc::new(AtomicUsize::new(0));
+    let download_time = Arc::new(Mutex::new(None::<chrono::DateTime<chrono::Utc>>));
 
     // Task to poll chunks
     task::spawn(async move {
@@ -56,33 +58,45 @@ async fn main() -> nexrad_data::result::Result<()> {
             .expect("Failed to poll chunks");
     });
 
-    // // Task to timeout polling at 120 seconds
-    // let timeout_stop_tx = stop_tx.clone();
-    // task::spawn(async move {
-    //     tokio::time::sleep(Duration::from_secs(120)).await;
+    // Task to timeout polling at 5 minutes
+    let timeout_stop_tx = stop_tx.clone();
+    task::spawn(async move {
+        tokio::time::sleep(Duration::from_secs(300)).await;
 
-    //     info!("Timeout reached, stopping...");
-    //     timeout_stop_tx.send(true).unwrap();
-    // });
+        info!("Timeout reached, stopping...");
+        timeout_stop_tx
+            .send(true)
+            .expect("Failed to send stop signal");
+    });
 
     // Task to receive statistics updates to track attempts
     let attempts_clone = attempts.clone();
+    let download_time_clone = download_time.clone();
     let stats_handle = task::spawn(async move {
         while let Ok(stats) = stats_rx.recv() {
             match stats {
                 PollStats::NewChunk(new_chunk_stats) => {
-                    debug!("New chunk download attempts: {}", new_chunk_stats.calls);
-                    attempts_clone
-                        .fetch_add(new_chunk_stats.calls, Ordering::SeqCst);
+                    debug!(
+                        "New chunk download: attempts={}, download_time={:?}, upload_time={:?}",
+                        new_chunk_stats.calls,
+                        new_chunk_stats.download_time,
+                        new_chunk_stats.upload_time
+                    );
 
-                    if new_chunk_stats.download_time < new_chunk_stats.upload_time {
-                        warn!("Chunk download time is less than upload time: {:?}", new_chunk_stats);
+                    attempts_clone.fetch_add(new_chunk_stats.calls, Ordering::SeqCst);
+
+                    let mut download_time_guard = download_time_clone
+                        .lock()
+                        .expect("Failed to lock download time");
+                    if let Some(time) = new_chunk_stats.download_time {
+                        *download_time_guard = Some(time);
+                    } else {
+                        *download_time_guard = None;
                     }
                 }
                 PollStats::NewVolumeCalls(new_volume_stats) => {
-                    debug!("New volume waiting attempts: {}", new_volume_stats);
-                    attempts_clone
-                        .fetch_add(new_volume_stats, Ordering::SeqCst);
+                    debug!("New volume found: attempts={}", new_volume_stats);
+                    attempts_clone.fetch_add(new_volume_stats, Ordering::SeqCst);
                 }
                 _ => {}
             }
@@ -91,12 +105,7 @@ async fn main() -> nexrad_data::result::Result<()> {
 
     println!(
         "{:<25} | {:<25} | {:<13} | {:<15} {:<29} | {:<8}",
-        "",
-        "",
-        "Time Since",
-        "",
-        "Latency Since",
-        ""
+        "", "", "Time Since", "", "Latency Since", ""
     );
     println!(
         "{:<25} | {:<25} | {:<13} | {:<13} | {:<13} | {:<13} | {:<8}",
@@ -114,7 +123,15 @@ async fn main() -> nexrad_data::result::Result<()> {
     let update_handle = task::spawn(async move {
         let mut last_chunk_time = None;
         while let Ok((chunk_id, chunk)) = update_rx.recv() {
-            let download_time = Utc::now();
+            let download_time = {
+                match *download_time.lock().expect("Failed to lock download time") {
+                    Some(time) => time,
+                    None => {
+                        warn!("No download time available, using current time");
+                        Utc::now()
+                    }
+                }
+            };
 
             let chunk_attempts = attempts.load(Ordering::SeqCst);
             attempts.store(0, Ordering::SeqCst);
@@ -176,6 +193,8 @@ fn process_record(
     last_chunk_time: Option<chrono::DateTime<chrono::Utc>>,
     attempts: usize,
 ) {
+    use chrono::SubsecRound;
+
     debug!("Decoding LDM record...");
     if record.compressed() {
         debug!("Decompressing LDM record...");
@@ -192,15 +211,6 @@ fn process_record(
 
     let summary = nexrad_decode::summarize::messages(messages.as_slice());
 
-    // Compare chunk_id.date_time() with last_chunk_time, though either could be None
-    let time_since_last_chunk = match (chunk_id.date_time(), last_chunk_time) {
-        (Some(current), Some(last)) => format!(
-            "{}",
-            (current - last).num_milliseconds() as f64 / 1000.0
-        ),
-        _ => String::from("N/A"),
-    };
-
     // Calculate latencies
     let first_radial_latency = summary
         .earliest_collection_time
@@ -212,10 +222,27 @@ fn process_record(
         .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0)
         .unwrap_or(f64::NAN);
 
+    // AWS rounds to the second for object modified times
+    let rounded_download_time = download_time.round_subsecs(0);
+
     let aws_latency = chunk_id
         .date_time()
-        .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0)
+        .map(|time| {
+            if rounded_download_time < time {
+                warn!("Download time is before S3 modified time: download={}, rounded download={}, s3={}", download_time, rounded_download_time, time);
+            }
+
+            (rounded_download_time - time).num_milliseconds() as f64 / 1000.0
+        })
         .unwrap_or(f64::NAN);
+
+    // Compare chunk_id.date_time() with last_chunk_time, though either could be None
+    let time_since_last_chunk = match (chunk_id.date_time(), last_chunk_time) {
+        (Some(current), Some(last)) => {
+            format!("{}", (current - last).num_milliseconds() as f64 / 1000.0)
+        }
+        _ => String::from("N/A"),
+    };
 
     // Print concise output in a single line
     println!(

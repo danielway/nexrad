@@ -26,11 +26,20 @@ impl Hash for ChunkCharacteristics {
     }
 }
 
+/// Statistics for a single timing sample
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct TimingStat {
+    /// Duration of the timing sample
+    duration: Duration,
+    /// Number of attempts to download the chunk
+    attempts: usize,
+}
+
 /// Statistics for timing between chunks
 #[derive(Debug, Clone, Default)]
 pub struct ChunkTimingStats {
     /// Timing statistics for each chunk characteristics
-    timings: HashMap<ChunkCharacteristics, VecDeque<Duration>>,
+    timings: HashMap<ChunkCharacteristics, VecDeque<TimingStat>>,
 }
 
 impl ChunkTimingStats {
@@ -42,10 +51,15 @@ impl ChunkTimingStats {
     }
 
     /// Add a timing sample for the given chunk characteristics
-    pub fn add_timing(&mut self, characteristics: ChunkCharacteristics, duration: Duration) {
+    pub fn add_timing(
+        &mut self,
+        characteristics: ChunkCharacteristics,
+        duration: Duration,
+        attempts: usize,
+    ) {
         let entry = self.timings.entry(characteristics).or_default();
 
-        entry.push_back(duration);
+        entry.push_back(TimingStat { duration, attempts });
 
         // Maintain the rolling window by removing oldest if we exceed the max
         if entry.len() > MAX_TIMING_SAMPLES {
@@ -65,11 +79,26 @@ impl ChunkTimingStats {
 
             let total_millis: i64 = timings
                 .iter()
-                .map(|duration| duration.num_milliseconds())
+                .map(|timing| timing.duration.num_milliseconds())
                 .sum();
 
             let avg_millis = total_millis / timings.len() as i64;
             Some(Duration::milliseconds(avg_millis))
+        })
+    }
+
+    /// Get the average number of attempts for the given chunk characteristics
+    pub(crate) fn get_average_attempts(
+        &self,
+        characteristics: &ChunkCharacteristics,
+    ) -> Option<f64> {
+        self.timings.get(characteristics).and_then(|timings| {
+            if timings.is_empty() {
+                return None;
+            }
+
+            let total_attempts: usize = timings.iter().map(|timing| timing.attempts).sum();
+            Some(total_attempts as f64 / timings.len() as f64)
         })
     }
 }

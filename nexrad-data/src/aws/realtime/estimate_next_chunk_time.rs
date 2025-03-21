@@ -1,6 +1,7 @@
 use crate::aws::realtime::{ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType};
 use chrono::Duration as ChronoDuration;
 use chrono::{DateTime, Utc};
+use log::debug;
 use std::ops::Add;
 
 /// Attempts to estimate the time at which the next chunk will be available given the previous chunk.
@@ -51,23 +52,44 @@ pub fn estimate_next_chunk_time(
                 channel_configuration: channel_config,
             };
 
+            let average_timing =
+                timing_stats.and_then(|stats| stats.get_average_timing(&characteristics));
+            let average_attempts =
+                timing_stats.and_then(|stats| stats.get_average_attempts(&characteristics));
+
             // Check if we have historical timing data for this combination
-            let estimated_wait_time = if let Some(stats) = timing_stats {
-                if let Some(avg_timing) = stats.get_average_timing(&characteristics) {
-                    // Use historical average if available
-                    avg_timing
-                } else {
-                    // Fall back to the static estimation
-                    get_default_wait_time(waveform_type, channel_config)
-                }
+            let estimated_wait_time = if let (Some(avg_timing), Some(avg_attempts)) =
+                (average_timing, average_attempts)
+            {
+                // Use historical average if available
+                let mut wait_time = avg_timing;
+
+                // If we're making multiple attempts, add the average number of attempts to the wait time
+                wait_time += chrono::Duration::seconds(avg_attempts as i64 - 1);
+
+                debug!(
+                    "Using historical average timing of {}ms and {} attempts for {}ms",
+                    avg_timing.num_milliseconds(),
+                    avg_attempts,
+                    wait_time.num_milliseconds()
+                );
+
+                wait_time
             } else {
-                // No timing stats provided, use static estimation
-                get_default_wait_time(waveform_type, channel_config)
+                // Fall back to the static estimation
+                let wait_time = get_default_wait_time(waveform_type, channel_config);
+
+                debug!(
+                    "No historical timing data available, using static estimation of {}ms",
+                    wait_time.num_milliseconds()
+                );
+
+                wait_time
             };
 
             let previous_time = previous_chunk.date_time().unwrap_or_else(Utc::now);
             return Some(previous_time.add(estimated_wait_time));
-        }
+        };
     }
 
     None

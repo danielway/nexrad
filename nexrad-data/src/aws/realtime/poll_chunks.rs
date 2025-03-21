@@ -110,14 +110,20 @@ pub async fn poll_chunks(
         let (attempts, next_chunk) =
             try_resiliently(|| download_chunk(site, &next_chunk_id), 500, 5).await;
 
+        let (next_chunk_id, next_chunk) = next_chunk.ok_or(AWSError::ExpectedChunkNotFound)?;
+
         if let (Some(chunk_time), Some(previous_chunk_time)) =
             (next_chunk_id.date_time(), previous_chunk_time)
         {
             let chunk_duration = chunk_time.signed_duration_since(previous_chunk_time);
-            update_timing_stats(&mut timing_stats, &previous_chunk_id, &vcp, chunk_duration);
+            update_timing_stats(
+                &mut timing_stats,
+                &previous_chunk_id,
+                &vcp,
+                chunk_duration,
+                attempts,
+            );
         }
-
-        let (next_chunk_id, next_chunk) = next_chunk.ok_or(AWSError::ExpectedChunkNotFound)?;
 
         if next_chunk_id.chunk_type() == Some(ChunkType::Start) {
             vcp = get_volume_coverage_pattern(&next_chunk)?;
@@ -154,6 +160,7 @@ fn update_timing_stats(
     chunk_id: &ChunkIdentifier,
     vcp: &nexrad_decode::messages::volume_coverage_pattern::Message,
     duration: Duration,
+    attempts: usize,
 ) {
     use log::debug;
 
@@ -173,7 +180,7 @@ fn update_timing_stats(
                 channel_configuration: elevation.channel_configuration(),
             };
 
-            timing_stats.add_timing(characteristics, duration);
+            timing_stats.add_timing(characteristics, duration, attempts);
             debug!(
                 "Updated timing statistics for {:?}: {}s",
                 &characteristics as &dyn std::fmt::Debug,

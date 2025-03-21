@@ -1,14 +1,17 @@
+#![cfg(all(feature = "aws", feature = "decode"))]
+
+use chrono::{DateTime, SubsecRound, Utc};
 use clap::Parser;
+use env_logger::{Builder, Env};
 use log::{debug, info, warn, LevelFilter};
+use nexrad_data::result::Result;
+use nexrad_data::{aws::realtime, volume};
+use nexrad_decode::summarize;
+use tokio::time::sleep;
 
 // Example designed to provide concise latency analysis for NEXRAD data chunks
 // Output format (single line per chunk):
 // Chunk: <name> | Downloaded: <time> | AWS Latency: <value>s | First Radial Latency: <value>s | Last Radial Latency: <value>s | Attempts: <count>
-
-#[cfg(not(all(feature = "aws", feature = "decode")))]
-fn main() {
-    println!("This example requires the \"aws\" and \"decode\" features to be enabled.");
-}
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -22,9 +25,8 @@ struct Cli {
     chunk_count: usize,
 }
 
-#[cfg(all(feature = "aws", feature = "decode"))]
 #[tokio::main]
-async fn main() -> nexrad_data::result::Result<()> {
+async fn main() -> Result<()> {
     use chrono::Utc;
     use nexrad_data::aws::realtime::Chunk;
     use nexrad_data::aws::realtime::{poll_chunks, ChunkIdentifier, PollStats};
@@ -33,7 +35,7 @@ async fn main() -> nexrad_data::result::Result<()> {
     use std::time::Duration;
     use tokio::task;
 
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+    Builder::from_env(Env::default().default_filter_or("info"))
         .filter_module("reqwest::connect", LevelFilter::Info)
         .init();
 
@@ -61,7 +63,7 @@ async fn main() -> nexrad_data::result::Result<()> {
     // Task to timeout polling at 5 minutes
     let timeout_stop_tx = stop_tx.clone();
     task::spawn(async move {
-        tokio::time::sleep(Duration::from_secs(300)).await;
+        sleep(Duration::from_secs(300)).await;
 
         info!("Timeout reached, stopping...");
         timeout_stop_tx
@@ -220,16 +222,13 @@ async fn main() -> nexrad_data::result::Result<()> {
     Ok(())
 }
 
-#[cfg(all(feature = "aws", feature = "decode"))]
 fn process_record(
-    chunk_id: &nexrad_data::aws::realtime::ChunkIdentifier,
-    mut record: nexrad_data::volume::Record,
-    download_time: chrono::DateTime<chrono::Utc>,
-    last_chunk_time: Option<chrono::DateTime<chrono::Utc>>,
+    chunk_id: &realtime::ChunkIdentifier,
+    mut record: volume::Record,
+    download_time: DateTime<Utc>,
+    last_chunk_time: Option<DateTime<Utc>>,
     attempts: usize,
 ) {
-    use chrono::SubsecRound;
-
     debug!("Decoding LDM record...");
     if record.compressed() {
         debug!("Decompressing LDM record...");
@@ -244,7 +243,7 @@ fn process_record(
         }
     };
 
-    let summary = nexrad_decode::summarize::messages(messages.as_slice());
+    let summary = summarize::messages(messages.as_slice());
 
     // Calculate latencies
     let first_radial_latency = summary

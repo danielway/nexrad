@@ -1,9 +1,16 @@
+#![cfg(all(feature = "aws", feature = "decode"))]
+
 use chrono::{DateTime, Utc};
 use clap::Parser;
+use env_logger::{Builder, Env};
 use log::{debug, info, warn, LevelFilter};
+use nexrad_data::aws::realtime::get_elevation_from_chunk;
 use nexrad_data::aws::realtime::{
     download_chunk, get_latest_volume, list_chunks_in_volume, Chunk, ChunkIdentifier, VolumeIndex,
 };
+use nexrad_data::result::Result;
+use nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock;
+use nexrad_decode::messages::MessageContents;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -32,17 +39,9 @@ struct Cli {
     output: PathBuf,
 }
 
-#[cfg(not(all(feature = "aws", feature = "decode")))]
-fn main() {
-    println!("This example requires the \"aws\" and \"decode\" features to be enabled.");
-}
-
-#[cfg(all(feature = "aws", feature = "decode"))]
 #[tokio::main]
-async fn main() -> nexrad_data::result::Result<()> {
-    use nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock;
-
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+async fn main() -> Result<()> {
+    Builder::from_env(Env::default().default_filter_or("info"))
         .filter_module("reqwest::connect", LevelFilter::Info)
         .init();
 
@@ -184,7 +183,6 @@ async fn main() -> nexrad_data::result::Result<()> {
 }
 
 /// Holds the analysis results for a chunk
-#[cfg(all(feature = "aws", feature = "decode"))]
 struct ChunkAnalysis {
     message_types: Vec<String>,
     data_types: Vec<String>,
@@ -203,15 +201,11 @@ struct ChunkAnalysis {
 }
 
 /// Analyzes a chunk and returns structured data about its contents
-#[cfg(all(feature = "aws", feature = "decode"))]
 fn analyze_chunk(
     chunk: &Chunk,
     chunk_id: &ChunkIdentifier,
-    vcp_message: &mut Vec<nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock>,
-) -> nexrad_data::result::Result<ChunkAnalysis> {
-    use nexrad_data::aws::realtime::get_elevation_from_chunk;
-    use nexrad_decode::messages::MessageContents;
-
+    vcp_message: &mut Vec<ElevationDataBlock>,
+) -> Result<ChunkAnalysis> {
     let mut result = ChunkAnalysis {
         message_types: Vec::new(),
         data_types: Vec::new(),
@@ -395,14 +389,13 @@ fn analyze_chunk(
 }
 
 /// Write a CSV row with chunk analysis data
-#[cfg(all(feature = "aws", feature = "decode"))]
 fn write_csv_row(
     file: &mut File,
     chunk_name: String,
     modified_time: Option<DateTime<Utc>>,
     time_diff: String,
     analysis: ChunkAnalysis,
-) -> nexrad_data::result::Result<()> {
+) -> Result<()> {
     writeln!(
         file,
         "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",

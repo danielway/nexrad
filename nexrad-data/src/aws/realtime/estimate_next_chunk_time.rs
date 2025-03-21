@@ -6,7 +6,6 @@ use std::ops::Add;
 
 /// Attempts to estimate the time at which the next chunk will be available given the previous chunk.
 /// A None result indicates that the chunk is already available or that an estimate cannot be made.
-#[cfg(feature = "nexrad-decode")]
 pub fn estimate_next_chunk_time(
     previous_chunk: &ChunkIdentifier,
     volume_coverage_pattern: &nexrad_decode::messages::volume_coverage_pattern::Message,
@@ -96,7 +95,6 @@ pub fn estimate_next_chunk_time(
 }
 
 /// Gets the default wait time based on waveform type and channel configuration
-#[cfg(feature = "nexrad-decode")]
 fn get_default_wait_time(
     waveform_type: nexrad_decode::messages::volume_coverage_pattern::WaveformType,
     channel_config: nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration,

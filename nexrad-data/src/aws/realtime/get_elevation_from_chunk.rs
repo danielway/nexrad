@@ -1,6 +1,5 @@
 /// Get the elevation from a chunk based on the sequence number. Returns None if the chunk does not
 /// correspond to a radar scan described by the VCP.
-#[cfg(feature = "nexrad-decode")]
 pub fn get_elevation_from_chunk(
     sequence: usize,
     elevations: &Vec<nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock>,

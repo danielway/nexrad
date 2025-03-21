@@ -1,10 +1,15 @@
+#![cfg(all(feature = "aws", feature = "decode"))]
+
 use chrono::{DateTime, Utc};
 use clap::Parser;
+use env_logger::{Builder, Env};
 use log::{debug, info, trace, LevelFilter};
 use nexrad_data::aws::realtime::{
     download_chunk, get_latest_volume, list_chunks_in_volume, Chunk, VolumeIndex,
 };
-use std::cmp::Ordering;
+use nexrad_data::result::Result;
+use nexrad_decode::summarize;
+use std::{cmp::Ordering, collections::HashMap};
 
 /// Example to analyze timing between chunks in a NEXRAD volume and inspect their contents.
 /// Displays information about the time differences between consecutive chunks and decodes
@@ -29,15 +34,9 @@ struct Cli {
     detailed: bool,
 }
 
-#[cfg(not(all(feature = "aws", feature = "decode")))]
-fn main() {
-    println!("This example requires the \"aws\" and \"decode\" features to be enabled.");
-}
-
-#[cfg(all(feature = "aws", feature = "decode"))]
 #[tokio::main]
-async fn main() -> nexrad_data::result::Result<()> {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+async fn main() -> Result<()> {
+    Builder::from_env(Env::default().default_filter_or("info"))
         .filter_module("reqwest::connect", LevelFilter::Info)
         .init();
 
@@ -174,7 +173,6 @@ async fn main() -> nexrad_data::result::Result<()> {
 }
 
 /// Information extracted from a chunk
-#[cfg(all(feature = "aws", feature = "decode"))]
 struct ChunkSummary {
     summary: String,
     message_count: usize,
@@ -182,15 +180,14 @@ struct ChunkSummary {
 }
 
 /// Decodes a chunk and returns summary information
-#[cfg(all(feature = "aws", feature = "decode"))]
 fn decode_chunk(
     chunk: &Chunk,
     download_time: DateTime<Utc>,
     detailed: bool,
-) -> nexrad_data::result::Result<ChunkSummary> {
+) -> Result<ChunkSummary> {
     let mut message_count = 0;
     let mut vcp = None;
-    let mut data_types = std::collections::HashMap::new();
+    let mut data_types = HashMap::new();
     let mut min_azimuth = f32::MAX;
     let mut max_azimuth = f32::MIN;
     let mut elevations = Vec::new();
@@ -208,7 +205,7 @@ fn decode_chunk(
                 let messages = record.messages()?;
                 message_count += messages.len();
 
-                let msg_summary = nexrad_decode::summarize::messages(messages.as_slice());
+                let msg_summary = summarize::messages(messages.as_slice());
 
                 // Extract VCP information
                 if !msg_summary.volume_coverage_patterns.is_empty() {
@@ -301,7 +298,7 @@ fn decode_chunk(
             let messages = record_clone.messages()?;
             message_count = messages.len();
 
-            let msg_summary = nexrad_decode::summarize::messages(messages.as_slice());
+            let msg_summary = summarize::messages(messages.as_slice());
 
             // Extract VCP information
             if !msg_summary.volume_coverage_patterns.is_empty() {

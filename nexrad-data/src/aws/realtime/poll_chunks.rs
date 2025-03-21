@@ -19,7 +19,6 @@ const CHUNKS_UNTIL_TIMING_STATS: usize = 10;
 /// they will be downloaded and sent to the provided `Sender`. If a statistics `Sender` is provided,
 /// statistics from the polling process such as how many requests are being sent will be sent to it.
 /// The polling process will stop when a message is received on the provided `Receiver`.
-#[cfg(feature = "nexrad-decode")]
 pub async fn poll_chunks(
     site: &str,
     tx: Sender<(ChunkIdentifier, Chunk<'_>)>,
@@ -169,7 +168,6 @@ pub async fn poll_chunks(
 }
 
 /// Helper function to update timing statistics for a downloaded chunk
-#[cfg(feature = "nexrad-decode")]
 fn update_timing_stats(
     timing_stats: &mut ChunkTimingStats,
     chunk_id: &ChunkIdentifier,
@@ -221,7 +219,6 @@ async fn get_latest_chunk(site: &str, volume: VolumeIndex) -> Result<Option<Chun
 }
 
 /// Gets the volume coverage pattern from the latest metadata chunk.
-#[cfg(feature = "nexrad-decode")]
 fn get_volume_coverage_pattern(
     latest_metadata: &Chunk<'_>,
 ) -> Result<nexrad_decode::messages::volume_coverage_pattern::Message> {

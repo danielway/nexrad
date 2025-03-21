@@ -1,4 +1,3 @@
-use crate::result::Result;
 use crate::volume::{split_compressed_records, Header, Record};
 use std::fmt::Debug;
 
@@ -19,7 +18,7 @@ impl File {
 
     /// The file's decoded Archive II volume header.
     #[cfg(all(feature = "serde", feature = "bincode"))]
-    pub fn header(&self) -> Result<Header> {
+    pub fn header(&self) -> crate::result::Result<Header> {
         Header::deserialize(&mut self.0.as_slice())
     }
 
@@ -31,7 +30,7 @@ impl File {
     /// Decodes this volume file into a common model scan containing sweeps and radials with moment
     /// data.
     #[cfg(all(feature = "nexrad-model", feature = "decode"))]
-    pub fn scan(&self) -> Result<nexrad_model::data::Scan> {
+    pub fn scan(&self) -> crate::result::Result<nexrad_model::data::Scan> {
         use crate::result::Error;
         use nexrad_decode::messages::MessageContents;
         use nexrad_model::data::{Scan, Sweep};

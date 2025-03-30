@@ -1,8 +1,8 @@
 use crate::aws::realtime::poll_stats::PollStats;
 use crate::aws::realtime::{
     download_chunk, estimate_next_chunk_time, get_latest_volume, list_chunks_in_volume, Chunk,
-    ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType, NewChunkStats, NextChunk,
-    VolumeIndex,
+    ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ElevationChunkMapper, NewChunkStats,
+    NextChunk, VolumeIndex,
 };
 use crate::result::Error;
 use crate::result::{aws::AWSError, Result};
@@ -48,8 +48,11 @@ pub async fn poll_chunks(
         .map_err(|_| AWSError::PollingAsyncError)?;
 
     let (_, latest_metadata) = download_chunk(site, &latest_chunk_id.with_sequence(1)).await?;
-    let mut vcp = get_volume_coverage_pattern(&latest_metadata)?;
-    debug!("Polling volume with VCP: {}", vcp.header.pattern_number);
+    let mut elevation_chunk_mapper = get_elevation_chunk_mapper(&latest_metadata)?;
+    debug!(
+        "Polling volume with VCP: {}",
+        elevation_chunk_mapper.get_vcp().header.pattern_number
+    );
 
     // Create timing statistics for improved predictions
     let mut timing_stats = ChunkTimingStats::new();
@@ -64,8 +67,11 @@ pub async fn poll_chunks(
             break;
         }
 
-        let next_chunk_estimate =
-            estimate_next_chunk_time(&previous_chunk_id, &vcp, Some(&timing_stats));
+        let next_chunk_estimate = estimate_next_chunk_time(
+            &previous_chunk_id,
+            &elevation_chunk_mapper,
+            Some(&timing_stats),
+        );
 
         let next_chunk_time = if let Some(next_chunk_estimate) = next_chunk_estimate {
             debug!(
@@ -123,17 +129,17 @@ pub async fn poll_chunks(
             update_timing_stats(
                 &mut timing_stats,
                 &previous_chunk_id,
-                &vcp,
+                &elevation_chunk_mapper,
                 chunk_duration,
                 attempts,
             );
         }
 
         if next_chunk_id.chunk_type() == Some(ChunkType::Start) {
-            vcp = get_volume_coverage_pattern(&next_chunk)?;
+            elevation_chunk_mapper = get_elevation_chunk_mapper(&next_chunk)?;
             debug!(
                 "Updated polling volume's VCP to: {}",
-                vcp.header.pattern_number
+                elevation_chunk_mapper.get_vcp().header.pattern_number
             );
         }
 
@@ -171,21 +177,15 @@ pub async fn poll_chunks(
 fn update_timing_stats(
     timing_stats: &mut ChunkTimingStats,
     chunk_id: &ChunkIdentifier,
-    vcp: &nexrad_decode::messages::volume_coverage_pattern::Message,
+    elevation_chunk_mapper: &ElevationChunkMapper,
     duration: Duration,
     attempts: usize,
 ) {
     use log::debug;
 
     if let Some(sequence) = chunk_id.sequence() {
-        if let Some(elevation) = super::get_elevation_from_chunk(sequence, &vcp.elevations) {
-            let chunk_type = if sequence == 1 {
-                ChunkType::Start
-            } else if sequence == 55 {
-                ChunkType::End
-            } else {
-                ChunkType::Intermediate
-            };
+        if let Some(elevation) = elevation_chunk_mapper.get_sequence_elevation(sequence) {
+            let chunk_type = elevation_chunk_mapper.get_sequence_type(sequence);
 
             let characteristics = ChunkCharacteristics {
                 chunk_type,
@@ -219,9 +219,7 @@ async fn get_latest_chunk(site: &str, volume: VolumeIndex) -> Result<Option<Chun
 }
 
 /// Gets the volume coverage pattern from the latest metadata chunk.
-fn get_volume_coverage_pattern(
-    latest_metadata: &Chunk<'_>,
-) -> Result<nexrad_decode::messages::volume_coverage_pattern::Message> {
+fn get_elevation_chunk_mapper(latest_metadata: &Chunk<'_>) -> Result<ElevationChunkMapper> {
     if let Chunk::Start(file) = latest_metadata {
         for mut record in file.records() {
             if record.compressed() {
@@ -232,7 +230,7 @@ fn get_volume_coverage_pattern(
                 if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) =
                     message.contents()
                 {
-                    return Ok(*vcp.clone());
+                    return Ok(ElevationChunkMapper::new(*vcp.clone()));
                 }
             }
         }

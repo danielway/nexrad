@@ -53,11 +53,6 @@ mod estimate_next_chunk_time;
 #[cfg(feature = "nexrad-decode")]
 pub use estimate_next_chunk_time::*;
 
-#[cfg(feature = "nexrad-decode")]
-mod get_elevation_from_chunk;
-#[cfg(feature = "nexrad-decode")]
-pub use get_elevation_from_chunk::*;
-
 #[cfg(all(feature = "nexrad-decode", feature = "bzip2"))]
 mod poll_chunks;
 #[cfg(all(feature = "nexrad-decode", feature = "bzip2"))]
@@ -72,6 +67,11 @@ pub use poll_stats::*;
 mod chunk_timing_stats;
 #[cfg(feature = "nexrad-decode")]
 pub use chunk_timing_stats::*;
+
+#[cfg(feature = "nexrad-decode")]
+mod elevation_chunk_mapper;
+#[cfg(feature = "nexrad-decode")]
+pub use elevation_chunk_mapper::*;
 
 mod search;
 

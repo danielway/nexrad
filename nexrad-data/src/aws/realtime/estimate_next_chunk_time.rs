@@ -1,46 +1,35 @@
-use crate::aws::realtime::{ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType};
+use crate::aws::realtime::{
+    ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType, ElevationChunkMapper,
+};
 use chrono::Duration as ChronoDuration;
 use chrono::{DateTime, Utc};
 use log::debug;
 use std::ops::Add;
 
-/// Attempts to estimate the time at which the next chunk will be available given the previous chunk.
-/// A None result indicates that the chunk is already available or that an estimate cannot be made.
+/// Attempts to estimate the time at which the next chunk will be available given the previous
+/// chunk. Requires an [ElevationChunkMapper] to describe the relationship between chunk sequence
+/// and VCP elevations. A None result indicates that the chunk is already available or that an
+/// estimate cannot be made.
 pub fn estimate_next_chunk_time(
     previous_chunk: &ChunkIdentifier,
-    volume_coverage_pattern: &nexrad_decode::messages::volume_coverage_pattern::Message,
+    elevation_chunk_mapper: &ElevationChunkMapper,
     timing_stats: Option<&ChunkTimingStats>,
 ) -> Option<DateTime<Utc>> {
-    use super::get_elevation_from_chunk;
+    if previous_chunk.chunk_type() == Some(ChunkType::End) {
+        return Some(
+            previous_chunk
+                .date_time()
+                .unwrap_or_else(Utc::now)
+                .add(ChronoDuration::seconds(10)),
+        );
+    }
 
     if let Some(previous_sequence) = previous_chunk.sequence() {
-        if !((1..=55).contains(&previous_sequence)) {
-            return None;
-        }
-
-        if previous_sequence == 55 {
-            return Some(
-                previous_chunk
-                    .date_time()
-                    .unwrap_or_else(Utc::now)
-                    .add(ChronoDuration::seconds(10)),
-            );
-        }
-
         // Get the next sequence and corresponding elevation
         let next_sequence = previous_sequence + 1;
-        let elevation =
-            get_elevation_from_chunk(next_sequence, &volume_coverage_pattern.elevations);
 
-        if let Some(elevation) = elevation {
-            // Determine chunk characteristics to look up timing
-            let next_chunk_type = if next_sequence == 1 {
-                ChunkType::Start
-            } else if next_sequence == 55 {
-                ChunkType::End
-            } else {
-                ChunkType::Intermediate
-            };
+        if let Some(elevation) = elevation_chunk_mapper.get_sequence_elevation(next_sequence) {
+            let next_chunk_type = elevation_chunk_mapper.get_sequence_type(next_sequence);
 
             let waveform_type = elevation.waveform_type();
             let channel_config = elevation.channel_configuration();

@@ -4,12 +4,11 @@ use chrono::{DateTime, Utc};
 use clap::Parser;
 use env_logger::{Builder, Env};
 use log::{debug, info, warn, LevelFilter};
-use nexrad_data::aws::realtime::get_elevation_from_chunk;
 use nexrad_data::aws::realtime::{
-    download_chunk, get_latest_volume, list_chunks_in_volume, Chunk, ChunkIdentifier, VolumeIndex,
+    download_chunk, get_latest_volume, list_chunks_in_volume, Chunk, ChunkIdentifier,
+    ElevationChunkMapper, VolumeIndex,
 };
 use nexrad_data::result::Result;
-use nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock;
 use nexrad_decode::messages::MessageContents;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
@@ -123,7 +122,7 @@ async fn main() -> Result<()> {
     );
 
     let mut previous_time: Option<DateTime<Utc>> = None;
-    let mut vcp_elevations: Vec<ElevationDataBlock> = Vec::new();
+    let elevation_chunk_mapper: Option<ElevationChunkMapper> = None;
 
     for (i, chunk_id) in chunks_to_analyze.iter().enumerate() {
         let chunk_name = chunk_id.name();
@@ -151,7 +150,7 @@ async fn main() -> Result<()> {
 
         match download_chunk(&site, chunk_id).await {
             Ok((_, chunk)) => {
-                let result = analyze_chunk(&chunk, chunk_id, &mut vcp_elevations)?;
+                let result = analyze_chunk(&chunk, chunk_id, &elevation_chunk_mapper)?;
 
                 write_csv_row(
                     &mut file,
@@ -204,7 +203,7 @@ struct ChunkAnalysis {
 fn analyze_chunk(
     chunk: &Chunk,
     chunk_id: &ChunkIdentifier,
-    vcp_message: &mut Vec<ElevationDataBlock>,
+    elevation_chunk_mapper: &Option<ElevationChunkMapper>,
 ) -> Result<ChunkAnalysis> {
     let mut result = ChunkAnalysis {
         message_types: Vec::new(),
@@ -259,7 +258,6 @@ fn analyze_chunk(
                     vcp.elevations.len()
                 );
 
-                *vcp_message = vcp.elevations.clone();
                 result.vcp_number = Some(format!("VCP{}", vcp.header.pattern_type));
             }
             MessageContents::DigitalRadarData(radar) => {
@@ -371,8 +369,12 @@ fn analyze_chunk(
         .map(|data_type| format!("{}", data_type))
         .collect();
 
-    if let (Some(sequence), vcp) = (chunk_id.sequence(), vcp_message) {
-        let elevation = get_elevation_from_chunk(sequence, &vcp);
+    if let (Some(sequence), elevation_chunk_mapper) = (chunk_id.sequence(), elevation_chunk_mapper)
+    {
+        let elevation = elevation_chunk_mapper
+            .as_ref()
+            .and_then(|mapper| mapper.get_sequence_elevation(sequence));
+
         if let Some(elevation) = elevation {
             result.elevation_angle = Some(elevation.elevation_angle_degrees());
             result.channel_configuration = Some(format!("{:?}", elevation.channel_configuration()));

@@ -204,7 +204,7 @@ async fn main() -> Result<()> {
                 }
             }
 
-            last_chunk_time = chunk_id.date_time();
+            last_chunk_time = chunk_id.upload_date_time();
 
             downloaded_chunk_count += 1;
             if downloaded_chunk_count >= desired_chunk_count {
@@ -260,7 +260,7 @@ fn process_record(
     let rounded_download_time = download_time.round_subsecs(0);
 
     let aws_latency = chunk_id
-        .date_time()
+        .upload_date_time()
         .map(|time| {
             if rounded_download_time < time {
                 warn!("Download time is before S3 modified time: download={}, rounded download={}, s3={}", download_time, rounded_download_time, time);
@@ -271,7 +271,7 @@ fn process_record(
         .unwrap_or(f64::NAN);
 
     // Compare chunk_id.date_time() with last_chunk_time, though either could be None
-    let time_since_last_chunk = match (chunk_id.date_time(), last_chunk_time) {
+    let time_since_last_chunk = match (chunk_id.upload_date_time(), last_chunk_time) {
         (Some(current), Some(last)) => {
             format!("{}", (current - last).num_milliseconds() as f64 / 1000.0)
         }

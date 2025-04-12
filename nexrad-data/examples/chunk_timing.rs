@@ -76,11 +76,11 @@ async fn main() -> Result<()> {
 
     // Sort chunks by modified time
     chunks.sort_by(|a, b| {
-        if let (Some(time_a), Some(time_b)) = (a.date_time(), b.date_time()) {
+        if let (Some(time_a), Some(time_b)) = (a.upload_date_time(), b.upload_date_time()) {
             time_a.cmp(&time_b)
-        } else if a.date_time().is_some() {
+        } else if a.upload_date_time().is_some() {
             Ordering::Less
-        } else if b.date_time().is_some() {
+        } else if b.upload_date_time().is_some() {
             Ordering::Greater
         } else {
             Ordering::Equal
@@ -119,7 +119,7 @@ async fn main() -> Result<()> {
 
     for chunk_id in chunks_to_analyze {
         let chunk_name = chunk_id.name();
-        let modified_time = chunk_id.date_time();
+        let modified_time = chunk_id.upload_date_time();
 
         // Calculate time difference
         let time_diff = if let Some(time) = modified_time {

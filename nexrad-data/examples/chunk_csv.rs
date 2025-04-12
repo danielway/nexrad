@@ -87,11 +87,11 @@ async fn main() -> Result<()> {
     }
 
     chunks.sort_by(|a, b| {
-        if let (Some(time_a), Some(time_b)) = (a.date_time(), b.date_time()) {
+        if let (Some(time_a), Some(time_b)) = (a.upload_date_time(), b.upload_date_time()) {
             time_a.cmp(&time_b)
-        } else if a.date_time().is_some() {
+        } else if a.upload_date_time().is_some() {
             Ordering::Less
-        } else if b.date_time().is_some() {
+        } else if b.upload_date_time().is_some() {
             Ordering::Greater
         } else {
             Ordering::Equal
@@ -127,7 +127,7 @@ async fn main() -> Result<()> {
 
     for (i, chunk_id) in chunks_to_analyze.iter().enumerate() {
         let chunk_name = chunk_id.name();
-        let modified_time = chunk_id.date_time();
+        let modified_time = chunk_id.upload_date_time();
 
         // Calculate time difference from previous chunk
         let time_diff = if let Some(time) = modified_time {
@@ -343,7 +343,10 @@ fn analyze_chunk(
             let duration = latest.signed_duration_since(earliest);
             result.scan_time = Some(duration.num_milliseconds() as f64 / 1000.0);
 
-            let proc_duration = chunk_id.date_time().unwrap().signed_duration_since(latest);
+            let proc_duration = chunk_id
+                .upload_date_time()
+                .unwrap()
+                .signed_duration_since(latest);
             result.processing_time = Some(proc_duration.num_milliseconds() as f64 / 1000.0);
         }
 
@@ -380,11 +383,9 @@ fn analyze_chunk(
         .map(|data_type| format!("{}", data_type))
         .collect();
 
-    if let (Some(sequence), Some(vcp), Some(elevation_chunk_mapper)) =
-        (chunk_id.sequence(), vcp, elevation_chunk_mapper)
-    {
+    if let (Some(vcp), Some(elevation_chunk_mapper)) = (vcp, elevation_chunk_mapper) {
         let elevation = elevation_chunk_mapper
-            .get_sequence_elevation_number(sequence)
+            .get_sequence_elevation_number(chunk_id.sequence())
             .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1));
 
         if let Some(elevation) = elevation {

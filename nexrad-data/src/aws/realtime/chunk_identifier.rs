@@ -69,7 +69,10 @@ impl ChunkIdentifier {
 
     /// Identifies the next chunk's expected location.
     #[cfg(feature = "nexrad-decode")]
-    pub fn next_chunk(&self, elevation_chunk_mapper: &crate::aws::realtime::ElevationChunkMapper) -> Option<NextChunk> {
+    pub fn next_chunk(
+        &self,
+        elevation_chunk_mapper: &crate::aws::realtime::ElevationChunkMapper,
+    ) -> Option<NextChunk> {
         if self.chunk_type() == Some(ChunkType::Start) {
             return Some(NextChunk::Sequence(ChunkIdentifier::new(
                 self.site().to_string(),
@@ -95,11 +98,10 @@ impl ChunkIdentifier {
 /// Identifies where to find the next expected chunk.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum NextChunk {
-    /// The next chunk is expected to be located in the same volume at this sequence. The
-    /// [ChunkIdentifier::with_sequence] method can be used to create the next chunk's identifier
-    /// and it can be downloaded using the [crate::aws::realtime::download_chunk()] function. You
-    /// may need to poll by checking if that function returns
-    /// [crate::result::aws::AWSError::S3ObjectNotFoundError].
+    /// The next chunk is expected to be located in the same volume at this sequence. Once the next
+    /// chunk's identifier is determined, it can be downloaded using the
+    /// [crate::aws::realtime::download_chunk()] function. You may need to poll by checking if that
+    /// function returns [crate::result::aws::AWSError::S3ObjectNotFoundError].
     Sequence(ChunkIdentifier),
 
     /// The chunk is expected to be located in the next volume. The next volume's chunks can be

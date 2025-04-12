@@ -9,7 +9,7 @@ use nexrad_data::aws::realtime::{
     ElevationChunkMapper, VolumeIndex,
 };
 use nexrad_data::result::Result;
-use nexrad_decode::messages::MessageContents;
+use nexrad_decode::messages::{volume_coverage_pattern, MessageContents};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -111,7 +111,7 @@ async fn main() -> Result<()> {
         file,
         "chunk_name,modified_time,time_since_previous_s,message_types,data_types,\
         earliest_message_time,latest_message_time,scan_time_s,processing_time_s,\
-        elevation_numbers,elevation_angle,azimuth_range,\
+        elevation_numbers,matched_to_vcp,elevation_angle,azimuth_range,\
         vcp_number,channel_configuration,waveform_type,super_resolution,azimuth_rate"
     )?;
 
@@ -122,7 +122,8 @@ async fn main() -> Result<()> {
     );
 
     let mut previous_time: Option<DateTime<Utc>> = None;
-    let elevation_chunk_mapper: Option<ElevationChunkMapper> = None;
+    let mut vcp: Option<volume_coverage_pattern::Message> = None;
+    let mut elevation_chunk_mapper: Option<ElevationChunkMapper> = None;
 
     for (i, chunk_id) in chunks_to_analyze.iter().enumerate() {
         let chunk_name = chunk_id.name();
@@ -150,7 +151,8 @@ async fn main() -> Result<()> {
 
         match download_chunk(&site, chunk_id).await {
             Ok((_, chunk)) => {
-                let result = analyze_chunk(&chunk, chunk_id, &elevation_chunk_mapper)?;
+                let result =
+                    analyze_chunk(&chunk, chunk_id, &mut vcp, &mut elevation_chunk_mapper)?;
 
                 write_csv_row(
                     &mut file,
@@ -191,6 +193,7 @@ struct ChunkAnalysis {
     processing_time: Option<f64>,
     elevation_numbers: HashSet<u8>,
     elevation_angle: Option<f64>,
+    matched_to_vcp: bool,
     azimuth_range: Option<f64>,
     vcp_number: Option<String>,
     channel_configuration: Option<String>,
@@ -203,7 +206,8 @@ struct ChunkAnalysis {
 fn analyze_chunk(
     chunk: &Chunk,
     chunk_id: &ChunkIdentifier,
-    elevation_chunk_mapper: &Option<ElevationChunkMapper>,
+    vcp: &mut Option<volume_coverage_pattern::Message>,
+    elevation_chunk_mapper: &mut Option<ElevationChunkMapper>,
 ) -> Result<ChunkAnalysis> {
     let mut result = ChunkAnalysis {
         message_types: Vec::new(),
@@ -214,6 +218,7 @@ fn analyze_chunk(
         processing_time: None,
         elevation_numbers: HashSet::new(),
         elevation_angle: None,
+        matched_to_vcp: false,
         azimuth_range: None,
         vcp_number: None,
         channel_configuration: None,
@@ -252,13 +257,19 @@ fn analyze_chunk(
         *message_type_counter.entry(msg_type).or_insert(0) += 1;
 
         match message.contents() {
-            MessageContents::VolumeCoveragePattern(vcp) => {
+            MessageContents::VolumeCoveragePattern(chunk_vcp) => {
                 debug!(
                     "Found VCP message with {} elevation cuts",
-                    vcp.elevations.len()
+                    chunk_vcp.elevations.len()
                 );
 
-                result.vcp_number = Some(format!("VCP{}", vcp.header.pattern_type));
+                if vcp.is_none() {
+                    *vcp = Some(*chunk_vcp.clone());
+                    *elevation_chunk_mapper =
+                        Some(ElevationChunkMapper::new(vcp.as_ref().unwrap()));
+                }
+
+                result.vcp_number = Some(format!("VCP{}", chunk_vcp.header.pattern_type));
             }
             MessageContents::DigitalRadarData(radar) => {
                 if let Some(time) = radar.header.date_time() {
@@ -369,13 +380,13 @@ fn analyze_chunk(
         .map(|data_type| format!("{}", data_type))
         .collect();
 
-    if let (Some(sequence), elevation_chunk_mapper) = (chunk_id.sequence(), elevation_chunk_mapper)
+    if let (Some(sequence), Some(vcp), Some(elevation_chunk_mapper)) =
+        (chunk_id.sequence(), vcp, elevation_chunk_mapper)
     {
-        let elevation = elevation_chunk_mapper
-            .as_ref()
-            .and_then(|mapper| mapper.get_sequence_elevation(sequence));
+        let elevation = elevation_chunk_mapper.get_sequence_elevation(sequence, vcp);
 
         if let Some(elevation) = elevation {
+            result.matched_to_vcp = true;
             result.elevation_angle = Some(elevation.elevation_angle_degrees());
             result.channel_configuration = Some(format!("{:?}", elevation.channel_configuration()));
             result.waveform_type = Some(format!("{:?}", elevation.waveform_type()));
@@ -396,11 +407,14 @@ fn write_csv_row(
     chunk_name: String,
     modified_time: Option<DateTime<Utc>>,
     time_diff: String,
-    analysis: ChunkAnalysis,
+    mut analysis: ChunkAnalysis,
 ) -> Result<()> {
+    analysis.message_types.sort();
+    analysis.data_types.sort();
+
     writeln!(
         file,
-        "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+        "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
         chunk_name,
         modified_time
             .map(|time| time.format("%Y-%m-%dT%H:%M:%S%.3f").to_string())
@@ -434,6 +448,10 @@ fn write_csv_row(
             .elevation_angle
             .map(|e| format!("{:.2}", e))
             .unwrap_or_else(|| "".to_string()),
+        analysis
+            .matched_to_vcp
+            .then(|| "Yes")
+            .unwrap_or_else(|| "No"),
         analysis
             .azimuth_range
             .map(|a| format!("{:.2}", a))

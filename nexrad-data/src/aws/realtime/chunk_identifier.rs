@@ -1,4 +1,4 @@
-use crate::aws::realtime::{ChunkType, ElevationChunkMapper, VolumeIndex};
+use crate::aws::realtime::{ChunkType, VolumeIndex};
 use chrono::{DateTime, Utc};
 
 /// Identifies a volume chunk within the real-time NEXRAD data bucket. These chunks are uploaded
@@ -68,7 +68,8 @@ impl ChunkIdentifier {
     }
 
     /// Identifies the next chunk's expected location.
-    pub fn next_chunk(&self, elevation_chunk_mapper: &ElevationChunkMapper) -> Option<NextChunk> {
+    #[cfg(feature = "nexrad-decode")]
+    pub fn next_chunk(&self, elevation_chunk_mapper: &crate::aws::realtime::ElevationChunkMapper) -> Option<NextChunk> {
         if self.chunk_type() == Some(ChunkType::Start) {
             return Some(NextChunk::Sequence(ChunkIdentifier::new(
                 self.site().to_string(),

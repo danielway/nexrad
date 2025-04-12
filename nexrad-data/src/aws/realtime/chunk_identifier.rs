@@ -62,13 +62,13 @@ impl ChunkIdentifier {
         name: String,
         upload_date_time: Option<DateTime<Utc>>,
     ) -> Result<Self> {
-        let date_time_prefix = name[..15]
-            .parse::<NaiveDateTime>()
+        let date_time_prefix = NaiveDateTime::parse_from_str(&name[..15], "%Y%m%d-%H%M%S")
             .map_err(|_| Error::AWS(AWSError::UnrecognizedChunkDateTime(name[..15].to_string())))?;
 
-        let sequence = name[15..18].parse::<usize>().map_err(|_| {
+        let sequence_str = &name[16..19];
+        let sequence = sequence_str.parse::<usize>().map_err(|_| {
             Error::AWS(AWSError::UnrecognizedChunkSequence(
-                name[15..18].to_string(),
+                sequence_str.to_string(),
             ))
         })?;
 

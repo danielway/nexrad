@@ -195,7 +195,10 @@ fn update_timing_stats(
     use log::debug;
 
     if let (Some(sequence), Some(chunk_type)) = (chunk_id.sequence(), chunk_id.chunk_type()) {
-        if let Some(elevation) = elevation_chunk_mapper.get_sequence_elevation(sequence, vcp) {
+        if let Some(elevation) = elevation_chunk_mapper
+            .get_sequence_elevation_number(sequence)
+            .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1))
+        {
             let characteristics = ChunkCharacteristics {
                 chunk_type,
                 waveform_type: elevation.waveform_type(),

@@ -383,7 +383,9 @@ fn analyze_chunk(
     if let (Some(sequence), Some(vcp), Some(elevation_chunk_mapper)) =
         (chunk_id.sequence(), vcp, elevation_chunk_mapper)
     {
-        let elevation = elevation_chunk_mapper.get_sequence_elevation(sequence, vcp);
+        let elevation = elevation_chunk_mapper
+            .get_sequence_elevation_number(sequence)
+            .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1));
 
         if let Some(elevation) = elevation {
             result.matched_to_vcp = true;

@@ -32,9 +32,13 @@ impl ElevationChunkMapper {
         }
     }
 
-    /// Get the elevation index for a given sequence number. Returns None if the sequence number
+    /// Get the elevation number for a given sequence number. Returns None if the sequence number   
     /// does not correspond to a radar scan described by the VCP.
-    pub fn get_sequence_elevation_index(&self, sequence: usize) -> Option<usize> {
+    pub fn get_sequence_elevation<'a>(
+        &self,
+        sequence: usize,
+        vcp: &'a volume_coverage_pattern::Message,
+    ) -> Option<&'a volume_coverage_pattern::ElevationDataBlock> {
         // The first chunk is metadata, not a radar scan described by the VCP
         if sequence == 1 {
             return None;
@@ -43,23 +47,7 @@ impl ElevationChunkMapper {
         self.elevation_chunk_mappings
             .iter()
             .position(|(start, end)| sequence >= *start && sequence <= *end)
-    }
-
-    /// Get the elevation number for a given sequence number. Returns None if the sequence number   
-    /// does not correspond to a radar scan described by the VCP.
-    pub fn get_sequence_elevation<'a>(
-        &self,
-        sequence: usize,
-        vcp: &'a volume_coverage_pattern::Message,
-    ) -> Option<&'a volume_coverage_pattern::ElevationDataBlock> {
-        self.get_sequence_elevation_index(sequence)
             .map(|elevation_index| &vcp.elevations[elevation_index])
-    }
-
-    /// Get the sequence number range for a given elevation number. Returns None if the elevation
-    /// number does not correspond to a radar scan described by the VCP.
-    pub fn get_elevation_sequence_range(&self, elevation: usize) -> Option<(usize, usize)> {
-        self.elevation_chunk_mappings.get(elevation).cloned()
     }
 
     /// Whether the given sequence number is the final chunk for the volume.

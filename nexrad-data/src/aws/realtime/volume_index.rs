@@ -14,4 +14,13 @@ impl VolumeIndex {
     pub fn as_number(&self) -> usize {
         self.0
     }
+
+    /// Returns the next volume index.
+    pub fn next(&self) -> Self {
+        if self.0 == 999 {
+            Self::new(1)
+        } else {
+            Self::new(self.0 + 1)
+        }
+    }
 }

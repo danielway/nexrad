@@ -1,12 +1,13 @@
 use crate::aws::realtime::poll_stats::PollStats;
 use crate::aws::realtime::{
-    download_chunk, estimate_next_chunk_time, get_latest_volume, list_chunks_in_volume, Chunk,
-    ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType, NewChunkStats, NextChunk,
-    VolumeIndex,
+    download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
+    Chunk, ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ElevationChunkMapper,
+    NewChunkStats, NextChunk, VolumeIndex,
 };
 use crate::result::Error;
 use crate::result::{aws::AWSError, Result};
 use chrono::{Duration, Utc};
+use nexrad_decode::messages::volume_coverage_pattern;
 use std::future::Future;
 use std::sync::mpsc::{Receiver, Sender};
 use std::time::Duration as StdDuration;
@@ -47,9 +48,17 @@ pub async fn poll_chunks(
     tx.send((latest_chunk_id.clone(), latest_chunk))
         .map_err(|_| AWSError::PollingAsyncError)?;
 
-    let (_, latest_metadata) = download_chunk(site, &latest_chunk_id.with_sequence(1)).await?;
-    let mut vcp = get_volume_coverage_pattern(&latest_metadata)?;
+    let latest_metadata_id = ChunkIdentifier::new(
+        site.to_string(),
+        latest_volume,
+        format!("{}-{:03}-{}", latest_chunk_id.name_prefix(), 1, "S"),
+        None,
+    );
+    let (_, latest_metadata) = download_chunk(site, &latest_metadata_id).await?;
+    let vcp = get_latest_vcp(&latest_metadata)?;
     debug!("Polling volume with VCP: {}", vcp.header.pattern_number);
+
+    let mut elevation_chunk_mapper = ElevationChunkMapper::new(&vcp);
 
     // Create timing statistics for improved predictions
     let mut timing_stats = ChunkTimingStats::new();
@@ -64,8 +73,12 @@ pub async fn poll_chunks(
             break;
         }
 
-        let next_chunk_estimate =
-            estimate_next_chunk_time(&previous_chunk_id, &vcp, Some(&timing_stats));
+        let next_chunk_estimate = estimate_chunk_availability_time(
+            &previous_chunk_id,
+            &vcp,
+            &elevation_chunk_mapper,
+            Some(&timing_stats),
+        );
 
         let next_chunk_time = if let Some(next_chunk_estimate) = next_chunk_estimate {
             debug!(
@@ -93,7 +106,7 @@ pub async fn poll_chunks(
         }
 
         let next_chunk_id = match previous_chunk_id
-            .next_chunk()
+            .next_chunk(&elevation_chunk_mapper)
             .ok_or(AWSError::FailedToDetermineNextChunk)?
         {
             NextChunk::Sequence(next_chunk_id) => next_chunk_id,
@@ -124,17 +137,20 @@ pub async fn poll_chunks(
                 &mut timing_stats,
                 &previous_chunk_id,
                 &vcp,
+                &elevation_chunk_mapper,
                 chunk_duration,
                 attempts,
             );
         }
 
         if next_chunk_id.chunk_type() == Some(ChunkType::Start) {
-            vcp = get_volume_coverage_pattern(&next_chunk)?;
+            let vcp = get_latest_vcp(&next_chunk)?;
             debug!(
                 "Updated polling volume's VCP to: {}",
                 vcp.header.pattern_number
             );
+
+            elevation_chunk_mapper = ElevationChunkMapper::new(&vcp);
         }
 
         if let Some(stats_tx) = &stats_tx {
@@ -171,22 +187,18 @@ pub async fn poll_chunks(
 fn update_timing_stats(
     timing_stats: &mut ChunkTimingStats,
     chunk_id: &ChunkIdentifier,
-    vcp: &nexrad_decode::messages::volume_coverage_pattern::Message,
+    vcp: &volume_coverage_pattern::Message,
+    elevation_chunk_mapper: &ElevationChunkMapper,
     duration: Duration,
     attempts: usize,
 ) {
     use log::debug;
 
-    if let Some(sequence) = chunk_id.sequence() {
-        if let Some(elevation) = super::get_elevation_from_chunk(sequence, &vcp.elevations) {
-            let chunk_type = if sequence == 1 {
-                ChunkType::Start
-            } else if sequence == 55 {
-                ChunkType::End
-            } else {
-                ChunkType::Intermediate
-            };
-
+    if let (Some(sequence), Some(chunk_type)) = (chunk_id.sequence(), chunk_id.chunk_type()) {
+        if let Some(elevation) = elevation_chunk_mapper
+            .get_sequence_elevation_number(sequence)
+            .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1))
+        {
             let characteristics = ChunkCharacteristics {
                 chunk_type,
                 waveform_type: elevation.waveform_type(),
@@ -219,9 +231,7 @@ async fn get_latest_chunk(site: &str, volume: VolumeIndex) -> Result<Option<Chun
 }
 
 /// Gets the volume coverage pattern from the latest metadata chunk.
-fn get_volume_coverage_pattern(
-    latest_metadata: &Chunk<'_>,
-) -> Result<nexrad_decode::messages::volume_coverage_pattern::Message> {
+fn get_latest_vcp(latest_metadata: &Chunk<'_>) -> Result<volume_coverage_pattern::Message> {
     if let Chunk::Start(file) = latest_metadata {
         for mut record in file.records() {
             if record.compressed() {

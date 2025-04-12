@@ -1,52 +1,54 @@
-use crate::aws::realtime::{ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType};
+use crate::aws::realtime::{
+    ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType, ElevationChunkMapper,
+};
 use chrono::Duration as ChronoDuration;
 use chrono::{DateTime, Utc};
 use log::debug;
-use std::ops::Add;
+use nexrad_decode::messages::volume_coverage_pattern::{self, ChannelConfiguration, WaveformType};
 
-/// Attempts to estimate the time at which the next chunk will be available given the previous chunk.
-/// A None result indicates that the chunk is already available or that an estimate cannot be made.
-pub fn estimate_next_chunk_time(
-    previous_chunk: &ChunkIdentifier,
-    volume_coverage_pattern: &nexrad_decode::messages::volume_coverage_pattern::Message,
+/// Attempts to estimate the time at which the next chunk will be available given the previous
+/// chunk. Requires an [ElevationChunkMapper] to describe the relationship between chunk sequence
+/// and VCP elevations. A None result indicates that the chunk is already available or that an
+/// estimate cannot be made.
+pub fn estimate_chunk_availability_time(
+    chunk: &ChunkIdentifier,
+    vcp: &volume_coverage_pattern::Message,
+    elevation_chunk_mapper: &ElevationChunkMapper,
     timing_stats: Option<&ChunkTimingStats>,
 ) -> Option<DateTime<Utc>> {
-    use super::get_elevation_from_chunk;
+    let processing_time =
+        estimate_chunk_processing_time(chunk, vcp, elevation_chunk_mapper, timing_stats)?;
 
-    if let Some(previous_sequence) = previous_chunk.sequence() {
-        if !((1..=55).contains(&previous_sequence)) {
-            return None;
-        }
+    let now = Utc::now();
+    let availability_time = now + processing_time;
 
-        if previous_sequence == 55 {
-            return Some(
-                previous_chunk
-                    .date_time()
-                    .unwrap_or_else(Utc::now)
-                    .add(ChronoDuration::seconds(10)),
-            );
-        }
+    Some(availability_time)
+}
 
-        // Get the next sequence and corresponding elevation
-        let next_sequence = previous_sequence + 1;
-        let elevation =
-            get_elevation_from_chunk(next_sequence, &volume_coverage_pattern.elevations);
+/// Attempts to estimate the time the given chunk will take to become available in the real-time S3
+/// bucket following the previous chunk. Requires an [ElevationChunkMapper] to describe the
+/// relationship between chunk sequence and VCP elevations. A None result indicates that an estimate
+/// cannot be made.
+pub fn estimate_chunk_processing_time(
+    chunk: &ChunkIdentifier,
+    vcp: &volume_coverage_pattern::Message,
+    elevation_chunk_mapper: &ElevationChunkMapper,
+    timing_stats: Option<&ChunkTimingStats>,
+) -> Option<ChronoDuration> {
+    if chunk.chunk_type() == Some(ChunkType::Start) {
+        return Some(ChronoDuration::seconds(10));
+    }
 
-        if let Some(elevation) = elevation {
-            // Determine chunk characteristics to look up timing
-            let next_chunk_type = if next_sequence == 1 {
-                ChunkType::Start
-            } else if next_sequence == 55 {
-                ChunkType::End
-            } else {
-                ChunkType::Intermediate
-            };
-
+    if let (Some(sequence), Some(chunk_type)) = (chunk.sequence(), chunk.chunk_type()) {
+        if let Some(elevation) = elevation_chunk_mapper
+            .get_sequence_elevation_number(sequence)
+            .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1))
+        {
             let waveform_type = elevation.waveform_type();
             let channel_config = elevation.channel_configuration();
 
             let characteristics = ChunkCharacteristics {
-                chunk_type: next_chunk_type,
+                chunk_type,
                 waveform_type,
                 channel_configuration: channel_config,
             };
@@ -86,9 +88,8 @@ pub fn estimate_next_chunk_time(
                 wait_time
             };
 
-            let previous_time = previous_chunk.date_time().unwrap_or_else(Utc::now);
-            return Some(previous_time.add(estimated_wait_time));
-        };
+            return Some(estimated_wait_time);
+        }
     }
 
     None
@@ -96,11 +97,9 @@ pub fn estimate_next_chunk_time(
 
 /// Gets the default wait time based on waveform type and channel configuration
 fn get_default_wait_time(
-    waveform_type: nexrad_decode::messages::volume_coverage_pattern::WaveformType,
-    channel_config: nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration,
+    waveform_type: WaveformType,
+    channel_config: ChannelConfiguration,
 ) -> ChronoDuration {
-    use nexrad_decode::messages::volume_coverage_pattern::{ChannelConfiguration, WaveformType};
-
     if waveform_type == WaveformType::CS {
         ChronoDuration::seconds(11)
     } else if channel_config == ChannelConfiguration::ConstantPhase {

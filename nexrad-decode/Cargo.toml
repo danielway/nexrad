@@ -23,7 +23,7 @@ uom = { workspace = true, optional = true }
 clap = { workspace = true }
 env_logger = { workspace = true }
 tokio = { workspace = true }
-nexrad-data = { workspace = true }
+nexrad-data = { version = "0.2.0", path = "../nexrad-data" }
 
 [[example]]
 name = "elevation_angles"

@@ -1,0 +1,11 @@
+[package]
+name = "nexrad-renderer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nexrad = { path = "../nexrad", features = ["uom", "decompress", "rayon"] }
+piet = { version = "0.6.2" , features = ["png"]}
+piet-common = { version = "0.6.2", features = ["png"] }
+uom = "0.36.0"
+rayon = { version = "1.10.0", optional = true }

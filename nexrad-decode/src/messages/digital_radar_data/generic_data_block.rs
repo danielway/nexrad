@@ -67,6 +67,9 @@ impl GenericDataBlock {
     #[cfg(feature = "nexrad-model")]
     pub fn moment_data(&self) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
+            self.header.number_of_data_moment_gates,
+            self.header.data_moment_range,
+            self.header.data_moment_range_sample_interval,
             self.header.scale,
             self.header.offset,
             self.encoded_data.clone(),
@@ -77,6 +80,9 @@ impl GenericDataBlock {
     #[cfg(feature = "nexrad-model")]
     pub fn into_moment_data(self) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
+            self.header.number_of_data_moment_gates,
+            self.header.data_moment_range,
+            self.header.data_moment_range_sample_interval,
             self.header.scale,
             self.header.offset,
             self.encoded_data,

@@ -1,14 +1,14 @@
-mod color;
-pub use crate::color::*;
-
-use nexrad::model::messages::digital_radar_data;
-use nexrad::model::messages::digital_radar_data::{GenericDataBlock, ScaledMomentValue};
+use nexrad_model::data::{MomentData, MomentValue, Radial};
+use result::{Result, Error};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::{Arc, Point, Vec2};
 use piet_common::{BitmapTarget, Device};
 use std::cmp::max;
-use std::f64::consts::PI;
-use uom::si::angle::radian;
+
+mod color;
+pub use crate::color::*;
+
+pub mod result;
 
 /// Radar data products to render.
 #[derive(Debug, Copy, Clone)]
@@ -25,14 +25,12 @@ pub enum Product {
 /// Render the specified radials to an image.
 pub fn render_radials<'a>(
     device: &'a mut Device,
-    radials: &Vec<digital_radar_data::Message>,
+    radials: &Vec<Radial>,
     product: Product,
     scale: &DiscreteColorScale,
     size: (usize, usize),
-) -> BitmapTarget<'a> {
-    let mut target = device
-        .bitmap_target(size.0, size.1, 1.0)
-        .expect("create bitmap target");
+) -> Result<BitmapTarget<'a>> {
+    let mut target = device.bitmap_target(size.0, size.1, 1.0)?;
 
     let mut render_context = target.render_context();
     render_context.clear(None, Color::BLACK);
@@ -40,63 +38,59 @@ pub fn render_radials<'a>(
     let image_center = Point::new(size.0 as f64 / 2.0, size.1 as f64 / 2.0);
 
     for radial in radials {
-        let azimuth = radial.header.azimuth_angle();
-        let data_moment = get_radial_moment(product, radial);
+        let azimuth = radial.azimuth_angle_degrees();
+        let data_moment = get_radial_moment(product, radial).ok_or(Error::ProductNotFound)?;
 
-        let first_gate_distance = data_moment.header.data_moment_range();
+        let first_gate_distance = data_moment.first_gate_range_km();
 
-        for (gate_index, scaled_gate) in data_moment.decoded_values().into_iter().enumerate() {
-            if let ScaledMomentValue::Value(value) = scaled_gate {
-                let gate_interval = data_moment.header.data_moment_range();
-
+        for (gate_index, value) in data_moment.values().into_iter().enumerate() {
+            if let MomentValue::Value(value) = value {
                 let radar_range = first_gate_distance
-                    + data_moment.header.number_of_data_moment_gates as f64 * gate_interval;
+                    + data_moment.gate_count() as f64 * data_moment.gate_interval_km();
 
                 let render_scale = max(size.0, size.1) as f64 / 2.0 / radar_range;
 
-                let gate_distance = first_gate_distance + gate_index as f64 * gate_interval;
+                let gate_distance = first_gate_distance + gate_index as f64 * data_moment.gate_interval_km();
 
-                let scaled_gate_interval = gate_interval * render_scale;
+                let scaled_gate_interval = data_moment.gate_interval_km() * render_scale;
 
                 // todo: why do we subtract half an interval instead of adding?
-                let gate_midpoint = gate_distance - gate_interval / 2.0;
+                let gate_midpoint = gate_distance - data_moment.gate_interval_km() / 2.0;
                 let scaled_gate_midpoint = render_scale * gate_midpoint;
 
-                // Rotate 90 degrees to align North with the top
-                let rotated_azimuth = azimuth.get::<radian>() - PI / 2.0;
+                // TODO: Rotate 90 degrees to align North with the top
+                // let rotated_azimuth = azimuth - 90.0;
 
                 render_context.stroke(
                     Arc::new(
                         image_center,
-                        Vec2::new(scaled_gate_midpoint.value, scaled_gate_midpoint.value),
-                        rotated_azimuth,
-                        radial.header.azimuth_resolution_spacing().get::<radian>(),
+                        Vec2::new(scaled_gate_midpoint, scaled_gate_midpoint),
+                        azimuth.into(),
+                        radial.azimuth_spacing_degrees().into(),
                         0.0,
                     ),
                     &scale.get_color(value),
-                    scaled_gate_interval.value,
+                    scaled_gate_interval,
                 );
             }
         }
     }
 
-    render_context.finish().expect("completed render");
+    render_context.finish()?;
     drop(render_context);
 
-    target
+    Ok(target)
 }
 
-/// Retrieve the generic data block in this radial for the given product, panicking if unavailable.
-fn get_radial_moment(product: Product, radial: &digital_radar_data::Message) -> &GenericDataBlock {
+/// Retrieve the generic data block in this radial for the given product.
+fn get_radial_moment(product: Product, radial: &Radial) -> Option<&MomentData> {
     match product {
-        Product::Reflectivity => &radial.reflectivity_data_block,
-        Product::Velocity => &radial.velocity_data_block,
-        Product::SpectrumWidth => &radial.spectrum_width_data_block,
-        Product::DifferentialReflectivity => &radial.differential_reflectivity_data_block,
-        Product::DifferentialPhase => &radial.differential_phase_data_block,
-        Product::CorrelationCoefficient => &radial.correlation_coefficient_data_block,
-        Product::SpecificDiffPhase => &radial.specific_diff_phase_data_block,
+        Product::Reflectivity => radial.reflectivity(),
+        Product::Velocity => radial.velocity(),
+        Product::SpectrumWidth => radial.spectrum_width(),
+        Product::DifferentialReflectivity => radial.differential_reflectivity(),
+        Product::DifferentialPhase => radial.differential_phase(),
+        Product::CorrelationCoefficient => radial.correlation_coefficient(),
+        Product::SpecificDiffPhase => radial.specific_differential_phase(),
     }
-    .as_ref()
-    .expect("has requested product moment")
 }

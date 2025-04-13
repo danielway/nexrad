@@ -35,33 +35,31 @@ pub fn estimate_chunk_processing_time(
     elevation_chunk_mapper: &ElevationChunkMapper,
     timing_stats: Option<&ChunkTimingStats>,
 ) -> Option<ChronoDuration> {
-    if chunk.chunk_type() == Some(ChunkType::Start) {
+    if chunk.chunk_type() == ChunkType::Start {
         return Some(ChronoDuration::seconds(10));
     }
 
-    if let (Some(sequence), Some(chunk_type)) = (chunk.sequence(), chunk.chunk_type()) {
-        if let Some(elevation) = elevation_chunk_mapper
-            .get_sequence_elevation_number(sequence)
-            .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1))
-        {
-            let waveform_type = elevation.waveform_type();
-            let channel_config = elevation.channel_configuration();
+    if let Some(elevation) = elevation_chunk_mapper
+        .get_sequence_elevation_number(chunk.sequence())
+        .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1))
+    {
+        let waveform_type = elevation.waveform_type();
+        let channel_config = elevation.channel_configuration();
 
-            let characteristics = ChunkCharacteristics {
-                chunk_type,
-                waveform_type,
-                channel_configuration: channel_config,
-            };
+        let characteristics = ChunkCharacteristics {
+            chunk_type: chunk.chunk_type(),
+            waveform_type,
+            channel_configuration: channel_config,
+        };
 
-            let average_timing =
-                timing_stats.and_then(|stats| stats.get_average_timing(&characteristics));
-            let average_attempts =
-                timing_stats.and_then(|stats| stats.get_average_attempts(&characteristics));
+        let average_timing =
+            timing_stats.and_then(|stats| stats.get_average_timing(&characteristics));
+        let average_attempts =
+            timing_stats.and_then(|stats| stats.get_average_attempts(&characteristics));
 
-            // Check if we have historical timing data for this combination
-            let estimated_wait_time = if let (Some(avg_timing), Some(avg_attempts)) =
-                (average_timing, average_attempts)
-            {
+        // Check if we have historical timing data for this combination
+        let estimated_wait_time =
+            if let (Some(avg_timing), Some(avg_attempts)) = (average_timing, average_attempts) {
                 // Use historical average if available
                 let mut wait_time = avg_timing;
 
@@ -88,8 +86,7 @@ pub fn estimate_chunk_processing_time(
                 wait_time
             };
 
-            return Some(estimated_wait_time);
-        }
+        return Some(estimated_wait_time);
     }
 
     None

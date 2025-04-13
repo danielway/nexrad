@@ -50,6 +50,12 @@ pub mod aws {
         InvalidSiteIdentifier(String),
         #[error("chunk data in unrecognized format")]
         UnrecognizedChunkFormat,
+        #[error("unrecognized chunk date time")]
+        UnrecognizedChunkDateTime(String),
+        #[error("unrecognized chunk sequence")]
+        UnrecognizedChunkSequence(String),
+        #[error("unrecognized chunk type")]
+        UnrecognizedChunkType(Option<char>),
         #[error("error listing AWS S3 objects")]
         S3ListObjectsError(reqwest::Error),
         #[error("error requesting AWS S3 object")]

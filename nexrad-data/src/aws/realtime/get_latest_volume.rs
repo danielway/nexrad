@@ -15,7 +15,7 @@ pub async fn get_latest_volume(site: &str) -> crate::result::Result<LatestVolume
         calls.fetch_add(1, Relaxed);
         async move {
             let chunks = list_chunks_in_volume(site, VolumeIndex::new(volume + 1), 1).await?;
-            Ok(chunks.first().and_then(|chunk| chunk.date_time()))
+            Ok(chunks.first().and_then(|chunk| chunk.upload_date_time()))
         }
     })
     .await

@@ -7,6 +7,7 @@ use crate::aws::realtime::{
 use crate::result::Error;
 use crate::result::{aws::AWSError, Result};
 use chrono::{Duration, Utc};
+use log::debug;
 use nexrad_decode::messages::volume_coverage_pattern;
 use std::future::Future;
 use std::sync::mpsc::{Receiver, Sender};
@@ -51,7 +52,9 @@ pub async fn poll_chunks(
     let latest_metadata_id = ChunkIdentifier::new(
         site.to_string(),
         latest_volume,
-        format!("{}-{:03}-{}", latest_chunk_id.name_prefix(), 1, "S"),
+        *latest_chunk_id.date_time_prefix(),
+        1,
+        ChunkType::Start,
         None,
     );
     let (_, latest_metadata) = download_chunk(site, &latest_metadata_id).await?;
@@ -130,7 +133,7 @@ pub async fn poll_chunks(
         let (next_chunk_id, next_chunk) = next_chunk.ok_or(AWSError::ExpectedChunkNotFound)?;
 
         if let (Some(chunk_time), Some(previous_chunk_time)) =
-            (next_chunk_id.date_time(), previous_chunk_time)
+            (next_chunk_id.upload_date_time(), previous_chunk_time)
         {
             let chunk_duration = chunk_time.signed_duration_since(previous_chunk_time);
             update_timing_stats(
@@ -143,7 +146,7 @@ pub async fn poll_chunks(
             );
         }
 
-        if next_chunk_id.chunk_type() == Some(ChunkType::Start) {
+        if next_chunk_id.chunk_type() == ChunkType::Start {
             let vcp = get_latest_vcp(&next_chunk)?;
             debug!(
                 "Updated polling volume's VCP to: {}",
@@ -158,7 +161,7 @@ pub async fn poll_chunks(
                 .send(PollStats::NewChunk(NewChunkStats {
                     calls: attempts,
                     download_time: Some(Utc::now()),
-                    upload_time: next_chunk_id.date_time(),
+                    upload_time: next_chunk_id.upload_date_time(),
                 }))
                 .map_err(|_| AWSError::PollingAsyncError)?;
 
@@ -176,7 +179,7 @@ pub async fn poll_chunks(
         tx.send((next_chunk_id.clone(), next_chunk))
             .map_err(|_| AWSError::PollingAsyncError)?;
 
-        previous_chunk_time = next_chunk_id.date_time();
+        previous_chunk_time = next_chunk_id.upload_date_time();
         previous_chunk_id = next_chunk_id;
     }
 
@@ -192,26 +195,22 @@ fn update_timing_stats(
     duration: Duration,
     attempts: usize,
 ) {
-    use log::debug;
+    if let Some(elevation) = elevation_chunk_mapper
+        .get_sequence_elevation_number(chunk_id.sequence())
+        .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1))
+    {
+        let characteristics = ChunkCharacteristics {
+            chunk_type: chunk_id.chunk_type(),
+            waveform_type: elevation.waveform_type(),
+            channel_configuration: elevation.channel_configuration(),
+        };
 
-    if let (Some(sequence), Some(chunk_type)) = (chunk_id.sequence(), chunk_id.chunk_type()) {
-        if let Some(elevation) = elevation_chunk_mapper
-            .get_sequence_elevation_number(sequence)
-            .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1))
-        {
-            let characteristics = ChunkCharacteristics {
-                chunk_type,
-                waveform_type: elevation.waveform_type(),
-                channel_configuration: elevation.channel_configuration(),
-            };
-
-            timing_stats.add_timing(characteristics, duration, attempts);
-            debug!(
-                "Updated timing statistics for {:?}: {}s",
-                &characteristics as &dyn std::fmt::Debug,
-                &(duration.num_milliseconds() as f64 / 1000.0) as &dyn std::fmt::Display,
-            );
-        }
+        timing_stats.add_timing(characteristics, duration, attempts);
+        debug!(
+            "Updated timing statistics for {:?}: {}s",
+            &characteristics as &dyn std::fmt::Debug,
+            &(duration.num_milliseconds() as f64 / 1000.0) as &dyn std::fmt::Display,
+        );
     }
 }
 

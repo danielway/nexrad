@@ -46,10 +46,11 @@ impl ElevationChunkMapper {
             .map(|elevation_index| elevation_index + 1)
     }
 
-    /// Whether the given sequence number is the final chunk for the volume.
-    pub fn is_final_sequence(&self, sequence: usize) -> bool {
+    /// Returns the final sequence number for the volume.
+    pub fn final_sequence(&self) -> usize {
         self.elevation_chunk_mappings
             .last()
-            .is_some_and(|(_, end)| sequence >= *end)
+            .map(|(_, end)| *end)
+            .unwrap_or(0)
     }
 }

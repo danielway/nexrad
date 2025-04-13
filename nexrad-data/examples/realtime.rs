@@ -79,7 +79,7 @@ async fn main() -> Result<()> {
             info!(
                 "Downloaded chunk {} from {:?} at {:?} of size {}",
                 chunk_id.name(),
-                chunk_id.date_time(),
+                chunk_id.upload_date_time(),
                 Utc::now(),
                 chunk.data().len()
             );
@@ -144,7 +144,7 @@ fn decode_record(
             .latest_collection_time
             .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
         chunk_id
-            .date_time()
+            .upload_date_time()
             .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
     );
 }

@@ -127,18 +127,8 @@ impl ChunkIdentifier {
     /// Identifies the next chunk's expected location.
     #[cfg(feature = "nexrad-decode")]
     pub fn next_chunk(&self, elevation_chunk_mapper: &ElevationChunkMapper) -> Option<NextChunk> {
-        if self.chunk_type == ChunkType::Start {
-            return Some(NextChunk::Sequence(ChunkIdentifier::new(
-                self.site().to_string(),
-                self.volume,
-                self.date_time_prefix,
-                2,
-                ChunkType::Start,
-                None,
-            )));
-        }
-
-        if elevation_chunk_mapper.is_final_sequence(self.sequence) {
+        let final_sequence = elevation_chunk_mapper.final_sequence();
+        if self.sequence == final_sequence {
             return Some(NextChunk::Volume(self.volume.next()));
         }
 
@@ -147,7 +137,11 @@ impl ChunkIdentifier {
             self.volume,
             self.date_time_prefix,
             self.sequence + 1,
-            ChunkType::Intermediate,
+            if self.sequence + 1 == final_sequence {
+                ChunkType::End
+            } else {
+                ChunkType::Intermediate
+            },
             None,
         )))
     }

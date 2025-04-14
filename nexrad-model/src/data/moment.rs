@@ -3,6 +3,9 @@ use std::fmt::Debug;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "uom")]
+use uom::si::{f64::Length, length::kilometer};
+
 /// Moment data from a radial for a particular product where each value corresponds to a gate.
 #[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -48,7 +51,7 @@ impl MomentData {
     /// The range to the center of the first gate.
     #[cfg(feature = "uom")]
     pub fn first_gate_range(&self) -> Length {
-        Length::from_value(self.first_gate_range as f64 * 0.001)
+        Length::new::<kilometer>(self.first_gate_range as f64 * 0.001)
     }
 
     /// The range between the centers of consecutive gates in kilometers.
@@ -59,7 +62,7 @@ impl MomentData {
     /// The range between the centers of consecutive gates.
     #[cfg(feature = "uom")]
     pub fn gate_interval(&self) -> Length {
-        Length::from_value(self.gate_interval as f64 * 0.001)
+        Length::new::<kilometer>(self.gate_interval as f64 * 0.001)
     }
 
     /// Values from this data moment corresponding to gates in the radial.

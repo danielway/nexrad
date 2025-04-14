@@ -1,9 +1,10 @@
 use nexrad_model::data::{MomentData, MomentValue, Radial};
-use result::{Result, Error};
 use piet::{Color, RenderContext};
 use piet_common::kurbo::{Arc, Point, Vec2};
 use piet_common::{BitmapTarget, Device};
+use result::{Error, Result};
 use std::cmp::max;
+use std::f32::consts::PI;
 
 mod color;
 pub use crate::color::*;
@@ -38,35 +39,34 @@ pub fn render_radials<'a>(
     let image_center = Point::new(size.0 as f64 / 2.0, size.1 as f64 / 2.0);
 
     for radial in radials {
-        let azimuth = radial.azimuth_angle_degrees();
-        let data_moment = get_radial_moment(product, radial).ok_or(Error::ProductNotFound)?;
+        let azimuth = radial.azimuth_angle_degrees().to_radians();
 
+        // Rotate 90 degrees to align North with the top
+        let rotated_azimuth = azimuth - PI / 2.0;
+
+        let data_moment = get_radial_moment(product, radial).ok_or(Error::ProductNotFound)?;
         let first_gate_distance = data_moment.first_gate_range_km();
+
+        let radar_range =
+            first_gate_distance + data_moment.gate_count() as f64 * data_moment.gate_interval_km();
+
+        let render_scale = max(size.0, size.1) as f64 / 2.0 / radar_range;
+
+        let scaled_gate_interval = data_moment.gate_interval_km() * render_scale;
 
         for (gate_index, value) in data_moment.values().into_iter().enumerate() {
             if let MomentValue::Value(value) = value {
-                let radar_range = first_gate_distance
-                    + data_moment.gate_count() as f64 * data_moment.gate_interval_km();
-
-                let render_scale = max(size.0, size.1) as f64 / 2.0 / radar_range;
-
-                let gate_distance = first_gate_distance + gate_index as f64 * data_moment.gate_interval_km();
-
-                let scaled_gate_interval = data_moment.gate_interval_km() * render_scale;
-
-                // todo: why do we subtract half an interval instead of adding?
+                let gate_distance =
+                    first_gate_distance + gate_index as f64 * data_moment.gate_interval_km();
                 let gate_midpoint = gate_distance - data_moment.gate_interval_km() / 2.0;
                 let scaled_gate_midpoint = render_scale * gate_midpoint;
-
-                // TODO: Rotate 90 degrees to align North with the top
-                // let rotated_azimuth = azimuth - 90.0;
 
                 render_context.stroke(
                     Arc::new(
                         image_center,
                         Vec2::new(scaled_gate_midpoint, scaled_gate_midpoint),
-                        azimuth.into(),
-                        radial.azimuth_spacing_degrees().into(),
+                        rotated_azimuth.into(),
+                        radial.azimuth_spacing_degrees().to_radians().into(),
                         0.0,
                     ),
                     &scale.get_color(value),

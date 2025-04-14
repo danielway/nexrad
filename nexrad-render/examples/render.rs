@@ -28,18 +28,13 @@ fn main() {
             }
         }
     }
-    
+
     let mut device = Device::new().expect("created device");
     let color_scale = get_nws_reflectivity_scale();
 
     let mut render_product = |product: Product| {
-        let image = render_radials(
-            &mut device,
-            &radials,
-            product,
-            &color_scale,
-            (1000, 1000),
-        ).expect("renders successfully");
+        let image = render_radials(&mut device, &radials, product, &color_scale, (3000, 3000))
+            .expect("renders successfully");
 
         std::fs::create_dir_all("renders").expect("creates directory");
 

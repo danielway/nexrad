@@ -42,7 +42,7 @@ jobs:
           components: clippy
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -65,7 +65,7 @@ jobs:
           override: true
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -93,7 +93,7 @@ jobs:
           override: true
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -123,7 +123,7 @@ jobs:
           override: true
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -149,7 +149,7 @@ jobs:
           override: true
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2

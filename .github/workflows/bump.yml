@@ -11,6 +11,7 @@ on:
           - nexrad-data
           - nexrad-decode
           - nexrad-model
+          - nexrad-render
       version_type:
         description: "Version type"
         required: true

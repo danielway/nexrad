@@ -3,10 +3,16 @@ use std::fmt::Debug;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "uom")]
+use uom::si::{f64::Length, length::kilometer};
+
 /// Moment data from a radial for a particular product where each value corresponds to a gate.
 #[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MomentData {
+    gate_count: u16,
+    first_gate_range: u16,
+    gate_interval: u16,
     scale: f32,
     offset: f32,
     values: Vec<u8>,
@@ -14,12 +20,49 @@ pub struct MomentData {
 
 impl MomentData {
     /// Create new moment data from fixed-point encoding.
-    pub fn from_fixed_point(scale: f32, offset: f32, values: Vec<u8>) -> Self {
+    pub fn from_fixed_point(
+        gate_count: u16,
+        first_gate_range: u16,
+        gate_interval: u16,
+        scale: f32,
+        offset: f32,
+        values: Vec<u8>,
+    ) -> Self {
         Self {
+            gate_count,
+            first_gate_range,
+            gate_interval,
             scale,
             offset,
             values,
         }
+    }
+
+    /// The number of gates in this data moment.
+    pub fn gate_count(&self) -> u16 {
+        self.gate_count
+    }
+
+    /// The range to the center of the first gate in kilometers.
+    pub fn first_gate_range_km(&self) -> f64 {
+        self.first_gate_range as f64 * 0.001
+    }
+
+    /// The range to the center of the first gate.
+    #[cfg(feature = "uom")]
+    pub fn first_gate_range(&self) -> Length {
+        Length::new::<kilometer>(self.first_gate_range as f64 * 0.001)
+    }
+
+    /// The range between the centers of consecutive gates in kilometers.
+    pub fn gate_interval_km(&self) -> f64 {
+        self.gate_interval as f64 * 0.001
+    }
+
+    /// The range between the centers of consecutive gates.
+    #[cfg(feature = "uom")]
+    pub fn gate_interval(&self) -> Length {
+        Length::new::<kilometer>(self.gate_interval as f64 * 0.001)
     }
 
     /// Values from this data moment corresponding to gates in the radial.

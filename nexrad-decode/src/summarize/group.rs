@@ -41,7 +41,7 @@ impl Display for MessageGroupSummary {
             write!(f, "Elevation: #{}", self.elevation_number.unwrap_or(0))?;
 
             if let Some(elev_angle) = self.elevation_angle {
-                write!(f, " ({:.2}°)", elev_angle)?;
+                write!(f, " ({elev_angle:.2}°)")?;
             }
 
             write!(
@@ -86,7 +86,7 @@ impl Display for MessageGroupSummary {
                             _ => data_type,
                         };
 
-                        write!(f, "{} ({})", abbr, count)?;
+                        write!(f, "{abbr} ({count})")?;
                     }
                 }
             }
@@ -111,7 +111,7 @@ impl Display for MessageGroupSummary {
                     } else {
                         "remote"
                     };
-                    write!(f, ", VCP: {} ({})", vcp, source)?;
+                    write!(f, ", VCP: {vcp} ({source})")?;
                 }
 
                 writeln!(f)?;
@@ -136,7 +136,7 @@ impl Display for MessageGroupSummary {
                         if i > 0 {
                             write!(f, ", ")?;
                         }
-                        write!(f, "{}", data_type)?;
+                        write!(f, "{data_type}")?;
                     }
                 }
 
@@ -148,7 +148,7 @@ impl Display for MessageGroupSummary {
                         if i > 0 {
                             write!(f, ", ")?;
                         }
-                        write!(f, "{}", flag)?;
+                        write!(f, "{flag}")?;
                     }
                 }
 
@@ -160,7 +160,7 @@ impl Display for MessageGroupSummary {
                         if i > 0 {
                             write!(f, ", ")?;
                         }
-                        write!(f, "{}", alarm)?;
+                        write!(f, "{alarm}")?;
                     }
                 }
             } else {
@@ -186,7 +186,7 @@ impl Display for MessageGroupSummary {
                 )?;
 
                 if let Some(doppler_res) = vcp_info.doppler_velocity_resolution {
-                    write!(f, ", Doppler resolution: {:.1} m/s", doppler_res)?;
+                    write!(f, ", Doppler resolution: {doppler_res:.1} m/s")?;
                 }
 
                 // VCP features
@@ -197,7 +197,7 @@ impl Display for MessageGroupSummary {
                         if i > 0 {
                             write!(f, ", ")?;
                         }
-                        write!(f, "{}", feature)?;
+                        write!(f, "{feature}")?;
                     }
                 }
 
@@ -210,7 +210,7 @@ impl Display for MessageGroupSummary {
                         write!(f, "      Cut #{}: {:.2}°", i + 1, elev.elevation_angle)?;
 
                         if let Some(cut_type) = &elev.special_cut_type {
-                            write!(f, " ({})", cut_type)?;
+                            write!(f, " ({cut_type})")?;
                         }
 
                         // Show waveform and channel configuration
@@ -230,7 +230,7 @@ impl Display for MessageGroupSummary {
                                 if j > 0 {
                                     write!(f, ", ")?;
                                 }
-                                write!(f, "{}", feature)?;
+                                write!(f, "{feature}")?;
                             }
                         }
 

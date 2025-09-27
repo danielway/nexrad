@@ -52,7 +52,7 @@ pub fn decode_message_contents<R: Read + Seek>(
     message_type: MessageType,
 ) -> Result<MessageContents> {
     let position = reader.stream_position();
-    trace!("Decoding message type {:?} at {:?}", message_type, position);
+    trace!("Decoding message type {message_type:?} at {position:?}");
 
     if message_type == MessageType::RDADigitalRadarDataGenericFormat {
         let radar_data_message = decode_digital_radar_data(reader)?;

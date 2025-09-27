@@ -99,7 +99,7 @@ async fn main() -> Result<()> {
     });
 
     let chunks_to_analyze = if max_chunks > 0 && max_chunks < chunks.len() {
-        info!("Limiting analysis to first {} chunks", max_chunks);
+        info!("Limiting analysis to first {max_chunks} chunks");
         chunks.iter().take(max_chunks).cloned().collect::<Vec<_>>()
     } else {
         chunks
@@ -165,7 +165,7 @@ async fn main() -> Result<()> {
                 previous_time = modified_time;
             }
             Err(err) => {
-                warn!("Failed to download chunk {}: {}", chunk_name, err);
+                warn!("Failed to download chunk {chunk_name}: {err}");
                 writeln!(
                     file,
                     "{},{},{},,,,,,,,,,,,",
@@ -374,13 +374,13 @@ fn analyze_chunk(
     result.message_types = message_type_counter
         .keys()
         .cloned()
-        .map(|msg_type| format!("{:?}", msg_type))
+        .map(|msg_type| format!("{msg_type:?}"))
         .collect();
 
     result.data_types = data_type_counter
         .keys()
         .cloned()
-        .map(|data_type| format!("{}", data_type))
+        .map(|data_type| data_type.to_string())
         .collect();
 
     if let (Some(vcp), Some(elevation_chunk_mapper)) = (vcp, elevation_chunk_mapper) {
@@ -421,26 +421,26 @@ fn write_csv_row(
         chunk_name,
         modified_time
             .map(|time| time.format("%Y-%m-%dT%H:%M:%S%.3f").to_string())
-            .unwrap_or_else(|| "".to_string()),
+            .unwrap_or_default(),
         time_diff,
         analysis.message_types.join(";"),
         analysis.data_types.join(";"),
         analysis
             .earliest_message_time
             .map(|time| time.format("%Y-%m-%dT%H:%M:%S%.3f").to_string())
-            .unwrap_or_else(|| "".to_string()),
+            .unwrap_or_default(),
         analysis
             .latest_message_time
             .map(|time| time.format("%Y-%m-%dT%H:%M:%S%.3f").to_string())
-            .unwrap_or_else(|| "".to_string()),
+            .unwrap_or_default(),
         analysis
             .scan_time
-            .map(|t| format!("{:.3}", t))
-            .unwrap_or_else(|| "".to_string()),
+            .map(|t| format!("{t:.3}"))
+            .unwrap_or_default(),
         analysis
             .processing_time
-            .map(|t| format!("{:.3}", t))
-            .unwrap_or_else(|| "".to_string()),
+            .map(|t| format!("{t:.3}"))
+            .unwrap_or_default(),
         analysis
             .elevation_numbers
             .iter()
@@ -449,26 +449,21 @@ fn write_csv_row(
             .join(";"),
         analysis
             .elevation_angle
-            .map(|e| format!("{:.2}", e))
-            .unwrap_or_else(|| "".to_string()),
-        analysis
-            .matched_to_vcp
-            .then(|| "Yes")
-            .unwrap_or_else(|| "No"),
+            .map(|e| format!("{e:.2}"))
+            .unwrap_or_default(),
+        if analysis.matched_to_vcp { "Yes" } else { "No" },
         analysis
             .azimuth_range
-            .map(|a| format!("{:.2}", a))
-            .unwrap_or_else(|| "".to_string()),
-        analysis.vcp_number.unwrap_or_else(|| "".to_string()),
-        analysis
-            .channel_configuration
-            .unwrap_or_else(|| "".to_string()),
-        analysis.waveform_type.unwrap_or_else(|| "".to_string()),
-        analysis.super_resolution.unwrap_or_else(|| "".to_string()),
+            .map(|a| format!("{a:.2}"))
+            .unwrap_or_default(),
+        analysis.vcp_number.unwrap_or_default(),
+        analysis.channel_configuration.unwrap_or_default(),
+        analysis.waveform_type.unwrap_or_default(),
+        analysis.super_resolution.unwrap_or_default(),
         analysis
             .azimuth_rate
-            .map(|a| format!("{:.2}", a))
-            .unwrap_or_else(|| "".to_string())
+            .map(|a| format!("{a:.2}"))
+            .unwrap_or_default()
     )?;
 
     Ok(())

@@ -28,11 +28,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let file_path = &cli.file_path;
     let output_path = &cli.output_path;
 
-    info!("Processing file: {}", file_path);
+    info!("Processing file: {file_path}");
 
     // Read the file
     let mut file =
-        File::open(file_path).unwrap_or_else(|_| panic!("Failed to open file: {}", file_path));
+        File::open(file_path).unwrap_or_else(|_| panic!("Failed to open file: {file_path}"));
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer)?;
 
@@ -82,8 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // Store elevation angle information
                 elevation_angles.insert((elevation_num, azimuth_num), elevation_angle);
                 debug!(
-                    "Elevation: {}, Azimuth Number: {}, Elevation Angle: {}",
-                    elevation_num, azimuth_num, elevation_angle
+                    "Elevation: {elevation_num}, Azimuth Number: {azimuth_num}, Elevation Angle: {elevation_angle}"
                 );
             }
         }
@@ -93,8 +92,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "Found elevation angles for {} elevation-azimuth combinations",
         elevation_angles.len()
     );
-    info!("Maximum elevation number: {}", max_elevation_num);
-    info!("Maximum azimuth number: {}", max_azimuth_num);
+    info!("Maximum elevation number: {max_elevation_num}");
+    info!("Maximum azimuth number: {max_azimuth_num}");
 
     // Create and write the CSV file
     let mut output_file = File::create(output_path)?;
@@ -102,25 +101,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Write header with elevation numbers
     write!(output_file, "azimuth_num")?;
     for elev in 1..=max_elevation_num {
-        write!(output_file, ",elev_{}", elev)?;
+        write!(output_file, ",elev_{elev}")?;
     }
     writeln!(output_file)?;
 
     // Write rows for each azimuth number
     for azimuth_num in 1..=max_azimuth_num {
-        write!(output_file, "{}", azimuth_num)?;
+        write!(output_file, "{azimuth_num}")?;
 
         // For each elevation in this azimuth number, write the elevation angle
         for elev_num in 1..=max_elevation_num {
             match elevation_angles.get(&(elev_num, azimuth_num)) {
-                Some(angle) => write!(output_file, ",{:.2}", angle)?,
+                Some(angle) => write!(output_file, ",{angle:.2}")?,
                 None => write!(output_file, ",")?, // Empty value if no data for this combination
             }
         }
         writeln!(output_file)?;
     }
 
-    info!("CSV file created successfully: {}", output_path);
+    info!("CSV file created successfully: {output_path}");
 
     Ok(())
 }

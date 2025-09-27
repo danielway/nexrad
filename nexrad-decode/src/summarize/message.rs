@@ -53,7 +53,7 @@ impl Display for MessageSummary {
                 if i > 0 {
                     write!(f, ", ")?;
                 }
-                write!(f, "{:?}", vcp)?;
+                write!(f, "{vcp:?}")?;
             }
             writeln!(f)?;
         }
@@ -73,7 +73,7 @@ impl Display for MessageSummary {
                 };
 
                 if group.is_continued {
-                    format!("{} (cont.)", msg_range)
+                    format!("{msg_range} (cont.)")
                 } else {
                     msg_range
                 }
@@ -86,7 +86,7 @@ impl Display for MessageSummary {
                     group.end_message_index + 1
                 )
             };
-            writeln!(f, "{}: {}", prefix, group)?;
+            writeln!(f, "{prefix}: {group}")?;
         }
 
         Ok(())

@@ -67,7 +67,7 @@ async fn main() -> Result<()> {
     // Task to receive statistics updates
     let stats_handle = task::spawn(async move {
         while let Ok(stats) = stats_rx.recv() {
-            info!("Polling statistics: {:?}", stats);
+            info!("Polling statistics: {stats:?}");
         }
     });
 
@@ -133,7 +133,7 @@ fn decode_record(
 
     let messages = record.messages().expect("Failed to decode messages");
     let summary = summarize::messages(messages.as_slice());
-    info!("Record summary:\n{}", summary);
+    info!("Record summary:\n{summary}");
 
     info!(
         "Message latency: earliest {:?}, latest {:?}, uploaded: {:?}",

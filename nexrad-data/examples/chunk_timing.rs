@@ -100,7 +100,7 @@ async fn main() -> Result<()> {
 
     // If max_chunks is set, limit the number of chunks to analyze
     let chunks_to_analyze = if max_chunks > 0 && max_chunks < chunks.len() {
-        info!("Limiting analysis to first {} chunks", max_chunks);
+        info!("Limiting analysis to first {max_chunks} chunks");
         chunks.iter().take(max_chunks).cloned().collect::<Vec<_>>()
     } else {
         chunks
@@ -145,7 +145,7 @@ async fn main() -> Result<()> {
                 total_messages += summary.message_count;
                 summary.summary
             }
-            Err(err) => format!("Failed to download: {}", err),
+            Err(err) => format!("Failed to download: {err}"),
         };
 
         println!(
@@ -166,8 +166,8 @@ async fn main() -> Result<()> {
 
     // Display statistics about the analyzed chunks
     println!("\nAnalysis Summary:");
-    println!("  Volume Coverage Patterns found: {:?}", vcps);
-    println!("  Total messages decoded: {}", total_messages);
+    println!("  Volume Coverage Patterns found: {vcps:?}");
+    println!("  Total messages decoded: {total_messages}");
 
     Ok(())
 }
@@ -213,7 +213,7 @@ fn decode_chunk(
                     let vcp_str = msg_summary
                         .volume_coverage_patterns
                         .iter()
-                        .map(|v| format!("{:?}", v))
+                        .map(|v| format!("{v:?}"))
                         .collect::<Vec<_>>()
                         .join(",");
 
@@ -248,7 +248,7 @@ fn decode_chunk(
 
                 // Print detailed message information if requested
                 if detailed {
-                    println!("\nChunk Contents:\n{}", msg_summary);
+                    println!("\nChunk Contents:\n{msg_summary}");
 
                     if let Some(earliest) = msg_summary.earliest_collection_time {
                         let latency = download_time.signed_duration_since(earliest);
@@ -262,7 +262,7 @@ fn decode_chunk(
 
             // Format azimuth range
             let azimuth_info = if min_azimuth != f32::MAX && max_azimuth != f32::MIN {
-                format!("Az: {:.1}°-{:.1}°", min_azimuth, max_azimuth)
+                format!("Az: {min_azimuth:.1}°-{max_azimuth:.1}°")
             } else {
                 "Az: N/A".to_string()
             };
@@ -306,7 +306,7 @@ fn decode_chunk(
                 let vcp_str = msg_summary
                     .volume_coverage_patterns
                     .iter()
-                    .map(|v| format!("{:?}", v))
+                    .map(|v| format!("{v:?}"))
                     .collect::<Vec<_>>()
                     .join(",");
 
@@ -340,7 +340,7 @@ fn decode_chunk(
 
             // Print detailed message information if requested
             if detailed {
-                println!("\nChunk Contents:\n{}", msg_summary);
+                println!("\nChunk Contents:\n{msg_summary}");
 
                 if let Some(earliest) = msg_summary.earliest_collection_time {
                     let latency = download_time.signed_duration_since(earliest);
@@ -353,7 +353,7 @@ fn decode_chunk(
 
             // Format azimuth range
             let azimuth_info = if min_azimuth != f32::MAX && max_azimuth != f32::MIN {
-                format!("Az: {:.1}°-{:.1}°", min_azimuth, max_azimuth)
+                format!("Az: {min_azimuth:.1}°-{max_azimuth:.1}°")
             } else {
                 "Az: N/A".to_string()
             };
@@ -393,10 +393,7 @@ fn decode_chunk(
                 "No data types".to_string()
             };
 
-            format!(
-                "{} msgs, {}, {}, {}",
-                message_count, azimuth_info, elev_info, type_info
-            )
+            format!("{message_count} msgs, {azimuth_info}, {elev_info}, {type_info}")
         }
     };
 

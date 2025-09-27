@@ -104,7 +104,7 @@ pub fn decode_digital_radar_data<R: Read + Seek>(reader: &mut R) -> Result<Messa
                     "CFP" => {
                         message.specific_diff_phase_data_block = Some(generic_data_block);
                     }
-                    _ => panic!("Unknown generic data block type: {:?}", data_block_id),
+                    _ => panic!("Unknown generic data block type: {data_block_id:?}"),
                 }
             }
         }

@@ -7,7 +7,7 @@ use std::io::Read;
 fn main() {
     let file_name = "KDMX20220305_221051_V06";
 
-    let mut file = File::open(format!("nexrad-render/files/{}", file_name)).expect("file exists");
+    let mut file = File::open(format!("nexrad-render/files/{file_name}")).expect("file exists");
     let mut data = Vec::new();
     file.read_to_end(&mut data).expect("can read file");
 
@@ -39,7 +39,7 @@ fn main() {
         std::fs::create_dir_all("renders").expect("creates directory");
 
         image
-            .save_to_file(format!("renders/{}_{:?}.png", file_name, product))
+            .save_to_file(format!("renders/{file_name}_{product:?}.png"))
             .expect("saves to file");
     };
 

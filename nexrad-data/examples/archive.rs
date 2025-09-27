@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
         NaiveTime::parse_from_str(&cli.start_time, "%H:%M").expect("start is valid time");
     let stop_time = NaiveTime::parse_from_str(&cli.stop_time, "%H:%M").expect("stop is valid time");
 
-    info!("Listing files for {} on {}...", site, date);
+    info!("Listing files for {site} on {date}...");
     let file_ids = list_files(site, &date).await?;
 
     if file_ids.is_empty() {
@@ -132,17 +132,14 @@ async fn main() -> Result<()> {
         }
 
         let summary = nexrad_decode::summarize::messages(messages.as_slice());
-        info!("Volume summary:\n{}", summary);
+        info!("Volume summary:\n{summary}");
     }
 
     Ok(())
 }
 
 /// Returns the index of the file with the nearest time to the provided start time.
-fn get_nearest_file_index(
-    files: &Vec<archive::Identifier>,
-    start_time: chrono::NaiveTime,
-) -> usize {
+fn get_nearest_file_index(files: &[archive::Identifier], start_time: chrono::NaiveTime) -> usize {
     let first_file = files.first().expect("find at least one file");
     let first_file_time = first_file
         .date_time()

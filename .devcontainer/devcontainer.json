@@ -1,22 +1,19 @@
 {
   "name": "Rust",
-  "image": "mcr.microsoft.com/devcontainers/rust:1-1-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
   "features": {
-    "ghcr.io/devcontainers/features/rust:1": {}
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "latest",
+      "profile": "minimal",
+      "components": "clippy,rustfmt"
+    }
   },
-  // Use 'mounts' to make the cargo cache persistent in a Docker Volume.
-  // "mounts": [
-  // 	{
-  // 		"source": "devcontainer-cargo-cache-${devcontainerId}",
-  // 		"target": "/usr/local/cargo",
-  // 		"type": "volume"
-  // 	}
-  // ]
   "customizations": {
     "jetbrains": {
       "backend": "RustRover"
     }
   },
   "containerUser": "vscode",
-  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev"
+  "updateContentCommand": "rustup update stable && rustup default stable",
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev && rustc -Vv && cargo clippy -V && rustup show"
 }

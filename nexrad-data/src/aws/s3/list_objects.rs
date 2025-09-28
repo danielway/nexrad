@@ -17,12 +17,9 @@ pub async fn list_objects(
 ) -> crate::result::Result<BucketListResult> {
     let mut path = format!("https://{bucket}.s3.amazonaws.com?list-type=2&prefix={prefix}");
     if let Some(max_keys) = max_keys {
-        path.push_str(&format!("&max-keys={}", max_keys));
+        path.push_str(&format!("&max-keys={max_keys}"));
     }
-    debug!(
-        "Listing objects in bucket \"{}\" with prefix \"{}\"",
-        bucket, prefix
-    );
+    debug!("Listing objects in bucket \"{bucket}\" with prefix \"{prefix}\"");
 
     let response = reqwest::get(path).await.map_err(S3ListObjectsError)?;
     trace!("  List objects response status: {}", response.status());
@@ -58,13 +55,13 @@ pub async fn list_objects(
                     if field == &BucketObjectField::IsTruncated {
                         truncated = chars == "true";
                         if truncated {
-                            trace!("  List objects truncated: {}", truncated);
+                            trace!("  List objects truncated: {truncated}");
                         }
                         continue;
                     }
 
                     let item = object.as_mut().ok_or_else(|| {
-                        warn!("Expected item for object field: {:?}", field);
+                        warn!("Expected item for object field: {field:?}");
                         AWSError::S3ListObjectsDecodingError
                     })?;
                     match field {
@@ -76,7 +73,7 @@ pub async fn list_objects(
                         }
                         BucketObjectField::Size => {
                             item.size = chars.parse().map_err(|_| {
-                                warn!("Error parsing object size: {}", chars);
+                                warn!("Error parsing object size: {chars}");
                                 AWSError::S3ListObjectsDecodingError
                             })?;
                         }

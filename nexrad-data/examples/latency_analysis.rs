@@ -97,7 +97,7 @@ async fn main() -> Result<()> {
                     }
                 }
                 PollStats::NewVolumeCalls(new_volume_stats) => {
-                    debug!("New volume found: attempts={}", new_volume_stats);
+                    debug!("New volume found: attempts={new_volume_stats}");
                     attempts_clone.fetch_add(new_volume_stats, Ordering::SeqCst);
                 }
                 PollStats::ChunkTimings(chunk_timings) => {
@@ -121,7 +121,7 @@ async fn main() -> Result<()> {
                         });
 
                         let attempts_str =
-                            avg_attempts.map_or("N/A".to_string(), |a| format!("{:.2}", a));
+                            avg_attempts.map_or("N/A".to_string(), |a| format!("{a:.2}"));
 
                         info!(
                             "{:<15} | {:<20} | {:<20} | {:<15} | {:<15}",
@@ -208,7 +208,7 @@ async fn main() -> Result<()> {
 
             downloaded_chunk_count += 1;
             if downloaded_chunk_count >= desired_chunk_count {
-                info!("Downloaded {} chunks, stopping...", desired_chunk_count);
+                info!("Downloaded {desired_chunk_count} chunks, stopping...");
                 stop_tx.send(true).expect("Failed to send stop signal");
                 break;
             }
@@ -238,7 +238,7 @@ fn process_record(
     let messages = match record.messages() {
         Ok(msgs) => msgs,
         Err(e) => {
-            warn!("Failed to decode messages: {}", e);
+            warn!("Failed to decode messages: {e}");
             return;
         }
     };
@@ -263,7 +263,7 @@ fn process_record(
         .upload_date_time()
         .map(|time| {
             if rounded_download_time < time {
-                warn!("Download time is before S3 modified time: download={}, rounded download={}, s3={}", download_time, rounded_download_time, time);
+                warn!("Download time is before S3 modified time: download={download_time}, rounded download={rounded_download_time}, s3={time}");
             }
 
             (rounded_download_time - time).num_milliseconds() as f64 / 1000.0

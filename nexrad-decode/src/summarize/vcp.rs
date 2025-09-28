@@ -27,12 +27,12 @@ pub fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Mess
 
     if message.header.vcp_supplemental_data_sails_vcp() {
         let sails_cuts = message.header.vcp_supplemental_data_number_sails_cuts();
-        vcp_features.push(format!("SAILS ({} cuts)", sails_cuts));
+        vcp_features.push(format!("SAILS ({sails_cuts} cuts)"));
     }
 
     if message.header.vcp_supplemental_data_mrle_vcp() {
         let mrle_cuts = message.header.vcp_supplemental_data_number_mrle_cuts();
-        vcp_features.push(format!("MRLE ({} cuts)", mrle_cuts));
+        vcp_features.push(format!("MRLE ({mrle_cuts} cuts)"));
     }
 
     if message.header.vcp_supplemental_data_mpda_vcp() {
@@ -41,7 +41,7 @@ pub fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Mess
 
     if message.header.vcp_supplemental_data_base_tilt_vcp() {
         let base_tilts = message.header.vcp_supplemental_data_base_tilts();
-        vcp_features.push(format!("Base tilts ({} cuts)", base_tilts));
+        vcp_features.push(format!("Base tilts ({base_tilts} cuts)"));
     }
 
     if message.header.vcp_sequencing_sequence_active() {
@@ -72,10 +72,10 @@ pub fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Mess
         let mut special_cut_type = None;
         if elev.supplemental_data_sails_cut() {
             let seq = elev.supplemental_data_sails_sequence_number();
-            special_cut_type = Some(format!("SAILS {}", seq));
+            special_cut_type = Some(format!("SAILS {seq}"));
         } else if elev.supplemental_data_mrle_cut() {
             let seq = elev.supplemental_data_mrle_sequence_number();
-            special_cut_type = Some(format!("MRLE {}", seq));
+            special_cut_type = Some(format!("MRLE {seq}"));
         } else if elev.supplemental_data_mpda_cut() {
             special_cut_type = Some("MPDA".to_string());
         } else if elev.supplemental_data_base_tilt_cut() {

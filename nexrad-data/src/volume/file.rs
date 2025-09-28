@@ -23,7 +23,7 @@ impl File {
     }
 
     /// The file's LDM records.
-    pub fn records(&self) -> Vec<Record> {
+    pub fn records(&self) -> Vec<Record<'_>> {
         split_compressed_records(&self.0[size_of::<Header>()..])
     }
 

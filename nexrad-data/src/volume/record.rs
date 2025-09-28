@@ -109,7 +109,7 @@ impl Debug for Record<'_> {
 
 /// Splits compressed LDM record data into individual records. Will omit the record size prefix from
 /// each record.
-pub fn split_compressed_records(data: &[u8]) -> Vec<Record> {
+pub fn split_compressed_records(data: &[u8]) -> Vec<Record<'_>> {
     let mut records = Vec::new();
 
     let mut position = 0;

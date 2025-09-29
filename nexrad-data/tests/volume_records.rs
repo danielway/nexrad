@@ -23,7 +23,12 @@ fn test_volume_record_splitting() {
 
     for (i, record) in records.iter().enumerate() {
         assert!(record.compressed(), "Record {} should be compressed", i);
-        assert_eq!(record.data().len(), expected_sizes[i], "Record {} size mismatch", i);
+        assert_eq!(
+            record.data().len(),
+            expected_sizes[i],
+            "Record {} size mismatch",
+            i
+        );
     }
 }
 
@@ -93,11 +98,19 @@ fn test_record_decompression() {
     let records = volume.records();
 
     let first_record = &records[0];
-    assert!(first_record.compressed(), "First record should be compressed");
+    assert!(
+        first_record.compressed(),
+        "First record should be compressed"
+    );
 
-    let decompressed = first_record.decompress().expect("Decompression should succeed");
+    let decompressed = first_record
+        .decompress()
+        .expect("Decompression should succeed");
     assert!(decompressed.data().len() > first_record.data().len());
-    assert!(!decompressed.compressed(), "Decompressed record should not be compressed");
+    assert!(
+        !decompressed.compressed(),
+        "Decompressed record should not be compressed"
+    );
     assert_eq!(decompressed.data().len(), 325888);
 
     let uncompressed_data = vec![0, 1, 2, 3, 4, 5, 6, 7];
@@ -105,7 +118,10 @@ fn test_record_decompression() {
     assert!(!uncompressed_record.compressed());
 
     let decompress_result = uncompressed_record.decompress();
-    assert!(decompress_result.is_err(), "Should fail to decompress uncompressed data");
+    assert!(
+        decompress_result.is_err(),
+        "Should fail to decompress uncompressed data"
+    );
 }
 
 #[test]
@@ -114,17 +130,27 @@ fn test_record_message_decoding() {
     let records = volume.records();
 
     let first_record = &records[0];
-    let decompressed = first_record.decompress().expect("Decompression should succeed");
+    let decompressed = first_record
+        .decompress()
+        .expect("Decompression should succeed");
 
-    let messages = decompressed.messages().expect("Message decoding should succeed");
+    let messages = decompressed
+        .messages()
+        .expect("Message decoding should succeed");
     assert_eq!(messages.len(), 134);
 
     let first_message = &messages[0];
     assert_eq!(first_message.header().message_size_bytes(), 2416);
-    assert_eq!(first_message.header().message_type(), nexrad_decode::messages::MessageType::RDAClutterFilterMap);
+    assert_eq!(
+        first_message.header().message_type(),
+        nexrad_decode::messages::MessageType::RDAClutterFilterMap
+    );
 
     let compressed_messages_result = first_record.messages();
-    assert!(compressed_messages_result.is_err(), "Should fail to decode messages from compressed data");
+    assert!(
+        compressed_messages_result.is_err(),
+        "Should fail to decode messages from compressed data"
+    );
 }
 
 #[test]
@@ -141,16 +167,30 @@ fn test_full_volume_record_decoding() {
         assert!(record.compressed(), "Record {} should be compressed", i);
 
         let decompressed = record.decompress().expect("Decompression should succeed");
-        assert!(!decompressed.compressed(), "Decompressed record {} should not be compressed", i);
-        assert!(decompressed.data().len() > record.data().len(), "Decompressed record {} should be larger", i);
+        assert!(
+            !decompressed.compressed(),
+            "Decompressed record {} should not be compressed",
+            i
+        );
+        assert!(
+            decompressed.data().len() > record.data().len(),
+            "Decompressed record {} should be larger",
+            i
+        );
 
-        let messages = decompressed.messages().expect("Message decoding should succeed");
+        let messages = decompressed
+            .messages()
+            .expect("Message decoding should succeed");
         total_messages += messages.len();
 
         for message in &messages {
             match message.header().message_type() {
-                nexrad_decode::messages::MessageType::RDADigitalRadarDataGenericFormat => digital_radar_messages += 1,
-                nexrad_decode::messages::MessageType::RDAClutterFilterMap => clutter_filter_messages += 1,
+                nexrad_decode::messages::MessageType::RDADigitalRadarDataGenericFormat => {
+                    digital_radar_messages += 1
+                }
+                nexrad_decode::messages::MessageType::RDAClutterFilterMap => {
+                    clutter_filter_messages += 1
+                }
                 nexrad_decode::messages::MessageType::RDAStatusData => status_messages += 1,
                 _ => {}
             }

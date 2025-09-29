@@ -3,9 +3,8 @@ use nexrad_data::volume;
 const TEST_NEXRAD_FILE: &[u8] = include_bytes!("KDMX20220305_232324_V06");
 
 #[test]
-fn splits_volume_records() {
+fn test_volume_record_splitting() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
-
     let records = volume.records().to_vec();
 
     let expected_sizes = vec![
@@ -24,19 +23,13 @@ fn splits_volume_records() {
 
     for (i, record) in records.iter().enumerate() {
         assert!(record.compressed(), "Record {} should be compressed", i);
-        assert_eq!(
-            record.data().len(),
-            expected_sizes[i],
-            "Record {} size mismatch",
-            i
-        );
+        assert_eq!(record.data().len(), expected_sizes[i], "Record {} size mismatch", i);
     }
 }
 
 #[test]
-fn decodes_volume_header() {
+fn test_volume_header_decoding() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
-
     let header = volume.header().expect("Failed to parse header");
 
     let expected_volume_datetime = chrono::DateTime::parse_from_rfc3339("2022-03-05T23:23:24.299Z")
@@ -47,4 +40,125 @@ fn decodes_volume_header() {
     assert_eq!(header.extension_number(), Some("879".to_string()));
     assert_eq!(header.date_time(), Some(expected_volume_datetime));
     assert_eq!(header.icao_of_radar(), Some("KDMX".to_string()));
+}
+
+#[test]
+fn test_record_construction_and_data_access() {
+    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+    let records = volume.records();
+
+    let first_record = &records[0];
+    let first_record_data = first_record.data().to_vec();
+
+    let owned_record = volume::Record::new(first_record_data.clone());
+    assert_eq!(owned_record.data(), first_record_data.as_slice());
+    assert_eq!(owned_record.data().len(), 2335);
+
+    let borrowed_record = volume::Record::from_slice(&first_record_data);
+    assert_eq!(borrowed_record.data(), first_record_data.as_slice());
+    assert_eq!(borrowed_record.data().len(), 2335);
+
+    assert_eq!(owned_record.data(), borrowed_record.data());
+}
+
+#[test]
+fn test_record_compression_detection() {
+    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+    let records = volume.records();
+
+    let first_record = &records[0];
+    assert_eq!(first_record.compressed(), true);
+
+    let compressed_count = records.iter().filter(|r| r.compressed()).count();
+    let total_count = records.len();
+    assert_eq!(compressed_count, 106);
+    assert_eq!(total_count, 106);
+
+    let test_data_uncompressed = vec![0, 1, 2, 3, 4, 5, 6, 7];
+    let uncompressed_record = volume::Record::new(test_data_uncompressed);
+    assert!(!uncompressed_record.compressed());
+
+    let test_data_compressed = vec![0, 1, 2, 3, b'B', b'Z', 6, 7, 8, 9];
+    let compressed_record = volume::Record::new(test_data_compressed);
+    assert!(compressed_record.compressed());
+
+    let short_data = vec![0, 1, 2, 3, 4];
+    let short_record = volume::Record::new(short_data);
+    assert!(!short_record.compressed());
+}
+
+#[test]
+fn test_record_decompression() {
+    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+    let records = volume.records();
+
+    let first_record = &records[0];
+    assert!(first_record.compressed(), "First record should be compressed");
+
+    let decompressed = first_record.decompress().expect("Decompression should succeed");
+    assert!(decompressed.data().len() > first_record.data().len());
+    assert!(!decompressed.compressed(), "Decompressed record should not be compressed");
+    assert_eq!(decompressed.data().len(), 325888);
+
+    let uncompressed_data = vec![0, 1, 2, 3, 4, 5, 6, 7];
+    let uncompressed_record = volume::Record::new(uncompressed_data);
+    assert!(!uncompressed_record.compressed());
+
+    let decompress_result = uncompressed_record.decompress();
+    assert!(decompress_result.is_err(), "Should fail to decompress uncompressed data");
+}
+
+#[test]
+fn test_record_message_decoding() {
+    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+    let records = volume.records();
+
+    let first_record = &records[0];
+    let decompressed = first_record.decompress().expect("Decompression should succeed");
+
+    let messages = decompressed.messages().expect("Message decoding should succeed");
+    assert_eq!(messages.len(), 134);
+
+    let first_message = &messages[0];
+    assert_eq!(first_message.header().message_size_bytes(), 2416);
+    assert_eq!(first_message.header().message_type(), nexrad_decode::messages::MessageType::RDAClutterFilterMap);
+
+    let compressed_messages_result = first_record.messages();
+    assert!(compressed_messages_result.is_err(), "Should fail to decode messages from compressed data");
+}
+
+#[test]
+fn test_full_volume_record_decoding() {
+    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+    let records = volume.records();
+
+    let mut total_messages = 0;
+    let mut digital_radar_messages = 0;
+    let mut clutter_filter_messages = 0;
+    let mut status_messages = 0;
+
+    for (i, record) in records.iter().enumerate() {
+        assert!(record.compressed(), "Record {} should be compressed", i);
+
+        let decompressed = record.decompress().expect("Decompression should succeed");
+        assert!(!decompressed.compressed(), "Decompressed record {} should not be compressed", i);
+        assert!(decompressed.data().len() > record.data().len(), "Decompressed record {} should be larger", i);
+
+        let messages = decompressed.messages().expect("Message decoding should succeed");
+        total_messages += messages.len();
+
+        for message in &messages {
+            match message.header().message_type() {
+                nexrad_decode::messages::MessageType::RDADigitalRadarDataGenericFormat => digital_radar_messages += 1,
+                nexrad_decode::messages::MessageType::RDAClutterFilterMap => clutter_filter_messages += 1,
+                nexrad_decode::messages::MessageType::RDAStatusData => status_messages += 1,
+                _ => {}
+            }
+        }
+    }
+
+    assert_eq!(total_messages, 12736);
+    assert_eq!(digital_radar_messages, 12600);
+    assert_eq!(clutter_filter_messages, 5);
+    assert_eq!(status_messages, 3);
 }

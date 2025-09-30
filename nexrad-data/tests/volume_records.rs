@@ -32,6 +32,7 @@ fn test_volume_record_splitting() {
     }
 }
 
+#[cfg(all(feature = "serde", feature = "bincode"))]
 #[test]
 fn test_volume_header_decoding() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -92,6 +93,7 @@ fn test_record_compression_detection() {
     assert!(!short_record.compressed());
 }
 
+#[cfg(feature = "bzip2")]
 #[test]
 fn test_record_decompression() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -124,6 +126,7 @@ fn test_record_decompression() {
     );
 }
 
+#[cfg(all(feature = "bzip2", feature = "nexrad-decode"))]
 #[test]
 fn test_record_message_decoding() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -153,6 +156,7 @@ fn test_record_message_decoding() {
     );
 }
 
+#[cfg(all(feature = "bzip2", feature = "nexrad-decode"))]
 #[test]
 fn test_full_volume_record_decoding() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -201,4 +205,55 @@ fn test_full_volume_record_decoding() {
     assert_eq!(digital_radar_messages, 12600);
     assert_eq!(clutter_filter_messages, 5);
     assert_eq!(status_messages, 3);
+}
+
+#[test]
+fn test_file_data_accessor() {
+    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+
+    let file_data = volume.data();
+    assert_eq!(file_data.len(), TEST_NEXRAD_FILE.len());
+    assert_eq!(file_data, &TEST_NEXRAD_FILE.to_vec());
+
+    let ptr1 = file_data.as_ptr();
+    let ptr2 = volume.data().as_ptr();
+    assert_eq!(ptr1, ptr2, "Should return reference to same data");
+}
+
+#[cfg(all(feature = "nexrad-model", feature = "decode"))]
+#[test]
+fn test_file_scan_conversion() {
+    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+
+    let scan_result = volume.scan();
+    assert!(
+        scan_result.is_ok(),
+        "Scan conversion should succeed for valid data"
+    );
+
+    let scan = scan_result.unwrap();
+    assert_eq!(scan.coverage_pattern_number(), 212);
+}
+
+#[cfg(all(feature = "serde", feature = "bincode"))]
+#[test]
+fn test_file_construction_variants() {
+    let empty_volume = volume::File::new(vec![]);
+    assert_eq!(empty_volume.data().len(), 0);
+
+    let header_result = empty_volume.header();
+    assert!(
+        header_result.is_err(),
+        "Should fail to parse header from empty data"
+    );
+
+    let minimal_data = vec![0u8; 10];
+    let minimal_volume = volume::File::new(minimal_data.clone());
+    assert_eq!(minimal_volume.data().len(), 10);
+
+    let header_result = minimal_volume.header();
+    assert!(
+        header_result.is_err(),
+        "Should fail to parse header from insufficient data"
+    );
 }

@@ -15,7 +15,7 @@ fn test_error_display_formatting() {
 #[test]
 fn test_deserialization_error() {
     use std::io::Cursor;
-    
+
     let invalid_data = vec![0xFF; 10]; // Invalid data for header
     let mut cursor = Cursor::new(invalid_data);
 

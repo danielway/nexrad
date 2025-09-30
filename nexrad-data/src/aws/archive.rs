@@ -20,4 +20,4 @@ pub use download_file::download_file;
 mod list_files;
 pub use list_files::list_files;
 
-const ARCHIVE_BUCKET: &str = "noaa-nexrad-level2";
+const ARCHIVE_BUCKET: &str = "unidata-nexrad-level2";

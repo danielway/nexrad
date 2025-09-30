@@ -1,4 +1,4 @@
-#![cfg(feature = "aws")]
+#![cfg(all(feature = "aws", feature = "bzip2"))]
 
 use chrono::NaiveDateTime;
 use nexrad_data::aws::realtime::{Chunk, ChunkIdentifier, ChunkType, VolumeIndex};

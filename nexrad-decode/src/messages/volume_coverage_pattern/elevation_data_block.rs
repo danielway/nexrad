@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::messages::primitive_aliases::{Code1, Code2, Integer1, Integer2, ScaledSInteger2};
@@ -12,7 +12,7 @@ use uom::si::{
 };
 
 /// A data block for a single elevation cut.
-#[derive(Clone, PartialEq, Deserialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize)]
 pub struct ElevationDataBlock {
     /// The elevation angle for this cut
     pub elevation_angle: Code2,

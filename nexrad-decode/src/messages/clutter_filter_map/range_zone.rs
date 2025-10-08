@@ -1,5 +1,5 @@
 use crate::messages::primitive_aliases::{Code2, Integer2};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::messages::clutter_filter_map::OpCode;
@@ -10,7 +10,7 @@ use uom::si::length::kilometer;
 
 /// Defines a range segment of a particular elevation and azimuth with an operation type describing
 /// the clutter filter map behavior for the segment.
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct RangeZone {
     /// Operation code for the range zone.
     pub op_code: Code2,

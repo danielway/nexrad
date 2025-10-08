@@ -12,13 +12,13 @@ use crate::messages::rda_status_data::scan_data_flags::ScanDataFlags;
 use crate::messages::rda_status_data::volume_coverage_pattern::VolumeCoveragePatternNumber;
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 /// The RDA status data message includes various information about the current RDA system's state,
 /// including system operating status, performance parameters, and active alarms.
 #[repr(C)]
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct Message {
     /// The RDA system's status.
     ///

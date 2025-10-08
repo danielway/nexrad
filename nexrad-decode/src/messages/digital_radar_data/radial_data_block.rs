@@ -1,13 +1,13 @@
 use crate::messages::digital_radar_data::DataBlockId;
 use crate::messages::primitive_aliases::{Integer2, Real4, ScaledInteger2};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 #[cfg(feature = "uom")]
 use uom::si::f64::{Information, Length, Velocity};
 
 /// A radial data moment block.
-#[derive(Clone, PartialEq, Deserialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize)]
 pub struct RadialDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,

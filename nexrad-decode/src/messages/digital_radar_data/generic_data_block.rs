@@ -2,7 +2,7 @@ use crate::messages::digital_radar_data::{ControlFlags, DataBlockId, ScaledMomen
 use crate::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger2,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 #[cfg(feature = "uom")]
@@ -13,7 +13,7 @@ use uom::si::information::byte;
 use uom::si::length::kilometer;
 
 /// A generic data moment block.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct GenericDataBlock {
     /// The generic data block's header information.
     pub header: GenericDataBlockHeader,
@@ -100,7 +100,7 @@ impl Debug for GenericDataBlock {
 }
 
 /// A generic data moment block's decoded header.
-#[derive(Clone, PartialEq, Deserialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize)]
 pub struct GenericDataBlockHeader {
     /// Data block identifier.
     pub data_block_id: DataBlockId,

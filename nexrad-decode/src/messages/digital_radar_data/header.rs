@@ -5,7 +5,7 @@ use crate::messages::primitive_aliases::{
 };
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 #[cfg(feature = "uom")]
@@ -17,7 +17,7 @@ use uom::si::information::byte;
 
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
-#[derive(Clone, PartialEq, Deserialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize)]
 pub struct Header {
     /// ICAO radar identifier.
     pub radar_identifier: [u8; 4],

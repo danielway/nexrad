@@ -1,13 +1,13 @@
 use crate::messages::digital_radar_data::{DataBlockId, ProcessingStatus, VolumeCoveragePattern};
 use crate::messages::primitive_aliases::{Integer1, Integer2, Real4, SInteger2};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 #[cfg(feature = "uom")]
 use uom::si::f64::{Angle, Energy, Information, Length};
 
 /// A volume data moment block.
-#[derive(Clone, PartialEq, Deserialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize)]
 pub struct VolumeDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,

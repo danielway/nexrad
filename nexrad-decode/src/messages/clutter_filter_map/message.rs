@@ -1,10 +1,12 @@
+use serde::Serialize;
+
 use crate::messages::clutter_filter_map::elevation_segment::ElevationSegment;
 use crate::messages::clutter_filter_map::header::Header;
 use std::fmt::Debug;
 
 /// A clutter filter map describing elevations, azimuths, and ranges containing clutter to
 /// filtered from radar products.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct Message {
     /// Decoded header information for this clutter filter map.
     pub header: Header,

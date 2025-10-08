@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use insta::{assert_yaml_snapshot, internals::Content};
+use insta::assert_yaml_snapshot;
 use nexrad_data::volume;
 use nexrad_decode::messages::decode_messages;
 use sha2::{Digest, Sha256};

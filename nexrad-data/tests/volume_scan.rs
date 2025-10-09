@@ -3,7 +3,7 @@
 use nexrad_data::volume;
 use nexrad_model::data::RadialStatus;
 
-const TEST_NEXRAD_FILE: &[u8] = include_bytes!("KDMX20220305_232324_V06");
+const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
 
 #[test]
 fn test_scan_basic_structure() {

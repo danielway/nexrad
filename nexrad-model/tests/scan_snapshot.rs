@@ -4,15 +4,15 @@ use insta::assert_yaml_snapshot;
 use nexrad_data::volume;
 use sha2::{Digest, Sha256};
 
-const TEST_NEXRAD_FILE: &[u8] = include_bytes!("KDMX20220305_232324_V06");
+const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
 
 #[test]
 fn test_decode_map_scan() {
-  let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
-  let scan = volume.scan().expect("decodes into scan model");
-  assert_yaml_snapshot!(scan, {
-    ".**.values" => insta::dynamic_redaction(|value, _path| redact_bytes_like(value)),
-  });
+    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+    let scan = volume.scan().expect("decodes into scan model");
+    assert_yaml_snapshot!(scan, {
+      ".**.values" => insta::dynamic_redaction(|value, _path| redact_bytes_like(value)),
+    });
 }
 
 fn redact_bytes_like(value: insta::internals::Content) -> insta::internals::Content {

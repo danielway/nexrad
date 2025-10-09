@@ -58,7 +58,7 @@ fn test_uncompressed_data_error() {
 #[cfg(feature = "nexrad-decode")]
 #[test]
 fn test_compressed_data_decode_error() {
-    const TEST_NEXRAD_FILE: &[u8] = include_bytes!("KDMX20220305_232324_V06");
+    const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
 
     let volume = nexrad_data::volume::File::new(TEST_NEXRAD_FILE.to_vec());
     let records = volume.records();

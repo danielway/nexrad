@@ -7,7 +7,7 @@ use nexrad_data::aws::realtime::{
 use nexrad_decode::messages::volume_coverage_pattern::{ChannelConfiguration, WaveformType};
 
 // Test data file
-const TEST_NEXRAD_FILE: &[u8] = include_bytes!("KDMX20220305_232324_V06");
+const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
 
 // Get a VCP from the test file
 fn get_test_vcp() -> nexrad_decode::messages::volume_coverage_pattern::Message {

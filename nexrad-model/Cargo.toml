@@ -12,3 +12,10 @@ thiserror = { workspace = true }
 chrono = { workspace = true, optional = true }
 uom = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+insta = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+nexrad-data = { version = "0.2.0", path = "../nexrad-data" }
+nexrad-decode = { version = "0.1.1", path = "../nexrad-decode" }

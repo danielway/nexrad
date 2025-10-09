@@ -346,7 +346,7 @@ fn test_chunk_identifier_next_chunk_intermediate() {
 
     // This test requires a real VCP message to create the mapper
     // For now, we'll test the basic structure
-    const TEST_NEXRAD_FILE: &[u8] = include_bytes!("KDMX20220305_232324_V06");
+    const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
     let volume_file = nexrad_data::volume::File::new(TEST_NEXRAD_FILE.to_vec());
 
     // Get VCP from the file

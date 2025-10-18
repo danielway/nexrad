@@ -1,0 +1,32 @@
+---
+source: nexrad-decode/tests/snapshot.rs
+expression: volume.header()
+---
+Ok(
+    Header {
+        tape_filename: [
+            65,
+            82,
+            50,
+            86,
+            48,
+            48,
+            48,
+            54,
+            46,
+        ],
+        extension_number: [
+            56,
+            55,
+            57,
+        ],
+        date: 19057,
+        time: 84204299,
+        icao_of_radar: [
+            75,
+            68,
+            77,
+            88,
+        ],
+    },
+)

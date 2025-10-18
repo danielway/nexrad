@@ -1,3 +1,4 @@
+use crate::binary_data::BinaryData;
 use crate::messages::digital_radar_data::{DataBlockId, ProcessingStatus, VolumeCoveragePattern};
 use crate::messages::primitive_aliases::{Integer1, Integer2, Real4, SInteger2};
 use serde::{Deserialize, Serialize};
@@ -7,7 +8,7 @@ use std::fmt::Debug;
 use uom::si::f64::{Angle, Energy, Information, Length};
 
 /// A volume data moment block.
-#[derive(Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 pub struct VolumeDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,
@@ -63,7 +64,7 @@ pub struct VolumeDataBlock {
     pub zdr_bias_estimate_weighted_mean: Integer2,
 
     /// Spare.
-    pub spare: [u8; 6],
+    pub spare: BinaryData<[u8; 6]>,
 }
 
 impl VolumeDataBlock {
@@ -138,79 +139,5 @@ impl VolumeDataBlock {
             1 => ProcessingStatus::CBT,
             _ => ProcessingStatus::Other(self.processing_status),
         }
-    }
-}
-
-#[cfg(not(feature = "uom"))]
-impl Debug for VolumeDataBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("VolumeDataBlock")
-            .field("data_block_id", &self.data_block_id)
-            .field("lrtup", &self.lrtup)
-            .field("major_version_number", &self.major_version_number)
-            .field("minor_version_number", &self.minor_version_number)
-            .field("latitude", &self.latitude)
-            .field("longitude", &self.longitude)
-            .field("site_height", &self.site_height)
-            .field("feedhorn_height", &self.feedhorn_height)
-            .field("calibration_constant", &self.calibration_constant)
-            .field("horizontal_shv_tx_power", &self.horizontal_shv_tx_power)
-            .field("vertical_shv_tx_power", &self.vertical_shv_tx_power)
-            .field(
-                "system_differential_reflectivity",
-                &self.system_differential_reflectivity,
-            )
-            .field(
-                "initial_system_differential_phase",
-                &self.initial_system_differential_phase,
-            )
-            .field(
-                "volume_coverage_pattern_number",
-                &self.volume_coverage_pattern_number,
-            )
-            .field("processing_status", &self.processing_status())
-            .field(
-                "zdr_bias_estimate_weighted_mean",
-                &self.zdr_bias_estimate_weighted_mean,
-            )
-            .field("spare", &self.spare)
-            .finish()
-    }
-}
-
-#[cfg(feature = "uom")]
-impl Debug for VolumeDataBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("VolumeDataBlock")
-            .field("data_block_id", &self.data_block_id)
-            .field("lrtup", &self.lrtup())
-            .field("major_version_number", &self.major_version_number)
-            .field("minor_version_number", &self.minor_version_number)
-            .field("latitude", &self.latitude())
-            .field("longitude", &self.longitude())
-            .field("site_height", &self.site_height())
-            .field("feedhorn_height", &self.feedhorn_height())
-            .field("calibration_constant", &self.calibration_constant)
-            .field("horizontal_shv_tx_power", &self.horizontal_shv_tx_power())
-            .field("vertical_shv_tx_power", &self.vertical_shv_tx_power())
-            .field(
-                "system_differential_reflectivity",
-                &self.system_differential_reflectivity,
-            )
-            .field(
-                "initial_system_differential_phase",
-                &self.initial_system_differential_phase(),
-            )
-            .field(
-                "volume_coverage_pattern_number",
-                &self.volume_coverage_pattern_number,
-            )
-            .field("processing_status", &self.processing_status())
-            .field(
-                "zdr_bias_estimate_weighted_mean",
-                &self.zdr_bias_estimate_weighted_mean,
-            )
-            .field("spare", &self.spare)
-            .finish()
     }
 }

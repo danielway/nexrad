@@ -10,7 +10,7 @@ use uom::si::length::kilometer;
 
 /// Defines a range segment of a particular elevation and azimuth with an operation type describing
 /// the clutter filter map behavior for the segment.
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize, Debug)]
 pub struct RangeZone {
     /// Operation code for the range zone.
     pub op_code: Code2,
@@ -36,25 +36,5 @@ impl RangeZone {
     #[cfg(feature = "uom")]
     pub fn end_range(&self) -> Length {
         Length::new::<kilometer>(self.end_range as f64)
-    }
-}
-
-#[cfg(not(feature = "uom"))]
-impl Debug for RangeZone {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RangeZone")
-            .field("op_code", &self.op_code)
-            .field("end_range", &self.end_range)
-            .finish()
-    }
-}
-
-#[cfg(feature = "uom")]
-impl Debug for RangeZone {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RangeZone")
-            .field("op_code", &self.op_code)
-            .field("end_range", &self.end_range())
-            .finish()
     }
 }

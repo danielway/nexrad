@@ -1,3 +1,4 @@
+use crate::binary_data::BinaryData;
 use crate::messages::digital_radar_data::{ControlFlags, DataBlockId, ScaledMomentValue};
 use crate::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger2,
@@ -13,13 +14,13 @@ use uom::si::information::byte;
 use uom::si::length::kilometer;
 
 /// A generic data moment block.
-#[derive(Clone, PartialEq, Serialize)]
+#[derive(Clone, PartialEq, Serialize, Debug)]
 pub struct GenericDataBlock {
     /// The generic data block's header information.
     pub header: GenericDataBlockHeader,
 
     /// The generic data block's encoded moment data.
-    pub encoded_data: Vec<u8>,
+    pub encoded_data: BinaryData<Vec<u8>>,
 }
 
 impl GenericDataBlock {
@@ -28,7 +29,7 @@ impl GenericDataBlock {
         let word_size_bytes = header.data_word_size as usize / 8;
         let encoded_data_size = header.number_of_data_moment_gates as usize * word_size_bytes;
         Self {
-            encoded_data: vec![0; encoded_data_size],
+            encoded_data: BinaryData::new(vec![0; encoded_data_size]),
             header,
         }
     }
@@ -72,7 +73,7 @@ impl GenericDataBlock {
             self.header.data_moment_range_sample_interval,
             self.header.scale,
             self.header.offset,
-            self.encoded_data.clone(),
+            self.encoded_data.0.clone(),
         )
     }
 
@@ -85,22 +86,13 @@ impl GenericDataBlock {
             self.header.data_moment_range_sample_interval,
             self.header.scale,
             self.header.offset,
-            self.encoded_data,
+            self.encoded_data.into_inner(),
         )
     }
 }
 
-impl Debug for GenericDataBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("GenericDataBlock")
-            .field("header", &self.header)
-            .field("data", &self.encoded_data.len())
-            .finish()
-    }
-}
-
 /// A generic data moment block's decoded header.
-#[derive(Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 pub struct GenericDataBlockHeader {
     /// Data block identifier.
     pub data_block_id: DataBlockId,
@@ -173,55 +165,5 @@ impl GenericDataBlockHeader {
         Information::new::<byte>(
             self.number_of_data_moment_gates as f64 * self.data_word_size as f64 / 8.0,
         )
-    }
-}
-
-#[cfg(not(feature = "uom"))]
-impl Debug for GenericDataBlockHeader {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("GenericDataBlockHeader")
-            .field("data_block_id", &self.data_block_id)
-            .field("reserved", &self.reserved)
-            .field(
-                "number_of_data_moment_gates",
-                &self.number_of_data_moment_gates,
-            )
-            .field("data_moment_range", &self.data_moment_range)
-            .field(
-                "data_moment_range_sample_interval",
-                &self.data_moment_range_sample_interval,
-            )
-            .field("tover", &self.tover)
-            .field("snr_threshold", &self.snr_threshold)
-            .field("control_flags", &self.control_flags())
-            .field("data_word_size", &self.data_word_size)
-            .field("scale", &self.scale)
-            .field("offset", &self.offset)
-            .finish()
-    }
-}
-
-#[cfg(feature = "uom")]
-impl Debug for GenericDataBlockHeader {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("GenericDataBlockHeader")
-            .field("data_block_id", &self.data_block_id)
-            .field("reserved", &self.reserved)
-            .field(
-                "number_of_data_moment_gates",
-                &self.number_of_data_moment_gates,
-            )
-            .field("data_moment_range", &self.data_moment_range())
-            .field(
-                "data_moment_range_sample_interval",
-                &self.data_moment_range_sample_interval(),
-            )
-            .field("tover", &self.tover)
-            .field("snr_threshold", &self.snr_threshold)
-            .field("control_flags", &self.control_flags())
-            .field("data_word_size", &self.data_word_size)
-            .field("scale", &self.scale)
-            .field("offset", &self.offset)
-            .finish()
     }
 }

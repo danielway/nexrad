@@ -9,7 +9,7 @@ use uom::si::f64::Information;
 use uom::si::information::byte;
 
 /// An elevation data block.
-#[derive(Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 pub struct ElevationDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,
@@ -30,29 +30,5 @@ impl ElevationDataBlock {
     #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
         Information::new::<byte>(self.lrtup as f64)
-    }
-}
-
-#[cfg(not(feature = "uom"))]
-impl Debug for ElevationDataBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ElevationDataBlock")
-            .field("data_block_id", &self.data_block_id)
-            .field("lrtup", &self.lrtup)
-            .field("atmos", &self.atmos)
-            .field("calibration_constant", &self.calibration_constant)
-            .finish()
-    }
-}
-
-#[cfg(feature = "uom")]
-impl Debug for ElevationDataBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ElevationDataBlock")
-            .field("data_block_id", &self.data_block_id)
-            .field("lrtup", &self.lrtup())
-            .field("atmos", &self.atmos)
-            .field("calibration_constant", &self.calibration_constant)
-            .finish()
     }
 }

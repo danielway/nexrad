@@ -2,7 +2,7 @@ use crate::messages::primitive_aliases::Code2;
 use std::fmt::Debug;
 
 /// The multiple flags for the RDA system's scan and data status.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct ScanDataFlags(Code2);
 
 impl ScanDataFlags {
@@ -34,19 +34,5 @@ impl ScanDataFlags {
     /// Whether time series data recording is enabled.
     pub fn time_series_data_recording_enabled(&self) -> bool {
         self.0 & 0b10000 != 0
-    }
-}
-
-impl Debug for ScanDataFlags {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ScanDataFlags")
-            .field("avset_enabled", &self.avset_enabled())
-            .field("ebc_enabled", &self.ebc_enabled())
-            .field("rda_log_data_enabled", &self.rda_log_data_enabled())
-            .field(
-                "time_series_data_recording_enabled",
-                &self.time_series_data_recording_enabled(),
-            )
-            .finish()
     }
 }

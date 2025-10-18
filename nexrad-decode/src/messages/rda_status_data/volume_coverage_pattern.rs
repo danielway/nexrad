@@ -2,7 +2,7 @@ use crate::messages::primitive_aliases::SInteger2;
 use std::fmt::Debug;
 
 /// The RDA system's volume coverage pattern number.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct VolumeCoveragePatternNumber(SInteger2);
 
 impl VolumeCoveragePatternNumber {
@@ -23,15 +23,5 @@ impl VolumeCoveragePatternNumber {
     /// Whether the volume coverage pattern number was specified remotely.
     pub fn remote(&self) -> bool {
         self.0 > 0
-    }
-}
-
-impl Debug for VolumeCoveragePatternNumber {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("VolumeCoveragePatternNumber")
-            .field("number", &self.number())
-            .field("local", &self.local())
-            .field("remote", &self.remote())
-            .finish()
     }
 }

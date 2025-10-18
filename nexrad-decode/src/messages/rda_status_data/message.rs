@@ -18,7 +18,7 @@ use std::fmt::Debug;
 /// The RDA status data message includes various information about the current RDA system's state,
 /// including system operating status, performance parameters, and active alarms.
 #[repr(C)]
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize, Debug)]
 pub struct Message {
     /// The RDA system's status.
     ///
@@ -464,66 +464,5 @@ impl Message {
             .filter(|&code| *code != 0)
             .filter_map(|&code| alarm::get_alarm_message(code))
             .collect()
-    }
-}
-
-impl Debug for Message {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Message")
-            .field("rda_status", &self.rda_status())
-            .field("operability_status", &self.operability_status())
-            .field("control_status", &self.control_status())
-            .field(
-                "auxiliary_power_generator_state",
-                &self.auxiliary_power_generator_state(),
-            )
-            .field("average_transmitter_power", &self.average_transmitter_power)
-            .field(
-                "horizontal_reflectivity_calibration_correction",
-                &self.horizontal_reflectivity_calibration_correction(),
-            )
-            .field(
-                "data_transmission_enabled",
-                &self.data_transmission_enabled(),
-            )
-            .field("volume_coverage_pattern", &self.volume_coverage_pattern())
-            .field(
-                "rda_control_authorization",
-                &self.rda_control_authorization(),
-            )
-            .field("rda_build_number", &self.rda_build_number())
-            .field("operational_mode", &self.operational_mode())
-            .field("super_resolution_status", &self.super_resolution_status())
-            .field(
-                "clutter_mitigation_decision_status",
-                &self.clutter_mitigation_decision_status(),
-            )
-            .field("rda_scan_and_data_flags", &self.rda_scan_and_data_flags())
-            .field("rda_alarm_summary", &self.rda_alarm_summary())
-            .field("command_acknowledgement", &self.command_acknowledgement())
-            .field("channel_control_status", &self.controlling_channel())
-            .field("spot_blanking_status", &self.spot_blanking_status())
-            .field(
-                "bypass_map_generation_date_time",
-                &self.bypass_map_generation_date_time(),
-            )
-            .field(
-                "clutter_filter_map_generation_date_time",
-                &self.clutter_filter_map_generation_date_time(),
-            )
-            .field(
-                "vertical_reflectivity_calibration_correction",
-                &self.vertical_reflectivity_calibration_correction,
-            )
-            .field(
-                "transition_power_source_status",
-                &self.transition_power_source_status(),
-            )
-            .field("rms_control_status", &self.rms_control_status())
-            .field("performance_check_status", &self.performance_check_status())
-            .field("alarm_messages", &self.alarm_messages())
-            .field("signal_processor_options", &self.signal_processor_options)
-            .field("status_version", &self.status_version)
-            .finish()
     }
 }

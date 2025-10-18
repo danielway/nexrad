@@ -8,7 +8,7 @@ use crate::messages::volume_coverage_pattern::definitions::*;
 use uom::si::{f64::Velocity, velocity::meter_per_second};
 
 /// The volume coverage pattern header block
-#[derive(Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 pub struct Header {
     /// Total message size in halfwords, including the header and all elevation blocks
     pub message_size: Integer2,
@@ -153,81 +153,5 @@ impl Header {
     /// The number of BASE TILTS in this VCP
     pub fn vcp_supplemental_data_base_tilts(&self) -> u8 {
         ((self.vcp_supplemental_data & 0xE000) >> 13) as u8
-    }
-}
-
-impl Debug for Header {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut debug = f.debug_struct("Header");
-
-        debug.field("message_size", &self.message_size);
-        debug.field("pattern_type", &self.pattern_type());
-        debug.field("pattern_number", &self.pattern_number);
-        debug.field("number_of_elevation_cuts", &self.number_of_elevation_cuts);
-        debug.field("version", &self.version);
-        debug.field("clutter_map_group_number", &self.clutter_map_group_number);
-
-        #[cfg(feature = "uom")]
-        debug.field(
-            "doppler_velocity_resolution",
-            &self.doppler_velocity_resolution(),
-        );
-        #[cfg(not(feature = "uom"))]
-        debug.field(
-            "doppler_velocity_resolution",
-            &self.doppler_velocity_resolution_meters_per_second(),
-        );
-
-        debug.field("pulse_width", &self.pulse_width());
-        debug.field("reserved_1", &self.reserved_1);
-        debug.field("vcp_sequencing_raw", &self.vcp_sequencing);
-        debug.field(
-            "vcp_sequencing_number_of_elevations",
-            &self.vcp_sequencing_number_of_elevations(),
-        );
-        debug.field(
-            "vcp_sequencing_maximum_sails_cuts",
-            &self.vcp_sequencing_maximum_sails_cuts(),
-        );
-        debug.field(
-            "vcp_sequencing_sequence_active",
-            &self.vcp_sequencing_sequence_active(),
-        );
-        debug.field(
-            "vcp_sequencing_truncated_vcp",
-            &self.vcp_sequencing_truncated_vcp(),
-        );
-        debug.field("vcp_supplemental_data_raw", &self.vcp_supplemental_data);
-        debug.field(
-            "vcp_supplemental_data_sails_vcp",
-            &self.vcp_supplemental_data_sails_vcp(),
-        );
-        debug.field(
-            "vcp_supplemental_data_number_sails_cuts",
-            &self.vcp_supplemental_data_number_sails_cuts(),
-        );
-        debug.field(
-            "vcp_supplemental_data_mrle_vcp",
-            &self.vcp_supplemental_data_mrle_vcp(),
-        );
-        debug.field(
-            "vcp_supplemental_data_number_mrle_cuts",
-            &self.vcp_supplemental_data_number_mrle_cuts(),
-        );
-        debug.field(
-            "vcp_supplemental_data_mpda_vcp",
-            &self.vcp_supplemental_data_mpda_vcp(),
-        );
-        debug.field(
-            "vcp_supplemental_data_base_tilt_vcp",
-            &self.vcp_supplemental_data_base_tilt_vcp(),
-        );
-        debug.field(
-            "vcp_supplemental_data_base_tilts",
-            &self.vcp_supplemental_data_base_tilts(),
-        );
-        debug.field("reserved_2", &self.reserved_2);
-
-        debug.finish()
     }
 }

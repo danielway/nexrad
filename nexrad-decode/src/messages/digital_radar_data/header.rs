@@ -17,7 +17,7 @@ use uom::si::information::byte;
 
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
-#[derive(Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 pub struct Header {
     /// ICAO radar identifier.
     pub radar_identifier: [u8; 4],
@@ -174,61 +174,5 @@ impl Header {
                 self.azimuth_indexing_mode as f64 * 0.01,
             ))
         }
-    }
-}
-
-#[cfg(not(feature = "uom"))]
-impl Debug for Header {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Header")
-            .field("radar_identifier", &self.radar_identifier())
-            .field("date_time", &self.date_time())
-            .field("azimuth_number", &self.azimuth_number)
-            .field("azimuth_angle", &self.azimuth_angle)
-            .field("compression_indicator", &self.compression_indicator())
-            .field("radial_length", &self.radial_length)
-            .field(
-                "azimuth_resolution_spacing",
-                &self.azimuth_resolution_spacing,
-            )
-            .field("radial_status", &self.radial_status())
-            .field("elevation_number", &self.elevation_number)
-            .field("cut_sector_number", &self.cut_sector_number)
-            .field("elevation_angle", &self.elevation_angle)
-            .field(
-                "radial_spot_blanking_status",
-                &self.radial_spot_blanking_status(),
-            )
-            .field("azimuth_indexing_mode", &self.azimuth_indexing_mode)
-            .field("data_block_count", &self.data_block_count)
-            .finish()
-    }
-}
-
-#[cfg(feature = "uom")]
-impl Debug for Header {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Header")
-            .field("radar_identifier", &self.radar_identifier())
-            .field("date_time", &self.date_time())
-            .field("azimuth_number", &self.azimuth_number)
-            .field("azimuth_angle", &self.azimuth_angle())
-            .field("compression_indicator", &self.compression_indicator())
-            .field("radial_length", &self.radial_length())
-            .field(
-                "azimuth_resolution_spacing",
-                &self.azimuth_resolution_spacing(),
-            )
-            .field("radial_status", &self.radial_status())
-            .field("elevation_number", &self.elevation_number)
-            .field("cut_sector_number", &self.cut_sector_number)
-            .field("elevation_angle", &self.elevation_angle())
-            .field(
-                "radial_spot_blanking_status",
-                &self.radial_spot_blanking_status(),
-            )
-            .field("azimuth_indexing_mode", &self.azimuth_indexing_mode())
-            .field("data_block_count", &self.data_block_count)
-            .finish()
     }
 }

@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 /// A digital radar data block's identifier.
 #[repr(C)]

@@ -4,7 +4,7 @@ use crate::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger2,
 };
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 #[cfg(feature = "uom")]
 use uom::si::f64::{Information, Length};

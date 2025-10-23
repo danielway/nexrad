@@ -6,7 +6,7 @@ use crate::messages::primitive_aliases::{
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 #[cfg(feature = "uom")]
 use uom::si::angle::degree;
@@ -111,7 +111,10 @@ impl Header {
 
     /// The collection date and time for this data.
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
-        get_datetime(self.date.get(), Duration::milliseconds(self.time.get() as i64))
+        get_datetime(
+            self.date.get(),
+            Duration::milliseconds(self.time.get() as i64),
+        )
     }
 
     /// Azimuth angle at which the radial was collected.

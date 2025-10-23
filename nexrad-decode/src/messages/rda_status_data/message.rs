@@ -13,7 +13,7 @@ use crate::messages::rda_status_data::volume_coverage_pattern::VolumeCoveragePat
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 /// The RDA status data message includes various information about the current RDA system's state,
 /// including system operating status, performance parameters, and active alarms.

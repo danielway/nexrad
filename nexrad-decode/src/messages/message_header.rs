@@ -5,7 +5,7 @@ use crate::messages::primitive_aliases::{Integer1, Integer2, Integer4};
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 #[cfg(feature = "uom")]
 use uom::si::f64::Information;
@@ -135,7 +135,10 @@ impl MessageHeader {
 
     /// This message's date and time in UTC.
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
-        get_datetime(self.date.get(), Duration::milliseconds(self.time.get() as i64))
+        get_datetime(
+            self.date.get(),
+            Duration::milliseconds(self.time.get() as i64),
+        )
     }
 
     /// Whether this message is segmented or variable-length. If the message is segmented, multiple

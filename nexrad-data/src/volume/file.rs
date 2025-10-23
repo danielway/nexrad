@@ -59,7 +59,9 @@ impl File {
         }
 
         Ok(Scan::new(
-            coverage_pattern_number.ok_or(Error::MissingCoveragePattern)?.get(),
+            coverage_pattern_number
+                .ok_or(Error::MissingCoveragePattern)?
+                .get(),
             Sweep::from_radials(radials),
         ))
     }

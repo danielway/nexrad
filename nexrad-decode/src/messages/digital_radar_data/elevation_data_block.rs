@@ -1,7 +1,7 @@
 use crate::messages::digital_radar_data::DataBlockId;
 use crate::messages::primitive_aliases::{Integer2, Real4, ScaledSInteger2};
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 #[cfg(feature = "uom")]
 use uom::si::f64::Information;

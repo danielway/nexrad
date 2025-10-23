@@ -37,7 +37,9 @@ pub enum Error {
     ZerocopyError(String),
 }
 
-impl<A: std::fmt::Display, S: std::fmt::Display, V: std::fmt::Display> From<zerocopy::ConvertError<A, S, V>> for Error {
+impl<A: std::fmt::Display, S: std::fmt::Display, V: std::fmt::Display>
+    From<zerocopy::ConvertError<A, S, V>> for Error
+{
     fn from(err: zerocopy::ConvertError<A, S, V>) -> Self {
         Error::ZerocopyError(err.to_string())
     }

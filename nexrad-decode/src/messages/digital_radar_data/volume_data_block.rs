@@ -2,7 +2,7 @@ use crate::binary_data::BinaryData;
 use crate::messages::digital_radar_data::{DataBlockId, ProcessingStatus, VolumeCoveragePattern};
 use crate::messages::primitive_aliases::{Integer1, Integer2, Real4, SInteger2};
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 #[cfg(feature = "uom")]
 use uom::si::f64::{Angle, Energy, Information, Length};

@@ -2,7 +2,7 @@ use crate::messages::primitive_aliases::Integer2;
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 /// Header information for a clutter filter map to be read directly from the Archive II file.
 #[repr(C)]

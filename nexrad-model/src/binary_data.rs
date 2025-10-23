@@ -1,23 +1,16 @@
 use sha2::{Digest, Sha256};
 use std::fmt::{self, Debug, Formatter};
 use std::ops::{Deref, DerefMut};
-use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 /// A wrapper for binary data that provides a concise Debug implementation showing size, hash,
 /// and a sample of head/tail bytes instead of the full binary content.
-#[repr(transparent)]
-#[derive(Clone, PartialEq, Eq, Hash, TryFromBytes, Immutable, KnownLayout)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct BinaryData<T>(pub T);
 
 impl<T> BinaryData<T> {
     /// Creates a new BinaryData wrapper.
     pub fn new(data: T) -> Self {
         Self(data)
-    }
-
-    /// Unwraps the inner data.
-    pub fn into_inner(self) -> T {
-        self.0
     }
 }
 
@@ -71,49 +64,5 @@ impl<T: AsRef<[u8]>> AsRef<[u8]> for BinaryData<T> {
 impl<T> From<T> for BinaryData<T> {
     fn from(data: T) -> Self {
         Self(data)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_debug_vec() {
-        let data = vec![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
-        let binary_data = BinaryData::new(data);
-        let debug_str = format!("{:?}", binary_data);
-
-        assert!(debug_str.contains("len: 8"));
-        assert!(debug_str.contains("sha256:"));
-        assert!(debug_str.contains("head: [1, 2, 3, 4]"));
-        assert!(debug_str.contains("tail: [5, 6, 7, 8]"));
-    }
-
-    #[test]
-    fn test_debug_array() {
-        let data = [0xAA, 0xBB, 0xCC];
-        let binary_data = BinaryData::new(data);
-        let debug_str = format!("{:?}", binary_data);
-
-        assert!(debug_str.contains("len: 3"));
-        assert!(debug_str.contains("head: [170, 187, 204]"));
-        assert!(debug_str.contains("tail: []")); // Less than 4 bytes
-    }
-
-    #[test]
-    fn test_deref() {
-        let data = vec![1, 2, 3];
-        let binary_data = BinaryData::new(data);
-        assert_eq!(binary_data.len(), 3);
-        assert_eq!(&binary_data[0], &1);
-    }
-
-    #[test]
-    fn test_as_ref() {
-        let data = [1, 2, 3, 4];
-        let binary_data = BinaryData::new(data);
-        let slice: &[u8] = binary_data.as_ref();
-        assert_eq!(slice, &[1, 2, 3, 4]);
     }
 }

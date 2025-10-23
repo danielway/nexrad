@@ -16,7 +16,6 @@ log = { version = "0.4.28" }
 clap = { version = "4.5.48", features = ["derive"] }
 chrono = { version = "0.4.42" }
 uom = { version = "0.37.0" }
-serde = { version = "1.0.228", features = ["derive"] }
 thiserror = { version = "2.0.16" }
 reqwest = { version = "0.12.23", default-features = false, features = [
     "rustls-tls",

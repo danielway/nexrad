@@ -40,10 +40,12 @@ pub fn decode_clutter_filter_map<R: Read>(reader: &mut R) -> Result<Message> {
         for azimuth_number in 0..360 {
             let mut azimuth_header_bytes = vec![0u8; size_of::<AzimuthSegmentHeader>()];
             reader.read_exact(&mut azimuth_header_bytes)?;
-            let (azimuth_segment_header, _) = AzimuthSegmentHeader::decode_ref(&azimuth_header_bytes)?;
+            let (azimuth_segment_header, _) =
+                AzimuthSegmentHeader::decode_ref(&azimuth_header_bytes)?;
             let range_zone_count = azimuth_segment_header.range_zone_count.get() as usize;
 
-            let mut azimuth_segment = AzimuthSegment::new(azimuth_segment_header.clone(), azimuth_number);
+            let mut azimuth_segment =
+                AzimuthSegment::new(azimuth_segment_header.clone(), azimuth_number);
             for _ in 0..range_zone_count {
                 let mut range_zone_bytes = vec![0u8; size_of::<RangeZone>()];
                 reader.read_exact(&mut range_zone_bytes)?;

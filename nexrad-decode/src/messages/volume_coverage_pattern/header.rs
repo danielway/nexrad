@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 use crate::messages::primitive_aliases::{Code1, Code2, Integer1, Integer2, Integer4};
 use crate::messages::volume_coverage_pattern::definitions::*;

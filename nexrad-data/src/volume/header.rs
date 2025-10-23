@@ -1,7 +1,7 @@
 use crate::volume::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::fmt::Debug;
-use zerocopy::{big_endian, TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{big_endian, Immutable, KnownLayout, TryFromBytes};
 
 /// Header for an Archive II volume file containing metadata about the radar data. This header is
 /// located at the beginning of the file.
@@ -37,7 +37,6 @@ pub struct Header {
 }
 
 impl Header {
-
     /// The tape's filename which indicates the version of the data. Name is in the format
     /// `AR2V0 0xx.` where `xx` indicates the version of the data.
     ///
@@ -61,7 +60,10 @@ impl Header {
 
     /// Returns the date and time of the volume.
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
-        get_datetime(self.date.get() as u16, Duration::milliseconds(self.time.get() as i64))
+        get_datetime(
+            self.date.get() as u16,
+            Duration::milliseconds(self.time.get() as i64),
+        )
     }
 
     /// Decodes a reference to a Header from a byte slice, returning the header and remaining bytes.

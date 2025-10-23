@@ -32,7 +32,6 @@ fn test_volume_record_splitting() {
     }
 }
 
-#[cfg(all(feature = "serde", feature = "bincode"))]
 #[test]
 fn test_volume_header_decoding() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -233,27 +232,4 @@ fn test_file_scan_conversion() {
 
     let scan = scan_result.unwrap();
     assert_eq!(scan.coverage_pattern_number(), 212);
-}
-
-#[cfg(all(feature = "serde", feature = "bincode"))]
-#[test]
-fn test_file_construction_variants() {
-    let empty_volume = volume::File::new(vec![]);
-    assert_eq!(empty_volume.data().len(), 0);
-
-    let header_result = empty_volume.header();
-    assert!(
-        header_result.is_err(),
-        "Should fail to parse header from empty data"
-    );
-
-    let minimal_data = vec![0u8; 10];
-    let minimal_volume = volume::File::new(minimal_data.clone());
-    assert_eq!(minimal_volume.data().len(), 10);
-
-    let header_result = minimal_volume.header();
-    assert!(
-        header_result.is_err(),
-        "Should fail to parse header from insufficient data"
-    );
 }

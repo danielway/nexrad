@@ -1,7 +1,7 @@
 use crate::messages::digital_radar_data::DataBlockId;
 use crate::messages::primitive_aliases::{Integer2, Real4, ScaledInteger2};
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 #[cfg(feature = "uom")]
 use uom::si::f64::{Information, Length, Velocity};
@@ -54,7 +54,9 @@ impl RadialDataBlock {
     /// Nyquist velocity.
     #[cfg(feature = "uom")]
     pub fn nyquist_velocity(&self) -> Velocity {
-        Velocity::new::<uom::si::velocity::meter_per_second>(self.nyquist_velocity.get() as f64 * 0.01)
+        Velocity::new::<uom::si::velocity::meter_per_second>(
+            self.nyquist_velocity.get() as f64 * 0.01,
+        )
     }
 
     /// Decodes a reference to a RadialDataBlock from a byte slice, returning the block and remaining bytes.

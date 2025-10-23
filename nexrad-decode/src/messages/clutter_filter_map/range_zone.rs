@@ -1,6 +1,6 @@
 use crate::messages::primitive_aliases::{Code2, Integer2};
 use std::fmt::Debug;
-use zerocopy::{TryFromBytes, Immutable, KnownLayout};
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 use crate::messages::clutter_filter_map::OpCode;
 #[cfg(feature = "uom")]

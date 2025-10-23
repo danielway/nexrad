@@ -1,14 +1,15 @@
 use crate::binary_data::BinaryData;
 use crate::messages::digital_radar_data::{DataBlockId, ProcessingStatus, VolumeCoveragePattern};
 use crate::messages::primitive_aliases::{Integer1, Integer2, Real4, SInteger2};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{TryFromBytes, Immutable, KnownLayout};
 
 #[cfg(feature = "uom")]
 use uom::si::f64::{Angle, Energy, Information, Length};
 
 /// A volume data moment block.
-#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
+#[repr(C)]
+#[derive(Clone, PartialEq, Debug, TryFromBytes, Immutable, KnownLayout)]
 pub struct VolumeDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,
@@ -71,54 +72,54 @@ impl VolumeDataBlock {
     /// Size of data block.
     #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
-        Information::new::<uom::si::information::byte>(self.lrtup as f64)
+        Information::new::<uom::si::information::byte>(self.lrtup.get() as f64)
     }
 
     /// Latitude of radar.
     #[cfg(feature = "uom")]
     pub fn latitude(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.latitude as f64)
+        Angle::new::<uom::si::angle::degree>(self.latitude.get() as f64)
     }
 
     /// Longitude of radar.
     #[cfg(feature = "uom")]
     pub fn longitude(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.longitude as f64)
+        Angle::new::<uom::si::angle::degree>(self.longitude.get() as f64)
     }
 
     /// Height of site base above sea level.
     #[cfg(feature = "uom")]
     pub fn site_height(&self) -> Length {
-        Length::new::<uom::si::length::meter>(self.site_height as f64)
+        Length::new::<uom::si::length::meter>(self.site_height.get() as f64)
     }
 
     /// Height of feedhorn above ground.
     #[cfg(feature = "uom")]
     pub fn feedhorn_height(&self) -> Length {
-        Length::new::<uom::si::length::meter>(self.feedhorn_height as f64)
+        Length::new::<uom::si::length::meter>(self.feedhorn_height.get() as f64)
     }
 
     /// Transmitter power for horizontal channel.
     #[cfg(feature = "uom")]
     pub fn horizontal_shv_tx_power(&self) -> Energy {
-        Energy::new::<uom::si::energy::kilojoule>(self.horizontal_shv_tx_power as f64)
+        Energy::new::<uom::si::energy::kilojoule>(self.horizontal_shv_tx_power.get() as f64)
     }
 
     /// Transmitter power for vertical channel.
     #[cfg(feature = "uom")]
     pub fn vertical_shv_tx_power(&self) -> Energy {
-        Energy::new::<uom::si::energy::kilojoule>(self.vertical_shv_tx_power as f64)
+        Energy::new::<uom::si::energy::kilojoule>(self.vertical_shv_tx_power.get() as f64)
     }
 
     /// Initial DP for the system.
     #[cfg(feature = "uom")]
     pub fn initial_system_differential_phase(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.initial_system_differential_phase as f64)
+        Angle::new::<uom::si::angle::degree>(self.initial_system_differential_phase.get() as f64)
     }
 
     /// Identifies the volume coverage pattern in use.
     pub fn volume_coverage_pattern(&self) -> VolumeCoveragePattern {
-        match self.volume_coverage_pattern_number {
+        match self.volume_coverage_pattern_number.get() {
             12 => VolumeCoveragePattern::VCP12,
             31 => VolumeCoveragePattern::VCP31,
             35 => VolumeCoveragePattern::VCP35,
@@ -127,17 +128,28 @@ impl VolumeDataBlock {
             215 => VolumeCoveragePattern::VCP215,
             _ => panic!(
                 "Invalid volume coverage pattern number: {}",
-                self.volume_coverage_pattern_number
+                self.volume_coverage_pattern_number.get()
             ),
         }
     }
 
     /// Processing option flags.
     pub fn processing_status(&self) -> ProcessingStatus {
-        match self.processing_status {
+        match self.processing_status.get() {
             0 => ProcessingStatus::RxRNoise,
             1 => ProcessingStatus::CBT,
-            _ => ProcessingStatus::Other(self.processing_status),
+            _ => ProcessingStatus::Other(self.processing_status.get()),
         }
+    }
+
+    /// Decodes a reference to a VolumeDataBlock from a byte slice, returning the block and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a VolumeDataBlock from a byte slice.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
+        let (block, _) = Self::decode_ref(bytes)?;
+        Ok(block.clone())
     }
 }

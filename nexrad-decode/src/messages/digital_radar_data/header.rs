@@ -5,8 +5,8 @@ use crate::messages::primitive_aliases::{
 };
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{TryFromBytes, Immutable, KnownLayout};
 
 #[cfg(feature = "uom")]
 use uom::si::angle::degree;
@@ -17,7 +17,8 @@ use uom::si::information::byte;
 
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
-#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
+#[repr(C)]
+#[derive(Clone, PartialEq, Debug, TryFromBytes, Immutable, KnownLayout)]
 pub struct Header {
     /// ICAO radar identifier.
     pub radar_identifier: [u8; 4],
@@ -110,13 +111,13 @@ impl Header {
 
     /// The collection date and time for this data.
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
-        get_datetime(self.date, Duration::milliseconds(self.time as i64))
+        get_datetime(self.date.get(), Duration::milliseconds(self.time.get() as i64))
     }
 
     /// Azimuth angle at which the radial was collected.
     #[cfg(feature = "uom")]
     pub fn azimuth_angle(&self) -> Angle {
-        Angle::new::<degree>(self.azimuth_angle as f64)
+        Angle::new::<degree>(self.azimuth_angle.get() as f64)
     }
 
     /// Whether the message is compressed and what type of compression was used.
@@ -132,7 +133,7 @@ impl Header {
     /// Uncompressed length of the radial (including the data header block).
     #[cfg(feature = "uom")]
     pub fn radial_length(&self) -> Information {
-        Information::new::<byte>(self.radial_length as f64)
+        Information::new::<byte>(self.radial_length.get() as f64)
     }
 
     /// Azimuthal spacing between adjacent radials.
@@ -156,7 +157,7 @@ impl Header {
     /// The radial's collection elevation angle.
     #[cfg(feature = "uom")]
     pub fn elevation_angle(&self) -> Angle {
-        Angle::new::<degree>(self.elevation_angle as f64)
+        Angle::new::<degree>(self.elevation_angle.get() as f64)
     }
 
     /// The spot blanking status for the current radial, elevation, and volume scan.
@@ -174,5 +175,16 @@ impl Header {
                 self.azimuth_indexing_mode as f64 * 0.01,
             ))
         }
+    }
+
+    /// Decodes a reference to a Header from a byte slice, returning the header and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a Header from a byte slice.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
+        let (header, _) = Self::decode_ref(bytes)?;
+        Ok(header.clone())
     }
 }

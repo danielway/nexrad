@@ -12,16 +12,16 @@ impl VolumeCoveragePatternNumber {
 
     /// The volume coverage pattern number.
     pub fn number(&self) -> i16 {
-        self.0.abs()
+        self.0.get().abs()
     }
 
     /// Whether the volume coverage pattern number was specified locally.
     pub fn local(&self) -> bool {
-        self.0 < 0
+        self.0.get() < 0
     }
 
     /// Whether the volume coverage pattern number was specified remotely.
     pub fn remote(&self) -> bool {
-        self.0 > 0
+        self.0.get() > 0
     }
 }

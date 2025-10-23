@@ -3,8 +3,8 @@ use crate::messages::digital_radar_data::{ControlFlags, DataBlockId, ScaledMomen
 use crate::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger2,
 };
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{TryFromBytes, Immutable, KnownLayout};
 
 #[cfg(feature = "uom")]
 use uom::si::f64::{Information, Length};
@@ -14,7 +14,7 @@ use uom::si::information::byte;
 use uom::si::length::kilometer;
 
 /// A generic data moment block.
-#[derive(Clone, PartialEq, Serialize, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct GenericDataBlock {
     /// The generic data block's header information.
     pub header: GenericDataBlockHeader,
@@ -27,7 +27,7 @@ impl GenericDataBlock {
     /// Creates a new generic data moment block from the decoded header.
     pub(crate) fn new(header: GenericDataBlockHeader) -> Self {
         let word_size_bytes = header.data_word_size as usize / 8;
-        let encoded_data_size = header.number_of_data_moment_gates as usize * word_size_bytes;
+        let encoded_data_size = header.number_of_data_moment_gates.get() as usize * word_size_bytes;
         Self {
             encoded_data: BinaryData::new(vec![0; encoded_data_size]),
             header,
@@ -49,7 +49,7 @@ impl GenericDataBlock {
             .iter()
             .copied()
             .map(|raw_value| {
-                if self.header.scale == 0.0 {
+                if self.header.scale.get() == 0.0 {
                     return ScaledMomentValue::Value(raw_value as f32);
                 }
 
@@ -57,7 +57,7 @@ impl GenericDataBlock {
                     0 => ScaledMomentValue::BelowThreshold,
                     1 => ScaledMomentValue::RangeFolded,
                     _ => ScaledMomentValue::Value(
-                        (raw_value as f32 - self.header.offset) / self.header.scale,
+                        (raw_value as f32 - self.header.offset.get()) / self.header.scale.get(),
                     ),
                 }
             })
@@ -68,11 +68,11 @@ impl GenericDataBlock {
     #[cfg(feature = "nexrad-model")]
     pub fn moment_data(&self) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
-            self.header.number_of_data_moment_gates,
-            self.header.data_moment_range,
-            self.header.data_moment_range_sample_interval,
-            self.header.scale,
-            self.header.offset,
+            self.header.number_of_data_moment_gates.get(),
+            self.header.data_moment_range.get(),
+            self.header.data_moment_range_sample_interval.get(),
+            self.header.scale.get(),
+            self.header.offset.get(),
             self.encoded_data.0.clone(),
         )
     }
@@ -81,18 +81,19 @@ impl GenericDataBlock {
     #[cfg(feature = "nexrad-model")]
     pub fn into_moment_data(self) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
-            self.header.number_of_data_moment_gates,
-            self.header.data_moment_range,
-            self.header.data_moment_range_sample_interval,
-            self.header.scale,
-            self.header.offset,
+            self.header.number_of_data_moment_gates.get(),
+            self.header.data_moment_range.get(),
+            self.header.data_moment_range_sample_interval.get(),
+            self.header.scale.get(),
+            self.header.offset.get(),
             self.encoded_data.into_inner(),
         )
     }
 }
 
 /// A generic data moment block's decoded header.
-#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
+#[repr(C)]
+#[derive(Clone, PartialEq, Debug, TryFromBytes, Immutable, KnownLayout)]
 pub struct GenericDataBlockHeader {
     /// Data block identifier.
     pub data_block_id: DataBlockId,
@@ -139,13 +140,13 @@ impl GenericDataBlockHeader {
     /// Range to center of first range gate.
     #[cfg(feature = "uom")]
     pub fn data_moment_range(&self) -> Length {
-        Length::new::<kilometer>(self.data_moment_range as f64 * 0.001)
+        Length::new::<kilometer>(self.data_moment_range.get() as f64 * 0.001)
     }
 
     /// Size of data moment sample interval.
     #[cfg(feature = "uom")]
     pub fn data_moment_range_sample_interval(&self) -> Length {
-        Length::new::<kilometer>(self.data_moment_range_sample_interval as f64 * 0.001)
+        Length::new::<kilometer>(self.data_moment_range_sample_interval.get() as f64 * 0.001)
     }
 
     /// Flags indicating special control features.
@@ -163,7 +164,18 @@ impl GenericDataBlockHeader {
     #[cfg(feature = "uom")]
     pub fn moment_size(&self) -> Information {
         Information::new::<byte>(
-            self.number_of_data_moment_gates as f64 * self.data_word_size as f64 / 8.0,
+            self.number_of_data_moment_gates.get() as f64 * self.data_word_size as f64 / 8.0,
         )
+    }
+
+    /// Decodes a reference to a GenericDataBlockHeader from a byte slice, returning the header and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a GenericDataBlockHeader from a byte slice.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
+        let (header, _) = Self::decode_ref(bytes)?;
+        Ok(header.clone())
     }
 }

@@ -18,13 +18,15 @@ use crate::messages::message_header::MessageHeader;
 use crate::messages::rda_status_data::decode_rda_status_message;
 use crate::messages::volume_coverage_pattern::decode_volume_coverage_pattern;
 use crate::result::Result;
-use crate::util::deserialize;
 use log::trace;
 use std::io::{Read, Seek};
 
 /// Decode a NEXRAD Level II message from a reader.
 pub fn decode_message_header<R: Read>(reader: &mut R) -> Result<MessageHeader> {
-    deserialize(reader)
+    let mut header_bytes = [0u8; size_of::<MessageHeader>()];
+    reader.read_exact(&mut header_bytes)?;
+    let (header, _) = MessageHeader::decode_ref(&header_bytes)?;
+    Ok(header.clone())
 }
 
 /// Decode a series of NEXRAD Level II messages from a reader.

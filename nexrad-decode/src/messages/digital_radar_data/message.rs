@@ -1,12 +1,10 @@
-use serde::Serialize;
-
 use crate::messages::digital_radar_data::{
     ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, VolumeDataBlock,
 };
 
 /// The digital radar data message includes base radar data from a single radial for various
 /// products.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Message {
     /// The decoded digital radar data header.
     pub header: Header,
@@ -72,8 +70,8 @@ impl Message {
                 .date_time()
                 .ok_or(Error::MessageMissingDateError)?
                 .timestamp_millis(),
-            self.header.azimuth_number,
-            self.header.azimuth_angle,
+            self.header.azimuth_number.get(),
+            self.header.azimuth_angle.get(),
             self.header.azimuth_resolution_spacing as f32 * 0.5,
             match self.header.radial_status() {
                 RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
@@ -84,7 +82,7 @@ impl Message {
                 RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
             },
             self.header.elevation_number,
-            self.header.elevation_angle,
+            self.header.elevation_angle.get(),
             self.reflectivity_data_block
                 .as_ref()
                 .map(|block| block.moment_data()),
@@ -121,8 +119,8 @@ impl Message {
                 .date_time()
                 .ok_or(Error::MessageMissingDateError)?
                 .timestamp_millis(),
-            self.header.azimuth_number,
-            self.header.azimuth_angle,
+            self.header.azimuth_number.get(),
+            self.header.azimuth_angle.get(),
             self.header.azimuth_resolution_spacing as f32 * 0.5,
             match self.header.radial_status() {
                 RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
@@ -133,7 +131,7 @@ impl Message {
                 RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
             },
             self.header.elevation_number,
-            self.header.elevation_angle,
+            self.header.elevation_angle.get(),
             self.reflectivity_data_block
                 .map(|block| block.into_moment_data()),
             self.velocity_data_block

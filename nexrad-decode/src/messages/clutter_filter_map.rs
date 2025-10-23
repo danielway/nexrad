@@ -23,26 +23,32 @@ mod definitions;
 pub use definitions::*;
 
 use crate::result::Result;
-use crate::util::deserialize;
 use std::io::Read;
 
 /// Decodes a clutter filter map message type 15 from the provided reader.
 pub fn decode_clutter_filter_map<R: Read>(reader: &mut R) -> Result<Message> {
-    let header: Header = deserialize(reader)?;
-    let elevation_segment_count = header.elevation_segment_count as u8;
+    let mut header_bytes = vec![0u8; size_of::<Header>()];
+    reader.read_exact(&mut header_bytes)?;
+    let (header, _) = Header::decode_ref(&header_bytes)?;
+    let elevation_segment_count = header.elevation_segment_count.get() as u8;
 
-    let mut message = Message::new(header);
+    let mut message = Message::new(header.clone());
 
     for elevation_segment_number in 0..elevation_segment_count {
         let mut elevation_segment = ElevationSegment::new(elevation_segment_number);
 
         for azimuth_number in 0..360 {
-            let azimuth_segment_header: AzimuthSegmentHeader = deserialize(reader)?;
-            let range_zone_count = azimuth_segment_header.range_zone_count as usize;
+            let mut azimuth_header_bytes = vec![0u8; size_of::<AzimuthSegmentHeader>()];
+            reader.read_exact(&mut azimuth_header_bytes)?;
+            let (azimuth_segment_header, _) = AzimuthSegmentHeader::decode_ref(&azimuth_header_bytes)?;
+            let range_zone_count = azimuth_segment_header.range_zone_count.get() as usize;
 
-            let mut azimuth_segment = AzimuthSegment::new(azimuth_segment_header, azimuth_number);
+            let mut azimuth_segment = AzimuthSegment::new(azimuth_segment_header.clone(), azimuth_number);
             for _ in 0..range_zone_count {
-                azimuth_segment.range_zones.push(deserialize(reader)?);
+                let mut range_zone_bytes = vec![0u8; size_of::<RangeZone>()];
+                reader.read_exact(&mut range_zone_bytes)?;
+                let (range_zone, _) = RangeZone::decode_ref(&range_zone_bytes)?;
+                azimuth_segment.range_zones.push(range_zone.clone());
             }
 
             elevation_segment.azimuth_segments.push(azimuth_segment);

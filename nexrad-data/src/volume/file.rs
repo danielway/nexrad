@@ -17,9 +17,9 @@ impl File {
     }
 
     /// The file's decoded Archive II volume header.
-    #[cfg(all(feature = "serde", feature = "bincode"))]
     pub fn header(&self) -> crate::result::Result<Header> {
-        Header::deserialize(&mut self.0.as_slice())
+        let (header, _) = Header::decode_ref(&self.0)?;
+        Ok(header.clone())
     }
 
     /// The file's LDM records.
@@ -59,7 +59,7 @@ impl File {
         }
 
         Ok(Scan::new(
-            coverage_pattern_number.ok_or(Error::MissingCoveragePattern)?,
+            coverage_pattern_number.ok_or(Error::MissingCoveragePattern)?.get(),
             Sweep::from_radials(radials),
         ))
     }
@@ -69,8 +69,6 @@ impl Debug for File {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut debug = f.debug_struct("File");
         debug.field("data.len()", &self.data().len());
-
-        #[cfg(all(feature = "serde", feature = "bincode"))]
         debug.field("header", &self.header());
 
         #[cfg(all(feature = "nexrad-model", feature = "decode"))]

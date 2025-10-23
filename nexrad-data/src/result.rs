@@ -10,9 +10,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("data file IO error")]
     FileError(#[from] std::io::Error),
-    #[error("file deserialization error")]
-    #[cfg(feature = "bincode")]
-    DeserializationError(#[from] bincode::Error),
     #[cfg(feature = "bzip2")]
     #[error("error decompressing uncompressed data")]
     UncompressedDataError,
@@ -34,6 +31,16 @@ pub enum Error {
     #[cfg(feature = "bzip2")]
     #[error("ldm record decompression error")]
     DecompressionError(#[from] bzip2::Error),
+    #[error("error decoding {0}")]
+    DecodingError(String),
+    #[error("zerocopy conversion error: {0}")]
+    ZerocopyError(String),
+}
+
+impl<A: std::fmt::Display, S: std::fmt::Display, V: std::fmt::Display> From<zerocopy::ConvertError<A, S, V>> for Error {
+    fn from(err: zerocopy::ConvertError<A, S, V>) -> Self {
+        Error::ZerocopyError(err.to_string())
+    }
 }
 
 #[cfg(feature = "aws")]

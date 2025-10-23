@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{TryFromBytes, Immutable, KnownLayout};
 
 use crate::messages::primitive_aliases::{Code1, Code2, Integer1, Integer2, Integer4};
 use crate::messages::volume_coverage_pattern::definitions::*;
@@ -8,7 +8,8 @@ use crate::messages::volume_coverage_pattern::definitions::*;
 use uom::si::{f64::Velocity, velocity::meter_per_second};
 
 /// The volume coverage pattern header block
-#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
+#[repr(C)]
+#[derive(Clone, PartialEq, Debug, TryFromBytes, Immutable, KnownLayout)]
 pub struct Header {
     /// Total message size in halfwords, including the header and all elevation blocks
     pub message_size: Integer2,
@@ -64,9 +65,20 @@ pub struct Header {
 }
 
 impl Header {
+    /// Decodes a reference to a Header from a byte slice, returning the header and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a Header from a byte slice.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
+        let (header, _) = Self::decode_ref(bytes)?;
+        Ok(header.clone())
+    }
+
     /// The pattern type of the volume coverage pattern
     pub fn pattern_type(&self) -> PatternType {
-        match self.pattern_type {
+        match self.pattern_type.get() {
             2 => PatternType::Constant,
             _ => PatternType::Unknown,
         }
@@ -102,56 +114,56 @@ impl Header {
 
     /// The number of elevations in the VCP
     pub fn vcp_sequencing_number_of_elevations(&self) -> u8 {
-        (self.vcp_sequencing & 0x001F) as u8
+        (self.vcp_sequencing.get() & 0x001F) as u8
     }
 
     /// The maximum number of SAILS cuts allowed in this VCP
     pub fn vcp_sequencing_maximum_sails_cuts(&self) -> u8 {
-        ((self.vcp_sequencing & 0x0060) >> 5) as u8
+        ((self.vcp_sequencing.get() & 0x0060) >> 5) as u8
     }
 
     /// Whether this VCP is a part of an active VCP sequence
     pub fn vcp_sequencing_sequence_active(&self) -> bool {
-        ((self.vcp_sequencing & 0x2000) >> 13) == 1
+        ((self.vcp_sequencing.get() & 0x2000) >> 13) == 1
     }
 
     /// Whether this VCP is truncated
     pub fn vcp_sequencing_truncated_vcp(&self) -> bool {
-        ((self.vcp_sequencing & 0x4000) >> 14) == 1
+        ((self.vcp_sequencing.get() & 0x4000) >> 14) == 1
     }
 
     /// Whether this VCP uses SAILS cuts
     pub fn vcp_supplemental_data_sails_vcp(&self) -> bool {
-        (self.vcp_supplemental_data & 0x0001) == 1
+        (self.vcp_supplemental_data.get() & 0x0001) == 1
     }
 
     /// The number of SAILS cuts used by this VCP
     pub fn vcp_supplemental_data_number_sails_cuts(&self) -> u8 {
-        ((self.vcp_supplemental_data & 0x000E) >> 1) as u8
+        ((self.vcp_supplemental_data.get() & 0x000E) >> 1) as u8
     }
 
     /// Whether this VCP uses MRLE cuts
     pub fn vcp_supplemental_data_mrle_vcp(&self) -> bool {
-        ((self.vcp_supplemental_data & 0x0010) >> 4) == 1
+        ((self.vcp_supplemental_data.get() & 0x0010) >> 4) == 1
     }
 
     /// The number of MRLE cuts used by this VCP
     pub fn vcp_supplemental_data_number_mrle_cuts(&self) -> u8 {
-        ((self.vcp_supplemental_data & 0x00E0) >> 5) as u8
+        ((self.vcp_supplemental_data.get() & 0x00E0) >> 5) as u8
     }
 
     /// Whether this VCP is a Multi-PRF Dealiasing Algorithm (MPDA) VCP
     pub fn vcp_supplemental_data_mpda_vcp(&self) -> bool {
-        ((self.vcp_supplemental_data & 0x0800) >> 11) == 1
+        ((self.vcp_supplemental_data.get() & 0x0800) >> 11) == 1
     }
 
     /// Whether this VCP contains BASE TILTS
     pub fn vcp_supplemental_data_base_tilt_vcp(&self) -> bool {
-        ((self.vcp_supplemental_data & 0x1000) >> 12) == 1
+        ((self.vcp_supplemental_data.get() & 0x1000) >> 12) == 1
     }
 
     /// The number of BASE TILTS in this VCP
     pub fn vcp_supplemental_data_base_tilts(&self) -> u8 {
-        ((self.vcp_supplemental_data & 0xE000) >> 13) as u8
+        ((self.vcp_supplemental_data.get() & 0xE000) >> 13) as u8
     }
 }

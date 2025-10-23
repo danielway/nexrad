@@ -10,10 +10,16 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("data file IO error")]
     FileError(#[from] std::io::Error),
-    #[error("file deserialization error")]
-    DeserializationError(#[from] bincode::Error),
+    #[error("zerocopy conversion error: {0}")]
+    ZerocopyError(String),
     #[error("file decoding error: {0}")]
     DecodingError(String),
     #[error("message is missing collection date/time")]
     MessageMissingDateError,
+}
+
+impl<A: std::fmt::Display, S: std::fmt::Display, V: std::fmt::Display> From<zerocopy::ConvertError<A, S, V>> for Error {
+    fn from(err: zerocopy::ConvertError<A, S, V>) -> Self {
+        Error::ZerocopyError(err.to_string())
+    }
 }

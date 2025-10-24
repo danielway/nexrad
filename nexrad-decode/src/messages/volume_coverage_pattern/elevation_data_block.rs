@@ -147,10 +147,10 @@ impl ElevationDataBlock {
         Ok(Self::try_ref_from_prefix(bytes)?)
     }
 
-    /// Decodes an owned copy of a ElevationDataBlock from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (block, _) = Self::decode_ref(bytes)?;
-        Ok(block.clone())
+    /// Decodes an owned copy of a ElevationDataBlock from a byte slice, returning the block and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (block, remaining) = Self::decode_ref(bytes)?;
+        Ok((block.clone(), remaining))
     }
 
     /// The elevation angle for this cut

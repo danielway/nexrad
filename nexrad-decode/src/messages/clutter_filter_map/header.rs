@@ -22,22 +22,22 @@ pub struct Header {
 }
 
 impl Header {
+    /// Decodes a reference to a Header from a byte slice, returning the header and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a Header from a byte slice, returning the header and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (header, remaining) = Self::decode_ref(bytes)?;
+        Ok((header.clone(), remaining))
+    }
+
     /// The date and time the clutter filter map was generated.
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(
             self.map_generation_date.get(),
             Duration::minutes(self.map_generation_time.get() as i64),
         )
-    }
-
-    /// Decodes a reference to a Header from a byte slice, returning the header and remaining bytes.
-    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
-        Ok(Self::try_ref_from_prefix(bytes)?)
-    }
-
-    /// Decodes an owned copy of a Header from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (header, _) = Self::decode_ref(bytes)?;
-        Ok(header.clone())
     }
 }

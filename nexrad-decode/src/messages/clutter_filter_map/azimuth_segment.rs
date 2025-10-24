@@ -16,10 +16,10 @@ impl AzimuthSegmentHeader {
         Ok(Self::try_ref_from_prefix(bytes)?)
     }
 
-    /// Decodes an owned copy of a AzimuthSegmentHeader from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (header, _) = Self::decode_ref(bytes)?;
-        Ok(header.clone())
+    /// Decodes an owned copy of a AzimuthSegmentHeader from a byte slice, returning the header and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (header, remaining) = Self::decode_ref(bytes)?;
+        Ok((header.clone(), remaining))
     }
 }
 

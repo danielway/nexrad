@@ -39,6 +39,17 @@ pub struct RadialDataBlock {
 }
 
 impl RadialDataBlock {
+    /// Decodes a reference to a RadialDataBlock from a byte slice, returning the block and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a RadialDataBlock from a byte slice, returning the block and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (block, remaining) = Self::decode_ref(bytes)?;
+        Ok((block.clone(), remaining))
+    }
+
     /// Size of data block.
     #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
@@ -57,16 +68,5 @@ impl RadialDataBlock {
         Velocity::new::<uom::si::velocity::meter_per_second>(
             self.nyquist_velocity.get() as f64 * 0.01,
         )
-    }
-
-    /// Decodes a reference to a RadialDataBlock from a byte slice, returning the block and remaining bytes.
-    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
-        Ok(Self::try_ref_from_prefix(bytes)?)
-    }
-
-    /// Decodes an owned copy of a RadialDataBlock from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (block, _) = Self::decode_ref(bytes)?;
-        Ok(block.clone())
     }
 }

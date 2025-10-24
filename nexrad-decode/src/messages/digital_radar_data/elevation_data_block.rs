@@ -27,20 +27,20 @@ pub struct ElevationDataBlock {
 }
 
 impl ElevationDataBlock {
-    /// Size of data block.
-    #[cfg(feature = "uom")]
-    pub fn lrtup(&self) -> Information {
-        Information::new::<byte>(self.lrtup.get() as f64)
-    }
-
     /// Decodes a reference to an ElevationDataBlock from a byte slice, returning the block and remaining bytes.
     pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
         Ok(Self::try_ref_from_prefix(bytes)?)
     }
 
-    /// Decodes an owned copy of an ElevationDataBlock from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (block, _) = Self::decode_ref(bytes)?;
-        Ok(block.clone())
+    /// Decodes an owned copy of an ElevationDataBlock from a byte slice, returning the block and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (block, remaining) = Self::decode_ref(bytes)?;
+        Ok((block.clone(), remaining))
+    }
+
+    /// Size of data block.
+    #[cfg(feature = "uom")]
+    pub fn lrtup(&self) -> Information {
+        Information::new::<byte>(self.lrtup.get() as f64)
     }
 }

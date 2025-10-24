@@ -37,6 +37,17 @@ pub struct Header {
 }
 
 impl Header {
+    /// Decodes a reference to a Header from a byte slice, returning the header and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a Header from a byte slice, returning the header and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (header, remaining) = Self::decode_ref(bytes)?;
+        Ok((header.clone(), remaining))
+    }
+
     /// The tape's filename which indicates the version of the data. Name is in the format
     /// `AR2V0 0xx.` where `xx` indicates the version of the data.
     ///
@@ -64,17 +75,6 @@ impl Header {
             self.date.get() as u16,
             Duration::milliseconds(self.time.get() as i64),
         )
-    }
-
-    /// Decodes a reference to a Header from a byte slice, returning the header and remaining bytes.
-    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
-        Ok(Self::try_ref_from_prefix(bytes)?)
-    }
-
-    /// Decodes an owned copy of a Header from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (header, _) = Self::decode_ref(bytes)?;
-        Ok(header.clone())
     }
 
     /// The ICAO identifier of the radar site.

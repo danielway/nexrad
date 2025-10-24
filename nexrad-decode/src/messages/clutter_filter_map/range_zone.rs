@@ -27,10 +27,10 @@ impl RangeZone {
         Ok(Self::try_ref_from_prefix(bytes)?)
     }
 
-    /// Decodes an owned copy of a RangeZone from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (range_zone, _) = Self::decode_ref(bytes)?;
-        Ok(range_zone.clone())
+    /// Decodes an owned copy of a RangeZone from a byte slice, returning the range zone and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (range_zone, remaining) = Self::decode_ref(bytes)?;
+        Ok((range_zone.clone(), remaining))
     }
 
     /// Operation code for the range zone.

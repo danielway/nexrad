@@ -137,6 +137,17 @@ pub struct GenericDataBlockHeader {
 }
 
 impl GenericDataBlockHeader {
+    /// Decodes a reference to a GenericDataBlockHeader from a byte slice, returning the header and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a GenericDataBlockHeader from a byte slice, returning the header and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (header, remaining) = Self::decode_ref(bytes)?;
+        Ok((header.clone(), remaining))
+    }
+
     /// Range to center of first range gate.
     #[cfg(feature = "uom")]
     pub fn data_moment_range(&self) -> Length {
@@ -166,16 +177,5 @@ impl GenericDataBlockHeader {
         Information::new::<byte>(
             self.number_of_data_moment_gates.get() as f64 * self.data_word_size as f64 / 8.0,
         )
-    }
-
-    /// Decodes a reference to a GenericDataBlockHeader from a byte slice, returning the header and remaining bytes.
-    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
-        Ok(Self::try_ref_from_prefix(bytes)?)
-    }
-
-    /// Decodes an owned copy of a GenericDataBlockHeader from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (header, _) = Self::decode_ref(bytes)?;
-        Ok(header.clone())
     }
 }

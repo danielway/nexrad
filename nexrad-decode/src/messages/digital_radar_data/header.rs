@@ -104,6 +104,17 @@ pub struct Header {
 }
 
 impl Header {
+    /// Decodes a reference to a Header from a byte slice, returning the header and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a Header from a byte slice, returning the header and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (header, remaining) = Self::decode_ref(bytes)?;
+        Ok((header.clone(), remaining))
+    }
+
     /// ICAO radar identifier.
     pub fn radar_identifier(&self) -> String {
         String::from_utf8_lossy(&self.radar_identifier).to_string()
@@ -178,16 +189,5 @@ impl Header {
                 self.azimuth_indexing_mode as f64 * 0.01,
             ))
         }
-    }
-
-    /// Decodes a reference to a Header from a byte slice, returning the header and remaining bytes.
-    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
-        Ok(Self::try_ref_from_prefix(bytes)?)
-    }
-
-    /// Decodes an owned copy of a Header from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (header, _) = Self::decode_ref(bytes)?;
-        Ok(header.clone())
     }
 }

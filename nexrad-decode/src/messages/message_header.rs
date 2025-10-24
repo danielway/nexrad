@@ -71,6 +71,17 @@ pub struct MessageHeader {
 }
 
 impl MessageHeader {
+    /// Decodes a reference to a MessageHeader from a byte slice, returning the header and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a MessageHeader from a byte slice, returning the header and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (header, remaining) = Self::decode_ref(bytes)?;
+        Ok((header.clone(), remaining))
+    }
+
     /// If this message is [MessageHeader::segmented], this indicates this message segment's size.
     /// Otherwise, this returns [None] and [MessageHeader::message_size] should be used to determine
     /// the message's full size.
@@ -200,16 +211,5 @@ impl MessageHeader {
                 Information::new::<byte>(message_size_bytes as f64)
             }
         }
-    }
-
-    /// Decodes a reference to a MessageHeader from a byte slice, returning the header and remaining bytes.
-    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
-        Ok(Self::try_ref_from_prefix(bytes)?)
-    }
-
-    /// Decodes an owned copy of a MessageHeader from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (header, _) = Self::decode_ref(bytes)?;
-        Ok(header.clone())
     }
 }

@@ -13,6 +13,17 @@ pub struct DataBlockId {
 }
 
 impl DataBlockId {
+    /// Decodes a reference to a DataBlockId from a byte slice, returning the ID and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a DataBlockId from a byte slice, returning the ID and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (id, remaining) = Self::decode_ref(bytes)?;
+        Ok((id.clone(), remaining))
+    }
+
     /// Data block type, e.g. "R".
     pub fn data_block_type(&self) -> char {
         self.data_block_type as char
@@ -21,16 +32,5 @@ impl DataBlockId {
     /// Data block name, e.g. "VOL".
     pub fn data_block_name(&self) -> String {
         String::from_utf8_lossy(&self.data_name).to_string()
-    }
-
-    /// Decodes a reference to a DataBlockId from a byte slice, returning the ID and remaining bytes.
-    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
-        Ok(Self::try_ref_from_prefix(bytes)?)
-    }
-
-    /// Decodes an owned copy of a DataBlockId from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (id, _) = Self::decode_ref(bytes)?;
-        Ok(id.clone())
     }
 }

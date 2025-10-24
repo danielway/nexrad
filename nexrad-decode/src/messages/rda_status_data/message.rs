@@ -227,6 +227,17 @@ pub struct Message {
 }
 
 impl Message {
+    /// Decodes a reference to a Message from a byte slice, returning the message and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a Message from a byte slice, returning the message and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (message, remaining) = Self::decode_ref(bytes)?;
+        Ok((message.clone(), remaining))
+    }
+
     /// The RDA system's status.
     pub fn rda_status(&self) -> RDAStatus {
         match self.rda_status.get() {
@@ -464,16 +475,5 @@ impl Message {
             .filter(|&code| code.get() != 0)
             .filter_map(|&code| alarm::get_alarm_message(code.get()))
             .collect()
-    }
-
-    /// Decodes a reference to a Message from a byte slice, returning the message and remaining bytes.
-    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
-        Ok(Self::try_ref_from_prefix(bytes)?)
-    }
-
-    /// Decodes an owned copy of a Message from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (message, _) = Self::decode_ref(bytes)?;
-        Ok(message.clone())
     }
 }

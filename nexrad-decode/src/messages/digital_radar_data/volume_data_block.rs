@@ -69,6 +69,17 @@ pub struct VolumeDataBlock {
 }
 
 impl VolumeDataBlock {
+    /// Decodes a reference to a VolumeDataBlock from a byte slice, returning the block and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a VolumeDataBlock from a byte slice, returning the block and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (block, remaining) = Self::decode_ref(bytes)?;
+        Ok((block.clone(), remaining))
+    }
+
     /// Size of data block.
     #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
@@ -140,16 +151,5 @@ impl VolumeDataBlock {
             1 => ProcessingStatus::CBT,
             _ => ProcessingStatus::Other(self.processing_status.get()),
         }
-    }
-
-    /// Decodes a reference to a VolumeDataBlock from a byte slice, returning the block and remaining bytes.
-    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
-        Ok(Self::try_ref_from_prefix(bytes)?)
-    }
-
-    /// Decodes an owned copy of a VolumeDataBlock from a byte slice.
-    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<Self> {
-        let (block, _) = Self::decode_ref(bytes)?;
-        Ok(block.clone())
     }
 }

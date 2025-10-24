@@ -17,9 +17,9 @@ impl File {
     }
 
     /// The file's decoded Archive II volume header.
-    pub fn header(&self) -> crate::result::Result<Header> {
+    pub fn header(&self) -> crate::result::Result<&Header> {
         let (header, _) = Header::decode_ref(&self.0)?;
-        Ok(header.clone())
+        Ok(header)
     }
 
     /// The file's LDM records.

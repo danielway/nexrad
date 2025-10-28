@@ -1,7 +1,7 @@
 use crate::messages::digital_radar_data::DataBlockId;
 use crate::messages::primitive_aliases::{Integer2, Real4, ScaledSInteger2};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 #[cfg(feature = "uom")]
 use uom::si::f64::Information;
@@ -9,7 +9,8 @@ use uom::si::f64::Information;
 use uom::si::information::byte;
 
 /// An elevation data block.
-#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
+#[repr(C)]
+#[derive(Clone, PartialEq, Debug, TryFromBytes, Immutable, KnownLayout)]
 pub struct ElevationDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,
@@ -26,9 +27,20 @@ pub struct ElevationDataBlock {
 }
 
 impl ElevationDataBlock {
+    /// Decodes a reference to an ElevationDataBlock from a byte slice, returning the block and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of an ElevationDataBlock from a byte slice, returning the block and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (block, remaining) = Self::decode_ref(bytes)?;
+        Ok((block.clone(), remaining))
+    }
+
     /// Size of data block.
     #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
-        Information::new::<byte>(self.lrtup as f64)
+        Information::new::<byte>(self.lrtup.get() as f64)
     }
 }

@@ -1,8 +1,9 @@
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{Immutable, KnownLayout, TryFromBytes};
 
 /// A digital radar data block's identifier.
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize, Debug)]
+#[repr(C)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, TryFromBytes, Immutable, KnownLayout)]
 pub struct DataBlockId {
     /// Data block type, e.g. "R".
     pub data_block_type: u8,
@@ -12,6 +13,17 @@ pub struct DataBlockId {
 }
 
 impl DataBlockId {
+    /// Decodes a reference to a DataBlockId from a byte slice, returning the ID and remaining bytes.
+    pub fn decode_ref(bytes: &[u8]) -> crate::result::Result<(&Self, &[u8])> {
+        Ok(Self::try_ref_from_prefix(bytes)?)
+    }
+
+    /// Decodes an owned copy of a DataBlockId from a byte slice, returning the ID and remaining bytes.
+    pub fn decode_owned(bytes: &[u8]) -> crate::result::Result<(Self, &[u8])> {
+        let (id, remaining) = Self::decode_ref(bytes)?;
+        Ok((id.clone(), remaining))
+    }
+
     /// Data block type, e.g. "R".
     pub fn data_block_type(&self) -> char {
         self.data_block_type as char

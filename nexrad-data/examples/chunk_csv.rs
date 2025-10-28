@@ -361,6 +361,8 @@ fn analyze_chunk(
         });
 
         if let (Some(start), Some(end)) = (start_azimuth, end_azimuth) {
+            let start = start.get();
+            let end = end.get();
             let range = if end > start {
                 end - start
             } else {

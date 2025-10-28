@@ -1,10 +1,8 @@
-use serde::Serialize;
-
 use crate::messages::volume_coverage_pattern::{ElevationDataBlock, Header};
 
 /// The digital radar data message includes base radar data from a single radial for various
 /// products.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Message {
     /// The decoded volume coverage pattern header.
     pub header: Header,

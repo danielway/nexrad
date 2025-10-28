@@ -30,7 +30,7 @@ pub fn extract_rda_status_info(
             .volume_coverage_pattern()
             .map(|vcp| vcp.local())
             .unwrap_or(false),
-        average_transmitter_power: message.average_transmitter_power,
+        average_transmitter_power: message.average_transmitter_power.get(),
         reflectivity_calibration: message.horizontal_reflectivity_calibration_correction(),
         super_resolution_status: format!("{:?}", message.super_resolution_status()),
         data_transmission_enabled: Vec::new(),

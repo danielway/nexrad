@@ -15,6 +15,7 @@
 #![warn(clippy::correctness)]
 #![allow(clippy::too_many_arguments)]
 
+mod binary_data;
 pub mod data;
 pub mod meta;
 pub mod result;

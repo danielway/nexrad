@@ -22,18 +22,22 @@ mod elevation_data_block;
 pub use elevation_data_block::ElevationDataBlock;
 
 use crate::result::Result;
-use crate::util::deserialize;
 
 /// Decodes a volume coverage pattern message type 5 from the provided reader.
 pub fn decode_volume_coverage_pattern<R: Read>(reader: &mut R) -> Result<Message> {
-    let header: Header = deserialize(reader)?;
+    let mut header_bytes = vec![0u8; size_of::<Header>()];
+    reader.read_exact(&mut header_bytes)?;
+    let (header, _) = Header::decode_ref(&header_bytes)?;
 
     let mut elevations: Vec<ElevationDataBlock> = Vec::new();
-    for _ in 0..header.number_of_elevation_cuts {
-        elevations.push(deserialize(reader)?);
+    for _ in 0..header.number_of_elevation_cuts.get() {
+        let mut elevation_bytes = vec![0u8; size_of::<ElevationDataBlock>()];
+        reader.read_exact(&mut elevation_bytes)?;
+        let (elevation, _) = ElevationDataBlock::decode_ref(&elevation_bytes)?;
+        elevations.push(elevation.clone());
     }
 
-    let message = Message::new(header, elevations);
+    let message = Message::new(header.clone(), elevations);
 
     Ok(message)
 }

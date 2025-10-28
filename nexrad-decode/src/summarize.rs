@@ -97,9 +97,9 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                         end_time: message_time,
                         message_count: 1,
                         elevation_number: Some(elevation_number),
-                        elevation_angle: Some(radar_data.header.elevation_angle),
-                        start_azimuth: Some(radar_data.header.azimuth_angle),
-                        end_azimuth: Some(radar_data.header.azimuth_angle),
+                        elevation_angle: Some(radar_data.header.elevation_angle.get()),
+                        start_azimuth: Some(radar_data.header.azimuth_angle.get()),
+                        end_azimuth: Some(radar_data.header.azimuth_angle.get()),
                         data_types: Some(HashMap::new()),
                         rda_status_info: None,
                         vcp_info: None,
@@ -114,7 +114,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                 } else if let Some(group) = &mut current_group {
                     group.end_time = message_time;
                     group.message_count += 1;
-                    group.end_azimuth = Some(radar_data.header.azimuth_angle);
+                    group.end_azimuth = Some(radar_data.header.azimuth_angle.get());
                     group.end_message_index = i;
                 }
 

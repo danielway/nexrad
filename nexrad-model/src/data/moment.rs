@@ -1,21 +1,17 @@
-use std::fmt::Debug;
-
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+use crate::binary_data::BinaryData;
 
 #[cfg(feature = "uom")]
 use uom::si::{f64::Length, length::kilometer};
 
 /// Moment data from a radial for a particular product where each value corresponds to a gate.
-#[derive(Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Clone, PartialEq, Debug)]
 pub struct MomentData {
     gate_count: u16,
     first_gate_range: u16,
     gate_interval: u16,
     scale: f32,
     offset: f32,
-    values: Vec<u8>,
+    values: BinaryData<Vec<u8>>,
 }
 
 impl MomentData {
@@ -34,7 +30,7 @@ impl MomentData {
             gate_interval,
             scale,
             offset,
-            values,
+            values: BinaryData::new(values),
         }
     }
 
@@ -82,14 +78,6 @@ impl MomentData {
                 _ => MomentValue::Value((raw_value as f32 - self.offset) / self.scale),
             })
             .collect()
-    }
-}
-
-impl Debug for MomentData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MomentData")
-            .field("values", &self.values())
-            .finish()
     }
 }
 

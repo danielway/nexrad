@@ -68,8 +68,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let header = &digital_data.header;
 
                 let elevation_num = header.elevation_number;
-                let azimuth_num = header.azimuth_number;
-                let elevation_angle = header.elevation_angle;
+                let azimuth_num = header.azimuth_number.get();
+                let elevation_angle = header.elevation_angle.get();
 
                 // Update max values for dimensions
                 if elevation_num > max_elevation_num {

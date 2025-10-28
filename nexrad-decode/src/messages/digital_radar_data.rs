@@ -37,17 +37,19 @@ mod pointers;
 pub use pointers::*;
 
 use crate::result::{Error, Result};
-use crate::util::deserialize;
 use std::io::{Read, Seek, SeekFrom};
 
 /// Decodes a digital radar data message type 31 from the provided reader.
 pub fn decode_digital_radar_data<R: Read + Seek>(reader: &mut R) -> Result<Message> {
     let start_position = reader.stream_position()?;
 
-    let header = deserialize(reader)?;
-    let mut message = Message::new(header);
+    // Read and decode header
+    let mut header_bytes = vec![0u8; size_of::<Header>()];
+    reader.read_exact(&mut header_bytes)?;
+    let (header, _) = Header::decode_ref(&header_bytes)?;
+    let mut message = Message::new(header.clone());
 
-    let pointers_space = message.header.data_block_count as usize * size_of::<u32>();
+    let pointers_space = message.header.data_block_count.get() as usize * size_of::<u32>();
     let mut pointers_raw = vec![0; pointers_space];
     reader.read_exact(&mut pointers_raw)?;
 
@@ -63,23 +65,39 @@ pub fn decode_digital_radar_data<R: Read + Seek>(reader: &mut R) -> Result<Messa
     for pointer in pointers {
         reader.seek(SeekFrom::Start(start_position + pointer as u64))?;
 
-        let data_block_id: DataBlockId = deserialize(reader)?;
-        reader.seek(SeekFrom::Current(-4))?;
+        // Read data block ID
+        let mut id_bytes = [0u8; size_of::<DataBlockId>()];
+        reader.read_exact(&mut id_bytes)?;
+        let (data_block_id, _) = DataBlockId::decode_ref(&id_bytes)?;
+
+        // Seek back to start of block
+        reader.seek(SeekFrom::Current(-(size_of::<DataBlockId>() as i64)))?;
 
         match data_block_id.data_block_name().as_str() {
             "VOL" => {
-                message.volume_data_block = Some(deserialize(reader)?);
+                let mut block_bytes = vec![0u8; size_of::<VolumeDataBlock>()];
+                reader.read_exact(&mut block_bytes)?;
+                let (block, _) = VolumeDataBlock::decode_ref(&block_bytes)?;
+                message.volume_data_block = Some(block.clone());
             }
             "ELV" => {
-                message.elevation_data_block = Some(deserialize(reader)?);
+                let mut block_bytes = vec![0u8; size_of::<ElevationDataBlock>()];
+                reader.read_exact(&mut block_bytes)?;
+                let (block, _) = ElevationDataBlock::decode_ref(&block_bytes)?;
+                message.elevation_data_block = Some(block.clone());
             }
             "RAD" => {
-                message.radial_data_block = Some(deserialize(reader)?);
+                let mut block_bytes = vec![0u8; size_of::<RadialDataBlock>()];
+                reader.read_exact(&mut block_bytes)?;
+                let (block, _) = RadialDataBlock::decode_ref(&block_bytes)?;
+                message.radial_data_block = Some(block.clone());
             }
             _ => {
-                let generic_header: GenericDataBlockHeader = deserialize(reader)?;
+                let mut header_bytes = vec![0u8; size_of::<GenericDataBlockHeader>()];
+                reader.read_exact(&mut header_bytes)?;
+                let (generic_header, _) = GenericDataBlockHeader::decode_ref(&header_bytes)?;
 
-                let mut generic_data_block = GenericDataBlock::new(generic_header);
+                let mut generic_data_block = GenericDataBlock::new(generic_header.clone());
                 reader.read_exact(&mut generic_data_block.encoded_data)?;
 
                 match data_block_id.data_block_name().as_str() {

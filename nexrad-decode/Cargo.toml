@@ -13,8 +13,6 @@ default = ["uom", "nexrad-model"]
 [dependencies]
 log = { workspace = true }
 thiserror = { workspace = true }
-bincode = { workspace = true }
-serde = { workspace = true }
 chrono = { workspace = true }
 nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }
 uom = { workspace = true, optional = true }

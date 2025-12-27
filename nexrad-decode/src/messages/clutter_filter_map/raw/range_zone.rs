@@ -1,6 +1,6 @@
 use crate::messages::primitive_aliases::{Code2, Integer2};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 use crate::messages::clutter_filter_map::OpCode;
 #[cfg(feature = "uom")]
@@ -10,7 +10,7 @@ use uom::si::length::kilometer;
 
 /// Defines a range segment of a particular elevation and azimuth with an operation type describing
 /// the clutter filter map behavior for the segment.
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct RangeZone {
     /// Operation code for the range zone.
     pub op_code: Code2,
@@ -23,7 +23,7 @@ pub struct RangeZone {
 impl RangeZone {
     /// Operation code for the range zone.
     pub fn op_code(&self) -> OpCode {
-        match self.op_code {
+        match self.op_code.get() {
             0 => OpCode::BypassFilter,
             1 => OpCode::BypassMapInControl,
             2 => OpCode::ForceFilter,
@@ -35,6 +35,6 @@ impl RangeZone {
     /// zone must have an end range of 511km.
     #[cfg(feature = "uom")]
     pub fn end_range(&self) -> Length {
-        Length::new::<kilometer>(self.end_range as f64)
+        Length::new::<kilometer>(self.end_range.get() as f64)
     }
 }

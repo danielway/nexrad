@@ -1,8 +1,15 @@
-use crate::result::Result;
-use bincode::{DefaultOptions, Options};
+use crate::result::{Error, Result};
 use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
-use serde::de::DeserializeOwned;
-use std::io::Read;
+
+/// Returns a typed reference to the next `T` in `input` and advances `input` past it.
+pub(crate) fn take_ref<'a, T>(input: &mut &'a [u8]) -> Result<&'a T>
+where
+    T: zerocopy::FromBytes + zerocopy::KnownLayout + zerocopy::Immutable,
+{
+    let (v, rest) = T::ref_from_prefix(*input).map_err(|_e| Error::UnexpectedEof)?;
+    *input = rest;
+    Ok(v)
+}
 
 /// Given a "modified" Julian date (date count since 1/1/1970) and a count of milliseconds since
 /// midnight on that date, return an appropriate DateTime.
@@ -18,12 +25,4 @@ pub(crate) fn get_datetime(
         NaiveDateTime::new(date, time),
         Utc,
     ))
-}
-
-/// Attempts to deserialize some struct from the provided binary reader.
-pub(crate) fn deserialize<R: Read, S: DeserializeOwned>(reader: &mut R) -> Result<S> {
-    Ok(DefaultOptions::new()
-        .with_fixint_encoding()
-        .with_big_endian()
-        .deserialize_from(reader.by_ref())?)
 }

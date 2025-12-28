@@ -11,6 +11,17 @@ where
     Ok(v)
 }
 
+/// Returns a typed slice of `count` elements of `T` from `input` and advances `input` past them.
+pub(crate) fn take_slice<'a, T>(input: &mut &'a [u8], count: usize) -> Result<&'a [T]>
+where
+    T: zerocopy::FromBytes + zerocopy::KnownLayout + zerocopy::Immutable,
+{
+    let (slice, rest) =
+        T::ref_from_prefix_with_elems(*input, count).map_err(|_e| Error::UnexpectedEof)?;
+    *input = rest;
+    Ok(slice)
+}
+
 /// Given a "modified" Julian date (date count since 1/1/1970) and a count of milliseconds since
 /// midnight on that date, return an appropriate DateTime.
 pub(crate) fn get_datetime(

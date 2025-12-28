@@ -122,7 +122,7 @@ async fn main() -> Result<()> {
     );
 
     let mut previous_time: Option<DateTime<Utc>> = None;
-    let mut vcp: Option<volume_coverage_pattern::Message> = None;
+    let mut vcp: Option<volume_coverage_pattern::Message<'static>> = None;
     let mut elevation_chunk_mapper: Option<ElevationChunkMapper> = None;
 
     for (i, chunk_id) in chunks_to_analyze.iter().enumerate() {
@@ -206,7 +206,7 @@ struct ChunkAnalysis {
 fn analyze_chunk(
     chunk: &Chunk,
     chunk_id: &ChunkIdentifier,
-    vcp: &mut Option<volume_coverage_pattern::Message>,
+    vcp: &mut Option<volume_coverage_pattern::Message<'static>>,
     elevation_chunk_mapper: &mut Option<ElevationChunkMapper>,
 ) -> Result<ChunkAnalysis> {
     let mut result = ChunkAnalysis {
@@ -264,7 +264,7 @@ fn analyze_chunk(
                 );
 
                 if vcp.is_none() {
-                    *vcp = Some(*chunk_vcp.clone());
+                    *vcp = Some(chunk_vcp.clone().into_owned());
                     *elevation_chunk_mapper =
                         Some(ElevationChunkMapper::new(vcp.as_ref().unwrap()));
                 }

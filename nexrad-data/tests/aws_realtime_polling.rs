@@ -10,7 +10,7 @@ use nexrad_decode::messages::volume_coverage_pattern::{ChannelConfiguration, Wav
 const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
 
 // Get a VCP from the test file
-fn get_test_vcp() -> nexrad_decode::messages::volume_coverage_pattern::Message {
+fn get_test_vcp() -> nexrad_decode::messages::volume_coverage_pattern::Message<'static> {
     let volume_file = nexrad_data::volume::File::new(TEST_NEXRAD_FILE.to_vec());
 
     for mut record in volume_file.records() {
@@ -21,7 +21,7 @@ fn get_test_vcp() -> nexrad_decode::messages::volume_coverage_pattern::Message {
             if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) =
                 message.contents()
             {
-                return *vcp.clone();
+                return vcp.clone().into_owned();
             }
         }
     }

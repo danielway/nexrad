@@ -7,7 +7,10 @@ mod raw;
 pub use raw::*;
 
 mod message;
-pub use message::{Message, MessageContents};
+pub use message::Message;
+
+mod message_contents;
+pub use message_contents::MessageContents;
 
 use crate::messages::digital_radar_data::decode_digital_radar_data;
 use crate::messages::raw::message_header::MessageHeader;

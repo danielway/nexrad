@@ -73,14 +73,12 @@ impl<'a> Record<'a> {
     pub fn messages(&self) -> crate::result::Result<Vec<nexrad_decode::messages::Message>> {
         use crate::result::Error;
         use nexrad_decode::messages::decode_messages;
-        use std::io::Cursor;
 
         if self.compressed() {
             return Err(Error::CompressedDataError);
         }
 
-        let mut reader = Cursor::new(self.data());
-        Ok(decode_messages(&mut reader)?)
+        Ok(decode_messages(&mut self.data())?)
     }
 }
 

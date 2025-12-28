@@ -2,7 +2,7 @@ use crate::messages::primitive_aliases::{Code2, Integer2, SInteger2, ScaledInteg
 use crate::messages::rda_status_data::alarm;
 use crate::messages::rda_status_data::alarm::Summary;
 use crate::messages::rda_status_data::data_transmission_enabled::DataTransmissionEnabled;
-use crate::messages::rda_status_data::definitions::{
+use crate::messages::rda_status_data::raw::{
     AuxiliaryPowerGeneratorState, ClutterMitigationDecisionStatus, CommandAcknowledgement,
     ControlAuthorization, ControlStatus, OperabilityStatus, OperationalMode,
     PerformanceCheckStatus, RDAStatus, RMSControlStatus, SpotBlankingStatus, SuperResolutionStatus,

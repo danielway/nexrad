@@ -15,8 +15,8 @@ use std::io::Read;
 mod scan_data_flags;
 pub use scan_data_flags::ScanDataFlags;
 
-mod definitions;
-pub use definitions::*;
+mod raw;
+pub use raw::*;
 
 mod message;
 pub use message::Message;

@@ -1,12 +1,11 @@
-use crate::messages::digital_radar_data::spot_blanking_status::SpotBlankingStatus;
-use crate::messages::digital_radar_data::{CompressionIndicator, RadialStatus};
+use crate::messages::digital_radar_data::{CompressionIndicator, RadialStatus, SpotBlankingStatus};
 use crate::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger1,
 };
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 #[cfg(feature = "uom")]
 use uom::si::angle::degree;
@@ -17,7 +16,7 @@ use uom::si::information::byte;
 
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
-#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
+#[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct Header {
     /// ICAO radar identifier.
     pub radar_identifier: [u8; 4],
@@ -110,13 +109,16 @@ impl Header {
 
     /// The collection date and time for this data.
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
-        get_datetime(self.date, Duration::milliseconds(self.time as i64))
+        get_datetime(
+            self.date.get(),
+            Duration::milliseconds(self.time.get() as i64),
+        )
     }
 
     /// Azimuth angle at which the radial was collected.
     #[cfg(feature = "uom")]
     pub fn azimuth_angle(&self) -> Angle {
-        Angle::new::<degree>(self.azimuth_angle as f64)
+        Angle::new::<degree>(self.azimuth_angle.get() as f64)
     }
 
     /// Whether the message is compressed and what type of compression was used.
@@ -132,7 +134,7 @@ impl Header {
     /// Uncompressed length of the radial (including the data header block).
     #[cfg(feature = "uom")]
     pub fn radial_length(&self) -> Information {
-        Information::new::<byte>(self.radial_length as f64)
+        Information::new::<byte>(self.radial_length.get() as f64)
     }
 
     /// Azimuthal spacing between adjacent radials.
@@ -156,7 +158,7 @@ impl Header {
     /// The radial's collection elevation angle.
     #[cfg(feature = "uom")]
     pub fn elevation_angle(&self) -> Angle {
-        Angle::new::<degree>(self.elevation_angle as f64)
+        Angle::new::<degree>(self.elevation_angle.get() as f64)
     }
 
     /// The spot blanking status for the current radial, elevation, and volume scan.

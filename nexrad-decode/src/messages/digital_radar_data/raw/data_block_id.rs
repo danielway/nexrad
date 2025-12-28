@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 /// A digital radar data block's identifier.
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct DataBlockId {
     /// Data block type, e.g. "R".
     pub data_block_type: u8,

@@ -1,11 +1,12 @@
 use sha2::{Digest, Sha256};
 use std::fmt::{self, Debug, Formatter};
 use std::ops::{Deref, DerefMut};
+use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 /// A wrapper for binary data that provides a concise Debug implementation showing size, hash,
 /// and a sample of head/tail bytes instead of the full binary content.
 #[repr(transparent)]
-#[derive(Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash, FromBytes, Immutable, KnownLayout)]
 pub struct BinaryData<T>(pub T);
 
 impl<T> BinaryData<T> {

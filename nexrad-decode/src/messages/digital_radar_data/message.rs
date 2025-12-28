@@ -1,51 +1,66 @@
-use serde::Serialize;
-
 use crate::messages::digital_radar_data::{
-    ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, VolumeDataBlock,
+    DataBlockId, ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, VolumeDataBlock,
 };
+use crate::result::{Error, Result};
+use crate::util::take_ref;
 
 /// The digital radar data message includes base radar data from a single radial for various
 /// products.
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct Message {
+#[derive(Debug, Clone, PartialEq)]
+pub struct Message<'a> {
     /// The decoded digital radar data header.
-    pub header: Header,
+    pub header: &'a Header,
 
     /// Volume data if included in the message.
-    pub volume_data_block: Option<VolumeDataBlock>,
+    pub volume_data_block: Option<&'a VolumeDataBlock>,
 
     /// Elevation data if included in the message.
-    pub elevation_data_block: Option<ElevationDataBlock>,
+    pub elevation_data_block: Option<&'a ElevationDataBlock>,
 
     /// Radial data if included in the message.
-    pub radial_data_block: Option<RadialDataBlock>,
+    pub radial_data_block: Option<&'a RadialDataBlock>,
 
     /// Reflectivity data if included in the message.
-    pub reflectivity_data_block: Option<GenericDataBlock>,
+    pub reflectivity_data_block: Option<GenericDataBlock<'a>>,
 
     /// Velocity data if included in the message.
-    pub velocity_data_block: Option<GenericDataBlock>,
+    pub velocity_data_block: Option<GenericDataBlock<'a>>,
 
     /// Spectrum width data if included in the message.
-    pub spectrum_width_data_block: Option<GenericDataBlock>,
+    pub spectrum_width_data_block: Option<GenericDataBlock<'a>>,
 
     /// Differential reflectivity data if included in the message.
-    pub differential_reflectivity_data_block: Option<GenericDataBlock>,
+    pub differential_reflectivity_data_block: Option<GenericDataBlock<'a>>,
 
     /// Differential phase data if included in the message.
-    pub differential_phase_data_block: Option<GenericDataBlock>,
+    pub differential_phase_data_block: Option<GenericDataBlock<'a>>,
 
     /// Correlation coefficient data if included in the message.
-    pub correlation_coefficient_data_block: Option<GenericDataBlock>,
+    pub correlation_coefficient_data_block: Option<GenericDataBlock<'a>>,
 
     /// Specific differential phase data if included in the message.
-    pub specific_diff_phase_data_block: Option<GenericDataBlock>,
+    pub specific_diff_phase_data_block: Option<GenericDataBlock<'a>>,
 }
 
-impl Message {
-    /// Create a new digital radar data message with the decoded header.
-    pub(crate) fn new(header: Header) -> Self {
-        Self {
+impl<'a> Message<'a> {
+    // TODO
+    pub(crate) fn parse<'b>(input: &'b mut &'a [u8]) -> Result<Self> {
+        let header = take_ref::<Header>(input)?;
+
+        let pointers_space = header.data_block_count.get() as usize * size_of::<u32>();
+        let (pointers_raw, remaining_input) = input.split_at(pointers_space);
+        *input = remaining_input;
+
+        let pointers = pointers_raw
+            .chunks_exact(size_of::<u32>())
+            .map(|v| {
+                v.try_into()
+                    .map_err(|_| Error::DecodingError("message pointers".to_string()))
+                    .map(u32::from_be_bytes)
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        let mut message = Self {
             header,
             volume_data_block: None,
             elevation_data_block: None,
@@ -57,7 +72,57 @@ impl Message {
             differential_phase_data_block: None,
             correlation_coefficient_data_block: None,
             specific_diff_phase_data_block: None,
+        };
+
+        // TODO: assert pointer position instead of assuming they line up
+        for _pointer in pointers {
+            let mut block_data = *input;
+            let block_id = take_ref::<DataBlockId>(&mut block_data)?;
+
+            match &block_id.data_name {
+                b"VOL" => {
+                    let volume_block = take_ref::<VolumeDataBlock>(input)?;
+                    message.volume_data_block = Some(volume_block);
+                }
+                b"ELV" => {
+                    let elevation_block = take_ref::<ElevationDataBlock>(input)?;
+                    message.elevation_data_block = Some(elevation_block);
+                }
+                b"RAD" => {
+                    let radial_block = take_ref::<RadialDataBlock>(input)?;
+                    message.radial_data_block = Some(radial_block);
+                }
+                _ => {
+                    let generic_block = GenericDataBlock::parse(input)?;
+                    match &block_id.data_name {
+                        b"REF" => {
+                            message.reflectivity_data_block = Some(generic_block);
+                        }
+                        b"VEL" => {
+                            message.velocity_data_block = Some(generic_block);
+                        }
+                        b"SW " => {
+                            message.spectrum_width_data_block = Some(generic_block);
+                        }
+                        b"ZDR" => {
+                            message.differential_reflectivity_data_block = Some(generic_block);
+                        }
+                        b"PHI" => {
+                            message.differential_phase_data_block = Some(generic_block);
+                        }
+                        b"RHO" => {
+                            message.correlation_coefficient_data_block = Some(generic_block);
+                        }
+                        b"CFP" => {
+                            message.specific_diff_phase_data_block = Some(generic_block);
+                        }
+                        _ => panic!("Unknown generic data block type: {block_id:?}"),
+                    }
+                }
+            }
         }
+
+        Ok(message)
     }
 
     /// Get a radial from this digital radar data message.
@@ -72,8 +137,8 @@ impl Message {
                 .date_time()
                 .ok_or(Error::MessageMissingDateError)?
                 .timestamp_millis(),
-            self.header.azimuth_number,
-            self.header.azimuth_angle,
+            self.header.azimuth_number.get(),
+            self.header.azimuth_angle.get(),
             self.header.azimuth_resolution_spacing as f32 * 0.5,
             match self.header.radial_status() {
                 RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
@@ -84,7 +149,7 @@ impl Message {
                 RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
             },
             self.header.elevation_number,
-            self.header.elevation_angle,
+            self.header.elevation_angle.get(),
             self.reflectivity_data_block
                 .as_ref()
                 .map(|block| block.moment_data()),
@@ -121,8 +186,8 @@ impl Message {
                 .date_time()
                 .ok_or(Error::MessageMissingDateError)?
                 .timestamp_millis(),
-            self.header.azimuth_number,
-            self.header.azimuth_angle,
+            self.header.azimuth_number.get(),
+            self.header.azimuth_angle.get(),
             self.header.azimuth_resolution_spacing as f32 * 0.5,
             match self.header.radial_status() {
                 RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
@@ -133,7 +198,7 @@ impl Message {
                 RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
             },
             self.header.elevation_number,
-            self.header.elevation_angle,
+            self.header.elevation_angle.get(),
             self.reflectivity_data_block
                 .map(|block| block.into_moment_data()),
             self.velocity_data_block

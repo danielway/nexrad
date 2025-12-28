@@ -1,7 +1,7 @@
 use crate::messages::digital_radar_data::DataBlockId;
 use crate::messages::primitive_aliases::{Integer2, Real4, ScaledSInteger2};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 #[cfg(feature = "uom")]
 use uom::si::f64::Information;
@@ -9,7 +9,7 @@ use uom::si::f64::Information;
 use uom::si::information::byte;
 
 /// An elevation data block.
-#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
+#[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct ElevationDataBlock {
     /// Data block identifier.
     pub data_block_id: DataBlockId,
@@ -29,6 +29,6 @@ impl ElevationDataBlock {
     /// Size of data block.
     #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
-        Information::new::<byte>(self.lrtup as f64)
+        Information::new::<byte>(self.lrtup.get() as f64)
     }
 }

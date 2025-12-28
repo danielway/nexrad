@@ -1,4 +1,3 @@
-use crate::binary_data::BinaryData;
 use crate::messages::digital_radar_data::{GenericDataBlockHeader, ScaledMomentValue};
 use crate::result::Result;
 use crate::util::take_ref;
@@ -11,7 +10,7 @@ pub struct GenericDataBlock<'a> {
     pub header: &'a GenericDataBlockHeader,
 
     /// The generic data block's encoded moment data.
-    pub encoded_data: BinaryData<Vec<u8>>,
+    pub encoded_data: &'a [u8],
 }
 
 impl<'a> GenericDataBlock<'a> {
@@ -21,7 +20,9 @@ impl<'a> GenericDataBlock<'a> {
 
         let word_size_bytes = header.data_word_size as usize / 8;
         let encoded_data_size = header.number_of_data_moment_gates.get() as usize * word_size_bytes;
-        let encoded_data = BinaryData::new(vec![0; encoded_data_size]);
+
+        let (encoded_data, rest) = input.split_at(encoded_data_size);
+        *input = rest;
 
         Ok(Self {
             header,
@@ -31,9 +32,9 @@ impl<'a> GenericDataBlock<'a> {
 
     /// Raw gate values for this moment/radial ordered in ascending distance from the radar. These
     /// values are stored in a fixed-point representation using the `DataMomentHeader.offset` and
-    /// `DataMomentHeader.scale` fields. `decoded_data` provides decoded floating-point values.  
+    /// `DataMomentHeader.scale` fields. `decoded_data` provides decoded floating-point values.
     pub fn encoded_values(&self) -> &[u8] {
-        &self.encoded_data
+        self.encoded_data
     }
 
     /// Decodes raw moment values from `encoded_data` from their fixed-point representation into
@@ -68,7 +69,7 @@ impl<'a> GenericDataBlock<'a> {
             self.header.data_moment_range_sample_interval.get(),
             self.header.scale.get(),
             self.header.offset.get(),
-            self.encoded_data.0.clone(),
+            self.encoded_data.to_vec(),
         )
     }
 
@@ -81,7 +82,7 @@ impl<'a> GenericDataBlock<'a> {
             self.header.data_moment_range_sample_interval.get(),
             self.header.scale.get(),
             self.header.offset.get(),
-            self.encoded_data.into_inner(),
+            self.encoded_data.to_vec(),
         )
     }
 }

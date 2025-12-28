@@ -1,20 +1,16 @@
 pub mod clutter_filter_map;
 pub mod digital_radar_data;
-pub mod message_header;
 pub mod rda_status_data;
 pub mod volume_coverage_pattern;
 
-mod message_type;
-pub use message_type::MessageType;
+mod raw;
+pub use raw::*;
 
 mod message;
 pub use message::{Message, MessageContents};
 
-mod definitions;
-mod primitive_aliases;
-
 use crate::messages::digital_radar_data::decode_digital_radar_data;
-use crate::messages::message_header::MessageHeader;
+use crate::messages::raw::message_header::MessageHeader;
 use crate::messages::rda_status_data::decode_rda_status_message;
 use crate::messages::volume_coverage_pattern::decode_volume_coverage_pattern;
 use crate::result::Result;

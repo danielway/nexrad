@@ -1,11 +1,10 @@
+use super::primitive_aliases::{Integer1, Integer2, Integer4};
+use super::{MessageType, RedundantChannel};
 use crate::binary_data::BinaryData;
-use crate::messages::definitions::RedundantChannel;
-use crate::messages::message_type::MessageType;
-use crate::messages::primitive_aliases::{Integer1, Integer2, Integer4};
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 #[cfg(feature = "uom")]
 use uom::si::f64::Information;
@@ -22,7 +21,7 @@ pub const VARIABLE_LENGTH_MESSAGE_SIZE: u16 = 65535;
 /// instead variable-length, with the segment count and segment number positions of the header
 /// (bytes 12-15) specifying the size of the full message in bytes.
 #[repr(C)]
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct MessageHeader {
     /// Unknown/reserved bytes from RPG.
     pub rpg_unknown: BinaryData<[u8; 12]>,
@@ -76,8 +75,9 @@ impl MessageHeader {
     /// the message's full size.
     #[cfg(feature = "uom")]
     pub fn segment_size(&self) -> Option<Information> {
-        if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
-            Some(Information::new::<byte>((self.segment_size * 2) as f64))
+        let segment_size = self.segment_size.get();
+        if segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
+            Some(Information::new::<byte>((segment_size * 2) as f64))
         } else {
             None
         }
@@ -134,7 +134,10 @@ impl MessageHeader {
 
     /// This message's date and time in UTC.
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
-        get_datetime(self.date, Duration::milliseconds(self.time as i64))
+        get_datetime(
+            self.date.get(),
+            Duration::milliseconds(self.time.get() as i64),
+        )
     }
 
     /// Whether this message is segmented or variable-length. If the message is segmented, multiple
@@ -150,7 +153,7 @@ impl MessageHeader {
     /// to determine the message's full size.
     pub fn segment_count(&self) -> Option<u16> {
         if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
-            Some(self.segment_count)
+            Some(self.segment_count.get())
         } else {
             None
         }
@@ -161,7 +164,7 @@ impl MessageHeader {
     /// used to determine the message's full size.
     pub fn segment_number(&self) -> Option<u16> {
         if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
-            Some(self.segment_number)
+            Some(self.segment_number.get())
         } else {
             None
         }
@@ -171,10 +174,10 @@ impl MessageHeader {
     /// this is the segment size, otherwise this is the full variable-length message size.
     pub fn message_size_bytes(&self) -> u32 {
         match self.segment_count() {
-            Some(_) => self.segment_size as u32 * 2,
+            Some(_) => self.segment_size.get() as u32 * 2,
             None => {
-                let segment_number = self.segment_number as u32;
-                let segment_size = self.segment_size as u32;
+                let segment_number = self.segment_number.get() as u32;
+                let segment_size = self.segment_size.get() as u32;
                 (segment_number << 16) | (segment_size << 1)
             }
         }
@@ -186,12 +189,12 @@ impl MessageHeader {
     pub fn message_size(&self) -> Information {
         match self.segment_count() {
             Some(_) => {
-                let segment_size_bytes = self.segment_size << 1;
+                let segment_size_bytes = self.segment_size.get() << 1;
                 Information::new::<byte>(segment_size_bytes as f64)
             }
             None => {
-                let segment_number = self.segment_number as u32;
-                let segment_size = self.segment_size as u32;
+                let segment_number = self.segment_number.get() as u32;
+                let segment_size = self.segment_size.get() as u32;
                 let message_size_bytes = (segment_number << 16) | segment_size;
                 Information::new::<byte>(message_size_bytes as f64)
             }

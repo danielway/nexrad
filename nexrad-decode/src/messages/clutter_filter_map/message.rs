@@ -5,7 +5,11 @@ use crate::util::take_ref;
 use std::fmt::Debug;
 
 /// A clutter filter map describing elevations, azimuths, and ranges containing clutter to
-/// filtered from radar products.
+/// filtered from radar products. The RDA transmits this any time the map changes.
+///
+/// This message's contents correspond to ICD 2620002AA section 3.2.4.15 Table XIV.
+/// The message starts with a brief header followed by a loop of elevation, azimuth,
+/// and finally range/gate.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Message<'a> {
     /// Decoded header information for this clutter filter map.

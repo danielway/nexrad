@@ -1,6 +1,9 @@
 mod auxiliary_power_generator_state;
 pub use auxiliary_power_generator_state::AuxiliaryPowerGeneratorState;
 
+mod data_transmission_enabled;
+pub use data_transmission_enabled::DataTransmissionEnabled;
+
 mod clutter_mitigation_decision_status;
 pub use clutter_mitigation_decision_status::ClutterMitigationDecisionStatus;
 
@@ -36,3 +39,9 @@ pub use super_resolution_status::SuperResolutionStatus;
 
 mod transition_power_source_status;
 pub use transition_power_source_status::TransitionPowerSourceStatus;
+
+mod scan_data_flags;
+pub use scan_data_flags::ScanDataFlags;
+
+mod volume_coverage_pattern;
+pub use volume_coverage_pattern::VolumeCoveragePatternNumber;

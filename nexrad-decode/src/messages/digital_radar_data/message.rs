@@ -3,22 +3,23 @@ use crate::messages::digital_radar_data::{
 };
 use crate::result::{Error, Result};
 use crate::util::take_ref;
+use std::borrow::Cow;
 
 /// The digital radar data message includes base radar data from a single radial for various
 /// products.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message<'a> {
     /// The decoded digital radar data header.
-    pub header: &'a Header,
+    pub header: Cow<'a, Header>,
 
     /// Volume data if included in the message.
-    pub volume_data_block: Option<&'a VolumeDataBlock>,
+    pub volume_data_block: Option<Cow<'a, VolumeDataBlock>>,
 
     /// Elevation data if included in the message.
-    pub elevation_data_block: Option<&'a ElevationDataBlock>,
+    pub elevation_data_block: Option<Cow<'a, ElevationDataBlock>>,
 
     /// Radial data if included in the message.
-    pub radial_data_block: Option<&'a RadialDataBlock>,
+    pub radial_data_block: Option<Cow<'a, RadialDataBlock>>,
 
     /// Reflectivity data if included in the message.
     pub reflectivity_data_block: Option<GenericDataBlock<'a>>,
@@ -43,7 +44,6 @@ pub struct Message<'a> {
 }
 
 impl<'a> Message<'a> {
-    // TODO
     pub(crate) fn parse<'b>(input: &'b mut &'a [u8]) -> Result<Self> {
         let header = take_ref::<Header>(input)?;
 
@@ -61,7 +61,7 @@ impl<'a> Message<'a> {
             .collect::<Result<Vec<_>>>()?;
 
         let mut message = Self {
-            header,
+            header: Cow::Borrowed(header),
             volume_data_block: None,
             elevation_data_block: None,
             radial_data_block: None,
@@ -82,15 +82,15 @@ impl<'a> Message<'a> {
             match &block_id.data_name {
                 b"VOL" => {
                     let volume_block = take_ref::<VolumeDataBlock>(input)?;
-                    message.volume_data_block = Some(volume_block);
+                    message.volume_data_block = Some(Cow::Borrowed(volume_block));
                 }
                 b"ELV" => {
                     let elevation_block = take_ref::<ElevationDataBlock>(input)?;
-                    message.elevation_data_block = Some(elevation_block);
+                    message.elevation_data_block = Some(Cow::Borrowed(elevation_block));
                 }
                 b"RAD" => {
                     let radial_block = take_ref::<RadialDataBlock>(input)?;
-                    message.radial_data_block = Some(radial_block);
+                    message.radial_data_block = Some(Cow::Borrowed(radial_block));
                 }
                 _ => {
                     let generic_block = GenericDataBlock::parse(input)?;
@@ -123,6 +123,31 @@ impl<'a> Message<'a> {
         }
 
         Ok(message)
+    }
+
+    /// Convert this message to an owned version with `'static` lifetime.
+    pub fn into_owned(self) -> Message<'static> {
+        Message {
+            header: Cow::Owned(self.header.into_owned()),
+            volume_data_block: self.volume_data_block.map(|b| Cow::Owned(b.into_owned())),
+            elevation_data_block: self.elevation_data_block.map(|b| Cow::Owned(b.into_owned())),
+            radial_data_block: self.radial_data_block.map(|b| Cow::Owned(b.into_owned())),
+            reflectivity_data_block: self.reflectivity_data_block.map(|b| b.into_owned()),
+            velocity_data_block: self.velocity_data_block.map(|b| b.into_owned()),
+            spectrum_width_data_block: self.spectrum_width_data_block.map(|b| b.into_owned()),
+            differential_reflectivity_data_block: self
+                .differential_reflectivity_data_block
+                .map(|b| b.into_owned()),
+            differential_phase_data_block: self
+                .differential_phase_data_block
+                .map(|b| b.into_owned()),
+            correlation_coefficient_data_block: self
+                .correlation_coefficient_data_block
+                .map(|b| b.into_owned()),
+            specific_diff_phase_data_block: self
+                .specific_diff_phase_data_block
+                .map(|b| b.into_owned()),
+        }
     }
 
     /// Get a radial from this digital radar data message.

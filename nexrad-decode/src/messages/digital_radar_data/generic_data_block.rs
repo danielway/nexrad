@@ -1,16 +1,17 @@
 use crate::messages::digital_radar_data::{GenericDataBlockHeader, ScaledMomentValue};
 use crate::result::Result;
 use crate::util::take_ref;
+use std::borrow::Cow;
 use std::fmt::Debug;
 
 /// A generic data moment block.
 #[derive(Clone, PartialEq, Debug)]
 pub struct GenericDataBlock<'a> {
     /// The generic data block's header information.
-    pub header: &'a GenericDataBlockHeader,
+    pub header: Cow<'a, GenericDataBlockHeader>,
 
     /// The generic data block's encoded moment data.
-    pub encoded_data: &'a [u8],
+    pub encoded_data: Cow<'a, [u8]>,
 }
 
 impl<'a> GenericDataBlock<'a> {
@@ -25,16 +26,24 @@ impl<'a> GenericDataBlock<'a> {
         *input = rest;
 
         Ok(Self {
-            header,
-            encoded_data,
+            header: Cow::Borrowed(header),
+            encoded_data: Cow::Borrowed(encoded_data),
         })
+    }
+
+    /// Convert this data block to an owned version with `'static` lifetime.
+    pub fn into_owned(self) -> GenericDataBlock<'static> {
+        GenericDataBlock {
+            header: Cow::Owned(self.header.into_owned()),
+            encoded_data: Cow::Owned(self.encoded_data.into_owned()),
+        }
     }
 
     /// Raw gate values for this moment/radial ordered in ascending distance from the radar. These
     /// values are stored in a fixed-point representation using the `DataMomentHeader.offset` and
     /// `DataMomentHeader.scale` fields. `decoded_data` provides decoded floating-point values.
     pub fn encoded_values(&self) -> &[u8] {
-        self.encoded_data
+        &self.encoded_data
     }
 
     /// Decodes raw moment values from `encoded_data` from their fixed-point representation into
@@ -73,7 +82,7 @@ impl<'a> GenericDataBlock<'a> {
         )
     }
 
-    /// Convert this generic data block into common model moment data, minimizing data copies.
+    /// Convert this generic data block into common model moment data.
     #[cfg(feature = "nexrad-model")]
     pub fn into_moment_data(self) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
@@ -82,7 +91,7 @@ impl<'a> GenericDataBlock<'a> {
             self.header.data_moment_range_sample_interval.get(),
             self.header.scale.get(),
             self.header.offset.get(),
-            self.encoded_data.to_vec(),
+            self.encoded_data.into_owned(),
         )
     }
 }

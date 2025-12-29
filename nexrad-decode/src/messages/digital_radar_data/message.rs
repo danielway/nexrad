@@ -130,7 +130,9 @@ impl<'a> Message<'a> {
         Message {
             header: Cow::Owned(self.header.into_owned()),
             volume_data_block: self.volume_data_block.map(|b| Cow::Owned(b.into_owned())),
-            elevation_data_block: self.elevation_data_block.map(|b| Cow::Owned(b.into_owned())),
+            elevation_data_block: self
+                .elevation_data_block
+                .map(|b| Cow::Owned(b.into_owned())),
             radial_data_block: self.radial_data_block.map(|b| Cow::Owned(b.into_owned())),
             reflectivity_data_block: self.reflectivity_data_block.map(|b| b.into_owned()),
             velocity_data_block: self.velocity_data_block.map(|b| b.into_owned()),

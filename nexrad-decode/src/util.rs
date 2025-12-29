@@ -1,5 +1,6 @@
 use crate::result::{Error, Result};
 use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use zerocopy::FromBytes;
 
 /// Returns a typed reference to the next `T` in `input` and advances `input` past it.
 pub(crate) fn take_ref<'a, T>(input: &mut &'a [u8]) -> Result<&'a T>
@@ -17,7 +18,7 @@ where
     T: zerocopy::FromBytes + zerocopy::KnownLayout + zerocopy::Immutable,
 {
     let (slice, rest) =
-        T::ref_from_prefix_with_elems(*input, count).map_err(|_e| Error::UnexpectedEof)?;
+        <[T]>::ref_from_prefix_with_elems(*input, count).map_err(|_e| Error::UnexpectedEof)?;
     *input = rest;
     Ok(slice)
 }

@@ -70,7 +70,7 @@ impl<'a> Record<'a> {
 
     /// Decodes the NEXRAD level II messages contained in this LDM record.
     #[cfg(feature = "nexrad-decode")]
-    pub fn messages(&self) -> crate::result::Result<Vec<nexrad_decode::messages::Message>> {
+    pub fn messages(&self) -> crate::result::Result<Vec<nexrad_decode::messages::Message<'_>>> {
         use crate::result::Error;
         use nexrad_decode::messages::decode_messages;
 

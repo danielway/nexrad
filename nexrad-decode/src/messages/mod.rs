@@ -15,7 +15,7 @@ pub use message_contents::MessageContents;
 use crate::result::Result;
 
 /// Decode a series of NEXRAD Level II messages from a reader.
-pub fn decode_messages<'a, 'b>(input: &'b mut &'a [u8]) -> Result<Vec<Message<'a>>> {
+pub fn decode_messages<'a>(input: &mut &'a [u8]) -> Result<Vec<Message<'a>>> {
     let mut messages = Vec::new();
     while let Ok(message) = Message::parse(input) {
         messages.push(message);

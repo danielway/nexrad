@@ -227,7 +227,7 @@ pub struct Message {
 
 impl<'a> Message {
     pub(crate) fn parse<'b>(input: &'b mut &'a [u8]) -> Result<&'a Self> {
-        Ok(take_ref::<Message>(input)?)
+        take_ref::<Message>(input)
     }
 
     /// The RDA system's status.

@@ -27,7 +27,7 @@ impl<'a> Message<'a> {
     }
 
     /// This message's contents.
-    pub fn contents(&self) -> &MessageContents {
+    pub fn contents(&self) -> &MessageContents<'_> {
         &self.contents
     }
 
@@ -38,8 +38,8 @@ impl<'a> Message<'a> {
 }
 
 /// Decode the content of a NEXRAD Level II message of the specified type from a reader.
-fn decode_message_contents<'a, 'b>(
-    input: &'b mut &'a [u8],
+fn decode_message_contents<'a>(
+    input: &mut &'a [u8],
     message_type: MessageType,
 ) -> Result<MessageContents<'a>> {
     if message_type == MessageType::RDADigitalRadarDataGenericFormat {

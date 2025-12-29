@@ -7,7 +7,7 @@ pub(crate) fn take_ref<'a, T>(input: &mut &'a [u8]) -> Result<&'a T>
 where
     T: zerocopy::FromBytes + zerocopy::KnownLayout + zerocopy::Immutable,
 {
-    let (v, rest) = T::ref_from_prefix(*input).map_err(|_e| Error::UnexpectedEof)?;
+    let (v, rest) = T::ref_from_prefix(input).map_err(|_e| Error::UnexpectedEof)?;
     *input = rest;
     Ok(v)
 }
@@ -18,7 +18,7 @@ where
     T: zerocopy::FromBytes + zerocopy::KnownLayout + zerocopy::Immutable,
 {
     let (slice, rest) =
-        <[T]>::ref_from_prefix_with_elems(*input, count).map_err(|_e| Error::UnexpectedEof)?;
+        <[T]>::ref_from_prefix_with_elems(input, count).map_err(|_e| Error::UnexpectedEof)?;
     *input = rest;
     Ok(slice)
 }

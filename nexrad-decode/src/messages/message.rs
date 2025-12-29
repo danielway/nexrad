@@ -1,6 +1,6 @@
 use crate::messages::{
-    digital_radar_data, rda_status_data, volume_coverage_pattern, MessageContents, MessageHeader,
-    MessageType,
+    clutter_filter_map, digital_radar_data, rda_status_data, volume_coverage_pattern,
+    MessageContents, MessageHeader, MessageType,
 };
 use crate::result::Result;
 use crate::util::take_ref;
@@ -61,10 +61,10 @@ fn decode_message_contents<'a>(
             let volume_coverage_message = volume_coverage_pattern::Message::parse(input)?;
             MessageContents::VolumeCoveragePattern(Box::new(volume_coverage_message))
         }
-        // TODO: this message type is segmented which is not supported well currently
-        // MessageType::RDAClutterFilterMap => {
-        //     Message::ClutterFilterMap(Box::new(decode_clutter_filter_map(message_reader)?))
-        // }
+        MessageType::RDAClutterFilterMap => {
+            let clutter_filter_message = clutter_filter_map::Message::parse(input)?;
+            MessageContents::ClutterFilterMap(Box::new(clutter_filter_message))
+        }
         _ => MessageContents::Other,
     })
 }

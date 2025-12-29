@@ -28,4 +28,16 @@ impl<'a> ElevationSegment<'a> {
 
         Ok(elevation_segment)
     }
+
+    /// Convert this segment to an owned version with `'static` lifetime.
+    pub fn into_owned(self) -> ElevationSegment<'static> {
+        ElevationSegment {
+            elevation_segment_number: self.elevation_segment_number,
+            azimuth_segments: self
+                .azimuth_segments
+                .into_iter()
+                .map(|s| s.into_owned())
+                .collect(),
+        }
+    }
 }

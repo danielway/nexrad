@@ -2,6 +2,7 @@ use crate::messages::clutter_filter_map::elevation_segment::ElevationSegment;
 use crate::messages::clutter_filter_map::raw::Header;
 use crate::result::Result;
 use crate::util::take_ref;
+use std::borrow::Cow;
 use std::fmt::Debug;
 
 /// A clutter filter map describing elevations, azimuths, and ranges containing clutter to
@@ -13,7 +14,7 @@ use std::fmt::Debug;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Message<'a> {
     /// Decoded header information for this clutter filter map.
-    pub header: &'a Header,
+    pub header: Cow<'a, Header>,
 
     /// The elevation segments defined in this clutter filter map.
     pub elevation_segments: Vec<ElevationSegment<'a>>,
@@ -26,7 +27,7 @@ impl<'a> Message<'a> {
 
         let segment_count = header.elevation_segment_count.get() as u8;
         let mut message = Message {
-            header,
+            header: Cow::Borrowed(header),
             elevation_segments: Vec::with_capacity(segment_count as usize),
         };
 
@@ -36,5 +37,17 @@ impl<'a> Message<'a> {
         }
 
         Ok(message)
+    }
+
+    /// Convert this message to an owned version with `'static` lifetime.
+    pub fn into_owned(self) -> Message<'static> {
+        Message {
+            header: Cow::Owned(self.header.into_owned()),
+            elevation_segments: self
+                .elevation_segments
+                .into_iter()
+                .map(|s| s.into_owned())
+                .collect(),
+        }
     }
 }

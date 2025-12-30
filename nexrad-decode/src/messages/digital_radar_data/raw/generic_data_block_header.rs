@@ -17,9 +17,6 @@ use uom::si::length::kilometer;
 #[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct GenericDataBlockHeader {
-    /// Data block identifier.
-    pub data_block_id: DataBlockId,
-
     /// Reserved.
     pub reserved: Integer4,
 

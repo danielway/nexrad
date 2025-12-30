@@ -1,6 +1,7 @@
 use crate::messages::clutter_filter_map::AzimuthSegment;
 use crate::messages::primitive_aliases::Integer1;
 use crate::result::Result;
+use crate::slice_reader::SliceReader;
 
 /// A segment of the clutter filter map for a specific elevation containing azimuth segments.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -14,15 +15,15 @@ pub struct ElevationSegment<'a> {
 }
 
 impl<'a> ElevationSegment<'a> {
-    /// Parse an elevation segment (expected to be the specified number) from the input.
-    pub(crate) fn parse<'b>(input: &'b mut &'a [u8], segment_number: u8) -> Result<Self> {
+    /// Parse an elevation segment (expected to be the specified number) from the reader.
+    pub(crate) fn parse(reader: &mut SliceReader<'a>, segment_number: u8) -> Result<Self> {
         let mut elevation_segment = ElevationSegment {
             elevation_segment_number: segment_number,
             azimuth_segments: Vec::with_capacity(360),
         };
 
         for azimuth_number in 0..360 {
-            let azimuth_segment = AzimuthSegment::parse(input, azimuth_number)?;
+            let azimuth_segment = AzimuthSegment::parse(reader, azimuth_number)?;
             elevation_segment.azimuth_segments.push(azimuth_segment);
         }
 

@@ -1,27 +1,4 @@
-use crate::result::{Error, Result};
 use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
-use zerocopy::FromBytes;
-
-/// Returns a typed reference to the next `T` in `input` and advances `input` past it.
-pub(crate) fn take_ref<'a, T>(input: &mut &'a [u8]) -> Result<&'a T>
-where
-    T: zerocopy::FromBytes + zerocopy::KnownLayout + zerocopy::Immutable,
-{
-    let (v, rest) = T::ref_from_prefix(input).map_err(|_e| Error::UnexpectedEof)?;
-    *input = rest;
-    Ok(v)
-}
-
-/// Returns a typed slice of `count` elements of `T` from `input` and advances `input` past them.
-pub(crate) fn take_slice<'a, T>(input: &mut &'a [u8], count: usize) -> Result<&'a [T]>
-where
-    T: zerocopy::FromBytes + zerocopy::KnownLayout + zerocopy::Immutable,
-{
-    let (slice, rest) =
-        <[T]>::ref_from_prefix_with_elems(input, count).map_err(|_e| Error::UnexpectedEof)?;
-    *input = rest;
-    Ok(slice)
-}
 
 /// Given a "modified" Julian date (date count since 1/1/1970) and a count of milliseconds since
 /// midnight on that date, return an appropriate DateTime.

@@ -1,7 +1,7 @@
 use crate::messages::clutter_filter_map::elevation_segment::ElevationSegment;
 use crate::messages::clutter_filter_map::raw::Header;
 use crate::result::Result;
-use crate::util::take_ref;
+use crate::slice_reader::SliceReader;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
@@ -22,8 +22,8 @@ pub struct Message<'a> {
 
 impl<'a> Message<'a> {
     /// Parse a clutter filter map message from the input.
-    pub(crate) fn parse<'b>(input: &'b mut &'a [u8]) -> Result<Self> {
-        let header = take_ref::<Header>(input)?;
+    pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
+        let header = reader.take_ref::<Header>()?;
 
         let segment_count = header.elevation_segment_count.get() as u8;
         let mut message = Message {
@@ -32,7 +32,7 @@ impl<'a> Message<'a> {
         };
 
         for segment_number in 0..segment_count {
-            let segment = ElevationSegment::parse(input, segment_number)?;
+            let segment = ElevationSegment::parse(reader, segment_number)?;
             message.elevation_segments.push(segment);
         }
 

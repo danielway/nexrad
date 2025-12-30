@@ -1,6 +1,6 @@
 use crate::messages::digital_radar_data::{GenericDataBlockHeader, ScaledMomentValue};
 use crate::result::Result;
-use crate::util::take_ref;
+use crate::slice_reader::SliceReader;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
@@ -16,14 +16,13 @@ pub struct GenericDataBlock<'a> {
 
 impl<'a> GenericDataBlock<'a> {
     /// Creates a new generic data moment block from the decoded header.
-    pub(crate) fn parse<'b>(input: &'b mut &'a [u8]) -> Result<Self> {
-        let header = take_ref::<GenericDataBlockHeader>(input)?;
+    pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
+        let header = reader.take_ref::<GenericDataBlockHeader>()?;
 
         let word_size_bytes = header.data_word_size as usize / 8;
         let encoded_data_size = header.number_of_data_moment_gates.get() as usize * word_size_bytes;
 
-        let (encoded_data, rest) = input.split_at(encoded_data_size);
-        *input = rest;
+        let encoded_data = reader.take_bytes(encoded_data_size)?;
 
         Ok(Self {
             header: Cow::Borrowed(header),

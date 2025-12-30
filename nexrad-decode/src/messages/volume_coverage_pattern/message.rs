@@ -1,6 +1,6 @@
 use crate::messages::volume_coverage_pattern::{ElevationDataBlock, Header};
 use crate::result::Result;
-use crate::util::{take_ref, take_slice};
+use crate::slice_reader::SliceReader;
 use std::borrow::Cow;
 
 /// The volume coverage pattern message describes the current scan pattern. This is sent on
@@ -18,12 +18,11 @@ pub struct Message<'a> {
 
 impl<'a> Message<'a> {
     /// Parse a volume coverage pattern message from the input.
-    pub(crate) fn parse<'b>(input: &'b mut &'a [u8]) -> Result<Self> {
-        let header = take_ref::<Header>(input)?;
-        let elevations = take_slice::<ElevationDataBlock>(
-            input,
-            header.number_of_elevation_cuts.get() as usize,
-        )?;
+    pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
+        let header = reader.take_ref::<Header>()?;
+
+        let elevation_cuts = header.number_of_elevation_cuts.get() as usize;
+        let elevations = reader.take_slice::<ElevationDataBlock>(elevation_cuts)?;
 
         Ok(Self {
             header: Cow::Borrowed(header),

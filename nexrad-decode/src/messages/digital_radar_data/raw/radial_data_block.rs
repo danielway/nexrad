@@ -1,4 +1,3 @@
-use crate::messages::digital_radar_data::DataBlockId;
 use crate::messages::primitive_aliases::{Integer2, Real4, ScaledInteger2};
 use std::fmt::Debug;
 use zerocopy::{FromBytes, Immutable, KnownLayout};
@@ -10,9 +9,6 @@ use uom::si::f64::{Information, Length, Velocity};
 #[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct RadialDataBlock {
-    /// Data block identifier.
-    pub data_block_id: DataBlockId,
-
     /// Size of data block in bytes.
     pub lrtup: Integer2,
 

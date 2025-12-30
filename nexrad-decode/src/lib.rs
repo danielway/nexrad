@@ -18,4 +18,5 @@ pub mod binary_data;
 pub mod messages;
 pub mod result;
 
+mod slice_reader;
 mod util;

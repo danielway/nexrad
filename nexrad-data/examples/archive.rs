@@ -7,6 +7,8 @@ use log::{debug, info, trace, warn, LevelFilter};
 use nexrad_data::aws::archive::{self, download_file, list_files};
 use nexrad_data::result::Result;
 use nexrad_data::volume::File;
+use nexrad_decode::messages::digital_radar_data::raw::ScaledMomentValue;
+use nexrad_decode::messages::MessageContents;
 use std::fs::create_dir;
 use std::io::Read;
 use std::io::Write;
@@ -121,21 +123,73 @@ async fn main() -> Result<()> {
         );
 
         debug!("Decoding {} records...", records.len());
-        let mut messages = Vec::new();
-        for mut record in records {
+        for (record_index, mut record) in records.into_iter().enumerate() {
+            debug!("Decoding record {}", record_index + 1);
             if record.compressed() {
                 trace!("Decompressing LDM record...");
                 record = record.decompress().expect("Failed to decompress record");
             }
 
-            messages.extend(record.messages()?.iter().cloned());
+            let messages = record.messages()?;
+            info!(
+                "Decoded {} messages in record {}:",
+                messages.len(),
+                record_index + 1
+            );
+
+            for (message_index, message) in messages.iter().enumerate() {
+                if let MessageContents::DigitalRadarData(data) = message.contents() {
+                    if let Some(block) = &data.reflectivity_data_block {
+                        info!(
+                            "Message {} at {:?}, reflectivity:",
+                            message_index,
+                            message.header().date_time(),
+                        );
+                        info!(
+                            "  {}",
+                            scaled_values_to_ascii(&block.decoded_values()[..100])
+                        );
+                    }
+                } else {
+                    info!(
+                        "Message {} at {:?}: type {:?}",
+                        message_index,
+                        message.header().date_time(),
+                        message.header().message_type()
+                    );
+                }
+            }
         }
 
-        let summary = nexrad_decode::summarize::messages(messages.as_slice());
-        info!("Volume summary:\n{summary}");
+        info!("All records decoded.");
     }
 
     Ok(())
+}
+
+/// Converts a slice of ScaledMomentValue to a visual ASCII string representation.
+/// Uses characters ordered by visual density to represent radar reflectivity values.
+fn scaled_values_to_ascii(values: &[ScaledMomentValue]) -> String {
+    // Characters ordered by increasing visual density
+    const CHARS: &[char] = &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
+
+    // dBZ range for radar reflectivity (typical range)
+    const MIN_DBZ: f32 = -30.0;
+    const MAX_DBZ: f32 = 75.0;
+
+    values
+        .iter()
+        .map(|v| match v {
+            ScaledMomentValue::Value(val) => {
+                // Normalize to 0.0-1.0 range, then map to character index
+                let normalized = ((val - MIN_DBZ) / (MAX_DBZ - MIN_DBZ)).clamp(0.0, 1.0);
+                let index = (normalized * (CHARS.len() - 1) as f32) as usize;
+                CHARS[index]
+            }
+            ScaledMomentValue::BelowThreshold => ' ',
+            ScaledMomentValue::RangeFolded => '~',
+        })
+        .collect()
 }
 
 /// Returns the index of the file with the nearest time to the provided start time.

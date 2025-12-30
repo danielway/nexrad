@@ -2,7 +2,7 @@ use crate::messages::digital_radar_data::{
     DataBlockId, ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, VolumeDataBlock,
 };
 use crate::result::{Error, Result};
-use crate::util::take_ref;
+use crate::slice_reader::SliceReader;
 use std::borrow::Cow;
 
 /// The digital radar data message includes base radar data from a single radial for various
@@ -44,12 +44,12 @@ pub struct Message<'a> {
 }
 
 impl<'a> Message<'a> {
-    pub(crate) fn parse<'b>(input: &'b mut &'a [u8]) -> Result<Self> {
-        let header = take_ref::<Header>(input)?;
+    pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
+        let start_position = reader.position();
+        let header = reader.take_ref::<Header>()?;
 
         let pointers_space = header.data_block_count.get() as usize * size_of::<u32>();
-        let (pointers_raw, remaining_input) = input.split_at(pointers_space);
-        *input = remaining_input;
+        let pointers_raw = reader.take_bytes(pointers_space)?;
 
         let pointers = pointers_raw
             .chunks_exact(size_of::<u32>())
@@ -74,26 +74,36 @@ impl<'a> Message<'a> {
             specific_diff_phase_data_block: None,
         };
 
-        // TODO: assert pointer position instead of assuming they line up
-        for _pointer in pointers {
-            let mut block_data = *input;
-            let block_id = take_ref::<DataBlockId>(&mut block_data)?;
+        for pointer in pointers {
+            let relative_position = reader.position() - start_position;
+            let pointer_position = pointer as usize;
+
+            if relative_position < pointer_position {
+                reader.advance(pointer_position - relative_position);
+            } else if relative_position > pointer_position {
+                panic!(
+                    "invalid pointer, cannot rewind {} bytes",
+                    relative_position - pointer_position
+                );
+            }
+
+            let block_id = reader.take_ref::<DataBlockId>()?;
 
             match &block_id.data_name {
                 b"VOL" => {
-                    let volume_block = take_ref::<VolumeDataBlock>(input)?;
+                    let volume_block = reader.take_ref::<VolumeDataBlock>()?;
                     message.volume_data_block = Some(Cow::Borrowed(volume_block));
                 }
                 b"ELV" => {
-                    let elevation_block = take_ref::<ElevationDataBlock>(input)?;
+                    let elevation_block = reader.take_ref::<ElevationDataBlock>()?;
                     message.elevation_data_block = Some(Cow::Borrowed(elevation_block));
                 }
                 b"RAD" => {
-                    let radial_block = take_ref::<RadialDataBlock>(input)?;
+                    let radial_block = reader.take_ref::<RadialDataBlock>()?;
                     message.radial_data_block = Some(Cow::Borrowed(radial_block));
                 }
                 _ => {
-                    let generic_block = GenericDataBlock::parse(input)?;
+                    let generic_block = GenericDataBlock::parse(reader)?;
                     match &block_id.data_name {
                         b"REF" => {
                             message.reflectivity_data_block = Some(generic_block);

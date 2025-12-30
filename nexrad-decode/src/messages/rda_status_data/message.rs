@@ -9,7 +9,8 @@ use crate::messages::rda_status_data::raw::{
     VolumeCoveragePatternNumber,
 };
 use crate::result::Result;
-use crate::util::{get_datetime, take_ref};
+use crate::slice_reader::SliceReader;
+use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::fmt::Debug;
 use zerocopy::{FromBytes, Immutable, KnownLayout};
@@ -225,9 +226,9 @@ pub struct Message {
     pub status_version: Integer2,
 }
 
-impl<'a> Message {
-    pub(crate) fn parse<'b>(input: &'b mut &'a [u8]) -> Result<&'a Self> {
-        take_ref::<Message>(input)
+impl Message {
+    pub(crate) fn parse<'a>(reader: &mut SliceReader<'a>) -> Result<&'a Self> {
+        reader.take_ref::<Message>()
     }
 
     /// The RDA system's status.

@@ -1,5 +1,5 @@
 use crate::binary_data::BinaryData;
-use crate::messages::digital_radar_data::{DataBlockId, ProcessingStatus, VolumeCoveragePattern};
+use crate::messages::digital_radar_data::{ProcessingStatus, VolumeCoveragePattern};
 use crate::messages::primitive_aliases::{Integer1, Integer2, Real4, SInteger2};
 use std::fmt::Debug;
 use zerocopy::{FromBytes, Immutable, KnownLayout};
@@ -11,9 +11,6 @@ use uom::si::f64::{Angle, Energy, Information, Length};
 #[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct VolumeDataBlock {
-    /// Data block identifier.
-    pub data_block_id: DataBlockId,
-
     /// Size of data block in bytes.
     pub lrtup: Integer2,
 

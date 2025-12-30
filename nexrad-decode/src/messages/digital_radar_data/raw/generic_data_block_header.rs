@@ -1,5 +1,4 @@
 use crate::messages::digital_radar_data::raw::ControlFlags;
-use crate::messages::digital_radar_data::DataBlockId;
 use crate::messages::primitive_aliases::{
     Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger2,
 };

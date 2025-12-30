@@ -9,7 +9,7 @@ use nexrad_data::aws::realtime::{
     ElevationChunkMapper, VolumeIndex,
 };
 use nexrad_data::result::Result;
-use nexrad_decode::messages::{volume_coverage_pattern, MessageContents};
+use nexrad_decode::messages::{volume_coverage_pattern, Message, MessageContents};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -227,7 +227,99 @@ fn analyze_chunk(
         azimuth_rate: None,
     };
 
-    let mut messages = Vec::new();
+    let mut message_type_counter = HashMap::new();
+    let mut data_type_counter = HashMap::new();
+    let mut radar_times = Vec::new();
+    let mut start_azimuth = None;
+    let mut end_azimuth = None;
+
+    let mut process_messages = |messages: &Vec<Message>| {
+        for message in messages {
+            let msg_type = message.header().message_type();
+            *message_type_counter.entry(msg_type).or_insert(0) += 1;
+
+            match message.contents() {
+                MessageContents::VolumeCoveragePattern(chunk_vcp) => {
+                    debug!(
+                        "Found VCP message with {} elevation cuts",
+                        chunk_vcp.elevations.len()
+                    );
+
+                    if vcp.is_none() {
+                        *vcp = Some(chunk_vcp.clone().into_owned());
+                        *elevation_chunk_mapper =
+                            Some(ElevationChunkMapper::new(vcp.as_ref().unwrap()));
+                    }
+
+                    result.vcp_number = Some(format!("VCP{}", chunk_vcp.header.pattern_type));
+                }
+                MessageContents::DigitalRadarData(radar) => {
+                    if let Some(time) = radar.header.date_time() {
+                        radar_times.push(time);
+                    }
+
+                    if start_azimuth.is_none() {
+                        start_azimuth = Some(radar.header.azimuth_angle.get());
+                    }
+                    end_azimuth = Some(radar.header.azimuth_angle.get());
+
+                    let mut add_data_type = |data_type: &str| {
+                        *data_type_counter.entry(data_type.to_string()).or_insert(0) += 1;
+                    };
+
+                    if radar.volume_data_block.is_some() {
+                        add_data_type("Volume");
+                    }
+
+                    if radar.elevation_data_block.is_some() {
+                        add_data_type("Elevation");
+                    }
+
+                    if radar.radial_data_block.is_some() {
+                        add_data_type("Radial");
+                    }
+
+                    if radar.reflectivity_data_block.is_some() {
+                        add_data_type("Reflectivity");
+                    }
+
+                    if radar.velocity_data_block.is_some() {
+                        add_data_type("Velocity");
+                    }
+
+                    if radar.spectrum_width_data_block.is_some() {
+                        add_data_type("Spectrum Width");
+                    }
+
+                    if radar.differential_reflectivity_data_block.is_some() {
+                        add_data_type("Differential Reflectivity");
+                    }
+
+                    if radar.differential_phase_data_block.is_some() {
+                        add_data_type("Differential Phase");
+                    }
+
+                    if radar.correlation_coefficient_data_block.is_some() {
+                        add_data_type("Correlation Coefficient");
+                    }
+
+                    if radar.specific_diff_phase_data_block.is_some() {
+                        add_data_type("Specific Differential Phase");
+                    }
+
+                    result
+                        .elevation_numbers
+                        .insert(radar.header.elevation_number);
+                    if let Some(volume) = &radar.volume_data_block {
+                        result.vcp_number =
+                            Some(format!("VCP{}", volume.volume_coverage_pattern_number));
+                    }
+                }
+                _ => {}
+            }
+        }
+    };
+
     match chunk {
         Chunk::Start(file) => {
             for mut record in file.records() {
@@ -235,7 +327,7 @@ fn analyze_chunk(
                     record = record.decompress()?;
                 }
 
-                messages.extend(record.messages()?);
+                process_messages(&record.messages()?);
             }
         }
         Chunk::IntermediateOrEnd(record) => {
@@ -244,91 +336,7 @@ fn analyze_chunk(
                 record = record.decompress()?;
             }
 
-            messages.extend(record.messages()?);
-        }
-    }
-
-    let mut message_type_counter = HashMap::new();
-    let mut data_type_counter = HashMap::new();
-    let mut radar_times = Vec::new();
-
-    for message in &messages {
-        let msg_type = message.header().message_type();
-        *message_type_counter.entry(msg_type).or_insert(0) += 1;
-
-        match message.contents() {
-            MessageContents::VolumeCoveragePattern(chunk_vcp) => {
-                debug!(
-                    "Found VCP message with {} elevation cuts",
-                    chunk_vcp.elevations.len()
-                );
-
-                if vcp.is_none() {
-                    *vcp = Some(chunk_vcp.clone().into_owned());
-                    *elevation_chunk_mapper =
-                        Some(ElevationChunkMapper::new(vcp.as_ref().unwrap()));
-                }
-
-                result.vcp_number = Some(format!("VCP{}", chunk_vcp.header.pattern_type));
-            }
-            MessageContents::DigitalRadarData(radar) => {
-                if let Some(time) = radar.header.date_time() {
-                    radar_times.push(time);
-                }
-
-                let mut add_data_type = |data_type: &str| {
-                    *data_type_counter.entry(data_type.to_string()).or_insert(0) += 1;
-                };
-
-                if radar.volume_data_block.is_some() {
-                    add_data_type("Volume");
-                }
-
-                if radar.elevation_data_block.is_some() {
-                    add_data_type("Elevation");
-                }
-
-                if radar.radial_data_block.is_some() {
-                    add_data_type("Radial");
-                }
-
-                if radar.reflectivity_data_block.is_some() {
-                    add_data_type("Reflectivity");
-                }
-
-                if radar.velocity_data_block.is_some() {
-                    add_data_type("Velocity");
-                }
-
-                if radar.spectrum_width_data_block.is_some() {
-                    add_data_type("Spectrum Width");
-                }
-
-                if radar.differential_reflectivity_data_block.is_some() {
-                    add_data_type("Differential Reflectivity");
-                }
-
-                if radar.differential_phase_data_block.is_some() {
-                    add_data_type("Differential Phase");
-                }
-
-                if radar.correlation_coefficient_data_block.is_some() {
-                    add_data_type("Correlation Coefficient");
-                }
-
-                if radar.specific_diff_phase_data_block.is_some() {
-                    add_data_type("Specific Differential Phase");
-                }
-
-                result
-                    .elevation_numbers
-                    .insert(radar.header.elevation_number);
-                if let Some(volume) = &radar.volume_data_block {
-                    result.vcp_number =
-                        Some(format!("VCP{}", volume.volume_coverage_pattern_number));
-                }
-            }
-            _ => {}
+            process_messages(&record.messages()?);
         }
     }
 
@@ -349,16 +357,6 @@ fn analyze_chunk(
                 .signed_duration_since(latest);
             result.processing_time = Some(proc_duration.num_milliseconds() as f64 / 1000.0);
         }
-
-        let start_azimuth = messages.iter().find_map(|msg| match msg.contents() {
-            MessageContents::DigitalRadarData(radar) => Some(radar.header.azimuth_angle),
-            _ => None,
-        });
-
-        let end_azimuth = messages.iter().rev().find_map(|msg| match msg.contents() {
-            MessageContents::DigitalRadarData(radar) => Some(radar.header.azimuth_angle),
-            _ => None,
-        });
 
         if let (Some(start), Some(end)) = (start_azimuth, end_azimuth) {
             let range = if end > start {

@@ -8,6 +8,7 @@ use zerocopy::{FromBytes, Immutable, KnownLayout};
 use uom::si::{f64::Velocity, velocity::meter_per_second};
 
 /// The volume coverage pattern header block
+#[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct Header {
     /// Total message size in halfwords, including the header and all elevation blocks

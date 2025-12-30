@@ -14,6 +14,7 @@ use uom::si::information::byte;
 use uom::si::length::kilometer;
 
 /// A generic data moment block's decoded header.
+#[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct GenericDataBlockHeader {
     /// Data block identifier.

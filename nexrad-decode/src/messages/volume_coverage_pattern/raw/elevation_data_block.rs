@@ -12,6 +12,7 @@ use uom::si::{
 };
 
 /// A data block for a single elevation cut.
+#[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct ElevationDataBlock {
     /// The elevation angle for this cut

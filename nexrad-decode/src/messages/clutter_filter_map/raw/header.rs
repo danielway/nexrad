@@ -5,6 +5,7 @@ use std::fmt::Debug;
 use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 /// Header information for a clutter filter map to be read directly from the Archive II file.
+#[repr(C)]
 #[derive(Clone, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct Header {
     /// The date the clutter filter map was generated represented as a count of days since 1 January

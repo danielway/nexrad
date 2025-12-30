@@ -8,6 +8,7 @@ use zerocopy::{FromBytes, Immutable, KnownLayout};
 use uom::si::f64::{Angle, Energy, Information, Length};
 
 /// A volume data moment block.
+#[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct VolumeDataBlock {
     /// Data block identifier.

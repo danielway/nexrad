@@ -7,6 +7,7 @@ use zerocopy::{FromBytes, Immutable, KnownLayout};
 use uom::si::f64::{Information, Length, Velocity};
 
 /// A radial data moment block.
+#[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct RadialDataBlock {
     /// Data block identifier.

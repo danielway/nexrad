@@ -111,13 +111,15 @@ impl<'a> Message<'a> {
                     let generic_block = GenericDataBlock::parse(reader)?;
                     match &block_id.data_name {
                         b"REF" => {
-                            message.reflectivity_data_block = Some(DataBlock::new(id, generic_block));
+                            message.reflectivity_data_block =
+                                Some(DataBlock::new(id, generic_block));
                         }
                         b"VEL" => {
                             message.velocity_data_block = Some(DataBlock::new(id, generic_block));
                         }
                         b"SW " => {
-                            message.spectrum_width_data_block = Some(DataBlock::new(id, generic_block));
+                            message.spectrum_width_data_block =
+                                Some(DataBlock::new(id, generic_block));
                         }
                         b"ZDR" => {
                             message.differential_reflectivity_data_block =

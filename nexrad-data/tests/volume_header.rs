@@ -1,15 +1,11 @@
-#![cfg(all(feature = "serde", feature = "bincode"))]
-
 use nexrad_data::volume;
-use std::io::Cursor;
 
 const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
 
 #[test]
-fn test_header_deserialization_success() {
-    let mut cursor = Cursor::new(TEST_NEXRAD_FILE);
-    let header =
-        volume::Header::deserialize(&mut cursor).expect("Header deserialization should succeed");
+fn test_header_read_success() {
+    let file = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+    let header = file.header().expect("Header read should succeed");
 
     let expected_volume_datetime = chrono::DateTime::parse_from_rfc3339("2022-03-05T23:23:24.299Z")
         .unwrap()
@@ -22,10 +18,10 @@ fn test_header_deserialization_success() {
 }
 
 #[test]
-fn test_header_deserialization_insufficient_data() {
+fn test_header_read_insufficient_data() {
     let short_data = vec![0u8; 10];
-    let mut cursor = Cursor::new(short_data);
+    let file = volume::File::new(short_data);
 
-    let result = volume::Header::deserialize(&mut cursor);
-    assert!(result.is_err(), "Should fail with insufficient data");
+    let result = file.header();
+    assert!(result.is_none(), "Should fail with insufficient data");
 }

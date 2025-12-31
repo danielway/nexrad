@@ -1,11 +1,8 @@
 use crate::{
-    aws::realtime::{ChunkType, VolumeIndex},
+    aws::realtime::{ChunkType, ElevationChunkMapper, VolumeIndex},
     result::{aws::AWSError, Error, Result},
 };
 use chrono::{DateTime, NaiveDateTime, Utc};
-
-#[cfg(feature = "nexrad-decode")]
-use crate::aws::realtime::ElevationChunkMapper;
 
 /// Identifies a volume chunk within the real-time NEXRAD data bucket. These chunks are uploaded
 /// every few seconds and contain a portion of the radar data for a specific volume.
@@ -125,7 +122,6 @@ impl ChunkIdentifier {
     }
 
     /// Identifies the next chunk's expected location.
-    #[cfg(feature = "nexrad-decode")]
     pub fn next_chunk(&self, elevation_chunk_mapper: &ElevationChunkMapper) -> Option<NextChunk> {
         let final_sequence = elevation_chunk_mapper.final_sequence();
         if self.sequence == final_sequence {

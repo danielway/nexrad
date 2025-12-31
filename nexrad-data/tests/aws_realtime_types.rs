@@ -1,4 +1,4 @@
-#![cfg(all(feature = "aws", feature = "bzip2"))]
+#![cfg(feature = "aws")]
 
 use chrono::NaiveDateTime;
 use nexrad_data::aws::realtime::{Chunk, ChunkIdentifier, ChunkType, VolumeIndex};
@@ -339,7 +339,6 @@ fn test_chunk_too_small_for_bz_check() {
     let _chunk = Chunk::new(small_data);
 }
 
-#[cfg(feature = "nexrad-decode")]
 #[test]
 fn test_chunk_identifier_next_chunk_intermediate() {
     use nexrad_data::aws::realtime::{ElevationChunkMapper, NextChunk};

@@ -32,7 +32,6 @@ fn test_volume_record_splitting() {
     }
 }
 
-#[cfg(all(feature = "serde", feature = "bincode"))]
 #[test]
 fn test_volume_header_decoding() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -93,7 +92,6 @@ fn test_record_compression_detection() {
     assert!(!short_record.compressed());
 }
 
-#[cfg(feature = "bzip2")]
 #[test]
 fn test_record_decompression() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -126,7 +124,6 @@ fn test_record_decompression() {
     );
 }
 
-#[cfg(all(feature = "bzip2", feature = "nexrad-decode"))]
 #[test]
 fn test_record_message_decoding() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -156,7 +153,6 @@ fn test_record_message_decoding() {
     );
 }
 
-#[cfg(all(feature = "bzip2", feature = "nexrad-decode"))]
 #[test]
 fn test_full_volume_record_decoding() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -220,7 +216,7 @@ fn test_file_data_accessor() {
     assert_eq!(ptr1, ptr2, "Should return reference to same data");
 }
 
-#[cfg(all(feature = "nexrad-model", feature = "decode"))]
+#[cfg(feature = "nexrad-model")]
 #[test]
 fn test_file_scan_conversion() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -235,7 +231,6 @@ fn test_file_scan_conversion() {
     assert_eq!(scan.coverage_pattern_number(), 212);
 }
 
-#[cfg(all(feature = "serde", feature = "bincode"))]
 #[test]
 fn test_file_construction_variants() {
     let empty_volume = volume::File::new(vec![]);
@@ -243,7 +238,7 @@ fn test_file_construction_variants() {
 
     let header_result = empty_volume.header();
     assert!(
-        header_result.is_err(),
+        header_result.is_none(),
         "Should fail to parse header from empty data"
     );
 
@@ -253,7 +248,7 @@ fn test_file_construction_variants() {
 
     let header_result = minimal_volume.header();
     assert!(
-        header_result.is_err(),
+        header_result.is_none(),
         "Should fail to parse header from insufficient data"
     );
 }

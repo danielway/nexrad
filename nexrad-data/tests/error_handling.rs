@@ -11,28 +11,6 @@ fn test_error_display_formatting() {
     assert!(file_error.source().is_some());
 }
 
-#[cfg(all(feature = "serde", feature = "bincode"))]
-#[test]
-fn test_deserialization_error() {
-    use std::io::Cursor;
-
-    let invalid_data = vec![0xFF; 10]; // Invalid data for header
-    let mut cursor = Cursor::new(invalid_data);
-
-    let result = nexrad_data::volume::Header::deserialize(&mut cursor);
-    assert!(result.is_err(), "Should fail to deserialize invalid data");
-
-    let error = result.unwrap_err();
-    match error {
-        result::Error::DeserializationError(_) => {
-            let display = format!("{}", error);
-            assert!(display.contains("file deserialization error"));
-        }
-        _ => panic!("Expected DeserializationError, got: {:?}", error),
-    }
-}
-
-#[cfg(feature = "bzip2")]
 #[test]
 fn test_uncompressed_data_error() {
     let uncompressed_data = vec![0, 1, 2, 3, 4, 5, 6, 7];
@@ -55,7 +33,6 @@ fn test_uncompressed_data_error() {
     }
 }
 
-#[cfg(feature = "nexrad-decode")]
 #[test]
 fn test_compressed_data_decode_error() {
     const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");

@@ -1,4 +1,4 @@
-#![cfg(all(feature = "nexrad-model", feature = "decode"))]
+#![cfg(feature = "nexrad-model")]
 
 use nexrad_data::volume;
 use nexrad_model::data::RadialStatus;

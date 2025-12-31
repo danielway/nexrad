@@ -1,4 +1,4 @@
-#![cfg(all(feature = "aws", feature = "decode"))]
+#![cfg(feature = "aws")]
 
 use chrono::{DateTime, Utc};
 use clap::Parser;

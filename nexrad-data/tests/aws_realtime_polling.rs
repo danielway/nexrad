@@ -1,4 +1,4 @@
-#![cfg(all(feature = "aws", feature = "nexrad-decode", feature = "bzip2"))]
+#![cfg(feature = "aws")]
 
 use chrono::Duration;
 use nexrad_data::aws::realtime::{

@@ -49,7 +49,6 @@ impl<'a> Record<'a> {
     }
 
     /// Decompresses this LDM record's data.
-    #[cfg(feature = "bzip2")]
     pub fn decompress<'b>(&self) -> crate::result::Result<Record<'b>> {
         use crate::result::Error;
         use bzip2::read::BzDecoder;
@@ -69,7 +68,6 @@ impl<'a> Record<'a> {
     }
 
     /// Decodes the NEXRAD level II messages contained in this LDM record.
-    #[cfg(feature = "nexrad-decode")]
     pub fn messages(&self) -> crate::result::Result<Vec<nexrad_decode::messages::Message<'_>>> {
         use crate::result::Error;
         use nexrad_decode::messages::decode_messages;
@@ -94,8 +92,6 @@ impl Debug for Record<'_> {
             },
         );
         debug.field("compressed", &self.compressed());
-
-        #[cfg(feature = "decode")]
         debug.field(
             "messages.len()",
             &self.messages().map(|messages| messages.len()),

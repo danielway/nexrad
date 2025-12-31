@@ -8,22 +8,20 @@ license = "MIT"
 edition = "2021"
 
 [features]
-default = ["aws", "decode", "nexrad-model"]
-decode = ["nexrad-decode", "bzip2", "serde", "bincode"]
+default = ["aws", "nexrad-model"]
 aws = ["reqwest", "xml", "tokio"]
 
 [dependencies]
 log = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true }
-serde = { workspace = true, optional = true }
-bincode = { workspace = true, optional = true }
+zerocopy = { workspace = true }
+bzip2 = { workspace = true }
+nexrad-decode = { version = "0.1.1", path = "../nexrad-decode" }
 reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
-bzip2 = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
 nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }
-nexrad-decode = { version = "0.1.1", path = "../nexrad-decode", optional = true }
 
 [dev-dependencies]
 clap = { workspace = true }
@@ -33,24 +31,24 @@ tokio = { workspace = true }
 [[example]]
 name = "realtime"
 path = "examples/realtime.rs"
-required-features = ["aws", "decode"]
+required-features = ["aws"]
 
 [[example]]
 name = "archive"
 path = "examples/archive.rs"
-required-features = ["aws", "decode"]
+required-features = ["aws"]
 
 [[example]]
 name = "latency_analysis"
 path = "examples/latency_analysis.rs"
-required-features = ["aws", "decode"]
+required-features = ["aws"]
 
 [[example]]
 name = "chunk_timing"
 path = "examples/chunk_timing.rs"
-required-features = ["aws", "decode"]
+required-features = ["aws"]
 
 [[example]]
 name = "chunk_csv"
 path = "examples/chunk_csv.rs"
-required-features = ["aws", "decode"]
+required-features = ["aws"]

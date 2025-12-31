@@ -16,7 +16,7 @@ use crate::{result::Result, slice_reader::SliceReader};
 use log::{trace, warn};
 
 /// Decode a series of NEXRAD Level II messages from a reader.
-pub fn decode_messages<'a>(input: &mut &'a [u8]) -> Result<Vec<Message<'a>>> {
+pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
     trace!("Decoding messages");
 
     let mut reader = SliceReader::new(input);

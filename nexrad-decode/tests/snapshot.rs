@@ -1,5 +1,3 @@
-use std::io::Cursor;
-
 use insta::assert_debug_snapshot;
 use nexrad_data::volume;
 use nexrad_decode::messages::decode_messages;
@@ -16,8 +14,7 @@ fn test_decode_volume() {
             record = record.decompress().expect("decompresses records");
         }
 
-        let mut reader = Cursor::new(record.data());
-        let messages = decode_messages(&mut reader).expect("decodes successfully");
+        let messages = decode_messages(record.data()).expect("decodes successfully");
 
         assert_debug_snapshot!(format!("Record {}", record_number), messages);
     }

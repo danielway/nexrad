@@ -1,4 +1,4 @@
-use std::{hint::black_box, io::Cursor, time::Duration};
+use std::{hint::black_box, time::Duration};
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use nexrad_data::volume;
@@ -38,8 +38,7 @@ fn benchmark_decode_messages(c: &mut Criterion) {
         b.iter_batched(
             || record1_data.clone(),
             |data| {
-                let mut reader = Cursor::new(black_box(&data));
-                decode_messages(&mut reader).expect("decodes successfully")
+                decode_messages(black_box(&data)).expect("decodes successfully");
             },
             BatchSize::SmallInput,
         )
@@ -49,8 +48,7 @@ fn benchmark_decode_messages(c: &mut Criterion) {
         b.iter_batched(
             || record2_data.clone(),
             |data| {
-                let mut reader = Cursor::new(black_box(&data));
-                decode_messages(&mut reader).expect("decodes successfully")
+                decode_messages(black_box(&data)).expect("decodes successfully");
             },
             BatchSize::SmallInput,
         )

@@ -78,7 +78,7 @@ impl<'a> Record<'a> {
             return Err(Error::CompressedDataError);
         }
 
-        Ok(decode_messages(&mut self.data())?)
+        Ok(decode_messages(self.data())?)
     }
 }
 

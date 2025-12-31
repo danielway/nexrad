@@ -16,7 +16,11 @@ use ratatui::prelude::*;
 
 #[derive(Parser)]
 #[command(name = "nexrad-inspector")]
-#[command(author, version, about = "Interactive inspector for NEXRAD Archive II volume files")]
+#[command(
+    author,
+    version,
+    about = "Interactive inspector for NEXRAD Archive II volume files"
+)]
 struct Cli {
     /// Path to the Archive II volume file to inspect
     #[arg(required = true)]

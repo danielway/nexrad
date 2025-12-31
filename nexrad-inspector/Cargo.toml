@@ -13,6 +13,7 @@ path = "src/main.rs"
 ratatui = { workspace = true }
 crossterm = { workspace = true }
 clap = { workspace = true }
-nexrad-data = { path = "../nexrad-data", features = ["decode"] }
+nexrad-data = { path = "../nexrad-data" }
 nexrad-decode = { path = "../nexrad-decode" }
 chrono = { workspace = true }
+zerocopy = { workspace = true }

@@ -1,5 +1,4 @@
 mod app;
-mod data;
 mod ui;
 
 use std::io;

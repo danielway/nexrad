@@ -6,6 +6,7 @@ members = [
     "nexrad-decode",
     "nexrad-data",
     "nexrad-render",
+    "nexrad-inspector",
 ]
 
 [profile.bench]
@@ -35,3 +36,5 @@ sha2 = "0.10.9"
 hex = "0.4.3"
 criterion = { version = "0.7.0" }
 zerocopy = { version = "0.8.30", features = ["derive"] }
+ratatui = { version = "0.29" }
+crossterm = { version = "0.28" }

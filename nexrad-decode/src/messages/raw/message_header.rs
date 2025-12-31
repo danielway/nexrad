@@ -17,9 +17,9 @@ pub const VARIABLE_LENGTH_MESSAGE_SIZE: u16 = 65535;
 
 /// Message and system configuration information appended to the beginning of all messages.
 ///
-/// Note that messages with a segment size of [VARIABLE_LENGTH_MESSAGE_SIZE] are not segmented and
-/// instead variable-length, with the segment count and segment number positions of the header
-/// (bytes 12-15) specifying the size of the full message in bytes.
+/// Note that messages with a segment size of 65535 (0xFFFF) are not segmented and instead
+/// variable-length, with the segment count and segment number positions of the header (bytes 12-15)
+/// specifying the size of the full message in bytes.
 #[repr(C)]
 #[derive(Clone, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct MessageHeader {
@@ -28,9 +28,9 @@ pub struct MessageHeader {
 
     /// Size of this segment in half-words. Note that this only describes this segment's size,
     /// though there could be multiple segments. In the case of a variable-length message (indicated
-    /// by this field being set to [VARIABLE_LENGTH_MESSAGE_SIZE]), the full message's size is
-    /// determined differently. See [MessageHeader::message_size_bytes] and
-    /// [MessageHeader::segment_count] for more information.
+    /// by this field being set to 65535/0xFFFF), the full message's size is determined differently.
+    /// See [MessageHeader::message_size_bytes] and [MessageHeader::segment_count] for more
+    /// information.
     pub segment_size: Integer2,
 
     /// Whether the RDA is operating on a redundant channel.
@@ -58,14 +58,14 @@ pub struct MessageHeader {
     /// Milliseconds past midnight, GMT.
     pub time: Integer4,
 
-    /// Number of segments in this message. If the [MessageHeader::segment_size] is less than
-    /// [VARIABLE_LENGTH_MESSAGE_SIZE], this field is meaningful, otherwise bytes 12-15 (this field
-    /// and [MessageHeader::segment_number]) specify the size of the message in bytes.
+    /// Number of segments in this message. If the message is segmented, this field is meaningful,
+    /// otherwise bytes 12-15 (this field and [MessageHeader::segment_number]) specify the size of
+    /// the message in bytes.
     pub segment_count: Integer2,
 
-    /// This message segment's number. If the [MessageHeader::segment_size] is less than
-    /// [VARIABLE_LENGTH_MESSAGE_SIZE], this field is meaningful, otherwise, bytes 12-15 (this field
-    /// and [MessageHeader::segment_number]) specify the size of the message in bytes.
+    /// This message segment's number. If the message is segmented, this field is meaningful,
+    /// otherwise bytes 12-15 (this field and [MessageHeader::segment_count]) specify the size of
+    /// the message in bytes.
     pub segment_number: Integer2,
 }
 
@@ -141,9 +141,9 @@ impl MessageHeader {
     }
 
     /// Whether this message is segmented or variable-length. If the message is segmented, multiple
-    /// message segments compose the full message. If the message is variable-length as indicated by
-    /// the [MessageHeader::segment_size] field being set to [VARIABLE_LENGTH_MESSAGE_SIZE], the
-    /// full message size can be retrieved by [MessageHeader::message_size_bytes].
+    /// message segments compose the full message. If the message is variable-length (indicated by
+    /// a segment size of 65535/0xFFFF), the full message size can be retrieved by
+    /// [MessageHeader::message_size_bytes].
     pub fn segmented(&self) -> bool {
         self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE
     }

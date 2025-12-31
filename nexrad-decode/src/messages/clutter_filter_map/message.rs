@@ -22,7 +22,10 @@ pub struct Message<'a> {
 
 impl<'a> Message<'a> {
     /// Parse a clutter filter map message from the input.
+    #[allow(dead_code)]
     pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
+        // TODO: this reads way too much data because the message is segmented
+
         let header = reader.take_ref::<Header>()?;
 
         let segment_count = header.elevation_segment_count.get() as u8;

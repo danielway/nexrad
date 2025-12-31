@@ -1,24 +1,24 @@
 use crate::messages::primitive_aliases::{Code2, Integer2, SInteger2, ScaledInteger2};
 use crate::messages::rda_status_data::alarm;
 use crate::messages::rda_status_data::alarm::Summary;
-use crate::messages::rda_status_data::data_transmission_enabled::DataTransmissionEnabled;
-use crate::messages::rda_status_data::definitions::{
+use crate::messages::rda_status_data::raw::{
     AuxiliaryPowerGeneratorState, ClutterMitigationDecisionStatus, CommandAcknowledgement,
-    ControlAuthorization, ControlStatus, OperabilityStatus, OperationalMode,
-    PerformanceCheckStatus, RDAStatus, RMSControlStatus, SpotBlankingStatus, SuperResolutionStatus,
-    TransitionPowerSourceStatus,
+    ControlAuthorization, ControlStatus, DataTransmissionEnabled, OperabilityStatus,
+    OperationalMode, PerformanceCheckStatus, RDAStatus, RMSControlStatus, ScanDataFlags,
+    SpotBlankingStatus, SuperResolutionStatus, TransitionPowerSourceStatus,
+    VolumeCoveragePatternNumber,
 };
-use crate::messages::rda_status_data::scan_data_flags::ScanDataFlags;
-use crate::messages::rda_status_data::volume_coverage_pattern::VolumeCoveragePatternNumber;
+use crate::result::Result;
+use crate::slice_reader::SliceReader;
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 /// The RDA status data message includes various information about the current RDA system's state,
 /// including system operating status, performance parameters, and active alarms.
 #[repr(C)]
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Serialize, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct Message {
     /// The RDA system's status.
     ///
@@ -227,9 +227,13 @@ pub struct Message {
 }
 
 impl Message {
+    pub(crate) fn parse<'a>(reader: &mut SliceReader<'a>) -> Result<&'a Self> {
+        reader.take_ref::<Message>()
+    }
+
     /// The RDA system's status.
     pub fn rda_status(&self) -> RDAStatus {
-        match self.rda_status {
+        match self.rda_status.get() {
             2 => RDAStatus::StartUp,
             4 => RDAStatus::Standby,
             8 => RDAStatus::Restart,
@@ -241,7 +245,7 @@ impl Message {
 
     /// The RDA system's operability status.
     pub fn operability_status(&self) -> OperabilityStatus {
-        match self.operability_status {
+        match self.operability_status.get() {
             2 => OperabilityStatus::OnLine,
             4 => OperabilityStatus::MaintenanceActionRequired,
             8 => OperabilityStatus::MaintenanceActionMandatory,
@@ -256,7 +260,7 @@ impl Message {
 
     /// The RDA system's control status.
     pub fn control_status(&self) -> ControlStatus {
-        match self.control_status {
+        match self.control_status.get() {
             2 => ControlStatus::LocalControlOnly,
             4 => ControlStatus::RemoteControlOnly,
             8 => ControlStatus::EitherLocalOrRemoteControl,
@@ -266,7 +270,7 @@ impl Message {
 
     /// The RDA system's auxiliary power generator state.
     pub fn auxiliary_power_generator_state(&self) -> AuxiliaryPowerGeneratorState {
-        match self.auxiliary_power_generator_state {
+        match self.auxiliary_power_generator_state.get() {
             1 => AuxiliaryPowerGeneratorState::SwitchedToAuxiliaryPower,
             2 => AuxiliaryPowerGeneratorState::UtilityPowerAvailable,
             4 => AuxiliaryPowerGeneratorState::GeneratorOn,
@@ -281,7 +285,7 @@ impl Message {
 
     /// Difference from adaptation data (delta dBZ0) in dB.
     pub fn horizontal_reflectivity_calibration_correction(&self) -> f32 {
-        self.horizontal_reflectivity_calibration_correction as f32 / 100.0
+        self.horizontal_reflectivity_calibration_correction.get() as f32 / 100.0
     }
 
     /// The types of data that have transmission enabled.
@@ -302,7 +306,7 @@ impl Message {
 
     /// The RDA system's mode of control.
     pub fn rda_control_authorization(&self) -> ControlAuthorization {
-        match self.rda_control_authorization {
+        match self.rda_control_authorization.get() {
             0 => ControlAuthorization::NoAction,
             1 => ControlAuthorization::LocalControlRequested,
             2 => ControlAuthorization::RemoteControlRequested,
@@ -315,7 +319,7 @@ impl Message {
 
     /// The RDA system's major and minor build numbers.
     pub fn rda_build_number(&self) -> f32 {
-        let number = self.rda_build_number as f32;
+        let number = self.rda_build_number.get() as f32;
         if number / 100.0 > 2.0 {
             return number / 100.0;
         }
@@ -325,7 +329,7 @@ impl Message {
 
     /// Whether the RDA system is operational.
     pub fn operational_mode(&self) -> OperationalMode {
-        match self.operational_mode {
+        match self.operational_mode.get() {
             4 => OperationalMode::Operational,
             8 => OperationalMode::Maintenance,
             _ => panic!("Invalid RDA operational mode: {}", self.operational_mode),
@@ -334,7 +338,7 @@ impl Message {
 
     /// Whether the RDA system has super resolution enabled.
     pub fn super_resolution_status(&self) -> SuperResolutionStatus {
-        match self.super_resolution_status {
+        match self.super_resolution_status.get() {
             2 => SuperResolutionStatus::Enabled,
             4 => SuperResolutionStatus::Disabled,
             _ => panic!(
@@ -346,7 +350,7 @@ impl Message {
 
     /// The RDA system's clutter mitigation status.
     pub fn clutter_mitigation_decision_status(&self) -> ClutterMitigationDecisionStatus {
-        match self.clutter_mitigation_decision_status {
+        match self.clutter_mitigation_decision_status.get() {
             0 => ClutterMitigationDecisionStatus::Disabled,
             1 => ClutterMitigationDecisionStatus::Enabled,
             _ => {
@@ -374,7 +378,7 @@ impl Message {
 
     /// Acknowledgement of command receipt by RDA system.
     pub fn command_acknowledgement(&self) -> Option<CommandAcknowledgement> {
-        match self.command_acknowledgement {
+        match self.command_acknowledgement.get() {
             1 => Some(CommandAcknowledgement::RemoteVCPReceived),
             2 => Some(CommandAcknowledgement::ClutterBypassMapReceived),
             3 => Some(CommandAcknowledgement::ClutterCensorZonesReceived),
@@ -390,7 +394,7 @@ impl Message {
 
     /// The RDA system's spot blanking status.
     pub fn spot_blanking_status(&self) -> SpotBlankingStatus {
-        match self.spot_blanking_status {
+        match self.spot_blanking_status.get() {
             0 => SpotBlankingStatus::NotInstalled,
             1 => SpotBlankingStatus::Enabled,
             4 => SpotBlankingStatus::Disabled,
@@ -404,22 +408,22 @@ impl Message {
     /// The bypass map generation date and time in UTC.
     pub fn bypass_map_generation_date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(
-            self.bypass_map_generation_date,
-            Duration::minutes(self.bypass_map_generation_time as i64),
+            self.bypass_map_generation_date.get(),
+            Duration::minutes(self.bypass_map_generation_time.get() as i64),
         )
     }
 
     /// The clutter filter map generation date and time in UTC.
     pub fn clutter_filter_map_generation_date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(
-            self.clutter_filter_map_generation_date,
-            Duration::minutes(self.clutter_filter_map_generation_time as i64),
+            self.clutter_filter_map_generation_date.get(),
+            Duration::minutes(self.clutter_filter_map_generation_time.get() as i64),
         )
     }
 
     /// The RDA system's TPS.
     pub fn transition_power_source_status(&self) -> TransitionPowerSourceStatus {
-        match self.transition_power_source_status {
+        match self.transition_power_source_status.get() {
             0 => TransitionPowerSourceStatus::NotInstalled,
             1 => TransitionPowerSourceStatus::Off,
             3 => TransitionPowerSourceStatus::OK,
@@ -433,7 +437,7 @@ impl Message {
 
     /// The RDA system's RMS control status.
     pub fn rms_control_status(&self) -> RMSControlStatus {
-        match self.rms_control_status {
+        match self.rms_control_status.get() {
             0 => RMSControlStatus::NonRMS,
             2 => RMSControlStatus::RMSInControl,
             4 => RMSControlStatus::RDAInControl,
@@ -446,7 +450,7 @@ impl Message {
 
     /// The RDA system's performance check status.
     pub fn performance_check_status(&self) -> PerformanceCheckStatus {
-        match self.performance_check_status {
+        match self.performance_check_status.get() {
             0 => PerformanceCheckStatus::NoCommandPending,
             1 => PerformanceCheckStatus::ForcePerformanceCheckPending,
             2 => PerformanceCheckStatus::InProgress,
@@ -462,7 +466,7 @@ impl Message {
         self.alarm_codes
             .iter()
             .filter(|&code| *code != 0)
-            .filter_map(|&code| alarm::get_alarm_message(code))
+            .filter_map(|&code| alarm::get_alarm_message(code.get()))
             .collect()
     }
 }

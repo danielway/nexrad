@@ -19,4 +19,5 @@ pub mod messages;
 pub mod result;
 pub mod summarize;
 
+mod slice_reader;
 mod util;

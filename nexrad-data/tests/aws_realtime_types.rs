@@ -359,7 +359,7 @@ fn test_chunk_identifier_next_chunk_intermediate() {
             if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp_msg) =
                 message.contents()
             {
-                vcp = Some(*vcp_msg.clone());
+                vcp = Some(vcp_msg.clone().into_owned());
                 break;
             }
         }

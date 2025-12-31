@@ -230,7 +230,9 @@ async fn get_latest_chunk(site: &str, volume: VolumeIndex) -> Result<Option<Chun
 }
 
 /// Gets the volume coverage pattern from the latest metadata chunk.
-fn get_latest_vcp(latest_metadata: &Chunk<'_>) -> Result<volume_coverage_pattern::Message> {
+fn get_latest_vcp(
+    latest_metadata: &Chunk<'_>,
+) -> Result<volume_coverage_pattern::Message<'static>> {
     if let Chunk::Start(file) = latest_metadata {
         for mut record in file.records() {
             if record.compressed() {
@@ -241,7 +243,7 @@ fn get_latest_vcp(latest_metadata: &Chunk<'_>) -> Result<volume_coverage_pattern
                 if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) =
                     message.contents()
                 {
-                    return Ok(*vcp.clone());
+                    return Ok(vcp.clone().into_owned());
                 }
             }
         }

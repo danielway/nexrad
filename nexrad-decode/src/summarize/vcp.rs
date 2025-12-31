@@ -53,7 +53,7 @@ pub fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Mess
     }
 
     let mut elevations = Vec::new();
-    for elev in &message.elevations {
+    for elev in message.elevations.iter() {
         let mut super_res_features = Vec::new();
         if elev.super_resolution_control_half_degree_azimuth() {
             super_res_features.push("0.5° azimuth".to_string());
@@ -93,9 +93,9 @@ pub fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Mess
     }
 
     VCPInfo {
-        pattern_number: message.header.pattern_number,
+        pattern_number: message.header.pattern_number.get(),
         version: message.header.version,
-        number_of_elevation_cuts: message.header.number_of_elevation_cuts,
+        number_of_elevation_cuts: message.header.number_of_elevation_cuts.get(),
         pulse_width: format!("{:?}", message.header.pulse_width()),
         doppler_velocity_resolution: message
             .header

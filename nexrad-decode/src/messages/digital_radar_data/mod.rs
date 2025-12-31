@@ -9,6 +9,9 @@
 mod message;
 pub use message::Message;
 
+mod data_block;
+pub use data_block::DataBlock;
+
 mod generic_data_block;
 pub use generic_data_block::GenericDataBlock;
 

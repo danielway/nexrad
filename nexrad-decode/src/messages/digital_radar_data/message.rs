@@ -1,5 +1,6 @@
 use crate::messages::digital_radar_data::{
-    DataBlockId, ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock, VolumeDataBlock,
+    DataBlock, DataBlockId, ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock,
+    VolumeDataBlock,
 };
 use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
@@ -13,34 +14,34 @@ pub struct Message<'a> {
     pub header: Cow<'a, Header>,
 
     /// Volume data if included in the message.
-    pub volume_data_block: Option<Cow<'a, VolumeDataBlock>>,
+    pub volume_data_block: Option<DataBlock<'a, Cow<'a, VolumeDataBlock>>>,
 
     /// Elevation data if included in the message.
-    pub elevation_data_block: Option<Cow<'a, ElevationDataBlock>>,
+    pub elevation_data_block: Option<DataBlock<'a, Cow<'a, ElevationDataBlock>>>,
 
     /// Radial data if included in the message.
-    pub radial_data_block: Option<Cow<'a, RadialDataBlock>>,
+    pub radial_data_block: Option<DataBlock<'a, Cow<'a, RadialDataBlock>>>,
 
     /// Reflectivity data if included in the message.
-    pub reflectivity_data_block: Option<GenericDataBlock<'a>>,
+    pub reflectivity_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Velocity data if included in the message.
-    pub velocity_data_block: Option<GenericDataBlock<'a>>,
+    pub velocity_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Spectrum width data if included in the message.
-    pub spectrum_width_data_block: Option<GenericDataBlock<'a>>,
+    pub spectrum_width_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Differential reflectivity data if included in the message.
-    pub differential_reflectivity_data_block: Option<GenericDataBlock<'a>>,
+    pub differential_reflectivity_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Differential phase data if included in the message.
-    pub differential_phase_data_block: Option<GenericDataBlock<'a>>,
+    pub differential_phase_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Correlation coefficient data if included in the message.
-    pub correlation_coefficient_data_block: Option<GenericDataBlock<'a>>,
+    pub correlation_coefficient_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Specific differential phase data if included in the message.
-    pub specific_diff_phase_data_block: Option<GenericDataBlock<'a>>,
+    pub specific_diff_phase_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 }
 
 impl<'a> Message<'a> {
@@ -88,43 +89,51 @@ impl<'a> Message<'a> {
             }
 
             let block_id = reader.take_ref::<DataBlockId>()?;
+            let id = Cow::Borrowed(block_id);
 
             match &block_id.data_name {
                 b"VOL" => {
                     let volume_block = reader.take_ref::<VolumeDataBlock>()?;
-                    message.volume_data_block = Some(Cow::Borrowed(volume_block));
+                    message.volume_data_block =
+                        Some(DataBlock::new(id, Cow::Borrowed(volume_block)));
                 }
                 b"ELV" => {
                     let elevation_block = reader.take_ref::<ElevationDataBlock>()?;
-                    message.elevation_data_block = Some(Cow::Borrowed(elevation_block));
+                    message.elevation_data_block =
+                        Some(DataBlock::new(id, Cow::Borrowed(elevation_block)));
                 }
                 b"RAD" => {
                     let radial_block = reader.take_ref::<RadialDataBlock>()?;
-                    message.radial_data_block = Some(Cow::Borrowed(radial_block));
+                    message.radial_data_block =
+                        Some(DataBlock::new(id, Cow::Borrowed(radial_block)));
                 }
                 _ => {
                     let generic_block = GenericDataBlock::parse(reader)?;
                     match &block_id.data_name {
                         b"REF" => {
-                            message.reflectivity_data_block = Some(generic_block);
+                            message.reflectivity_data_block = Some(DataBlock::new(id, generic_block));
                         }
                         b"VEL" => {
-                            message.velocity_data_block = Some(generic_block);
+                            message.velocity_data_block = Some(DataBlock::new(id, generic_block));
                         }
                         b"SW " => {
-                            message.spectrum_width_data_block = Some(generic_block);
+                            message.spectrum_width_data_block = Some(DataBlock::new(id, generic_block));
                         }
                         b"ZDR" => {
-                            message.differential_reflectivity_data_block = Some(generic_block);
+                            message.differential_reflectivity_data_block =
+                                Some(DataBlock::new(id, generic_block));
                         }
                         b"PHI" => {
-                            message.differential_phase_data_block = Some(generic_block);
+                            message.differential_phase_data_block =
+                                Some(DataBlock::new(id, generic_block));
                         }
                         b"RHO" => {
-                            message.correlation_coefficient_data_block = Some(generic_block);
+                            message.correlation_coefficient_data_block =
+                                Some(DataBlock::new(id, generic_block));
                         }
                         b"CFP" => {
-                            message.specific_diff_phase_data_block = Some(generic_block);
+                            message.specific_diff_phase_data_block =
+                                Some(DataBlock::new(id, generic_block));
                         }
                         _ => panic!("Unknown generic data block type: {block_id:?}"),
                     }
@@ -139,26 +148,36 @@ impl<'a> Message<'a> {
     pub fn into_owned(self) -> Message<'static> {
         Message {
             header: Cow::Owned(self.header.into_owned()),
-            volume_data_block: self.volume_data_block.map(|b| Cow::Owned(b.into_owned())),
+            volume_data_block: self
+                .volume_data_block
+                .map(|b| b.into_owned_with(|inner| Cow::Owned(inner.into_owned()))),
             elevation_data_block: self
                 .elevation_data_block
-                .map(|b| Cow::Owned(b.into_owned())),
-            radial_data_block: self.radial_data_block.map(|b| Cow::Owned(b.into_owned())),
-            reflectivity_data_block: self.reflectivity_data_block.map(|b| b.into_owned()),
-            velocity_data_block: self.velocity_data_block.map(|b| b.into_owned()),
-            spectrum_width_data_block: self.spectrum_width_data_block.map(|b| b.into_owned()),
+                .map(|b| b.into_owned_with(|inner| Cow::Owned(inner.into_owned()))),
+            radial_data_block: self
+                .radial_data_block
+                .map(|b| b.into_owned_with(|inner| Cow::Owned(inner.into_owned()))),
+            reflectivity_data_block: self
+                .reflectivity_data_block
+                .map(|b| b.into_owned_with(|inner| inner.into_owned())),
+            velocity_data_block: self
+                .velocity_data_block
+                .map(|b| b.into_owned_with(|inner| inner.into_owned())),
+            spectrum_width_data_block: self
+                .spectrum_width_data_block
+                .map(|b| b.into_owned_with(|inner| inner.into_owned())),
             differential_reflectivity_data_block: self
                 .differential_reflectivity_data_block
-                .map(|b| b.into_owned()),
+                .map(|b| b.into_owned_with(|inner| inner.into_owned())),
             differential_phase_data_block: self
                 .differential_phase_data_block
-                .map(|b| b.into_owned()),
+                .map(|b| b.into_owned_with(|inner| inner.into_owned())),
             correlation_coefficient_data_block: self
                 .correlation_coefficient_data_block
-                .map(|b| b.into_owned()),
+                .map(|b| b.into_owned_with(|inner| inner.into_owned())),
             specific_diff_phase_data_block: self
                 .specific_diff_phase_data_block
-                .map(|b| b.into_owned()),
+                .map(|b| b.into_owned_with(|inner| inner.into_owned())),
         }
     }
 
@@ -237,19 +256,19 @@ impl<'a> Message<'a> {
             self.header.elevation_number,
             self.header.elevation_angle.get(),
             self.reflectivity_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.inner.into_moment_data()),
             self.velocity_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.inner.into_moment_data()),
             self.spectrum_width_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.inner.into_moment_data()),
             self.differential_reflectivity_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.inner.into_moment_data()),
             self.differential_phase_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.inner.into_moment_data()),
             self.correlation_coefficient_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.inner.into_moment_data()),
             self.specific_diff_phase_data_block
-                .map(|block| block.into_moment_data()),
+                .map(|block| block.inner.into_moment_data()),
         ))
     }
 }

@@ -1,3 +1,4 @@
+use crate::binary_data::BinaryData;
 use crate::messages::digital_radar_data::{GenericDataBlockHeader, ScaledMomentValue};
 use crate::result::Result;
 use crate::slice_reader::SliceReader;
@@ -11,7 +12,7 @@ pub struct GenericDataBlock<'a> {
     pub header: Cow<'a, GenericDataBlockHeader>,
 
     /// The generic data block's encoded moment data.
-    pub encoded_data: Cow<'a, [u8]>,
+    pub encoded_data: BinaryData<Cow<'a, [u8]>>,
 }
 
 impl<'a> GenericDataBlock<'a> {
@@ -26,7 +27,7 @@ impl<'a> GenericDataBlock<'a> {
 
         Ok(Self {
             header: Cow::Borrowed(header),
-            encoded_data: Cow::Borrowed(encoded_data),
+            encoded_data: BinaryData::new(Cow::Borrowed(encoded_data)),
         })
     }
 
@@ -34,7 +35,7 @@ impl<'a> GenericDataBlock<'a> {
     pub fn into_owned(self) -> GenericDataBlock<'static> {
         GenericDataBlock {
             header: Cow::Owned(self.header.into_owned()),
-            encoded_data: Cow::Owned(self.encoded_data.into_owned()),
+            encoded_data: BinaryData::new(Cow::Owned(self.encoded_data.0.into_owned())),
         }
     }
 
@@ -90,7 +91,7 @@ impl<'a> GenericDataBlock<'a> {
             self.header.data_moment_range_sample_interval.get(),
             self.header.scale.get(),
             self.header.offset.get(),
-            self.encoded_data.into_owned(),
+            self.encoded_data.into_inner().into_owned(),
         )
     }
 }

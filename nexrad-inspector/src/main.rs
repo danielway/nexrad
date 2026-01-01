@@ -71,11 +71,10 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> AppRe
         // Poll for events with timeout
         if poll(timeout)? {
             if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    if handle_key_event(app, key).await? {
+                if key.kind == KeyEventKind::Press
+                    && handle_key_event(app, key).await? {
                         return Ok(()); // Quit
                     }
-                }
             }
         }
 
@@ -128,8 +127,8 @@ async fn handle_key_event(app: &mut App, key: event::KeyEvent) -> AppResult<bool
 }
 
 fn is_text_input_active(app: &App) -> bool {
-    matches!(app.mode, AppMode::AwsBrowser) &&
-        app.aws_browser.as_ref().map_or(false, |aws| {
+    matches!(app.mode, AppMode::AwsBrowser)
+        && app.aws_browser.as_ref().is_some_and(|aws| {
             matches!(aws.step, AwsStep::EnterSite | AwsStep::EnterDate)
         })
 }
@@ -146,13 +145,11 @@ async fn handle_menu_keys(app: &mut App, key: event::KeyEvent) -> AppResult<bool
                 app.menu_selected += 1;
             }
         }
-        KeyCode::Enter => {
-            match app.menu_selected {
-                0 => app.init_local_browser(),
-                1 => app.init_aws_browser(),
-                _ => {}
-            }
-        }
+        KeyCode::Enter => match app.menu_selected {
+            0 => app.init_local_browser(),
+            1 => app.init_aws_browser(),
+            _ => {}
+        },
         KeyCode::Esc => {
             // At top level, quit
             return Ok(true);
@@ -197,42 +194,39 @@ async fn handle_local_browser_keys(app: &mut App, key: event::KeyEvent) -> AppRe
 async fn handle_aws_browser_keys(app: &mut App, key: event::KeyEvent) -> AppResult<bool> {
     if let Some(ref mut state) = app.aws_browser {
         match state.step {
-            AwsStep::EnterSite => {
-                match state.site_input.handle_key(key.code) {
-                    TextInputResult::Submitted => {
-                        if !state.site_input.value.is_empty() {
-                            state.step = AwsStep::EnterDate;
-                        }
+            AwsStep::EnterSite => match state.site_input.handle_key(key.code) {
+                TextInputResult::Submitted => {
+                    if !state.site_input.value.is_empty() {
+                        state.step = AwsStep::EnterDate;
                     }
-                    TextInputResult::Cancelled => {
-                        app.back();
-                    }
-                    _ => {}
                 }
-            }
-            AwsStep::EnterDate => {
-                match state.date_input.handle_key(key.code) {
-                    TextInputResult::Submitted => {
-                        if !state.date_input.value.is_empty() {
-                            use chrono::NaiveDate;
+                TextInputResult::Cancelled => {
+                    app.back();
+                }
+                _ => {}
+            },
+            AwsStep::EnterDate => match state.date_input.handle_key(key.code) {
+                TextInputResult::Submitted => {
+                    if !state.date_input.value.is_empty() {
+                        use chrono::NaiveDate;
 
-                            let site = state.site_input.value.clone();
-                            match NaiveDate::parse_from_str(&state.date_input.value, "%Y-%m-%d") {
-                                Ok(date) => {
-                                    app.start_aws_list(site, date);
-                                }
-                                Err(_) => {
-                                    app.error = Some("Invalid date format. Use YYYY-MM-DD.".to_string());
-                                }
+                        let site = state.site_input.value.clone();
+                        match NaiveDate::parse_from_str(&state.date_input.value, "%Y-%m-%d") {
+                            Ok(date) => {
+                                app.start_aws_list(site, date);
+                            }
+                            Err(_) => {
+                                app.error =
+                                    Some("Invalid date format. Use YYYY-MM-DD.".to_string());
                             }
                         }
                     }
-                    TextInputResult::Cancelled => {
-                        state.step = AwsStep::EnterSite;
-                    }
-                    _ => {}
                 }
-            }
+                TextInputResult::Cancelled => {
+                    state.step = AwsStep::EnterSite;
+                }
+                _ => {}
+            },
             AwsStep::SelectFile => {
                 match key.code {
                     KeyCode::Up | KeyCode::Char('k') => {

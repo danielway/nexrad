@@ -40,30 +40,6 @@ pub enum FsEntry {
     File(PathBuf),
 }
 
-impl FsEntry {
-    pub fn display_name(&self) -> String {
-        match self {
-            FsEntry::ParentDir => "..".to_string(),
-            FsEntry::Directory(path) => {
-                format!("{}/", path.file_name().unwrap_or_default().to_string_lossy())
-            }
-            FsEntry::File(path) => path
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string(),
-        }
-    }
-
-    pub fn icon(&self) -> &str {
-        match self {
-            FsEntry::ParentDir => "..",
-            FsEntry::Directory(_) => "[DIR]",
-            FsEntry::File(_) => "     ",
-        }
-    }
-}
-
 /// Local filesystem browser state
 pub struct LocalBrowserState {
     pub current_dir: PathBuf,
@@ -243,11 +219,6 @@ impl App {
         Ok(app)
     }
 
-    /// Legacy constructor for backward compatibility
-    pub fn new(file_path: &Path) -> AppResult<Self> {
-        Self::new_with_file(file_path)
-    }
-
     /// Get the volume file (recreated from cached data)
     fn volume_file(&self) -> Option<volume::File> {
         self.file_data
@@ -419,16 +390,14 @@ impl App {
                         state.selected_index = 0;
                         state.scroll_offset = 0;
                     }
-                    FsEntry::File(path) => {
-                        match self.load_local_file(&path) {
-                            Ok(()) => {
-                                self.mode = AppMode::Inspector;
-                            }
-                            Err(e) => {
-                                self.error = Some(format!("Failed to load file: {}", e));
-                            }
+                    FsEntry::File(path) => match self.load_local_file(&path) {
+                        Ok(()) => {
+                            self.mode = AppMode::Inspector;
                         }
-                    }
+                        Err(e) => {
+                            self.error = Some(format!("Failed to load file: {}", e));
+                        }
+                    },
                 }
             }
         }
@@ -440,7 +409,8 @@ impl App {
         self.mode = AppMode::Loading;
         self.loading_message = format!("Listing files for {} on {}...", site, date);
 
-        let handle = tokio::spawn(async move { nexrad_data::aws::archive::list_files(&site, &date).await });
+        let handle =
+            tokio::spawn(async move { nexrad_data::aws::archive::list_files(&site, &date).await });
 
         self.pending_operation = Some(PendingOperation::ListFiles(handle));
     }
@@ -503,55 +473,53 @@ impl App {
             if is_finished {
                 let op = self.pending_operation.take().unwrap();
                 match op {
-                    PendingOperation::ListFiles(handle) => {
-                        match handle.await {
-                            Ok(Ok(files)) => {
-                                if let Some(ref mut aws) = self.aws_browser {
-                                    aws.files = files;
-                                    aws.step = AwsStep::SelectFile;
-                                    aws.selected_index = 0;
-                                    aws.scroll_offset = 0;
-                                }
-                                self.mode = AppMode::AwsBrowser;
+                    PendingOperation::ListFiles(handle) => match handle.await {
+                        Ok(Ok(files)) => {
+                            if let Some(ref mut aws) = self.aws_browser {
+                                aws.files = files;
+                                aws.step = AwsStep::SelectFile;
+                                aws.selected_index = 0;
+                                aws.scroll_offset = 0;
                             }
-                            Ok(Err(e)) => {
-                                self.error = Some(format!("Failed to list files: {}", e));
-                                self.mode = AppMode::AwsBrowser;
-                            }
-                            Err(e) => {
-                                self.error = Some(format!("Task error: {}", e));
-                                self.mode = AppMode::AwsBrowser;
-                            }
+                            self.mode = AppMode::AwsBrowser;
                         }
-                    }
-                    PendingOperation::DownloadFile(handle) => {
-                        match handle.await {
-                            Ok(Ok(volume_file)) => {
-                                let identifier_opt = self.aws_browser.as_ref()
-                                    .and_then(|aws| aws.files.get(aws.selected_index).cloned());
+                        Ok(Err(e)) => {
+                            self.error = Some(format!("Failed to list files: {}", e));
+                            self.mode = AppMode::AwsBrowser;
+                        }
+                        Err(e) => {
+                            self.error = Some(format!("Task error: {}", e));
+                            self.mode = AppMode::AwsBrowser;
+                        }
+                    },
+                    PendingOperation::DownloadFile(handle) => match handle.await {
+                        Ok(Ok(volume_file)) => {
+                            let identifier_opt = self
+                                .aws_browser
+                                .as_ref()
+                                .and_then(|aws| aws.files.get(aws.selected_index).cloned());
 
-                                if let Some(identifier) = identifier_opt {
-                                    match self.load_aws_file(&identifier, volume_file) {
-                                        Ok(()) => {
-                                            self.mode = AppMode::Inspector;
-                                        }
-                                        Err(e) => {
-                                            self.error = Some(format!("Failed to load file: {}", e));
-                                            self.mode = AppMode::AwsBrowser;
-                                        }
+                            if let Some(identifier) = identifier_opt {
+                                match self.load_aws_file(&identifier, volume_file) {
+                                    Ok(()) => {
+                                        self.mode = AppMode::Inspector;
+                                    }
+                                    Err(e) => {
+                                        self.error = Some(format!("Failed to load file: {}", e));
+                                        self.mode = AppMode::AwsBrowser;
                                     }
                                 }
                             }
-                            Ok(Err(e)) => {
-                                self.error = Some(format!("Failed to download file: {}", e));
-                                self.mode = AppMode::AwsBrowser;
-                            }
-                            Err(e) => {
-                                self.error = Some(format!("Task error: {}", e));
-                                self.mode = AppMode::AwsBrowser;
-                            }
                         }
-                    }
+                        Ok(Err(e)) => {
+                            self.error = Some(format!("Failed to download file: {}", e));
+                            self.mode = AppMode::AwsBrowser;
+                        }
+                        Err(e) => {
+                            self.error = Some(format!("Task error: {}", e));
+                            self.mode = AppMode::AwsBrowser;
+                        }
+                    },
                 }
             }
         }
@@ -571,9 +539,7 @@ impl App {
     /// Get or decompress a record
     pub fn get_decompressed_record(&mut self, index: usize) -> AppResult<&[u8]> {
         if !self.decompressed_cache.contains_key(&index) {
-            let volume_file = self
-                .volume_file()
-                .ok_or("No file loaded")?;
+            let volume_file = self.volume_file().ok_or("No file loaded")?;
             let records = volume_file.records();
             let record = records.get(index).ok_or("Record not found")?;
 

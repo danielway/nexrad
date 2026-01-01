@@ -28,12 +28,6 @@ impl TextInput {
         }
     }
 
-    pub fn with_value(mut self, value: impl Into<String>) -> Self {
-        self.value = value.into();
-        self.cursor = self.value.len();
-        self
-    }
-
     pub fn handle_key(&mut self, key: KeyCode) -> TextInputResult {
         match key {
             KeyCode::Char(c) => {
@@ -119,10 +113,5 @@ impl TextInput {
                 frame.set_cursor_position(Position::new(cursor_x, cursor_y));
             }
         }
-    }
-
-    pub fn clear(&mut self) {
-        self.value.clear();
-        self.cursor = 0;
     }
 }

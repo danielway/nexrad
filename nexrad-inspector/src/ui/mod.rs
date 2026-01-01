@@ -39,13 +39,11 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         AppMode::Loading => {
             loading_view::render(frame, &app.loading_message, app.spinner_frame, content_area);
         }
-        AppMode::Inspector => {
-            match app.view {
-                View::File => file_view::render(frame, app, content_area),
-                View::Record => record_view::render(frame, app, content_area),
-                View::Message => message_view::render(frame, app, content_area),
-            }
-        }
+        AppMode::Inspector => match app.view {
+            View::File => file_view::render(frame, app, content_area),
+            View::Record => record_view::render(frame, app, content_area),
+            View::Message => message_view::render(frame, app, content_area),
+        },
     }
 
     // Render status bar

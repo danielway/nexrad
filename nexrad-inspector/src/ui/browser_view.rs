@@ -14,10 +14,7 @@ pub fn render_local(frame: &mut Frame, app: &App, area: Rect) {
             ])
             .split(area);
 
-        let path_display = state
-            .current_dir
-            .to_string_lossy()
-            .to_string();
+        let path_display = state.current_dir.to_string_lossy().to_string();
         let header = Paragraph::new(format!("Current Directory: {}", path_display))
             .style(Style::default().fg(Color::Cyan))
             .block(Block::default().borders(Borders::ALL));
@@ -25,10 +22,11 @@ pub fn render_local(frame: &mut Frame, app: &App, area: Rect) {
 
         render_file_list(frame, state, chunks[1]);
 
-        let help = Paragraph::new("↑/↓: Navigate | Enter: Select/Open | Esc: Back to menu | q: Quit")
-            .style(Style::default().fg(Color::DarkGray))
-            .alignment(Alignment::Center)
-            .block(Block::default().borders(Borders::ALL));
+        let help =
+            Paragraph::new("↑/↓: Navigate | Enter: Select/Open | Esc: Back to menu | q: Quit")
+                .style(Style::default().fg(Color::DarkGray))
+                .alignment(Alignment::Center)
+                .block(Block::default().borders(Borders::ALL));
         frame.render_widget(help, chunks[2]);
     }
 }
@@ -97,7 +95,11 @@ pub fn render_aws(frame: &mut Frame, app: &App, area: Rect) {
             .split(area);
 
         let title = Paragraph::new("AWS Archive Query")
-            .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+            .style(
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )
             .alignment(Alignment::Center)
             .block(Block::default().borders(Borders::ALL));
         frame.render_widget(title, chunks[0]);
@@ -105,10 +107,12 @@ pub fn render_aws(frame: &mut Frame, app: &App, area: Rect) {
         match state.step {
             AwsStep::EnterSite => {
                 render_site_input(frame, state, chunks[1]);
-                let help = Paragraph::new("Enter radar site code (e.g., KDMX) | Enter: Continue | Esc: Back")
-                    .style(Style::default().fg(Color::DarkGray))
-                    .alignment(Alignment::Center)
-                    .block(Block::default().borders(Borders::ALL));
+                let help = Paragraph::new(
+                    "Enter radar site code (e.g., KDMX) | Enter: Continue | Esc: Back",
+                )
+                .style(Style::default().fg(Color::DarkGray))
+                .alignment(Alignment::Center)
+                .block(Block::default().borders(Borders::ALL));
                 frame.render_widget(help, chunks[2]);
             }
             AwsStep::EnterDate => {
@@ -211,7 +215,11 @@ fn render_file_selection(frame: &mut Frame, state: &crate::app::AwsBrowserState,
         )
         .header(
             Row::new(vec!["Time", "Filename"])
-                .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+                .style(
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
+                )
                 .bottom_margin(1),
         )
         .row_highlight_style(

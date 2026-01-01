@@ -66,9 +66,18 @@ fn render_header_info(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_record_list(frame: &mut Frame, app: &App, area: Rect) {
-    let header_cells = ["#", "Status", "Compressed", "Decompressed"]
-        .iter()
-        .map(|h| Cell::from(*h).style(Style::default().add_modifier(Modifier::BOLD)));
+    let header_cells = [
+        "#",
+        "Status",
+        "Compressed",
+        "Decompressed",
+        "Type",
+        "Products",
+        "Elevation",
+        "Azimuth",
+    ]
+    .iter()
+    .map(|h| Cell::from(*h).style(Style::default().add_modifier(Modifier::BOLD)));
     let header = Row::new(header_cells).height(1);
 
     let rows: Vec<Row> = app
@@ -90,21 +99,46 @@ fn render_record_list(frame: &mut Frame, app: &App, area: Rect) {
                 .map(|s| format!("{}", s))
                 .unwrap_or_else(|| "-".to_string());
 
+            let (record_type, products, elevation, azimuth) =
+                if let Some(summary) = app.get_record_summary(record.index) {
+                    (
+                        summary.record_type,
+                        summary.products,
+                        summary.elevation,
+                        summary.azimuth,
+                    )
+                } else {
+                    (
+                        "-".to_string(),
+                        "-".to_string(),
+                        "-".to_string(),
+                        "-".to_string(),
+                    )
+                };
+
             let cells = vec![
                 Cell::from(format!("{}", record.index)),
                 Cell::from(status).style(status_style),
                 Cell::from(format!("{}", record.size)),
                 Cell::from(decompressed_str),
+                Cell::from(record_type),
+                Cell::from(products),
+                Cell::from(elevation),
+                Cell::from(azimuth),
             ];
             Row::new(cells).height(1)
         })
         .collect();
 
     let widths = [
-        Constraint::Length(5),
-        Constraint::Length(12),
-        Constraint::Length(12),
-        Constraint::Length(12),
+        Constraint::Length(5),  // #
+        Constraint::Length(12), // Status
+        Constraint::Length(12), // Compressed
+        Constraint::Length(12), // Decompressed
+        Constraint::Length(12), // Type
+        Constraint::Min(15),    // Products
+        Constraint::Length(10), // Elevation
+        Constraint::Length(12), // Azimuth
     ];
 
     let table = Table::new(rows, widths)

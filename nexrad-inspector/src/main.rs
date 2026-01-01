@@ -254,7 +254,11 @@ async fn handle_aws_browser_keys(app: &mut App, key: event::KeyEvent) -> AppResu
                     }
                     KeyCode::Enter => {
                         if let Some(identifier) = state.files.get(state.selected_index).cloned() {
-                            app.start_aws_download(identifier);
+                            // Check if we already have this file cached in ./downloads
+                            if !app.try_load_cached_aws_file(&identifier) {
+                                // File not cached, download it
+                                app.start_aws_download(identifier);
+                            }
                         }
                     }
                     KeyCode::Esc | KeyCode::Backspace => {

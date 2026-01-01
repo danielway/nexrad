@@ -445,6 +445,25 @@ impl App {
         self.pending_operation = Some(PendingOperation::ListFiles(handle));
     }
 
+    /// Try to load a cached AWS file from ./downloads
+    /// Returns true if the file was found and loaded successfully
+    pub fn try_load_cached_aws_file(&mut self, identifier: &Identifier) -> bool {
+        let downloads_dir = PathBuf::from("./downloads");
+        let file_path = downloads_dir.join(identifier.name());
+
+        if file_path.exists() {
+            match self.load_local_file(&file_path) {
+                Ok(()) => {
+                    self.mode = AppMode::Inspector;
+                    true
+                }
+                Err(_) => false,
+            }
+        } else {
+            false
+        }
+    }
+
     /// Start downloading an AWS file
     pub fn start_aws_download(&mut self, identifier: Identifier) {
         self.mode = AppMode::Loading;

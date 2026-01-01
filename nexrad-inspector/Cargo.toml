@@ -5,6 +5,10 @@ edition = "2021"
 description = "Interactive TUI for inspecting NEXRAD Archive II volume files"
 license = "MIT"
 
+[features]
+default = ["aws"]
+aws = ["nexrad-data/aws"]
+
 [[bin]]
 name = "nexrad-inspector"
 path = "src/main.rs"
@@ -13,7 +17,8 @@ path = "src/main.rs"
 ratatui = { workspace = true }
 crossterm = { workspace = true }
 clap = { workspace = true }
-nexrad-data = { path = "../nexrad-data" }
+nexrad-data = { path = "../nexrad-data", features = ["aws"] }
 nexrad-decode = { path = "../nexrad-decode" }
 chrono = { workspace = true }
 zerocopy = { workspace = true }
+tokio = { workspace = true }

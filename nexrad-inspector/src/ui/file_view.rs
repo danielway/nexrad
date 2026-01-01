@@ -15,19 +15,34 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_header_info(frame: &mut Frame, app: &App, area: Rect) {
-    let header = &app.header;
+    let (tape_filename, extension, datetime, icao, file_path_str) = if let Some(ref header) = app.header {
+        let tape_filename = header
+            .tape_filename()
+            .unwrap_or_else(|| "Unknown".to_string());
+        let extension = header
+            .extension_number()
+            .unwrap_or_else(|| "???".to_string());
+        let datetime = header
+            .date_time()
+            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S UTC").to_string())
+            .unwrap_or_else(|| "Unknown".to_string());
+        let icao = header.icao_of_radar().unwrap_or_else(|| "????".to_string());
+        let file_path_str = app
+            .file_path
+            .as_ref()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|| "Unknown".to_string());
 
-    let tape_filename = header
-        .tape_filename()
-        .unwrap_or_else(|| "Unknown".to_string());
-    let extension = header
-        .extension_number()
-        .unwrap_or_else(|| "???".to_string());
-    let datetime = header
-        .date_time()
-        .map(|dt| dt.format("%Y-%m-%d %H:%M:%S UTC").to_string())
-        .unwrap_or_else(|| "Unknown".to_string());
-    let icao = header.icao_of_radar().unwrap_or_else(|| "????".to_string());
+        (tape_filename, extension, datetime, icao, file_path_str)
+    } else {
+        (
+            "No file loaded".to_string(),
+            "N/A".to_string(),
+            "N/A".to_string(),
+            "N/A".to_string(),
+            "N/A".to_string(),
+        )
+    };
 
     let info_text = format!(
         "File: {}\n\
@@ -35,7 +50,7 @@ fn render_header_info(frame: &mut Frame, app: &App, area: Rect) {
          Extension: {}\n\
          Date/Time: {}\n\
          Radar ICAO: {}",
-        app.file_path.display(),
+        file_path_str,
         tape_filename,
         extension,
         datetime,

@@ -109,6 +109,15 @@ pub struct MessageInfo {
     pub data: Vec<u8>,
 }
 
+/// Summary of a record's contents
+#[derive(Debug, Clone)]
+pub struct RecordSummary {
+    pub record_type: String,
+    pub products: String,
+    pub elevation: String,
+    pub azimuth: String,
+}
+
 /// Application state
 pub struct App {
     /// Application mode
@@ -800,12 +809,17 @@ impl App {
     }
 
     /// Get a summary of record contents (if decompressed)
-    pub fn get_record_summary(&self, record_index: usize) -> Option<String> {
+    pub fn get_record_summary(&self, record_index: usize) -> Option<RecordSummary> {
         // Only generate summary if record is already decompressed
         let messages = self.messages_cache.get(&record_index)?;
 
         if messages.is_empty() {
-            return Some("-".to_string());
+            return Some(RecordSummary {
+                record_type: "-".to_string(),
+                products: "-".to_string(),
+                elevation: "-".to_string(),
+                azimuth: "-".to_string(),
+            });
         }
 
         // Categorize messages by type
@@ -836,19 +850,116 @@ impl App {
         } else if !has_radar_data && has_metadata {
             // Pure metadata record
             let types_str = Self::format_message_types(&metadata_types);
-            Some(format!("Metadata ({})", types_str))
+            Some(RecordSummary {
+                record_type: "Metadata".to_string(),
+                products: types_str,
+                elevation: "-".to_string(),
+                azimuth: "-".to_string(),
+            })
         } else if has_radar_data && has_metadata {
             // Mixed record
             let types_str = Self::format_message_types(&metadata_types);
-            Some(format!("Mixed ({})", types_str))
+            Some(RecordSummary {
+                record_type: "Mixed".to_string(),
+                products: types_str,
+                elevation: "-".to_string(),
+                azimuth: "-".to_string(),
+            })
         } else {
-            Some("-".to_string())
+            Some(RecordSummary {
+                record_type: "-".to_string(),
+                products: "-".to_string(),
+                elevation: "-".to_string(),
+                azimuth: "-".to_string(),
+            })
         }
     }
 
     /// Summarize a radar data record
-    fn summarize_radar_data_record(_messages: &[MessageInfo]) -> String {
-        "Radar data".to_string()
+    fn summarize_radar_data_record(messages: &[MessageInfo]) -> RecordSummary {
+        use nexrad_decode::messages::{decode_messages, MessageContents};
+
+        let mut products = HashSet::new();
+        let mut min_azimuth = f32::MAX;
+        let mut max_azimuth = f32::MIN;
+        let mut elevation = None;
+
+        for msg in messages {
+            if let Some(header) = Self::get_message_header(&msg.data) {
+                let msg_type = header.message_type();
+                if matches!(
+                    msg_type,
+                    MessageType::RDADigitalRadarData | MessageType::RDADigitalRadarDataGenericFormat
+                ) {
+                    // Parse the message to get detailed radar data
+                    if let Ok(parsed_messages) = decode_messages(&msg.data) {
+                        if let Some(parsed_msg) = parsed_messages.first() {
+                            if let MessageContents::DigitalRadarData(digital_radar_data) = parsed_msg.contents() {
+                                // Track which products are present
+                                if digital_radar_data.reflectivity_data_block.is_some() {
+                                    products.insert("REF");
+                                }
+                                if digital_radar_data.velocity_data_block.is_some() {
+                                    products.insert("VEL");
+                                }
+                                if digital_radar_data.spectrum_width_data_block.is_some() {
+                                    products.insert("SW");
+                                }
+                                if digital_radar_data.differential_reflectivity_data_block.is_some() {
+                                    products.insert("ZDR");
+                                }
+                                if digital_radar_data.differential_phase_data_block.is_some() {
+                                    products.insert("PHI");
+                                }
+                                if digital_radar_data.correlation_coefficient_data_block.is_some() {
+                                    products.insert("RHO");
+                                }
+                                if digital_radar_data.specific_diff_phase_data_block.is_some() {
+                                    products.insert("CFP");
+                                }
+
+                                // Track azimuth range
+                                let az = digital_radar_data.header.azimuth_angle.get();
+                                min_azimuth = min_azimuth.min(az);
+                                max_azimuth = max_azimuth.max(az);
+
+                                // Track elevation
+                                if elevation.is_none() {
+                                    elevation = Some(digital_radar_data.header.elevation_angle.get());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let products_str = if products.is_empty() {
+            "-".to_string()
+        } else {
+            let mut product_list: Vec<_> = products.into_iter().collect();
+            product_list.sort();
+            product_list.join(",")
+        };
+
+        let azimuth_str = if min_azimuth != f32::MAX && max_azimuth != f32::MIN {
+            format!("{:.1}-{:.1}°", min_azimuth, max_azimuth)
+        } else {
+            "-".to_string()
+        };
+
+        let elevation_str = if let Some(elev) = elevation {
+            format!("{:.1}°", elev)
+        } else {
+            "-".to_string()
+        };
+
+        RecordSummary {
+            record_type: "Radar data".to_string(),
+            products: products_str,
+            elevation: elevation_str,
+            azimuth: azimuth_str,
+        }
     }
 
     /// Format a set of message types as a comma-separated string

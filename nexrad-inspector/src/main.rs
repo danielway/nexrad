@@ -273,8 +273,15 @@ fn handle_inspector_keys(app: &mut App, key: event::KeyEvent) -> AppResult<bool>
         KeyCode::Enter => app.enter(),
         KeyCode::Esc | KeyCode::Backspace => app.back(),
         KeyCode::Tab => app.toggle_view(),
-        KeyCode::Char('s') => app.save_message()?,
+        KeyCode::Char('s') => {
+            // Save record in file/record view, save message in message view
+            match app.view {
+                app::View::File | app::View::Record => app.save_record()?,
+                app::View::Message => app.save_message()?,
+            }
+        }
         KeyCode::Char('d') => app.decompress_selected(),
+        KeyCode::Char('D') => app.decompress_all_records(),
         KeyCode::PageUp => app.page_up(),
         KeyCode::PageDown => app.page_down(),
         _ => {}

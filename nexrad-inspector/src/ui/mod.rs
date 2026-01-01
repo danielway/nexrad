@@ -70,9 +70,9 @@ fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
             AppMode::AwsBrowser => "Type to enter text  Enter:continue  Esc:back  q:quit",
             AppMode::Loading => "Loading...",
             AppMode::Inspector => match app.view {
-                View::File => "q:quit  Enter:open record  d:decompress  Esc:menu  ?:help",
-                View::Record => "q:quit  Enter:open message  Esc:back  ?:help",
-                View::Message => "q:quit  Tab:hex/parsed  s:save  Esc:back  ?:help",
+                View::File => "q:quit  Enter:open  d:decompress  D:decompress all  s:save  ?:help",
+                View::Record => "q:quit  Enter:open message  s:save record  Esc:back  ?:help",
+                View::Message => "q:quit  Tab:hex/parsed  s:save message  Esc:back  ?:help",
             },
         };
         nav_hint.to_string()
@@ -108,8 +108,8 @@ fn render_error_overlay(frame: &mut Frame, app: &App, area: Rect) {
 
 fn render_help_overlay(frame: &mut Frame, area: Rect) {
     // Center the help popup
-    let popup_width = 50;
-    let popup_height = 17;
+    let popup_width = 60;
+    let popup_height = 21;
     let popup_area = centered_rect(popup_width, popup_height, area);
 
     // Clear the area behind the popup
@@ -125,6 +125,12 @@ Navigation:
 
 File View:
   d               Decompress selected record
+  D               Decompress all records (bulk)
+  s               Save selected record (compressed or
+                  decompressed based on current state)
+
+Record View:
+  s               Save selected record
 
 Message View:
   Tab             Toggle hex/parsed view

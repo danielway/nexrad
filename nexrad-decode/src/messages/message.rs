@@ -13,17 +13,20 @@ const FIXED_SEGMENT_SIZE: usize = 2432 - size_of::<MessageHeader>();
 pub struct Message<'a> {
     header: &'a MessageHeader,
     contents: MessageContents<'a>,
+    offset: usize,
+    size: usize,
 }
 
 impl<'a> Message<'a> {
     pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
+        let offset = reader.position();
         let header = reader.take_ref::<MessageHeader>()?;
 
-        let start_position = reader.position();
+        let contents_start = reader.position();
         let contents = decode_message_contents(reader, header.message_type())?;
 
         if header.message_type() != MessageType::RDADigitalRadarDataGenericFormat {
-            let actual_length = reader.position() - start_position;
+            let actual_length = reader.position() - contents_start;
 
             let length_delta: i32 = FIXED_SEGMENT_SIZE as i32 - actual_length as i32;
             if length_delta > 0 {
@@ -37,7 +40,14 @@ impl<'a> Message<'a> {
             }
         }
 
-        Ok(Message { header, contents })
+        let size = reader.position() - offset;
+
+        Ok(Message {
+            header,
+            contents,
+            offset,
+            size,
+        })
     }
 
     /// This message's header.
@@ -53,6 +63,16 @@ impl<'a> Message<'a> {
     /// Consume this message, returning ownership of its contents.
     pub fn into_contents(self) -> MessageContents<'a> {
         self.contents
+    }
+
+    /// The byte offset where this message starts in the source data.
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
+
+    /// The total size of this message in bytes, including the header.
+    pub fn size(&self) -> usize {
+        self.size
     }
 }
 

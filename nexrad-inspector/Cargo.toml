@@ -1,0 +1,19 @@
+[package]
+name = "nexrad-inspector"
+version = "0.1.0"
+edition = "2021"
+description = "Interactive TUI for inspecting NEXRAD Archive II volume files"
+license = "MIT"
+
+[[bin]]
+name = "nexrad-inspector"
+path = "src/main.rs"
+
+[dependencies]
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+clap = { workspace = true }
+nexrad-data = { path = "../nexrad-data" }
+nexrad-decode = { path = "../nexrad-decode" }
+chrono = { workspace = true }
+zerocopy = { workspace = true }

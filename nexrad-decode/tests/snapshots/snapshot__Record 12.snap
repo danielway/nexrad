@@ -271,6 +271,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 0,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -540,6 +542,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 3852,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -809,6 +813,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 7704,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -1078,6 +1084,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 11556,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -1347,6 +1355,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 15408,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -1616,6 +1626,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 19260,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -1885,6 +1897,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 23112,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -2154,6 +2168,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 26964,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -2423,6 +2439,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 30816,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -2692,6 +2710,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 34668,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -2961,6 +2981,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 38520,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -3230,6 +3252,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 42372,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -3499,6 +3523,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 46224,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -3768,6 +3794,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 50076,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -4037,6 +4065,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 53928,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -4306,6 +4336,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 57780,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -4575,6 +4607,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 61632,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -4844,6 +4878,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 65484,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -5113,6 +5149,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 69336,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -5382,6 +5420,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 73188,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -5651,6 +5691,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 77040,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -5920,6 +5962,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 80892,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -6189,6 +6233,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 84744,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -6458,6 +6504,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 88596,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -6727,6 +6775,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 92448,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -6996,6 +7046,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 96300,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -7265,6 +7317,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 100152,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -7534,6 +7588,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 104004,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -7803,6 +7859,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 107856,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -8072,6 +8130,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 111708,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -8341,6 +8401,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 115560,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -8610,6 +8672,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 119412,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -8879,6 +8943,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 123264,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -9148,6 +9214,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 127116,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -9417,6 +9485,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 130968,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -9686,6 +9756,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 134820,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -9955,6 +10027,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 138672,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -10224,6 +10298,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 142524,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -10493,6 +10569,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 146376,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -10762,6 +10840,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 150228,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -11031,6 +11111,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 154080,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -11300,6 +11382,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 157932,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -11569,6 +11653,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 161784,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -11838,6 +11924,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 165636,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -12107,6 +12195,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 169488,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -12376,6 +12466,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 173340,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -12645,6 +12737,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 177192,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -12914,6 +13008,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 181044,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -13183,6 +13279,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 184896,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -13452,6 +13550,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 188748,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -13721,6 +13821,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 192600,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -13990,6 +14092,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 196452,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -14259,6 +14363,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 200304,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -14528,6 +14634,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 204156,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -14797,6 +14905,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 208008,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -15066,6 +15176,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 211860,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -15335,6 +15447,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 215712,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -15604,6 +15718,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 219564,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -15873,6 +15989,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 223416,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -16142,6 +16260,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 227268,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -16411,6 +16531,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 231120,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -16680,6 +16802,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 234972,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -16949,6 +17073,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 238824,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -17218,6 +17344,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 242676,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -17487,6 +17615,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 246528,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -17756,6 +17886,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 250380,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -18025,6 +18157,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 254232,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -18294,6 +18428,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 258084,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -18563,6 +18699,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 261936,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -18832,6 +18970,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 265788,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -19101,6 +19241,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 269640,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -19370,6 +19512,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 273492,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -19639,6 +19783,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 277344,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -19908,6 +20054,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 281196,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -20177,6 +20325,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 285048,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -20446,6 +20596,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 288900,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -20715,6 +20867,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 292752,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -20984,6 +21138,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 296604,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -21253,6 +21409,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 300456,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -21522,6 +21680,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 304308,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -21791,6 +21951,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 308160,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -22060,6 +22222,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 312012,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -22329,6 +22493,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 315864,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -22598,6 +22764,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 319716,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -22867,6 +23035,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 323568,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -23136,6 +23306,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 327420,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -23405,6 +23577,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 331272,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -23674,6 +23848,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 335124,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -23943,6 +24119,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 338976,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -24212,6 +24390,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 342828,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -24481,6 +24661,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 346680,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -24750,6 +24932,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 350532,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -25019,6 +25203,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 354384,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -25288,6 +25474,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 358236,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -25557,6 +25745,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 362088,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -25826,6 +26016,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 365940,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -26095,6 +26287,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 369792,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -26364,6 +26558,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 373644,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -26633,6 +26829,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 377496,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -26902,6 +27100,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 381348,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -27171,6 +27371,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 385200,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -27440,6 +27642,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 389052,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -27709,6 +27913,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 392904,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -27978,6 +28184,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 396756,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -28247,6 +28455,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 400608,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -28516,6 +28726,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 404460,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -28785,6 +28997,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 408312,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -29054,6 +29268,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 412164,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -29323,6 +29539,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 416016,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -29592,6 +29810,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 419868,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -29861,6 +30081,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 423720,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -30130,6 +30352,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 427572,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -30399,6 +30623,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 431424,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -30668,6 +30894,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 435276,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -30937,6 +31165,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 439128,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -31206,6 +31436,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 442980,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -31475,6 +31707,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 446832,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -31744,6 +31978,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 450684,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -32013,6 +32249,8 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 454536,
+        size: 3852,
     },
     Message {
         header: MessageHeader {
@@ -32282,5 +32520,7 @@ expression: messages
                 specific_diff_phase_data_block: None,
             },
         ),
+        offset: 458388,
+        size: 3852,
     },
 ]

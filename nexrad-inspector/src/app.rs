@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use chrono::NaiveDate;
 use nexrad_data::aws::archive::Identifier;
 use nexrad_data::volume::{self, Record};
-use nexrad_decode::messages::MessageHeader;
+use nexrad_decode::messages::{MessageHeader, MessageType};
 use tokio::task::JoinHandle;
 use zerocopy::FromBytes;
 
@@ -761,6 +761,8 @@ impl App {
                 if record.compressed && !self.decompressed_cache.contains_key(&index) {
                     match self.get_decompressed_record(index) {
                         Ok(_) => {
+                            // Also parse messages so summary can be generated
+                            let _ = self.get_messages(index);
                             self.status_message = Some(format!("Decompressed record {}", index));
                         }
                         Err(e) => {
@@ -795,5 +797,86 @@ impl App {
 
         self.status_message = Some(format!("Saved to {}", filename));
         Ok(())
+    }
+
+    /// Get a summary of record contents (if decompressed)
+    pub fn get_record_summary(&self, record_index: usize) -> Option<String> {
+        // Only generate summary if record is already decompressed
+        let messages = self.messages_cache.get(&record_index)?;
+
+        if messages.is_empty() {
+            return Some("-".to_string());
+        }
+
+        // Categorize messages by type
+        let mut radar_data_count = 0;
+        let mut metadata_types = HashSet::new();
+
+        for msg in messages {
+            if let Some(header) = Self::get_message_header(&msg.data) {
+                let msg_type = header.message_type();
+                match msg_type {
+                    MessageType::RDADigitalRadarData
+                    | MessageType::RDADigitalRadarDataGenericFormat => {
+                        radar_data_count += 1;
+                    }
+                    _ => {
+                        metadata_types.insert(msg_type);
+                    }
+                }
+            }
+        }
+
+        let has_radar_data = radar_data_count > 0;
+        let has_metadata = !metadata_types.is_empty();
+
+        if has_radar_data && !has_metadata {
+            // Pure radar data record
+            Some(Self::summarize_radar_data_record(messages))
+        } else if !has_radar_data && has_metadata {
+            // Pure metadata record
+            let types_str = Self::format_message_types(&metadata_types);
+            Some(format!("Metadata ({})", types_str))
+        } else if has_radar_data && has_metadata {
+            // Mixed record
+            let types_str = Self::format_message_types(&metadata_types);
+            Some(format!("Mixed ({})", types_str))
+        } else {
+            Some("-".to_string())
+        }
+    }
+
+    /// Summarize a radar data record
+    fn summarize_radar_data_record(_messages: &[MessageInfo]) -> String {
+        "Radar data".to_string()
+    }
+
+    /// Format a set of message types as a comma-separated string
+    fn format_message_types(types: &HashSet<MessageType>) -> String {
+        let mut type_list: Vec<_> = types
+            .iter()
+            .map(|t| match t {
+                MessageType::RDAStatusData => "Status",
+                MessageType::RDAPerformanceMaintenanceData => "Perf/Maint",
+                MessageType::RDAConsoleMessage => "RDA Console",
+                MessageType::RDAVolumeCoveragePattern => "RDA VCP",
+                MessageType::RDAControlCommands => "Control",
+                MessageType::RPGVolumeCoveragePattern => "RPG VCP",
+                MessageType::RPGClutterCensorZones => "Clutter Zones",
+                MessageType::RPGRequestForData => "Request",
+                MessageType::RPGConsoleMessage => "RPG Console",
+                MessageType::RDALoopBackTest => "RDA Loopback",
+                MessageType::RPGLoopBackTest => "RPG Loopback",
+                MessageType::RDAClutterFilterBypassMap => "Clutter Bypass",
+                MessageType::RDAClutterFilterMap => "Clutter Map",
+                MessageType::RDAAdaptationData => "Adaptation",
+                MessageType::RDAPRFData => "PRF",
+                MessageType::RDALogData => "Log",
+                _ => "Other",
+            })
+            .collect();
+        type_list.sort();
+        type_list.dedup();
+        type_list.join(", ")
     }
 }

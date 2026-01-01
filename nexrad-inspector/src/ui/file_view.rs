@@ -66,7 +66,7 @@ fn render_header_info(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_record_list(frame: &mut Frame, app: &App, area: Rect) {
-    let header_cells = ["#", "Status", "Compressed", "Decompressed"]
+    let header_cells = ["#", "Status", "Compressed", "Decompressed", "Summary"]
         .iter()
         .map(|h| Cell::from(*h).style(Style::default().add_modifier(Modifier::BOLD)));
     let header = Row::new(header_cells).height(1);
@@ -90,11 +90,16 @@ fn render_record_list(frame: &mut Frame, app: &App, area: Rect) {
                 .map(|s| format!("{}", s))
                 .unwrap_or_else(|| "-".to_string());
 
+            let summary = app
+                .get_record_summary(record.index)
+                .unwrap_or_else(|| "-".to_string());
+
             let cells = vec![
                 Cell::from(format!("{}", record.index)),
                 Cell::from(status).style(status_style),
                 Cell::from(format!("{}", record.size)),
                 Cell::from(decompressed_str),
+                Cell::from(summary),
             ];
             Row::new(cells).height(1)
         })
@@ -105,6 +110,7 @@ fn render_record_list(frame: &mut Frame, app: &App, area: Rect) {
         Constraint::Length(12),
         Constraint::Length(12),
         Constraint::Length(12),
+        Constraint::Min(30),
     ];
 
     let table = Table::new(rows, widths)

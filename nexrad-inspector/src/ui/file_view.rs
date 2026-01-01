@@ -54,7 +54,7 @@ fn render_header_info(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_record_list(frame: &mut Frame, app: &App, area: Rect) {
-    let header_cells = ["#", "Status", "Size (bytes)"]
+    let header_cells = ["#", "Status", "Compressed", "Decompressed"]
         .iter()
         .map(|h| Cell::from(*h).style(Style::default().add_modifier(Modifier::BOLD)));
     let header = Row::new(header_cells).height(1);
@@ -63,31 +63,43 @@ fn render_record_list(frame: &mut Frame, app: &App, area: Rect) {
         .records
         .iter()
         .map(|record| {
-            let status = if record.compressed {
-                "Compressed"
+            let is_cached = app.is_record_decompressed(record.index);
+            let decompressed_size = app.get_decompressed_size(record.index);
+
+            let (status, status_style) = if !record.compressed {
+                ("Raw", Style::default().fg(Color::Blue))
+            } else if is_cached {
+                ("Cached", Style::default().fg(Color::Green))
             } else {
-                "Decompressed"
+                ("Compressed", Style::default().fg(Color::Yellow))
             };
+
+            let decompressed_str = decompressed_size
+                .map(|s| format!("{}", s))
+                .unwrap_or_else(|| "-".to_string());
+
             let cells = vec![
                 Cell::from(format!("{}", record.index)),
-                Cell::from(status),
+                Cell::from(status).style(status_style),
                 Cell::from(format!("{}", record.size)),
+                Cell::from(decompressed_str),
             ];
             Row::new(cells).height(1)
         })
         .collect();
 
     let widths = [
-        Constraint::Length(6),
-        Constraint::Length(14),
-        Constraint::Min(12),
+        Constraint::Length(5),
+        Constraint::Length(12),
+        Constraint::Length(12),
+        Constraint::Length(12),
     ];
 
     let table = Table::new(rows, widths)
         .header(header)
         .block(
             Block::default()
-                .title(format!(" Records ({}) ", app.records.len()))
+                .title(format!(" Records ({}) - d:decompress ", app.records.len()))
                 .borders(Borders::ALL),
         )
         .row_highlight_style(Style::default().add_modifier(Modifier::REVERSED))

@@ -338,6 +338,32 @@ impl App {
         self.show_help = !self.show_help;
     }
 
+    /// Decompress the currently selected record without entering it
+    pub fn decompress_selected(&mut self) {
+        if self.view == View::File {
+            let index = self.selected_record;
+            if let Some(record) = self.records.get(index) {
+                if record.compressed && !self.decompressed_cache.contains_key(&index) {
+                    match self.get_decompressed_record(index) {
+                        Ok(_) => {
+                            self.status_message =
+                                Some(format!("Decompressed record {}", index));
+                        }
+                        Err(e) => {
+                            self.status_message =
+                                Some(format!("Failed to decompress: {}", e));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Check if a record is decompressed
+    pub fn is_record_decompressed(&self, index: usize) -> bool {
+        self.decompressed_cache.contains_key(&index)
+    }
+
     /// Save current message to file
     pub fn save_message(&mut self) -> AppResult<()> {
         if self.view != View::Message {

@@ -62,6 +62,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> AppResult<(
                     KeyCode::Esc | KeyCode::Backspace => app.back(),
                     KeyCode::Tab => app.toggle_view(),
                     KeyCode::Char('s') => app.save_message()?,
+                    KeyCode::Char('d') => app.decompress_selected(),
                     KeyCode::Char('?') => app.toggle_help(),
                     KeyCode::PageUp => app.page_up(),
                     KeyCode::PageDown => app.page_down(),

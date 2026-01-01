@@ -42,7 +42,7 @@ fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
         msg.clone()
     } else {
         let nav_hint = match app.view {
-            View::File => "q:quit  Enter:open record  ?:help",
+            View::File => "q:quit  Enter:open record  d:decompress  ?:help",
             View::Record => "q:quit  Enter:open message  Esc:back  ?:help",
             View::Message => "q:quit  Tab:hex/parsed  s:save  Esc:back  ?:help",
         };
@@ -56,7 +56,7 @@ fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
 fn render_help_overlay(frame: &mut Frame, area: Rect) {
     // Center the help popup
     let popup_width = 50;
-    let popup_height = 14;
+    let popup_height = 17;
     let popup_area = centered_rect(popup_width, popup_height, area);
 
     // Clear the area behind the popup
@@ -69,6 +69,9 @@ Navigation:
   Enter           Drill into selected item
   Esc/Backspace   Go back to previous view
   PageUp/PageDown Scroll by 10 items
+
+File View:
+  d               Decompress selected record
 
 Message View:
   Tab             Toggle hex/parsed view

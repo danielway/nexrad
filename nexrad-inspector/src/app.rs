@@ -346,12 +346,10 @@ impl App {
                 if record.compressed && !self.decompressed_cache.contains_key(&index) {
                     match self.get_decompressed_record(index) {
                         Ok(_) => {
-                            self.status_message =
-                                Some(format!("Decompressed record {}", index));
+                            self.status_message = Some(format!("Decompressed record {}", index));
                         }
                         Err(e) => {
-                            self.status_message =
-                                Some(format!("Failed to decompress: {}", e));
+                            self.status_message = Some(format!("Failed to decompress: {}", e));
                         }
                     }
                 }

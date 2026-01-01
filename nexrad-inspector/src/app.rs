@@ -889,12 +889,15 @@ impl App {
                 let msg_type = header.message_type();
                 if matches!(
                     msg_type,
-                    MessageType::RDADigitalRadarData | MessageType::RDADigitalRadarDataGenericFormat
+                    MessageType::RDADigitalRadarData
+                        | MessageType::RDADigitalRadarDataGenericFormat
                 ) {
                     // Parse the message to get detailed radar data
                     if let Ok(parsed_messages) = decode_messages(&msg.data) {
                         if let Some(parsed_msg) = parsed_messages.first() {
-                            if let MessageContents::DigitalRadarData(digital_radar_data) = parsed_msg.contents() {
+                            if let MessageContents::DigitalRadarData(digital_radar_data) =
+                                parsed_msg.contents()
+                            {
                                 // Track which products are present
                                 if digital_radar_data.reflectivity_data_block.is_some() {
                                     products.insert("REF");
@@ -905,13 +908,19 @@ impl App {
                                 if digital_radar_data.spectrum_width_data_block.is_some() {
                                     products.insert("SW");
                                 }
-                                if digital_radar_data.differential_reflectivity_data_block.is_some() {
+                                if digital_radar_data
+                                    .differential_reflectivity_data_block
+                                    .is_some()
+                                {
                                     products.insert("ZDR");
                                 }
                                 if digital_radar_data.differential_phase_data_block.is_some() {
                                     products.insert("PHI");
                                 }
-                                if digital_radar_data.correlation_coefficient_data_block.is_some() {
+                                if digital_radar_data
+                                    .correlation_coefficient_data_block
+                                    .is_some()
+                                {
                                     products.insert("RHO");
                                 }
                                 if digital_radar_data.specific_diff_phase_data_block.is_some() {
@@ -925,7 +934,8 @@ impl App {
 
                                 // Track elevation
                                 if elevation.is_none() {
-                                    elevation = Some(digital_radar_data.header.elevation_angle.get());
+                                    elevation =
+                                        Some(digital_radar_data.header.elevation_angle.get());
                                 }
                             }
                         }

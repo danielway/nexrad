@@ -101,9 +101,19 @@ fn render_record_list(frame: &mut Frame, app: &App, area: Rect) {
 
             let (record_type, products, elevation, azimuth) =
                 if let Some(summary) = app.get_record_summary(record.index) {
-                    (summary.record_type, summary.products, summary.elevation, summary.azimuth)
+                    (
+                        summary.record_type,
+                        summary.products,
+                        summary.elevation,
+                        summary.azimuth,
+                    )
                 } else {
-                    ("-".to_string(), "-".to_string(), "-".to_string(), "-".to_string())
+                    (
+                        "-".to_string(),
+                        "-".to_string(),
+                        "-".to_string(),
+                        "-".to_string(),
+                    )
                 };
 
             let cells = vec![
@@ -121,14 +131,14 @@ fn render_record_list(frame: &mut Frame, app: &App, area: Rect) {
         .collect();
 
     let widths = [
-        Constraint::Length(5),   // #
-        Constraint::Length(12),  // Status
-        Constraint::Length(12),  // Compressed
-        Constraint::Length(12),  // Decompressed
-        Constraint::Length(12),  // Type
-        Constraint::Min(15),     // Products
-        Constraint::Length(10),  // Elevation
-        Constraint::Length(12),  // Azimuth
+        Constraint::Length(5),  // #
+        Constraint::Length(12), // Status
+        Constraint::Length(12), // Compressed
+        Constraint::Length(12), // Decompressed
+        Constraint::Length(12), // Type
+        Constraint::Min(15),    // Products
+        Constraint::Length(10), // Elevation
+        Constraint::Length(12), // Azimuth
     ];
 
     let table = Table::new(rows, widths)

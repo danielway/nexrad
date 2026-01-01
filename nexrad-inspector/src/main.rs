@@ -214,23 +214,16 @@ async fn handle_aws_browser_keys(app: &mut App, key: event::KeyEvent) -> AppResu
                 match state.date_input.handle_key(key.code) {
                     TextInputResult::Submitted => {
                         if !state.date_input.value.is_empty() {
-                            #[cfg(feature = "aws")]
-                            {
-                                use chrono::NaiveDate;
+                            use chrono::NaiveDate;
 
-                                let site = state.site_input.value.clone();
-                                match NaiveDate::parse_from_str(&state.date_input.value, "%Y-%m-%d") {
-                                    Ok(date) => {
-                                        app.start_aws_list(site, date);
-                                    }
-                                    Err(_) => {
-                                        app.error = Some("Invalid date format. Use YYYY-MM-DD.".to_string());
-                                    }
+                            let site = state.site_input.value.clone();
+                            match NaiveDate::parse_from_str(&state.date_input.value, "%Y-%m-%d") {
+                                Ok(date) => {
+                                    app.start_aws_list(site, date);
                                 }
-                            }
-                            #[cfg(not(feature = "aws"))]
-                            {
-                                app.error = Some("AWS feature not enabled".to_string());
+                                Err(_) => {
+                                    app.error = Some("Invalid date format. Use YYYY-MM-DD.".to_string());
+                                }
                             }
                         }
                     }
@@ -248,29 +241,20 @@ async fn handle_aws_browser_keys(app: &mut App, key: event::KeyEvent) -> AppResu
                         }
                     }
                     KeyCode::Down | KeyCode::Char('j') => {
-                        #[cfg(feature = "aws")]
-                        {
-                            if state.selected_index < state.files.len().saturating_sub(1) {
-                                state.selected_index += 1;
-                            }
+                        if state.selected_index < state.files.len().saturating_sub(1) {
+                            state.selected_index += 1;
                         }
                     }
                     KeyCode::PageUp => {
                         state.selected_index = state.selected_index.saturating_sub(10);
                     }
                     KeyCode::PageDown => {
-                        #[cfg(feature = "aws")]
-                        {
-                            state.selected_index =
-                                (state.selected_index + 10).min(state.files.len().saturating_sub(1));
-                        }
+                        state.selected_index =
+                            (state.selected_index + 10).min(state.files.len().saturating_sub(1));
                     }
                     KeyCode::Enter => {
-                        #[cfg(feature = "aws")]
-                        {
-                            if let Some(identifier) = state.files.get(state.selected_index).cloned() {
-                                app.start_aws_download(identifier);
-                            }
+                        if let Some(identifier) = state.files.get(state.selected_index).cloned() {
+                            app.start_aws_download(identifier);
                         }
                     }
                     KeyCode::Esc | KeyCode::Backspace => {

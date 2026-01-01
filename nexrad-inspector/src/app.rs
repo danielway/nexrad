@@ -4,13 +4,11 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
+use nexrad_data::aws::archive::Identifier;
 use nexrad_data::volume::{self, Record};
 use nexrad_decode::messages::MessageHeader;
 use tokio::task::JoinHandle;
 use zerocopy::FromBytes;
-
-#[cfg(feature = "aws")]
-use nexrad_data::aws::archive::Identifier;
 
 use crate::ui::text_input::TextInput;
 
@@ -87,7 +85,6 @@ pub struct AwsBrowserState {
     pub step: AwsStep,
     pub site_input: TextInput,
     pub date_input: TextInput,
-    #[cfg(feature = "aws")]
     pub files: Vec<Identifier>,
     pub selected_index: usize,
     pub scroll_offset: usize,
@@ -99,7 +96,6 @@ impl AwsBrowserState {
             step: AwsStep::EnterSite,
             site_input: TextInput::new("Radar Site", "e.g., KDMX"),
             date_input: TextInput::new("Date (YYYY-MM-DD)", "e.g., 2024-01-15"),
-            #[cfg(feature = "aws")]
             files: Vec::new(),
             selected_index: 0,
             scroll_offset: 0,
@@ -108,7 +104,6 @@ impl AwsBrowserState {
 }
 
 /// Pending async operation
-#[cfg(feature = "aws")]
 pub enum PendingOperation {
     ListFiles(JoinHandle<nexrad_data::result::Result<Vec<Identifier>>>),
     DownloadFile(JoinHandle<nexrad_data::result::Result<volume::File>>),
@@ -153,7 +148,6 @@ pub struct App {
     pub aws_browser: Option<AwsBrowserState>,
 
     /// Pending async operation
-    #[cfg(feature = "aws")]
     pub pending_operation: Option<PendingOperation>,
 
     /// Loading message
@@ -219,7 +213,6 @@ impl App {
             menu_selected: 0,
             local_browser: None,
             aws_browser: None,
-            #[cfg(feature = "aws")]
             pending_operation: None,
             loading_message: String::new(),
             spinner_frame: 0,
@@ -299,7 +292,6 @@ impl App {
     }
 
     /// Load a volume file from AWS download
-    #[cfg(feature = "aws")]
     pub fn load_aws_file(
         &mut self,
         identifier: &Identifier,
@@ -348,7 +340,14 @@ impl App {
 
     /// Initialize local browser
     pub fn init_local_browser(&mut self) {
-        let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        // Start in ./downloads if it exists, otherwise use current directory
+        let downloads_dir = PathBuf::from("./downloads");
+        let current_dir = if downloads_dir.is_dir() {
+            downloads_dir
+        } else {
+            std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+        };
+
         let entries = Self::read_directory(&current_dir);
 
         self.local_browser = Some(LocalBrowserState {
@@ -437,7 +436,6 @@ impl App {
     }
 
     /// Start listing AWS files
-    #[cfg(feature = "aws")]
     pub fn start_aws_list(&mut self, site: String, date: NaiveDate) {
         self.mode = AppMode::Loading;
         self.loading_message = format!("Listing files for {} on {}...", site, date);
@@ -448,18 +446,34 @@ impl App {
     }
 
     /// Start downloading an AWS file
-    #[cfg(feature = "aws")]
     pub fn start_aws_download(&mut self, identifier: Identifier) {
         self.mode = AppMode::Loading;
         self.loading_message = format!("Downloading {}...", identifier.name());
 
-        let handle = tokio::spawn(async move { nexrad_data::aws::archive::download_file(identifier).await });
+        let filename = identifier.name().to_string();
+        let handle = tokio::spawn(async move {
+            let result = nexrad_data::aws::archive::download_file(identifier).await;
+
+            // Save to ./downloads if successful
+            if let Ok(ref volume_file) = result {
+                let downloads_dir = PathBuf::from("./downloads");
+                if !downloads_dir.exists() {
+                    let _ = std::fs::create_dir(&downloads_dir);
+                }
+
+                let file_path = downloads_dir.join(&filename);
+                if let Ok(mut file) = std::fs::File::create(&file_path) {
+                    let _ = file.write_all(volume_file.data());
+                }
+            }
+
+            result
+        });
 
         self.pending_operation = Some(PendingOperation::DownloadFile(handle));
     }
 
     /// Poll pending async operations
-    #[cfg(feature = "aws")]
     pub async fn poll_pending_operations(&mut self) -> AppResult<()> {
         if let Some(ref mut op) = self.pending_operation {
             let is_finished = match op {
@@ -522,12 +536,6 @@ impl App {
                 }
             }
         }
-        Ok(())
-    }
-
-    /// Poll pending async operations (no-op when aws feature is disabled)
-    #[cfg(not(feature = "aws"))]
-    pub async fn poll_pending_operations(&mut self) -> AppResult<()> {
         Ok(())
     }
 

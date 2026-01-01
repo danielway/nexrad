@@ -5,10 +5,6 @@ edition = "2021"
 description = "Interactive TUI for inspecting NEXRAD Archive II volume files"
 license = "MIT"
 
-[features]
-default = ["aws"]
-aws = ["nexrad-data/aws"]
-
 [[bin]]
 name = "nexrad-inspector"
 path = "src/main.rs"

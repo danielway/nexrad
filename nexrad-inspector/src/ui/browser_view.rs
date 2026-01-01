@@ -175,7 +175,6 @@ fn render_date_input(frame: &mut Frame, state: &crate::app::AwsBrowserState, are
     state.date_input.render(frame, horizontal_center[1]);
 }
 
-#[cfg(feature = "aws")]
 fn render_file_selection(frame: &mut Frame, state: &crate::app::AwsBrowserState, area: Rect) {
     use chrono::Timelike;
 
@@ -226,13 +225,4 @@ fn render_file_selection(frame: &mut Frame, state: &crate::app::AwsBrowserState,
     table_state.select(Some(state.selected_index));
 
     frame.render_stateful_widget(table, area, &mut table_state);
-}
-
-#[cfg(not(feature = "aws"))]
-fn render_file_selection(frame: &mut Frame, _state: &crate::app::AwsBrowserState, area: Rect) {
-    let msg = Paragraph::new("AWS feature not enabled")
-        .style(Style::default().fg(Color::Red))
-        .alignment(Alignment::Center)
-        .block(Block::default().borders(Borders::ALL).title("Files"));
-    frame.render_widget(msg, area);
 }

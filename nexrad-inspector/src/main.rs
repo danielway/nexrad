@@ -71,10 +71,9 @@ async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> AppRe
         // Poll for events with timeout
         if poll(timeout)? {
             if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press
-                    && handle_key_event(app, key).await? {
-                        return Ok(()); // Quit
-                    }
+                if key.kind == KeyEventKind::Press && handle_key_event(app, key).await? {
+                    return Ok(()); // Quit
+                }
             }
         }
 
@@ -128,9 +127,10 @@ async fn handle_key_event(app: &mut App, key: event::KeyEvent) -> AppResult<bool
 
 fn is_text_input_active(app: &App) -> bool {
     matches!(app.mode, AppMode::AwsBrowser)
-        && app.aws_browser.as_ref().is_some_and(|aws| {
-            matches!(aws.step, AwsStep::EnterSite | AwsStep::EnterDate)
-        })
+        && app
+            .aws_browser
+            .as_ref()
+            .is_some_and(|aws| matches!(aws.step, AwsStep::EnterSite | AwsStep::EnterDate))
 }
 
 async fn handle_menu_keys(app: &mut App, key: event::KeyEvent) -> AppResult<bool> {

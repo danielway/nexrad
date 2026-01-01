@@ -4,7 +4,7 @@ use ratatui::widgets::{Block, Borders, Paragraph};
 /// Render a hex dump of binary data
 pub fn render(frame: &mut Frame, data: &[u8], scroll: usize, area: Rect) {
     let bytes_per_row = 16;
-    let total_rows = (data.len() + bytes_per_row - 1) / bytes_per_row;
+    let total_rows = data.len().div_ceil(bytes_per_row);
 
     // Calculate visible rows based on area height (minus 2 for borders)
     let visible_rows = (area.height as usize).saturating_sub(2);

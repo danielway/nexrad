@@ -788,6 +788,82 @@ impl App {
         self.decompressed_cache.contains_key(&index)
     }
 
+    /// Bulk decompress all records
+    pub fn decompress_all_records(&mut self) {
+        if self.view != View::File {
+            return;
+        }
+
+        let total_records = self.records.len();
+        let mut decompressed_count = 0;
+        let mut already_decompressed = 0;
+        let mut error_count = 0;
+
+        for index in 0..total_records {
+            if let Some(record) = self.records.get(index) {
+                if self.decompressed_cache.contains_key(&index) {
+                    already_decompressed += 1;
+                } else if record.compressed {
+                    match self.get_decompressed_record(index) {
+                        Ok(_) => {
+                            // Also parse messages so summary can be generated
+                            let _ = self.get_messages(index);
+                            decompressed_count += 1;
+                        }
+                        Err(_) => {
+                            error_count += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut status_parts = Vec::new();
+        if decompressed_count > 0 {
+            status_parts.push(format!("Decompressed {} records", decompressed_count));
+        }
+        if already_decompressed > 0 {
+            status_parts.push(format!("{} already decompressed", already_decompressed));
+        }
+        if error_count > 0 {
+            status_parts.push(format!("{} errors", error_count));
+        }
+
+        self.status_message = Some(status_parts.join(", "));
+    }
+
+    /// Save current record to file
+    pub fn save_record(&mut self) -> AppResult<()> {
+        if !matches!(self.view, View::File | View::Record) {
+            self.status_message = Some("Must be in file or record view to save record".to_string());
+            return Ok(());
+        }
+
+        let record_index = self.selected_record;
+
+        // Check if we have decompressed data in cache
+        let (data, is_decompressed) = if let Some(decompressed) = self.decompressed_cache.get(&record_index) {
+            // Use decompressed data from cache
+            (decompressed.clone(), true)
+        } else {
+            // Use original compressed data from file
+            let volume_file = self.volume_file().ok_or("No file loaded")?;
+            let records = volume_file.records();
+            let record = records.get(record_index).ok_or("Record not found")?;
+            let is_compressed = record.compressed();
+            (record.data().to_vec(), !is_compressed)
+        };
+
+        let suffix = if is_decompressed { "_decompressed" } else { "_compressed" };
+        let filename = format!("record_{}{}.bin", record_index, suffix);
+
+        let mut file = File::create(&filename)?;
+        file.write_all(&data)?;
+
+        self.status_message = Some(format!("Saved to {}", filename));
+        Ok(())
+    }
+
     /// Save current message to file
     pub fn save_message(&mut self) -> AppResult<()> {
         if self.view != View::Message {

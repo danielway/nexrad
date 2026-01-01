@@ -842,19 +842,24 @@ impl App {
         let record_index = self.selected_record;
 
         // Check if we have decompressed data in cache
-        let (data, is_decompressed) = if let Some(decompressed) = self.decompressed_cache.get(&record_index) {
-            // Use decompressed data from cache
-            (decompressed.clone(), true)
-        } else {
-            // Use original compressed data from file
-            let volume_file = self.volume_file().ok_or("No file loaded")?;
-            let records = volume_file.records();
-            let record = records.get(record_index).ok_or("Record not found")?;
-            let is_compressed = record.compressed();
-            (record.data().to_vec(), !is_compressed)
-        };
+        let (data, is_decompressed) =
+            if let Some(decompressed) = self.decompressed_cache.get(&record_index) {
+                // Use decompressed data from cache
+                (decompressed.clone(), true)
+            } else {
+                // Use original compressed data from file
+                let volume_file = self.volume_file().ok_or("No file loaded")?;
+                let records = volume_file.records();
+                let record = records.get(record_index).ok_or("Record not found")?;
+                let is_compressed = record.compressed();
+                (record.data().to_vec(), !is_compressed)
+            };
 
-        let suffix = if is_decompressed { "_decompressed" } else { "_compressed" };
+        let suffix = if is_decompressed {
+            "_decompressed"
+        } else {
+            "_compressed"
+        };
         let filename = format!("record_{}{}.bin", record_index, suffix);
 
         let mut file = File::create(&filename)?;

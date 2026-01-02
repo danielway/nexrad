@@ -13,8 +13,25 @@ default = ["uom", "nexrad-model"]
 [dependencies]
 log = { workspace = true }
 thiserror = { workspace = true }
-bincode = { workspace = true }
-serde = { workspace = true }
 chrono = { workspace = true }
 nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }
 uom = { workspace = true, optional = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+zerocopy = { workspace = true }
+
+[dev-dependencies]
+clap = { workspace = true }
+env_logger = { workspace = true }
+tokio = { workspace = true }
+insta = { workspace = true }
+nexrad-data = { version = "0.2.0", path = "../nexrad-data" }
+criterion = { workspace = true }
+
+[[example]]
+name = "elevation_angles"
+path = "examples/elevation_angles.rs"
+
+[[bench]]
+name = "decode_messages"
+harness = false

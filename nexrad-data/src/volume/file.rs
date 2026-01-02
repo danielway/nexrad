@@ -1,6 +1,6 @@
-use crate::result::Result;
 use crate::volume::{split_compressed_records, Header, Record};
 use std::fmt::Debug;
+use zerocopy::Ref;
 
 /// A NEXRAD Archive II volume data file.
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -18,20 +18,21 @@ impl File {
     }
 
     /// The file's decoded Archive II volume header.
-    #[cfg(all(feature = "serde", feature = "bincode"))]
-    pub fn header(&self) -> Result<Header> {
-        Header::deserialize(&mut self.0.as_slice())
+    pub fn header(&self) -> Option<&Header> {
+        Ref::<_, Header>::from_prefix(self.0.as_slice())
+            .ok()
+            .map(|(header, _rest)| Ref::into_ref(header))
     }
 
     /// The file's LDM records.
-    pub fn records(&self) -> Vec<Record> {
+    pub fn records(&self) -> Vec<Record<'_>> {
         split_compressed_records(&self.0[size_of::<Header>()..])
     }
 
     /// Decodes this volume file into a common model scan containing sweeps and radials with moment
     /// data.
-    #[cfg(all(feature = "nexrad-model", feature = "decode"))]
-    pub fn scan(&self) -> Result<nexrad_model::data::Scan> {
+    #[cfg(feature = "nexrad-model")]
+    pub fn scan(&self) -> crate::result::Result<nexrad_model::data::Scan> {
         use crate::result::Error;
         use nexrad_decode::messages::MessageContents;
         use nexrad_model::data::{Scan, Sweep};
@@ -50,7 +51,7 @@ impl File {
                     if coverage_pattern_number.is_none() {
                         if let Some(volume_block) = &radar_data_message.volume_data_block {
                             coverage_pattern_number =
-                                Some(volume_block.volume_coverage_pattern_number);
+                                Some(volume_block.volume_coverage_pattern_number.get());
                         }
                     }
 
@@ -70,11 +71,9 @@ impl Debug for File {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut debug = f.debug_struct("File");
         debug.field("data.len()", &self.data().len());
-
-        #[cfg(all(feature = "serde", feature = "bincode"))]
         debug.field("header", &self.header());
 
-        #[cfg(all(feature = "nexrad-model", feature = "decode"))]
+        #[cfg(feature = "nexrad-model")]
         debug.field("records.len()", &self.records().len());
 
         debug.finish()

@@ -15,14 +15,14 @@ pub async fn list_chunks_in_volume(
         .objects
         .iter()
         .map(|object| {
-            let identifier_segment = object.key.split('/').last();
+            let identifier_segment = object.key.split('/').next_back();
             let identifier = identifier_segment
                 .unwrap_or_else(|| object.key.as_ref())
                 .to_string();
 
-            ChunkIdentifier::new(site.to_string(), volume, identifier, object.last_modified)
+            ChunkIdentifier::from_name(site.to_string(), volume, identifier, object.last_modified)
         })
-        .collect();
+        .collect::<crate::result::Result<Vec<_>>>()?;
 
     Ok(metas)
 }

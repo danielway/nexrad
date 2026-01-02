@@ -11,6 +11,7 @@ on:
           - nexrad-data
           - nexrad-decode
           - nexrad-model
+          - nexrad-render
       version_type:
         description: "Version type"
         required: true
@@ -40,8 +41,10 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
-      - name: Install Rust stable
-        run: rustup default stable
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
 
       - name: Install cargo-release
         run: cargo install cargo-release

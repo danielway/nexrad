@@ -15,11 +15,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install rustfmt
-        run: rustup component add rustfmt
+      - name: Install Rust (stable, rustfmt)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt
 
       - name: Check formatting
         run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust (stable, clippy)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: clippy
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Clippy
+        run: cargo clippy --all-features --workspace -- -D warnings
 
   build:
     name: Build check
@@ -28,8 +53,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Rust stable
-        run: rustup default stable
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-hack
         uses: taiki-e/install-action@v2
@@ -46,8 +79,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Rust stable
-        run: rustup default stable
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-hack
         uses: taiki-e/install-action@v2
@@ -66,8 +107,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Rust stable
-        run: rustup default stable
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Run tests
         run: cargo test --all-features --workspace
@@ -82,8 +131,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Rust ${{ matrix.rust_version }}
-        run: rustup install ${{ matrix.rust_version }}
+      - name: Install Rust (${{ matrix.rust_version }})
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust_version }}
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Run tests
         run: cargo +${{ matrix.rust_version }} test --all-features --workspace

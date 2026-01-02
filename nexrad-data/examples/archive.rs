@@ -1,10 +1,18 @@
-use clap::Parser;
-use log::{debug, info, trace, warn, LevelFilter};
+#![cfg(feature = "aws")]
 
-#[cfg(not(all(feature = "aws", feature = "decode")))]
-fn main() {
-    println!("This example requires the \"aws\" and \"decode\" features to be enabled.");
-}
+use chrono::{NaiveDate, NaiveTime};
+use clap::Parser;
+use env_logger::{Builder, Env};
+use log::{debug, info, trace, warn, LevelFilter};
+use nexrad_data::aws::archive::{self, download_file, list_files};
+use nexrad_data::result::Result;
+use nexrad_data::volume::File;
+use nexrad_decode::messages::digital_radar_data::raw::ScaledMomentValue;
+use nexrad_decode::messages::MessageContents;
+use std::fs::create_dir;
+use std::io::Read;
+use std::io::Write;
+use std::path::Path;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -26,18 +34,9 @@ struct Cli {
     stop_time: String,
 }
 
-#[cfg(all(feature = "aws", feature = "decode"))]
 #[tokio::main]
-async fn main() -> nexrad_data::result::Result<()> {
-    use chrono::{NaiveDate, NaiveTime};
-    use nexrad_data::aws::archive::{download_file, list_files};
-    use nexrad_data::volume::File;
-    use std::fs::create_dir;
-    use std::io::Read;
-    use std::io::Write;
-    use std::path::Path;
-
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
+async fn main() -> Result<()> {
+    Builder::from_env(Env::default().default_filter_or("debug"))
         .filter_module("reqwest::connect", LevelFilter::Info)
         .init();
 
@@ -49,7 +48,7 @@ async fn main() -> nexrad_data::result::Result<()> {
         NaiveTime::parse_from_str(&cli.start_time, "%H:%M").expect("start is valid time");
     let stop_time = NaiveTime::parse_from_str(&cli.stop_time, "%H:%M").expect("stop is valid time");
 
-    info!("Listing files for {} on {}...", site, date);
+    info!("Listing files for {site} on {date}...");
     let file_ids = list_files(site, &date).await?;
 
     if file_ids.is_empty() {
@@ -79,6 +78,11 @@ async fn main() -> nexrad_data::result::Result<()> {
         .skip(start_index)
         .take(stop_index - start_index + 1)
     {
+        if file_id.name().ends_with("_MDM") {
+            debug!("Skipping MDM file: {}", file_id.name());
+            continue;
+        }
+
         let file = if Path::new(&format!("downloads/{}", file_id.name())).exists() {
             debug!("File \"{}\" already downloaded.", file_id.name());
             let mut file =
@@ -118,30 +122,78 @@ async fn main() -> nexrad_data::result::Result<()> {
             file.header()
         );
 
-        let mut messages = Vec::new();
-        for mut record in records {
-            debug!("Decoding record...");
+        debug!("Decoding {} records...", records.len());
+        for (record_index, mut record) in records.into_iter().enumerate() {
+            debug!("Decoding record {}", record_index + 1);
             if record.compressed() {
                 trace!("Decompressing LDM record...");
                 record = record.decompress().expect("Failed to decompress record");
             }
 
-            messages.extend(record.messages()?.iter().cloned());
+            let messages = record.messages()?;
+            info!(
+                "Decoded {} messages in record {}:",
+                messages.len(),
+                record_index + 1
+            );
+
+            for (message_index, message) in messages.iter().enumerate() {
+                if let MessageContents::DigitalRadarData(data) = message.contents() {
+                    if let Some(block) = &data.reflectivity_data_block {
+                        info!(
+                            "Message {} at {:?}, reflectivity:",
+                            message_index,
+                            message.header().date_time(),
+                        );
+                        info!(
+                            "  {}",
+                            scaled_values_to_ascii(&block.decoded_values()[..100])
+                        );
+                    }
+                } else {
+                    info!(
+                        "Message {} at {:?}: type {:?}",
+                        message_index,
+                        message.header().date_time(),
+                        message.header().message_type()
+                    );
+                }
+            }
         }
 
-        let summary = nexrad_decode::summarize::messages(messages.as_slice());
-        info!("Volume summary:\n{:#?}", summary);
+        info!("All records decoded.");
     }
 
     Ok(())
 }
 
+/// Converts a slice of ScaledMomentValue to a visual ASCII string representation.
+/// Uses characters ordered by visual density to represent radar reflectivity values.
+fn scaled_values_to_ascii(values: &[ScaledMomentValue]) -> String {
+    // Characters ordered by increasing visual density
+    const CHARS: &[char] = &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
+
+    // dBZ range for radar reflectivity (typical range)
+    const MIN_DBZ: f32 = -30.0;
+    const MAX_DBZ: f32 = 75.0;
+
+    values
+        .iter()
+        .map(|v| match v {
+            ScaledMomentValue::Value(val) => {
+                // Normalize to 0.0-1.0 range, then map to character index
+                let normalized = ((val - MIN_DBZ) / (MAX_DBZ - MIN_DBZ)).clamp(0.0, 1.0);
+                let index = (normalized * (CHARS.len() - 1) as f32) as usize;
+                CHARS[index]
+            }
+            ScaledMomentValue::BelowThreshold => ' ',
+            ScaledMomentValue::RangeFolded => '~',
+        })
+        .collect()
+}
+
 /// Returns the index of the file with the nearest time to the provided start time.
-#[cfg(feature = "aws")]
-fn get_nearest_file_index(
-    files: &Vec<nexrad_data::aws::archive::Identifier>,
-    start_time: chrono::NaiveTime,
-) -> usize {
+fn get_nearest_file_index(files: &[archive::Identifier], start_time: chrono::NaiveTime) -> usize {
     let first_file = files.first().expect("find at least one file");
     let first_file_time = first_file
         .date_time()

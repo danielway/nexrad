@@ -10,28 +10,20 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("data file IO error")]
     FileError(#[from] std::io::Error),
-    #[error("file deserialization error")]
-    #[cfg(feature = "bincode")]
-    DeserializationError(#[from] bincode::Error),
-    #[cfg(feature = "bzip2")]
     #[error("error decompressing uncompressed data")]
     UncompressedDataError,
     #[cfg(feature = "aws")]
     #[error(transparent)]
     AWS(#[from] aws::AWSError),
-    #[cfg(feature = "decode")]
     #[error("error decoding NEXRAD data")]
     Decode(#[from] nexrad_decode::result::Error),
     #[cfg(feature = "nexrad-model")]
     #[error("error in common model")]
     Model(#[from] nexrad_model::result::Error),
-    #[cfg(feature = "decode")]
     #[error("compressed data cannot be decoded")]
     CompressedDataError,
-    #[cfg(feature = "decode")]
     #[error("volume missing coverage pattern number")]
     MissingCoveragePattern,
-    #[cfg(feature = "bzip2")]
     #[error("ldm record decompression error")]
     DecompressionError(#[from] bzip2::Error),
 }
@@ -50,6 +42,12 @@ pub mod aws {
         InvalidSiteIdentifier(String),
         #[error("chunk data in unrecognized format")]
         UnrecognizedChunkFormat,
+        #[error("unrecognized chunk date time")]
+        UnrecognizedChunkDateTime(String),
+        #[error("unrecognized chunk sequence")]
+        UnrecognizedChunkSequence(String),
+        #[error("unrecognized chunk type")]
+        UnrecognizedChunkType(Option<char>),
         #[error("error listing AWS S3 objects")]
         S3ListObjectsError(reqwest::Error),
         #[error("error requesting AWS S3 object")]

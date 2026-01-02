@@ -16,12 +16,12 @@ pub async fn download_chunk<'a>(
     let downloaded_object = download_object(REALTIME_BUCKET, &key).await?;
 
     Ok((
-        ChunkIdentifier::new(
+        ChunkIdentifier::from_name(
             site.to_string(),
             *chunk_id.volume(),
             chunk_id.name().to_string(),
             downloaded_object.metadata.last_modified,
-        ),
+        )?,
         Chunk::new(downloaded_object.data)?,
     ))
 }

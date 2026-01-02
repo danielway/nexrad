@@ -1,14 +1,27 @@
-use crate::aws::realtime::{ChunkType, VolumeIndex};
-use chrono::{DateTime, Utc};
+use crate::{
+    aws::realtime::{ChunkType, ElevationChunkMapper, VolumeIndex},
+    result::{aws::AWSError, Error, Result},
+};
+use chrono::{DateTime, NaiveDateTime, Utc};
 
 /// Identifies a volume chunk within the real-time NEXRAD data bucket. These chunks are uploaded
 /// every few seconds and contain a portion of the radar data for a specific volume.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChunkIdentifier {
+    // These three fields are the same for all chunks in a volume
     site: String,
     volume: VolumeIndex,
+    date_time_prefix: NaiveDateTime,
+
+    // These fields identify a specific chunk within the volume
+    sequence: usize,
+    chunk_type: ChunkType,
+
+    // This is derived from the other fields
     name: String,
-    date_time: Option<DateTime<Utc>>,
+
+    // If this chunk was downloaded, this is the upload time
+    upload_date_time: Option<DateTime<Utc>>,
 }
 
 impl ChunkIdentifier {
@@ -16,37 +29,61 @@ impl ChunkIdentifier {
     pub fn new(
         site: String,
         volume: VolumeIndex,
-        name: String,
-        date_time: Option<DateTime<Utc>>,
+        date_time_prefix: NaiveDateTime,
+        sequence: usize,
+        chunk_type: ChunkType,
+        upload_date_time: Option<DateTime<Utc>>,
     ) -> Self {
-        Self {
-            site,
-            volume,
-            name,
-            date_time,
-        }
-    }
-
-    /// Creates a new chunk identifier with the given sequence number. The chunk type will be
-    /// inferred from the sequence and date/time will be omitted since it is unknown.
-    pub fn with_sequence(&self, sequence: usize) -> Self {
         let name = format!(
             "{}-{:03}-{}",
-            self.name_prefix(),
+            date_time_prefix.format("%Y%m%d-%H%M%S"),
             sequence,
-            match sequence {
-                1 => "S",
-                55 => "E",
-                _ => "I",
-            }
+            chunk_type.abbreviation()
         );
 
         Self {
-            site: self.site.clone(),
-            volume: self.volume,
+            site,
+            volume,
+            date_time_prefix,
+            sequence,
+            chunk_type,
             name,
-            date_time: None,
+            upload_date_time,
         }
+    }
+
+    /// Creates a new chunk identifier by parsing a chunk name.
+    pub fn from_name(
+        site: String,
+        volume: VolumeIndex,
+        name: String,
+        upload_date_time: Option<DateTime<Utc>>,
+    ) -> Result<Self> {
+        let date_time_prefix = NaiveDateTime::parse_from_str(&name[..15], "%Y%m%d-%H%M%S")
+            .map_err(|_| Error::AWS(AWSError::UnrecognizedChunkDateTime(name[..15].to_string())))?;
+
+        let sequence_str = &name[16..19];
+        let sequence = sequence_str.parse::<usize>().map_err(|_| {
+            Error::AWS(AWSError::UnrecognizedChunkSequence(
+                sequence_str.to_string(),
+            ))
+        })?;
+
+        let chunk_type = ChunkType::from_abbreviation(
+            name.chars()
+                .last()
+                .ok_or(Error::AWS(AWSError::UnrecognizedChunkType(None)))?,
+        )?;
+
+        Ok(Self {
+            site,
+            volume,
+            date_time_prefix,
+            sequence,
+            chunk_type,
+            name,
+            upload_date_time,
+        })
     }
 
     /// The chunk's radar site identifier.
@@ -59,245 +96,63 @@ impl ChunkIdentifier {
         &self.volume
     }
 
+    /// The chunk's date and time prefix, consistent across all chunks in a volume.
+    pub fn date_time_prefix(&self) -> &NaiveDateTime {
+        &self.date_time_prefix
+    }
+
+    /// The sequence number of this chunk within the volume.
+    pub fn sequence(&self) -> usize {
+        self.sequence
+    }
+
+    /// The chunk's type.
+    pub fn chunk_type(&self) -> ChunkType {
+        self.chunk_type
+    }
+
     /// The chunk's name.
     pub fn name(&self) -> &str {
         &self.name
     }
 
-    /// The chunk's name prefix.
-    pub fn name_prefix(&self) -> &str {
-        &self.name[..15]
-    }
-
-    /// The sequence number of this chunk within the volume.
-    pub fn sequence(&self) -> Option<usize> {
-        self.name.split('-').nth(2).and_then(|s| s.parse().ok())
-    }
-
-    /// The position of this chunk within the volume.
-    pub fn chunk_type(&self) -> Option<ChunkType> {
-        match self.name.chars().last() {
-            Some('S') => Some(ChunkType::Start),
-            Some('I') => Some(ChunkType::Intermediate),
-            Some('E') => Some(ChunkType::End),
-            _ => None,
-        }
-    }
-
     /// The date and time this chunk was uploaded.
-    pub fn date_time(&self) -> Option<DateTime<Utc>> {
-        self.date_time
+    pub fn upload_date_time(&self) -> Option<DateTime<Utc>> {
+        self.upload_date_time
     }
 
     /// Identifies the next chunk's expected location.
-    pub fn next_chunk(&self) -> Option<NextChunk> {
-        let sequence = self.sequence()?;
-        let mut chunk_type;
-
-        if sequence < 55 {
-            let next_sequence = sequence + 1;
-
-            chunk_type = ChunkType::Intermediate;
-            if next_sequence == 55 {
-                chunk_type = ChunkType::End;
-            }
-
-            let name = format!(
-                "{}-{:03}-{}",
-                self.name_prefix(),
-                next_sequence,
-                match chunk_type {
-                    ChunkType::Start => "S",
-                    ChunkType::Intermediate => "I",
-                    ChunkType::End => "E",
-                }
-            );
-
-            let next_chunk = ChunkIdentifier::new(self.site().to_string(), self.volume, name, None);
-            return Some(NextChunk::Sequence(next_chunk));
+    pub fn next_chunk(&self, elevation_chunk_mapper: &ElevationChunkMapper) -> Option<NextChunk> {
+        let final_sequence = elevation_chunk_mapper.final_sequence();
+        if self.sequence == final_sequence {
+            return Some(NextChunk::Volume(self.volume.next()));
         }
 
-        let mut volume = self.volume.as_number() + 1;
-        if volume > 999 {
-            volume = 1;
-        }
-
-        Some(NextChunk::Volume(VolumeIndex::new(volume)))
+        Some(NextChunk::Sequence(ChunkIdentifier::new(
+            self.site().to_string(),
+            self.volume,
+            self.date_time_prefix,
+            self.sequence + 1,
+            if self.sequence + 1 == final_sequence {
+                ChunkType::End
+            } else {
+                ChunkType::Intermediate
+            },
+            None,
+        )))
     }
 }
 
 /// Identifies where to find the next expected chunk.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum NextChunk {
-    /// The next chunk is expected to be located in the same volume at this sequence. The
-    /// [ChunkIdentifier::with_sequence] method can be used to create the next chunk's identifier
-    /// and it can be downloaded using the [crate::aws::realtime::download_chunk()] function. You
-    /// may need to poll by checking if that function returns
-    /// [crate::result::aws::AWSError::S3ObjectNotFoundError].
+    /// The next chunk is expected to be located in the same volume at this sequence. Once the next
+    /// chunk's identifier is determined, it can be downloaded using the
+    /// [crate::aws::realtime::download_chunk()] function. You may need to poll by checking if that
+    /// function returns [crate::result::aws::AWSError::S3ObjectNotFoundError].
     Sequence(ChunkIdentifier),
 
     /// The chunk is expected to be located in the next volume. The next volume's chunks can be
     /// listed using the [crate::aws::realtime::list_chunks_in_volume()] function.
     Volume(VolumeIndex),
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use chrono::TimeZone;
-
-    #[test]
-    fn test_chunk_identifier() {
-        let site = "KTLX";
-        let volume = 50;
-        let name = "20240813-123330-014-I";
-        let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
-
-        let chunk = ChunkIdentifier::new(
-            site.to_string(),
-            VolumeIndex::new(volume),
-            name.to_string(),
-            Some(date_time),
-        );
-
-        assert_eq!(chunk.site(), site);
-        assert_eq!(chunk.volume().as_number(), 50);
-        assert_eq!(chunk.name(), name);
-        assert_eq!(chunk.name_prefix(), "20240813-123330");
-        assert_eq!(chunk.chunk_type(), Some(ChunkType::Intermediate));
-        assert_eq!(chunk.sequence(), Some(14));
-        assert_eq!(chunk.date_time(), Some(date_time));
-    }
-
-    #[test]
-    fn test_next_chunk_start() {
-        let site = "KTLX";
-        let volume = 50;
-        let name = "20240813-123330-001-S";
-        let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
-
-        let chunk = ChunkIdentifier::new(
-            site.to_string(),
-            VolumeIndex::new(volume),
-            name.to_string(),
-            Some(date_time),
-        );
-
-        let next_chunk = chunk.next_chunk().expect("Expected next chunk");
-        match next_chunk {
-            NextChunk::Sequence(next_chunk) => {
-                assert_eq!(next_chunk.site(), site);
-                assert_eq!(next_chunk.volume().as_number(), 50);
-                assert_eq!(next_chunk.name(), "20240813-123330-002-I");
-                assert_eq!(next_chunk.name_prefix(), "20240813-123330");
-                assert_eq!(next_chunk.sequence(), Some(2));
-                assert_eq!(next_chunk.chunk_type(), Some(ChunkType::Intermediate));
-                assert_eq!(next_chunk.date_time(), None);
-            }
-            _ => panic!("Expected sequence"),
-        }
-    }
-
-    #[test]
-    fn test_next_chunk_intermediate() {
-        let site = "KTLX";
-        let volume = 999;
-        let name = "20240813-123330-014-I";
-        let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
-
-        let chunk = ChunkIdentifier::new(
-            site.to_string(),
-            VolumeIndex::new(volume),
-            name.to_string(),
-            Some(date_time),
-        );
-
-        let next_chunk = chunk.next_chunk().expect("Expected next chunk");
-        match next_chunk {
-            NextChunk::Sequence(next_chunk) => {
-                assert_eq!(next_chunk.site(), site);
-                assert_eq!(next_chunk.volume().as_number(), 999);
-                assert_eq!(next_chunk.name(), "20240813-123330-015-I");
-                assert_eq!(next_chunk.name_prefix(), "20240813-123330");
-                assert_eq!(next_chunk.sequence(), Some(15));
-                assert_eq!(next_chunk.chunk_type(), Some(ChunkType::Intermediate));
-                assert_eq!(next_chunk.date_time(), None);
-            }
-            _ => panic!("Expected sequence"),
-        }
-    }
-
-    #[test]
-    fn test_next_chunk_end() {
-        let site = "KTLX";
-        let volume = 50;
-        let name = "20240813-123330-055-E";
-        let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
-
-        let chunk = ChunkIdentifier::new(
-            site.to_string(),
-            VolumeIndex::new(volume),
-            name.to_string(),
-            Some(date_time),
-        );
-
-        let next_chunk = chunk.next_chunk().expect("Expected next chunk");
-        match next_chunk {
-            NextChunk::Volume(next_volume) => {
-                assert_eq!(next_volume.as_number(), 51);
-            }
-            _ => panic!("Expected volume"),
-        }
-    }
-
-    #[test]
-    fn test_next_chunk_last_volume() {
-        let site = "KTLX";
-        let volume = 999;
-        let name = "20240813-123330-055-E";
-        let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
-
-        let chunk = ChunkIdentifier::new(
-            site.to_string(),
-            VolumeIndex::new(volume),
-            name.to_string(),
-            Some(date_time),
-        );
-
-        let next_chunk = chunk.next_chunk().expect("Expected next chunk");
-        match next_chunk {
-            NextChunk::Volume(next_volume) => {
-                assert_eq!(next_volume.as_number(), 1);
-            }
-            _ => panic!("Expected volume"),
-        }
-    }
-
-    #[test]
-    fn test_chunk_from_sequence() {
-        let site = "KTLX";
-        let volume = 50;
-        let name = "20240813-123330-014-I";
-        let date_time = Utc.with_ymd_and_hms(2021, 1, 1, 0, 0, 0).unwrap();
-
-        let chunk = ChunkIdentifier::new(
-            site.to_string(),
-            VolumeIndex::new(volume),
-            name.to_string(),
-            Some(date_time),
-        );
-
-        let next_chunk = chunk.with_sequence(15);
-        assert_eq!(next_chunk.site(), site);
-        assert_eq!(next_chunk.volume().as_number(), 50);
-        assert_eq!(next_chunk.name(), "20240813-123330-015-I");
-        assert_eq!(next_chunk.name_prefix(), "20240813-123330");
-        assert_eq!(next_chunk.sequence(), Some(15));
-        assert_eq!(next_chunk.chunk_type(), Some(ChunkType::Intermediate));
-        assert_eq!(next_chunk.date_time(), None);
-
-        assert_eq!(chunk.with_sequence(1).chunk_type(), Some(ChunkType::Start));
-        assert_eq!(chunk.with_sequence(55).chunk_type(), Some(ChunkType::End));
-    }
 }

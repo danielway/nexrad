@@ -34,6 +34,13 @@ NOAA's WSR-88D Interface Control Document for the RDA/RPG "ICD 2620002W".
 
 Download and processing functions for NEXRAD weather radar data.
 
+## `nexrad-render`
+
+[![Crate](https://img.shields.io/crates/v/nexrad-render.svg)](https://crates.io/crates/nexrad-render)
+[![Docs.rs](https://docs.rs/nexrad-render/badge.svg)](https://docs.rs/nexrad-render)
+
+Functions for rendering NEXRAD weather radar data into visual images.
+
 ## Acknowledgements
 
 I consulted the following resources when developing this library:

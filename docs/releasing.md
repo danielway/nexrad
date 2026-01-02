@@ -39,6 +39,7 @@ The following crates can be released:
 - `nexrad-data`
 - `nexrad-decode`
 - `nexrad-model`
+- `nexrad-render`
 
 ## Troubleshooting
 

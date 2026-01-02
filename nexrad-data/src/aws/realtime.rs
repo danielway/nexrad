@@ -57,6 +57,12 @@ pub use poll_chunks::*;
 mod poll_stats;
 pub use poll_stats::*;
 
+mod chunk_timing_stats;
+pub use chunk_timing_stats::*;
+
+mod elevation_chunk_mapper;
+pub use elevation_chunk_mapper::*;
+
 mod search;
 
 const REALTIME_BUCKET: &str = "unidata-nexrad-level2-chunks";

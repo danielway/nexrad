@@ -49,7 +49,6 @@ impl<'a> Record<'a> {
     }
 
     /// Decompresses this LDM record's data.
-    #[cfg(feature = "bzip2")]
     pub fn decompress<'b>(&self) -> crate::result::Result<Record<'b>> {
         use crate::result::Error;
         use bzip2::read::BzDecoder;
@@ -69,18 +68,15 @@ impl<'a> Record<'a> {
     }
 
     /// Decodes the NEXRAD level II messages contained in this LDM record.
-    #[cfg(feature = "decode")]
-    pub fn messages(&self) -> crate::result::Result<Vec<nexrad_decode::messages::Message>> {
+    pub fn messages(&self) -> crate::result::Result<Vec<nexrad_decode::messages::Message<'_>>> {
         use crate::result::Error;
         use nexrad_decode::messages::decode_messages;
-        use std::io::Cursor;
 
         if self.compressed() {
             return Err(Error::CompressedDataError);
         }
 
-        let mut reader = Cursor::new(self.data());
-        Ok(decode_messages(&mut reader)?)
+        Ok(decode_messages(self.data())?)
     }
 }
 
@@ -96,8 +92,6 @@ impl Debug for Record<'_> {
             },
         );
         debug.field("compressed", &self.compressed());
-
-        #[cfg(feature = "decode")]
         debug.field(
             "messages.len()",
             &self.messages().map(|messages| messages.len()),
@@ -109,7 +103,7 @@ impl Debug for Record<'_> {
 
 /// Splits compressed LDM record data into individual records. Will omit the record size prefix from
 /// each record.
-pub fn split_compressed_records(data: &[u8]) -> Vec<Record> {
+pub fn split_compressed_records(data: &[u8]) -> Vec<Record<'_>> {
     let mut records = Vec::new();
 
     let mut position = 0;

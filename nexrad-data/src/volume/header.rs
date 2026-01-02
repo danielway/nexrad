@@ -1,15 +1,12 @@
-use crate::result::Result;
 use crate::volume::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
-use std::fmt;
-use std::fmt::{Debug, Formatter};
-use std::io::Read;
+use std::fmt::Debug;
+use zerocopy::{big_endian, FromBytes, Immutable, KnownLayout};
 
 /// Header for an Archive II volume file containing metadata about the radar data. This header is
 /// located at the beginning of the file.
 #[repr(C)]
-#[derive(Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct Header {
     /// The tape's filename which indicates the version of the data. Name is in the format
     /// `AR2V0 0xx.` where `xx` indicates the version of the data.
@@ -30,26 +27,16 @@ pub struct Header {
 
     /// This volume's date represented as a count of days since 1 January 1970 00:00 GMT. It is
     /// also referred-to as a "modified Julian date" where it is the Julian date - 2440586.5.
-    date: u32,
+    date: big_endian::U32,
 
     /// Milliseconds past midnight, GMT.
-    time: u32,
+    time: big_endian::U32,
 
     /// The ICAO identifier of the radar site.
     icao_of_radar: [u8; 4],
 }
 
 impl Header {
-    /// Deserializes an Archive II header from the provided reader.
-    #[cfg(all(feature = "serde", feature = "bincode"))]
-    pub fn deserialize<R: Read>(reader: &mut R) -> Result<Self> {
-        use bincode::{DefaultOptions, Options};
-        Ok(DefaultOptions::new()
-            .with_fixint_encoding()
-            .with_big_endian()
-            .deserialize_from(reader.by_ref())?)
-    }
-
     /// The tape's filename which indicates the version of the data. Name is in the format
     /// `AR2V0 0xx.` where `xx` indicates the version of the data.
     ///
@@ -73,22 +60,14 @@ impl Header {
 
     /// Returns the date and time of the volume.
     pub fn date_time(&self) -> Option<DateTime<Utc>> {
-        get_datetime(self.date as u16, Duration::milliseconds(self.time as i64))
+        get_datetime(
+            self.date.get() as u16,
+            Duration::milliseconds(self.time.get() as i64),
+        )
     }
 
     /// The ICAO identifier of the radar site.
     pub fn icao_of_radar(&self) -> Option<String> {
         String::from_utf8(self.icao_of_radar.to_vec()).ok()
-    }
-}
-
-impl Debug for Header {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Header")
-            .field("tape_filename", &self.tape_filename())
-            .field("extension_number", &self.extension_number())
-            .field("date_time", &self.date_time())
-            .field("icao_of_radar", &self.icao_of_radar())
-            .finish()
     }
 }

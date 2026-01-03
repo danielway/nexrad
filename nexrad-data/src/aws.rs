@@ -6,7 +6,7 @@
 //!
 //! [AWS Labs Open Data Documentation](https://github.com/awslabs/open-data-docs/tree/main/docs/noaa/noaa-nexrad)
 //!
-//! **NEXRAD Level II archive data**: `arn:aws:s3:::noaa-nexrad-level2`
+//! **NEXRAD Level II archive data**: `arn:aws:s3:::unidata-nexrad-level2`
 //!
 //! **NEXRAD Level II real-time data**: `arn:aws:s3:::unidata-nexrad-level2-chunks`
 //!

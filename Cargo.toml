@@ -36,5 +36,5 @@ sha2 = "0.10.9"
 hex = "0.4.3"
 criterion = { version = "0.8.1" }
 zerocopy = { version = "0.8.30", features = ["derive"] }
-ratatui = { version = "0.29" }
+ratatui = { version = "0.30" }
 crossterm = { version = "0.29" }

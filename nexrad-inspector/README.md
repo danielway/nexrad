@@ -22,13 +22,13 @@ cargo install nexrad-inspector
 Launch the inspector interactively:
 
 ```bash
-nexrad-inspector
+cargo run -p nexrad-inspector
 ```
 
 Or open a specific file directly:
 
 ```bash
-nexrad-inspector path/to/volume/file
+cargo run -p nexrad-inspector -- path/to/volume/file
 ```
 
 ## Navigation

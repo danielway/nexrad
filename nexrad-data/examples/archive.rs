@@ -106,9 +106,7 @@ async fn main() -> Result<()> {
                 std::fs::File::create(format!("downloads/{}", file_id.name()))
                     .expect("create file");
 
-            downloaded_file
-                .write_all(file.data())
-                .expect("write file");
+            downloaded_file.write_all(file.data()).expect("write file");
 
             file
         };

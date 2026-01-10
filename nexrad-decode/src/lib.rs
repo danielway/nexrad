@@ -38,7 +38,7 @@
 //!
 //! # Features
 //!
-//! - `nexrad-model` - Convert decoded messages to [`nexrad_model`] types
+//! - `nexrad-model` - Convert decoded messages to `nexrad_model` types
 //! - `uom` - Type-safe units of measure for physical quantities
 //!
 //! # Module Organization

@@ -6,7 +6,7 @@
 //! # Overview
 //!
 //! - [`volume`] - Parse and decode local Archive II volume files
-//! - [`aws`] - Download data from AWS (archive and real-time)
+//! - `aws` - Download data from AWS (archive and real-time, requires `aws` feature)
 //!
 //! # Working with Local Files
 //!

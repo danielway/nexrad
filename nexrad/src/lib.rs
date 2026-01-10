@@ -5,9 +5,9 @@
 //! This crate serves as the main entry point for the NEXRAD library suite, providing
 //! convenient re-exports from the underlying crates:
 //!
-//! - [`nexrad_model`] - Core data model types (Scan, Sweep, Radial, Site)
-//! - [`nexrad_decode`] - Binary protocol decoding for Archive II format
-//! - [`nexrad_data`] - Data access (local files, AWS S3)
+//! - `nexrad-model` - Core data model types (Scan, Sweep, Radial, Site)
+//! - `nexrad-decode` - Binary protocol decoding for Archive II format
+//! - `nexrad-data` - Data access (local files, AWS S3)
 //!
 //! ## Features
 //!

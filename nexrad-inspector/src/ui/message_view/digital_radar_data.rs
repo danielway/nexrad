@@ -308,14 +308,14 @@ fn scaled_values_to_ascii(
 
     // Different scaling based on product type
     let (min_val, max_val): (f32, f32) = match product {
-        "REF" => (-30.0, 75.0),  // dBZ range for reflectivity
-        "VEL" => (-50.0, 50.0),  // m/s range for velocity
-        "SW " => (0.0, 20.0),    // m/s range for spectrum width
-        "ZDR" => (-8.0, 8.0),    // dB range for differential reflectivity
-        "PHI" => (0.0, 360.0),   // degrees for differential phase
-        "RHO" => (0.0, 1.05),    // unitless correlation coefficient
-        "CFP" => (0.0, 20.0),    // deg/km for specific differential phase
-        _ => (-30.0, 75.0),      // default
+        "REF" => (-30.0, 75.0), // dBZ range for reflectivity
+        "VEL" => (-50.0, 50.0), // m/s range for velocity
+        "SW " => (0.0, 20.0),   // m/s range for spectrum width
+        "ZDR" => (-8.0, 8.0),   // dB range for differential reflectivity
+        "PHI" => (0.0, 360.0),  // degrees for differential phase
+        "RHO" => (0.0, 1.05),   // unitless correlation coefficient
+        "CFP" => (0.0, 20.0),   // deg/km for specific differential phase
+        _ => (-30.0, 75.0),     // default
     };
 
     values

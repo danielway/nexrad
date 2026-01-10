@@ -17,3 +17,6 @@ pub use generic_data_block::GenericDataBlock;
 
 pub mod raw;
 pub use raw::*;
+
+#[cfg(test)]
+mod snapshot_test;

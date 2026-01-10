@@ -46,6 +46,29 @@
 //! - [`messages`] - Message parsing and type definitions
 //! - [`summarize`] - Utilities for summarizing message collections
 //! - [`binary_data`] - Wrapper type for binary blobs with debug support
+//!
+//! # Crate Boundaries
+//!
+//! This crate provides **binary protocol parsing** with the following responsibilities
+//! and constraints:
+//!
+//! ## Responsibilities
+//!
+//! - ✓ Parse binary data per NOAA ICD 2620010H specification
+//! - ✓ Convert raw bytes into structured message types
+//! - ✓ Provide conversion to `nexrad_model` types (when feature enabled)
+//! - ✓ Validate message structures and checksums
+//!
+//! ## Constraints
+//!
+//! - ✗ **No I/O operations** (operates on byte slices provided by caller)
+//! - ✗ **No file or network access**
+//! - ✗ **No rendering or visualization**
+//! - ✗ **No CLI or user interaction**
+//!
+//! This crate is purely concerned with parsing binary protocol data. It accepts byte
+//! slices as input and returns structured data types. All I/O operations (reading files,
+//! downloading from AWS, decompression) are handled by the `nexrad-data` crate.
 
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]

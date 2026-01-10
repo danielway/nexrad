@@ -8,6 +8,7 @@
 //! - `nexrad-model` - Core data model types (Scan, Sweep, Radial, Site)
 //! - `nexrad-decode` - Binary protocol decoding for Archive II format
 //! - `nexrad-data` - Data access (local files, AWS S3)
+//! - `nexrad-render` - Visualization and rendering
 //!
 //! ## Features
 //!
@@ -17,6 +18,7 @@
 //! - `model` - Core data model types
 //! - `decode` - Protocol decoding
 //! - `data` - Data access and AWS integration
+//! - `render` - Visualization and rendering
 //!
 //! ## Quick Start
 //!
@@ -39,6 +41,29 @@
 //! }
 //! ```
 //!
+//! ## Error Handling
+//!
+//! This crate provides unified error types via [`Error`] and [`Result<T>`]:
+//!
+//! - [`Error::Model`] - Errors from the data model layer
+//! - [`Error::Decode`] - Errors from binary protocol decoding
+//! - [`Error::Data`] - Errors from data access and I/O operations
+//! - [`Error::Render`] - Errors from rendering and visualization
+//!
+//! All sub-crate errors automatically convert to the unified type via `From` traits,
+//! enabling seamless error propagation:
+//!
+//! ```ignore
+//! fn process_volume() -> nexrad::Result<()> {
+//!     let data = std::fs::read("volume.ar2")?;  // io::Error converts
+//!     let volume = nexrad::data::volume::File::new(data);
+//!     let scan = volume.scan()?;  // data/decode/model errors convert
+//!     Ok(())
+//! }
+//! ```
+//!
+//! See the [`result`] module for detailed error handling documentation.
+//!
 //! ## Crate Organization
 //!
 //! For more specialized use cases, you can depend on individual crates directly:
@@ -49,11 +74,51 @@
 //! | `nexrad-decode` | Low-level binary parsing per NOAA ICD 2620010H |
 //! | `nexrad-data` | Archive II file handling and AWS S3 access |
 //! | `nexrad-render` | Visualization and image rendering |
+//!
+//! ## Crate Responsibility Boundaries
+//!
+//! This facade crate enforces clear separation of concerns across the library suite:
+//!
+//! ### Re-exported Crates (Part of Public API)
+//!
+//! - **`nexrad-model`**: Pure data structures and transformations
+//!   - ✓ Domain types (Scan, Sweep, Radial, Site)
+//!   - ✓ Data transformations and validations
+//!   - ✗ No I/O operations (file, network, stdio)
+//!   - ✗ No binary parsing or encoding
+//!   - ✗ No rendering or visualization
+//!
+//! - **`nexrad-decode`**: Binary protocol parsing
+//!   - ✓ Parsing NEXRAD Level II message format (NOAA ICD 2620010H)
+//!   - ✓ Conversion to model types (when feature enabled)
+//!   - ✗ No I/O operations (operates on byte slices)
+//!   - ✗ No file or network access
+//!   - ✗ No rendering or visualization
+//!
+//! - **`nexrad-data`**: File I/O and network access
+//!   - ✓ Archive II file handling (including limited volume header decoding)
+//!   - ✓ AWS S3 integration (when `aws` feature enabled)
+//!   - ✓ Decompression and format handling
+//!   - ✓ Uses `nexrad-decode` for message parsing
+//!   - ✓ Uses `nexrad-model` for high-level types
+//!   - ✗ No rendering or visualization
+//!   - ✗ No CLI or user interaction
+//!
+//! - **`nexrad-render`**: Visualization and image rendering
+//!   - ✓ Render radar data to in-memory images
+//!   - ✓ Apply color scales to moment data
+//!   - ✓ Consume `nexrad-model` types
+//!   - ✗ No I/O operations
+//!   - ✗ No data access or parsing
 
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
+
+pub mod result;
+
+pub use result::{Error, Result};
 
 /// Re-export of `nexrad-model` for core data types.
 #[cfg(feature = "model")]
@@ -66,3 +131,7 @@ pub use nexrad_decode as decode;
 /// Re-export of `nexrad-data` for data access and AWS integration.
 #[cfg(feature = "data")]
 pub use nexrad_data as data;
+
+/// Re-export of `nexrad-render` for visualization and rendering.
+#[cfg(feature = "render")]
+pub use nexrad_render as render;

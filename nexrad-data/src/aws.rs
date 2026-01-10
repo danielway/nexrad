@@ -1,15 +1,24 @@
+//! AWS data access for NEXRAD weather radar files.
 //!
-//! Downloads archival and real-time NEXRAD level II weather radar data from AWS Open Data buckets
-//! populated by NOAA.
+//! This module provides functions to download NEXRAD data from AWS Open Data buckets
+//! populated by NOAA. Both historical archive data and real-time streaming data are available.
 //!
-//! [AWS Open Data NOAA NEXRAD](https://registry.opendata.aws/noaa-nexrad/)
+//! # Data Sources
 //!
-//! [AWS Labs Open Data Documentation](https://github.com/awslabs/open-data-docs/tree/main/docs/noaa/noaa-nexrad)
+//! - [`archive`] - Historical volume files from the NEXRAD Level II archive
+//! - [`realtime`] - Live radar data with chunk-based streaming
 //!
-//! **NEXRAD Level II archive data**: `arn:aws:s3:::unidata-nexrad-level2`
+//! # AWS Buckets
 //!
-//! **NEXRAD Level II real-time data**: `arn:aws:s3:::unidata-nexrad-level2-chunks`
+//! | Bucket | ARN | Description |
+//! |--------|-----|-------------|
+//! | Archive | `arn:aws:s3:::unidata-nexrad-level2` | Historical volumes |
+//! | Real-time | `arn:aws:s3:::unidata-nexrad-level2-chunks` | Live data chunks |
 //!
+//! # Resources
+//!
+//! - [AWS Open Data NOAA NEXRAD](https://registry.opendata.aws/noaa-nexrad/)
+//! - [AWS Labs Documentation](https://github.com/awslabs/open-data-docs/tree/main/docs/noaa/noaa-nexrad)
 
 pub mod archive;
 pub mod realtime;

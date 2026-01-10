@@ -48,7 +48,10 @@ fn test_decode_volume_structure() {
     }
 
     // Verify expected message distribution for a typical volume scan
-    assert!(status_count >= 1, "expected at least one RDA status message");
+    assert!(
+        status_count >= 1,
+        "expected at least one RDA status message"
+    );
     assert!(vcp_count >= 1, "expected at least one VCP message");
     assert!(
         radar_data_count > 1000,

@@ -65,7 +65,8 @@ fn test_decode_error_conversion() {
 #[test]
 fn test_decode_error_with_string_conversion() {
     // Create a decode error with string detail
-    let decode_err = nexrad_decode::result::Error::DecodingError("invalid magic number".to_string());
+    let decode_err =
+        nexrad_decode::result::Error::DecodingError("invalid magic number".to_string());
 
     // Convert to unified error
     let unified_err: nexrad::Error = decode_err.into();
@@ -204,10 +205,7 @@ fn test_error_debug_format() {
 
     // Verify Debug format works and contains useful info
     let debug_string = format!("{:?}", unified_err);
-    assert!(
-        !debug_string.is_empty(),
-        "Debug format should not be empty"
-    );
+    assert!(!debug_string.is_empty(), "Debug format should not be empty");
     assert!(
         debug_string.contains("Model"),
         "Debug format should indicate Model variant"
@@ -255,7 +253,12 @@ fn test_all_features_enabled() {
     let _: nexrad::Error = data_err.into();
 }
 
-#[cfg(all(feature = "model", feature = "decode", feature = "data", feature = "render"))]
+#[cfg(all(
+    feature = "model",
+    feature = "decode",
+    feature = "data",
+    feature = "render"
+))]
 #[test]
 fn test_all_features_including_render() {
     // This test verifies all error variants including render

@@ -1,6 +1,6 @@
 ---
-source: nexrad-decode/tests/message_snapshots.rs
-assertion_line: 32
+source: nexrad-decode/src/messages/rda_status_data/snapshot_test.rs
+assertion_line: 17
 expression: "messages[0]"
 ---
 Message {

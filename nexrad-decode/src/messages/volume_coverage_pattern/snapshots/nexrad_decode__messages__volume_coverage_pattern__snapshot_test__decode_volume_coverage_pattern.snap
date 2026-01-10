@@ -1,6 +1,6 @@
 ---
-source: nexrad-decode/tests/message_snapshots.rs
-assertion_line: 53
+source: nexrad-decode/src/messages/volume_coverage_pattern/snapshot_test.rs
+assertion_line: 18
 expression: "messages[0]"
 ---
 Message {

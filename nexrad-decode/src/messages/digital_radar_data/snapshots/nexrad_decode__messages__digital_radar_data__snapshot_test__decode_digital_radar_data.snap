@@ -1,6 +1,6 @@
 ---
-source: nexrad-decode/tests/message_snapshots.rs
-assertion_line: 73
+source: nexrad-decode/src/messages/digital_radar_data/snapshot_test.rs
+assertion_line: 17
 expression: "messages[0]"
 ---
 Message {

@@ -12,3 +12,6 @@ pub use raw::*;
 
 mod message;
 pub use message::Message;
+
+#[cfg(test)]
+mod snapshot_test;

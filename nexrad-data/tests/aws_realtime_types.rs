@@ -43,7 +43,7 @@ fn test_volume_index_ordering() {
 
     assert!(vol1 < vol2);
     assert!(vol2 > vol1);
-    assert!(vol1 == vol1.clone());
+    assert!(vol1 == vol1);
     assert!(vol999 > vol1);
     assert!(vol999 > vol2);
 }

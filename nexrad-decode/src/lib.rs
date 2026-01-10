@@ -1,12 +1,51 @@
+//! Binary protocol decoding for NEXRAD Archive II data.
 //!
-//! # nexrad-decode
-//! Decoding functions and models for NEXRAD weather radar data. Decoder and struct definitions are
-//! in accordance with NOAA's WSR-88D Interface Control Document for Archive II "ICD 2620010H"
-//! build 19.0.
+//! This crate provides low-level decoding functions and type definitions for NEXRAD
+//! weather radar data, implementing NOAA's WSR-88D Interface Control Document for
+//! Archive II (ICD 2620010H, Build 19.0).
 //!
-//! Optionally, the `nexrad-model` feature provides mappings to a common model for representing
-//! radar data. The `uom` feature can also be used to provide type-safe units of measure.
+//! # Overview
 //!
+//! The main entry point is [`messages::decode_messages`], which parses binary data
+//! into structured [`messages::Message`] objects:
+//!
+//! ```ignore
+//! use nexrad_decode::messages::{decode_messages, MessageContents};
+//!
+//! let messages = decode_messages(&decompressed_data)?;
+//!
+//! for message in &messages {
+//!     match message.contents() {
+//!         MessageContents::DigitalRadarData(data) => {
+//!             // Process radar data message
+//!         }
+//!         MessageContents::VolumeCoveragePattern(vcp) => {
+//!             // Process VCP information
+//!         }
+//!         _ => {}
+//!     }
+//! }
+//! ```
+//!
+//! # Message Types
+//!
+//! The decoder handles several message types defined in the ICD:
+//!
+//! - **Digital Radar Data (Type 31)** - Primary radar measurements
+//! - **RDA Status Data (Type 2)** - Radar status and alarms
+//! - **Volume Coverage Pattern (Type 5)** - Scanning strategy details
+//! - **Clutter Filter Map (Type 15)** - Clutter suppression data
+//!
+//! # Features
+//!
+//! - `nexrad-model` - Convert decoded messages to `nexrad_model` types
+//! - `uom` - Type-safe units of measure for physical quantities
+//!
+//! # Module Organization
+//!
+//! - [`messages`] - Message parsing and type definitions
+//! - [`summarize`] - Utilities for summarizing message collections
+//! - [`binary_data`] - Wrapper type for binary blobs with debug support
 
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]

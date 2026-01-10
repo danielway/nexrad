@@ -377,7 +377,6 @@ fn analyze_chunk(
 
     result.data_types = data_type_counter
         .keys()
-        .cloned()
         .map(|data_type| data_type.to_string())
         .collect();
 

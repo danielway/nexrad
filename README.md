@@ -41,6 +41,13 @@ Download and processing functions for NEXRAD weather radar data.
 
 Functions for rendering NEXRAD weather radar data into visual images.
 
+## `nexrad-inspector`
+
+[![Crate](https://img.shields.io/crates/v/nexrad-inspector.svg)](https://crates.io/crates/nexrad-inspector)
+
+Interactive TUI for inspecting NEXRAD Archive II volume files. Browse local files or download directly
+from AWS, decompress LDM records, and inspect individual radar messages with hex and parsed views.
+
 ## Acknowledgements
 
 I consulted the following resources when developing this library:

@@ -72,7 +72,7 @@ fn test_record_compression_detection() {
     let records = volume.records();
 
     let first_record = &records[0];
-    assert_eq!(first_record.compressed(), true);
+    assert!(first_record.compressed());
 
     let compressed_count = records.iter().filter(|r| r.compressed()).count();
     let total_count = records.len();

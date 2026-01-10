@@ -171,6 +171,7 @@ fn test_scan_elevation_angles() {
     let sweeps = scan.sweeps();
 
     // Verify elevation angles for each sweep
+    #[allow(clippy::approx_constant)]
     let expected_elevations = vec![
         0.61, 0.53, 0.84, 0.92, 1.27, 1.36, 1.86, 2.25, 2.95, 3.85, 4.91, 0.27, 0.53, 0.76, 0.92,
         1.27, 1.36, 6.28, 7.83, 9.88, 12.32, 15.41,

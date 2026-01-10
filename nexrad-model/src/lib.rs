@@ -1,13 +1,55 @@
+//! Core data model for NEXRAD weather radar data.
 //!
-//! # nexrad-model
-//! A common model for representing NEXRAD weather radar data. Provides an ergonomic API which is
-//! documented for an audience who is not necessarily familiar with the NOAA Archive II format.
+//! This crate provides an ergonomic API for working with NEXRAD radar data, documented
+//! for users who may not be familiar with the NOAA Archive II format.
 //!
-//! A number of optional features are available:
-//! - `uom`: Use the `uom` crate for type-safe units of measure.
-//! - `serde`: Implement `serde::Serialize` and `serde::Deserialize` for all models.
-//! - `chrono`: Use the `chrono` crate for date and time types.
+//! # Overview
 //!
+//! The data model consists of:
+//!
+//! - [`data::Scan`] - A complete volume scan containing multiple sweeps
+//! - [`data::Sweep`] - A single rotation at one elevation angle
+//! - [`data::Radial`] - A single beam direction with moment data
+//! - [`data::MomentData`] - Gate-by-gate measurements for a product
+//! - [`meta::Site`] - Radar site metadata (location, identifier)
+//!
+//! # Example
+//!
+//! ```ignore
+//! use nexrad_model::data::{Scan, Sweep, MomentValue};
+//!
+//! fn process_scan(scan: &Scan) {
+//!     println!("VCP: {}", scan.coverage_pattern_number());
+//!
+//!     for sweep in scan.sweeps() {
+//!         for radial in sweep.radials() {
+//!             if let Some(reflectivity) = radial.reflectivity() {
+//!                 for value in reflectivity.values() {
+//!                     match value {
+//!                         MomentValue::Value(dbz) => println!("dBZ: {}", dbz),
+//!                         MomentValue::BelowThreshold => {},
+//!                         MomentValue::RangeFolded => {},
+//!                         _ => {},
+//!                     }
+//!                 }
+//!             }
+//!         }
+//!     }
+//! }
+//! ```
+//!
+//! # Features
+//!
+//! Optional features provide additional functionality:
+//!
+//! - `uom` - Type-safe units of measure via the [`uom`](https://docs.rs/uom) crate.
+//!   Enables methods like `first_gate_range()` returning `Length` instead of raw km values.
+//!
+//! - `serde` - Serialization/deserialization support via [`serde`](https://docs.rs/serde).
+//!   All model types implement `Serialize` and `Deserialize`.
+//!
+//! - `chrono` - Date/time support via [`chrono`](https://docs.rs/chrono).
+//!   Enables `collection_time()` returning `DateTime<Utc>` instead of raw timestamps.
 
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]

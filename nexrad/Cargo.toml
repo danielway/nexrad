@@ -7,6 +7,12 @@ repository = "https://github.com/danielway/nexrad"
 license = "MIT"
 edition = "2021"
 
+[features]
+default = ["model", "decode", "data"]
+model = ["dep:nexrad-model"]
+decode = ["dep:nexrad-decode"]
+data = ["dep:nexrad-data"]
+
 [dependencies]
 thiserror = { workspace = true }
 nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }

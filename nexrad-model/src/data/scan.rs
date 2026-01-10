@@ -1,5 +1,5 @@
 use crate::data::Sweep;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -32,6 +32,17 @@ impl Scan {
     /// The elevation sweeps comprising this scan.
     pub fn sweeps(&self) -> &[Sweep] {
         &self.sweeps
+    }
+}
+
+impl Display for Scan {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Scan (VCP {}, {} sweeps)",
+            self.coverage_pattern_number,
+            self.sweeps.len()
+        )
     }
 }
 

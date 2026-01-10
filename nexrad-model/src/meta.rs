@@ -1,10 +1,10 @@
+//! Radar site metadata.
 //!
 //! This module contains models containing metadata about the radar data collected by the NEXRAD
 //! weather network. This data may not change between radials, sweeps, or even scans, and thus it
 //! is represented separately to avoid duplication in storage.
-//!
 
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -81,6 +81,19 @@ impl Site {
     #[cfg(feature = "uom")]
     pub fn feedhorn_height(&self) -> Length {
         Length::new::<meter>(self.feedhorn_height_meters as f32)
+    }
+}
+
+impl Display for Site {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} ({:.4}°, {:.4}°, {}m)",
+            self.identifier_string(),
+            self.latitude,
+            self.longitude,
+            self.height_meters
+        )
     }
 }
 

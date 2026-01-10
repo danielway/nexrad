@@ -43,10 +43,14 @@ Functions for rendering NEXRAD weather radar data into visual images.
 
 ## `nexrad-inspector`
 
-[![Crate](https://img.shields.io/crates/v/nexrad-inspector.svg)](https://crates.io/crates/nexrad-inspector)
-
 Interactive TUI for inspecting NEXRAD Archive II volume files. Browse local files or download directly
 from AWS, decompress LDM records, and inspect individual radar messages with hex and parsed views.
+
+This can be run from the repository with:
+
+```bash
+cargo run -p nexrad-inspector
+```
 
 ## Acknowledgements
 

@@ -9,6 +9,15 @@ members = [
     "nexrad-inspector",
 ]
 
+[workspace.package]
+authors = ["Daniel Way <contact@danieldway.com>"]
+edition = "2021"
+license = "MIT"
+rust-version = "1.75.0"
+repository = "https://github.com/danielway/nexrad"
+keywords = ["nexrad", "radar", "weather", "meteorology", "noaa"]
+categories = ["science", "parsing", "data-structures"]
+
 [profile.bench]
 debug = true
 

@@ -1,11 +1,14 @@
 [package]
 name = "nexrad-render"
 version = "0.1.0"
-description = "Functions for rendering NEXRAD weather radar data into visual images."
-authors = ["Daniel Way <contact@danieldway.com>"]
-repository = "https://github.com/danielway/nexrad/nexrad-render"
-license = "MIT"
-edition = "2021"
+description = "Rendering functions for NEXRAD weather radar data visualization."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories = ["science", "visualization", "rendering"]
 
 [dependencies]
 thiserror = { workspace = true }

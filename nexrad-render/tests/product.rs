@@ -18,6 +18,8 @@ fn test_product_copy() {
 #[test]
 fn test_product_clone() {
     let p1 = Product::Velocity;
+    // Product is Copy, so clone() should also work (even if redundant)
+    #[allow(clippy::clone_on_copy)]
     let p2 = p1.clone();
     assert_eq!(p1, p2);
 }

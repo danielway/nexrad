@@ -96,6 +96,7 @@ impl Debug for MomentData {
 /// The data moment value for a product in a radial's gate. The value may be a floating-point number
 /// or a special case such as "below threshold" or "range folded".
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum MomentValue {
     /// The data moment value for a gate.
     Value(f32),

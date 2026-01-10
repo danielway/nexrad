@@ -30,8 +30,8 @@ impl Scan {
     }
 
     /// The elevation sweeps comprising this scan.
-    pub fn sweeps(&self) -> &Vec<Sweep> {
-        self.sweeps.as_ref()
+    pub fn sweeps(&self) -> &[Sweep] {
+        &self.sweeps
     }
 }
 

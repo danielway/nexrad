@@ -107,7 +107,7 @@ async fn main() -> Result<()> {
                     .expect("create file");
 
             downloaded_file
-                .write_all(file.data().as_slice())
+                .write_all(file.data())
                 .expect("write file");
 
             file

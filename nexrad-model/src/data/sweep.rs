@@ -55,8 +55,8 @@ impl Sweep {
     }
 
     /// The radials comprising this sweep.
-    pub fn radials(&self) -> &Vec<Radial> {
-        self.radials.as_ref()
+    pub fn radials(&self) -> &[Radial] {
+        &self.radials
     }
 
     /// Merges this sweep with another sweep, combining their radials into a single sweep. The

@@ -282,7 +282,7 @@ impl App {
             .cloned()
             .ok_or("Failed to parse volume header")?;
 
-        let file_data = volume_file.data().clone();
+        let file_data = volume_file.data().to_vec();
         let records: Vec<RecordInfo> = volume_file
             .records()
             .into_iter()

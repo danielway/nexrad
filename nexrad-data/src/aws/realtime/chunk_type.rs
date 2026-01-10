@@ -1,10 +1,16 @@
 use crate::result::{aws::AWSError, Error, Result};
 
 /// The position of this chunk within the volume.
+///
+/// Each chunk in a real-time volume has a type indicating its position
+/// in the sequence of chunks that form a complete volume scan.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum ChunkType {
+    /// The first chunk in a volume.
     Start,
+    /// A chunk in the middle of a volume.
     Intermediate,
+    /// The final chunk in a volume.
     End,
 }
 

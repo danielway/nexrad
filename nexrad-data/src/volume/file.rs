@@ -13,7 +13,7 @@ impl File {
     }
 
     /// The file's encoded and compressed data.
-    pub fn data(&self) -> &Vec<u8> {
+    pub fn data(&self) -> &[u8] {
         &self.0
     }
 

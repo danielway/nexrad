@@ -6,11 +6,12 @@
 use nexrad_data::volume;
 use nexrad_decode::messages::{decode_messages, MessageContents, MessageType};
 
-const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
+const KDMX_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
+const KCRP_FILE: &[u8] = include_bytes!("../../downloads/KCRP20170826_044114_V06");
 
 #[test]
-fn test_decode_volume_structure() {
-    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+fn test_decode_kdmx_volume_structure() {
+    let volume = volume::File::new(KDMX_FILE.to_vec());
 
     // Verify volume header
     let header = volume.header().expect("volume should have header");
@@ -66,8 +67,65 @@ fn test_decode_volume_structure() {
 }
 
 #[test]
-fn test_decode_volume_message_ordering() {
-    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+fn test_decode_kcrp_volume_structure() {
+    let volume = volume::File::new(KCRP_FILE.to_vec());
+
+    // Verify volume header
+    let header = volume.header().expect("volume should have header");
+    let tape_filename = header.tape_filename().expect("should have tape filename");
+    assert!(
+        tape_filename.starts_with("AR2V"),
+        "expected Archive II format, got {tape_filename}"
+    );
+
+    // Decode all records and collect messages
+    let mut status_count = 0;
+    let mut vcp_count = 0;
+    let mut radar_data_count = 0;
+    let mut other_count = 0;
+
+    let records: Vec<_> = volume.records().into_iter().collect();
+    assert!(!records.is_empty(), "expected at least one record");
+
+    for mut record in records {
+        if record.compressed() {
+            record = record.decompress().expect("decompresses record");
+        }
+
+        let messages = decode_messages(record.data()).expect("decodes messages");
+
+        for message in &messages {
+            match message.contents() {
+                MessageContents::RDAStatusData(_) => status_count += 1,
+                MessageContents::VolumeCoveragePattern(_) => vcp_count += 1,
+                MessageContents::DigitalRadarData(_) => radar_data_count += 1,
+                MessageContents::ClutterFilterMap(_) => other_count += 1,
+                MessageContents::Other => other_count += 1,
+            }
+        }
+    }
+
+    // Verify expected message distribution for a typical volume scan
+    assert!(
+        status_count >= 1,
+        "expected at least one RDA status message"
+    );
+    assert!(vcp_count >= 1, "expected at least one VCP message");
+    assert!(
+        radar_data_count > 1000,
+        "expected significant radar data messages, got {radar_data_count}"
+    );
+
+    // Radar data should be the dominant message type
+    assert!(
+        radar_data_count > status_count + vcp_count + other_count,
+        "radar data should be the most common message type"
+    );
+}
+
+#[test]
+fn test_decode_kdmx_volume_message_ordering() {
+    let volume = volume::File::new(KDMX_FILE.to_vec());
 
     // The first record typically contains metadata messages
     let mut first_record = volume.records().into_iter().next().expect("has records");
@@ -90,8 +148,8 @@ fn test_decode_volume_message_ordering() {
 }
 
 #[test]
-fn test_decode_volume_radar_data_properties() {
-    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+fn test_decode_kdmx_volume_radar_data_properties() {
+    let volume = volume::File::new(KDMX_FILE.to_vec());
 
     let mut elevation_numbers_seen = std::collections::HashSet::new();
     let mut found_volume_start = false;

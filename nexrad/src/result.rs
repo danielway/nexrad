@@ -2,16 +2,13 @@
 //! Unified error types for the NEXRAD facade crate.
 //!
 //! This module provides a unified error type [`Error`] that consolidates errors from all
-//! sub-crates (nexrad-model, nexrad-decode, nexrad-data) into a single error surface for
-//! users of the facade crate.
+//! sub-crates (nexrad-model, nexrad-decode, nexrad-data, nexrad-render) into a single
+//! error surface for users of the facade crate.
 //!
 //! ## Error Hierarchy
 //!
-//! The [`Error`] enum has variants corresponding to each sub-crate:
-//!
-//! - [`Error::Model`] - Errors from the data model layer (nexrad-model)
-//! - [`Error::Decode`] - Errors from binary protocol decoding (nexrad-decode)
-//! - [`Error::Data`] - Errors from data access and I/O operations (nexrad-data)
+//! The [`Error`] enum has variants corresponding to each enabled sub-crate feature.
+//! See the [`Error`] type documentation for details on specific variants.
 //!
 //! ## Automatic Conversion
 //!
@@ -34,9 +31,10 @@
 //!
 //! Error variants are conditionally compiled based on the enabled features:
 //!
-//! - `model` feature enables [`Error::Model`]
-//! - `decode` feature enables [`Error::Decode`]
-//! - `data` feature enables [`Error::Data`]
+//! - `model` feature enables the Model variant
+//! - `decode` feature enables the Decode variant
+//! - `data` feature enables the Data variant
+//! - `render` feature enables the Render variant
 //!
 //! All features are enabled by default.
 //!

@@ -43,15 +43,9 @@
 //!
 //! ## Error Handling
 //!
-//! This crate provides unified error types via [`Error`] and [`Result<T>`]:
-//!
-//! - [`Error::Model`] - Errors from the data model layer
-//! - [`Error::Decode`] - Errors from binary protocol decoding
-//! - [`Error::Data`] - Errors from data access and I/O operations
-//! - [`Error::Render`] - Errors from rendering and visualization
-//!
-//! All sub-crate errors automatically convert to the unified type via `From` traits,
-//! enabling seamless error propagation:
+//! This crate provides unified error types via [`Error`] and [`Result<T>`]. All sub-crate
+//! errors automatically convert to the unified type via `From` traits, enabling seamless
+//! error propagation:
 //!
 //! ```ignore
 //! fn process_volume() -> nexrad::Result<()> {

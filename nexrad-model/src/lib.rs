@@ -50,6 +50,27 @@
 //!
 //! - `chrono` - Date/time support via [`chrono`](https://docs.rs/chrono).
 //!   Enables `collection_time()` returning `DateTime<Utc>` instead of raw timestamps.
+//!
+//! # Crate Boundaries
+//!
+//! This crate is a **pure data model** with the following responsibilities and constraints:
+//!
+//! ## Responsibilities
+//!
+//! - ✓ Define domain types (Scan, Sweep, Radial, Site, MomentData)
+//! - ✓ Provide data transformations and validations
+//! - ✓ Support optional features (serde, chrono, uom)
+//!
+//! ## Constraints
+//!
+//! - ✗ **No I/O operations** (file, network, stdio)
+//! - ✗ **No binary parsing or encoding**
+//! - ✗ **No rendering or visualization**
+//! - ✗ **No CLI or user interaction**
+//!
+//! This crate focuses solely on providing ergonomic data structures for working with
+//! NEXRAD radar data. All I/O, parsing, and rendering concerns are handled by separate
+//! crates in the NEXRAD library suite.
 
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]

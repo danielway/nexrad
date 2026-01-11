@@ -52,6 +52,31 @@
 //!
 //! - `aws` - Enable AWS S3 data access (requires async runtime)
 //! - `nexrad-model` - Enable conversion to high-level `Scan` model
+//!
+//! # Crate Boundaries
+//!
+//! This crate provides **data access and I/O operations** with the following
+//! responsibilities and constraints:
+//!
+//! ## Responsibilities
+//!
+//! - ✓ Read and parse Archive II volume files
+//! - ✓ Handle file I/O operations
+//! - ✓ Decompress bzip2-compressed LDM records
+//! - ✓ AWS S3 integration for archive and real-time data (when `aws` feature enabled)
+//! - ✓ Use `nexrad-decode` for message parsing
+//! - ✓ Use `nexrad-model` for high-level type conversion (when feature enabled)
+//! - ✓ Orchestrate the data pipeline from raw bytes to structured models
+//!
+//! ## Constraints
+//!
+//! - ✗ **No rendering or visualization**
+//! - ✗ **No CLI or user interaction**
+//!
+//! This crate serves as the **I/O boundary layer** for the NEXRAD library suite. It
+//! handles all file and network operations, decompression, and coordinates between
+//! the low-level binary parsing (`nexrad-decode`) and high-level data models
+//! (`nexrad-model`).
 
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]

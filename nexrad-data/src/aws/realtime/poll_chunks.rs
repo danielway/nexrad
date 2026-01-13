@@ -59,7 +59,7 @@ pub async fn poll_chunks(
     );
     let (_, latest_metadata) = download_chunk(site, &latest_metadata_id).await?;
     let vcp = get_latest_vcp(&latest_metadata)?;
-    debug!("Polling volume with VCP: {}", vcp.header.pattern_number);
+    debug!("Polling volume with VCP: {}", vcp.header().pattern_number());
 
     let mut elevation_chunk_mapper = ElevationChunkMapper::new(&vcp);
 
@@ -150,7 +150,7 @@ pub async fn poll_chunks(
             let vcp = get_latest_vcp(&next_chunk)?;
             debug!(
                 "Updated polling volume's VCP to: {}",
-                vcp.header.pattern_number
+                vcp.header().pattern_number()
             );
 
             elevation_chunk_mapper = ElevationChunkMapper::new(&vcp);
@@ -197,7 +197,7 @@ fn update_timing_stats(
 ) {
     if let Some(elevation) = elevation_chunk_mapper
         .get_sequence_elevation_number(chunk_id.sequence())
-        .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1))
+        .and_then(|elevation_number| vcp.elevations().get(elevation_number - 1))
     {
         let characteristics = ChunkCharacteristics {
             chunk_type: chunk_id.chunk_type(),

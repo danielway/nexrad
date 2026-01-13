@@ -41,7 +41,7 @@ pub fn estimate_chunk_processing_time(
 
     if let Some(elevation) = elevation_chunk_mapper
         .get_sequence_elevation_number(chunk.sequence())
-        .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1))
+        .and_then(|elevation_number| vcp.elevations().get(elevation_number - 1))
     {
         let waveform_type = elevation.waveform_type();
         let channel_config = elevation.channel_configuration();

@@ -1,11 +1,8 @@
-mod header;
-pub use header::Header;
+pub(crate) mod header;
+pub(crate) use header::Header;
 
-mod azimuth_segment_header;
-pub use azimuth_segment_header::AzimuthSegmentHeader;
+pub(crate) mod azimuth_segment_header;
+pub(crate) use azimuth_segment_header::AzimuthSegmentHeader;
 
-mod range_zone;
-pub use range_zone::RangeZone;
-
-mod definitions;
-pub use definitions::OpCode;
+pub(crate) mod range_zone;
+pub(crate) use range_zone::RangeZone;

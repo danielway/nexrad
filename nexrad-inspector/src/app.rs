@@ -631,13 +631,25 @@ impl App {
     pub fn previous(&mut self) {
         match self.view {
             View::File => {
-                if self.selected_record > 0 {
-                    self.selected_record -= 1;
-                }
+                let len = self.records.len();
+                self.selected_record = if self.selected_record > 0 {
+                    self.selected_record - 1
+                } else if len > 0 {
+                    len - 1
+                } else {
+                    0
+                };
             }
             View::Record => {
-                if self.selected_message > 0 {
-                    self.selected_message -= 1;
+                let record_index = self.selected_record;
+                if let Some(msg_count) = self.message_count(record_index) {
+                    self.selected_message = if self.selected_message > 0 {
+                        self.selected_message - 1
+                    } else if msg_count > 0 {
+                        msg_count - 1
+                    } else {
+                        0
+                    };
                 }
             }
             View::Message => match self.message_tab {
@@ -659,16 +671,22 @@ impl App {
     pub fn next(&mut self) {
         match self.view {
             View::File => {
-                if self.selected_record < self.records.len().saturating_sub(1) {
-                    self.selected_record += 1;
-                }
+                let len = self.records.len();
+                self.selected_record = if len > 0 && self.selected_record < len - 1 {
+                    self.selected_record + 1
+                } else {
+                    0
+                };
             }
             View::Record => {
                 let record_index = self.selected_record;
                 if let Some(msg_count) = self.message_count(record_index) {
-                    if self.selected_message < msg_count.saturating_sub(1) {
-                        self.selected_message += 1;
-                    }
+                    self.selected_message = if msg_count > 0 && self.selected_message < msg_count - 1
+                    {
+                        self.selected_message + 1
+                    } else {
+                        0
+                    };
                 }
             }
             View::Message => match self.message_tab {

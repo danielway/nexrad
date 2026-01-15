@@ -134,16 +134,21 @@ fn is_text_input_active(app: &App) -> bool {
 }
 
 async fn handle_menu_keys(app: &mut App, key: event::KeyEvent) -> AppResult<bool> {
+    const MENU_ITEMS: usize = 2;
     match key.code {
         KeyCode::Up | KeyCode::Char('k') => {
-            if app.menu_selected > 0 {
-                app.menu_selected -= 1;
-            }
+            app.menu_selected = if app.menu_selected > 0 {
+                app.menu_selected - 1
+            } else {
+                MENU_ITEMS - 1
+            };
         }
         KeyCode::Down | KeyCode::Char('j') => {
-            if app.menu_selected < 1 {
-                app.menu_selected += 1;
-            }
+            app.menu_selected = if app.menu_selected < MENU_ITEMS - 1 {
+                app.menu_selected + 1
+            } else {
+                0
+            };
         }
         KeyCode::Enter => match app.menu_selected {
             0 => app.init_local_browser(),
@@ -161,16 +166,23 @@ async fn handle_menu_keys(app: &mut App, key: event::KeyEvent) -> AppResult<bool
 
 async fn handle_local_browser_keys(app: &mut App, key: event::KeyEvent) -> AppResult<bool> {
     if let Some(ref mut state) = app.local_browser {
+        let len = state.entries.len();
         match key.code {
             KeyCode::Up | KeyCode::Char('k') => {
-                if state.selected_index > 0 {
-                    state.selected_index -= 1;
-                }
+                state.selected_index = if state.selected_index > 0 {
+                    state.selected_index - 1
+                } else if len > 0 {
+                    len - 1
+                } else {
+                    0
+                };
             }
             KeyCode::Down | KeyCode::Char('j') => {
-                if state.selected_index < state.entries.len().saturating_sub(1) {
-                    state.selected_index += 1;
-                }
+                state.selected_index = if len > 0 && state.selected_index < len - 1 {
+                    state.selected_index + 1
+                } else {
+                    0
+                };
             }
             KeyCode::PageUp => {
                 state.selected_index = state.selected_index.saturating_sub(10);
@@ -228,16 +240,23 @@ async fn handle_aws_browser_keys(app: &mut App, key: event::KeyEvent) -> AppResu
                 _ => {}
             },
             AwsStep::SelectFile => {
+                let len = state.files.len();
                 match key.code {
                     KeyCode::Up | KeyCode::Char('k') => {
-                        if state.selected_index > 0 {
-                            state.selected_index -= 1;
-                        }
+                        state.selected_index = if state.selected_index > 0 {
+                            state.selected_index - 1
+                        } else if len > 0 {
+                            len - 1
+                        } else {
+                            0
+                        };
                     }
                     KeyCode::Down | KeyCode::Char('j') => {
-                        if state.selected_index < state.files.len().saturating_sub(1) {
-                            state.selected_index += 1;
-                        }
+                        state.selected_index = if len > 0 && state.selected_index < len - 1 {
+                            state.selected_index + 1
+                        } else {
+                            0
+                        };
                     }
                     KeyCode::PageUp => {
                         state.selected_index = state.selected_index.saturating_sub(10);

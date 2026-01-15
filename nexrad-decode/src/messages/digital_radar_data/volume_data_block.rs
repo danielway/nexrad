@@ -8,19 +8,19 @@ use uom::si::f64::{Angle, Energy, Information, Length};
 /// Internal representation of the volume data block, supporting both legacy and modern formats.
 #[derive(Clone, PartialEq, Debug)]
 enum VolumeDataBlockInner<'a> {
-    /// Legacy format (Build 17.0 and earlier, 40 bytes).
+    /// Legacy format (Build 19.0 and earlier, 40 bytes).
     Legacy(&'a raw::VolumeDataBlockLegacy),
-    /// Modern format (Build 18.0 and later, 48 bytes).
+    /// Modern format (Build 20.0 and later, 48 bytes).
     Modern(&'a raw::VolumeDataBlock),
 }
 
 /// A volume data moment block.
 ///
 /// This type provides access to volume metadata from digital radar data messages.
-/// It supports both the legacy 40-byte format (Build 17.0 and earlier) and the
-/// modern 48-byte format (Build 18.0 and later).
+/// It supports both the legacy 40-byte format (Build 19.0 and earlier) and the
+/// modern 48-byte format (Build 20.0 and later).
 ///
-/// Fields that were added in Build 18.0 (`zdr_bias_estimate_weighted_mean` and `spare`)
+/// Fields that were added in Build 20.0 (`zdr_bias_estimate_weighted_mean` and `spare`)
 /// return `Option` types that are `None` for legacy data.
 #[derive(Clone, PartialEq, Debug)]
 pub struct VolumeDataBlock<'a> {
@@ -42,7 +42,7 @@ impl<'a> VolumeDataBlock<'a> {
         }
     }
 
-    /// Returns true if this is a legacy format block (Build 17.0 and earlier).
+    /// Returns true if this is a legacy format block (Build 19.0 and earlier).
     pub fn is_legacy(&self) -> bool {
         matches!(self.inner, VolumeDataBlockInner::Legacy(_))
     }
@@ -174,8 +174,8 @@ impl<'a> VolumeDataBlock<'a> {
 
     /// RPG weighted mean ZDR bias estimate in dB.
     ///
-    /// Returns `None` for legacy data (Build 17.0 and earlier) as this field
-    /// was added in Build 18.0.
+    /// Returns `None` for legacy data (Build 19.0 and earlier) as this field
+    /// was added in Build 20.0.
     pub fn zdr_bias_estimate_weighted_mean(&self) -> Option<u16> {
         match &self.inner {
             VolumeDataBlockInner::Legacy(_) => None,
@@ -187,8 +187,8 @@ impl<'a> VolumeDataBlock<'a> {
 
     /// Spare bytes.
     ///
-    /// Returns `None` for legacy data (Build 17.0 and earlier) as this field
-    /// was added in Build 18.0.
+    /// Returns `None` for legacy data (Build 19.0 and earlier) as this field
+    /// was added in Build 20.0.
     pub fn spare(&self) -> Option<&BinaryData<[u8; 6]>> {
         match &self.inner {
             VolumeDataBlockInner::Legacy(_) => None,

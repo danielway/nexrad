@@ -95,8 +95,8 @@ impl<'a> Message<'a> {
                 b"VOL" => {
                     // Determine which format to parse. First check build number if available,
                     // otherwise peek at lrtup field to detect format.
-                    // Legacy builds (17.0 and earlier) use 40-byte VolumeDataBlock,
-                    // modern builds (18.0+) use 48-byte VolumeDataBlock.
+                    // Legacy builds (19.0 and earlier) use 40-byte VolumeDataBlock,
+                    // modern builds (20.0+) use 48-byte VolumeDataBlock.
                     let use_legacy = if let Some(build) = reader.build_number() {
                         build.uses_legacy_volume_data_block()
                     } else {

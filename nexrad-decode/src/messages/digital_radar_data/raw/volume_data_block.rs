@@ -3,9 +3,9 @@ use crate::messages::primitive_aliases::{Integer1, Integer2, Real4, SInteger2};
 use std::fmt::Debug;
 use zerocopy::{FromBytes, Immutable, KnownLayout};
 
-/// Legacy volume data moment block (Build 17.0 and earlier, 40 bytes).
+/// Legacy volume data moment block (Build 19.0 and earlier, 40 bytes).
 ///
-/// This format was used in NEXRAD builds through 17.0 and does not include
+/// This format was used in NEXRAD builds through 20.0 and does not include
 /// the ZDR bias estimate fields added in later builds.
 #[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]

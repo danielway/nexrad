@@ -97,17 +97,9 @@ impl RDABuildNumber {
 
     /// Returns true if this build uses the legacy 40-byte VolumeDataBlock format.
     ///
-    /// Builds 17.0 and earlier use a 40-byte VolumeDataBlock that does not include
-    /// the `zdr_bias_estimate_weighted_mean` and `spare` fields added in Build 18.0.
+    /// Builds 19.0 and earlier use a 40-byte VolumeDataBlock that does not include
+    /// the `zdr_bias_estimate_weighted_mean` and `spare` fields added in Build 20.0.
     pub fn uses_legacy_volume_data_block(&self) -> bool {
-        matches!(
-            self,
-            RDABuildNumber::Build12_0
-                | RDABuildNumber::Build13_0
-                | RDABuildNumber::Build14_0
-                | RDABuildNumber::Build15_0
-                | RDABuildNumber::Build16_0
-                | RDABuildNumber::Build17_0
-        )
+        self.as_float() < 20.0
     }
 }

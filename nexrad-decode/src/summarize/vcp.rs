@@ -25,81 +25,84 @@ pub struct VCPElevationInfo {
 pub fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Message) -> VCPInfo {
     let mut vcp_features = Vec::new();
 
-    if message.header.vcp_supplemental_data_sails_vcp() {
-        let sails_cuts = message.header.vcp_supplemental_data_number_sails_cuts();
+    if message.header().is_sails_vcp() {
+        let sails_cuts = message.header().number_of_sails_cuts();
         vcp_features.push(format!("SAILS ({sails_cuts} cuts)"));
     }
 
-    if message.header.vcp_supplemental_data_mrle_vcp() {
-        let mrle_cuts = message.header.vcp_supplemental_data_number_mrle_cuts();
+    if message.header().is_mrle_vcp() {
+        let mrle_cuts = message.header().number_of_mrle_cuts();
         vcp_features.push(format!("MRLE ({mrle_cuts} cuts)"));
     }
 
-    if message.header.vcp_supplemental_data_mpda_vcp() {
+    if message.header().is_mpda_vcp() {
         vcp_features.push("MPDA".to_string());
     }
 
-    if message.header.vcp_supplemental_data_base_tilt_vcp() {
-        let base_tilts = message.header.vcp_supplemental_data_base_tilts();
+    if message.header().is_base_tilt_vcp() {
+        let base_tilts = message.header().number_of_base_tilts();
         vcp_features.push(format!("Base tilts ({base_tilts} cuts)"));
     }
 
-    if message.header.vcp_sequencing_sequence_active() {
+    if message.header().vcp_sequencing_sequence_active() {
         vcp_features.push("VCP sequence active".to_string());
     }
 
-    if message.header.vcp_sequencing_truncated_vcp() {
+    if message.header().vcp_sequencing_truncated() {
         vcp_features.push("Truncated VCP".to_string());
     }
 
     let mut elevations = Vec::new();
-    for elev in message.elevations.iter() {
+    for elev in message.elevations().iter() {
         let mut super_res_features = Vec::new();
-        if elev.super_resolution_control_half_degree_azimuth() {
+        if elev.super_resolution_half_degree_azimuth() {
             super_res_features.push("0.5° azimuth".to_string());
         }
-        if elev.super_resolution_control_quarter_km_reflectivity() {
+        if elev.super_resolution_quarter_km_reflectivity() {
             super_res_features.push("0.25 km reflectivity".to_string());
         }
-        if elev.super_resolution_control_doppler_to_300km() {
+        if elev.super_resolution_doppler_to_300km() {
             super_res_features.push("Doppler to 300 km".to_string());
         }
-        if elev.super_resolution_control_dual_polarization_to_300km() {
+        if elev.super_resolution_dual_pol_to_300km() {
             super_res_features.push("Dual pol to 300 km".to_string());
         }
 
         // Determine special cut type
         let mut special_cut_type = None;
-        if elev.supplemental_data_sails_cut() {
-            let seq = elev.supplemental_data_sails_sequence_number();
+        if elev.is_sails_cut() {
+            let seq = elev.sails_sequence_number();
             special_cut_type = Some(format!("SAILS {seq}"));
-        } else if elev.supplemental_data_mrle_cut() {
-            let seq = elev.supplemental_data_mrle_sequence_number();
+        } else if elev.is_mrle_cut() {
+            let seq = elev.mrle_sequence_number();
             special_cut_type = Some(format!("MRLE {seq}"));
-        } else if elev.supplemental_data_mpda_cut() {
+        } else if elev.is_mpda_cut() {
             special_cut_type = Some("MPDA".to_string());
-        } else if elev.supplemental_data_base_tilt_cut() {
+        } else if elev.is_base_tilt_cut() {
             special_cut_type = Some("Base tilt".to_string());
         }
 
         elevations.push(VCPElevationInfo {
-            elevation_angle: elev.elevation_angle_degrees(),
+            elevation_angle: elev.elevation_angle(),
             channel_configuration: format!("{:?}", elev.channel_configuration()),
             waveform_type: format!("{:?}", elev.waveform_type()),
-            azimuth_rate: elev.azimuth_rate_degrees_per_second(),
+            azimuth_rate: elev.azimuth_rate(),
             super_resolution_features: super_res_features,
             special_cut_type,
         });
     }
 
+    let doppler_res = message.header().doppler_velocity_resolution();
     VCPInfo {
-        pattern_number: message.header.pattern_number.get(),
-        version: message.header.version,
-        number_of_elevation_cuts: message.header.number_of_elevation_cuts.get(),
-        pulse_width: format!("{:?}", message.header.pulse_width()),
-        doppler_velocity_resolution: message
-            .header
-            .doppler_velocity_resolution_meters_per_second(),
+        pattern_number: message.header().pattern_number(),
+        version: message.header().version(),
+        number_of_elevation_cuts: message.header().number_of_elevation_cuts(),
+        pulse_width: format!("{:?}", message.header().pulse_width()),
+        doppler_velocity_resolution: if doppler_res > 0.0 {
+            Some(doppler_res as f64)
+        } else {
+            None
+        },
         vcp_features,
         elevations,
     }

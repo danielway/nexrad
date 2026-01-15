@@ -49,9 +49,9 @@ impl File {
                 let contents = message.into_contents();
                 if let MessageContents::DigitalRadarData(radar_data_message) = contents {
                     if coverage_pattern_number.is_none() {
-                        if let Some(volume_block) = &radar_data_message.volume_data_block {
+                        if let Some(volume_block) = radar_data_message.volume_data_block() {
                             coverage_pattern_number =
-                                Some(volume_block.volume_coverage_pattern_number.get());
+                                Some(volume_block.volume_coverage_pattern_number());
                         }
                     }
 

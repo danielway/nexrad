@@ -8,7 +8,7 @@ pub enum MessageContents<'a> {
     /// Message type 2 "RDA Status Data" contains information about the current RDA state, system
     /// control, operating status, scanning strategy, performance parameters like transmitter power
     /// and calibration, and system alarms
-    RDAStatusData(Box<&'a rda_status_data::Message>),
+    RDAStatusData(Box<rda_status_data::Message<'a>>),
 
     /// Message type 31 "Digital Radar Data" consists of base data information such as reflectivity,
     /// mean radial velocity, spectrum width, differential reflectivity, differential phase,

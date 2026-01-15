@@ -242,7 +242,7 @@ fn analyze_chunk(
                 MessageContents::VolumeCoveragePattern(chunk_vcp) => {
                     debug!(
                         "Found VCP message with {} elevation cuts",
-                        chunk_vcp.elevations.len()
+                        chunk_vcp.elevations().len()
                     );
 
                     if vcp.is_none() {
@@ -251,68 +251,68 @@ fn analyze_chunk(
                             Some(ElevationChunkMapper::new(vcp.as_ref().unwrap()));
                     }
 
-                    result.vcp_number = Some(format!("VCP{}", chunk_vcp.header.pattern_type));
+                    result.vcp_number = Some(format!("VCP{}", chunk_vcp.header().pattern_number()));
                 }
                 MessageContents::DigitalRadarData(radar) => {
-                    if let Some(time) = radar.header.date_time() {
+                    if let Some(time) = radar.header().date_time() {
                         radar_times.push(time);
                     }
 
                     if start_azimuth.is_none() {
-                        start_azimuth = Some(radar.header.azimuth_angle.get());
+                        start_azimuth = Some(radar.header().azimuth_angle_raw());
                     }
-                    end_azimuth = Some(radar.header.azimuth_angle.get());
+                    end_azimuth = Some(radar.header().azimuth_angle_raw());
 
                     let mut add_data_type = |data_type: &str| {
                         *data_type_counter.entry(data_type.to_string()).or_insert(0) += 1;
                     };
 
-                    if radar.volume_data_block.is_some() {
+                    if radar.volume_data_block().is_some() {
                         add_data_type("Volume");
                     }
 
-                    if radar.elevation_data_block.is_some() {
+                    if radar.elevation_data_block().is_some() {
                         add_data_type("Elevation");
                     }
 
-                    if radar.radial_data_block.is_some() {
+                    if radar.radial_data_block().is_some() {
                         add_data_type("Radial");
                     }
 
-                    if radar.reflectivity_data_block.is_some() {
+                    if radar.reflectivity_data_block().is_some() {
                         add_data_type("Reflectivity");
                     }
 
-                    if radar.velocity_data_block.is_some() {
+                    if radar.velocity_data_block().is_some() {
                         add_data_type("Velocity");
                     }
 
-                    if radar.spectrum_width_data_block.is_some() {
+                    if radar.spectrum_width_data_block().is_some() {
                         add_data_type("Spectrum Width");
                     }
 
-                    if radar.differential_reflectivity_data_block.is_some() {
+                    if radar.differential_reflectivity_data_block().is_some() {
                         add_data_type("Differential Reflectivity");
                     }
 
-                    if radar.differential_phase_data_block.is_some() {
+                    if radar.differential_phase_data_block().is_some() {
                         add_data_type("Differential Phase");
                     }
 
-                    if radar.correlation_coefficient_data_block.is_some() {
+                    if radar.correlation_coefficient_data_block().is_some() {
                         add_data_type("Correlation Coefficient");
                     }
 
-                    if radar.specific_diff_phase_data_block.is_some() {
+                    if radar.specific_diff_phase_data_block().is_some() {
                         add_data_type("Specific Differential Phase");
                     }
 
                     result
                         .elevation_numbers
-                        .insert(radar.header.elevation_number);
-                    if let Some(volume) = &radar.volume_data_block {
+                        .insert(radar.header().elevation_number());
+                    if let Some(volume) = radar.volume_data_block() {
                         result.vcp_number =
-                            Some(format!("VCP{}", volume.volume_coverage_pattern_number));
+                            Some(format!("VCP{}", volume.volume_coverage_pattern_number()));
                     }
                 }
                 _ => {}
@@ -383,18 +383,18 @@ fn analyze_chunk(
     if let (Some(vcp), Some(elevation_chunk_mapper)) = (vcp, elevation_chunk_mapper) {
         let elevation = elevation_chunk_mapper
             .get_sequence_elevation_number(chunk_id.sequence())
-            .and_then(|elevation_number| vcp.elevations.get(elevation_number - 1));
+            .and_then(|elevation_number| vcp.elevations().get(elevation_number - 1));
 
         if let Some(elevation) = elevation {
             result.matched_to_vcp = true;
-            result.elevation_angle = Some(elevation.elevation_angle_degrees());
+            result.elevation_angle = Some(elevation.elevation_angle());
             result.channel_configuration = Some(format!("{:?}", elevation.channel_configuration()));
             result.waveform_type = Some(format!("{:?}", elevation.waveform_type()));
             result.super_resolution = Some(format!(
                 "{:?}",
-                elevation.super_resolution_control_half_degree_azimuth()
+                elevation.super_resolution_half_degree_azimuth()
             ));
-            result.azimuth_rate = Some(elevation.azimuth_rate_degrees_per_second());
+            result.azimuth_rate = Some(elevation.azimuth_rate());
         }
     }
 

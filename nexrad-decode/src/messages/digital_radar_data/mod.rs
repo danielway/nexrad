@@ -6,8 +6,47 @@
 //! the type of data associated with that strategy.
 //!
 
-mod message;
-pub use message::Message;
+mod compression_indicator;
+pub use compression_indicator::CompressionIndicator;
+
+mod control_flags;
+pub use control_flags::ControlFlags;
+
+mod processing_status;
+pub use processing_status::ProcessingStatus;
+
+mod radial_status;
+pub use radial_status::RadialStatus;
+
+mod volume_coverage_pattern;
+pub use volume_coverage_pattern::VolumeCoveragePattern;
+
+mod scaled_moment_value;
+pub use scaled_moment_value::ScaledMomentValue;
+
+mod spot_blanking_status;
+pub use spot_blanking_status::SpotBlankingStatus;
+
+mod pointers;
+pub use pointers::*;
+
+mod data_block_id;
+pub use data_block_id::DataBlockId;
+
+mod header;
+pub use header::Header;
+
+mod elevation_data_block;
+pub use elevation_data_block::ElevationDataBlock;
+
+mod radial_data_block;
+pub use radial_data_block::RadialDataBlock;
+
+mod volume_data_block;
+pub use volume_data_block::VolumeDataBlock;
+
+mod generic_data_block_header;
+pub use generic_data_block_header::GenericDataBlockHeader;
 
 mod data_block;
 pub use data_block::DataBlock;
@@ -15,8 +54,10 @@ pub use data_block::DataBlock;
 mod generic_data_block;
 pub use generic_data_block::GenericDataBlock;
 
-pub mod raw;
-pub use raw::*;
+mod message;
+pub use message::Message;
+
+pub(crate) mod raw;
 
 #[cfg(test)]
 mod snapshot_test;

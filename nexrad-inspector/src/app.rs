@@ -980,43 +980,46 @@ impl App {
                                 parsed_msg.contents()
                             {
                                 // Track which products are present
-                                if digital_radar_data.reflectivity_data_block.is_some() {
+                                if digital_radar_data.reflectivity_data_block().is_some() {
                                     products.insert("REF");
                                 }
-                                if digital_radar_data.velocity_data_block.is_some() {
+                                if digital_radar_data.velocity_data_block().is_some() {
                                     products.insert("VEL");
                                 }
-                                if digital_radar_data.spectrum_width_data_block.is_some() {
+                                if digital_radar_data.spectrum_width_data_block().is_some() {
                                     products.insert("SW");
                                 }
                                 if digital_radar_data
-                                    .differential_reflectivity_data_block
+                                    .differential_reflectivity_data_block()
                                     .is_some()
                                 {
                                     products.insert("ZDR");
                                 }
-                                if digital_radar_data.differential_phase_data_block.is_some() {
+                                if digital_radar_data.differential_phase_data_block().is_some() {
                                     products.insert("PHI");
                                 }
                                 if digital_radar_data
-                                    .correlation_coefficient_data_block
+                                    .correlation_coefficient_data_block()
                                     .is_some()
                                 {
                                     products.insert("RHO");
                                 }
-                                if digital_radar_data.specific_diff_phase_data_block.is_some() {
+                                if digital_radar_data
+                                    .specific_diff_phase_data_block()
+                                    .is_some()
+                                {
                                     products.insert("CFP");
                                 }
 
                                 // Track azimuth range
-                                let az = digital_radar_data.header.azimuth_angle.get();
+                                let az = digital_radar_data.header().azimuth_angle_raw();
                                 min_azimuth = min_azimuth.min(az);
                                 max_azimuth = max_azimuth.max(az);
 
                                 // Track elevation
                                 if elevation.is_none() {
                                     elevation =
-                                        Some(digital_radar_data.header.elevation_angle.get());
+                                        Some(digital_radar_data.header().elevation_angle_raw());
                                 }
                             }
                         }

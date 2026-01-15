@@ -8,10 +8,10 @@ use crate::slice_reader::SliceReader;
 pub struct ElevationSegment<'a> {
     /// This elevation segment's number from 1 to 5 (oftentimes there are only 2) in increasing
     /// elevation from the ground.
-    pub elevation_segment_number: Integer1,
+    elevation_segment_number: Integer1,
 
     /// The azimuth segments defined in this elevation segment.
-    pub azimuth_segments: Vec<AzimuthSegment<'a>>,
+    azimuth_segments: Vec<AzimuthSegment<'a>>,
 }
 
 impl<'a> ElevationSegment<'a> {
@@ -28,6 +28,17 @@ impl<'a> ElevationSegment<'a> {
         }
 
         Ok(elevation_segment)
+    }
+
+    /// This elevation segment's number from 1 to 5 (oftentimes there are only 2) in increasing
+    /// elevation from the ground.
+    pub fn elevation_segment_number(&self) -> u8 {
+        self.elevation_segment_number
+    }
+
+    /// The azimuth segments defined in this elevation segment.
+    pub fn azimuth_segments(&self) -> &[AzimuthSegment<'a>] {
+        &self.azimuth_segments
     }
 
     /// Convert this segment to an owned version with `'static` lifetime.

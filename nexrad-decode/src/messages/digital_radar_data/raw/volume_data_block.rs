@@ -1,143 +1,62 @@
 use crate::binary_data::BinaryData;
-use crate::messages::digital_radar_data::{ProcessingStatus, VolumeCoveragePattern};
 use crate::messages::primitive_aliases::{Integer1, Integer2, Real4, SInteger2};
 use std::fmt::Debug;
 use zerocopy::{FromBytes, Immutable, KnownLayout};
-
-#[cfg(feature = "uom")]
-use uom::si::f64::{Angle, Energy, Information, Length};
 
 /// A volume data moment block.
 #[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct VolumeDataBlock {
     /// Size of data block in bytes.
-    pub lrtup: Integer2,
+    pub(crate) lrtup: Integer2,
 
     /// Major version number.
-    pub major_version_number: Integer1,
+    pub(crate) major_version_number: Integer1,
 
     /// Minor version number.
-    pub minor_version_number: Integer1,
+    pub(crate) minor_version_number: Integer1,
 
     /// Latitude of radar in degrees.
-    pub latitude: Real4,
+    pub(crate) latitude: Real4,
 
     /// Longitude of radar in degrees.
-    pub longitude: Real4,
+    pub(crate) longitude: Real4,
 
     /// Height of site base above sea level in meters.
-    pub site_height: SInteger2,
+    pub(crate) site_height: SInteger2,
 
     /// Height of feedhorn above ground in meters.
-    pub feedhorn_height: Integer2,
+    pub(crate) feedhorn_height: Integer2,
 
     /// Reflectivity scaling factor without correction by ground noise scaling factors given in
     /// adaptation data message in dB.
-    pub calibration_constant: Real4,
+    pub(crate) calibration_constant: Real4,
 
     /// Transmitter power for horizontal channel in kW.
-    pub horizontal_shv_tx_power: Real4,
+    pub(crate) horizontal_shv_tx_power: Real4,
 
     /// Transmitter power for vertical channel in kW.
-    pub vertical_shv_tx_power: Real4,
+    pub(crate) vertical_shv_tx_power: Real4,
 
     /// Calibration of system ZDR in dB.
-    pub system_differential_reflectivity: Real4,
+    pub(crate) system_differential_reflectivity: Real4,
 
     /// Initial DP for the system in degrees.
-    pub initial_system_differential_phase: Real4,
+    pub(crate) initial_system_differential_phase: Real4,
 
     /// Identifies the volume coverage pattern in use.
-    pub volume_coverage_pattern_number: Integer2,
+    pub(crate) volume_coverage_pattern_number: Integer2,
 
     /// Processing option flags.
     ///
     /// Options:
     ///   0 = RxR noise
     ///   1 = CBT
-    pub processing_status: Integer2,
+    pub(crate) processing_status: Integer2,
 
     /// RPG weighted mean ZDR bias estimate in dB.
-    pub zdr_bias_estimate_weighted_mean: Integer2,
+    pub(crate) zdr_bias_estimate_weighted_mean: Integer2,
 
     /// Spare.
-    pub spare: BinaryData<[u8; 6]>,
-}
-
-impl VolumeDataBlock {
-    /// Size of data block.
-    #[cfg(feature = "uom")]
-    pub fn lrtup(&self) -> Information {
-        Information::new::<uom::si::information::byte>(self.lrtup.get() as f64)
-    }
-
-    /// Latitude of radar.
-    #[cfg(feature = "uom")]
-    pub fn latitude(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.latitude.get() as f64)
-    }
-
-    /// Longitude of radar.
-    #[cfg(feature = "uom")]
-    pub fn longitude(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.longitude.get() as f64)
-    }
-
-    /// Height of site base above sea level.
-    #[cfg(feature = "uom")]
-    pub fn site_height(&self) -> Length {
-        Length::new::<uom::si::length::meter>(self.site_height.get() as f64)
-    }
-
-    /// Height of feedhorn above ground.
-    #[cfg(feature = "uom")]
-    pub fn feedhorn_height(&self) -> Length {
-        Length::new::<uom::si::length::meter>(self.feedhorn_height.get() as f64)
-    }
-
-    /// Transmitter power for horizontal channel.
-    #[cfg(feature = "uom")]
-    pub fn horizontal_shv_tx_power(&self) -> Energy {
-        Energy::new::<uom::si::energy::kilojoule>(self.horizontal_shv_tx_power.get() as f64)
-    }
-
-    /// Transmitter power for vertical channel.
-    #[cfg(feature = "uom")]
-    pub fn vertical_shv_tx_power(&self) -> Energy {
-        Energy::new::<uom::si::energy::kilojoule>(self.vertical_shv_tx_power.get() as f64)
-    }
-
-    /// Initial DP for the system.
-    #[cfg(feature = "uom")]
-    pub fn initial_system_differential_phase(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.initial_system_differential_phase.get() as f64)
-    }
-
-    /// Identifies the volume coverage pattern in use.
-    pub fn volume_coverage_pattern(&self) -> VolumeCoveragePattern {
-        let volume_coverage_pattern = self.volume_coverage_pattern_number.get();
-        match volume_coverage_pattern {
-            12 => VolumeCoveragePattern::VCP12,
-            31 => VolumeCoveragePattern::VCP31,
-            35 => VolumeCoveragePattern::VCP35,
-            112 => VolumeCoveragePattern::VCP112,
-            212 => VolumeCoveragePattern::VCP212,
-            215 => VolumeCoveragePattern::VCP215,
-            _ => panic!(
-                "Invalid volume coverage pattern number: {}",
-                volume_coverage_pattern
-            ),
-        }
-    }
-
-    /// Processing option flags.
-    pub fn processing_status(&self) -> ProcessingStatus {
-        let processing_status = self.processing_status.get();
-        match processing_status {
-            0 => ProcessingStatus::RxRNoise,
-            1 => ProcessingStatus::CBT,
-            _ => ProcessingStatus::Other(processing_status),
-        }
-    }
+    pub(crate) spare: BinaryData<[u8; 6]>,
 }

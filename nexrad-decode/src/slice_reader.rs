@@ -1,3 +1,4 @@
+use crate::messages::rda_status_data::RDABuildNumber;
 use crate::result::{Error, Result};
 use zerocopy::FromBytes;
 
@@ -9,12 +10,27 @@ use zerocopy::FromBytes;
 pub struct SliceReader<'a> {
     data: &'a [u8],
     pos: usize,
+    build_number: Option<RDABuildNumber>,
 }
 
 impl<'a> SliceReader<'a> {
     /// Creates a new SliceReader starting at position 0.
     pub fn new(data: &'a [u8]) -> Self {
-        Self { data, pos: 0 }
+        Self {
+            data,
+            pos: 0,
+            build_number: None,
+        }
+    }
+
+    /// Sets the RDA build number for version-aware parsing.
+    pub fn set_build_number(&mut self, build_number: RDABuildNumber) {
+        self.build_number = Some(build_number);
+    }
+
+    /// Gets the RDA build number if set.
+    pub fn build_number(&self) -> Option<RDABuildNumber> {
+        self.build_number
     }
 
     /// Returns the current byte position in the slice.

@@ -14,4 +14,4 @@ pub(crate) mod radial_data_block;
 pub(crate) use radial_data_block::RadialDataBlock;
 
 pub(crate) mod volume_data_block;
-pub(crate) use volume_data_block::VolumeDataBlock;
+pub(crate) use volume_data_block::{VolumeDataBlock, VolumeDataBlockLegacy};

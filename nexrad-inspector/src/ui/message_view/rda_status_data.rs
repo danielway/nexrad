@@ -210,7 +210,7 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
     output.push_str("\n--- Build & Version ---\n");
     output.push_str(&format!(
         "RDA Build Number: {:.1}\n",
-        message.rda_build_number()
+        message.build_number().as_float()
     ));
     output.push_str(&format!(
         "Status Message Version: {}\n",

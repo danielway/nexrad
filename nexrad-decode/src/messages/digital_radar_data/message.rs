@@ -93,9 +93,37 @@ impl<'a> Message<'a> {
 
             match &block_id.data_name {
                 b"VOL" => {
-                    let volume_block = reader.take_ref::<raw::VolumeDataBlock>()?;
-                    message.volume_data_block =
-                        Some(DataBlock::new(id, VolumeDataBlock::new(volume_block)));
+                    // Determine which format to parse. First check build number if available,
+                    // otherwise peek at lrtup field to detect format.
+                    // Legacy builds (19.0 and earlier) use 40-byte VolumeDataBlock,
+                    // modern builds (20.0+) use 48-byte VolumeDataBlock.
+                    let use_legacy = if let Some(build) = reader.build_number() {
+                        build.uses_legacy_volume_data_block()
+                    } else {
+                        // Fall back to lrtup detection: peek at first 2 bytes to get block size.
+                        // lrtup includes the DataBlockId (4 bytes), so:
+                        // - Legacy format (40-byte struct): lrtup = 44
+                        // - Modern format (48-byte struct): lrtup = 52
+                        let remaining = reader.remaining();
+                        if remaining.len() >= 2 {
+                            let lrtup = u16::from_be_bytes([remaining[0], remaining[1]]);
+                            lrtup <= 44
+                        } else {
+                            false // Default to modern if we can't peek
+                        }
+                    };
+
+                    if use_legacy {
+                        let volume_block = reader.take_ref::<raw::VolumeDataBlockLegacy>()?;
+                        message.volume_data_block = Some(DataBlock::new(
+                            id,
+                            VolumeDataBlock::new_legacy(volume_block),
+                        ));
+                    } else {
+                        let volume_block = reader.take_ref::<raw::VolumeDataBlock>()?;
+                        message.volume_data_block =
+                            Some(DataBlock::new(id, VolumeDataBlock::new(volume_block)));
+                    }
                 }
                 b"ELV" => {
                     let elevation_block = reader.take_ref::<raw::ElevationDataBlock>()?;

@@ -4,8 +4,8 @@ use crate::messages::rda_status_data::raw;
 use crate::messages::rda_status_data::{
     AuxiliaryPowerGeneratorState, ClutterMitigationDecisionStatus, CommandAcknowledgement,
     ControlAuthorization, ControlStatus, DataTransmissionEnabled, OperabilityStatus,
-    OperationalMode, PerformanceCheckStatus, RDAStatus, RMSControlStatus, ScanDataFlags,
-    SpotBlankingStatus, SuperResolutionStatus, TransitionPowerSourceStatus,
+    OperationalMode, PerformanceCheckStatus, RDABuildNumber, RDAStatus, RMSControlStatus,
+    ScanDataFlags, SpotBlankingStatus, SuperResolutionStatus, TransitionPowerSourceStatus,
     VolumeCoveragePatternNumber,
 };
 use crate::result::Result;
@@ -388,13 +388,8 @@ impl<'a> Message<'a> {
     }
 
     /// The RDA system's major and minor build numbers.
-    pub fn rda_build_number(&self) -> f32 {
-        let number = self.inner.rda_build_number.get() as f32;
-        if number / 100.0 > 2.0 {
-            return number / 100.0;
-        }
-
-        number / 10.0
+    pub fn build_number(&self) -> RDABuildNumber {
+        RDABuildNumber::from_raw(self.inner.rda_build_number.get())
     }
 
     /// Whether the RDA system is operational.

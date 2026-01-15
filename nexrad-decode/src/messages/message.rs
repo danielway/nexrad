@@ -91,6 +91,10 @@ fn decode_message_contents<'a>(
     Ok(match message_type {
         MessageType::RDAStatusData => {
             let rda_status_message = rda_status_data::Message::parse(reader)?;
+
+            // Capture build number for version-aware parsing of subsequent messages
+            reader.set_build_number(rda_status_message.build_number());
+
             MessageContents::RDAStatusData(Box::new(rda_status_message))
         }
         MessageType::RDAVolumeCoveragePattern => {

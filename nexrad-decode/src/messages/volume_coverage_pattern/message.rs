@@ -25,10 +25,7 @@ impl<'a> Message<'a> {
         let raw_elevations = reader.take_slice::<raw::ElevationDataBlock>(elevation_cuts)?;
 
         let header = Header::new(raw_header);
-        let elevations = raw_elevations
-            .iter()
-            .map(ElevationDataBlock::new)
-            .collect();
+        let elevations = raw_elevations.iter().map(ElevationDataBlock::new).collect();
 
         Ok(Self { header, elevations })
     }

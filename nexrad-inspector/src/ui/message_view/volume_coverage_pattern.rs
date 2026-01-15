@@ -91,29 +91,17 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
     output.push_str("\n--- Supplemental Data ---\n");
     output.push_str(&format!(
         "SAILS VCP: {} ({} cuts)\n",
-        if header.is_sails_vcp() {
-            "Yes"
-        } else {
-            "No"
-        },
+        if header.is_sails_vcp() { "Yes" } else { "No" },
         header.number_of_sails_cuts()
     ));
     output.push_str(&format!(
         "MRLE VCP: {} ({} cuts)\n",
-        if header.is_mrle_vcp() {
-            "Yes"
-        } else {
-            "No"
-        },
+        if header.is_mrle_vcp() { "Yes" } else { "No" },
         header.number_of_mrle_cuts()
     ));
     output.push_str(&format!(
         "MPDA VCP: {}\n",
-        if header.is_mpda_vcp() {
-            "Yes"
-        } else {
-            "No"
-        }
+        if header.is_mpda_vcp() { "Yes" } else { "No" }
     ));
     output.push_str(&format!(
         "Base Tilt VCP: {} ({} tilts)\n",
@@ -205,16 +193,10 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
         // Special cut types
         let mut special = Vec::new();
         if elev.is_sails_cut() {
-            special.push(format!(
-                "SAILS(seq={})",
-                elev.sails_sequence_number()
-            ));
+            special.push(format!("SAILS(seq={})", elev.sails_sequence_number()));
         }
         if elev.is_mrle_cut() {
-            special.push(format!(
-                "MRLE(seq={})",
-                elev.mrle_sequence_number()
-            ));
+            special.push(format!("MRLE(seq={})", elev.mrle_sequence_number()));
         }
         if elev.is_mpda_cut() {
             special.push("MPDA".to_string());

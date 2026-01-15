@@ -1004,7 +1004,10 @@ impl App {
                                 {
                                     products.insert("RHO");
                                 }
-                                if digital_radar_data.specific_diff_phase_data_block().is_some() {
+                                if digital_radar_data
+                                    .specific_diff_phase_data_block()
+                                    .is_some()
+                                {
                                     products.insert("CFP");
                                 }
 

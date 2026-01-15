@@ -47,7 +47,10 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         header.elevation_angle_raw()
     ));
     output.push_str(&format!("Radial Status: {:?}\n", header.radial_status()));
-    output.push_str(&format!("Radial Length: {} bytes\n", header.radial_length_raw()));
+    output.push_str(&format!(
+        "Radial Length: {} bytes\n",
+        header.radial_length_raw()
+    ));
     output.push_str(&format!(
         "Compression: {:?}\n",
         header.compression_indicator()
@@ -61,7 +64,10 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
             1.0
         }
     ));
-    output.push_str(&format!("Data Block Count: {}\n", header.data_block_count()));
+    output.push_str(&format!(
+        "Data Block Count: {}\n",
+        header.data_block_count()
+    ));
 
     // Volume Data Block
     if let Some(vol) = msg.volume_data_block() {
@@ -104,7 +110,8 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         ));
         output.push_str(&format!(
             "Version: {}.{}\n",
-            vol.major_version_number(), vol.minor_version_number()
+            vol.major_version_number(),
+            vol.minor_version_number()
         ));
     }
 
@@ -158,11 +165,7 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
     )> = vec![
         ("REF", "Reflectivity", msg.reflectivity_data_block()),
         ("VEL", "Velocity", msg.velocity_data_block()),
-        (
-            "SW ",
-            "Spectrum Width",
-            msg.spectrum_width_data_block(),
-        ),
+        ("SW ", "Spectrum Width", msg.spectrum_width_data_block()),
         (
             "ZDR",
             "Differential Reflectivity",

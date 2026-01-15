@@ -7,7 +7,7 @@ use log::{debug, info, trace, warn, LevelFilter};
 use nexrad_data::aws::archive::{self, download_file, list_files};
 use nexrad_data::result::Result;
 use nexrad_data::volume::File;
-use nexrad_decode::messages::digital_radar_data::raw::ScaledMomentValue;
+use nexrad_decode::messages::digital_radar_data::ScaledMomentValue;
 use nexrad_decode::messages::MessageContents;
 use std::fs::create_dir;
 use std::io::Read;
@@ -137,7 +137,7 @@ async fn main() -> Result<()> {
 
             for (message_index, message) in messages.iter().enumerate() {
                 if let MessageContents::DigitalRadarData(data) = message.contents() {
-                    if let Some(block) = &data.reflectivity_data_block {
+                    if let Some(block) = data.reflectivity_data_block() {
                         info!(
                             "Message {} at {:?}, reflectivity:",
                             message_index,

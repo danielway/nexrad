@@ -1,55 +1,55 @@
-use crate::messages::digital_radar_data::{
+use super::raw;
+use super::{
     DataBlock, DataBlockId, ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock,
-    VolumeDataBlock,
+    RadialStatus, VolumeDataBlock,
 };
 use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
-use std::borrow::Cow;
 
 /// The digital radar data message includes base radar data from a single radial for various
 /// products.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message<'a> {
     /// The decoded digital radar data header.
-    pub header: Cow<'a, Header>,
+    header: Header<'a>,
 
     /// Volume data if included in the message.
-    pub volume_data_block: Option<DataBlock<'a, Cow<'a, VolumeDataBlock>>>,
+    volume_data_block: Option<DataBlock<'a, VolumeDataBlock<'a>>>,
 
     /// Elevation data if included in the message.
-    pub elevation_data_block: Option<DataBlock<'a, Cow<'a, ElevationDataBlock>>>,
+    elevation_data_block: Option<DataBlock<'a, ElevationDataBlock<'a>>>,
 
     /// Radial data if included in the message.
-    pub radial_data_block: Option<DataBlock<'a, Cow<'a, RadialDataBlock>>>,
+    radial_data_block: Option<DataBlock<'a, RadialDataBlock<'a>>>,
 
     /// Reflectivity data if included in the message.
-    pub reflectivity_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
+    reflectivity_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Velocity data if included in the message.
-    pub velocity_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
+    velocity_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Spectrum width data if included in the message.
-    pub spectrum_width_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
+    spectrum_width_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Differential reflectivity data if included in the message.
-    pub differential_reflectivity_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
+    differential_reflectivity_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Differential phase data if included in the message.
-    pub differential_phase_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
+    differential_phase_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Correlation coefficient data if included in the message.
-    pub correlation_coefficient_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
+    correlation_coefficient_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Specific differential phase data if included in the message.
-    pub specific_diff_phase_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
+    specific_diff_phase_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 }
 
 impl<'a> Message<'a> {
     pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
         let start_position = reader.position();
-        let header = reader.take_ref::<Header>()?;
+        let raw_header = reader.take_ref::<raw::Header>()?;
 
-        let pointers_space = header.data_block_count.get() as usize * size_of::<u32>();
+        let pointers_space = raw_header.data_block_count.get() as usize * size_of::<u32>();
         let pointers_raw = reader.take_bytes(pointers_space)?;
 
         let pointers = pointers_raw
@@ -62,7 +62,7 @@ impl<'a> Message<'a> {
             .collect::<Result<Vec<_>>>()?;
 
         let mut message = Self {
-            header: Cow::Borrowed(header),
+            header: Header::new(raw_header),
             volume_data_block: None,
             elevation_data_block: None,
             radial_data_block: None,
@@ -88,24 +88,24 @@ impl<'a> Message<'a> {
                 );
             }
 
-            let block_id = reader.take_ref::<DataBlockId>()?;
-            let id = Cow::Borrowed(block_id);
+            let block_id = reader.take_ref::<raw::DataBlockId>()?;
+            let id = DataBlockId::new(block_id);
 
             match &block_id.data_name {
                 b"VOL" => {
-                    let volume_block = reader.take_ref::<VolumeDataBlock>()?;
+                    let volume_block = reader.take_ref::<raw::VolumeDataBlock>()?;
                     message.volume_data_block =
-                        Some(DataBlock::new(id, Cow::Borrowed(volume_block)));
+                        Some(DataBlock::new(id, VolumeDataBlock::new(volume_block)));
                 }
                 b"ELV" => {
-                    let elevation_block = reader.take_ref::<ElevationDataBlock>()?;
+                    let elevation_block = reader.take_ref::<raw::ElevationDataBlock>()?;
                     message.elevation_data_block =
-                        Some(DataBlock::new(id, Cow::Borrowed(elevation_block)));
+                        Some(DataBlock::new(id, ElevationDataBlock::new(elevation_block)));
                 }
                 b"RAD" => {
-                    let radial_block = reader.take_ref::<RadialDataBlock>()?;
+                    let radial_block = reader.take_ref::<raw::RadialDataBlock>()?;
                     message.radial_data_block =
-                        Some(DataBlock::new(id, Cow::Borrowed(radial_block)));
+                        Some(DataBlock::new(id, RadialDataBlock::new(radial_block)));
                 }
                 _ => {
                     let generic_block = GenericDataBlock::parse(reader)?;
@@ -149,16 +149,16 @@ impl<'a> Message<'a> {
     /// Convert this message to an owned version with `'static` lifetime.
     pub fn into_owned(self) -> Message<'static> {
         Message {
-            header: Cow::Owned(self.header.into_owned()),
+            header: self.header.into_owned(),
             volume_data_block: self
                 .volume_data_block
-                .map(|b| b.into_owned_with(|inner| Cow::Owned(inner.into_owned()))),
+                .map(|b| b.into_owned_with(|inner| inner.into_owned())),
             elevation_data_block: self
                 .elevation_data_block
-                .map(|b| b.into_owned_with(|inner| Cow::Owned(inner.into_owned()))),
+                .map(|b| b.into_owned_with(|inner| inner.into_owned())),
             radial_data_block: self
                 .radial_data_block
-                .map(|b| b.into_owned_with(|inner| Cow::Owned(inner.into_owned()))),
+                .map(|b| b.into_owned_with(|inner| inner.into_owned())),
             reflectivity_data_block: self
                 .reflectivity_data_block
                 .map(|b| b.into_owned_with(|inner| inner.into_owned())),
@@ -183,10 +183,68 @@ impl<'a> Message<'a> {
         }
     }
 
+    /// The decoded digital radar data header.
+    pub fn header(&self) -> &Header<'a> {
+        &self.header
+    }
+
+    /// Volume data if included in the message.
+    pub fn volume_data_block(&self) -> Option<&DataBlock<'a, VolumeDataBlock<'a>>> {
+        self.volume_data_block.as_ref()
+    }
+
+    /// Elevation data if included in the message.
+    pub fn elevation_data_block(&self) -> Option<&DataBlock<'a, ElevationDataBlock<'a>>> {
+        self.elevation_data_block.as_ref()
+    }
+
+    /// Radial data if included in the message.
+    pub fn radial_data_block(&self) -> Option<&DataBlock<'a, RadialDataBlock<'a>>> {
+        self.radial_data_block.as_ref()
+    }
+
+    /// Reflectivity data if included in the message.
+    pub fn reflectivity_data_block(&self) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
+        self.reflectivity_data_block.as_ref()
+    }
+
+    /// Velocity data if included in the message.
+    pub fn velocity_data_block(&self) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
+        self.velocity_data_block.as_ref()
+    }
+
+    /// Spectrum width data if included in the message.
+    pub fn spectrum_width_data_block(&self) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
+        self.spectrum_width_data_block.as_ref()
+    }
+
+    /// Differential reflectivity data if included in the message.
+    pub fn differential_reflectivity_data_block(
+        &self,
+    ) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
+        self.differential_reflectivity_data_block.as_ref()
+    }
+
+    /// Differential phase data if included in the message.
+    pub fn differential_phase_data_block(&self) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
+        self.differential_phase_data_block.as_ref()
+    }
+
+    /// Correlation coefficient data if included in the message.
+    pub fn correlation_coefficient_data_block(
+        &self,
+    ) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
+        self.correlation_coefficient_data_block.as_ref()
+    }
+
+    /// Specific differential phase data if included in the message.
+    pub fn specific_diff_phase_data_block(&self) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
+        self.specific_diff_phase_data_block.as_ref()
+    }
+
     /// Get a radial from this digital radar data message.
     #[cfg(feature = "nexrad-model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
-        use crate::messages::digital_radar_data::RadialStatus;
         use crate::result::Error;
         use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
 
@@ -195,9 +253,9 @@ impl<'a> Message<'a> {
                 .date_time()
                 .ok_or(Error::MessageMissingDateError)?
                 .timestamp_millis(),
-            self.header.azimuth_number.get(),
-            self.header.azimuth_angle.get(),
-            self.header.azimuth_resolution_spacing as f32 * 0.5,
+            self.header.azimuth_number(),
+            self.header.azimuth_angle_raw(),
+            self.header.azimuth_resolution_spacing_raw() as f32 * 0.5,
             match self.header.radial_status() {
                 RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
                 RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
@@ -206,8 +264,8 @@ impl<'a> Message<'a> {
                 RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
                 RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
             },
-            self.header.elevation_number,
-            self.header.elevation_angle.get(),
+            self.header.elevation_number(),
+            self.header.elevation_angle_raw(),
             self.reflectivity_data_block
                 .as_ref()
                 .map(|block| block.moment_data()),
@@ -235,7 +293,6 @@ impl<'a> Message<'a> {
     /// Convert this digital radar data message into a common model radial, minimizing data copy.
     #[cfg(feature = "nexrad-model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
-        use crate::messages::digital_radar_data::RadialStatus;
         use crate::result::Error;
         use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
 
@@ -244,9 +301,9 @@ impl<'a> Message<'a> {
                 .date_time()
                 .ok_or(Error::MessageMissingDateError)?
                 .timestamp_millis(),
-            self.header.azimuth_number.get(),
-            self.header.azimuth_angle.get(),
-            self.header.azimuth_resolution_spacing as f32 * 0.5,
+            self.header.azimuth_number(),
+            self.header.azimuth_angle_raw(),
+            self.header.azimuth_resolution_spacing_raw() as f32 * 0.5,
             match self.header.radial_status() {
                 RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
                 RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
@@ -255,22 +312,22 @@ impl<'a> Message<'a> {
                 RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
                 RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
             },
-            self.header.elevation_number,
-            self.header.elevation_angle.get(),
+            self.header.elevation_number(),
+            self.header.elevation_angle_raw(),
             self.reflectivity_data_block
-                .map(|block| block.inner.into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data()),
             self.velocity_data_block
-                .map(|block| block.inner.into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data()),
             self.spectrum_width_data_block
-                .map(|block| block.inner.into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data()),
             self.differential_reflectivity_data_block
-                .map(|block| block.inner.into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data()),
             self.differential_phase_data_block
-                .map(|block| block.inner.into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data()),
             self.correlation_coefficient_data_block
-                .map(|block| block.inner.into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data()),
             self.specific_diff_phase_data_block
-                .map(|block| block.inner.into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data()),
         ))
     }
 }

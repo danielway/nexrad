@@ -1,7 +1,7 @@
-use crate::messages::volume_coverage_pattern::{ElevationDataBlock, Header};
+use super::raw;
+use super::{ElevationDataBlock, Header};
 use crate::result::Result;
 use crate::slice_reader::SliceReader;
-use std::borrow::Cow;
 
 /// The volume coverage pattern message describes the current scan pattern. This is sent on
 /// wideband connection and the start of each volume scan.
@@ -10,31 +10,45 @@ use std::borrow::Cow;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message<'a> {
     /// The decoded volume coverage pattern header.
-    pub header: Cow<'a, Header>,
+    header: Header<'a>,
 
     /// The decoded elevation data blocks.
-    pub elevations: Cow<'a, [ElevationDataBlock]>,
+    elevations: Vec<ElevationDataBlock<'a>>,
 }
 
 impl<'a> Message<'a> {
     /// Parse a volume coverage pattern message from the input.
     pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
-        let header = reader.take_ref::<Header>()?;
+        let raw_header = reader.take_ref::<raw::Header>()?;
 
-        let elevation_cuts = header.number_of_elevation_cuts.get() as usize;
-        let elevations = reader.take_slice::<ElevationDataBlock>(elevation_cuts)?;
+        let elevation_cuts = raw_header.number_of_elevation_cuts.get() as usize;
+        let raw_elevations = reader.take_slice::<raw::ElevationDataBlock>(elevation_cuts)?;
 
-        Ok(Self {
-            header: Cow::Borrowed(header),
-            elevations: Cow::Borrowed(elevations),
-        })
+        let header = Header::new(raw_header);
+        let elevations = raw_elevations.iter().map(ElevationDataBlock::new).collect();
+
+        Ok(Self { header, elevations })
     }
 
     /// Convert this message to an owned version with `'static` lifetime.
     pub fn into_owned(self) -> Message<'static> {
         Message {
-            header: Cow::Owned(self.header.into_owned()),
-            elevations: Cow::Owned(self.elevations.into_owned()),
+            header: self.header.into_owned(),
+            elevations: self
+                .elevations
+                .into_iter()
+                .map(ElevationDataBlock::into_owned)
+                .collect(),
         }
+    }
+
+    /// The decoded volume coverage pattern header.
+    pub fn header(&self) -> &Header<'a> {
+        &self.header
+    }
+
+    /// The decoded elevation data blocks.
+    pub fn elevations(&self) -> &[ElevationDataBlock<'a>] {
+        &self.elevations
     }
 }

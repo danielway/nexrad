@@ -1,4 +1,5 @@
-use crate::messages::clutter_filter_map::{AzimuthSegmentHeader, RangeZone};
+use crate::messages::clutter_filter_map::raw::{self, AzimuthSegmentHeader};
+use crate::messages::clutter_filter_map::RangeZone;
 use crate::result::Result;
 use crate::slice_reader::SliceReader;
 use std::borrow::Cow;
@@ -8,27 +9,46 @@ use std::borrow::Cow;
 pub struct AzimuthSegment<'a> {
     /// Header information for this azimuth segment. This is the portion of an azimuth segment that
     /// is read directly from the Archive II file.
-    pub header: Cow<'a, AzimuthSegmentHeader>,
+    header: Cow<'a, AzimuthSegmentHeader>,
 
     /// This azimuth segment's number from 0 to 359. Each azimuth segment subtends a range of 1
     /// degree, e.g.: 0 degrees <= azimuth segment 0 < 1 degree.
-    pub azimuth_segment: u16,
+    azimuth_segment: u16,
 
     /// The range zones defined in this azimuth segment.
-    pub range_zones: Cow<'a, [RangeZone]>,
+    range_zones: Vec<RangeZone<'a>>,
 }
 
 impl<'a> AzimuthSegment<'a> {
     /// Parse an azimuth segment (expected to be the specified number) from the reader.
     pub(crate) fn parse(reader: &mut SliceReader<'a>, segment_number: u16) -> Result<Self> {
         let header = reader.take_ref::<AzimuthSegmentHeader>()?;
-        let range_zones = reader.take_slice::<RangeZone>(header.range_zone_count.get() as usize)?;
+        let raw_range_zones =
+            reader.take_slice::<raw::RangeZone>(header.range_zone_count.get() as usize)?;
+
+        let range_zones = raw_range_zones.iter().map(RangeZone::new).collect();
 
         Ok(AzimuthSegment {
             header: Cow::Borrowed(header),
             azimuth_segment: segment_number,
-            range_zones: Cow::Borrowed(range_zones),
+            range_zones,
         })
+    }
+
+    /// The number of range zones defined in this azimuth segment, from 1 to 20.
+    pub fn range_zone_count(&self) -> u16 {
+        self.header.range_zone_count.get()
+    }
+
+    /// This azimuth segment's number from 0 to 359. Each azimuth segment subtends a range of 1
+    /// degree, e.g.: 0 degrees <= azimuth segment 0 < 1 degree.
+    pub fn azimuth_segment(&self) -> u16 {
+        self.azimuth_segment
+    }
+
+    /// The range zones defined in this azimuth segment.
+    pub fn range_zones(&self) -> &[RangeZone<'a>] {
+        &self.range_zones
     }
 
     /// Convert this segment to an owned version with `'static` lifetime.
@@ -36,7 +56,11 @@ impl<'a> AzimuthSegment<'a> {
         AzimuthSegment {
             header: Cow::Owned(self.header.into_owned()),
             azimuth_segment: self.azimuth_segment,
-            range_zones: Cow::Owned(self.range_zones.into_owned()),
+            range_zones: self
+                .range_zones
+                .into_iter()
+                .map(|rz| rz.into_owned())
+                .collect(),
         }
     }
 }

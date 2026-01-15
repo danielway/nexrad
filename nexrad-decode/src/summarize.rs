@@ -77,7 +77,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                     }
                 }
 
-                let elevation_number = radar_data.header.elevation_number;
+                let elevation_number = radar_data.header().elevation_number();
 
                 let can_continue = if let Some(group) = &current_group {
                     group.message_type == MessageType::RDADigitalRadarDataGenericFormat
@@ -97,9 +97,9 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                         end_time: message_time,
                         message_count: 1,
                         elevation_number: Some(elevation_number),
-                        elevation_angle: Some(radar_data.header.elevation_angle.get()),
-                        start_azimuth: Some(radar_data.header.azimuth_angle.get()),
-                        end_azimuth: Some(radar_data.header.azimuth_angle.get()),
+                        elevation_angle: Some(radar_data.header().elevation_angle_raw()),
+                        start_azimuth: Some(radar_data.header().azimuth_angle_raw()),
+                        end_azimuth: Some(radar_data.header().azimuth_angle_raw()),
                         data_types: Some(HashMap::new()),
                         rda_status_info: None,
                         vcp_info: None,
@@ -114,7 +114,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                 } else if let Some(group) = &mut current_group {
                     group.end_time = message_time;
                     group.message_count += 1;
-                    group.end_azimuth = Some(radar_data.header.azimuth_angle.get());
+                    group.end_azimuth = Some(radar_data.header().azimuth_angle_raw());
                     group.end_message_index = i;
                 }
 
@@ -125,31 +125,31 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                             data_types.insert(data_type.to_string(), count);
                         };
 
-                        if radar_data.reflectivity_data_block.is_some() {
+                        if radar_data.reflectivity_data_block().is_some() {
                             increment_count("Reflectivity");
                         }
-                        if radar_data.velocity_data_block.is_some() {
+                        if radar_data.velocity_data_block().is_some() {
                             increment_count("Velocity");
                         }
-                        if radar_data.spectrum_width_data_block.is_some() {
+                        if radar_data.spectrum_width_data_block().is_some() {
                             increment_count("Spectrum Width");
                         }
-                        if radar_data.differential_reflectivity_data_block.is_some() {
+                        if radar_data.differential_reflectivity_data_block().is_some() {
                             increment_count("Differential Reflectivity");
                         }
-                        if radar_data.differential_phase_data_block.is_some() {
+                        if radar_data.differential_phase_data_block().is_some() {
                             increment_count("Differential Phase");
                         }
-                        if radar_data.correlation_coefficient_data_block.is_some() {
+                        if radar_data.correlation_coefficient_data_block().is_some() {
                             increment_count("Correlation Coefficient");
                         }
-                        if radar_data.specific_diff_phase_data_block.is_some() {
+                        if radar_data.specific_diff_phase_data_block().is_some() {
                             increment_count("Specific Differential Phase");
                         }
                     }
                 }
 
-                if let Some(volume_data) = &radar_data.volume_data_block {
+                if let Some(volume_data) = radar_data.volume_data_block() {
                     summary
                         .volume_coverage_patterns
                         .insert(volume_data.volume_coverage_pattern());

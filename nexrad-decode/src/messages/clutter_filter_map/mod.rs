@@ -13,5 +13,10 @@ pub use elevation_segment::ElevationSegment;
 mod message;
 pub use message::Message;
 
-mod raw;
-pub use raw::*;
+mod op_code;
+pub use op_code::OpCode;
+
+mod range_zone;
+pub use range_zone::RangeZone;
+
+pub(crate) mod raw;

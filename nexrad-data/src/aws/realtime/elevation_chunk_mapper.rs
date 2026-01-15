@@ -11,9 +11,8 @@ impl ElevationChunkMapper {
     pub fn new(vcp: &volume_coverage_pattern::Message) -> Self {
         let mut elevation_chunk_mappings = Vec::new();
         let mut total_chunk_count = 2;
-        for elevation in vcp.elevations.iter() {
-            let elevation_chunk_count = if elevation.super_resolution_control_half_degree_azimuth()
-            {
+        for elevation in vcp.elevations().iter() {
+            let elevation_chunk_count = if elevation.super_resolution_half_degree_azimuth() {
                 6 // 720 radials / 120 chunks per chunk
             } else {
                 3 // 360 radials / 120 chunks per chunk

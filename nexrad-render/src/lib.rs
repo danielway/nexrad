@@ -18,6 +18,27 @@
 //!     (800, 800),
 //! ).unwrap();
 //! ```
+//!
+//! # Crate Boundaries
+//!
+//! This crate provides **visualization and rendering** with the following responsibilities
+//! and constraints:
+//!
+//! ## Responsibilities
+//!
+//! - ✓ Render radar data to in-memory images
+//! - ✓ Apply color scales to moment data
+//! - ✓ Handle geometric transformations (polar coordinates, rotation)
+//! - ✓ Consume `nexrad-model` types (Radial, MomentData)
+//!
+//! ## Constraints
+//!
+//! - ✗ **No I/O operations** (returns in-memory bitmap targets)
+//! - ✗ **No data access or network operations**
+//! - ✗ **No binary parsing or decoding**
+//!
+//! This crate can be used standalone or through the `nexrad` facade crate (re-exported
+//! via the `render` feature, which is enabled by default).
 
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]

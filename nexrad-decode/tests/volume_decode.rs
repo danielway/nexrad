@@ -168,10 +168,10 @@ fn test_decode_kdmx_volume_radar_data_properties() {
             }
 
             if let MessageContents::DigitalRadarData(radar_data) = message.contents() {
-                elevation_numbers_seen.insert(radar_data.header.elevation_number);
+                elevation_numbers_seen.insert(radar_data.header().elevation_number());
 
                 // Check for volume scan boundaries
-                match radar_data.header.radial_status {
+                match radar_data.header().radial_status_raw() {
                     3 => found_volume_start = true, // VolumeScanStart
                     4 => found_volume_end = true,   // VolumeScanEnd
                     _ => {}

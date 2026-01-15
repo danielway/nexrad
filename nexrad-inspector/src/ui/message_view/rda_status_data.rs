@@ -1,13 +1,22 @@
 //! RDA Status Data (Type 2) message parsing and display.
 
-use nexrad_decode::messages::rda_status_data;
-use zerocopy::FromBytes;
+use nexrad_decode::messages::{decode_messages, rda_status_data, MessageContents};
 
 /// Parses and displays an RDA Status Data (Type 2) message with full details.
 pub fn parse_rda_status_data(data: &[u8]) -> String {
-    let message = match rda_status_data::Message::ref_from_prefix(data) {
-        Ok((m, _)) => m,
-        Err(_) => return "Failed to parse RDA Status Data".to_string(),
+    let messages = match decode_messages(data) {
+        Ok(m) => m,
+        Err(_) => return "Failed to decode RDA Status Data".to_string(),
+    };
+
+    let message = match messages.first() {
+        Some(m) => m,
+        None => return "No messages decoded".to_string(),
+    };
+
+    let message = match message.contents() {
+        MessageContents::RDAStatusData(data) => data,
+        _ => return "Message is not RDA Status Data".to_string(),
     };
 
     let mut output = String::new();
@@ -43,7 +52,7 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
     output.push_str("\n--- Power & Calibration ---\n");
     output.push_str(&format!(
         "Avg TX Power: {} watts\n",
-        message.average_transmitter_power
+        message.average_transmitter_power()
     ));
     output.push_str(&format!(
         "Aux Power Generator: {:?}\n",
@@ -59,7 +68,7 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
     ));
     output.push_str(&format!(
         "Vert Reflectivity Cal: {:.2} dB\n",
-        message.vertical_reflectivity_calibration_correction.get() as f32 / 100.0
+        message.raw_vertical_reflectivity_calibration_correction() as f32 / 100.0
     ));
 
     // Volume Coverage Pattern Section
@@ -205,11 +214,11 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
     ));
     output.push_str(&format!(
         "Status Message Version: {}\n",
-        message.status_version
+        message.status_version()
     ));
     output.push_str(&format!(
         "Signal Processor Options: 0x{:04X}\n",
-        message.signal_processor_options.get()
+        message.raw_signal_processor_options()
     ));
 
     output

@@ -87,7 +87,7 @@ fn test_elevation_chunk_mapper_all_sequences_valid() {
 
         let elev_num = elevation.unwrap();
         assert!(
-            elev_num >= 1 && elev_num <= vcp.elevations.len(),
+            elev_num >= 1 && elev_num <= vcp.elevations().len(),
             "Elevation number {} out of range for sequence {}",
             elev_num,
             seq
@@ -110,7 +110,7 @@ fn test_elevation_chunk_mapper_final_sequence() {
     );
     assert_eq!(
         elevation.unwrap(),
-        vcp.elevations.len(),
+        vcp.elevations().len(),
         "Final sequence should map to last elevation"
     );
 }
@@ -394,7 +394,7 @@ fn test_estimate_chunk_processing_time_with_stats() {
 
     // Get characteristics for sequence 2
     let elevation = mapper.get_sequence_elevation_number(2).unwrap();
-    let elev_data = &vcp.elevations[elevation - 1];
+    let elev_data = &vcp.elevations()[elevation - 1];
 
     let characteristics = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,

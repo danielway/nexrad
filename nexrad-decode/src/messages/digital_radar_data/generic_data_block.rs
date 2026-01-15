@@ -1,5 +1,6 @@
+use super::raw;
+use super::{GenericDataBlockHeader, ScaledMomentValue};
 use crate::binary_data::BinaryData;
-use crate::messages::digital_radar_data::{GenericDataBlockHeader, ScaledMomentValue};
 use crate::result::Result;
 use crate::slice_reader::SliceReader;
 use std::borrow::Cow;
@@ -9,24 +10,25 @@ use std::fmt::Debug;
 #[derive(Clone, PartialEq, Debug)]
 pub struct GenericDataBlock<'a> {
     /// The generic data block's header information.
-    pub header: Cow<'a, GenericDataBlockHeader>,
+    header: GenericDataBlockHeader<'a>,
 
     /// The generic data block's encoded moment data.
-    pub encoded_data: BinaryData<Cow<'a, [u8]>>,
+    encoded_data: BinaryData<Cow<'a, [u8]>>,
 }
 
 impl<'a> GenericDataBlock<'a> {
     /// Creates a new generic data moment block from the decoded header.
     pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
-        let header = reader.take_ref::<GenericDataBlockHeader>()?;
+        let raw_header = reader.take_ref::<raw::GenericDataBlockHeader>()?;
 
-        let word_size_bytes = header.data_word_size as usize / 8;
-        let encoded_data_size = header.number_of_data_moment_gates.get() as usize * word_size_bytes;
+        let word_size_bytes = raw_header.data_word_size as usize / 8;
+        let encoded_data_size =
+            raw_header.number_of_data_moment_gates.get() as usize * word_size_bytes;
 
         let encoded_data = reader.take_bytes(encoded_data_size)?;
 
         Ok(Self {
-            header: Cow::Borrowed(header),
+            header: GenericDataBlockHeader::new(raw_header),
             encoded_data: BinaryData::new(Cow::Borrowed(encoded_data)),
         })
     }
@@ -34,9 +36,19 @@ impl<'a> GenericDataBlock<'a> {
     /// Convert this data block to an owned version with `'static` lifetime.
     pub fn into_owned(self) -> GenericDataBlock<'static> {
         GenericDataBlock {
-            header: Cow::Owned(self.header.into_owned()),
+            header: self.header.into_owned(),
             encoded_data: BinaryData::new(Cow::Owned(self.encoded_data.0.into_owned())),
         }
+    }
+
+    /// The generic data block's header information.
+    pub fn header(&self) -> &GenericDataBlockHeader<'a> {
+        &self.header
+    }
+
+    /// The generic data block's encoded moment data.
+    pub fn encoded_data(&self) -> &BinaryData<Cow<'a, [u8]>> {
+        &self.encoded_data
     }
 
     /// Raw gate values for this moment/radial ordered in ascending distance from the radar. These
@@ -54,7 +66,7 @@ impl<'a> GenericDataBlock<'a> {
             .iter()
             .copied()
             .map(|raw_value| {
-                if self.header.scale == 0.0 {
+                if self.header.scale() == 0.0 {
                     return ScaledMomentValue::Value(raw_value as f32);
                 }
 
@@ -62,7 +74,7 @@ impl<'a> GenericDataBlock<'a> {
                     0 => ScaledMomentValue::BelowThreshold,
                     1 => ScaledMomentValue::RangeFolded,
                     _ => ScaledMomentValue::Value(
-                        (raw_value as f32 - self.header.offset.get()) / self.header.scale.get(),
+                        (raw_value as f32 - self.header.offset()) / self.header.scale(),
                     ),
                 }
             })
@@ -73,11 +85,11 @@ impl<'a> GenericDataBlock<'a> {
     #[cfg(feature = "nexrad-model")]
     pub fn moment_data(&self) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
-            self.header.number_of_data_moment_gates.get(),
-            self.header.data_moment_range.get(),
-            self.header.data_moment_range_sample_interval.get(),
-            self.header.scale.get(),
-            self.header.offset.get(),
+            self.header.number_of_data_moment_gates(),
+            self.header.data_moment_range_raw(),
+            self.header.data_moment_range_sample_interval_raw(),
+            self.header.scale(),
+            self.header.offset(),
             self.encoded_data.to_vec(),
         )
     }
@@ -86,11 +98,11 @@ impl<'a> GenericDataBlock<'a> {
     #[cfg(feature = "nexrad-model")]
     pub fn into_moment_data(self) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
-            self.header.number_of_data_moment_gates.get(),
-            self.header.data_moment_range.get(),
-            self.header.data_moment_range_sample_interval.get(),
-            self.header.scale.get(),
-            self.header.offset.get(),
+            self.header.number_of_data_moment_gates(),
+            self.header.data_moment_range_raw(),
+            self.header.data_moment_range_sample_interval_raw(),
+            self.header.scale(),
+            self.header.offset(),
             self.encoded_data.into_inner().into_owned(),
         )
     }

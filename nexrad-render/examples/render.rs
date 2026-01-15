@@ -22,7 +22,7 @@ fn main() {
 
         for message in record.messages().expect("messages are valid") {
             if let MessageContents::DigitalRadarData(message) = message.contents() {
-                if message.header.elevation_number == target_elevation_number {
+                if message.header().elevation_number() == target_elevation_number {
                     radials.push(message.radial().expect("radial is valid"));
                 }
             }

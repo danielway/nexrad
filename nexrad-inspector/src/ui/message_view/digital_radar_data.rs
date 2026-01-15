@@ -20,16 +20,15 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         _ => return "Message is not digital radar data".to_string(),
     };
 
-    let header = &msg.header;
+    let header = msg.header();
 
     let datetime = header
         .date_time()
         .map(|dt| dt.format("%Y-%m-%d %H:%M:%S UTC").to_string())
         .unwrap_or_else(|| "Unknown".to_string());
 
-    let radar_id = std::str::from_utf8(&header.radar_identifier)
-        .unwrap_or("????")
-        .trim_end_matches('\0');
+    let radar_id = header.radar_identifier();
+    let radar_id = radar_id.trim_end_matches('\0');
 
     let mut output = String::new();
 
@@ -39,65 +38,65 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
     output.push_str(&format!("Date/Time: {}\n", datetime));
     output.push_str(&format!(
         "Azimuth: #{} at {:.2}\u{00b0}\n",
-        header.azimuth_number,
-        header.azimuth_angle.get()
+        header.azimuth_number(),
+        header.azimuth_angle_raw()
     ));
     output.push_str(&format!(
         "Elevation: #{} at {:.2}\u{00b0}\n",
-        header.elevation_number,
-        header.elevation_angle.get()
+        header.elevation_number(),
+        header.elevation_angle_raw()
     ));
     output.push_str(&format!("Radial Status: {:?}\n", header.radial_status()));
-    output.push_str(&format!("Radial Length: {} bytes\n", header.radial_length));
+    output.push_str(&format!("Radial Length: {} bytes\n", header.radial_length_raw()));
     output.push_str(&format!(
         "Compression: {:?}\n",
         header.compression_indicator()
     ));
     output.push_str(&format!(
         "Azimuth Resolution: {} ({}\u{00b0})\n",
-        header.azimuth_resolution_spacing,
-        if header.azimuth_resolution_spacing == 1 {
+        header.azimuth_resolution_spacing_raw(),
+        if header.azimuth_resolution_spacing_raw() == 1 {
             0.5
         } else {
             1.0
         }
     ));
-    output.push_str(&format!("Data Block Count: {}\n", header.data_block_count));
+    output.push_str(&format!("Data Block Count: {}\n", header.data_block_count()));
 
     // Volume Data Block
-    if let Some(ref vol) = msg.volume_data_block {
+    if let Some(vol) = msg.volume_data_block() {
         output.push_str("\n--- Volume Data Block ---\n");
         output.push_str(&format!(
             "Location: {:.4}\u{00b0}, {:.4}\u{00b0}\n",
-            vol.latitude.get(),
-            vol.longitude.get()
+            vol.latitude_raw(),
+            vol.longitude_raw()
         ));
         output.push_str(&format!(
             "Site Height: {} m (feedhorn: {} m)\n",
-            vol.site_height.get(),
-            vol.feedhorn_height.get()
+            vol.site_height_raw(),
+            vol.feedhorn_height_raw()
         ));
         output.push_str(&format!(
             "VCP: {} ({:?})\n",
-            vol.volume_coverage_pattern_number.get(),
+            vol.volume_coverage_pattern_number(),
             vol.volume_coverage_pattern()
         ));
         output.push_str(&format!(
             "Calibration Constant: {:.2} dB\n",
-            vol.calibration_constant.get()
+            vol.calibration_constant()
         ));
         output.push_str(&format!(
             "TX Power (H/V): {:.1}/{:.1} kW\n",
-            vol.horizontal_shv_tx_power.get(),
-            vol.vertical_shv_tx_power.get()
+            vol.horizontal_shv_tx_power_raw(),
+            vol.vertical_shv_tx_power_raw()
         ));
         output.push_str(&format!(
             "System ZDR: {:.2} dB\n",
-            vol.system_differential_reflectivity.get()
+            vol.system_differential_reflectivity()
         ));
         output.push_str(&format!(
             "Initial DP: {:.2}\u{00b0}\n",
-            vol.initial_system_differential_phase.get()
+            vol.initial_system_differential_phase_raw()
         ));
         output.push_str(&format!(
             "Processing Status: {:?}\n",
@@ -105,49 +104,49 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         ));
         output.push_str(&format!(
             "Version: {}.{}\n",
-            vol.major_version_number, vol.minor_version_number
+            vol.major_version_number(), vol.minor_version_number()
         ));
     }
 
     // Radial Data Block
-    if let Some(ref rad) = msg.radial_data_block {
+    if let Some(rad) = msg.radial_data_block() {
         output.push_str("\n--- Radial Data Block ---\n");
         output.push_str(&format!(
             "Unambiguous Range: {:.1} km\n",
-            rad.unambiguous_range.get() as f32 * 0.1
+            rad.unambiguous_range_raw() as f32 * 0.1
         ));
         output.push_str(&format!(
             "Nyquist Velocity: {:.2} m/s\n",
-            rad.nyquist_velocity.get() as f32 * 0.01
+            rad.nyquist_velocity_raw() as f32 * 0.01
         ));
         output.push_str(&format!(
             "Noise Level (H): {:.2} dBm\n",
-            rad.horizontal_channel_noise_level.get()
+            rad.horizontal_channel_noise_level()
         ));
         output.push_str(&format!(
             "Noise Level (V): {:.2} dBm\n",
-            rad.vertical_channel_noise_level.get()
+            rad.vertical_channel_noise_level()
         ));
         output.push_str(&format!(
             "Calibration (H): {:.2} dBZ\n",
-            rad.horizontal_channel_calibration_constant.get()
+            rad.horizontal_channel_calibration_constant()
         ));
         output.push_str(&format!(
             "Calibration (V): {:.2} dBZ\n",
-            rad.vertical_channel_calibration_constant.get()
+            rad.vertical_channel_calibration_constant()
         ));
     }
 
     // Elevation Data Block
-    if let Some(ref elv) = msg.elevation_data_block {
+    if let Some(elv) = msg.elevation_data_block() {
         output.push_str("\n--- Elevation Data Block ---\n");
         output.push_str(&format!(
             "Atmospheric Attenuation: {:.4} dB/km\n",
-            elv.atmos.get()
+            elv.atmos()
         ));
         output.push_str(&format!(
             "Calibration Constant: {:.2} dB\n",
-            elv.calibration_constant.get()
+            elv.calibration_constant()
         ));
     }
 
@@ -157,32 +156,32 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         &str,
         Option<&digital_radar_data::DataBlock<digital_radar_data::GenericDataBlock>>,
     )> = vec![
-        ("REF", "Reflectivity", msg.reflectivity_data_block.as_ref()),
-        ("VEL", "Velocity", msg.velocity_data_block.as_ref()),
+        ("REF", "Reflectivity", msg.reflectivity_data_block()),
+        ("VEL", "Velocity", msg.velocity_data_block()),
         (
             "SW ",
             "Spectrum Width",
-            msg.spectrum_width_data_block.as_ref(),
+            msg.spectrum_width_data_block(),
         ),
         (
             "ZDR",
             "Differential Reflectivity",
-            msg.differential_reflectivity_data_block.as_ref(),
+            msg.differential_reflectivity_data_block(),
         ),
         (
             "PHI",
             "Differential Phase",
-            msg.differential_phase_data_block.as_ref(),
+            msg.differential_phase_data_block(),
         ),
         (
             "RHO",
             "Correlation Coefficient",
-            msg.correlation_coefficient_data_block.as_ref(),
+            msg.correlation_coefficient_data_block(),
         ),
         (
             "CFP",
             "Specific Diff Phase",
-            msg.specific_diff_phase_data_block.as_ref(),
+            msg.specific_diff_phase_data_block(),
         ),
     ];
 
@@ -191,32 +190,32 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
             output.push_str(&format!("\n--- {} ({}) ---\n", name, id));
             output.push_str(&format!(
                 "Gates: {}\n",
-                block.header.number_of_data_moment_gates.get()
+                block.header().number_of_data_moment_gates()
             ));
             output.push_str(&format!(
                 "First Gate: {:.3} km\n",
-                block.header.data_moment_range.get() as f32 * 0.001
+                block.header().data_moment_range_raw() as f32 * 0.001
             ));
             output.push_str(&format!(
                 "Gate Interval: {:.3} km\n",
-                block.header.data_moment_range_sample_interval.get() as f32 * 0.001
+                block.header().data_moment_range_sample_interval_raw() as f32 * 0.001
             ));
             output.push_str(&format!(
                 "SNR Threshold: {:.3} dB\n",
-                block.header.snr_threshold.get()
+                block.header().snr_threshold_raw()
             ));
             output.push_str(&format!(
                 "Scale/Offset: {:.2}/{:.2}\n",
-                block.header.scale.get(),
-                block.header.offset.get()
+                block.header().scale(),
+                block.header().offset()
             ));
             output.push_str(&format!(
                 "Word Size: {} bits\n",
-                block.header.data_word_size
+                block.header().data_word_size()
             ));
             output.push_str(&format!(
                 "Control Flags: {:?}\n",
-                block.header.control_flags()
+                block.header().control_flags()
             ));
 
             // Get decoded values and create ASCII visualization
@@ -232,9 +231,9 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
 
                 for (row_idx, chunk) in ascii.as_bytes().chunks(gates_per_row).enumerate() {
                     let start_gate = row_idx * gates_per_row;
-                    let start_range = block.header.data_moment_range.get() as f32 * 0.001
+                    let start_range = block.header().data_moment_range_raw() as f32 * 0.001
                         + start_gate as f32
-                            * block.header.data_moment_range_sample_interval.get() as f32
+                            * block.header().data_moment_range_sample_interval_raw() as f32
                             * 0.001;
                     output.push_str(&format!(
                         "{:5.1}km |{}|\n",

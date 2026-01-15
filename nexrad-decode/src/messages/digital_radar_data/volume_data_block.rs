@@ -179,7 +179,9 @@ impl<'a> VolumeDataBlock<'a> {
     pub fn zdr_bias_estimate_weighted_mean(&self) -> Option<u16> {
         match &self.inner {
             VolumeDataBlockInner::Legacy(_) => None,
-            VolumeDataBlockInner::Modern(inner) => Some(inner.zdr_bias_estimate_weighted_mean.get()),
+            VolumeDataBlockInner::Modern(inner) => {
+                Some(inner.zdr_bias_estimate_weighted_mean.get())
+            }
         }
     }
 

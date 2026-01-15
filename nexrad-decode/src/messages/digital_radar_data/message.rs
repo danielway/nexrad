@@ -115,8 +115,10 @@ impl<'a> Message<'a> {
 
                     if use_legacy {
                         let volume_block = reader.take_ref::<raw::VolumeDataBlockLegacy>()?;
-                        message.volume_data_block =
-                            Some(DataBlock::new(id, VolumeDataBlock::new_legacy(volume_block)));
+                        message.volume_data_block = Some(DataBlock::new(
+                            id,
+                            VolumeDataBlock::new_legacy(volume_block),
+                        ));
                     } else {
                         let volume_block = reader.take_ref::<raw::VolumeDataBlock>()?;
                         message.volume_data_block =

@@ -1,0 +1,164 @@
+# NEXRAD Test Fixture Catalog
+#
+# This file documents curated test fixtures for the nexrad workspace.
+# Each fixture is a trimmed (2-3 sweeps) NEXRAD Archive II volume file
+# selected to cover diverse time periods, geographic regions, and weather regimes.
+#
+# Fixture files are stored in subdirectories by weather regime and loaded
+# via include_bytes! in integration tests.
+
+[catalog]
+version = "1.0"
+description = "Curated NEXRAD Archive II fixtures for integration and snapshot testing"
+
+# Schema for each fixture entry:
+# - id: Unique identifier used in test code
+# - path: Relative path from tests/fixtures/
+# - site: 4-letter ICAO radar identifier
+# - timestamp: ISO 8601 UTC timestamp of volume start
+# - label: Human-readable event/condition description
+# - file_version: AR2V00XX format version from tape filename
+# - icd_build: RDA build version (affects message format)
+# - vcp: Volume Coverage Pattern number
+# - sweeps_included: Which elevation sweeps are included (1-indexed)
+# - original_size_mb: Size of source file before trimming
+# - trimmed_size_kb: Size after trimming
+# - weather_regime: Category (clear_air, convective, stratiform, tropical, winter)
+# - notes: Additional ICD, format, or meteorological notes
+# - status: "available" (file exists) or "planned" (to be downloaded)
+
+# =============================================================================
+# AVAILABLE FIXTURES (files exist in repository)
+# =============================================================================
+
+[[fixtures]]
+id = "existing_kdmx"
+path = "convective/KDMX20220305_232324.bin"
+site = "KDMX"
+timestamp = "2022-03-05T23:23:24Z"
+label = "Convective activity, Des Moines"
+file_version = "AR2V0006"
+icd_build = "19.0"
+vcp = 212
+sweeps_included = [1, 2, 3]
+original_size_mb = 12.11
+trimmed_size_kb = 2700
+weather_regime = "convective"
+notes = "Derived from existing downloads/KDMX20220305_232324_V06, regression baseline"
+status = "available"
+
+[[fixtures]]
+id = "hurricane_harvey"
+path = "tropical/KCRP20170826_044114.bin"
+site = "KCRP"
+timestamp = "2017-08-26T04:41:14Z"
+label = "Hurricane Harvey landfall"
+file_version = "AR2V0006"
+icd_build = "17.0"
+vcp = 212
+sweeps_included = [1, 2, 3]
+original_size_mb = 13.09
+trimmed_size_kb = 3744
+weather_regime = "tropical"
+notes = "Major hurricane, coastal Texas site, Build 17.0"
+status = "available"
+
+[[fixtures]]
+id = "modern_build_kdmx"
+path = "clear_air/KDMX20250314_175512.bin"
+site = "KDMX"
+timestamp = "2025-03-14T17:55:12Z"
+label = "Modern build, Des Moines"
+file_version = "AR2V0006"
+icd_build = "21.0"
+vcp = 212
+sweeps_included = [1, 2, 3]
+original_size_mb = 4.77
+trimmed_size_kb = 2225
+weather_regime = "clear_air"
+notes = "Build 21.0+ modern VolumeDataBlock format (48-byte), recent data"
+status = "available"
+
+# =============================================================================
+# PLANNED FIXTURES (to be downloaded from AWS)
+# =============================================================================
+
+[[fixtures]]
+id = "clear_air_plains"
+path = "clear_air/KTLX20190715_120000.bin"
+site = "KTLX"
+timestamp = "2019-07-15T12:00:00Z"
+label = "Clear-air return, summer morning"
+file_version = "AR2V0006"
+icd_build = "19.0"
+vcp = 32
+sweeps_included = [1, 2, 3]
+original_size_mb = 8.5
+trimmed_size_kb = 850
+weather_regime = "clear_air"
+notes = "VCP 32 clear-air mode, Build 19.0 dual-pol, Oklahoma plains"
+status = "planned"
+
+[[fixtures]]
+id = "tornado_moore_2013"
+path = "convective/KTLX20130520_195400.bin"
+site = "KTLX"
+timestamp = "2013-05-20T19:54:00Z"
+label = "Moore, OK EF5 Tornado"
+file_version = "AR2V0006"
+icd_build = "14.0"
+vcp = 212
+sweeps_included = [1, 2, 3]
+original_size_mb = 15.2
+trimmed_size_kb = 1200
+weather_regime = "convective"
+notes = "Historic tornado signature, early dual-pol era (Build 14.0)"
+status = "planned"
+
+[[fixtures]]
+id = "qlcs_outbreak"
+path = "convective/KSRX20110427_210000.bin"
+site = "KSRX"
+timestamp = "2011-04-27T21:00:00Z"
+label = "April 2011 Super Outbreak QLCS"
+file_version = "AR2V0006"
+icd_build = "12.0"
+vcp = 212
+sweeps_included = [1, 2, 3]
+original_size_mb = 12.5
+trimmed_size_kb = 1000
+weather_regime = "convective"
+notes = "Build 12.0 dual-pol transition period, quasi-linear convective system"
+status = "planned"
+
+[[fixtures]]
+id = "winter_greatlakes"
+path = "winter/KMKX20200115_150000.bin"
+site = "KMKX"
+timestamp = "2020-01-15T15:00:00Z"
+label = "Great Lakes snow event"
+file_version = "AR2V0006"
+icd_build = "19.0"
+vcp = 215
+sweeps_included = [1, 2, 3]
+original_size_mb = 9.6
+trimmed_size_kb = 770
+weather_regime = "winter"
+notes = "VCP 215 winter mode, lake-effect snow signatures"
+status = "planned"
+
+[[fixtures]]
+id = "stratiform_noreaster"
+path = "stratiform/KLWX20180302_120000.bin"
+site = "KLWX"
+timestamp = "2018-03-02T12:00:00Z"
+label = "Nor'easter stratiform rain"
+file_version = "AR2V0006"
+icd_build = "18.0"
+vcp = 212
+sweeps_included = [1, 2, 3]
+original_size_mb = 11.3
+trimmed_size_kb = 900
+weather_regime = "stratiform"
+notes = "East coast Nor'easter, widespread stratiform precipitation"
+status = "planned"

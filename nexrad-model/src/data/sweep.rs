@@ -45,6 +45,13 @@ impl Sweep {
             sweep_radials.push(radial);
         }
 
+        // Push the final sweep if there are remaining radials
+        if let Some(elevation_number) = sweep_elevation_number {
+            if !sweep_radials.is_empty() {
+                sweeps.push(Sweep::new(elevation_number, sweep_radials));
+            }
+        }
+
         sweeps
     }
 

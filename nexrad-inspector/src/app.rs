@@ -681,12 +681,12 @@ impl App {
             View::Record => {
                 let record_index = self.selected_record;
                 if let Some(msg_count) = self.message_count(record_index) {
-                    self.selected_message = if msg_count > 0 && self.selected_message < msg_count - 1
-                    {
-                        self.selected_message + 1
-                    } else {
-                        0
-                    };
+                    self.selected_message =
+                        if msg_count > 0 && self.selected_message < msg_count - 1 {
+                            self.selected_message + 1
+                        } else {
+                            0
+                        };
                 }
             }
             View::Message => match self.message_tab {

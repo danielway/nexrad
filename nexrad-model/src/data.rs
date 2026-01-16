@@ -14,8 +14,22 @@ mod scan;
 pub use scan::*;
 
 mod radial;
-
 pub use radial::*;
 
 mod moment;
 pub use moment::*;
+
+mod pulse_width;
+pub use pulse_width::*;
+
+mod waveform_type;
+pub use waveform_type::*;
+
+mod channel_configuration;
+pub use channel_configuration::*;
+
+mod elevation_cut;
+pub use elevation_cut::*;
+
+mod volume_coverage_pattern;
+pub use volume_coverage_pattern::*;

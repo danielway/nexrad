@@ -705,12 +705,12 @@ impl App {
                 let record_index = self.selected_record;
                 if let Ok(messages) = self.get_displayed_messages(record_index) {
                     let msg_count = messages.len();
-                    self.selected_message = if msg_count > 0 && self.selected_message < msg_count - 1
-                    {
-                        self.selected_message + 1
-                    } else {
-                        0
-                    };
+                    self.selected_message =
+                        if msg_count > 0 && self.selected_message < msg_count - 1 {
+                            self.selected_message + 1
+                        } else {
+                            0
+                        };
                 }
             }
             View::Message => match self.message_tab {

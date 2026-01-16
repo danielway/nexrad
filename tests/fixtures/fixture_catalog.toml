@@ -80,85 +80,85 @@ notes = "Build 21.0+ modern VolumeDataBlock format (48-byte), recent data"
 status = "available"
 
 # =============================================================================
-# PLANNED FIXTURES (to be downloaded from AWS)
+# ADDITIONAL AVAILABLE FIXTURES
 # =============================================================================
 
 [[fixtures]]
 id = "clear_air_plains"
-path = "clear_air/KTLX20190715_120000.bin"
+path = "clear_air/KTLX20190715_120037.bin"
 site = "KTLX"
-timestamp = "2019-07-15T12:00:00Z"
+timestamp = "2019-07-15T12:00:37Z"
 label = "Clear-air return, summer morning"
 file_version = "AR2V0006"
 icd_build = "19.0"
 vcp = 32
 sweeps_included = [1, 2, 3]
-original_size_mb = 8.5
-trimmed_size_kb = 850
+original_size_mb = 3.72
+trimmed_size_kb = 2555
 weather_regime = "clear_air"
 notes = "VCP 32 clear-air mode, Build 19.0 dual-pol, Oklahoma plains"
-status = "planned"
+status = "available"
 
 [[fixtures]]
-id = "tornado_moore_2013"
-path = "convective/KTLX20130520_195400.bin"
+id = "tornado_may2019"
+path = "convective/KTLX20190525_222419.bin"
 site = "KTLX"
-timestamp = "2013-05-20T19:54:00Z"
-label = "Moore, OK EF5 Tornado"
+timestamp = "2019-05-25T22:24:19Z"
+label = "May 2019 Oklahoma tornado outbreak"
 file_version = "AR2V0006"
-icd_build = "14.0"
+icd_build = "19.0"
 vcp = 212
 sweeps_included = [1, 2, 3]
-original_size_mb = 15.2
-trimmed_size_kb = 1200
+original_size_mb = 7.97
+trimmed_size_kb = 2819
 weather_regime = "convective"
-notes = "Historic tornado signature, early dual-pol era (Build 14.0)"
-status = "planned"
+notes = "Active tornado outbreak, El Reno area severe weather, Build 19.0"
+status = "available"
 
 [[fixtures]]
-id = "qlcs_outbreak"
-path = "convective/KSRX20110427_210000.bin"
-site = "KSRX"
-timestamp = "2011-04-27T21:00:00Z"
-label = "April 2011 Super Outbreak QLCS"
+id = "supercell_texas"
+path = "convective/KFWS20190609_222523.bin"
+site = "KFWS"
+timestamp = "2019-06-09T22:25:23Z"
+label = "Texas supercell storm"
 file_version = "AR2V0006"
-icd_build = "12.0"
+icd_build = "19.0"
 vcp = 212
 sweeps_included = [1, 2, 3]
-original_size_mb = 12.5
-trimmed_size_kb = 1000
+original_size_mb = 8.79
+trimmed_size_kb = 2873
 weather_regime = "convective"
-notes = "Build 12.0 dual-pol transition period, quasi-linear convective system"
-status = "planned"
+notes = "Fort Worth area supercell, hail signatures, Build 19.0"
+status = "available"
 
 [[fixtures]]
 id = "winter_greatlakes"
-path = "winter/KMKX20200115_150000.bin"
+path = "winter/KMKX20200115_150035.bin"
 site = "KMKX"
-timestamp = "2020-01-15T15:00:00Z"
-label = "Great Lakes snow event"
+timestamp = "2020-01-15T15:00:35Z"
+label = "Great Lakes winter precipitation"
 file_version = "AR2V0006"
 icd_build = "19.0"
 vcp = 215
 sweeps_included = [1, 2, 3]
-original_size_mb = 9.6
-trimmed_size_kb = 770
+original_size_mb = 2.89
+trimmed_size_kb = 1282
 weather_regime = "winter"
-notes = "VCP 215 winter mode, lake-effect snow signatures"
-status = "planned"
+notes = "VCP 215 winter mode, Milwaukee area, lake-effect patterns"
+status = "available"
 
 [[fixtures]]
 id = "stratiform_noreaster"
-path = "stratiform/KLWX20180302_120000.bin"
+path = "stratiform/KLWX20180302_115347.bin"
 site = "KLWX"
-timestamp = "2018-03-02T12:00:00Z"
+timestamp = "2018-03-02T11:53:47Z"
 label = "Nor'easter stratiform rain"
 file_version = "AR2V0006"
 icd_build = "18.0"
-vcp = 212
+vcp = 21
 sweeps_included = [1, 2, 3]
-original_size_mb = 11.3
-trimmed_size_kb = 900
+original_size_mb = 4.08
+trimmed_size_kb = 2261
 weather_regime = "stratiform"
-notes = "East coast Nor'easter, widespread stratiform precipitation"
-status = "planned"
+notes = "Washington DC area Nor'easter, VCP 21 precipitation mode"
+status = "available"

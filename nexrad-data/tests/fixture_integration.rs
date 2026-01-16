@@ -48,6 +48,41 @@ const FIXTURES: &[FixtureMeta] = &[
         expected_sweeps: 3,
         data: include_bytes!("../../tests/fixtures/clear_air/KDMX20250314_175512.bin"),
     },
+    FixtureMeta {
+        id: "clear_air_plains",
+        site: "KTLX",
+        expected_vcp: 32,
+        expected_sweeps: 3,
+        data: include_bytes!("../../tests/fixtures/clear_air/KTLX20190715_120037.bin"),
+    },
+    FixtureMeta {
+        id: "tornado_may2019",
+        site: "KTLX",
+        expected_vcp: 212,
+        expected_sweeps: 3,
+        data: include_bytes!("../../tests/fixtures/convective/KTLX20190525_222419.bin"),
+    },
+    FixtureMeta {
+        id: "supercell_texas",
+        site: "KFWS",
+        expected_vcp: 212,
+        expected_sweeps: 3,
+        data: include_bytes!("../../tests/fixtures/convective/KFWS20190609_222523.bin"),
+    },
+    FixtureMeta {
+        id: "winter_greatlakes",
+        site: "KMKX",
+        expected_vcp: 215,
+        expected_sweeps: 3,
+        data: include_bytes!("../../tests/fixtures/winter/KMKX20200115_150035.bin"),
+    },
+    FixtureMeta {
+        id: "stratiform_noreaster",
+        site: "KLWX",
+        expected_vcp: 21,
+        expected_sweeps: 3,
+        data: include_bytes!("../../tests/fixtures/stratiform/KLWX20180302_115347.bin"),
+    },
 ];
 
 // =============================================================================

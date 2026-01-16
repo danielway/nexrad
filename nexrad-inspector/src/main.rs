@@ -282,6 +282,7 @@ fn handle_inspector_keys(app: &mut App, key: event::KeyEvent) -> AppResult<bool>
         }
         KeyCode::Char('d') => app.decompress_selected(),
         KeyCode::Char('D') => app.decompress_all_records(),
+        KeyCode::Char('u') => app.toggle_filter(),
         KeyCode::PageUp => app.page_up(),
         KeyCode::PageDown => app.page_down(),
         _ => {}

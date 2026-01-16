@@ -71,7 +71,7 @@ fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
             AppMode::Loading => "Loading...",
             AppMode::Inspector => match app.view {
                 View::File => "q:quit  Enter:open  d:decompress  D:decompress all  s:save  ?:help",
-                View::Record => "q:quit  Enter:open message  s:save record  Esc:back  ?:help",
+                View::Record => "q:quit  Enter:open  u:filter  s:save  Esc:back  ?:help",
                 View::Message => "q:quit  Tab:hex/parsed  s:save message  Esc:back  ?:help",
             },
         };
@@ -109,7 +109,7 @@ fn render_error_overlay(frame: &mut Frame, app: &App, area: Rect) {
 fn render_help_overlay(frame: &mut Frame, area: Rect) {
     // Center the help popup
     let popup_width = 60;
-    let popup_height = 21;
+    let popup_height = 22;
     let popup_area = centered_rect(popup_width, popup_height, area);
 
     // Clear the area behind the popup
@@ -130,6 +130,7 @@ File View:
                   decompressed based on current state)
 
 Record View:
+  u               Toggle unknown/empty filter
   s               Save selected record
 
 Message View:

@@ -71,7 +71,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Read input file
     let input_data = fs::read(&cli.input)?;
     let input_size = input_data.len();
-    println!("Input file size: {} bytes ({:.2} MB)", input_size, input_size as f64 / 1024.0 / 1024.0);
+    println!(
+        "Input file size: {} bytes ({:.2} MB)",
+        input_size,
+        input_size as f64 / 1024.0 / 1024.0
+    );
 
     // Parse the volume file
     let volume = VolumeFile::new(input_data.clone());

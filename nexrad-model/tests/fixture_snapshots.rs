@@ -185,12 +185,14 @@ fn create_moment_stats(
             gate_interval_km: m.gate_interval_km(),
             data_sha256: hash_moment_values(&m.values()),
         }),
-        differential_reflectivity: radial.differential_reflectivity().map(|m| MomentBlockStats {
-            gate_count: m.gate_count(),
-            first_gate_range_km: m.first_gate_range_km(),
-            gate_interval_km: m.gate_interval_km(),
-            data_sha256: hash_moment_values(&m.values()),
-        }),
+        differential_reflectivity: radial
+            .differential_reflectivity()
+            .map(|m| MomentBlockStats {
+                gate_count: m.gate_count(),
+                first_gate_range_km: m.first_gate_range_km(),
+                gate_interval_km: m.gate_interval_km(),
+                data_sha256: hash_moment_values(&m.values()),
+            }),
     }
 }
 

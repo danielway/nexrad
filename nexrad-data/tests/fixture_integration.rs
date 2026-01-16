@@ -115,7 +115,8 @@ fn test_station_id_consistency_all_fixtures() {
                     let msg_site = drd.header().radar_identifier();
                     let msg_site_trimmed = msg_site.trim_end_matches('\0');
                     assert_eq!(
-                        msg_site_trimmed, fixture.site,
+                        msg_site_trimmed,
+                        fixture.site,
                         "Fixture {} message site mismatch at elevation {}",
                         fixture.id,
                         drd.header().elevation_number()
@@ -502,9 +503,7 @@ fn test_at_least_one_moment_present() {
                 assert!(
                     has_any_moment,
                     "Fixture {} sweep {} radial {} has no moment data",
-                    fixture.id,
-                    sweep_idx,
-                    radial_idx
+                    fixture.id, sweep_idx, radial_idx
                 );
             }
         }
@@ -519,10 +518,7 @@ fn test_at_least_one_moment_present() {
 #[test]
 fn test_same_vcp_similar_structure() {
     // Group fixtures by VCP
-    let vcp_212_fixtures: Vec<_> = FIXTURES
-        .iter()
-        .filter(|f| f.expected_vcp == 212)
-        .collect();
+    let vcp_212_fixtures: Vec<_> = FIXTURES.iter().filter(|f| f.expected_vcp == 212).collect();
 
     // All VCP 212 fixtures should have similar first-sweep properties
     for fixture in &vcp_212_fixtures {

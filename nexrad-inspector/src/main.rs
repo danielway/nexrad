@@ -57,7 +57,10 @@ async fn main() -> AppResult<()> {
     result
 }
 
-async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> AppResult<()> {
+async fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> AppResult<()>
+where
+    <B as Backend>::Error: 'static,
+{
     loop {
         terminal.draw(|frame| ui::render(frame, app))?;
 

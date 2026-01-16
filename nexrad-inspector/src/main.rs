@@ -88,6 +88,9 @@ where
             app.tick_spinner();
         }
 
+        // Auto-dismiss status messages
+        app.tick_status_message();
+
         // Check quit flag
         if app.should_quit {
             return Ok(());

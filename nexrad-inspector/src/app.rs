@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use chrono::NaiveDate;
 use nexrad_data::aws::archive::Identifier;
@@ -189,6 +190,9 @@ pub struct App {
     /// Status message to display
     pub status_message: Option<String>,
 
+    /// When the status message was set (for auto-dismiss)
+    status_message_time: Option<Instant>,
+
     /// Whether to filter out empty/unknown messages in record view
     pub filter_empty_unknown: bool,
 }
@@ -220,6 +224,7 @@ impl App {
             parsed_scroll: 0,
             show_help: false,
             status_message: None,
+            status_message_time: None,
             filter_empty_unknown: true,
         }
     }
@@ -549,6 +554,23 @@ impl App {
         self.error = None;
     }
 
+    /// Set a status message (auto-dismisses after a few seconds)
+    pub fn set_status_message(&mut self, message: String) {
+        self.status_message = Some(message);
+        self.status_message_time = Some(Instant::now());
+    }
+
+    /// Clear expired status message (call this in the main loop)
+    pub fn tick_status_message(&mut self) {
+        const STATUS_DURATION_SECS: u64 = 3;
+        if let Some(time) = self.status_message_time {
+            if time.elapsed().as_secs() >= STATUS_DURATION_SECS {
+                self.status_message = None;
+                self.status_message_time = None;
+            }
+        }
+    }
+
     /// Get or decompress a record
     pub fn get_decompressed_record(&mut self, index: usize) -> AppResult<&[u8]> {
         if !self.decompressed_cache.contains_key(&index) {
@@ -820,10 +842,10 @@ impl App {
                         Ok(_) => {
                             // Also parse messages so summary can be generated
                             let _ = self.get_messages(index);
-                            self.status_message = Some(format!("Decompressed record {}", index));
+                            self.set_status_message(format!("Decompressed record {}", index));
                         }
                         Err(e) => {
-                            self.status_message = Some(format!("Failed to decompress: {}", e));
+                            self.set_status_message(format!("Failed to decompress: {}", e));
                         }
                     }
                 }
@@ -877,13 +899,13 @@ impl App {
             status_parts.push(format!("{} errors", error_count));
         }
 
-        self.status_message = Some(status_parts.join(", "));
+        self.set_status_message(status_parts.join(", "));
     }
 
     /// Save current record to file
     pub fn save_record(&mut self) -> AppResult<()> {
         if !matches!(self.view, View::File | View::Record) {
-            self.status_message = Some("Must be in file or record view to save record".to_string());
+            self.set_status_message("Must be in file or record view to save record".to_string());
             return Ok(());
         }
 
@@ -913,14 +935,14 @@ impl App {
         let mut file = File::create(&filename)?;
         file.write_all(&data)?;
 
-        self.status_message = Some(format!("Saved to {}", filename));
+        self.set_status_message(format!("Saved to {}", filename));
         Ok(())
     }
 
     /// Save current message to file
     pub fn save_message(&mut self) -> AppResult<()> {
         if self.view != View::Message {
-            self.status_message = Some("Must be in message view to save".to_string());
+            self.set_status_message("Must be in message view to save".to_string());
             return Ok(());
         }
 
@@ -933,7 +955,7 @@ impl App {
         let mut file = File::create(&filename)?;
         file.write_all(&data)?;
 
-        self.status_message = Some(format!("Saved to {}", filename));
+        self.set_status_message(format!("Saved to {}", filename));
         Ok(())
     }
 

@@ -188,6 +188,9 @@ pub struct App {
 
     /// Status message to display
     pub status_message: Option<String>,
+
+    /// Whether to filter out empty/unknown messages in record view
+    pub filter_empty_unknown: bool,
 }
 
 impl App {
@@ -217,6 +220,7 @@ impl App {
             parsed_scroll: 0,
             show_help: false,
             status_message: None,
+            filter_empty_unknown: true,
         }
     }
 
@@ -597,20 +601,38 @@ impl App {
         Ok(self.messages_cache.get(&record_index).unwrap())
     }
 
+    /// Check if a message should be filtered out (empty or unknown)
+    fn should_filter_message(msg: &MessageInfo) -> bool {
+        match Self::get_message_header(&msg.data) {
+            Some(hdr) => matches!(hdr.message_type(), MessageType::Unknown(_)),
+            None => true, // No valid header = empty/unparseable
+        }
+    }
+
+    /// Get messages for display, respecting the filter setting
+    pub fn get_displayed_messages(&mut self, record_index: usize) -> AppResult<Vec<MessageInfo>> {
+        let filter = self.filter_empty_unknown;
+        let messages = self.get_messages(record_index)?;
+        if filter {
+            Ok(messages
+                .iter()
+                .filter(|m| !Self::should_filter_message(m))
+                .cloned()
+                .collect())
+        } else {
+            Ok(messages.to_vec())
+        }
+    }
+
     /// Get the currently selected message data (cloned to avoid borrow issues)
     pub fn current_message_data(&mut self) -> AppResult<Vec<u8>> {
         let record_index = self.selected_record;
         let message_index = self.selected_message;
-        let messages = self.get_messages(record_index)?;
+        let messages = self.get_displayed_messages(record_index)?;
         messages
             .get(message_index)
             .map(|m| m.data.clone())
             .ok_or_else(|| "Message not found".into())
-    }
-
-    /// Get the number of messages in a record (if cached)
-    pub fn message_count(&self, record_index: usize) -> Option<usize> {
-        self.messages_cache.get(&record_index).map(|m| m.len())
     }
 
     /// Get the message header for a message
@@ -642,7 +664,8 @@ impl App {
             }
             View::Record => {
                 let record_index = self.selected_record;
-                if let Some(msg_count) = self.message_count(record_index) {
+                if let Ok(messages) = self.get_displayed_messages(record_index) {
+                    let msg_count = messages.len();
                     self.selected_message = if self.selected_message > 0 {
                         self.selected_message - 1
                     } else if msg_count > 0 {
@@ -680,13 +703,14 @@ impl App {
             }
             View::Record => {
                 let record_index = self.selected_record;
-                if let Some(msg_count) = self.message_count(record_index) {
-                    self.selected_message =
-                        if msg_count > 0 && self.selected_message < msg_count - 1 {
-                            self.selected_message + 1
-                        } else {
-                            0
-                        };
+                if let Ok(messages) = self.get_displayed_messages(record_index) {
+                    let msg_count = messages.len();
+                    self.selected_message = if msg_count > 0 && self.selected_message < msg_count - 1
+                    {
+                        self.selected_message + 1
+                    } else {
+                        0
+                    };
                 }
             }
             View::Message => match self.message_tab {
@@ -778,6 +802,12 @@ impl App {
     /// Toggle help overlay
     pub fn toggle_help(&mut self) {
         self.show_help = !self.show_help;
+    }
+
+    /// Toggle filtering of empty/unknown messages
+    pub fn toggle_filter(&mut self) {
+        self.filter_empty_unknown = !self.filter_empty_unknown;
+        self.selected_message = 0;
     }
 
     /// Decompress the currently selected record without entering it

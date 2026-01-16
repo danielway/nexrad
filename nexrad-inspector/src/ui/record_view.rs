@@ -38,7 +38,7 @@ fn render_record_info(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_message_list(frame: &mut Frame, app: &mut App, area: Rect) {
-    let messages = match app.get_messages(app.selected_record) {
+    let messages = match app.get_displayed_messages(app.selected_record) {
         Ok(msgs) => msgs,
         Err(e) => {
             let error = Paragraph::new(format!("Error loading messages: {}", e))
@@ -104,13 +104,15 @@ fn render_message_list(frame: &mut Frame, app: &mut App, area: Rect) {
         Constraint::Length(14),
     ];
 
+    let title = if app.filter_empty_unknown {
+        format!(" Messages ({}) [filtered] ", messages.len())
+    } else {
+        format!(" Messages ({}) ", messages.len())
+    };
+
     let table = Table::new(rows, widths)
         .header(header)
-        .block(
-            Block::default()
-                .title(format!(" Messages ({}) ", messages.len()))
-                .borders(Borders::ALL),
-        )
+        .block(Block::default().title(title).borders(Borders::ALL))
         .row_highlight_style(Style::default().add_modifier(Modifier::REVERSED))
         .highlight_symbol("> ");
 

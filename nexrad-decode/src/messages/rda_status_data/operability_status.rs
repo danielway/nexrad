@@ -6,4 +6,6 @@ pub enum OperabilityStatus {
     MaintenanceActionMandatory,
     CommandedShutDown,
     Inoperable,
+    /// Unknown operability status value for forward compatibility.
+    Unknown(u16),
 }

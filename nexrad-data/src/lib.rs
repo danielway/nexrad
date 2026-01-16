@@ -22,7 +22,7 @@
 //! }
 //!
 //! // Process LDM records
-//! for record in volume.records() {
+//! for record in volume.records()? {
 //!     let decompressed = record.decompress()?;
 //!     let messages = decompressed.messages()?;
 //!     // Process radar messages...

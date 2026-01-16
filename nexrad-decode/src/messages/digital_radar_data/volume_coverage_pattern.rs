@@ -7,4 +7,6 @@ pub enum VolumeCoveragePattern {
     VCP112,
     VCP212,
     VCP215,
+    /// Unknown VCP number for forward compatibility with new scan strategies.
+    Unknown(u16),
 }

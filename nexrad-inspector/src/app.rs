@@ -252,7 +252,7 @@ impl App {
             .ok_or("Failed to parse volume header")?;
 
         let records: Vec<RecordInfo> = volume_file
-            .records()
+            .records()?
             .into_iter()
             .enumerate()
             .map(|(index, record)| RecordInfo {
@@ -288,7 +288,7 @@ impl App {
 
         let file_data = volume_file.data().to_vec();
         let records: Vec<RecordInfo> = volume_file
-            .records()
+            .records()?
             .into_iter()
             .enumerate()
             .map(|(index, record)| RecordInfo {
@@ -553,7 +553,7 @@ impl App {
     pub fn get_decompressed_record(&mut self, index: usize) -> AppResult<&[u8]> {
         if !self.decompressed_cache.contains_key(&index) {
             let volume_file = self.volume_file().ok_or("No file loaded")?;
-            let records = volume_file.records();
+            let records = volume_file.records()?;
             let record = records.get(index).ok_or("Record not found")?;
 
             let decompressed = if record.compressed() {
@@ -897,7 +897,7 @@ impl App {
             } else {
                 // Use original compressed data from file
                 let volume_file = self.volume_file().ok_or("No file loaded")?;
-                let records = volume_file.records();
+                let records = volume_file.records()?;
                 let record = records.get(record_index).ok_or("Record not found")?;
                 let is_compressed = record.compressed();
                 (record.data().to_vec(), !is_compressed)

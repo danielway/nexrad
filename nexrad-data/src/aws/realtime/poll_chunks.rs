@@ -234,7 +234,7 @@ fn get_latest_vcp(
     latest_metadata: &Chunk<'_>,
 ) -> Result<volume_coverage_pattern::Message<'static>> {
     if let Chunk::Start(file) = latest_metadata {
-        for mut record in file.records() {
+        for mut record in file.records()? {
             if record.compressed() {
                 record = record.decompress()?;
             }

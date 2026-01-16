@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut max_azimuth_num = 0;
 
     // Process all records in the file
-    for mut record in volume_file.records() {
+    for mut record in volume_file.records().expect("records") {
         debug!("Processing record...");
         if record.compressed() {
             debug!("Decompressing LDM record...");

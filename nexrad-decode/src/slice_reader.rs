@@ -39,8 +39,13 @@ impl<'a> SliceReader<'a> {
     }
 
     /// Returns the remaining unread bytes.
+    /// Returns an empty slice if position is at or past the end.
     pub fn remaining(&self) -> &'a [u8] {
-        &self.data[self.pos..]
+        if self.pos >= self.data.len() {
+            &[]
+        } else {
+            &self.data[self.pos..]
+        }
     }
 
     /// Advances the position by `n` bytes.

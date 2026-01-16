@@ -295,7 +295,7 @@ async fn test_list_and_download_workflow() {
     assert!(file.data().starts_with(b"AR2"));
 
     // Verify we can get records from the downloaded file
-    let records = file.records();
+    let records = file.records().expect("records");
     assert!(!records.is_empty(), "File should contain records");
 }
 

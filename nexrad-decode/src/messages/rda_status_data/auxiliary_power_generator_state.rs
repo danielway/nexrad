@@ -6,4 +6,6 @@ pub enum AuxiliaryPowerGeneratorState {
     GeneratorOn,
     TransferSwitchSetToManual,
     CommandedSwitchover,
+    /// Unknown auxiliary power generator state value for forward compatibility.
+    Unknown(u16),
 }

@@ -113,7 +113,7 @@ async fn main() -> Result<()> {
 
         trace!("Data file size (bytes): {}", file.data().len());
 
-        let records = file.records();
+        let records = file.records()?;
         debug!(
             "Volume with {} records. Header: {:?}",
             records.len(),

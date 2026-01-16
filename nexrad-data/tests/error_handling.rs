@@ -38,7 +38,7 @@ fn test_compressed_data_decode_error() {
     const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
 
     let volume = nexrad_data::volume::File::new(TEST_NEXRAD_FILE.to_vec());
-    let records = volume.records();
+    let records = volume.records().expect("records");
     let compressed_record = &records[0];
     assert!(
         compressed_record.compressed(),

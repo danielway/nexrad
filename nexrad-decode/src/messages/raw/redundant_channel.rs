@@ -7,4 +7,6 @@ pub enum RedundantChannel {
     ORDASingleChannel,
     ORDARedundantChannel1,
     ORDARedundantChannel2,
+    /// Unknown redundant channel value for forward compatibility.
+    Unknown(u8),
 }

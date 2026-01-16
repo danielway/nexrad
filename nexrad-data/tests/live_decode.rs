@@ -116,7 +116,7 @@ fn decode_volume(site: &str, file_name: &str, file: &volume::File) -> Result<Dec
     let mut has_volume_start = false;
     let mut has_volume_end = false;
 
-    let records: Vec<_> = file.records().into_iter().collect();
+    let records: Vec<_> = file.records().expect("records").into_iter().collect();
     if records.is_empty() {
         return Err("No records found in volume".to_string());
     }

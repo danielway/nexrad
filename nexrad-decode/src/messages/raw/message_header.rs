@@ -92,7 +92,7 @@ impl MessageHeader {
             8 => RedundantChannel::ORDASingleChannel,
             9 => RedundantChannel::ORDARedundantChannel1,
             10 => RedundantChannel::ORDARedundantChannel2,
-            _ => panic!("Invalid RDA redundant channel: {}", self.redundant_channel),
+            other => RedundantChannel::Unknown(other),
         }
     }
 

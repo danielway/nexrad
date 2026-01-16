@@ -4,4 +4,6 @@ pub enum ControlStatus {
     LocalControlOnly,
     RemoteControlOnly,
     EitherLocalOrRemoteControl,
+    /// Unknown control status value for forward compatibility.
+    Unknown(u16),
 }

@@ -13,7 +13,7 @@ const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232
 fn get_test_vcp() -> nexrad_decode::messages::volume_coverage_pattern::Message<'static> {
     let volume_file = nexrad_data::volume::File::new(TEST_NEXRAD_FILE.to_vec());
 
-    for mut record in volume_file.records() {
+    for mut record in volume_file.records().expect("records") {
         if record.compressed() {
             record = record.decompress().unwrap();
         }

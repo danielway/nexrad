@@ -5,7 +5,7 @@ const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232
 #[test]
 fn test_volume_record_splitting() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
-    let records = volume.records().to_vec();
+    let records = volume.records().expect("records").to_vec();
 
     let expected_sizes = vec![
         2335, 233467, 165644, 208109, 261787, 201050, 178271, 88007, 54902, 91951, 112300, 68236,
@@ -50,7 +50,7 @@ fn test_volume_header_decoding() {
 #[test]
 fn test_record_construction_and_data_access() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
-    let records = volume.records();
+    let records = volume.records().expect("records");
 
     let first_record = &records[0];
     let first_record_data = first_record.data().to_vec();
@@ -69,7 +69,7 @@ fn test_record_construction_and_data_access() {
 #[test]
 fn test_record_compression_detection() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
-    let records = volume.records();
+    let records = volume.records().expect("records");
 
     let first_record = &records[0];
     assert!(first_record.compressed());
@@ -95,7 +95,7 @@ fn test_record_compression_detection() {
 #[test]
 fn test_record_decompression() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
-    let records = volume.records();
+    let records = volume.records().expect("records");
 
     let first_record = &records[0];
     assert!(
@@ -127,7 +127,7 @@ fn test_record_decompression() {
 #[test]
 fn test_record_message_decoding() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
-    let records = volume.records();
+    let records = volume.records().expect("records");
 
     let first_record = &records[0];
     let decompressed = first_record
@@ -156,7 +156,7 @@ fn test_record_message_decoding() {
 #[test]
 fn test_full_volume_record_decoding() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
-    let records = volume.records();
+    let records = volume.records().expect("records");
 
     let mut total_messages = 0;
     let mut digital_radar_messages = 0;

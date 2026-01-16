@@ -26,7 +26,7 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
         messages.push(message);
     }
 
-    let bytes_remaining = input.len() - reader.position();
+    let bytes_remaining = input.len().saturating_sub(reader.position());
     if bytes_remaining > 0 {
         warn!(
             "Bytes remaining after decoding all messages: {}",

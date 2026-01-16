@@ -25,7 +25,9 @@ impl File {
     }
 
     /// The file's LDM records.
-    pub fn records(&self) -> Vec<Record<'_>> {
+    ///
+    /// Returns an error if the record data is truncated or malformed.
+    pub fn records(&self) -> crate::result::Result<Vec<Record<'_>>> {
         split_compressed_records(&self.0[size_of::<Header>()..])
     }
 
@@ -39,7 +41,7 @@ impl File {
 
         let mut coverage_pattern_number = None;
         let mut radials = Vec::new();
-        for mut record in self.records() {
+        for mut record in self.records()? {
             if record.compressed() {
                 record = record.decompress()?;
             }
@@ -74,7 +76,10 @@ impl Debug for File {
         debug.field("header", &self.header());
 
         #[cfg(feature = "nexrad-model")]
-        debug.field("records.len()", &self.records().len());
+        debug.field(
+            "records.len()",
+            &self.records().map(|records| records.len()),
+        );
 
         debug.finish()
     }

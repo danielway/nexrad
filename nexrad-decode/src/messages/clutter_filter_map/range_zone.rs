@@ -39,7 +39,7 @@ impl<'a> RangeZone<'a> {
             0 => OpCode::BypassFilter,
             1 => OpCode::BypassMapInControl,
             2 => OpCode::ForceFilter,
-            _ => panic!("Invalid OpCode: {}", self.inner.op_code.get()),
+            other => OpCode::Unknown(other),
         }
     }
 

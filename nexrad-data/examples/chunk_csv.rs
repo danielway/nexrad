@@ -322,7 +322,7 @@ fn analyze_chunk(
 
     match chunk {
         Chunk::Start(file) => {
-            for mut record in file.records() {
+            for mut record in file.records()? {
                 if record.compressed() {
                     record = record.decompress()?;
                 }

@@ -2,7 +2,7 @@ use crate::messages::{
     digital_radar_data, rda_status_data, volume_coverage_pattern, MessageContents, MessageHeader,
     MessageType,
 };
-use crate::result::Result;
+use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
 
 /// Expected segment contents size for fixed-length segments.
@@ -32,11 +32,10 @@ impl<'a> Message<'a> {
             if length_delta > 0 {
                 reader.advance(length_delta as usize);
             } else if length_delta < 0 {
-                panic!(
-                    "invalid message length for type {:?}, cannot rewind {} bytes",
-                    header.message_type(),
-                    length_delta
-                );
+                return Err(Error::InvalidMessageLength {
+                    message_type: format!("{:?}", header.message_type()),
+                    delta: length_delta,
+                });
             }
         }
 

@@ -350,7 +350,7 @@ fn test_chunk_identifier_next_chunk_intermediate() {
 
     // Get VCP from the file
     let mut vcp = None;
-    for mut record in volume_file.records() {
+    for mut record in volume_file.records().expect("records") {
         if record.compressed() {
             record = record.decompress().unwrap();
         }

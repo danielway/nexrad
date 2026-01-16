@@ -5,4 +5,6 @@ pub enum ControlFlags {
     RecombinedAzimuthalRadials,
     RecombinedRangeGates,
     RecombinedRadialsAndRangeGatesToLegacyResolution,
+    /// Unknown control flag value for forward compatibility.
+    Unknown(u8),
 }

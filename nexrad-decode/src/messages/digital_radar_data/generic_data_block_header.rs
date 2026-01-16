@@ -100,7 +100,7 @@ impl<'a> GenericDataBlockHeader<'a> {
             1 => ControlFlags::RecombinedAzimuthalRadials,
             2 => ControlFlags::RecombinedRangeGates,
             3 => ControlFlags::RecombinedRadialsAndRangeGatesToLegacyResolution,
-            _ => panic!("Invalid control flag value: {}", self.inner.control_flags),
+            other => ControlFlags::Unknown(other),
         }
     }
 

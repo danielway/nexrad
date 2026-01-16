@@ -8,6 +8,10 @@ members = [
     "nexrad-render",
     "nexrad-inspector",
 ]
+exclude = [
+    "nexrad-decode/fuzz",
+    "nexrad-data/fuzz",
+]
 
 [workspace.package]
 authors = ["Daniel Way <contact@danieldway.com>"]

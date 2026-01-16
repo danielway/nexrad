@@ -7,4 +7,6 @@ pub enum OpCode {
     BypassMapInControl,
     /// The clutter filter is being forced for the range segment.
     ForceFilter,
+    /// Unknown opcode value for forward compatibility.
+    Unknown(u16),
 }

@@ -6,4 +6,6 @@ pub enum RDAStatus {
     Restart,
     Operate,
     Spare,
+    /// Unknown status value for forward compatibility.
+    Unknown(u16),
 }

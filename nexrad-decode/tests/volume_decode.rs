@@ -27,7 +27,7 @@ fn test_decode_kdmx_volume_structure() {
     let mut radar_data_count = 0;
     let mut other_count = 0;
 
-    let records: Vec<_> = volume.records().into_iter().collect();
+    let records: Vec<_> = volume.records().expect("records").into_iter().collect();
     assert!(!records.is_empty(), "expected at least one record");
 
     for mut record in records {
@@ -84,7 +84,7 @@ fn test_decode_kcrp_volume_structure() {
     let mut radar_data_count = 0;
     let mut other_count = 0;
 
-    let records: Vec<_> = volume.records().into_iter().collect();
+    let records: Vec<_> = volume.records().expect("records").into_iter().collect();
     assert!(!records.is_empty(), "expected at least one record");
 
     for mut record in records {
@@ -128,7 +128,12 @@ fn test_decode_kdmx_volume_message_ordering() {
     let volume = volume::File::new(KDMX_FILE.to_vec());
 
     // The first record typically contains metadata messages
-    let mut first_record = volume.records().into_iter().next().expect("has records");
+    let mut first_record = volume
+        .records()
+        .expect("records")
+        .into_iter()
+        .next()
+        .expect("has records");
     if first_record.compressed() {
         first_record = first_record.decompress().expect("decompresses");
     }
@@ -155,7 +160,7 @@ fn test_decode_kdmx_volume_radar_data_properties() {
     let mut found_volume_start = false;
     let mut found_volume_end = false;
 
-    for mut record in volume.records() {
+    for mut record in volume.records().expect("records") {
         if record.compressed() {
             record = record.decompress().expect("decompresses");
         }

@@ -8,7 +8,7 @@ const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232
 
 fn benchmark_decode_messages(c: &mut Criterion) {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
-    let mut records = volume.records().into_iter().take(2);
+    let mut records = volume.records().expect("records").into_iter().take(2);
 
     let mut first_record = records.next().expect("first record exists");
     first_record = first_record

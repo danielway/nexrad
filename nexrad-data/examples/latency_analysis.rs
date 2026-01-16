@@ -175,7 +175,7 @@ async fn main() -> Result<()> {
 
             match chunk {
                 Chunk::Start(file) => {
-                    let records = file.records();
+                    let records = file.records().expect("records");
                     debug!(
                         "Volume start chunk with {} records. Header: {:?}",
                         records.len(),

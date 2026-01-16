@@ -4,4 +4,6 @@ pub enum PerformanceCheckStatus {
     NoCommandPending,
     ForcePerformanceCheckPending,
     InProgress,
+    /// Unknown performance check status value for forward compatibility.
+    Unknown(u16),
 }

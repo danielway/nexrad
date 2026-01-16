@@ -4,4 +4,6 @@ pub enum ControlAuthorization {
     NoAction,
     LocalControlRequested,
     RemoteControlRequested,
+    /// Unknown control authorization value for forward compatibility.
+    Unknown(u16),
 }

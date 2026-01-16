@@ -15,7 +15,7 @@ fn main() {
 
     let target_elevation_number = 1; // TODO: make this configurable
     let mut radials = Vec::new();
-    for mut record in archive.records() {
+    for mut record in archive.records().expect("records") {
         if record.compressed() {
             record = record.decompress().expect("decompresses successfully");
         }

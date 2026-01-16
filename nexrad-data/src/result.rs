@@ -26,6 +26,10 @@ pub enum Error {
     MissingCoveragePattern,
     #[error("ldm record decompression error")]
     DecompressionError(#[from] bzip2::Error),
+    #[error("truncated record: expected {expected} bytes, got {actual}")]
+    TruncatedRecord { expected: usize, actual: usize },
+    #[error("invalid record size {size} at offset {offset}")]
+    InvalidRecordSize { size: usize, offset: usize },
 }
 
 #[cfg(feature = "aws")]

@@ -82,10 +82,10 @@ impl<'a> Message<'a> {
             if relative_position < pointer_position {
                 reader.advance(pointer_position - relative_position);
             } else if relative_position > pointer_position {
-                panic!(
-                    "invalid pointer, cannot rewind {} bytes",
-                    relative_position - pointer_position
-                );
+                return Err(Error::InvalidDataBlockPointer {
+                    bytes: relative_position - pointer_position,
+                    position: reader.position(),
+                });
             }
 
             let block_id = reader.take_ref::<raw::DataBlockId>()?;
@@ -165,7 +165,10 @@ impl<'a> Message<'a> {
                             message.specific_diff_phase_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        _ => panic!("Unknown generic data block type: {block_id:?}"),
+                        _ => {
+                            // Unknown block type - skip for forward compatibility with newer formats
+                            log::warn!("Skipping unknown generic data block type: {:?}", block_id);
+                        }
                     }
                 }
             }

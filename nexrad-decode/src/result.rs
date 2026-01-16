@@ -16,4 +16,10 @@ pub enum Error {
     MessageMissingDateError,
     #[error("unexpected end of file to input data")]
     UnexpectedEof,
+    #[error("invalid message length for type {message_type}: cannot rewind {delta} bytes")]
+    InvalidMessageLength { message_type: String, delta: i32 },
+    #[error("invalid data block pointer: cannot rewind {bytes} bytes at position {position}")]
+    InvalidDataBlockPointer { bytes: usize, position: usize },
+    #[error("unknown data block type: {block_type}")]
+    UnknownDataBlockType { block_type: String },
 }

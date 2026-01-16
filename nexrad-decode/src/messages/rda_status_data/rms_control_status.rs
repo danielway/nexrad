@@ -4,4 +4,6 @@ pub enum RMSControlStatus {
     NonRMS,
     RMSInControl,
     RDAInControl,
+    /// Unknown RMS control status value for forward compatibility.
+    Unknown(u16),
 }

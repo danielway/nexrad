@@ -303,7 +303,7 @@ impl<'a> Message<'a> {
             8 => RDAStatus::Restart,
             16 => RDAStatus::Operate,
             32 => RDAStatus::Spare,
-            _ => panic!("Invalid RDA status: {}", self.inner.rda_status.get()),
+            other => RDAStatus::Unknown(other),
         }
     }
 
@@ -315,10 +315,7 @@ impl<'a> Message<'a> {
             8 => OperabilityStatus::MaintenanceActionMandatory,
             16 => OperabilityStatus::CommandedShutDown,
             32 => OperabilityStatus::Inoperable,
-            _ => panic!(
-                "Invalid RDA operability status: {}",
-                self.inner.operability_status.get()
-            ),
+            other => OperabilityStatus::Unknown(other),
         }
     }
 
@@ -328,10 +325,7 @@ impl<'a> Message<'a> {
             2 => ControlStatus::LocalControlOnly,
             4 => ControlStatus::RemoteControlOnly,
             8 => ControlStatus::EitherLocalOrRemoteControl,
-            _ => panic!(
-                "Invalid RDA control status: {}",
-                self.inner.control_status.get()
-            ),
+            other => ControlStatus::Unknown(other),
         }
     }
 
@@ -343,10 +337,7 @@ impl<'a> Message<'a> {
             4 => AuxiliaryPowerGeneratorState::GeneratorOn,
             8 => AuxiliaryPowerGeneratorState::TransferSwitchSetToManual,
             16 => AuxiliaryPowerGeneratorState::CommandedSwitchover,
-            _ => panic!(
-                "Invalid RDA auxiliary power generator state: {}",
-                self.inner.auxiliary_power_generator_state.get()
-            ),
+            other => AuxiliaryPowerGeneratorState::Unknown(other),
         }
     }
 
@@ -380,10 +371,7 @@ impl<'a> Message<'a> {
             0 => ControlAuthorization::NoAction,
             1 => ControlAuthorization::LocalControlRequested,
             2 => ControlAuthorization::RemoteControlRequested,
-            _ => panic!(
-                "Invalid RDA control authorization: {}",
-                self.inner.rda_control_authorization.get()
-            ),
+            other => ControlAuthorization::Unknown(other),
         }
     }
 
@@ -397,10 +385,7 @@ impl<'a> Message<'a> {
         match self.inner.operational_mode.get() {
             4 => OperationalMode::Operational,
             8 => OperationalMode::Maintenance,
-            _ => panic!(
-                "Invalid RDA operational mode: {}",
-                self.inner.operational_mode.get()
-            ),
+            other => OperationalMode::Unknown(other),
         }
     }
 
@@ -409,10 +394,7 @@ impl<'a> Message<'a> {
         match self.inner.super_resolution_status.get() {
             2 => SuperResolutionStatus::Enabled,
             4 => SuperResolutionStatus::Disabled,
-            _ => panic!(
-                "Invalid RDA super resolution status: {}",
-                self.inner.super_resolution_status.get()
-            ),
+            other => SuperResolutionStatus::Unknown(other),
         }
     }
 
@@ -466,10 +448,7 @@ impl<'a> Message<'a> {
             0 => SpotBlankingStatus::NotInstalled,
             1 => SpotBlankingStatus::Enabled,
             4 => SpotBlankingStatus::Disabled,
-            _ => panic!(
-                "Invalid RDA spot blanking status: {}",
-                self.inner.spot_blanking_status.get()
-            ),
+            other => SpotBlankingStatus::Other(other as u8),
         }
     }
 
@@ -496,10 +475,7 @@ impl<'a> Message<'a> {
             1 => TransitionPowerSourceStatus::Off,
             3 => TransitionPowerSourceStatus::OK,
             4 => TransitionPowerSourceStatus::Unknown,
-            _ => panic!(
-                "Invalid RDA TPS status: {}",
-                self.inner.transition_power_source_status.get()
-            ),
+            other => TransitionPowerSourceStatus::Other(other),
         }
     }
 
@@ -509,10 +485,7 @@ impl<'a> Message<'a> {
             0 => RMSControlStatus::NonRMS,
             2 => RMSControlStatus::RMSInControl,
             4 => RMSControlStatus::RDAInControl,
-            _ => panic!(
-                "Invalid RDA RMS control status: {}",
-                self.inner.rms_control_status.get()
-            ),
+            other => RMSControlStatus::Unknown(other),
         }
     }
 
@@ -522,10 +495,7 @@ impl<'a> Message<'a> {
             0 => PerformanceCheckStatus::NoCommandPending,
             1 => PerformanceCheckStatus::ForcePerformanceCheckPending,
             2 => PerformanceCheckStatus::InProgress,
-            _ => panic!(
-                "Invalid RDA performance check status: {}",
-                self.inner.performance_check_status.get()
-            ),
+            other => PerformanceCheckStatus::Unknown(other),
         }
     }
 

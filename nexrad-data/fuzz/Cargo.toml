@@ -1,0 +1,28 @@
+[package]
+name = "nexrad-data-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[workspace]
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+nexrad-data = { path = ".." }
+
+[[bin]]
+name = "split_records"
+path = "fuzz_targets/split_records.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decompress_record"
+path = "fuzz_targets/decompress_record.rs"
+test = false
+doc = false
+bench = false

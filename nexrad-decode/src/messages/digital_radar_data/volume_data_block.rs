@@ -254,10 +254,7 @@ impl<'a> VolumeDataBlock<'a> {
             112 => VolumeCoveragePattern::VCP112,
             212 => VolumeCoveragePattern::VCP212,
             215 => VolumeCoveragePattern::VCP215,
-            _ => panic!(
-                "Invalid volume coverage pattern number: {}",
-                volume_coverage_pattern
-            ),
+            other => VolumeCoveragePattern::Unknown(other),
         }
     }
 

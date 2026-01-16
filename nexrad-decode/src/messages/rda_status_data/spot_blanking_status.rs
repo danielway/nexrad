@@ -4,4 +4,6 @@ pub enum SpotBlankingStatus {
     NotInstalled,
     Enabled,
     Disabled,
+    /// Unknown spot blanking status value for forward compatibility.
+    Other(u8),
 }

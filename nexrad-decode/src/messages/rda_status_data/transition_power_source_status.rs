@@ -5,4 +5,6 @@ pub enum TransitionPowerSourceStatus {
     Off,
     OK,
     Unknown,
+    /// Unrecognized TPS status value for forward compatibility.
+    Other(u16),
 }

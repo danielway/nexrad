@@ -103,7 +103,11 @@ impl Debug for Record<'_> {
 
 /// Splits compressed LDM record data into individual records. Will omit the record size prefix from
 /// each record.
-pub fn split_compressed_records(data: &[u8]) -> Vec<Record<'_>> {
+///
+/// Returns an error if the data is truncated or contains invalid record sizes.
+pub fn split_compressed_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
+    use crate::result::Error;
+
     let mut records = Vec::new();
 
     let mut position = 0;
@@ -112,15 +116,38 @@ pub fn split_compressed_records(data: &[u8]) -> Vec<Record<'_>> {
             break;
         }
 
-        let mut record_size = [0; 4];
-        record_size.copy_from_slice(&data[position..position + 4]);
-        let record_size = i32::from_be_bytes(record_size).unsigned_abs() as usize;
+        // Check bounds for reading record size
+        if position + 4 > data.len() {
+            return Err(Error::TruncatedRecord {
+                expected: position + 4,
+                actual: data.len(),
+            });
+        }
 
-        records.push(Record::from_slice(
-            &data[position..position + record_size + 4],
-        ));
-        position += record_size + 4;
+        let mut record_size_bytes = [0; 4];
+        record_size_bytes.copy_from_slice(&data[position..position + 4]);
+        let record_size = i32::from_be_bytes(record_size_bytes).unsigned_abs() as usize;
+
+        // Validate record size is non-zero to prevent infinite loops
+        if record_size == 0 {
+            return Err(Error::InvalidRecordSize {
+                size: record_size,
+                offset: position,
+            });
+        }
+
+        // Check bounds for full record
+        let record_end = position + record_size + 4;
+        if record_end > data.len() {
+            return Err(Error::TruncatedRecord {
+                expected: record_end,
+                actual: data.len(),
+            });
+        }
+
+        records.push(Record::from_slice(&data[position..record_end]));
+        position = record_end;
     }
 
-    records
+    Ok(records)
 }

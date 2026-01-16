@@ -3,4 +3,6 @@
 pub enum OperationalMode {
     Operational,
     Maintenance,
+    /// Unknown operational mode value for forward compatibility.
+    Unknown(u16),
 }

@@ -196,7 +196,7 @@ fn decode_chunk(
         Chunk::Start(file) => {
             debug!("Decoding volume start chunk");
             // Process records in the file
-            for mut record in file.records() {
+            for mut record in file.records()? {
                 if record.compressed() {
                     trace!("Decompressing LDM record...");
                     record = record.decompress()?;

@@ -1,0 +1,36 @@
+---
+source: nexrad-model/tests/fixture_snapshots.rs
+expression: snapshot
+---
+coverage_pattern_number: 21
+sweep_count: 3
+sweeps:
+  - elevation_number: 1
+    radial_count: 720
+    first_azimuth_degrees: 301.2616
+    elevation_angle_degrees: 0.6399536
+    azimuth_spacing_degrees: 0.5
+    moments_present:
+      - REF
+      - ZDR
+      - PHI
+      - RHO
+  - elevation_number: 2
+    radial_count: 720
+    first_azimuth_degrees: 309.27063
+    elevation_angle_degrees: 0.45043945
+    azimuth_spacing_degrees: 0.5
+    moments_present:
+      - REF
+      - VEL
+      - SW
+  - elevation_number: 3
+    radial_count: 720
+    first_azimuth_degrees: 319.30664
+    elevation_angle_degrees: 1.2524414
+    azimuth_spacing_degrees: 0.5
+    moments_present:
+      - REF
+      - ZDR
+      - PHI
+      - RHO

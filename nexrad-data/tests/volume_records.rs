@@ -137,13 +137,26 @@ fn test_record_message_decoding() {
     let messages = decompressed
         .messages()
         .expect("Message decoding should succeed");
-    assert_eq!(messages.len(), 134);
+
+    // 127 = 134 - 5 + 1 - 4 + 1: 134 original segments, 5 CFM segments combined into 1,
+    // and 4 RDAAdaptationData segments combined into 1
+    assert_eq!(messages.len(), 127);
 
     let first_message = &messages[0];
-    assert_eq!(first_message.header().message_size_bytes(), 2416);
+    // First message is a clutter filter map (now decoded as a single segmented message)
     assert_eq!(
         first_message.header().message_type(),
         nexrad_decode::messages::MessageType::RDAClutterFilterMap
+    );
+    // Segmented message composed of 5 segments
+    assert!(
+        first_message.is_segmented(),
+        "should be a segmented message"
+    );
+    assert_eq!(
+        first_message.headers().count(),
+        5,
+        "should have 5 segment headers"
     );
 
     let compressed_messages_result = first_record.messages();
@@ -197,9 +210,12 @@ fn test_full_volume_record_decoding() {
         }
     }
 
-    assert_eq!(total_messages, 12736);
+    // 12729 = 12736 - 5 + 1 - 4 + 1: 12736 original, 5 CFM segments combined into 1,
+    // and 4 RDAAdaptationData segments combined into 1
+    assert_eq!(total_messages, 12729);
     assert_eq!(digital_radar_messages, 12600);
-    assert_eq!(clutter_filter_messages, 5);
+    // 1 clutter filter map message (composed of 5 segments internally)
+    assert_eq!(clutter_filter_messages, 1);
     assert_eq!(status_messages, 3);
 }
 

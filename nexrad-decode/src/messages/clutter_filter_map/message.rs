@@ -1,7 +1,7 @@
 use crate::messages::clutter_filter_map::elevation_segment::ElevationSegment;
 use crate::messages::clutter_filter_map::raw::Header;
 use crate::result::Result;
-use crate::slice_reader::SliceReader;
+use crate::segmented_slice_reader::SegmentedSliceReader;
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::borrow::Cow;
@@ -23,11 +23,11 @@ pub struct Message<'a> {
 }
 
 impl<'a> Message<'a> {
-    /// Parse a clutter filter map message from the input.
-    #[allow(dead_code)]
-    pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
-        // TODO: this reads way too much data because the message is segmented
-
+    /// Parse a clutter filter map message from segmented input.
+    ///
+    /// Clutter filter maps span multiple fixed-length segments. The data is read
+    /// across all segment payloads using the SegmentedSliceReader.
+    pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a>) -> Result<Self> {
         let header = reader.take_ref::<Header>()?;
 
         let segment_count = header.elevation_segment_count.get() as u8;

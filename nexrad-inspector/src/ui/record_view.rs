@@ -68,12 +68,12 @@ fn render_message_list(frame: &mut Frame, app: &mut App, area: Rect) {
                     .map(|dt| dt.format("%H:%M:%S").to_string())
                     .unwrap_or_else(|| "-".to_string());
 
-                let segment_str = if hdr.segmented() {
-                    format!(
-                        "{}/{}",
-                        hdr.segment_number().unwrap_or(0),
-                        hdr.segment_count().unwrap_or(0)
-                    )
+                // For combined segmented messages, show segment count
+                // For single messages, show "var" for variable-length or "1" for fixed
+                let segment_str = if msg.segment_count > 1 {
+                    format!("{} segments", msg.segment_count)
+                } else if hdr.segmented() {
+                    "1".to_string()
                 } else {
                     format!("var ({}B)", hdr.message_size_bytes())
                 };
@@ -83,8 +83,19 @@ fn render_message_list(frame: &mut Frame, app: &mut App, area: Rect) {
                 ("?".to_string(), "-".to_string(), "-".to_string())
             };
 
+            // Show index range for segmented messages (e.g., "253-257")
+            let index_str = if msg.raw_indices.len() > 1 {
+                format!(
+                    "{}-{}",
+                    msg.raw_indices.first().unwrap_or(&0),
+                    msg.raw_indices.last().unwrap_or(&0)
+                )
+            } else {
+                format!("{}", msg.raw_indices.first().unwrap_or(&msg.index))
+            };
+
             let cells = vec![
-                Cell::from(format!("{}", msg.index)),
+                Cell::from(index_str),
                 Cell::from(type_str),
                 Cell::from(format!("0x{:06X}", msg.offset)),
                 Cell::from(format!("{}", msg.size)),
@@ -96,7 +107,7 @@ fn render_message_list(frame: &mut Frame, app: &mut App, area: Rect) {
         .collect();
 
     let widths = [
-        Constraint::Length(5),
+        Constraint::Length(9), // Index (can be "253-257" for segmented)
         Constraint::Length(28),
         Constraint::Length(10),
         Constraint::Length(8),

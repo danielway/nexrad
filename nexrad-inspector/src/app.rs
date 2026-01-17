@@ -104,10 +104,18 @@ pub struct RecordInfo {
 /// Information about a message within a record
 #[derive(Debug, Clone)]
 pub struct MessageInfo {
+    /// Logical index of this message in the record
     pub index: usize,
+    /// Byte offset in decompressed record
     pub offset: usize,
+    /// Total message size in bytes
     pub size: usize,
+    /// Full message binary data
     pub data: Vec<u8>,
+    /// Number of segments this message spans (1 for non-segmented)
+    pub segment_count: usize,
+    /// Raw message indices before segment combining (for display as "253-257")
+    pub raw_indices: Vec<usize>,
 }
 
 /// Summary of a record's contents
@@ -602,17 +610,27 @@ impl App {
             let record = Record::new(data.clone());
             let messages = record.messages()?;
 
+            // Track raw message index as we iterate (segments are combined into single messages)
+            let mut raw_index = 0usize;
             let message_infos: Vec<MessageInfo> = messages
                 .iter()
                 .enumerate()
                 .map(|(index, msg)| {
                     let offset = msg.offset();
                     let size = msg.size();
+                    let segment_count = msg.headers().count();
+
+                    // Generate raw indices for this message (before segment combining)
+                    let raw_indices: Vec<usize> = (raw_index..raw_index + segment_count).collect();
+                    raw_index += segment_count;
+
                     MessageInfo {
                         index,
                         offset,
                         size,
                         data: data[offset..offset + size].to_vec(),
+                        segment_count,
+                        raw_indices,
                     }
                 })
                 .collect();

@@ -1,35 +1,36 @@
 ---
 source: nexrad-decode/src/messages/rda_status_data/snapshot_test.rs
-assertion_line: 13
 expression: "messages[0]"
 ---
 Message {
-    header: MessageHeader {
-        rpg_unknown: BinaryData {
-            len: 12,
-            sha256: "15ec7bf0b50732b49f8228e07d24365338f9e3ab994b00af08e5a3bffe55fd8b",
-            head: [
-                0,
-                0,
-                0,
-                0,
-            ],
-            tail: [
-                0,
-                0,
-                0,
-                0,
-            ],
+    headers: Single(
+        MessageHeader {
+            rpg_unknown: BinaryData {
+                len: 12,
+                sha256: "15ec7bf0b50732b49f8228e07d24365338f9e3ab994b00af08e5a3bffe55fd8b",
+                head: [
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
+                tail: [
+                    0,
+                    0,
+                    0,
+                    0,
+                ],
+            },
+            segment_size: 68,
+            redundant_channel: 8,
+            message_type: 2,
+            sequence_number: 4106,
+            date: 19057,
+            time: 84205394,
+            segment_count: 1,
+            segment_number: 1,
         },
-        segment_size: 68,
-        redundant_channel: 8,
-        message_type: 2,
-        sequence_number: 4106,
-        date: 19057,
-        time: 84205394,
-        segment_count: 1,
-        segment_number: 1,
-    },
+    ),
     contents: RDAStatusData(
         Message {
             inner: Message {

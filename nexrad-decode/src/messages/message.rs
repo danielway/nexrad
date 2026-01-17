@@ -6,22 +6,81 @@ use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
 
 /// Expected segment contents size for fixed-length segments.
-const FIXED_SEGMENT_SIZE: usize = 2432 - size_of::<MessageHeader>();
+pub(crate) const FIXED_SEGMENT_SIZE: usize = 2432 - size_of::<MessageHeader>();
 
-/// A decoded NEXRAD Level II message with its metadata header.
+/// Container for message headers, supporting both single-segment and multi-segment messages.
+///
+/// Most NEXRAD messages are single-segment, but some message types (like Clutter Filter Map)
+/// span multiple fixed-length segments. This enum provides a unified interface for accessing
+/// headers in both cases.
+#[derive(Debug, Clone, PartialEq)]
+pub enum MessageHeaders<'a> {
+    /// A single-segment message (most common case).
+    Single(&'a MessageHeader),
+    /// A multi-segment message with headers from each segment.
+    Multiple(Vec<&'a MessageHeader>),
+}
+
+impl<'a> MessageHeaders<'a> {
+    /// Returns the primary header (first segment's header for segmented messages).
+    ///
+    /// For single-segment messages, this returns the only header.
+    /// For multi-segment messages, this returns the first segment's header.
+    pub fn primary(&self) -> &'a MessageHeader {
+        match self {
+            MessageHeaders::Single(h) => h,
+            MessageHeaders::Multiple(headers) => headers[0],
+        }
+    }
+
+    /// Returns an iterator over all headers.
+    ///
+    /// For single-segment messages, yields one header.
+    /// For multi-segment messages, yields headers in segment order.
+    pub fn iter(&self) -> impl Iterator<Item = &'a MessageHeader> + '_ {
+        let slice: &[&'a MessageHeader] = match self {
+            MessageHeaders::Single(h) => std::slice::from_ref(h),
+            MessageHeaders::Multiple(headers) => headers.as_slice(),
+        };
+        slice.iter().copied()
+    }
+
+    /// Returns the number of segments (headers).
+    pub fn count(&self) -> usize {
+        match self {
+            MessageHeaders::Single(_) => 1,
+            MessageHeaders::Multiple(headers) => headers.len(),
+        }
+    }
+
+    /// Returns true if this is a multi-segment message.
+    pub fn is_segmented(&self) -> bool {
+        matches!(self, MessageHeaders::Multiple(_))
+    }
+}
+
+/// A decoded NEXRAD Level II message with its metadata header(s).
+///
+/// For most message types, this contains a single header and decoded contents.
+/// For segmented message types (like Clutter Filter Map), this contains headers
+/// from all segments that compose the logical message.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message<'a> {
-    header: &'a MessageHeader,
+    headers: MessageHeaders<'a>,
     contents: MessageContents<'a>,
     offset: usize,
     size: usize,
 }
 
 impl<'a> Message<'a> {
-    pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
-        let offset = reader.position();
-        let header = reader.take_ref::<MessageHeader>()?;
-
+    /// Parse a single (non-segmented) message from the reader.
+    ///
+    /// The header should already be read; `offset` is the position where it started.
+    pub(crate) fn parse(
+        reader: &mut SliceReader<'a>,
+        header: &'a MessageHeader,
+        offset: usize,
+    ) -> Result<Self> {
         let contents_start = reader.position();
         let contents = decode_message_contents(reader, header.message_type())?;
 
@@ -42,16 +101,49 @@ impl<'a> Message<'a> {
         let size = reader.position() - offset;
 
         Ok(Message {
-            header,
+            headers: MessageHeaders::Single(header),
             contents,
             offset,
             size,
         })
     }
 
-    /// This message's header.
+    /// Create a new message from pre-parsed components.
+    ///
+    /// Used by decode_messages() when constructing segmented messages.
+    pub(crate) fn new(
+        headers: MessageHeaders<'a>,
+        contents: MessageContents<'a>,
+        offset: usize,
+        size: usize,
+    ) -> Self {
+        Message {
+            headers,
+            contents,
+            offset,
+            size,
+        }
+    }
+
+    /// This message's primary header.
+    ///
+    /// For single-segment messages, returns the only header.
+    /// For multi-segment messages, returns the first segment's header.
     pub fn header(&self) -> &MessageHeader {
-        self.header
+        self.headers.primary()
+    }
+
+    /// All headers for this message.
+    ///
+    /// For single-segment messages, contains one header.
+    /// For multi-segment messages, contains headers from all segments in order.
+    pub fn headers(&self) -> &MessageHeaders<'a> {
+        &self.headers
+    }
+
+    /// Whether this message spans multiple segments.
+    pub fn is_segmented(&self) -> bool {
+        self.headers.is_segmented()
     }
 
     /// This message's contents.
@@ -65,11 +157,15 @@ impl<'a> Message<'a> {
     }
 
     /// The byte offset where this message starts in the source data.
+    ///
+    /// For segmented messages, this is the offset of the first segment.
     pub fn offset(&self) -> usize {
         self.offset
     }
 
-    /// The total size of this message in bytes, including the header.
+    /// The total size of this message in bytes, including all headers.
+    ///
+    /// For segmented messages, this is the combined size of all segments.
     pub fn size(&self) -> usize {
         self.size
     }

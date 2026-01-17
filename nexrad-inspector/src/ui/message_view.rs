@@ -12,7 +12,7 @@ use nexrad_decode::messages::MessageType;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Paragraph, Tabs, Wrap};
 
-use crate::app::{App, MessageTab};
+use crate::app::{App, MessageInfo, MessageTab};
 use crate::ui::hex_view;
 
 pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
@@ -20,7 +20,7 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
     let record_index = app.selected_record;
     let message_index = app.selected_message;
 
-    let message_info = match app.get_messages(record_index) {
+    let message_info = match app.get_displayed_messages(record_index) {
         Ok(msgs) => msgs.get(message_index).cloned(),
         Err(_) => None,
     };
@@ -42,7 +42,7 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
         ])
         .split(area);
 
-    render_header_info(frame, &message_info.data, chunks[0]);
+    render_header_info(frame, &message_info, chunks[0]);
     render_tabs(frame, app, chunks[1]);
 
     match app.message_tab {
@@ -55,8 +55,8 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
     }
 }
 
-fn render_header_info(frame: &mut Frame, data: &[u8], area: Rect) {
-    let header_info = App::get_message_header(data);
+fn render_header_info(frame: &mut Frame, msg_info: &MessageInfo, area: Rect) {
+    let header_info = App::get_message_header(&msg_info.data);
 
     let info_text = if let Some(hdr) = header_info {
         let msg_type = hdr.message_type();
@@ -65,14 +65,23 @@ fn render_header_info(frame: &mut Frame, data: &[u8], area: Rect) {
             .map(|dt| dt.format("%Y-%m-%d %H:%M:%S UTC").to_string())
             .unwrap_or_else(|| "Unknown".to_string());
 
-        let segment_info = if hdr.segmented() {
+        // Show segment info based on whether this is a combined segmented message
+        let segment_info = if msg_info.segment_count > 1 {
+            // Combined segmented message - show total segments and combined size
+            let index_range = format!(
+                "{}-{}",
+                msg_info.raw_indices.first().unwrap_or(&0),
+                msg_info.raw_indices.last().unwrap_or(&0)
+            );
             format!(
-                "Segment {}/{} ({} bytes each)",
-                hdr.segment_number().unwrap_or(0),
-                hdr.segment_count().unwrap_or(0),
-                hdr.message_size_bytes()
+                "{} segments (indices {}, {} bytes total)",
+                msg_info.segment_count, index_range, msg_info.size
             )
+        } else if hdr.segmented() {
+            // Single fixed-length segment
+            format!("Fixed-length ({} bytes)", hdr.message_size_bytes())
         } else {
+            // Variable-length message
             format!("Variable-length ({} bytes)", hdr.message_size_bytes())
         };
 

@@ -8,12 +8,12 @@ mod digital_radar_data;
 mod rda_status_data;
 mod volume_coverage_pattern;
 
-use nexrad_decode::messages::MessageType;
+use nexrad_decode::messages::{MessageHeader, MessageType};
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Paragraph, Tabs, Wrap};
 
 use crate::app::{App, MessageInfo, MessageTab};
-use crate::ui::hex_view;
+use crate::ui::hex_view::{self, HexRegion};
 
 pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
     // Get current message - extract indices first to avoid borrow issues
@@ -47,12 +47,52 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
 
     match app.message_tab {
         MessageTab::Hex => {
-            hex_view::render(frame, &message_info.data, app.hex_scroll, chunks[2]);
+            let regions = compute_hex_regions(&message_info);
+            hex_view::render(
+                frame,
+                &message_info.data,
+                app.hex_scroll,
+                chunks[2],
+                &regions,
+            );
         }
         MessageTab::Parsed => {
             render_parsed_view(frame, &message_info.data, app.parsed_scroll, chunks[2]);
         }
     }
+}
+
+/// Compute hex regions for header/payload visualization
+fn compute_hex_regions(msg_info: &MessageInfo) -> Vec<HexRegion> {
+    let mut regions = Vec::new();
+    let header_size = std::mem::size_of::<MessageHeader>();
+
+    if msg_info.segment_count > 1 {
+        // Multi-segment message: each segment is 2432 bytes (header + payload + padding)
+        const SEGMENT_SIZE: usize = 2432;
+        let payload_size = SEGMENT_SIZE - header_size;
+
+        for seg_idx in 0..msg_info.segment_count {
+            let seg_start = seg_idx * SEGMENT_SIZE;
+
+            // Header region
+            regions.push(HexRegion::header(seg_start, header_size));
+
+            // Payload region
+            regions.push(HexRegion::payload(seg_start + header_size, payload_size));
+        }
+    } else {
+        // Single message (segmented with count=1, or variable-length)
+        // Header region
+        regions.push(HexRegion::header(0, header_size));
+
+        // Payload region (rest of the data)
+        if msg_info.size > header_size {
+            regions.push(HexRegion::payload(header_size, msg_info.size - header_size));
+        }
+    }
+
+    regions
 }
 
 fn render_header_info(frame: &mut Frame, msg_info: &MessageInfo, area: Rect) {

@@ -1,7 +1,27 @@
 //! Unit tests for nexrad-model types.
 
-use nexrad_model::data::{MomentData, MomentValue, Scan, Sweep};
+use nexrad_model::data::{MomentData, MomentValue, PulseWidth, Scan, Sweep, VolumeCoveragePattern};
 use nexrad_model::meta::Site;
+
+/// Helper to create a minimal VCP for testing
+fn test_vcp(pattern_number: u16) -> VolumeCoveragePattern {
+    VolumeCoveragePattern::new(
+        pattern_number,
+        1,   // version
+        0.5, // doppler_velocity_resolution
+        PulseWidth::Short,
+        false,  // sails_enabled
+        0,      // sails_cuts
+        false,  // mrle_enabled
+        0,      // mrle_cuts
+        false,  // mpda_enabled
+        false,  // base_tilt_enabled
+        0,      // base_tilt_count
+        false,  // sequence_active
+        false,  // truncated
+        vec![], // elevation_cuts
+    )
+}
 
 #[test]
 fn test_site_creation() {
@@ -47,7 +67,7 @@ fn test_site_clone() {
 #[test]
 fn test_scan_creation() {
     let sweeps = vec![Sweep::new(1, vec![]), Sweep::new(2, vec![])];
-    let scan = Scan::new(212, sweeps);
+    let scan = Scan::new(test_vcp(212), sweeps);
 
     assert_eq!(scan.coverage_pattern_number(), 212);
     assert_eq!(scan.sweeps().len(), 2);
@@ -60,7 +80,7 @@ fn test_scan_display() {
         Sweep::new(2, vec![]),
         Sweep::new(3, vec![]),
     ];
-    let scan = Scan::new(212, sweeps);
+    let scan = Scan::new(test_vcp(212), sweeps);
     let display = format!("{}", scan);
 
     assert!(display.contains("VCP 212"));

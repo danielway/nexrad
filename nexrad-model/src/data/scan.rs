@@ -1,4 +1,4 @@
-use crate::data::Sweep;
+use crate::data::{Sweep, VolumeCoveragePattern};
 use std::fmt::{Debug, Display};
 
 #[cfg(feature = "serde")]
@@ -11,22 +11,30 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Scan {
-    coverage_pattern_number: u16,
+    coverage_pattern: VolumeCoveragePattern,
     sweeps: Vec<Sweep>,
 }
 
 impl Scan {
-    /// Create a new radar scan with the given coverage pattern number and sweeps.
-    pub fn new(coverage_pattern_number: u16, sweeps: Vec<Sweep>) -> Self {
+    /// Create a new radar scan with the given volume coverage pattern and sweeps.
+    pub fn new(coverage_pattern: VolumeCoveragePattern, sweeps: Vec<Sweep>) -> Self {
         Self {
-            coverage_pattern_number,
+            coverage_pattern,
             sweeps,
         }
     }
 
     /// This scan's volume coverage pattern number.
     pub fn coverage_pattern_number(&self) -> u16 {
-        self.coverage_pattern_number
+        self.coverage_pattern.pattern_number()
+    }
+
+    /// The volume coverage pattern configuration for this scan.
+    ///
+    /// This contains detailed configuration about how the radar scans the volume, including
+    /// per-elevation settings, SAILS/MRLE/MPDA capabilities, and various thresholds.
+    pub fn coverage_pattern(&self) -> &VolumeCoveragePattern {
+        &self.coverage_pattern
     }
 
     /// The elevation sweeps comprising this scan.
@@ -40,7 +48,7 @@ impl Display for Scan {
         write!(
             f,
             "Scan (VCP {}, {} sweeps)",
-            self.coverage_pattern_number,
+            self.coverage_pattern.pattern_number(),
             self.sweeps.len()
         )
     }
@@ -49,7 +57,7 @@ impl Display for Scan {
 impl Debug for Scan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Scan")
-            .field("coverage_pattern_number", &self.coverage_pattern_number())
+            .field("coverage_pattern", &self.coverage_pattern())
             .field("sweeps", &self.sweeps())
             .finish()
     }

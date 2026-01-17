@@ -36,11 +36,16 @@ impl File {
     #[cfg(feature = "nexrad-model")]
     pub fn scan(&self) -> crate::result::Result<nexrad_model::data::Scan> {
         use crate::result::Error;
+        use nexrad_decode::messages::volume_coverage_pattern as vcp;
         use nexrad_decode::messages::MessageContents;
-        use nexrad_model::data::{Scan, Sweep};
+        use nexrad_model::data::{
+            ChannelConfiguration, ElevationCut, PulseWidth, Scan, Sweep, VolumeCoveragePattern,
+            WaveformType,
+        };
 
-        let mut coverage_pattern_number = None;
+        let mut coverage_pattern_message: Option<vcp::Message<'_>> = None;
         let mut radials = Vec::new();
+
         for mut record in self.records()? {
             if record.compressed() {
                 record = record.decompress()?;
@@ -49,23 +54,95 @@ impl File {
             let messages = record.messages()?;
             for message in messages {
                 let contents = message.into_contents();
-                if let MessageContents::DigitalRadarData(radar_data_message) = contents {
-                    if coverage_pattern_number.is_none() {
-                        if let Some(volume_block) = radar_data_message.volume_data_block() {
-                            coverage_pattern_number =
-                                Some(volume_block.volume_coverage_pattern_number());
+                match contents {
+                    MessageContents::DigitalRadarData(radar_data_message) => {
+                        radials.push(radar_data_message.into_radial()?);
+                    }
+                    MessageContents::VolumeCoveragePattern(vcp_message) => {
+                        if coverage_pattern_message.is_none() {
+                            coverage_pattern_message = Some(vcp_message.into_owned());
                         }
                     }
-
-                    radials.push(radar_data_message.into_radial()?);
+                    _ => {}
                 }
             }
         }
 
-        Ok(Scan::new(
-            coverage_pattern_number.ok_or(Error::MissingCoveragePattern)?,
-            Sweep::from_radials(radials),
-        ))
+        // Convert the VCP message to the model representation
+        let vcp_msg = coverage_pattern_message.ok_or(Error::MissingCoveragePattern)?;
+        let header = vcp_msg.header();
+
+        let pulse_width = match header.pulse_width() {
+            vcp::PulseWidth::Short => PulseWidth::Short,
+            vcp::PulseWidth::Long => PulseWidth::Long,
+            vcp::PulseWidth::Unknown => PulseWidth::Unknown,
+        };
+
+        let elevation_cuts: Vec<ElevationCut> = vcp_msg
+            .elevations()
+            .iter()
+            .map(|elev| {
+                let channel_config = match elev.channel_configuration() {
+                    vcp::ChannelConfiguration::ConstantPhase => ChannelConfiguration::ConstantPhase,
+                    vcp::ChannelConfiguration::RandomPhase => ChannelConfiguration::RandomPhase,
+                    vcp::ChannelConfiguration::SZ2Phase => ChannelConfiguration::SZ2Phase,
+                    vcp::ChannelConfiguration::UnknownPhase => ChannelConfiguration::Unknown,
+                };
+
+                let waveform = match elev.waveform_type() {
+                    vcp::WaveformType::CS => WaveformType::CS,
+                    vcp::WaveformType::CDW => WaveformType::CDW,
+                    vcp::WaveformType::CDWO => WaveformType::CDWO,
+                    vcp::WaveformType::B => WaveformType::B,
+                    vcp::WaveformType::SPP => WaveformType::SPP,
+                    vcp::WaveformType::Unknown => WaveformType::Unknown,
+                };
+
+                ElevationCut::new(
+                    elev.elevation_angle(),
+                    channel_config,
+                    waveform,
+                    elev.azimuth_rate(),
+                    elev.super_resolution_half_degree_azimuth(),
+                    elev.super_resolution_quarter_km_reflectivity(),
+                    elev.super_resolution_doppler_to_300km(),
+                    elev.super_resolution_dual_pol_to_300km(),
+                    elev.surveillance_prf_number(),
+                    elev.surveillance_prf_pulse_count_radial(),
+                    elev.reflectivity_threshold(),
+                    elev.velocity_threshold(),
+                    elev.spectrum_width_threshold(),
+                    elev.differential_reflectivity_threshold(),
+                    elev.differential_phase_threshold(),
+                    elev.correlation_coefficient_threshold(),
+                    elev.is_sails_cut(),
+                    elev.sails_sequence_number(),
+                    elev.is_mrle_cut(),
+                    elev.mrle_sequence_number(),
+                    elev.is_mpda_cut(),
+                    elev.is_base_tilt_cut(),
+                )
+            })
+            .collect();
+
+        let coverage_pattern = VolumeCoveragePattern::new(
+            header.pattern_number(),
+            header.version(),
+            header.doppler_velocity_resolution(),
+            pulse_width,
+            header.is_sails_vcp(),
+            header.number_of_sails_cuts(),
+            header.is_mrle_vcp(),
+            header.number_of_mrle_cuts(),
+            header.is_mpda_vcp(),
+            header.is_base_tilt_vcp(),
+            header.number_of_base_tilts(),
+            header.vcp_sequencing_sequence_active(),
+            header.vcp_sequencing_truncated(),
+            elevation_cuts,
+        );
+
+        Ok(Scan::new(coverage_pattern, Sweep::from_radials(radials)))
     }
 }
 

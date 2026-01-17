@@ -22,7 +22,7 @@ pub enum Error {
     Model(#[from] nexrad_model::result::Error),
     #[error("compressed data cannot be decoded")]
     CompressedDataError,
-    #[error("volume missing coverage pattern number")]
+    #[error("volume missing coverage pattern (message type 5)")]
     MissingCoveragePattern,
     #[error("ldm record decompression error")]
     DecompressionError(#[from] bzip2::Error),

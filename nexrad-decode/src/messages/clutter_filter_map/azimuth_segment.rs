@@ -1,7 +1,7 @@
 use crate::messages::clutter_filter_map::raw::{self, AzimuthSegmentHeader};
 use crate::messages::clutter_filter_map::RangeZone;
 use crate::result::Result;
-use crate::slice_reader::SliceReader;
+use crate::segmented_slice_reader::SegmentedSliceReader;
 use std::borrow::Cow;
 
 /// A segment of the clutter filter map for a specific elevation and azimuth containing range zones.
@@ -21,10 +21,14 @@ pub struct AzimuthSegment<'a> {
 
 impl<'a> AzimuthSegment<'a> {
     /// Parse an azimuth segment (expected to be the specified number) from the reader.
-    pub(crate) fn parse(reader: &mut SliceReader<'a>, segment_number: u16) -> Result<Self> {
+    pub(crate) fn parse(
+        reader: &mut SegmentedSliceReader<'a>,
+        segment_number: u16,
+    ) -> Result<Self> {
         let header = reader.take_ref::<AzimuthSegmentHeader>()?;
-        let raw_range_zones =
-            reader.take_slice::<raw::RangeZone>(header.range_zone_count.get() as usize)?;
+        let range_zone_count = header.range_zone_count.get() as usize;
+
+        let raw_range_zones = reader.take_slice::<raw::RangeZone>(range_zone_count)?;
 
         let range_zones = raw_range_zones.iter().map(RangeZone::new).collect();
 

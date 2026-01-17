@@ -81,5 +81,6 @@ pub mod messages;
 pub mod result;
 pub mod summarize;
 
+mod segmented_slice_reader;
 mod slice_reader;
 mod util;

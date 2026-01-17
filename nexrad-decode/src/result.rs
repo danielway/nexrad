@@ -22,4 +22,8 @@ pub enum Error {
     InvalidDataBlockPointer { bytes: usize, position: usize },
     #[error("unknown data block type: {block_type}")]
     UnknownDataBlockType { block_type: String },
+    #[error("segmented message has out-of-order segment: expected {expected}, got {actual}")]
+    SegmentOutOfOrder { expected: u16, actual: u16 },
+    #[error("data structure spans segment boundary at position {position}")]
+    DataSpansSegmentBoundary { position: usize },
 }

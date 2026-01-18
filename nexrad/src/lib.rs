@@ -3,43 +3,93 @@
 //! A Rust library for working with NEXRAD (Next Generation Weather Radar) data.
 //!
 //! This crate serves as the main entry point for the NEXRAD library suite, providing
-//! convenient re-exports from the underlying crates:
+//! ergonomic top-level functions and re-exports from the underlying crates:
 //!
 //! - `nexrad-model` - Core data model types (Scan, Sweep, Radial, Site)
 //! - `nexrad-decode` - Binary protocol decoding for Archive II format
 //! - `nexrad-data` - Data access (local files, AWS S3)
 //! - `nexrad-render` - Visualization and rendering
 //!
-//! ## Features
-//!
-//! All features are enabled by default. You can disable default features and
-//! enable only what you need:
-//!
-//! - `model` - Core data model types
-//! - `decode` - Protocol decoding
-//! - `data` - Data access and AWS integration
-//! - `render` - Visualization and rendering
-//!
 //! ## Quick Start
 //!
+//! Load radar data with a single function call:
+//!
 //! ```ignore
-//! use nexrad::data::volume::File;
-//! use nexrad::model::data::{Scan, Sweep};
+//! // Load from a local file
+//! let volume = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
+//! println!("VCP: {}, {} sweeps",
+//!     volume.coverage_pattern_number(),
+//!     volume.sweeps().len());
 //!
-//! // Load a local NEXRAD Archive II file
-//! let data = std::fs::read("KTLX20130520_201643_V06.ar2v")?;
-//! let volume = File::new(data);
-//!
-//! // Convert to the high-level data model
-//! let scan: Scan = volume.scan()?;
-//!
-//! // Access sweeps and radials
-//! for sweep in scan.sweeps() {
-//!     println!("Elevation {}: {} radials",
-//!         sweep.elevation_number(),
-//!         sweep.radials().len());
+//! // Access data
+//! for sweep in volume.sweeps() {
+//!     for radial in sweep.radials() {
+//!         if let Some(reflectivity) = radial.reflectivity() {
+//!             println!("{} gates", reflectivity.gate_count());
+//!         }
+//!     }
 //! }
+//! # Ok::<(), nexrad::Error>(())
 //! ```
+//!
+//! Or download directly from the NEXRAD archive on AWS (requires `aws` feature):
+//!
+//! ```ignore
+//! use chrono::NaiveDate;
+//!
+//! let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
+//! let volume = nexrad::download_latest("KTLX", date).await?;
+//! # Ok::<(), nexrad::Error>(())
+//! ```
+//!
+//! ## Terminology
+//!
+//! The [`prelude`] module provides type aliases that align with standard radar terminology:
+//!
+//! | Term | Type | Description |
+//! |------|------|-------------|
+//! | Volume | [`model::data::Scan`] | Complete radar scan at multiple elevations |
+//! | Sweep | [`model::data::Sweep`] | Single rotation at one elevation angle |
+//! | Radial | [`model::data::Radial`] | Single beam direction with moment data |
+//! | Moment | [`model::data::MomentData`] | Per-gate measurements for one data type |
+//! | Gate | [`model::data::MomentValue`] | Individual range bin measurement |
+//!
+//! ```ignore
+//! use nexrad::prelude::*;
+//!
+//! let volume: Volume = nexrad::load_file("radar.ar2v")?;
+//! for sweep in volume.sweeps() {
+//!     for radial in sweep.radials() {
+//!         // Access reflectivity moment data
+//!         if let Some(moment) = radial.reflectivity() {
+//!             for gate in moment.values() {
+//!                 match gate {
+//!                     GateValue::Value(dbz) => println!("dBZ: {}", dbz),
+//!                     GateValue::BelowThreshold => {},
+//!                     _ => {}
+//!                 }
+//!             }
+//!         }
+//!     }
+//! }
+//! # Ok::<(), nexrad::Error>(())
+//! ```
+//!
+//! ## Features
+//!
+//! All core features are enabled by default. Additional features can be enabled:
+//!
+//! | Feature | Description |
+//! |---------|-------------|
+//! | `model` | Core data model types (default) |
+//! | `decode` | Protocol decoding (default) |
+//! | `data` | Data access (default) |
+//! | `render` | Visualization and rendering (default) |
+//! | `aws` | Enable AWS S3 downloads ([`download_latest`], [`download_at`], [`list_volumes`]) |
+//! | `serde` | Serialization support for model types |
+//! | `uom` | Type-safe units of measure |
+//! | `chrono` | Date/time type support |
+//! | `full` | Enable all features |
 //!
 //! ## Error Handling
 //!
@@ -110,9 +160,172 @@
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
 
+pub mod prelude;
 pub mod result;
 
 pub use result::{Error, Result};
+
+// ============================================================================
+// Top-level volume loading functions
+// ============================================================================
+
+/// Load a volume from raw Archive II data bytes.
+///
+/// This function automatically handles decompression of bzip2-compressed LDM records
+/// and decodes the NEXRAD messages into the high-level data model.
+///
+/// # Example
+///
+/// ```ignore
+/// let data = std::fs::read("KTLX20230520_201643_V06.ar2v")?;
+/// let volume = nexrad::load(&data)?;
+/// println!("VCP: {}, {} sweeps",
+///     volume.coverage_pattern_number(),
+///     volume.sweeps().len());
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if the data cannot be parsed as a valid Archive II file,
+/// decompression fails, or the messages cannot be decoded.
+#[cfg(all(feature = "data", feature = "model"))]
+pub fn load(data: &[u8]) -> Result<model::data::Scan> {
+    let file = data::volume::File::new(data.to_vec());
+    Ok(file.scan()?)
+}
+
+/// Load a volume from a file path.
+///
+/// This is a convenience wrapper around [`load`] that reads the file from disk first.
+///
+/// # Example
+///
+/// ```ignore
+/// let volume = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
+/// println!("VCP: {}", volume.coverage_pattern_number());
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if the file cannot be read or parsed.
+#[cfg(all(feature = "data", feature = "model"))]
+pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan> {
+    let data = std::fs::read(path)?;
+    load(&data)
+}
+
+/// Download the most recent volume for a site on a given date.
+///
+/// Returns the last available archive file for the specified date. This is useful
+/// when you want the most complete data available for a particular day.
+///
+/// # Example
+///
+/// ```ignore
+/// use chrono::NaiveDate;
+///
+/// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
+/// let volume = nexrad::download_latest("KTLX", date).await?;
+/// println!("VCP: {}", volume.coverage_pattern_number());
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns [`Error::NoDataAvailable`] if no archive files exist for the site/date,
+/// or a network/parsing error if download or decoding fails.
+#[cfg(all(feature = "data", feature = "model", feature = "aws"))]
+pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<model::data::Scan> {
+    let files = data::aws::archive::list_files(site, &date).await?;
+    let file_id = files
+        .last()
+        .cloned()
+        .ok_or_else(|| Error::NoDataAvailable {
+            site: site.to_string(),
+            date: date.to_string(),
+        })?;
+    let file = data::aws::archive::download_file(file_id).await?;
+    Ok(file.scan()?)
+}
+
+/// Download the volume that overlaps a specific datetime.
+///
+/// Finds the archive file whose collection period contains the requested datetime.
+/// Archive files typically span approximately 5 minutes of data collection, so this
+/// function returns the volume that was being collected at the specified time.
+///
+/// # Example
+///
+/// ```ignore
+/// use chrono::NaiveDateTime;
+///
+/// // Download the volume that was being collected at 20:16:43 UTC
+/// let dt = NaiveDateTime::parse_from_str(
+///     "2023-05-20 20:16:43",
+///     "%Y-%m-%d %H:%M:%S"
+/// ).unwrap();
+/// let volume = nexrad::download_at("KTLX", dt).await?;
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns [`Error::NoDataAvailable`] if no archive files exist for the site/date
+/// or if no file overlaps the requested time.
+#[cfg(all(feature = "data", feature = "model", feature = "aws"))]
+pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<model::data::Scan> {
+    let files = data::aws::archive::list_files(site, &datetime.date()).await?;
+
+    // Find the archive file that would contain data at the requested time.
+    // Files are sorted chronologically; find the last one with start_time <= requested time.
+    let file_id = files
+        .iter()
+        .rfind(|f| {
+            f.date_time()
+                .map(|dt| dt.time() <= datetime.time())
+                .unwrap_or(false)
+        })
+        .cloned()
+        .ok_or_else(|| Error::NoDataAvailable {
+            site: site.to_string(),
+            date: datetime.date().to_string(),
+        })?;
+
+    let file = data::aws::archive::download_file(file_id).await?;
+    Ok(file.scan()?)
+}
+
+/// List available volumes for a site and date.
+///
+/// Returns identifiers for all archive files available on the specified date.
+/// These identifiers can be used to selectively download specific volumes.
+///
+/// # Example
+///
+/// ```ignore
+/// use chrono::NaiveDate;
+///
+/// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
+/// let volumes = nexrad::list_volumes("KTLX", date).await?;
+/// println!("Found {} volumes", volumes.len());
+/// for vol in &volumes {
+///     println!("  {:?}", vol);
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(all(feature = "data", feature = "aws"))]
+pub async fn list_volumes(
+    site: &str,
+    date: chrono::NaiveDate,
+) -> Result<Vec<data::aws::archive::Identifier>> {
+    Ok(data::aws::archive::list_files(site, &date).await?)
+}
+
+// ============================================================================
+// Sub-crate re-exports
+// ============================================================================
 
 /// Re-export of `nexrad-model` for core data types.
 #[cfg(feature = "model")]

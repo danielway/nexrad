@@ -121,4 +121,23 @@ pub enum Error {
     #[cfg(feature = "render")]
     #[error("render error: {0}")]
     Render(#[from] nexrad_render::result::Error),
+
+    /// I/O error from file operations.
+    ///
+    /// This variant wraps standard library I/O errors that occur when reading
+    /// volume files from disk.
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// No data available for the requested site and date/time.
+    ///
+    /// This error occurs when attempting to download archive data that doesn't exist,
+    /// such as requesting a date before radar operations began or a future date.
+    #[error("no data available for site {site} on {date}")]
+    NoDataAvailable {
+        /// The radar site identifier (e.g., "KTLX").
+        site: String,
+        /// The requested date in YYYY-MM-DD format.
+        date: String,
+    },
 }

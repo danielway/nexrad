@@ -13,7 +13,9 @@ This repository uses GitHub Actions to manage the release process for individual
        - `major` for breaking changes (x.0.0)
        - `minor` for new features (0.x.0)
        - `patch` for bug fixes (0.0.x)
-       - `rc` for release candidates (0.0.0-rc.1)
+       - `rc` for release candidates (0.0.x-rc.1)
+       - `custom` for arbitrary versions (e.g., 1.0.0-rc.1)
+     - If using `custom`, enter the exact version string in the "Custom version" field
 
 2. **Review Draft Release**
    - The workflow will:
@@ -40,6 +42,40 @@ The following crates can be released:
 - `nexrad-decode`
 - `nexrad-model`
 - `nexrad-render`
+
+## Crate Dependencies
+
+The crates have interdependencies that affect release order:
+
+```
+nexrad-model (no internal deps)
+       │
+   ┌───┴───┐
+   ▼       ▼
+nexrad-decode   nexrad-render
+   │
+   ▼
+nexrad-data
+
+       │ (all four)
+       ▼
+     nexrad (facade)
+```
+
+### Release Order
+
+When releasing multiple crates, follow this order:
+
+1. **nexrad-model** - foundation crate, no internal dependencies
+2. **nexrad-decode** and **nexrad-render** - both depend only on nexrad-model (can be released in parallel)
+3. **nexrad-data** - depends on nexrad-decode and nexrad-model
+4. **nexrad** - facade crate, depends on all others
+
+### Automatic Dependency Updates
+
+The Release Bump workflow uses `cargo release`, which automatically updates version requirements in all dependent crates within the workspace and commits those changes. For example, releasing `nexrad-model@1.0.0-rc.1` will also update the `nexrad-model` version in `nexrad-decode/Cargo.toml`, `nexrad-render/Cargo.toml`, etc.
+
+You still need to release crates in dependency order because each crate must be published to crates.io before its dependents can be released
 
 ## Troubleshooting
 

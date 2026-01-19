@@ -21,6 +21,11 @@ on:
           - minor
           - patch
           - rc
+          - custom
+      custom_version:
+        description: "Custom version (only used when version_type is 'custom', e.g., 1.0.0-rc.1)"
+        required: false
+        type: string
 
 jobs:
   ci:
@@ -57,7 +62,11 @@ jobs:
       - name: Bump version and tag
         id: cargo_release
         run: |
-          cargo release ${{ github.event.inputs.version_type }} \
+          VERSION="${{ github.event.inputs.version_type }}"
+          if [ "$VERSION" = "custom" ]; then
+            VERSION="${{ github.event.inputs.custom_version }}"
+          fi
+          cargo release $VERSION \
             --package ${{ github.event.inputs.crate }} \
             --tag-prefix "{{crate_name}}" \
             --tag-name "{{prefix}}@{{version}}" \
@@ -76,7 +85,7 @@ jobs:
         with:
           tag_name: ${{ steps.get_tag.outputs.tag }}
           draft: true
-          prerelease: ${{ github.event.inputs.version_type == 'rc' }}
+          prerelease: ${{ github.event.inputs.version_type == 'rc' || contains(github.event.inputs.custom_version, '-') }}
           body: |
             ## Release Notes
             A draft release was automatically created. 

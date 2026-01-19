@@ -80,5 +80,9 @@
 #![deny(missing_docs)]
 
 pub mod data;
+pub mod field;
 pub mod meta;
 pub mod result;
+
+// Re-export commonly used field types at crate root for convenience
+pub use field::{CartesianGrid, FieldError, GridSpec, PolarSweep, ProductSelector};

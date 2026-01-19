@@ -3,7 +3,29 @@
 //! This crate provides functions to render radar data into visual images. It converts
 //! radar moment data (reflectivity, velocity, etc.) into color-mapped visualizations.
 //!
-//! # Example
+//! # New API (Recommended)
+//!
+//! The new API uses canonical interchange types for better composability:
+//!
+//! ```ignore
+//! use nexrad_model::field::{PolarSweep, radials_to_polar_sweep, ProductSelector};
+//! use nexrad_render::render::{render_polar, RenderOpts};
+//! use nexrad_render::get_nws_reflectivity_scale;
+//! use piet_common::Device;
+//!
+//! // Convert radials to PolarSweep
+//! let sweep = radials_to_polar_sweep(radials, ProductSelector::Reflectivity)?;
+//!
+//! // Render to image
+//! let mut device = Device::new().unwrap();
+//! let opts = RenderOpts::new(800, 800);
+//! let mut image = render_polar(&mut device, &sweep, &get_nws_reflectivity_scale(), &opts)?;
+//! image.save_to_file("output.png")?;
+//! ```
+//!
+//! # Legacy API
+//!
+//! The original API that works directly with `Radial` slices is still available:
 //!
 //! ```ignore
 //! use nexrad_render::{render_radials, Product, get_nws_reflectivity_scale};
@@ -29,7 +51,7 @@
 //! - ✓ Render radar data to in-memory images
 //! - ✓ Apply color scales to moment data
 //! - ✓ Handle geometric transformations (polar coordinates, rotation)
-//! - ✓ Consume `nexrad-model` types (Radial, MomentData)
+//! - ✓ Consume `nexrad-model` types (Radial, MomentData, PolarSweep, CartesianGrid)
 //!
 //! ## Constraints
 //!
@@ -58,6 +80,14 @@ mod color;
 pub use crate::color::*;
 
 pub mod result;
+
+// New modules for canonical interchange types
+pub mod render;
+pub mod sampler;
+
+// Re-export new primary API at crate root for convenience
+pub use render::{render_grid, render_polar, RenderOpts, RenderedImage};
+pub use sampler::{GridSampler, PolarSampler, Sampler};
 
 /// Radar data products that can be rendered.
 ///

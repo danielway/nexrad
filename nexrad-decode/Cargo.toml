@@ -28,7 +28,7 @@ clap = { workspace = true }
 env_logger = { workspace = true }
 tokio = { workspace = true }
 insta = { workspace = true }
-nexrad-data = { version = "0.2.0", path = "../nexrad-data" }
+nexrad-data = { version = "1.0.0-rc.1", path = "../nexrad-data" }
 criterion = { workspace = true }
 
 [[example]]

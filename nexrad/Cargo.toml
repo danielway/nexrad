@@ -34,7 +34,7 @@ chrono = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
 nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model", optional = true }
 nexrad-decode = { version = "1.0.0-rc.1", path = "../nexrad-decode", optional = true }
-nexrad-data = { version = "0.2.0", path = "../nexrad-data", optional = true }
+nexrad-data = { version = "1.0.0-rc.1", path = "../nexrad-data", optional = true }
 nexrad-render = { version = "1.0.0-rc.1", path = "../nexrad-render", optional = true }
 
 [dev-dependencies]

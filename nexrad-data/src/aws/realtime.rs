@@ -51,17 +51,22 @@ pub use list_chunks_in_volume::*;
 mod estimate_next_chunk_time;
 pub use estimate_next_chunk_time::*;
 
-mod poll_chunks;
-pub use poll_chunks::*;
-
-mod poll_stats;
-pub use poll_stats::*;
-
 mod chunk_timing_stats;
 pub use chunk_timing_stats::*;
 
 mod elevation_chunk_mapper;
 pub use elevation_chunk_mapper::*;
+
+// Polling functionality requires tokio and is not WASM-compatible
+#[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
+mod poll_chunks;
+#[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
+pub use poll_chunks::*;
+
+#[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
+mod poll_stats;
+#[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
+pub use poll_stats::*;
 
 mod search;
 

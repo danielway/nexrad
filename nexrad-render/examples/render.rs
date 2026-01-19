@@ -5,9 +5,9 @@ use std::fs::File;
 use std::io::Read;
 
 fn main() {
-    let file_name = "KDMX20220305_221051_V06";
+    let file_name = "KDMX20220305_232324_V06";
 
-    let mut file = File::open(format!("nexrad-render/files/{file_name}")).expect("file exists");
+    let mut file = File::open(format!("downloads/{file_name}")).expect("file exists");
     let mut data = Vec::new();
     file.read_to_end(&mut data).expect("can read file");
 

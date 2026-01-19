@@ -165,3 +165,34 @@ jobs:
 
       - name: Run tests
         run: cargo +${{ matrix.rust_version }} test --all-features --workspace
+
+  wasm-compatibility:
+    name: WASM compatibility check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check nexrad-model (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad-model --all-features
+
+      - name: Check nexrad-decode (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad-decode --all-features
+
+      - name: Check nexrad-data without aws (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad-data --no-default-features
+
+      - name: Check nexrad-data with aws (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad-data --no-default-features --features aws
+
+      - name: Check nexrad facade with WASM-compatible features
+        run: cargo check --target wasm32-unknown-unknown -p nexrad --no-default-features --features model,decode,data,aws,serde,uom,chrono

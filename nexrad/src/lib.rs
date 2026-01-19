@@ -79,17 +79,18 @@
 //!
 //! All core features are enabled by default. Additional features can be enabled:
 //!
-//! | Feature | Description | Dependencies |
-//! |---------|-------------|--------------|
-//! | `model` | Core data model types (default) | Pure Rust |
-//! | `decode` | Protocol decoding (default) | chrono, zerocopy |
-//! | `data` | Data access (default) | bzip2 |
-//! | `render` | Visualization and rendering (default) | piet (requires cairo) |
-//! | `aws` | Enable AWS S3 downloads (`download_latest`, `download_at`, `list_volumes`) | reqwest, tokio |
-//! | `serde` | Serialization support for model types | serde |
-//! | `uom` | Type-safe units of measure | uom |
-//! | `chrono` | Date/time type support | chrono |
-//! | `full` | Enable all features | All above |
+//! | Feature | Description | Dependencies | WASM-compatible |
+//! |---------|-------------|--------------|-----------------|
+//! | `model` | Core data model types (default) | Pure Rust | Yes |
+//! | `decode` | Protocol decoding (default) | chrono, zerocopy | Yes |
+//! | `data` | Data access (default) | bzip2 | Yes |
+//! | `render` | Visualization and rendering (default) | piet (requires cairo) | No |
+//! | `aws` | Enable AWS S3 downloads (`download_latest`, `download_at`, `list_volumes`) | reqwest | Yes |
+//! | `aws-polling` | Real-time polling (`poll_chunks`) | reqwest, tokio | No |
+//! | `serde` | Serialization support for model types | serde | Yes |
+//! | `uom` | Type-safe units of measure | uom | Yes |
+//! | `chrono` | Date/time type support | chrono | Yes |
+//! | `full` | Enable all features | All above | No |
 //!
 //! ### Common Configurations
 //!

@@ -77,6 +77,7 @@
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
 #![allow(clippy::too_many_arguments)]
+#![deny(missing_docs)]
 
 pub mod data;
 pub mod meta;

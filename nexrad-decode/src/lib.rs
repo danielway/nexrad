@@ -75,10 +75,15 @@
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
 #![allow(clippy::too_many_arguments)]
+#![deny(missing_docs)]
 
+/// Wrapper type for binary data with debug formatting support.
 pub mod binary_data;
+/// Message parsing and type definitions for NEXRAD Level II data.
 pub mod messages;
+/// Result and error types for decoding operations.
 pub mod result;
+/// Utilities for summarizing collections of decoded messages.
 pub mod summarize;
 
 mod segmented_slice_reader;

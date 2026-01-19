@@ -44,6 +44,7 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
+#![deny(missing_docs)]
 
 use nexrad_model::data::{MomentData, MomentValue, Radial};
 use piet::{Color, RenderContext};

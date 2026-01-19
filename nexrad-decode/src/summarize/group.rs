@@ -6,32 +6,41 @@ use std::{
     fmt::{Display, Formatter, Result},
 };
 
-/// Summary of a single message or group of related messages
+/// Summary of a single message or group of related messages.
 #[derive(Clone, PartialEq, Debug)]
 pub struct MessageGroupSummary {
+    /// The type of message(s) in this group.
     pub message_type: MessageType,
+    /// Start timestamp of the first message in the group.
     pub start_time: Option<DateTime<Utc>>,
+    /// End timestamp of the last message in the group.
     pub end_time: Option<DateTime<Utc>>,
+    /// Number of messages in this group.
     pub message_count: usize,
 
-    // For DigitalRadarData messages
+    /// Elevation number (for DigitalRadarData messages).
     pub elevation_number: Option<u8>,
+    /// Elevation angle in degrees (for DigitalRadarData messages).
     pub elevation_angle: Option<f32>,
+    /// Starting azimuth angle in degrees (for DigitalRadarData messages).
     pub start_azimuth: Option<f32>,
+    /// Ending azimuth angle in degrees (for DigitalRadarData messages).
     pub end_azimuth: Option<f32>,
+    /// Data types present and their counts (for DigitalRadarData messages).
     pub data_types: Option<HashMap<String, usize>>,
 
-    // For RDAStatusData messages
+    /// RDA status information (for RDAStatusData messages).
     pub rda_status_info: Option<RDAStatusInfo>,
 
-    // For VolumeCoveragePattern messages
+    /// VCP information (for VolumeCoveragePattern messages).
     pub vcp_info: Option<VCPInfo>,
 
-    // Indicates if this group continues from a previous group
+    /// Whether this group continues from a previous group.
     pub is_continued: bool,
 
-    // Absolute message indices
+    /// Index of the first message in this group.
     pub start_message_index: usize,
+    /// Index of the last message in this group.
     pub end_message_index: usize,
 }
 

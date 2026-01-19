@@ -62,8 +62,11 @@ impl Message {
 /// The status of the RDA as a result of the alarm.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum State {
+    /// Maintenance is mandatory before operation can continue.
     MaintenanceMandatory,
+    /// Maintenance is required but operation can continue.
     MaintenanceRequired,
+    /// System is inoperative due to this alarm.
     Inoperative,
     /// Alarm not specifically tied to state change.
     Secondary,
@@ -83,11 +86,18 @@ pub enum AlarmType {
 /// The hardware device area where the alarm originated.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Device {
+    /// Control unit/computer.
     Control,
+    /// Antenna pedestal.
     Pedestal,
+    /// Receiver subsystem.
     Receiver,
+    /// Signal processor.
     SignalProcessor,
+    /// Communications equipment.
     Communications,
+    /// Tower utilities (power, HVAC, etc.).
     TowerUtilities,
+    /// Transmitter subsystem.
     Transmitter,
 }

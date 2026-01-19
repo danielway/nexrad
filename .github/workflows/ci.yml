@@ -100,6 +100,27 @@ jobs:
           RUSTDOCFLAGS: "-D warnings"
         run: cargo hack doc --no-deps --feature-powerset --optional-deps --release
 
+  examples:
+    name: Example compilation check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build all examples
+        run: cargo build --workspace --examples --all-features
+
   test-toolchain:
     name: Test (rust-toolchain.toml)
     runs-on: ubuntu-latest

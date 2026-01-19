@@ -1,23 +1,36 @@
-/// Contains summary information from the Volume Coverage Pattern message
+/// Contains summary information from the Volume Coverage Pattern message.
 #[derive(Clone, PartialEq, Debug)]
 pub struct VCPInfo {
+    /// VCP pattern number (e.g., 12, 31, 212).
     pub pattern_number: u16,
+    /// VCP version number.
     pub version: u8,
+    /// Number of elevation cuts in the VCP.
     pub number_of_elevation_cuts: u16,
+    /// Pulse width description.
     pub pulse_width: String,
+    /// Doppler velocity resolution in m/s, if available.
     pub doppler_velocity_resolution: Option<f64>,
+    /// VCP features enabled (SAILS, MRLE, MPDA, etc.).
     pub vcp_features: Vec<String>,
+    /// Information about each elevation cut.
     pub elevations: Vec<VCPElevationInfo>,
 }
 
-/// Summary information about a single elevation cut in a VCP
+/// Summary information about a single elevation cut in a VCP.
 #[derive(Clone, PartialEq, Debug)]
 pub struct VCPElevationInfo {
+    /// Elevation angle in degrees.
     pub elevation_angle: f64,
+    /// Channel configuration description.
     pub channel_configuration: String,
+    /// Waveform type description.
     pub waveform_type: String,
+    /// Azimuth rotation rate in degrees per second.
     pub azimuth_rate: f64,
+    /// Super resolution features enabled for this cut.
     pub super_resolution_features: Vec<String>,
+    /// Special cut type (SAILS, MRLE, MPDA, Base tilt), if applicable.
     pub special_cut_type: Option<String>,
 }
 

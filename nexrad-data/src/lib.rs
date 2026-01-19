@@ -82,10 +82,14 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
+#![deny(missing_docs)]
 
 #[cfg(feature = "aws")]
+/// AWS S3 integration for downloading NEXRAD data from the cloud.
 pub mod aws;
 
+/// Local Archive II volume file handling.
 pub mod volume;
 
+/// Result and error types for data operations.
 pub mod result;

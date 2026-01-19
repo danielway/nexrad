@@ -1,4 +1,4 @@
-#![cfg(feature = "aws")]
+#![cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
 
 use chrono::{DateTime, Utc};
 use clap::Parser;

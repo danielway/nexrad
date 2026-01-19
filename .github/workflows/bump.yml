@@ -29,8 +29,9 @@ on:
 
 jobs:
   ci:
-    name: CI
-    uses: ./.github/workflows/ci.yml
+    name: CI (Lite)
+    uses: ./.github/workflows/ci-lite.yml
+
   bump-version:
     name: Bump version
     needs: ci
@@ -41,15 +42,16 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           persist-credentials: true
           fetch-depth: 0
 
-      - name: Install Rust (stable)
-        uses: dtolnay/rust-toolchain@master
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
         with:
-          toolchain: stable
+          system-deps: "false"
+          cache: "false"
 
       - name: Install cargo-release
         run: cargo install cargo-release
@@ -88,5 +90,5 @@ jobs:
           prerelease: ${{ github.event.inputs.version_type == 'rc' || contains(github.event.inputs.custom_version, '-') }}
           body: |
             ## Release Notes
-            A draft release was automatically created. 
+            A draft release was automatically created.
             Please edit this text to add a changelog before publishing.

@@ -1,6 +1,6 @@
 [package]
 name = "nexrad-data"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 description = "Data access for NEXRAD weather radar files and AWS integration."
 authors.workspace = true
 edition.workspace = true
@@ -12,7 +12,10 @@ categories.workspace = true
 
 [features]
 default = ["aws", "nexrad-model"]
-aws = ["reqwest", "xml", "tokio"]
+# Basic AWS S3 access (WASM-compatible)
+aws = ["reqwest", "xml"]
+# Real-time polling functionality (requires tokio, not WASM-compatible)
+aws-polling = ["aws", "tokio"]
 
 [dependencies]
 log = { workspace = true }
@@ -23,18 +26,23 @@ bzip2 = { workspace = true }
 nexrad-decode = { version = "1.0.0-rc.1", path = "../nexrad-decode" }
 reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
-tokio = { workspace = true, optional = true }
 nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model", optional = true }
+
+# tokio is only available on non-WASM targets
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { workspace = true, optional = true }
 
 [dev-dependencies]
 clap = { workspace = true }
 env_logger = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true }
 
 [[example]]
 name = "realtime"
 path = "examples/realtime.rs"
-required-features = ["aws"]
+required-features = ["aws-polling"]
 
 [[example]]
 name = "archive"
@@ -44,7 +52,7 @@ required-features = ["aws"]
 [[example]]
 name = "latency_analysis"
 path = "examples/latency_analysis.rs"
-required-features = ["aws"]
+required-features = ["aws-polling"]
 
 [[example]]
 name = "chunk_timing"

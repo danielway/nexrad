@@ -6,8 +6,9 @@ on:
 
 jobs:
   ci:
-    name: CI
-    uses: ./.github/workflows/ci.yml
+    name: CI (Lite)
+    uses: ./.github/workflows/ci-lite.yml
+
   publish-crate:
     name: Publish crate
     needs: ci
@@ -15,19 +16,12 @@ jobs:
 
     steps:
       - name: Checkout repository at the published tag
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      - name: Install Rust (stable)
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libglib2.0-dev libcairo2-dev libpango1.0-dev libgdk-pixbuf2.0-dev
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
 
       - name: Extract crate name
         id: extract

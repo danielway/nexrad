@@ -13,13 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Rust (stable, rustfmt)
-        uses: dtolnay/rust-toolchain@master
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
         with:
-          toolchain: stable
           components: rustfmt
+          system-deps: "false"
+          cache: "false"
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -29,19 +30,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Rust (stable, clippy)
-        uses: dtolnay/rust-toolchain@master
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
         with:
-          toolchain: stable
           components: clippy
-
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
 
       - name: Run Clippy
         run: cargo clippy --all-features --workspace -- -D warnings
@@ -51,18 +45,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Rust (stable)
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
 
       - name: Install cargo-hack
         uses: taiki-e/install-action@v2
@@ -70,25 +56,17 @@ jobs:
           tool: cargo-hack
 
       - name: Check feature matrix
-        run: cargo hack check --workspace --all-targets --feature-powerset --optional-deps --release
+        run: cargo hack check --workspace --all-targets --each-feature --optional-deps --release
 
   documentation:
     name: Documentation check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Rust (stable)
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
 
       - name: Install cargo-hack
         uses: taiki-e/install-action@v2
@@ -98,70 +76,63 @@ jobs:
       - name: Check documentation feature matrix
         env:
           RUSTDOCFLAGS: "-D warnings"
-        run: cargo hack doc --no-deps --feature-powerset --optional-deps --release
+        run: cargo hack doc --no-deps --each-feature --optional-deps --release
 
   examples:
     name: Example compilation check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Rust (stable)
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
 
       - name: Build all examples
         run: cargo build --workspace --examples --all-features
 
-  test-toolchain:
-    name: Test (rust-toolchain.toml)
+  test:
+    name: Test (${{ matrix.rust_version }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust_version: [stable, nightly]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Rust (stable)
-        uses: dtolnay/rust-toolchain@master
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
         with:
-          toolchain: stable
-
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+          toolchain: ${{ matrix.rust_version }}
 
       - name: Run tests
         run: cargo test --all-features --workspace
 
-  test-nightly:
-    name: Test ${{ matrix.rust_version }}
+  wasm-compatibility:
+    name: WASM compatibility check
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust_version: ["stable", "nightly"]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Rust (${{ matrix.rust_version }})
-        uses: dtolnay/rust-toolchain@master
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
         with:
-          toolchain: ${{ matrix.rust_version }}
+          targets: wasm32-unknown-unknown
+          system-deps: "false"
 
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
+      - name: Check nexrad-model (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad-model --all-features
 
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+      - name: Check nexrad-decode (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad-decode --all-features
 
-      - name: Run tests
-        run: cargo +${{ matrix.rust_version }} test --all-features --workspace
+      - name: Check nexrad-data without aws (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad-data --no-default-features
+
+      - name: Check nexrad-data with aws (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad-data --no-default-features --features aws
+
+      - name: Check nexrad facade with WASM-compatible features
+        run: cargo check --target wasm32-unknown-unknown -p nexrad --no-default-features --features model,decode,data,aws,serde,uom,chrono

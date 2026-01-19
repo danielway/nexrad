@@ -24,7 +24,7 @@ nexrad-decode = { version = "0.1.1", path = "../nexrad-decode" }
 reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
-nexrad-model = { version = "0.1.1-rc.1", path = "../nexrad-model", optional = true }
+nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }
 
 [dev-dependencies]
 clap = { workspace = true }

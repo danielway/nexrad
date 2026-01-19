@@ -17,7 +17,7 @@ default = ["uom", "nexrad-model"]
 log = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true }
-nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }
+nexrad-model = { version = "0.1.1-rc.1", path = "../nexrad-model", optional = true }
 uom = { workspace = true, optional = true }
 sha2 = { workspace = true }
 hex = { workspace = true }

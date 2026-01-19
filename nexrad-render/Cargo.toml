@@ -14,7 +14,7 @@ categories = ["science", "visualization", "rendering"]
 thiserror = { workspace = true }
 piet = { workspace = true }
 piet-common = { workspace = true }
-nexrad-model = { version = "0.1.0", path = "../nexrad-model" }
+nexrad-model = { version = "0.1.1-rc.1", path = "../nexrad-model" }
 
 [dev-dependencies]
 nexrad-decode = { version = "0.1.1", path = "../nexrad-decode" }

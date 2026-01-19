@@ -1,6 +1,10 @@
 //! Tests for color scale functionality.
 
-use nexrad_render::{get_nws_reflectivity_scale, ColorScaleLevel, DiscreteColorScale};
+use nexrad_render::{
+    get_correlation_coefficient_scale, get_default_scale, get_differential_phase_scale,
+    get_differential_reflectivity_scale, get_nws_reflectivity_scale, get_specific_diff_phase_scale,
+    get_spectrum_width_scale, get_velocity_scale, ColorScaleLevel, DiscreteColorScale, Product,
+};
 use piet::Color;
 
 #[test]
@@ -108,4 +112,179 @@ fn test_color_scale_debug() {
     // Should have some content and not panic
     assert!(!debug_str.is_empty());
     assert!(debug_str.contains("DiscreteColorScale"));
+}
+
+// Tests for velocity scale
+
+#[test]
+fn test_velocity_scale_negative() {
+    let scale = get_velocity_scale();
+
+    // Strong inbound velocity should be dark green
+    let color = scale.get_color(-60.0);
+    assert_eq!(color, Color::rgb(0.0, 0.3922, 0.0));
+
+    // Moderate inbound should be green
+    let color = scale.get_color(-40.0);
+    assert_eq!(color, Color::rgb(0.0, 0.5451, 0.0));
+}
+
+#[test]
+fn test_velocity_scale_zero() {
+    let scale = get_velocity_scale();
+
+    // Near-zero velocity should be gray
+    let color = scale.get_color(0.0);
+    assert_eq!(color, Color::rgb(0.6627, 0.6627, 0.6627));
+}
+
+#[test]
+fn test_velocity_scale_positive() {
+    let scale = get_velocity_scale();
+
+    // Strong outbound velocity (>= 64) should be dark red
+    let color = scale.get_color(64.0);
+    assert_eq!(color, Color::rgb(0.5451, 0.0, 0.0));
+
+    // Moderate-strong outbound (48-64 range) should be red
+    let color = scale.get_color(50.0);
+    assert_eq!(color, Color::rgb(0.8039, 0.0, 0.0));
+
+    // Moderate outbound (32-48 range) should be light red
+    let color = scale.get_color(40.0);
+    assert_eq!(color, Color::rgb(1.0, 0.4118, 0.4118));
+}
+
+// Tests for spectrum width scale
+
+#[test]
+fn test_spectrum_width_scale() {
+    let scale = get_spectrum_width_scale();
+
+    // Low turbulence should be gray
+    let color = scale.get_color(2.0);
+    assert_eq!(color, Color::rgb(0.502, 0.502, 0.502));
+
+    // Moderate turbulence should be green
+    let color = scale.get_color(14.0);
+    assert_eq!(color, Color::rgb(0.0, 0.8039, 0.0));
+
+    // High turbulence should be red
+    let color = scale.get_color(28.0);
+    assert_eq!(color, Color::rgb(1.0, 0.0, 0.0));
+}
+
+// Tests for differential reflectivity scale
+
+#[test]
+fn test_differential_reflectivity_scale() {
+    let scale = get_differential_reflectivity_scale();
+
+    // Negative ZDR (vertically oriented) should be purple/blue
+    let color = scale.get_color(-1.5);
+    assert_eq!(color, Color::rgb(0.502, 0.0, 0.502));
+
+    // Near-zero ZDR should be gray
+    let color = scale.get_color(0.25);
+    assert_eq!(color, Color::rgb(0.6627, 0.6627, 0.6627));
+
+    // Positive ZDR (oblate drops) should be in yellow/orange/red range
+    let color = scale.get_color(3.0);
+    assert_eq!(color, Color::rgb(1.0, 0.6471, 0.0));
+}
+
+// Tests for correlation coefficient scale
+
+#[test]
+fn test_correlation_coefficient_scale() {
+    let scale = get_correlation_coefficient_scale();
+
+    // Low CC (debris/non-met) should be dark
+    let color = scale.get_color(0.3);
+    assert_eq!(color, Color::rgb(0.3922, 0.0, 0.5882));
+
+    // High CC (pure precipitation) should be light
+    let color = scale.get_color(0.99);
+    assert_eq!(color, Color::rgb(0.902, 0.902, 0.902));
+}
+
+// Tests for differential phase scale
+
+#[test]
+fn test_differential_phase_scale() {
+    let scale = get_differential_phase_scale();
+
+    // Low phase should be purple
+    let color = scale.get_color(20.0);
+    assert_eq!(color, Color::rgb(0.502, 0.0, 0.502));
+
+    // Mid phase should be green
+    let color = scale.get_color(150.0);
+    assert_eq!(color, Color::rgb(0.0, 0.8039, 0.0));
+
+    // High phase should be red/magenta
+    let color = scale.get_color(300.0);
+    assert_eq!(color, Color::rgb(1.0, 0.0, 0.0));
+}
+
+// Tests for specific differential phase scale
+
+#[test]
+fn test_specific_diff_phase_scale() {
+    let scale = get_specific_diff_phase_scale();
+
+    // Low KDP should be gray
+    let color = scale.get_color(0.25);
+    assert_eq!(color, Color::rgb(0.6627, 0.6627, 0.6627));
+
+    // Moderate KDP should be green
+    let color = scale.get_color(2.5);
+    assert_eq!(color, Color::rgb(0.0, 0.8039, 0.0));
+
+    // High KDP should be red
+    let color = scale.get_color(8.0);
+    assert_eq!(color, Color::rgb(1.0, 0.0, 0.0));
+}
+
+// Tests for get_default_scale
+
+#[test]
+fn test_get_default_scale_reflectivity() {
+    let scale = get_default_scale(Product::Reflectivity);
+    let nws_scale = get_nws_reflectivity_scale();
+
+    // Should return the same colors as NWS reflectivity scale
+    assert_eq!(scale.get_color(30.0), nws_scale.get_color(30.0));
+    assert_eq!(scale.get_color(50.0), nws_scale.get_color(50.0));
+}
+
+#[test]
+fn test_get_default_scale_velocity() {
+    let scale = get_default_scale(Product::Velocity);
+    let velocity_scale = get_velocity_scale();
+
+    // Should return the same colors as velocity scale
+    assert_eq!(scale.get_color(-32.0), velocity_scale.get_color(-32.0));
+    assert_eq!(scale.get_color(32.0), velocity_scale.get_color(32.0));
+}
+
+#[test]
+fn test_get_default_scale_all_products() {
+    // Verify all products return a valid scale
+    let products = [
+        Product::Reflectivity,
+        Product::Velocity,
+        Product::SpectrumWidth,
+        Product::DifferentialReflectivity,
+        Product::DifferentialPhase,
+        Product::CorrelationCoefficient,
+        Product::SpecificDiffPhase,
+    ];
+
+    for product in products {
+        let scale = get_default_scale(product);
+        // Just verify we can get colors without panicking
+        let _ = scale.get_color(0.0);
+        let _ = scale.get_color(50.0);
+    }
 }

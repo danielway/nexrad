@@ -80,7 +80,59 @@ pub enum Product {
     SpecificDiffPhase,
 }
 
-/// Renders radar radials to an image.
+/// Options for rendering radar radials.
+///
+/// Use the builder methods to configure rendering options, then pass to
+/// [`render_radials_with_options`].
+///
+/// # Example
+///
+/// ```
+/// use nexrad_render::RenderOptions;
+/// use piet::Color;
+///
+/// // Render with transparent background for compositing
+/// let options = RenderOptions::new(800, 800).transparent();
+///
+/// // Render with custom background color
+/// let options = RenderOptions::new(800, 800).with_background(Color::WHITE);
+/// ```
+#[derive(Debug, Clone)]
+pub struct RenderOptions {
+    /// Background color. `None` means transparent.
+    pub background: Option<Color>,
+    /// Output image dimensions (width, height) in pixels.
+    pub size: (usize, usize),
+}
+
+impl RenderOptions {
+    /// Creates new render options with the specified dimensions and black background.
+    ///
+    /// This is the default behavior matching the original `render_radials` function.
+    pub fn new(width: usize, height: usize) -> Self {
+        Self {
+            background: Some(Color::BLACK),
+            size: (width, height),
+        }
+    }
+
+    /// Sets the background to transparent for compositing.
+    ///
+    /// When rendering with a transparent background, areas without radar data
+    /// will be fully transparent, allowing multiple renders to be layered.
+    pub fn transparent(mut self) -> Self {
+        self.background = None;
+        self
+    }
+
+    /// Sets a custom background color.
+    pub fn with_background(mut self, color: Color) -> Self {
+        self.background = Some(color);
+        self
+    }
+}
+
+/// Renders radar radials to an image with full configuration options.
 ///
 /// Each radial is rendered as an arc segment, with colors determined by the moment
 /// values and the provided color scale. The image is centered with North at the top.
@@ -91,23 +143,46 @@ pub enum Product {
 /// * `radials` - Slice of radials to render (typically from a single sweep)
 /// * `product` - The radar product (moment type) to visualize
 /// * `scale` - Color scale mapping moment values to colors
-/// * `size` - Output image dimensions (width, height) in pixels
+/// * `options` - Rendering options (size, background, etc.)
 ///
 /// # Errors
 ///
 /// Returns an error if the requested product is not present in the radials,
 /// or if rendering fails.
-pub fn render_radials<'a>(
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad_render::{render_radials_with_options, Product, get_nws_reflectivity_scale, RenderOptions};
+/// use piet_common::Device;
+///
+/// let mut device = Device::new().unwrap();
+/// let options = RenderOptions::new(800, 800).transparent();
+/// let target = render_radials_with_options(
+///     &mut device,
+///     sweep.radials(),
+///     Product::Reflectivity,
+///     &get_nws_reflectivity_scale(),
+///     &options,
+/// ).unwrap();
+/// ```
+pub fn render_radials_with_options<'a>(
     device: &'a mut Device,
     radials: &[Radial],
     product: Product,
     scale: &DiscreteColorScale,
-    size: (usize, usize),
+    options: &RenderOptions,
 ) -> Result<BitmapTarget<'a>> {
+    let size = options.size;
     let mut target = device.bitmap_target(size.0, size.1, 1.0)?;
 
     let mut render_context = target.render_context();
-    render_context.clear(None, Color::BLACK);
+
+    // Clear with background color or transparent
+    match options.background {
+        Some(color) => render_context.clear(None, color),
+        None => render_context.clear(None, Color::TRANSPARENT),
+    }
 
     let image_center = Point::new(size.0 as f64 / 2.0, size.1 as f64 / 2.0);
 
@@ -153,6 +228,105 @@ pub fn render_radials<'a>(
     drop(render_context);
 
     Ok(target)
+}
+
+/// Renders radar radials to an image.
+///
+/// Each radial is rendered as an arc segment, with colors determined by the moment
+/// values and the provided color scale. The image is centered with North at the top.
+///
+/// This is a convenience wrapper around [`render_radials_with_options`] that uses
+/// a black background.
+///
+/// # Arguments
+///
+/// * `device` - The piet rendering device
+/// * `radials` - Slice of radials to render (typically from a single sweep)
+/// * `product` - The radar product (moment type) to visualize
+/// * `scale` - Color scale mapping moment values to colors
+/// * `size` - Output image dimensions (width, height) in pixels
+///
+/// # Errors
+///
+/// Returns an error if the requested product is not present in the radials,
+/// or if rendering fails.
+pub fn render_radials<'a>(
+    device: &'a mut Device,
+    radials: &[Radial],
+    product: Product,
+    scale: &DiscreteColorScale,
+    size: (usize, usize),
+) -> Result<BitmapTarget<'a>> {
+    let options = RenderOptions::new(size.0, size.1);
+    render_radials_with_options(device, radials, product, scale, &options)
+}
+
+/// Renders radar radials using the default color scale for the product.
+///
+/// This is the simplest way to render radar data. It automatically selects
+/// an appropriate color scale based on the product type.
+///
+/// # Arguments
+///
+/// * `device` - The piet rendering device
+/// * `radials` - Slice of radials to render (typically from a single sweep)
+/// * `product` - The radar product (moment type) to visualize
+/// * `size` - Output image dimensions (width, height) in pixels
+///
+/// # Errors
+///
+/// Returns an error if the requested product is not present in the radials,
+/// or if rendering fails.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad_render::{render_radials_default, Product};
+/// use piet_common::Device;
+///
+/// let mut device = Device::new().unwrap();
+/// let target = render_radials_default(
+///     &mut device,
+///     sweep.radials(),
+///     Product::Velocity,
+///     (800, 800),
+/// ).unwrap();
+/// ```
+pub fn render_radials_default<'a>(
+    device: &'a mut Device,
+    radials: &[Radial],
+    product: Product,
+    size: (usize, usize),
+) -> Result<BitmapTarget<'a>> {
+    let scale = get_default_scale(product);
+    let options = RenderOptions::new(size.0, size.1);
+    render_radials_with_options(device, radials, product, &scale, &options)
+}
+
+/// Returns the default color scale for a given product.
+///
+/// This function selects an appropriate color scale based on the product type,
+/// using standard meteorological conventions.
+///
+/// | Product | Scale |
+/// |---------|-------|
+/// | Reflectivity | NWS Reflectivity (dBZ) |
+/// | Velocity | Divergent Green-Red (-64 to +64 m/s) |
+/// | SpectrumWidth | Sequential (0 to 30 m/s) |
+/// | DifferentialReflectivity | Divergent (-2 to +6 dB) |
+/// | DifferentialPhase | Sequential (0 to 360 deg) |
+/// | CorrelationCoefficient | Sequential (0 to 1) |
+/// | SpecificDiffPhase | Sequential (0 to 10 deg/km) |
+pub fn get_default_scale(product: Product) -> DiscreteColorScale {
+    match product {
+        Product::Reflectivity => get_nws_reflectivity_scale(),
+        Product::Velocity => get_velocity_scale(),
+        Product::SpectrumWidth => get_spectrum_width_scale(),
+        Product::DifferentialReflectivity => get_differential_reflectivity_scale(),
+        Product::DifferentialPhase => get_differential_phase_scale(),
+        Product::CorrelationCoefficient => get_correlation_coefficient_scale(),
+        Product::SpecificDiffPhase => get_specific_diff_phase_scale(),
+    }
 }
 
 /// Retrieve the generic data block in this radial for the given product.

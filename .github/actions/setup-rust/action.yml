@@ -1,0 +1,43 @@
+name: Setup Rust
+description: Install system dependencies, Rust toolchain, and configure caching
+
+inputs:
+  toolchain:
+    description: Rust toolchain to install
+    required: false
+    default: stable
+  components:
+    description: Additional Rust components to install (comma-separated)
+    required: false
+    default: ""
+  targets:
+    description: Additional Rust targets to install (comma-separated)
+    required: false
+    default: ""
+  cache:
+    description: Whether to enable Rust caching
+    required: false
+    default: "true"
+  system-deps:
+    description: Whether to install system dependencies (cairo, pango, glib)
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Install system dependencies
+      if: inputs.system-deps == 'true'
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ inputs.toolchain }}
+        components: ${{ inputs.components }}
+        targets: ${{ inputs.targets }}
+
+    - name: Rust Cache
+      if: inputs.cache == 'true'
+      uses: Swatinem/rust-cache@v2

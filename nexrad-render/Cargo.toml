@@ -9,6 +9,7 @@ rust-version.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories = ["science", "visualization", "rendering"]
+exclude = ["files/"]
 
 [dependencies]
 thiserror = { workspace = true }

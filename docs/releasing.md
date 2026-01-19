@@ -50,8 +50,8 @@ The crates have interdependencies that affect release order:
 ```
 nexrad-model (no internal deps)
        │
-   ┌───┴───┐
-   ▼       ▼
+   ┌───┴───────────┐
+   ▼               ▼
 nexrad-decode   nexrad-render
    │
    ▼

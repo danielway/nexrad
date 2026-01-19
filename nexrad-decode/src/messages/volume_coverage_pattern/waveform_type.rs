@@ -1,15 +1,16 @@
-/// Possible values for waveform type
+/// Possible values for waveform type.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum WaveformType {
-    /// Contiguous Surveillance
+    /// Contiguous Surveillance.
     CS,
-    /// Contiguous Doppler with Ambiguity Resolution
+    /// Contiguous Doppler with Ambiguity Resolution.
     CDW,
-    /// Contiguous Doppler without Ambiguity Resolution
+    /// Contiguous Doppler without Ambiguity Resolution.
     CDWO,
-    /// Batch
+    /// Batch mode.
     B,
-    /// Staggered Pulse Pair
+    /// Staggered Pulse Pair.
     SPP,
+    /// Unknown waveform type.
     Unknown,
 }

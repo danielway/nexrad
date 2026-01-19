@@ -11,7 +11,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["model", "decode", "data", "render"]
+default = ["full"]
 
 # Core crate features
 model = ["dep:nexrad-model"]
@@ -36,3 +36,18 @@ nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }
 nexrad-decode = { version = "0.1.1", path = "../nexrad-decode", optional = true }
 nexrad-data = { version = "0.2.0", path = "../nexrad-data", optional = true }
 nexrad-render = { version = "0.1.0", path = "../nexrad-render", optional = true }
+
+[dev-dependencies]
+piet-common = { workspace = true }
+tokio = { workspace = true }
+
+[[example]]
+name = "decode_summary"
+
+[[example]]
+name = "download_latest"
+required-features = ["aws"]
+
+[[example]]
+name = "render_reflectivity"
+required-features = ["render"]

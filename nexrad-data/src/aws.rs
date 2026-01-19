@@ -5,8 +5,8 @@
 //!
 //! # Data Sources
 //!
-//! - [`archive`] - Historical volume files from the NEXRAD Level II archive
-//! - [`realtime`] - Live radar data with chunk-based streaming
+//! - `archive` - Historical volume files from the NEXRAD Level II archive
+//! - `realtime` - Live radar data with chunk-based streaming
 //!
 //! # AWS Buckets
 //!

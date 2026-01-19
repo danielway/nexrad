@@ -79,17 +79,37 @@
 //!
 //! All core features are enabled by default. Additional features can be enabled:
 //!
-//! | Feature | Description |
-//! |---------|-------------|
-//! | `model` | Core data model types (default) |
-//! | `decode` | Protocol decoding (default) |
-//! | `data` | Data access (default) |
-//! | `render` | Visualization and rendering (default) |
-//! | `aws` | Enable AWS S3 downloads ([`download_latest`], [`download_at`], [`list_volumes`]) |
-//! | `serde` | Serialization support for model types |
-//! | `uom` | Type-safe units of measure |
-//! | `chrono` | Date/time type support |
-//! | `full` | Enable all features |
+//! | Feature | Description | Dependencies |
+//! |---------|-------------|--------------|
+//! | `model` | Core data model types (default) | Pure Rust |
+//! | `decode` | Protocol decoding (default) | chrono, zerocopy |
+//! | `data` | Data access (default) | bzip2 |
+//! | `render` | Visualization and rendering (default) | piet (requires cairo) |
+//! | `aws` | Enable AWS S3 downloads ([`download_latest`], [`download_at`], [`list_volumes`]) | reqwest, tokio |
+//! | `serde` | Serialization support for model types | serde |
+//! | `uom` | Type-safe units of measure | uom |
+//! | `chrono` | Date/time type support | chrono |
+//! | `full` | Enable all features | All above |
+//!
+//! ### Common Configurations
+//!
+//! ```toml
+//! # Minimal - local file processing only (no rendering)
+//! nexrad = { version = "1.0", default-features = false, features = ["model", "decode", "data"] }
+//!
+//! # With AWS S3 downloads
+//! nexrad = { version = "1.0", features = ["aws"] }
+//! tokio = { version = "1", features = ["full"] }
+//!
+//! # Full feature set
+//! nexrad = { version = "1.0", features = ["full"] }
+//! ```
+//!
+//! ### System Dependencies
+//!
+//! The `render` feature requires system graphics libraries:
+//! - **Debian/Ubuntu:** `apt install libcairo2-dev libpango1.0-dev libglib2.0-dev`
+//! - **macOS:** `brew install cairo pango`
 //!
 //! ## Error Handling
 //!
@@ -154,13 +174,91 @@
 //!   - ✓ Consume `nexrad-model` types
 //!   - ✗ No I/O operations
 //!   - ✗ No data access or parsing
+//!
+//! ## Lower-Level APIs
+//!
+//! For advanced use cases, the sub-crates provide finer-grained control.
+//!
+//! ### Direct File Access with nexrad-data
+//!
+//! Work directly with Archive II files to access raw LDM records:
+//!
+//! ```ignore
+//! use nexrad::data::volume::File;
+//!
+//! let data = std::fs::read("volume.ar2v")?;
+//! let file = File::new(data);
+//!
+//! // Access raw records before decoding
+//! for record in file.records()? {
+//!     println!("Record: {} bytes, compressed: {}",
+//!         record.data().len(),
+//!         record.is_compressed());
+//! }
+//!
+//! // Or decode directly to a Scan
+//! let scan = file.scan()?;
+//! # Ok::<(), nexrad::Error>(())
+//! ```
+//!
+//! ### Binary Message Decoding with nexrad-decode
+//!
+//! Parse individual NEXRAD messages from raw bytes:
+//!
+//! ```ignore
+//! use nexrad::decode::messages::{decode_message, Message};
+//!
+//! // After extracting message bytes from an Archive II file
+//! let (remaining, message) = decode_message(message_bytes)?;
+//!
+//! match message {
+//!     Message::DigitalRadarData(msg31) => {
+//!         println!("Azimuth: {} deg", msg31.azimuth_angle());
+//!         println!("Elevation: {} deg", msg31.elevation_angle());
+//!     }
+//!     Message::VolumeData(msg2) => {
+//!         println!("Site: {}", msg2.site_id());
+//!     }
+//!     _ => {}
+//! }
+//! # Ok::<(), nexrad::decode::result::Error>(())
+//! ```
+//!
+//! ### Rendering with nexrad-render
+//!
+//! Create visualizations from radar data:
+//!
+//! ```ignore
+//! use nexrad::render::{render_radials, get_nws_reflectivity_scale, Product};
+//! use piet_common::Device;
+//!
+//! let volume = nexrad::load_file("volume.ar2v")?;
+//! let sweep = volume.sweeps().first().unwrap();
+//!
+//! let mut device = Device::new().unwrap();
+//! let color_scale = get_nws_reflectivity_scale();
+//!
+//! let image = render_radials(
+//!     &mut device,
+//!     sweep.radials(),
+//!     Product::Reflectivity,
+//!     &color_scale,
+//!     (1024, 1024),
+//! )?;
+//!
+//! image.save_to_file("output.png").unwrap();
+//! # Ok::<(), nexrad::Error>(())
+//! ```
 
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
+#![deny(missing_docs)]
 
+/// Common types and terminology aliases for NEXRAD data.
 pub mod prelude;
+/// Unified error types for the NEXRAD facade crate.
 pub mod result;
 
 pub use result::{Error, Result};

@@ -12,20 +12,31 @@ pub struct DataMomentPointer {
 /// The type of data moment that the pointer references.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DataMomentPointerType {
+    /// Volume data block containing scan-level metadata.
     Volume,
+    /// Elevation data block containing elevation-specific metadata.
     Elevation,
+    /// Radial data block containing radial-specific metadata.
     Radial,
+    /// Generic data block containing moment-specific data.
     Generic(DataMomentGenericPointerType),
 }
 
 /// The type of generic data moment that the pointer references.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DataMomentGenericPointerType {
+    /// Reflectivity (dBZ) moment data.
     Reflectivity,
+    /// Radial velocity (m/s) moment data.
     Velocity,
+    /// Spectrum width (m/s) moment data.
     SpectrumWidth,
+    /// Differential reflectivity (dB) moment data.
     DifferentialReflectivity,
+    /// Differential phase (degrees) moment data.
     DifferentialPhase,
+    /// Correlation coefficient (unitless) moment data.
     CorrelationCoefficient,
+    /// Specific differential phase (degrees/km) moment data.
     SpecificDiffPhase,
 }

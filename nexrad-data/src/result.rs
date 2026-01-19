@@ -55,8 +55,6 @@ pub enum Error {
 /// AWS-related error types (requires `aws` feature).
 #[cfg(feature = "aws")]
 pub mod aws {
-    //! AWS-specific error types for S3 operations.
-
     use thiserror::Error as ThisError;
 
     /// Errors that can occur during AWS S3 operations.

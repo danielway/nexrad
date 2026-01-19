@@ -48,11 +48,11 @@
 //!
 //! | Term | Type | Description |
 //! |------|------|-------------|
-//! | Volume | [`model::data::Scan`] | Complete radar scan at multiple elevations |
-//! | Sweep | [`model::data::Sweep`] | Single rotation at one elevation angle |
-//! | Radial | [`model::data::Radial`] | Single beam direction with moment data |
-//! | Moment | [`model::data::MomentData`] | Per-gate measurements for one data type |
-//! | Gate | [`model::data::MomentValue`] | Individual range bin measurement |
+//! | Volume | `model::data::Scan` | Complete radar scan at multiple elevations |
+//! | Sweep | `model::data::Sweep` | Single rotation at one elevation angle |
+//! | Radial | `model::data::Radial` | Single beam direction with moment data |
+//! | Moment | `model::data::MomentData` | Per-gate measurements for one data type |
+//! | Gate | `model::data::MomentValue` | Individual range bin measurement |
 //!
 //! ```ignore
 //! use nexrad::prelude::*;
@@ -85,7 +85,7 @@
 //! | `decode` | Protocol decoding (default) | chrono, zerocopy |
 //! | `data` | Data access (default) | bzip2 |
 //! | `render` | Visualization and rendering (default) | piet (requires cairo) |
-//! | `aws` | Enable AWS S3 downloads ([`download_latest`], [`download_at`], [`list_volumes`]) | reqwest, tokio |
+//! | `aws` | Enable AWS S3 downloads (`download_latest`, `download_at`, `list_volumes`) | reqwest, tokio |
 //! | `serde` | Serialization support for model types | serde |
 //! | `uom` | Type-safe units of measure | uom |
 //! | `chrono` | Date/time type support | chrono |

@@ -43,11 +43,12 @@ tokio = { workspace = true }
 
 [[example]]
 name = "decode_summary"
+required-features = ["model", "data"]
 
 [[example]]
 name = "download_latest"
-required-features = ["aws"]
+required-features = ["aws", "model"]
 
 [[example]]
 name = "render_reflectivity"
-required-features = ["render"]
+required-features = ["render", "data"]

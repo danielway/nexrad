@@ -1,7 +1,7 @@
 //! Rendering functions for radar field data.
 //!
 //! This module provides the primary rendering API for the canonical interchange
-//! types [`PolarSweep`] and [`CartesianGrid`].
+//! types `PolarSweep` and `CartesianGrid`.
 //!
 //! # Example
 //!

@@ -223,7 +223,7 @@ impl<T> PolarSweep<T> {
 }
 
 impl<T: Copy> PolarSweep<T> {
-    /// Returns an iterator over rays, yielding (azimuth_deg, &[T]) for each ray.
+    /// Returns an iterator over rays, yielding `(azimuth_deg, &[T])` for each ray.
     pub fn rays(&self) -> impl Iterator<Item = (f32, &[T])> {
         self.azimuth_deg.iter().enumerate().map(move |(i, &az)| {
             let start = i * self.gate_count;

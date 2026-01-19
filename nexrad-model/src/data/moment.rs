@@ -13,6 +13,8 @@ pub struct MomentData {
     gate_count: u16,
     first_gate_range: u16,
     gate_interval: u16,
+    /// Bits per gate (8 or 16). Dual-pol moments often use 16-bit words.
+    data_word_size: u8,
     scale: f32,
     offset: f32,
     values: Vec<u8>,
@@ -24,6 +26,7 @@ impl MomentData {
         gate_count: u16,
         first_gate_range: u16,
         gate_interval: u16,
+        data_word_size: u8,
         scale: f32,
         offset: f32,
         values: Vec<u8>,
@@ -32,6 +35,7 @@ impl MomentData {
             gate_count,
             first_gate_range,
             gate_interval,
+            data_word_size,
             scale,
             offset,
             values,
@@ -59,6 +63,11 @@ impl MomentData {
         self.gate_interval as f64 * 0.001
     }
 
+    /// Number of bits per gate (8 or 16).
+    pub fn data_word_size(&self) -> u8 {
+        self.data_word_size
+    }
+
     /// The range between the centers of consecutive gates.
     #[cfg(feature = "uom")]
     pub fn gate_interval(&self) -> Length {
@@ -67,27 +76,39 @@ impl MomentData {
 
     /// Values from this data moment corresponding to gates in the radial.
     pub fn values(&self) -> Vec<MomentValue> {
-        let copied_values = self.values.iter().copied();
+        let scale = self.scale;
+        let offset = self.offset;
 
-        if self.scale == 0.0 {
-            return copied_values
-                .map(|raw_value| MomentValue::Value(raw_value as f32))
-                .collect();
-        }
+        let decode = |raw_value: u16| {
+            if scale == 0.0 {
+                return MomentValue::Value(raw_value as f32);
+            }
 
-        copied_values
-            .map(|raw_value| match raw_value {
+            match raw_value {
                 0 => MomentValue::BelowThreshold,
                 1 => MomentValue::RangeFolded,
-                _ => MomentValue::Value((raw_value as f32 - self.offset) / self.scale),
-            })
-            .collect()
+                _ => MomentValue::Value((raw_value as f32 - offset) / scale),
+            }
+        };
+
+        if self.data_word_size == 16 {
+            // 16-bit moments store big-endian u16 values per gate.
+            self.values
+                .chunks_exact(2)
+                .map(|chunk| u16::from_be_bytes([chunk[0], chunk[1]]))
+                .map(decode)
+                .collect()
+        } else {
+            // Default to 8-bit decoding.
+            self.values.iter().copied().map(|v| decode(v as u16)).collect()
+        }
     }
 }
 
 impl Debug for MomentData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MomentData")
+            .field("data_word_size", &self.data_word_size)
             .field("values", &self.values())
             .finish()
     }

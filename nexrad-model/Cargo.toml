@@ -10,6 +10,11 @@ repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
+[features]
+serde = ["dep:serde"]
+chrono = ["dep:chrono"]
+uom = ["dep:uom"]
+
 [dependencies]
 thiserror = { workspace = true }
 chrono = { workspace = true, optional = true }

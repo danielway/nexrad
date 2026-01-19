@@ -1,14 +1,18 @@
-//!
 //! Primitive aliases matching the types referenced in the ICD.
 //!
+//! These types provide big-endian wrappers around standard Rust primitives,
+//! matching the naming conventions used in the NEXRAD ICD documentation.
 
 use std::cmp::Ordering;
 use std::fmt;
 use std::ops::{BitAnd, Shr};
 use zerocopy::{big_endian, FromBytes, Immutable, KnownLayout};
 
+/// 8-bit code value (Code1 in ICD).
 pub type Code1 = u8;
+/// 8-bit unsigned integer (Integer1 in ICD).
 pub type Integer1 = u8;
+/// 8-bit scaled unsigned integer (ScaledInteger1 in ICD).
 pub type ScaledInteger1 = u8;
 
 /// Big-endian unsigned 16-bit integer (Code2 in ICD).
@@ -17,10 +21,12 @@ pub type ScaledInteger1 = u8;
 pub struct Code2(big_endian::U16);
 
 impl Code2 {
+    /// Creates a new Code2 from a native u16 value.
     pub fn new(value: u16) -> Self {
         Self(big_endian::U16::new(value))
     }
 
+    /// Returns the value as a native u16.
     pub fn get(self) -> u16 {
         self.0.get()
     }
@@ -76,10 +82,12 @@ impl From<u16> for Code2 {
 pub struct Integer2(big_endian::U16);
 
 impl Integer2 {
+    /// Creates a new Integer2 from a native u16 value.
     pub fn new(value: u16) -> Self {
         Self(big_endian::U16::new(value))
     }
 
+    /// Returns the value as a native u16.
     pub fn get(self) -> u16 {
         self.0.get()
     }
@@ -121,10 +129,12 @@ impl From<u16> for Integer2 {
 pub struct Integer4(big_endian::U32);
 
 impl Integer4 {
+    /// Creates a new Integer4 from a native u32 value.
     pub fn new(value: u32) -> Self {
         Self(big_endian::U32::new(value))
     }
 
+    /// Returns the value as a native u32.
     pub fn get(self) -> u32 {
         self.0.get()
     }
@@ -166,10 +176,12 @@ impl From<u32> for Integer4 {
 pub struct Real4(big_endian::F32);
 
 impl Real4 {
+    /// Creates a new Real4 from a native f32 value.
     pub fn new(value: f32) -> Self {
         Self(big_endian::F32::new(value))
     }
 
+    /// Returns the value as a native f32.
     pub fn get(self) -> f32 {
         self.0.get()
     }
@@ -211,10 +223,12 @@ impl From<f32> for Real4 {
 pub struct ScaledInteger2(big_endian::U16);
 
 impl ScaledInteger2 {
+    /// Creates a new ScaledInteger2 from a native u16 value.
     pub fn new(value: u16) -> Self {
         Self(big_endian::U16::new(value))
     }
 
+    /// Returns the value as a native u16.
     pub fn get(self) -> u16 {
         self.0.get()
     }
@@ -256,10 +270,12 @@ impl From<u16> for ScaledInteger2 {
 pub struct ScaledSInteger2(big_endian::I16);
 
 impl ScaledSInteger2 {
+    /// Creates a new ScaledSInteger2 from a native i16 value.
     pub fn new(value: i16) -> Self {
         Self(big_endian::I16::new(value))
     }
 
+    /// Returns the value as a native i16.
     pub fn get(self) -> i16 {
         self.0.get()
     }
@@ -301,10 +317,12 @@ impl From<i16> for ScaledSInteger2 {
 pub struct SInteger2(big_endian::I16);
 
 impl SInteger2 {
+    /// Creates a new SInteger2 from a native i16 value.
     pub fn new(value: i16) -> Self {
         Self(big_endian::I16::new(value))
     }
 
+    /// Returns the value as a native i16.
     pub fn get(self) -> i16 {
         self.0.get()
     }

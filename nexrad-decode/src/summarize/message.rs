@@ -14,10 +14,12 @@ pub struct MessageSummary {
     /// The distinct volume coverage patterns found in these messages.
     pub volume_coverage_patterns: HashSet<digital_radar_data::VolumeCoveragePattern>,
 
-    /// All messages in sequence, with related messages grouped together
+    /// All messages in sequence, with related messages grouped together.
     pub message_groups: Vec<MessageGroupSummary>,
 
+    /// Earliest collection timestamp across all messages.
     pub earliest_collection_time: Option<DateTime<Utc>>,
+    /// Latest collection timestamp across all messages.
     pub latest_collection_time: Option<DateTime<Utc>>,
 }
 

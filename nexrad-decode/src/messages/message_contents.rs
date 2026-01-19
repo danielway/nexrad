@@ -24,5 +24,6 @@ pub enum MessageContents<'a> {
     /// coverage pattern being used, including detailed settings for each elevation.
     VolumeCoveragePattern(Box<volume_coverage_pattern::Message<'a>>),
 
+    /// Message type not recognized or not yet implemented.
     Other,
 }

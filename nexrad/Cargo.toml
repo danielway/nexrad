@@ -11,15 +11,44 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["model", "decode", "data", "render"]
+default = ["full"]
+
+# Core crate features
 model = ["dep:nexrad-model"]
 decode = ["dep:nexrad-decode"]
 data = ["dep:nexrad-data"]
 render = ["dep:nexrad-render", "model"]
 
+# Pass-through features from sub-crates
+serde = ["nexrad-model?/serde"]
+uom = ["nexrad-model?/uom", "nexrad-decode?/uom"]
+chrono = ["nexrad-model?/chrono", "dep:chrono"]
+aws = ["data", "chrono", "nexrad-data?/aws", "dep:tokio"]
+
+# Convenience feature for everything
+full = ["model", "decode", "data", "render", "serde", "uom", "chrono", "aws"]
+
 [dependencies]
 thiserror = { workspace = true }
+chrono = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
 nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }
 nexrad-decode = { version = "0.1.1", path = "../nexrad-decode", optional = true }
 nexrad-data = { version = "0.2.0", path = "../nexrad-data", optional = true }
 nexrad-render = { version = "0.1.0", path = "../nexrad-render", optional = true }
+
+[dev-dependencies]
+piet-common = { workspace = true }
+tokio = { workspace = true }
+
+[[example]]
+name = "decode_summary"
+required-features = ["model", "data"]
+
+[[example]]
+name = "download_latest"
+required-features = ["aws", "model"]
+
+[[example]]
+name = "render_reflectivity"
+required-features = ["render", "data"]

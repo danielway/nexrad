@@ -1,18 +1,31 @@
-/// Contains summary information from the RDA Status Data message
+/// Contains summary information from the RDA Status Data message.
 #[derive(Clone, PartialEq, Debug)]
 pub struct RDAStatusInfo {
+    /// Current RDA status (e.g., "Operate", "Standby").
     pub rda_status: String,
+    /// System operability status.
     pub operability_status: String,
+    /// Control status (local/remote).
     pub control_status: String,
+    /// Operational mode (operational/maintenance).
     pub operational_mode: String,
+    /// Active VCP number, if any.
     pub vcp_number: Option<i16>,
+    /// Whether the VCP was set locally.
     pub vcp_is_local: bool,
+    /// Average transmitter power in watts.
     pub average_transmitter_power: u16,
+    /// Reflectivity calibration correction in dB.
     pub reflectivity_calibration: f32,
+    /// Super resolution status.
     pub super_resolution_status: String,
+    /// List of enabled data transmission types.
     pub data_transmission_enabled: Vec<String>,
+    /// Whether any alarms are active.
     pub has_alarms: bool,
+    /// List of active alarm descriptions.
     pub active_alarms: Vec<String>,
+    /// Scan and data configuration flags.
     pub scan_data_info: Vec<String>,
 }
 

@@ -16,6 +16,8 @@ default = ["aws", "nexrad-model"]
 aws = ["reqwest", "xml"]
 # Real-time polling functionality (requires tokio, not WASM-compatible)
 aws-polling = ["aws", "tokio"]
+parallel-decompress = ["dep:rayon"]
+parallel-decode = ["dep:rayon"]
 
 [dependencies]
 log = { workspace = true }
@@ -24,6 +26,7 @@ chrono = { workspace = true }
 zerocopy = { workspace = true }
 bzip2 = { workspace = true }
 nexrad-decode = { version = "1.0.0-rc.1", path = "../nexrad-decode" }
+rayon = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
 nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model", optional = true }
@@ -38,6 +41,7 @@ env_logger = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true }
+criterion = { workspace = true }
 
 [[example]]
 name = "realtime"
@@ -63,3 +67,7 @@ required-features = ["aws"]
 name = "chunk_csv"
 path = "examples/chunk_csv.rs"
 required-features = ["aws"]
+
+[[bench]]
+name = "scan"
+harness = false

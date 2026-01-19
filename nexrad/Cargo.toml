@@ -18,6 +18,8 @@ model = ["dep:nexrad-model"]
 decode = ["dep:nexrad-decode"]
 data = ["dep:nexrad-data"]
 render = ["dep:nexrad-render", "model"]
+parallel-decompress = ["data", "nexrad-data/parallel-decompress"]
+parallel-decode = ["decode", "data", "nexrad-data/parallel-decode"]
 
 # Pass-through features from sub-crates
 serde = ["nexrad-model?/serde"]

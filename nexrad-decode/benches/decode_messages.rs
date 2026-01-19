@@ -26,6 +26,26 @@ fn benchmark_decode_messages(c: &mut Criterion) {
 
     let record2_data = second_record.data().to_vec();
 
+    let record_limit: usize = std::env::var("NEXRAD_DECODE_BENCH_RECORDS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(80);
+
+    let mut largest_record_data: Option<Vec<u8>> = None;
+    for mut record in volume.records().into_iter().take(record_limit) {
+        if record.compressed() {
+            record = record.decompress().expect("decompresses record");
+        }
+        let data = record.data().to_vec();
+        let is_larger = largest_record_data
+            .as_ref()
+            .map_or(true, |current| data.len() > current.len());
+        if is_larger {
+            largest_record_data = Some(data);
+        }
+    }
+    let largest_record_data = largest_record_data.expect("at least one record");
+
     let mut group = c.benchmark_group("decode_messages");
     group
         .warm_up_time(Duration::from_secs(5))
@@ -52,6 +72,12 @@ fn benchmark_decode_messages(c: &mut Criterion) {
             },
             BatchSize::SmallInput,
         )
+    });
+
+    group.bench_function("largest_record", |b| {
+        b.iter(|| {
+            decode_messages(black_box(&largest_record_data)).expect("decodes successfully");
+        })
     });
 
     group.finish();

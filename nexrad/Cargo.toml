@@ -32,7 +32,7 @@ full = ["model", "decode", "data", "render", "serde", "uom", "chrono", "aws"]
 thiserror = { workspace = true }
 chrono = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
-nexrad-model = { version = "0.1.0", path = "../nexrad-model", optional = true }
+nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model", optional = true }
 nexrad-decode = { version = "0.1.1", path = "../nexrad-decode", optional = true }
 nexrad-data = { version = "0.2.0", path = "../nexrad-data", optional = true }
 nexrad-render = { version = "0.1.0", path = "../nexrad-render", optional = true }

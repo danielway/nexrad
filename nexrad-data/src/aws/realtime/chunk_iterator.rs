@@ -194,6 +194,27 @@ impl ChunkIterator {
                         }
                     }
 
+                    // If we joined mid-volume (not a start chunk), fetch the start chunk
+                    // to get the VCP needed for elevation mapping
+                    if downloaded.identifier.chunk_type() != ChunkType::Start
+                        && self.elevation_mapper.is_none()
+                    {
+                        let start_id = ChunkIdentifier::new(
+                            self.site.clone(),
+                            volume,
+                            *downloaded.identifier.date_time_prefix(),
+                            1,
+                            ChunkType::Start,
+                            None,
+                        );
+                        if let Ok((_, start_chunk)) = download_chunk(&self.site, &start_id).await {
+                            if let Ok(vcp) = Self::extract_vcp(&start_chunk) {
+                                self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
+                                self.vcp = Some(vcp);
+                            }
+                        }
+                    }
+
                     // Update timing stats if we have previous chunk time
                     if let (Some(upload_time), Some(prev_time)) = (
                         downloaded.identifier.upload_date_time(),

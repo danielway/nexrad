@@ -52,6 +52,8 @@
 //!
 //! - `aws` - Enable AWS S3 data access (requires async runtime)
 //! - `nexrad-model` - Enable conversion to high-level `Scan` model
+//! - `parallel-decompress` - Parallelize LDM record decompression using Rayon
+//! - `parallel-decode` - Parallelize record decoding and radial conversion using Rayon
 //!
 //! # Crate Boundaries
 //!

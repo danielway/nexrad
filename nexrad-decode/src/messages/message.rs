@@ -4,6 +4,7 @@ use crate::messages::{
 };
 use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
+use std::mem::size_of;
 
 /// Expected segment contents size for fixed-length segments.
 pub(crate) const FIXED_SEGMENT_SIZE: usize = 2432 - size_of::<MessageHeader>();

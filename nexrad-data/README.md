@@ -46,3 +46,5 @@ groupings of dependencies/behavior:
 - `decode` - Enables both decoding of the volume headers and of decoding the LDM records' NEXRAD messages using `nexrad-decode`.
 - `aws` - Enables accessing archive and real-time NEXRAD data from AWS Open Data.
 - `nexrad-model` - Provides mappings to a common radar data model, particularly for mapping `volume::File` into a `Scan`.
+- `parallel-decompress` - Parallelize LDM record decompression using Rayon.
+- `parallel-decode` - Parallelize record decoding and radial conversion using Rayon.

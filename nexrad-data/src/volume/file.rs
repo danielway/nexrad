@@ -39,33 +39,60 @@ impl File {
         use nexrad_decode::messages::volume_coverage_pattern as vcp;
         use nexrad_decode::messages::MessageContents;
         use nexrad_model::data::{
-            ChannelConfiguration, ElevationCut, PulseWidth, Scan, Sweep, VolumeCoveragePattern,
-            WaveformType,
+            ChannelConfiguration, ElevationCut, PulseWidth, Radial, Scan, Sweep,
+            VolumeCoveragePattern, WaveformType,
         };
 
-        let mut coverage_pattern_message: Option<vcp::Message<'_>> = None;
-        let mut radials = Vec::new();
+        let records = self.records()?;
 
-        for mut record in self.records()? {
-            if record.compressed() {
-                record = record.decompress()?;
-            }
+        let process_record = |record: Record<'_>| -> crate::result::Result<(
+            Option<vcp::Message<'static>>,
+            Vec<Radial>,
+        )> {
+            let record = if record.compressed() {
+                record.decompress()?
+            } else {
+                Record::new(record.data().to_vec())
+            };
 
-            let messages = record.messages()?;
-            for message in messages {
-                let contents = message.into_contents();
-                match contents {
-                    MessageContents::DigitalRadarData(radar_data_message) => {
-                        radials.push(radar_data_message.into_radial()?);
-                    }
-                    MessageContents::VolumeCoveragePattern(vcp_message) => {
-                        if coverage_pattern_message.is_none() {
-                            coverage_pattern_message = Some(vcp_message.into_owned());
+            let mut vcp = None;
+            let mut radials = Vec::new();
+            for message in record.messages()? {
+                match message.into_contents() {
+                    MessageContents::DigitalRadarData(m) => radials.push(m.into_radial()?),
+                    MessageContents::VolumeCoveragePattern(m) => {
+                        if vcp.is_none() {
+                            vcp = Some(m.into_owned());
                         }
                     }
                     _ => {}
                 }
             }
+            Ok((vcp, radials))
+        };
+
+        #[cfg(feature = "parallel")]
+        let results: Vec<_> = {
+            use rayon::prelude::*;
+            records
+                .into_par_iter()
+                .map(process_record)
+                .collect::<crate::result::Result<Vec<_>>>()?
+        };
+
+        #[cfg(not(feature = "parallel"))]
+        let results: Vec<_> = records
+            .into_iter()
+            .map(process_record)
+            .collect::<crate::result::Result<Vec<_>>>()?;
+
+        let mut coverage_pattern_message = None;
+        let mut radials = Vec::new();
+        for (vcp, r) in results {
+            if coverage_pattern_message.is_none() {
+                coverage_pattern_message = vcp;
+            }
+            radials.extend(r);
         }
 
         // Convert the VCP message to the model representation

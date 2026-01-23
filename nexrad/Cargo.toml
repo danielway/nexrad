@@ -1,6 +1,6 @@
 [package]
 name = "nexrad"
-version = "1.0.0-rc.2"
+version = "1.0.0-rc.3"
 description = "Download and decode functions for NEXRAD radar data."
 authors.workspace = true
 edition.workspace = true

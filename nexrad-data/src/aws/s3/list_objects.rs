@@ -22,7 +22,11 @@ pub async fn list_objects(
     }
     debug!("Listing objects in bucket \"{bucket}\" with prefix \"{prefix}\"");
 
-    let response = client().get(&path).send().await.map_err(S3ListObjectsError)?;
+    let response = client()
+        .get(&path)
+        .send()
+        .await
+        .map_err(S3ListObjectsError)?;
     trace!("  List objects response status: {}", response.status());
 
     let body = response.text().await.map_err(S3ListObjectsError)?;

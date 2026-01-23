@@ -120,7 +120,8 @@ impl RetryState {
             self.policy.initial_delay
         } else {
             let multiplier = self.policy.backoff_multiplier.powi(self.attempt as i32 - 1);
-            let delay_ms = (self.policy.initial_delay.num_milliseconds() as f64 * multiplier) as i64;
+            let delay_ms =
+                (self.policy.initial_delay.num_milliseconds() as f64 * multiplier) as i64;
             let delay = Duration::milliseconds(delay_ms);
             std::cmp::min(delay, self.policy.max_delay)
         };

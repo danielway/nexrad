@@ -328,7 +328,10 @@ fn test_chunk_too_small_for_ar2_check() {
     // Test with data too small for AR2 header (needs at least 3 bytes)
     let tiny_data = vec![b'A', b'R'];
     let result = Chunk::new(tiny_data);
-    assert!(result.is_err(), "Expected error for data too small for AR2 check");
+    assert!(
+        result.is_err(),
+        "Expected error for data too small for AR2 check"
+    );
 }
 
 #[test]
@@ -336,7 +339,10 @@ fn test_chunk_too_small_for_bz_check() {
     // Test with data too small for BZ check (needs at least 6 bytes to check positions 4-5)
     let small_data = vec![0, 0, 0, 0, b'B'];
     let result = Chunk::new(small_data);
-    assert!(result.is_err(), "Expected error for data too small for BZ check");
+    assert!(
+        result.is_err(),
+        "Expected error for data too small for BZ check"
+    );
 }
 
 #[test]

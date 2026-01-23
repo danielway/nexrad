@@ -156,12 +156,14 @@ impl ChunkIterator {
     /// This method uses the configured retry policy for transient failures.
     pub async fn try_next(&mut self) -> Result<Option<DownloadedChunk>> {
         match &self.state {
-            IteratorState::NeedVolumeStart(volume) => {
-                self.try_fetch_volume_start(*volume).await
-            }
+            IteratorState::NeedVolumeStart(volume) => self.try_fetch_volume_start(*volume).await,
             IteratorState::Ready(current) => {
                 let next = current
-                    .next_chunk(self.elevation_mapper.as_ref().ok_or(AWSError::FailedToDetermineNextChunk)?)
+                    .next_chunk(
+                        self.elevation_mapper
+                            .as_ref()
+                            .ok_or(AWSError::FailedToDetermineNextChunk)?,
+                    )
                     .ok_or(AWSError::FailedToDetermineNextChunk)?;
 
                 match next {
@@ -175,7 +177,10 @@ impl ChunkIterator {
     }
 
     /// Attempts to fetch the start chunk of a new volume.
-    async fn try_fetch_volume_start(&mut self, volume: VolumeIndex) -> Result<Option<DownloadedChunk>> {
+    async fn try_fetch_volume_start(
+        &mut self,
+        volume: VolumeIndex,
+    ) -> Result<Option<DownloadedChunk>> {
         let mut retry_state = RetryState::new(self.discovery_policy.clone());
 
         while retry_state.should_retry() {
@@ -190,11 +195,16 @@ impl ChunkIterator {
                     }
 
                     // Update timing stats if we have previous chunk time
-                    if let (Some(upload_time), Some(prev_time)) =
-                        (downloaded.identifier.upload_date_time(), self.last_chunk_time)
-                    {
+                    if let (Some(upload_time), Some(prev_time)) = (
+                        downloaded.identifier.upload_date_time(),
+                        self.last_chunk_time,
+                    ) {
                         let duration = upload_time - prev_time;
-                        self.update_timing_stats(&downloaded.identifier, duration, downloaded.attempts);
+                        self.update_timing_stats(
+                            &downloaded.identifier,
+                            duration,
+                            downloaded.attempts,
+                        );
                     }
 
                     self.last_chunk_time = downloaded.identifier.upload_date_time();
@@ -242,7 +252,10 @@ impl ChunkIterator {
     }
 
     /// Attempts to fetch a specific chunk.
-    async fn try_fetch_chunk(&mut self, chunk_id: ChunkIdentifier) -> Result<Option<DownloadedChunk>> {
+    async fn try_fetch_chunk(
+        &mut self,
+        chunk_id: ChunkIdentifier,
+    ) -> Result<Option<DownloadedChunk>> {
         let mut retry_state = RetryState::new(self.download_policy.clone());
         let mut attempts = 0;
 
@@ -343,7 +356,8 @@ impl ChunkIterator {
                     channel_configuration: elevation.channel_configuration(),
                 };
 
-                self.timing_stats.add_timing(characteristics, duration, attempts);
+                self.timing_stats
+                    .add_timing(characteristics, duration, attempts);
             }
         }
     }

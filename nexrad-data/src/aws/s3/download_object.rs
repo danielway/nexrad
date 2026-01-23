@@ -17,7 +17,11 @@ pub async fn download_object(
     debug!("Downloading object key \"{key}\" from bucket \"{bucket}\"");
     let path = format!("https://{bucket}.s3.amazonaws.com/{key}");
 
-    let response = client().get(&path).send().await.map_err(S3GetObjectRequestError)?;
+    let response = client()
+        .get(&path)
+        .send()
+        .await
+        .map_err(S3GetObjectRequestError)?;
     trace!(
         "  Object \"{}\" download response status: {}",
         key,

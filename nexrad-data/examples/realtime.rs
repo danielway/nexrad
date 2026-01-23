@@ -3,15 +3,17 @@
 use chrono::{DateTime, Utc};
 use clap::Parser;
 use env_logger::{Builder, Env};
+use futures::StreamExt;
 use log::{debug, info, trace, LevelFilter};
 use nexrad_data::result::Result;
 use nexrad_data::{
-    aws::realtime::{self, poll_chunks, Chunk, ChunkIdentifier, PollStats},
+    aws::realtime::{self, chunk_stream, Chunk, DownloadedChunk, PollConfig},
     volume,
 };
 use nexrad_decode::summarize;
-use std::{sync::mpsc, time::Duration};
-use tokio::{task, time::sleep};
+use std::pin::pin;
+use std::time::Duration;
+use tokio::time::timeout;
 
 // Example output from a real-time chunk:
 //   Scans from 2025-03-17 01:31:40.449 UTC to 2025-03-17 01:31:44.491 UTC (0.07m)
@@ -39,85 +41,77 @@ async fn main() -> Result<()> {
         .init();
 
     let cli = Cli::parse();
-
-    let site = cli.site.clone();
     let desired_chunk_count = cli.chunk_count;
 
+    info!("Starting real-time polling for site {}", cli.site);
+
+    let config = PollConfig::new(&cli.site);
+    let stream = chunk_stream(config);
+    let mut stream = pin!(stream);
+
     let mut downloaded_chunk_count = 0;
-    let (update_tx, update_rx) = mpsc::channel::<(ChunkIdentifier, Chunk)>();
-    let (stats_tx, stats_rx) = mpsc::channel::<PollStats>();
-    let (stop_tx, stop_rx) = mpsc::channel::<bool>();
 
-    // Task to poll chunks
-    task::spawn(async move {
-        poll_chunks(&site, update_tx, Some(stats_tx), stop_rx)
-            .await
-            .expect("Failed to poll chunks");
-    });
+    // Stream chunks with a 60 second overall timeout
+    let result = timeout(Duration::from_secs(60), async {
+        while let Some(result) = stream.next().await {
+            match result {
+                Ok(downloaded) => {
+                    let download_time = Utc::now();
+                    process_chunk(&downloaded, download_time);
 
-    // Task to timeout polling at 60 seconds
-    let timeout_stop_tx = stop_tx.clone();
-    task::spawn(async move {
-        sleep(Duration::from_secs(60)).await;
-
-        info!("Timeout reached, stopping...");
-        timeout_stop_tx.send(true).unwrap();
-    });
-
-    // Task to receive statistics updates
-    let stats_handle = task::spawn(async move {
-        while let Ok(stats) = stats_rx.recv() {
-            info!("Polling statistics: {stats:?}");
-        }
-    });
-
-    // Task to receive downloaded chunks
-    let update_handle = task::spawn(async move {
-        while let Ok((chunk_id, chunk)) = update_rx.recv() {
-            let download_time = Utc::now();
-
-            info!(
-                "Downloaded chunk {} from {:?} at {:?} of size {}",
-                chunk_id.name(),
-                chunk_id.upload_date_time(),
-                Utc::now(),
-                chunk.data().len()
-            );
-
-            match chunk {
-                Chunk::Start(file) => {
-                    let records = file.records().expect("records");
-                    debug!(
-                        "Volume start chunk with {} records. Header: {:?}",
-                        records.len(),
-                        file.header()
-                    );
-
-                    records
-                        .into_iter()
-                        .for_each(|record| decode_record(&chunk_id, record, download_time));
+                    downloaded_chunk_count += 1;
+                    if downloaded_chunk_count >= desired_chunk_count {
+                        info!("Downloaded {} chunks, stopping...", desired_chunk_count);
+                        break;
+                    }
                 }
-                Chunk::IntermediateOrEnd(record) => {
-                    debug!("Intermediate or end volume chunk.");
-                    decode_record(&chunk_id, record, download_time);
+                Err(e) => {
+                    info!("Error downloading chunk: {:?}", e);
                 }
             }
-
-            downloaded_chunk_count += 1;
-            if downloaded_chunk_count >= desired_chunk_count {
-                info!("Downloaded 10 chunks, stopping...");
-                stop_tx.send(true).expect("Failed to send stop signal");
-                break;
-            }
         }
-    });
+    })
+    .await;
 
-    stats_handle.await.expect("Failed to join handle");
-    update_handle.await.expect("Failed to join handle");
-
-    info!("Finished downloading chunks");
+    match result {
+        Ok(()) => info!("Finished downloading chunks"),
+        Err(_) => info!("Timeout reached, stopping..."),
+    }
 
     Ok(())
+}
+
+fn process_chunk(downloaded: &DownloadedChunk, download_time: DateTime<Utc>) {
+    let chunk_id = &downloaded.identifier;
+    let chunk = &downloaded.chunk;
+
+    info!(
+        "Downloaded chunk {} from {:?} at {:?} of size {} (attempts: {})",
+        chunk_id.name(),
+        chunk_id.upload_date_time(),
+        download_time,
+        chunk.data().len(),
+        downloaded.attempts
+    );
+
+    match chunk {
+        Chunk::Start(file) => {
+            let records = file.records().expect("records");
+            debug!(
+                "Volume start chunk with {} records. Header: {:?}",
+                records.len(),
+                file.header()
+            );
+
+            records
+                .into_iter()
+                .for_each(|record| decode_record(chunk_id, record, download_time));
+        }
+        Chunk::IntermediateOrEnd(record) => {
+            debug!("Intermediate or end volume chunk.");
+            decode_record(chunk_id, record.clone(), download_time);
+        }
+    }
 }
 
 fn decode_record(

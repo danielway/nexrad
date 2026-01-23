@@ -13,9 +13,9 @@ categories.workspace = true
 [features]
 default = ["aws", "nexrad-model"]
 # Basic AWS S3 access (WASM-compatible)
-aws = ["reqwest", "xml"]
+aws = ["reqwest", "xml", "once_cell"]
 # Real-time polling functionality (requires tokio, not WASM-compatible)
-aws-polling = ["aws", "tokio"]
+aws-polling = ["aws", "tokio", "futures"]
 # Parallel decompression and decoding using rayon
 parallel = ["rayon"]
 
@@ -30,6 +30,8 @@ reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
 nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model", optional = true }
 rayon = { workspace = true, optional = true }
+once_cell = { workspace = true, optional = true }
+futures = { workspace = true, optional = true }
 
 # tokio is only available on non-WASM targets
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

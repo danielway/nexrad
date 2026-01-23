@@ -458,90 +458,45 @@ fn test_estimate_chunk_processing_time_without_stats() {
 }
 
 // Integration tests that require network access and aws-polling feature
-// These tests use poll_chunks, PollStats, and NewChunkStats which require tokio
 #[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
 mod polling_tests {
-    use super::*;
+    use futures::StreamExt;
+    use nexrad_data::aws::realtime::{chunk_stream, PollConfig};
+    use std::pin::pin;
+    use std::time::Duration as StdDuration;
 
     #[tokio::test]
     #[ignore = "requires AWS access and takes time"]
-    async fn test_poll_chunks_basic() {
-        use nexrad_data::aws::realtime::{poll_chunks, Chunk, ChunkIdentifier};
-        use std::sync::mpsc;
-        use std::time::Duration as StdDuration;
+    async fn test_chunk_stream_basic() {
+        let config = PollConfig::new("KDMX");
+        let stream = chunk_stream(config);
+        let mut stream = pin!(stream);
 
-        let site = "KDMX";
-        let (tx, rx) = mpsc::channel::<(ChunkIdentifier, Chunk)>();
-        let (stats_tx, _stats_rx) = mpsc::channel();
-        let (stop_tx, stop_rx) = mpsc::channel::<bool>();
+        let mut chunk_count = 0;
 
-        // Spawn polling in background
-        let poll_handle =
-            tokio::spawn(async move { poll_chunks(site, tx, Some(stats_tx), stop_rx).await });
+        // Use timeout to limit test duration
+        let result = tokio::time::timeout(StdDuration::from_secs(30), async {
+            while let Some(result) = stream.next().await {
+                match result {
+                    Ok(downloaded) => {
+                        assert!(!downloaded.identifier.name().is_empty());
+                        assert!(!downloaded.chunk.data().is_empty());
+                        chunk_count += 1;
 
-        // Let it poll for a few seconds
-        tokio::time::sleep(StdDuration::from_secs(30)).await;
+                        // Stop after receiving a few chunks
+                        if chunk_count >= 3 {
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        panic!("Stream error: {:?}", e);
+                    }
+                }
+            }
+        })
+        .await;
 
-        // Stop polling
-        stop_tx.send(true).unwrap();
-
-        // Wait for polling to finish
-        let result = poll_handle.await.unwrap();
-        assert!(result.is_ok(), "Polling failed: {:?}", result.err());
-
-        // Should have received some chunks
-        let chunk_count = rx.try_iter().count();
+        assert!(result.is_ok(), "Test timed out");
         assert!(chunk_count > 0, "Expected to receive at least one chunk");
-    }
-
-    #[test]
-    fn test_poll_stats_variants() {
-        use nexrad_data::aws::realtime::{NewChunkStats, PollStats};
-
-        // Test that all PollStats variants can be constructed
-        let _latest_volume_calls = PollStats::LatestVolumeCalls(5);
-        let _new_volume_calls = PollStats::NewVolumeCalls(3);
-        let _new_chunk = PollStats::NewChunk(NewChunkStats {
-            calls: 2,
-            download_time: None,
-            upload_time: None,
-        });
-        let _chunk_timings = PollStats::ChunkTimings(ChunkTimingStats::new());
-    }
-
-    #[test]
-    fn test_new_chunk_stats_latency() {
-        use chrono::Utc;
-        use nexrad_data::aws::realtime::NewChunkStats;
-
-        let upload_time = Utc::now();
-        let download_time = upload_time + Duration::seconds(5);
-
-        let stats = NewChunkStats {
-            calls: 1,
-            download_time: Some(download_time),
-            upload_time: Some(upload_time),
-        };
-
-        let latency = stats.latency();
-        assert!(latency.is_some());
-
-        // Note: latency is upload - download (negative for future downloads)
-        // The actual calculation is upload_time.signed_duration_since(download_time)
-        assert_eq!(latency.unwrap(), Duration::seconds(-5));
-    }
-
-    #[test]
-    fn test_new_chunk_stats_latency_missing_times() {
-        use nexrad_data::aws::realtime::NewChunkStats;
-
-        let stats = NewChunkStats {
-            calls: 1,
-            download_time: None,
-            upload_time: None,
-        };
-
-        let latency = stats.latency();
-        assert_eq!(latency, None);
     }
 }

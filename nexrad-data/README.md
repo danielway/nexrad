@@ -34,8 +34,9 @@ rotated through with chunks being added to each directory until they comprise a 
 function queries a volume for its chunks, returning identifiers for each chunk. The `realtime::download_chunk` function
 downloads a chunk by its identifier. The `realtime::get_latest_volume` function can be used to identify which of the 999
 volume directories contain the latest data, and the `realtime::estimate_next_chunk_time` function can be used to
-estimate when the next chunk will be uploaded. Finally, `realtime::poll_chunks` function will asynchronously poll for
-new chunks in the latest volume directory, downloading them as they become available.
+estimate when the next chunk will be uploaded. The `realtime::chunk_stream` function returns an async stream that
+continuously yields chunks as they become available. For environments without tokio, `realtime::ChunkIterator` provides
+a pull-based interface with manual timing control.
 
 ## Features
 

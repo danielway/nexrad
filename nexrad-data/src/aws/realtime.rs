@@ -57,16 +57,17 @@ pub use chunk_timing_stats::*;
 mod elevation_chunk_mapper;
 pub use elevation_chunk_mapper::*;
 
-// Polling functionality requires tokio and is not WASM-compatible
+mod retry_policy;
+pub use retry_policy::*;
+
+mod chunk_iterator;
+pub use chunk_iterator::*;
+
+// Polling functionality requires tokio
 #[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
 mod poll_chunks;
 #[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
 pub use poll_chunks::*;
-
-#[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
-mod poll_stats;
-#[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
-pub use poll_stats::*;
 
 mod search;
 

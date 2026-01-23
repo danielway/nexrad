@@ -67,6 +67,8 @@ pub struct ChunkIterator {
     download_policy: RetryPolicy,
     discovery_policy: RetryPolicy,
     last_chunk_time: Option<DateTime<Utc>>,
+    requests_made: usize,
+    bytes_downloaded: u64,
 }
 
 impl ChunkIterator {
@@ -119,6 +121,8 @@ impl ChunkIterator {
             download_policy,
             discovery_policy,
             last_chunk_time: None,
+            requests_made: latest_volume_result.calls,
+            bytes_downloaded: 0,
         };
 
         // Fetch the initial chunk(s)
@@ -150,6 +154,8 @@ impl ChunkIterator {
             download_policy,
             discovery_policy,
             last_chunk_time: None,
+            requests_made: 0,
+            bytes_downloaded: 0,
         }
     }
 
@@ -186,6 +192,9 @@ impl ChunkIterator {
             );
 
             if let Ok((identifier, chunk)) = download_chunk(&self.site, &start_id).await {
+                self.requests_made += 1;
+                self.bytes_downloaded += chunk.data().len() as u64;
+
                 if let Ok(vcp) = Self::extract_vcp(&chunk) {
                     self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
                     self.vcp = Some(vcp);
@@ -298,6 +307,9 @@ impl ChunkIterator {
                             None,
                         );
                         if let Ok((_, start_chunk)) = download_chunk(&self.site, &start_id).await {
+                            self.requests_made += 1;
+                            self.bytes_downloaded += start_chunk.data().len() as u64;
+
                             if let Ok(vcp) = Self::extract_vcp(&start_chunk) {
                                 self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
                                 self.vcp = Some(vcp);
@@ -344,16 +356,20 @@ impl ChunkIterator {
 
     /// Fetches the latest chunk in a volume.
     async fn fetch_latest_chunk_in_volume(
-        &self,
+        &mut self,
         volume: VolumeIndex,
     ) -> Result<Option<DownloadedChunk>> {
         let chunks = list_chunks_in_volume(&self.site, volume, 100).await?;
+        self.requests_made += 1;
+
         let latest = match chunks.last() {
             Some(id) => id,
             None => return Ok(None),
         };
 
         let (identifier, chunk) = download_chunk(&self.site, latest).await?;
+        self.requests_made += 1;
+        self.bytes_downloaded += chunk.data().len() as u64;
 
         Ok(Some(DownloadedChunk {
             identifier,
@@ -373,8 +389,12 @@ impl ChunkIterator {
         &mut self,
         chunk_id: ChunkIdentifier,
     ) -> Result<Option<DownloadedChunk>> {
+        self.requests_made += 1;
+
         match download_chunk(&self.site, &chunk_id).await {
             Ok((identifier, chunk)) => {
+                self.bytes_downloaded += chunk.data().len() as u64;
+
                 // Update VCP if this is a start chunk
                 if identifier.chunk_type() == ChunkType::Start {
                     if let Ok(vcp) = Self::extract_vcp(&chunk) {
@@ -500,5 +520,21 @@ impl ChunkIterator {
     /// Returns the discovery retry policy.
     pub fn discovery_policy(&self) -> &RetryPolicy {
         &self.discovery_policy
+    }
+
+    /// Returns the total number of HTTP requests made by this iterator.
+    ///
+    /// This includes requests made during initialization and all subsequent
+    /// `try_next()` calls. Useful for displaying network statistics in UIs.
+    pub fn requests_made(&self) -> usize {
+        self.requests_made
+    }
+
+    /// Returns the total bytes downloaded by this iterator.
+    ///
+    /// This includes chunk data downloaded during initialization and all
+    /// subsequent `try_next()` calls.
+    pub fn bytes_downloaded(&self) -> u64 {
+        self.bytes_downloaded
     }
 }

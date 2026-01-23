@@ -25,6 +25,23 @@ pub struct DownloadedChunk {
     pub attempts: usize,
 }
 
+/// Result of initializing a [`ChunkIterator`].
+///
+/// When creating a new iterator, the latest chunk in the volume is fetched and returned
+/// in `latest_chunk`. If joining mid-volume (the latest chunk is not a Start chunk),
+/// the Start chunk is also fetched to extract the VCP and is returned in `start_chunk`.
+#[derive(Debug)]
+pub struct ChunkIteratorInit {
+    /// The initialized iterator, ready for subsequent `try_next()` calls.
+    pub iterator: ChunkIterator,
+    /// The latest chunk in the volume (the chunk the iterator joined at).
+    pub latest_chunk: DownloadedChunk,
+    /// The Start chunk, if it was fetched separately from the latest chunk.
+    /// This is `Some` when joining mid-volume and contains the VCP metadata.
+    /// When the latest chunk IS the Start chunk, this is `None`.
+    pub start_chunk: Option<DownloadedChunk>,
+}
+
 /// Iterator state for tracking what to fetch next.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum IteratorState {
@@ -40,6 +57,7 @@ enum IteratorState {
 /// environments without tokio or where caller-controlled scheduling is preferred.
 /// Instead of blocking, callers can use [`next_expected_time`](Self::next_expected_time)
 /// to determine when to call [`try_next`](Self::try_next).
+#[derive(Debug)]
 pub struct ChunkIterator {
     site: String,
     state: IteratorState,
@@ -52,12 +70,20 @@ pub struct ChunkIterator {
 }
 
 impl ChunkIterator {
-    /// Creates a new chunk iterator starting at the latest available volume.
+    /// Starts a new chunk iterator at the latest available volume.
     ///
-    /// This will make network requests to discover the latest volume and its
-    /// most recent chunk.
-    pub async fn new(site: &str) -> Result<Self> {
-        Self::with_policies(
+    /// This will make network requests to discover the latest volume and download
+    /// the most recent chunk. The returned [`ChunkIteratorInit`] contains both the
+    /// iterator and the initial chunk(s), including the Start chunk if joining mid-volume.
+    ///
+    /// # Returns
+    ///
+    /// A [`ChunkIteratorInit`] containing:
+    /// - `iterator`: The initialized iterator ready for `try_next()` calls
+    /// - `latest_chunk`: The most recent chunk in the volume
+    /// - `start_chunk`: The Start chunk if it differs from `latest_chunk` (contains VCP metadata)
+    pub async fn start(site: &str) -> Result<ChunkIteratorInit> {
+        Self::start_with_policies(
             site,
             RetryPolicy::default_download(),
             RetryPolicy::default_discovery(),
@@ -65,12 +91,14 @@ impl ChunkIterator {
         .await
     }
 
-    /// Creates a new chunk iterator with custom retry policies.
-    pub async fn with_policies(
+    /// Starts a new chunk iterator with custom retry policies.
+    ///
+    /// See [`start`](Self::start) for details on the return value.
+    pub async fn start_with_policies(
         site: &str,
         download_policy: RetryPolicy,
         discovery_policy: RetryPolicy,
-    ) -> Result<Self> {
+    ) -> Result<ChunkIteratorInit> {
         let latest_volume_result = get_latest_volume(site).await?;
         let volume = latest_volume_result
             .volume
@@ -82,7 +110,7 @@ impl ChunkIterator {
             volume.as_number()
         );
 
-        Ok(Self {
+        let mut iterator = Self {
             site: site.to_string(),
             state: IteratorState::NeedVolumeStart(volume),
             elevation_mapper: None,
@@ -91,12 +119,22 @@ impl ChunkIterator {
             download_policy,
             discovery_policy,
             last_chunk_time: None,
+        };
+
+        // Fetch the initial chunk(s)
+        let (latest_chunk, start_chunk) = iterator.fetch_initial_chunks(volume).await?;
+
+        Ok(ChunkIteratorInit {
+            iterator,
+            latest_chunk,
+            start_chunk,
         })
     }
 
     /// Creates a new chunk iterator starting at a specific chunk.
     ///
-    /// This is useful for resuming from a known position.
+    /// This is useful for resuming from a known position. Note that the VCP and
+    /// elevation mapper will not be available until a Start chunk is encountered.
     pub fn from_chunk(
         site: &str,
         chunk_id: ChunkIdentifier,
@@ -113,6 +151,58 @@ impl ChunkIterator {
             discovery_policy,
             last_chunk_time: None,
         }
+    }
+
+    /// Fetches the initial chunks during iterator construction.
+    ///
+    /// Returns the latest chunk and optionally the Start chunk (if they differ).
+    async fn fetch_initial_chunks(
+        &mut self,
+        volume: VolumeIndex,
+    ) -> Result<(DownloadedChunk, Option<DownloadedChunk>)> {
+        // Fetch the latest chunk in the volume
+        let latest_chunk = self
+            .fetch_latest_chunk_in_volume(volume)
+            .await?
+            .ok_or(Error::AWS(AWSError::ExpectedChunkNotFound))?;
+
+        let mut start_chunk = None;
+
+        // If the latest chunk is a Start chunk, extract VCP from it
+        if latest_chunk.identifier.chunk_type() == ChunkType::Start {
+            if let Ok(vcp) = Self::extract_vcp(&latest_chunk.chunk) {
+                self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
+                self.vcp = Some(vcp);
+            }
+        } else {
+            // Joined mid-volume: fetch the Start chunk for VCP
+            let start_id = ChunkIdentifier::new(
+                self.site.clone(),
+                volume,
+                *latest_chunk.identifier.date_time_prefix(),
+                1,
+                ChunkType::Start,
+                None,
+            );
+
+            if let Ok((identifier, chunk)) = download_chunk(&self.site, &start_id).await {
+                if let Ok(vcp) = Self::extract_vcp(&chunk) {
+                    self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
+                    self.vcp = Some(vcp);
+                }
+
+                start_chunk = Some(DownloadedChunk {
+                    identifier,
+                    chunk,
+                    attempts: 1,
+                });
+            }
+        }
+
+        self.last_chunk_time = latest_chunk.identifier.upload_date_time();
+        self.state = IteratorState::Ready(latest_chunk.identifier.clone());
+
+        Ok((latest_chunk, start_chunk))
     }
 
     /// Returns the estimated time when the next chunk will be available.

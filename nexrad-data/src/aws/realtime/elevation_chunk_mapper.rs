@@ -1,6 +1,7 @@
 use nexrad_decode::messages::volume_coverage_pattern;
 
 /// Maps between real-time chunk sequence numbers and volume coverage pattern elevation numbers.
+#[derive(Debug)]
 pub struct ElevationChunkMapper {
     // Index is elevation number - 1, value is chunk range inclusive
     elevation_chunk_mappings: Vec<(usize, usize)>,

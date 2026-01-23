@@ -111,6 +111,13 @@ async fn main() -> Result<()> {
         stat_entries.len()
     );
 
+    // Display network statistics
+    info!(
+        "Network statistics: {} requests, {} bytes downloaded",
+        iterator.requests_made(),
+        iterator.bytes_downloaded()
+    );
+
     info!("Done! Downloaded {} chunks", downloaded);
 
     Ok(())

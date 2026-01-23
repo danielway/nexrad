@@ -23,4 +23,5 @@
 pub mod archive;
 pub mod realtime;
 
+mod client;
 mod s3;

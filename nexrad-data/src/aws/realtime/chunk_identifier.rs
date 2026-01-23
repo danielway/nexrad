@@ -59,10 +59,20 @@ impl ChunkIdentifier {
         name: String,
         upload_date_time: Option<DateTime<Utc>>,
     ) -> Result<Self> {
-        let date_time_prefix = NaiveDateTime::parse_from_str(&name[..15], "%Y%m%d-%H%M%S")
-            .map_err(|_| Error::AWS(AWSError::UnrecognizedChunkDateTime(name[..15].to_string())))?;
+        // Chunk names must be at least 20 characters: "YYYYMMDD-HHMMSS-NNN-T"
+        if name.len() < 20 {
+            return Err(Error::AWS(AWSError::UnrecognizedChunkFormat));
+        }
 
-        let sequence_str = &name[16..19];
+        let date_str = name
+            .get(..15)
+            .ok_or_else(|| Error::AWS(AWSError::UnrecognizedChunkDateTime(name.clone())))?;
+        let date_time_prefix = NaiveDateTime::parse_from_str(date_str, "%Y%m%d-%H%M%S")
+            .map_err(|_| Error::AWS(AWSError::UnrecognizedChunkDateTime(date_str.to_string())))?;
+
+        let sequence_str = name
+            .get(16..19)
+            .ok_or_else(|| Error::AWS(AWSError::UnrecognizedChunkFormat))?;
         let sequence = sequence_str.parse::<usize>().map_err(|_| {
             Error::AWS(AWSError::UnrecognizedChunkSequence(
                 sequence_str.to_string(),

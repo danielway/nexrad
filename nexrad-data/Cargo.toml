@@ -71,3 +71,4 @@ required-features = ["aws"]
 [[bench]]
 name = "scan"
 harness = false
+required-features = ["nexrad-model"]

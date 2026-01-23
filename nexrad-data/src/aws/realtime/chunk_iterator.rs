@@ -252,67 +252,53 @@ impl ChunkIterator {
     }
 
     /// Attempts to fetch a specific chunk.
+    /// Attempts to fetch a specific chunk.
+    ///
+    /// This is a single-attempt fetch for pull-based iteration. Returns:
+    /// - `Ok(Some(chunk))` if successfully downloaded
+    /// - `Ok(None)` if chunk is not yet available (caller should wait and retry)
+    /// - `Err(...)` for unrecoverable errors
     async fn try_fetch_chunk(
         &mut self,
         chunk_id: ChunkIdentifier,
     ) -> Result<Option<DownloadedChunk>> {
-        let mut retry_state = RetryState::new(self.download_policy.clone());
-        let mut attempts = 0;
-
-        while retry_state.should_retry() {
-            attempts += 1;
-
-            match download_chunk(&self.site, &chunk_id).await {
-                Ok((identifier, chunk)) => {
-                    // Update VCP if this is a start chunk
-                    if identifier.chunk_type() == ChunkType::Start {
-                        if let Ok(vcp) = Self::extract_vcp(&chunk) {
-                            self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
-                            self.vcp = Some(vcp);
-                        }
+        match download_chunk(&self.site, &chunk_id).await {
+            Ok((identifier, chunk)) => {
+                // Update VCP if this is a start chunk
+                if identifier.chunk_type() == ChunkType::Start {
+                    if let Ok(vcp) = Self::extract_vcp(&chunk) {
+                        self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
+                        self.vcp = Some(vcp);
                     }
-
-                    // Update timing stats
-                    if let (Some(upload_time), Some(prev_time)) =
-                        (identifier.upload_date_time(), self.last_chunk_time)
-                    {
-                        let duration = upload_time - prev_time;
-                        self.update_timing_stats(&identifier, duration, attempts);
-                    }
-
-                    self.last_chunk_time = identifier.upload_date_time();
-                    self.state = IteratorState::Ready(identifier.clone());
-
-                    return Ok(Some(DownloadedChunk {
-                        identifier,
-                        chunk,
-                        attempts,
-                    }));
                 }
-                Err(Error::AWS(AWSError::S3ObjectNotFoundError)) => {
-                    // Chunk not yet available, retry
-                    debug!(
-                        "Chunk {} not yet available, attempt {}",
-                        chunk_id.name(),
-                        attempts
-                    );
+
+                // Update timing stats
+                if let (Some(upload_time), Some(prev_time)) =
+                    (identifier.upload_date_time(), self.last_chunk_time)
+                {
+                    let duration = upload_time - prev_time;
+                    self.update_timing_stats(&identifier, duration, 1);
                 }
-                Err(e) => {
-                    debug!("Error downloading chunk: {:?}", e);
-                    return Err(e);
-                }
+
+                self.last_chunk_time = identifier.upload_date_time();
+                self.state = IteratorState::Ready(identifier.clone());
+
+                Ok(Some(DownloadedChunk {
+                    identifier,
+                    chunk,
+                    attempts: 1,
+                }))
             }
-
-            if retry_state.next_delay().is_none() {
-                break;
+            Err(Error::AWS(AWSError::S3ObjectNotFoundError)) => {
+                // Chunk not yet available
+                debug!("Chunk {} not yet available", chunk_id.name());
+                Ok(None)
             }
-
-            // Return None to let caller control timing
-            return Ok(None);
+            Err(e) => {
+                debug!("Error downloading chunk: {:?}", e);
+                Err(e)
+            }
         }
-
-        // Chunk not available after configured retries
-        Ok(None)
     }
 
     /// Extracts VCP from a start chunk.

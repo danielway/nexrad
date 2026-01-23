@@ -22,7 +22,9 @@ pub fn client() -> &'static Client {
             builder = builder.pool_max_idle_per_host(4);
         }
 
-        builder.build().expect("Failed to create HTTP client")
+        builder
+            .build()
+            .unwrap_or_else(|e| panic!("Failed to create HTTP client: {e}"))
     });
 
     &CLIENT

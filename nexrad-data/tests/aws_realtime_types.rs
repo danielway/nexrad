@@ -236,11 +236,11 @@ fn test_chunk_identifier_from_name_invalid() {
 }
 
 #[test]
-#[should_panic]
 fn test_chunk_identifier_from_name_too_short() {
     let volume = VolumeIndex::new(1);
-    // String too short - will panic when trying to parse
-    let _result = ChunkIdentifier::from_name("KDMX".to_string(), volume, "short".to_string(), None);
+    // String too short - should return an error
+    let result = ChunkIdentifier::from_name("KDMX".to_string(), volume, "short".to_string(), None);
+    assert!(result.is_err(), "Expected error for short name");
 }
 
 #[test]
@@ -324,19 +324,19 @@ fn test_chunk_data_accessor() {
 }
 
 #[test]
-#[should_panic]
 fn test_chunk_too_small_for_ar2_check() {
     // Test with data too small for AR2 header (needs at least 3 bytes)
     let tiny_data = vec![b'A', b'R'];
-    let _chunk = Chunk::new(tiny_data);
+    let result = Chunk::new(tiny_data);
+    assert!(result.is_err(), "Expected error for data too small for AR2 check");
 }
 
 #[test]
-#[should_panic]
 fn test_chunk_too_small_for_bz_check() {
     // Test with data too small for BZ check (needs at least 6 bytes to check positions 4-5)
     let small_data = vec![0, 0, 0, 0, b'B'];
-    let _chunk = Chunk::new(small_data);
+    let result = Chunk::new(small_data);
+    assert!(result.is_err(), "Expected error for data too small for BZ check");
 }
 
 #[test]

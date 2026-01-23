@@ -23,13 +23,13 @@ impl Chunk<'_> {
     /// The chunk type is determined by the data's format.
     pub fn new(data: Vec<u8>) -> crate::result::Result<Self> {
         // Check if the data begins with an Archive II volume header, indicating a "start" chunk
-        if data[0..3].as_ref() == b"AR2" {
+        if data.len() >= 3 && data.get(0..3) == Some(b"AR2".as_slice()) {
             let file = volume::File::new(data);
             return Ok(Self::Start(file));
         }
 
         // Check if the data begins with a BZ compressed record, indicating an "intermediate" or "end" chunk
-        if data[4..6].as_ref() == b"BZ" {
+        if data.len() >= 6 && data.get(4..6) == Some(b"BZ".as_slice()) {
             let record = volume::Record::new(data);
             return Ok(Self::IntermediateOrEnd(record));
         }

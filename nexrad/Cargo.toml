@@ -18,13 +18,12 @@ model = ["dep:nexrad-model"]
 decode = ["dep:nexrad-decode"]
 data = ["dep:nexrad-data"]
 render = ["dep:nexrad-render", "model"]
-parallel-decompress = ["data", "nexrad-data/parallel-decompress"]
-parallel-decode = ["decode", "data", "nexrad-data/parallel-decode"]
 
 # Pass-through features from sub-crates
 serde = ["nexrad-model?/serde"]
 uom = ["nexrad-model?/uom", "nexrad-decode?/uom"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
+parallel = ["nexrad-data?/parallel"]
 # Basic AWS S3 access (WASM-compatible)
 aws = ["data", "chrono", "nexrad-data?/aws"]
 # Real-time polling functionality (requires tokio, not WASM-compatible)

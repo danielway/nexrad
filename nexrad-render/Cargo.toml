@@ -17,5 +17,5 @@ piet-common = { workspace = true }
 nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model" }
 
 [dev-dependencies]
-nexrad-decode = { version = "1.0.0-rc.1", path = "../nexrad-decode" }
+nexrad-decode = { version = "1.0.0-rc.2", path = "../nexrad-decode" }
 nexrad-data = { version = "1.0.0-rc.2", path = "../nexrad-data" }

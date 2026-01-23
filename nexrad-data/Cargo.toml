@@ -25,7 +25,7 @@ thiserror = { workspace = true }
 chrono = { workspace = true }
 zerocopy = { workspace = true }
 bzip2 = { workspace = true }
-nexrad-decode = { version = "1.0.0-rc.1", path = "../nexrad-decode" }
+nexrad-decode = { version = "1.0.0-rc.2", path = "../nexrad-decode" }
 reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
 nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model", optional = true }

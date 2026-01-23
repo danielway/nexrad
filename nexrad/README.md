@@ -18,3 +18,15 @@ Section 7 of the ICD specifies the format for this API. This data format is dist
 Unidata Local Data Manager (LDM) software. The data is organized into "volumes" (a file with binary
 data) which contain a number of compressed "LDR records", each of which contain "messages" that
 correspond to radials/rays from the radar with corresponding data and parameters.
+
+## WASM Support
+
+For WebAssembly targets, use the `wasm` feature which enables all WASM-compatible functionality:
+
+```toml
+nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
+```
+
+This includes: `model`, `decode`, `data`, `render`, `aws`, `serde`, `uom`, and `chrono`. The
+`aws-polling` and `parallel` features require native runtimes (tokio, rayon) and are not
+WASM-compatible.

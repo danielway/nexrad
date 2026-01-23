@@ -29,8 +29,10 @@ aws = ["data", "chrono", "nexrad-data?/aws"]
 # Real-time polling functionality (requires tokio, not WASM-compatible)
 aws-polling = ["aws", "nexrad-data?/aws-polling", "tokio"]
 
-# Convenience feature for everything (includes polling, not WASM-compatible)
-full = ["model", "decode", "data", "render", "serde", "uom", "chrono", "aws-polling"]
+# All WASM-compatible features
+wasm = ["model", "decode", "data", "render", "aws", "serde", "uom", "chrono"]
+# Convenience feature for everything (includes native-only features, not WASM-compatible)
+full = ["wasm", "aws-polling", "parallel"]
 
 [dependencies]
 thiserror = { workspace = true }

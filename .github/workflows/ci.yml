@@ -128,11 +128,14 @@ jobs:
       - name: Check nexrad-decode (WASM)
         run: cargo check --target wasm32-unknown-unknown -p nexrad-decode --all-features
 
+      - name: Check nexrad-render (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad-render --all-features
+
       - name: Check nexrad-data without aws (WASM)
         run: cargo check --target wasm32-unknown-unknown -p nexrad-data --no-default-features
 
       - name: Check nexrad-data with aws (WASM)
         run: cargo check --target wasm32-unknown-unknown -p nexrad-data --no-default-features --features aws
 
-      - name: Check nexrad facade with WASM-compatible features
-        run: cargo check --target wasm32-unknown-unknown -p nexrad --no-default-features --features model,decode,data,aws,serde,uom,chrono
+      - name: Check nexrad facade (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad --no-default-features --features wasm

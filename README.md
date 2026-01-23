@@ -171,11 +171,29 @@ fn main() -> nexrad::Result<()> {
 | `decode` | Binary protocol decoding | chrono, zerocopy |
 | `data` | Local file I/O | bzip2 |
 | `render` | Image rendering | piet, cairo (system) |
-| `aws` | AWS S3 downloads | reqwest, tokio |
+| `aws` | AWS S3 downloads | reqwest |
+| `parallel` | Parallel decompression | rayon |
 | `serde` | Serialization support | serde |
 | `uom` | Type-safe units of measure | uom |
 | `chrono` | DateTime type support | chrono |
-| `full` | All features | All above |
+| `aws-polling` | Real-time polling | tokio |
+| `wasm` | All WASM-compatible features | (see below) |
+| `full` | All features (native only) | All above |
+
+### WASM Support
+
+The `wasm` feature enables all WASM-compatible functionality:
+
+```toml
+nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
+```
+
+This includes: `model`, `decode`, `data`, `render`, `aws`, `serde`, `uom`, and `chrono`.
+
+**Not WASM-compatible:**
+- `aws-polling` - requires tokio runtime
+- `parallel` - requires threads (rayon)
+- `full` - includes `aws-polling` and `parallel`
 
 ### Examples
 

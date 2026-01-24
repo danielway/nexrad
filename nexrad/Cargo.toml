@@ -46,9 +46,6 @@ nexrad-render = { version = "1.0.0-rc.1", path = "../nexrad-render", optional = 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { workspace = true, optional = true }
 
-[dev-dependencies]
-piet-common = { workspace = true }
-
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true }
 

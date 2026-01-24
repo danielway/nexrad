@@ -9,8 +9,7 @@
 //!     tests/fixtures/convective/KDMX20220305_232324.bin output.png
 //! ```
 
-use nexrad::render::{get_nws_reflectivity_scale, render_radials, Product};
-use piet_common::Device;
+use nexrad::render::{get_nws_reflectivity_scale, render_radials, Product, RenderOptions};
 use std::env;
 
 fn main() -> nexrad::Result<()> {
@@ -46,23 +45,21 @@ fn main() -> nexrad::Result<()> {
         sweep.radials().len()
     );
 
-    // Create rendering device and color scale
-    let mut device =
-        Device::new().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+    // Set up rendering options and color scale
+    let options = RenderOptions::new(1024, 1024);
     let color_scale = get_nws_reflectivity_scale();
 
     // Render the image
     let image = render_radials(
-        &mut device,
         sweep.radials(),
         Product::Reflectivity,
         &color_scale,
-        (1024, 1024),
+        &options,
     )?;
 
     // Save to file
     image
-        .save_to_file(output_path)
+        .save(output_path)
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
 
     println!("Saved reflectivity image to: {}", output_path);

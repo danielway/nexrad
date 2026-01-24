@@ -136,32 +136,26 @@ async fn main() -> nexrad::Result<()> {
 With the `render` feature, create PNG images from radar data:
 
 ```rust,ignore
-use nexrad::render::{get_nws_reflectivity_scale, render_radials, Product};
-use piet_common::Device;
+use nexrad::render::{get_nws_reflectivity_scale, render_radials, Product, RenderOptions};
 
 fn main() -> nexrad::Result<()> {
     let volume = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
     let sweep = volume.sweeps().first().unwrap();
 
-    let mut device = Device::new().unwrap();
+    let options = RenderOptions::new(1024, 1024);
     let color_scale = get_nws_reflectivity_scale();
 
     let image = render_radials(
-        &mut device,
         sweep.radials(),
         Product::Reflectivity,
         &color_scale,
-        (1024, 1024),
+        &options,
     )?;
 
-    image.save_to_file("reflectivity.png").unwrap();
+    image.save("reflectivity.png").unwrap();
     Ok(())
 }
 ```
-
-**Note:** The `render` feature requires system graphics libraries:
-- **Debian/Ubuntu:** `apt install libcairo2-dev libpango1.0-dev libglib2.0-dev`
-- **macOS:** `brew install cairo pango`
 
 ### Feature Reference
 
@@ -170,7 +164,7 @@ fn main() -> nexrad::Result<()> {
 | `model` | Core data types (Scan, Sweep, Radial) | Pure Rust |
 | `decode` | Binary protocol decoding | chrono, zerocopy |
 | `data` | Local file I/O | bzip2 |
-| `render` | Image rendering | piet, cairo (system) |
+| `render` | Image rendering | image |
 | `aws` | AWS S3 downloads | reqwest |
 | `parallel` | Parallel decompression | rayon |
 | `serde` | Serialization support | serde |

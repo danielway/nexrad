@@ -212,6 +212,11 @@ pub fn render_radials(
     // Extract azimuths for binary search
     let sorted_azimuths: Vec<f32> = radial_data.iter().map(|(az, _)| *az).collect();
 
+    // Calculate max azimuth gap threshold based on radial spacing
+    // Use 1.5x the expected spacing to allow for minor gaps while rejecting large ones
+    let azimuth_spacing = first_radial.azimuth_spacing_degrees();
+    let max_azimuth_gap = azimuth_spacing * 1.5;
+
     let center_x = width as f64 / 2.0;
     let center_y = height as f64 / 2.0;
     let scale_factor = width.max(height) as f64 / 2.0 / radar_range_km;
@@ -236,8 +241,14 @@ pub fn render_radials(
             let azimuth_rad = dx.atan2(-dy);
             let azimuth_deg = (azimuth_rad.to_degrees() + 360.0) % 360.0;
 
-            // Find the closest radial
-            let radial_idx = find_closest_radial_index(&sorted_azimuths, azimuth_deg as f32);
+            // Find the closest radial and check if it's within acceptable range
+            let (radial_idx, angular_distance) =
+                find_closest_radial(&sorted_azimuths, azimuth_deg as f32);
+
+            // Skip pixels where no radial is close enough (partial sweep gaps)
+            if angular_distance > max_azimuth_gap {
+                continue;
+            }
 
             // Calculate gate index
             let gate_index = ((distance_km - first_gate_km) / gate_interval_km) as usize;
@@ -341,12 +352,15 @@ pub fn get_product_value_range(product: Product) -> (f32, f32) {
     }
 }
 
-/// Find the index in sorted_azimuths closest to the given azimuth.
+/// Find the index in sorted_azimuths closest to the given azimuth and return
+/// the angular distance to that radial.
+///
+/// Returns `(index, angular_distance)` where `angular_distance` is in degrees.
 #[inline]
-fn find_closest_radial_index(sorted_azimuths: &[f32], azimuth: f32) -> usize {
+fn find_closest_radial(sorted_azimuths: &[f32], azimuth: f32) -> (usize, f32) {
     let len = sorted_azimuths.len();
     if len == 0 {
-        return 0;
+        return (0, f32::MAX);
     }
 
     // Binary search for insertion point
@@ -359,9 +373,9 @@ fn find_closest_radial_index(sorted_azimuths: &[f32], azimuth: f32) -> usize {
         let dist_to_first = (sorted_azimuths[0] - azimuth).abs();
         let dist_to_last = 360.0 - sorted_azimuths[len - 1] + azimuth;
         if dist_to_last < dist_to_first {
-            return len - 1;
+            return (len - 1, dist_to_last);
         }
-        return 0;
+        return (0, dist_to_first);
     }
 
     if pos >= len {
@@ -369,9 +383,9 @@ fn find_closest_radial_index(sorted_azimuths: &[f32], azimuth: f32) -> usize {
         let dist_to_last = (azimuth - sorted_azimuths[len - 1]).abs();
         let dist_to_first = 360.0 - azimuth + sorted_azimuths[0];
         if dist_to_first < dist_to_last {
-            return 0;
+            return (0, dist_to_first);
         }
-        return len - 1;
+        return (len - 1, dist_to_last);
     }
 
     // Compare distances to neighbors
@@ -379,9 +393,9 @@ fn find_closest_radial_index(sorted_azimuths: &[f32], azimuth: f32) -> usize {
     let dist_to_curr = (sorted_azimuths[pos] - azimuth).abs();
 
     if dist_to_prev <= dist_to_curr {
-        pos - 1
+        (pos - 1, dist_to_prev)
     } else {
-        pos
+        (pos, dist_to_curr)
     }
 }
 

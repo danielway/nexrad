@@ -2,9 +2,59 @@
 //!
 //! This module provides types for mapping radar moment values to colors.
 //! The primary type is [`DiscreteColorScale`], which maps value ranges to
-//! specific colors based on threshold levels.
+//! specific colors based on threshold levels. For rendering, the scale is
+//! converted to a [`ColorLookupTable`] which provides O(1) color lookups.
 
-use piet::Color;
+/// An RGBA color with components in the range 0.0 to 1.0.
+///
+/// This type is used for defining color scales. Colors are converted to
+/// 8-bit RGBA values during rendering.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Color {
+    /// Red component (0.0 to 1.0)
+    pub r: f64,
+    /// Green component (0.0 to 1.0)
+    pub g: f64,
+    /// Blue component (0.0 to 1.0)
+    pub b: f64,
+    /// Alpha component (0.0 to 1.0)
+    pub a: f64,
+}
+
+impl Color {
+    /// Creates a new color from RGB components (alpha defaults to 1.0).
+    ///
+    /// Components should be in the range 0.0 to 1.0.
+    pub const fn rgb(r: f64, g: f64, b: f64) -> Self {
+        Self { r, g, b, a: 1.0 }
+    }
+
+    /// Creates a new color from RGBA components.
+    ///
+    /// Components should be in the range 0.0 to 1.0.
+    pub const fn rgba(r: f64, g: f64, b: f64, a: f64) -> Self {
+        Self { r, g, b, a }
+    }
+
+    /// Converts the color to 8-bit RGBA values.
+    pub fn to_rgba8(&self) -> [u8; 4] {
+        [
+            (self.r * 255.0) as u8,
+            (self.g * 255.0) as u8,
+            (self.b * 255.0) as u8,
+            (self.a * 255.0) as u8,
+        ]
+    }
+
+    /// Black color.
+    pub const BLACK: Color = Color::rgb(0.0, 0.0, 0.0);
+
+    /// White color.
+    pub const WHITE: Color = Color::rgb(1.0, 1.0, 1.0);
+
+    /// Transparent (fully transparent black).
+    pub const TRANSPARENT: Color = Color::rgba(0.0, 0.0, 0.0, 0.0);
+}
 
 /// A single level in a discrete color scale.
 ///
@@ -13,7 +63,7 @@ use piet::Color;
 /// this color.
 #[derive(Debug, Clone)]
 pub struct ColorScaleLevel {
-    value_dbz: f32,
+    value: f32,
     color: Color,
 }
 
@@ -22,10 +72,10 @@ impl ColorScaleLevel {
     ///
     /// # Arguments
     ///
-    /// * `value_dbz` - The threshold value (typically in dBZ for reflectivity)
+    /// * `value` - The threshold value
     /// * `color` - The color to use for values at or above this threshold
-    pub fn new(value_dbz: f32, color: Color) -> Self {
-        Self { value_dbz, color }
+    pub fn new(value: f32, color: Color) -> Self {
+        Self { value, color }
     }
 }
 
@@ -38,13 +88,12 @@ impl ColorScaleLevel {
 /// # Example
 ///
 /// ```
-/// use nexrad_render::{ColorScaleLevel, DiscreteColorScale};
-/// use piet::Color;
+/// use nexrad_render::{ColorScaleLevel, DiscreteColorScale, Color};
 ///
 /// let scale = DiscreteColorScale::new(vec![
 ///     ColorScaleLevel::new(0.0, Color::BLACK),
-///     ColorScaleLevel::new(30.0, Color::GREEN),
-///     ColorScaleLevel::new(50.0, Color::RED),
+///     ColorScaleLevel::new(30.0, Color::rgb(0.0, 1.0, 0.0)),
+///     ColorScaleLevel::new(50.0, Color::rgb(1.0, 0.0, 0.0)),
 /// ]);
 ///
 /// // Values >= 50 return red, >= 30 return green, >= 0 return black
@@ -59,7 +108,7 @@ impl DiscreteColorScale {
     ///
     /// Levels are automatically sorted from highest to lowest threshold.
     pub fn new(mut levels: Vec<ColorScaleLevel>) -> Self {
-        levels.sort_by(|a, b| b.value_dbz.total_cmp(&a.value_dbz));
+        levels.sort_by(|a, b| b.value.total_cmp(&a.value));
         Self { levels }
     }
 
@@ -67,11 +116,11 @@ impl DiscreteColorScale {
     ///
     /// Finds the highest threshold that the value exceeds and returns its color.
     /// If the value is below all thresholds, returns the color of the lowest threshold.
-    pub fn get_color(&self, value_dbz: f32) -> Color {
+    pub fn get_color(&self, value: f32) -> Color {
         let mut color = Color::BLACK;
 
         for level in &self.levels {
-            if value_dbz >= level.value_dbz {
+            if value >= level.value {
                 return level.color;
             }
 
@@ -79,6 +128,83 @@ impl DiscreteColorScale {
         }
 
         color
+    }
+
+    /// Returns the levels in this color scale (sorted highest to lowest).
+    pub fn levels(&self) -> &[ColorScaleLevel] {
+        &self.levels
+    }
+}
+
+/// A pre-computed lookup table for O(1) color lookups.
+///
+/// This table maps a range of values to RGBA colors using a fixed-size array.
+/// It is created from a [`DiscreteColorScale`] and provides fast color lookups
+/// during rendering.
+///
+/// # Example
+///
+/// ```
+/// use nexrad_render::{ColorLookupTable, get_nws_reflectivity_scale};
+///
+/// let scale = get_nws_reflectivity_scale();
+/// let lut = ColorLookupTable::from_scale(&scale, -32.0, 95.0, 256);
+///
+/// // O(1) lookup returning [R, G, B, A] bytes
+/// let color = lut.get_color(45.0);
+/// ```
+#[derive(Debug, Clone)]
+pub struct ColorLookupTable {
+    /// RGBA color values indexed by quantized input value.
+    table: Vec<[u8; 4]>,
+    /// Minimum value in the mapped range.
+    min_value: f32,
+    /// Value range (max - min).
+    range: f32,
+}
+
+impl ColorLookupTable {
+    /// Creates a lookup table from a discrete color scale.
+    ///
+    /// # Arguments
+    ///
+    /// * `scale` - The color scale to sample from
+    /// * `min_value` - The minimum value to map
+    /// * `max_value` - The maximum value to map
+    /// * `size` - The number of entries in the lookup table (256 recommended)
+    ///
+    /// Values outside the min/max range will be clamped to the nearest entry.
+    pub fn from_scale(
+        scale: &DiscreteColorScale,
+        min_value: f32,
+        max_value: f32,
+        size: usize,
+    ) -> Self {
+        let range = max_value - min_value;
+        let mut table = Vec::with_capacity(size);
+
+        for i in 0..size {
+            let value = min_value + (i as f32 / (size - 1) as f32) * range;
+            let color = scale.get_color(value);
+            table.push(color.to_rgba8());
+        }
+
+        Self {
+            table,
+            min_value,
+            range,
+        }
+    }
+
+    /// Returns the RGBA color for the given value.
+    ///
+    /// This is an O(1) operation using direct array indexing.
+    #[inline]
+    pub fn get_color(&self, value: f32) -> [u8; 4] {
+        let normalized = (value - self.min_value) / self.range;
+        let index = (normalized * (self.table.len() - 1) as f32) as usize;
+        let index = index.min(self.table.len() - 1);
+        self.table[index]
     }
 }
 

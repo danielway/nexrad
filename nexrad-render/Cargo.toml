@@ -12,10 +12,14 @@ categories = ["science", "visualization", "rendering"]
 
 [dependencies]
 thiserror = { workspace = true }
-piet = { workspace = true }
-piet-common = { workspace = true }
 nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model" }
+image = "0.25"
 
 [dev-dependencies]
 nexrad-decode = { version = "1.0.0-rc.2", path = "../nexrad-decode" }
 nexrad-data = { version = "1.0.0-rc.4", path = "../nexrad-data" }
+criterion = { workspace = true }
+
+[[bench]]
+name = "render_radials"
+harness = false

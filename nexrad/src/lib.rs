@@ -84,7 +84,7 @@
 //! | `model` | Core data model types (default) | Pure Rust | Yes |
 //! | `decode` | Protocol decoding (default) | chrono, zerocopy | Yes |
 //! | `data` | Data access (default) | bzip2 | Yes |
-//! | `render` | Visualization and rendering (default) | piet (requires cairo) | No |
+//! | `render` | Visualization and rendering (default) | image | Yes |
 //! | `aws` | Enable AWS S3 downloads (`download_latest`, `download_at`, `list_volumes`) | reqwest | Yes |
 //! | `aws-polling` | Real-time polling (`poll_chunks`) | reqwest, tokio | No |
 //! | `serde` | Serialization support for model types | serde | Yes |
@@ -105,12 +105,6 @@
 //! # Full feature set
 //! nexrad = { version = "1.0", features = ["full"] }
 //! ```
-//!
-//! ### System Dependencies
-//!
-//! The `render` feature requires system graphics libraries:
-//! - **Debian/Ubuntu:** `apt install libcairo2-dev libpango1.0-dev libglib2.0-dev`
-//! - **macOS:** `brew install cairo pango`
 //!
 //! ## Error Handling
 //!
@@ -230,24 +224,22 @@
 //! Create visualizations from radar data:
 //!
 //! ```ignore
-//! use nexrad::render::{render_radials, get_nws_reflectivity_scale, Product};
-//! use piet_common::Device;
+//! use nexrad::render::{render_radials, get_nws_reflectivity_scale, Product, RenderOptions};
 //!
 //! let volume = nexrad::load_file("volume.ar2v")?;
 //! let sweep = volume.sweeps().first().unwrap();
 //!
-//! let mut device = Device::new().unwrap();
+//! let options = RenderOptions::new(1024, 1024);
 //! let color_scale = get_nws_reflectivity_scale();
 //!
 //! let image = render_radials(
-//!     &mut device,
 //!     sweep.radials(),
 //!     Product::Reflectivity,
 //!     &color_scale,
-//!     (1024, 1024),
+//!     &options,
 //! )?;
 //!
-//! image.save_to_file("output.png").unwrap();
+//! image.save("output.png").unwrap();
 //! # Ok::<(), nexrad::Error>(())
 //! ```
 

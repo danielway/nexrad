@@ -9,9 +9,12 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(ThisError, Debug)]
 pub enum Error {
     /// The requested radar product was not found in the radial data.
-    #[error("requested product not found")]
+    #[error("requested product not found in radial data")]
     ProductNotFound,
-    /// An error occurred in the graphics rendering backend.
-    #[error("error rendering image")]
-    RenderError(#[from] piet::Error),
+    /// No radials were provided for rendering.
+    #[error("no radials provided for rendering")]
+    NoRadials,
+    /// The image dimensions were invalid for creating an image buffer.
+    #[error("invalid image dimensions")]
+    InvalidDimensions,
 }

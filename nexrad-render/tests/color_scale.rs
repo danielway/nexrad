@@ -3,26 +3,26 @@
 use nexrad_render::{
     get_correlation_coefficient_scale, get_default_scale, get_differential_phase_scale,
     get_differential_reflectivity_scale, get_nws_reflectivity_scale, get_specific_diff_phase_scale,
-    get_spectrum_width_scale, get_velocity_scale, ColorScaleLevel, DiscreteColorScale, Product,
+    get_spectrum_width_scale, get_velocity_scale, Color, ColorScaleLevel, DiscreteColorScale,
+    Product,
 };
-use piet::Color;
 
 #[test]
 fn test_discrete_color_scale_ordering() {
     // Levels should be sorted from highest to lowest internally
     let scale = DiscreteColorScale::new(vec![
-        ColorScaleLevel::new(30.0, Color::GREEN),
+        ColorScaleLevel::new(30.0, Color::rgb(0.0, 1.0, 0.0)),
         ColorScaleLevel::new(0.0, Color::BLACK),
-        ColorScaleLevel::new(50.0, Color::RED),
+        ColorScaleLevel::new(50.0, Color::rgb(1.0, 0.0, 0.0)),
     ]);
 
     // Value >= 50 should get red
     let color = scale.get_color(50.0);
-    assert_eq!(color, Color::RED);
+    assert_eq!(color, Color::rgb(1.0, 0.0, 0.0));
 
     // Value >= 30 but < 50 should get green
     let color = scale.get_color(35.0);
-    assert_eq!(color, Color::GREEN);
+    assert_eq!(color, Color::rgb(0.0, 1.0, 0.0));
 
     // Value >= 0 but < 30 should get black
     let color = scale.get_color(15.0);
@@ -33,42 +33,42 @@ fn test_discrete_color_scale_ordering() {
 fn test_color_scale_boundary_values() {
     let scale = DiscreteColorScale::new(vec![
         ColorScaleLevel::new(0.0, Color::BLACK),
-        ColorScaleLevel::new(30.0, Color::GREEN),
-        ColorScaleLevel::new(50.0, Color::RED),
+        ColorScaleLevel::new(30.0, Color::rgb(0.0, 1.0, 0.0)),
+        ColorScaleLevel::new(50.0, Color::rgb(1.0, 0.0, 0.0)),
     ]);
 
     // Exactly at threshold should get that threshold's color
-    assert_eq!(scale.get_color(50.0), Color::RED);
-    assert_eq!(scale.get_color(30.0), Color::GREEN);
+    assert_eq!(scale.get_color(50.0), Color::rgb(1.0, 0.0, 0.0));
+    assert_eq!(scale.get_color(30.0), Color::rgb(0.0, 1.0, 0.0));
     assert_eq!(scale.get_color(0.0), Color::BLACK);
 }
 
 #[test]
 fn test_color_scale_negative_values() {
     let scale = DiscreteColorScale::new(vec![
-        ColorScaleLevel::new(-10.0, Color::BLUE),
+        ColorScaleLevel::new(-10.0, Color::rgb(0.0, 0.0, 1.0)),
         ColorScaleLevel::new(0.0, Color::BLACK),
-        ColorScaleLevel::new(30.0, Color::GREEN),
+        ColorScaleLevel::new(30.0, Color::rgb(0.0, 1.0, 0.0)),
     ]);
 
     // Negative value above -10 threshold
-    assert_eq!(scale.get_color(-5.0), Color::BLUE);
+    assert_eq!(scale.get_color(-5.0), Color::rgb(0.0, 0.0, 1.0));
 
     // Very negative value (below all thresholds) should get lowest threshold color
     let color = scale.get_color(-20.0);
-    assert_eq!(color, Color::BLUE);
+    assert_eq!(color, Color::rgb(0.0, 0.0, 1.0));
 }
 
 #[test]
 fn test_color_scale_high_values() {
     let scale = DiscreteColorScale::new(vec![
         ColorScaleLevel::new(0.0, Color::BLACK),
-        ColorScaleLevel::new(50.0, Color::RED),
+        ColorScaleLevel::new(50.0, Color::rgb(1.0, 0.0, 0.0)),
     ]);
 
     // Value above highest threshold should still get highest color
-    assert_eq!(scale.get_color(100.0), Color::RED);
-    assert_eq!(scale.get_color(75.0), Color::RED);
+    assert_eq!(scale.get_color(100.0), Color::rgb(1.0, 0.0, 0.0));
+    assert_eq!(scale.get_color(75.0), Color::rgb(1.0, 0.0, 0.0));
 }
 
 #[test]

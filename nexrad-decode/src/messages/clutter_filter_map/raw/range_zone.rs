@@ -8,9 +8,9 @@ use zerocopy::{FromBytes, Immutable, KnownLayout};
 #[derive(Clone, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct RangeZone {
     /// Operation code for the range zone.
-    pub(crate) op_code: Code2,
+    pub op_code: Code2,
 
     /// Stop range per zone in km. There are 20 possible zones and not all need to be defined. The
     /// last zone must have an end range of 511km.
-    pub(crate) end_range: Integer2,
+    pub end_range: Integer2,
 }

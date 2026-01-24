@@ -6,5 +6,5 @@ use zerocopy::{FromBytes, Immutable, KnownLayout};
 #[derive(Debug, Clone, PartialEq, Eq, Hash, FromBytes, Immutable, KnownLayout)]
 pub struct AzimuthSegmentHeader {
     /// The number of range zones defined in this azimuth segment, from 1 to 20.
-    pub(crate) range_zone_count: Integer2,
+    pub range_zone_count: Integer2,
 }

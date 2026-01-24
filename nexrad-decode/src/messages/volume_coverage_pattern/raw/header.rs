@@ -8,42 +8,42 @@ use zerocopy::{FromBytes, Immutable, KnownLayout};
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct Header {
     /// Total message size in halfwords, including the header and all elevation blocks
-    pub(crate) message_size: Integer2,
+    pub message_size: Integer2,
 
     /// Pattern type is always 2
-    pub(crate) pattern_type: Code2,
+    pub pattern_type: Code2,
 
     /// Volume Coverage Pattern Number
-    pub(crate) pattern_number: Integer2,
+    pub pattern_number: Integer2,
 
     /// Number of elevation cuts in the complete volume scan
-    pub(crate) number_of_elevation_cuts: Integer2,
+    pub number_of_elevation_cuts: Integer2,
 
     /// Volume Coverage Pattern Version Number
-    pub(crate) version: Integer1,
+    pub version: Integer1,
 
     /// Clutter map groups are not currently implemented
-    pub(crate) clutter_map_group_number: Integer1,
+    pub clutter_map_group_number: Integer1,
 
     /// Doppler velocity resolution.
     /// 2 -> 0.5
     /// 4 -> 1.0
-    pub(crate) doppler_velocity_resolution: Code1,
+    pub doppler_velocity_resolution: Code1,
 
     /// Pulse width values.
     /// 2 -> Short
     /// 4 -> Long
-    pub(crate) pulse_width: Code1,
+    pub pulse_width: Code1,
 
     /// Reserved
-    pub(crate) reserved_1: Integer4,
+    pub reserved_1: Integer4,
 
     /// VCP sequencing values.
     /// Bits 0-4: Number of Elevations
     /// Bits 5-6: Maximum SAILS Cuts
     /// Bit  13:  Sequence Active
     /// Bit  14:  Truncated VCP
-    pub(crate) vcp_sequencing: Code2,
+    pub vcp_sequencing: Code2,
 
     /// VCP supplemental data.
     /// Bit  0:     SAILS VCP
@@ -54,8 +54,8 @@ pub struct Header {
     /// Bit  11:    MPDA VCP
     /// Bit  12:    BASE TILT VCP
     /// Bits 13-15: Number of BASE TILTS
-    pub(crate) vcp_supplemental_data: Code2,
+    pub vcp_supplemental_data: Code2,
 
     /// Reserved
-    pub(crate) reserved_2: Integer2,
+    pub reserved_2: Integer2,
 }

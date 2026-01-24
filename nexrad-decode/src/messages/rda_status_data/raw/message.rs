@@ -16,7 +16,7 @@ pub struct Message {
     ///  16 (bit 4) = Operate
     ///  32 (bit 5) = Spare
     ///  64 (bit 6) = Spare
-    pub(crate) rda_status: Code2,
+    pub rda_status: Code2,
 
     /// The RDA system's operability status.
     ///
@@ -26,7 +26,7 @@ pub struct Message {
     ///   8 (bit 3) = Maintenance action mandatory
     ///  16 (bit 4) = Commanded shut down
     ///  32 (bit 5) = Inoperable
-    pub(crate) operability_status: Code2,
+    pub operability_status: Code2,
 
     /// The RDA system's control status.
     ///
@@ -34,7 +34,7 @@ pub struct Message {
     ///   2 (bit 1) = Local control only
     ///   4 (bit 2) = Remote (RPG) control only
     ///   8 (bit 3) = Either local or remote control
-    pub(crate) control_status: Code2,
+    pub control_status: Code2,
 
     /// The RDA system's auxiliary power generator state.
     ///
@@ -44,14 +44,14 @@ pub struct Message {
     ///   4 (bit 2) = Generator on
     ///   8 (bit 3) = Transfer switch set to manual
     ///  16 (bit 4) = Commanded switchover
-    pub(crate) auxiliary_power_generator_state: Code2,
+    pub auxiliary_power_generator_state: Code2,
 
     /// The average transmitter power in watts calculated over a range of samples.
-    pub(crate) average_transmitter_power: Integer2,
+    pub average_transmitter_power: Integer2,
 
     /// Difference from adaptation data (delta dBZ0) in dB. Scaling is two decimal places, e.g.
     /// a value of -19800 represents -198.00 dB.
-    pub(crate) horizontal_reflectivity_calibration_correction: ScaledInteger2,
+    pub horizontal_reflectivity_calibration_correction: ScaledInteger2,
 
     /// Which types of data have transmission enabled.
     ///
@@ -60,13 +60,13 @@ pub struct Message {
     ///   2 (bit 2) = Reflectivity
     ///   4 (bit 3) = Velocity
     ///   8 (bit 4) = Spectrum width
-    pub(crate) data_transmission_enabled: Code2,
+    pub data_transmission_enabled: Code2,
 
     /// The radar's volume coverage pattern number.
     ///
     /// The magnitude of the value identifies the pattern, and the sign indicates whether it was
     /// specified locally or remotely. Zero indicates no pattern.
-    pub(crate) volume_coverage_pattern: SInteger2,
+    pub volume_coverage_pattern: SInteger2,
 
     /// The RDA system's mode of control.
     ///
@@ -74,27 +74,27 @@ pub struct Message {
     ///   0 (none)  = No action
     ///   2 (bit 1) = Local control requested
     ///   4 (bit 2) = Remote control requested (local released)
-    pub(crate) rda_control_authorization: Code2,
+    pub rda_control_authorization: Code2,
 
     /// The RDA system's major and minor build numbers.
     ///
     /// If the value divided by 100 is greater than 2 then the build version is the value divided
     /// by 100, otherwise it is divided by 10.
-    pub(crate) rda_build_number: ScaledInteger2,
+    pub rda_build_number: ScaledInteger2,
 
     /// Whether the RDA system is operational.
     ///
     /// Modes:
     ///   4 (bit 2) = Operational
     ///   8 (bit 3) = Maintenance
-    pub(crate) operational_mode: Code2,
+    pub operational_mode: Code2,
 
     /// Whether the RDA system has super resolution enabled.
     ///
     /// Statuses:
     ///   2 (bit 1) = Enabled
     ///   4 (bit 2) = Disabled
-    pub(crate) super_resolution_status: Code2,
+    pub super_resolution_status: Code2,
 
     /// The RDA system's clutter mitigation status.
     ///
@@ -108,7 +108,7 @@ pub struct Message {
     ///   8 (bit 3) = Bypass map elevation 3 applied
     ///  16 (bit 4) = Bypass map elevation 4 applied
     ///  32 (bit 5) = Bypass map elevation 5 applied
-    pub(crate) clutter_mitigation_decision_status: Code2,
+    pub clutter_mitigation_decision_status: Code2,
 
     /// Multiple flags for the RDA system's scan and data status.
     ///
@@ -118,7 +118,7 @@ pub struct Message {
     ///   8 (bit 3) = EBC enablement
     ///  16 (bit 4) = RDA log data enablement
     ///  32 (bit 5) = Time series data recording enablement
-    pub(crate) rda_scan_and_data_flags: Code2,
+    pub rda_scan_and_data_flags: Code2,
 
     /// The RDA system's active alarm types.
     ///
@@ -131,7 +131,7 @@ pub struct Message {
     ///  16 (bit 5) = RDA control
     ///  32 (bit 6) = Communication
     ///  64 (bit 7) = Signal processor
-    pub(crate) rda_alarm_summary: Code2,
+    pub rda_alarm_summary: Code2,
 
     /// Acknowledgement of command receipt by RDA system.
     ///
@@ -141,14 +141,14 @@ pub struct Message {
     ///   2 (bit 1)   = Clutter bypass map received
     ///   3 (bit 0&1) = Clutter censor zones received
     ///   4 (bit 2)   = Redundant channel control command accepted
-    pub(crate) command_acknowledgement: Code2,
+    pub command_acknowledgement: Code2,
 
     /// Indicates whether this is the RDA system's controlling channel.
     ///
     /// Values:
     ///   0 (none)  = Controlling channel
     ///   1 (bit 0) = Non-controlling channel
-    pub(crate) channel_control_status: Code2,
+    pub channel_control_status: Code2,
 
     /// The RDA system's spot blanking status.
     ///
@@ -156,25 +156,25 @@ pub struct Message {
     ///   0 (none)  = Not installed
     ///   1 (bit 1) = Enabled
     ///   4 (bit 2) = Disabled
-    pub(crate) spot_blanking_status: Code2,
+    pub spot_blanking_status: Code2,
 
     /// The bypass map generation date represented as a count of days since 1 January 1970 00:00 GMT.
     /// It is also referred-to as a "modified Julian date" where it is the Julian date - 2440586.5.
-    pub(crate) bypass_map_generation_date: Integer2,
+    pub bypass_map_generation_date: Integer2,
 
     /// The bypass map generation time in minutes past midnight, GMT.
-    pub(crate) bypass_map_generation_time: Integer2,
+    pub bypass_map_generation_time: Integer2,
 
     /// The clutter filter map generation date represented as a count of days since 1 January 1970
     /// 00:00 GMT. It is also referred-to as a "modified Julian date" where it is the
     /// Julian date - 2440586.5.
-    pub(crate) clutter_filter_map_generation_date: Integer2,
+    pub clutter_filter_map_generation_date: Integer2,
 
     /// The clutter filter map generation time in minutes past midnight, GMT.
-    pub(crate) clutter_filter_map_generation_time: Integer2,
+    pub clutter_filter_map_generation_time: Integer2,
 
     /// The RDA system's vertical reflectivity calibration correction in dB.
-    pub(crate) vertical_reflectivity_calibration_correction: ScaledInteger2,
+    pub vertical_reflectivity_calibration_correction: ScaledInteger2,
 
     /// The RDA system's TPS.
     ///
@@ -183,7 +183,7 @@ pub struct Message {
     ///   1 (bit 0)   = Off
     ///   3 (bit 0&1) = OK
     ///   4 (bit 2)   = Unknown
-    pub(crate) transition_power_source_status: Integer2,
+    pub transition_power_source_status: Integer2,
 
     /// The RDA system's RMS control status.
     ///
@@ -191,7 +191,7 @@ pub struct Message {
     ///   0 (none)  = Non-RMS system
     ///   2 (bit 1) = RMS in control
     ///   4 (bit 2) = RDA in control
-    pub(crate) rms_control_status: Code2,
+    pub rms_control_status: Code2,
 
     /// The RDA system's performance check status.
     ///
@@ -199,16 +199,16 @@ pub struct Message {
     ///   0 (none)  = No command pending
     ///   1 (bit 0) = Force performance check pending
     ///   2 (bit 1) = In progress
-    pub(crate) performance_check_status: Code2,
+    pub performance_check_status: Code2,
 
     /// The RDA system's alarm codes stored per-halfword up to 14 possible codes.
-    pub(crate) alarm_codes: [Integer2; 14],
+    pub alarm_codes: [Integer2; 14],
 
     /// Flags indicating the various RDA signal processing options.
-    pub(crate) signal_processor_options: Code2,
+    pub signal_processor_options: Code2,
 
-    pub(crate) spares: [Integer2; 18],
+    pub spares: [Integer2; 18],
 
     /// Version of status message.
-    pub(crate) status_version: Integer2,
+    pub status_version: Integer2,
 }

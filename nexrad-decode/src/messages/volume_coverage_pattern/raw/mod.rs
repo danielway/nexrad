@@ -1,5 +1,5 @@
-pub(crate) mod header;
-pub(crate) use header::Header;
+mod header;
+pub use header::Header;
 
-pub(crate) mod elevation_data_block;
-pub(crate) use elevation_data_block::{decode_angle, decode_angular_velocity, ElevationDataBlock};
+mod elevation_data_block;
+pub use elevation_data_block::{decode_angle, decode_angular_velocity, ElevationDataBlock};

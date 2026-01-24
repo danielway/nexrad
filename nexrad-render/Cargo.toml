@@ -1,6 +1,6 @@
 [package]
 name = "nexrad-render"
-version = "1.0.0-rc.2"
+version = "1.0.0-rc.3"
 description = "Rendering functions for NEXRAD weather radar data visualization."
 authors.workspace = true
 edition.workspace = true

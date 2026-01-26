@@ -21,6 +21,7 @@ fn create_test_radial(azimuth_degrees: f32, reflectivity_value: u8) -> Radial {
         gate_count,
         first_gate_range_m,
         gate_interval_m,
+        8, // data_word_size: 8-bit encoding
         scale,
         offset,
         values,

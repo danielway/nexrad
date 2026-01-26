@@ -126,7 +126,7 @@ fn test_sweep_merge_different_elevation() {
 #[test]
 fn test_moment_data_creation() {
     let values = vec![0, 1, 50, 100, 150, 200, 255];
-    let moment = MomentData::from_fixed_point(7, 500, 250, 2.0, 33.0, values);
+    let moment = MomentData::from_fixed_point(7, 500, 250, 8, 2.0, 33.0, values);
 
     assert_eq!(moment.gate_count(), 7);
     assert!((moment.first_gate_range_km() - 0.5).abs() < 0.001);
@@ -143,7 +143,7 @@ fn test_moment_data_values_with_scale() {
     // raw=100 -> (100 - 33) / 2 = 33.5
 
     let values = vec![0, 1, 50, 100];
-    let moment = MomentData::from_fixed_point(4, 500, 250, 2.0, 33.0, values);
+    let moment = MomentData::from_fixed_point(4, 500, 250, 8, 2.0, 33.0, values);
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 4);
@@ -168,7 +168,7 @@ fn test_moment_data_values_with_scale() {
 fn test_moment_data_values_without_scale() {
     // When scale=0.0, raw values are passed through directly
     let values = vec![0, 1, 50, 100];
-    let moment = MomentData::from_fixed_point(4, 500, 250, 0.0, 0.0, values);
+    let moment = MomentData::from_fixed_point(4, 500, 250, 8, 0.0, 0.0, values);
 
     let decoded_values = moment.values();
 
@@ -182,6 +182,41 @@ fn test_moment_data_values_without_scale() {
             _ => panic!("Expected Value variant, got {:?}", v),
         }
     }
+}
+
+#[test]
+fn test_moment_data_values_16bit_with_scale() {
+    // Two 16-bit big-endian values: 20 and 30
+    // With scale=2.0, offset=10.0 => 5.0 and 10.0
+    let values = vec![0x00, 0x14, 0x00, 0x1E];
+    let moment = MomentData::from_fixed_point(2, 500, 250, 16, 2.0, 10.0, values);
+
+    let decoded_values = moment.values();
+    assert_eq!(decoded_values.len(), 2);
+
+    if let MomentValue::Value(v) = decoded_values[0] {
+        assert!((v - 5.0).abs() < 0.01, "Expected 5.0, got {}", v);
+    } else {
+        panic!("Expected Value variant");
+    }
+
+    if let MomentValue::Value(v) = decoded_values[1] {
+        assert!((v - 10.0).abs() < 0.01, "Expected 10.0, got {}", v);
+    } else {
+        panic!("Expected Value variant");
+    }
+}
+
+#[test]
+fn test_moment_data_values_16bit_special_values() {
+    // 16-bit raw values 0 and 1 should map to special cases when scale != 0.
+    let values = vec![0x00, 0x00, 0x00, 0x01];
+    let moment = MomentData::from_fixed_point(2, 500, 250, 16, 2.0, 0.0, values);
+
+    let decoded_values = moment.values();
+    assert_eq!(decoded_values.len(), 2);
+    assert_eq!(decoded_values[0], MomentValue::BelowThreshold);
+    assert_eq!(decoded_values[1], MomentValue::RangeFolded);
 }
 
 #[test]

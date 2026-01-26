@@ -100,7 +100,11 @@ impl MomentData {
                 .collect()
         } else {
             // Default to 8-bit decoding.
-            self.values.iter().copied().map(|v| decode(v as u16)).collect()
+            self.values
+                .iter()
+                .copied()
+                .map(|v| decode(v as u16))
+                .collect()
         }
     }
 }

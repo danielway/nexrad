@@ -86,7 +86,11 @@ impl<'a> GenericDataBlock<'a> {
                 .collect()
         } else {
             // Default to 8-bit decoding.
-            self.encoded_data.iter().copied().map(|v| decode(v as u16)).collect()
+            self.encoded_data
+                .iter()
+                .copied()
+                .map(|v| decode(v as u16))
+                .collect()
         }
     }
 

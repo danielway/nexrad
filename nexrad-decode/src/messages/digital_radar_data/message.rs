@@ -42,7 +42,6 @@ pub struct Message<'a> {
 
     /// Clutter filter power (CFP) data if included in the message.
     /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
-    /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
     clutter_filter_power_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 }
 

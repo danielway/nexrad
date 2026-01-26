@@ -1,5 +1,6 @@
 ---
 source: nexrad-model/tests/fixture_snapshots.rs
+assertion_line: 249
 expression: stats
 ---
 sweep_index: 0
@@ -15,4 +16,4 @@ differential_reflectivity:
   gate_count: 1192
   first_gate_range_km: 2.125
   gate_interval_km: 0.25
-  data_sha256: 37060cb0eafd907da5507e46495ee27f15263c18c5c088b377322fc7583d73d5
+  data_sha256: 65b642bf82b3241baede9d1f164e3e2932bb936afbbef3c0f665301c6d7a6945

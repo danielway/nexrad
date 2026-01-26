@@ -342,7 +342,7 @@ Message {
                     },
                 },
             ),
-            specific_diff_phase_data_block: Some(
+            clutter_filter_power_data_block: Some(
                 DataBlock {
                     id: DataBlockId {
                         inner: DataBlockId {

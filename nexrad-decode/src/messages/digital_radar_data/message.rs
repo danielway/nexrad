@@ -40,8 +40,10 @@ pub struct Message<'a> {
     /// Correlation coefficient data if included in the message.
     correlation_coefficient_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
-    /// Specific differential phase data if included in the message.
-    specific_diff_phase_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
+    /// Clutter filter power (CFP) data if included in the message.
+    /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
+    /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
+    clutter_filter_power_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 }
 
 impl<'a> Message<'a> {
@@ -72,7 +74,7 @@ impl<'a> Message<'a> {
             differential_reflectivity_data_block: None,
             differential_phase_data_block: None,
             correlation_coefficient_data_block: None,
-            specific_diff_phase_data_block: None,
+            clutter_filter_power_data_block: None,
         };
 
         for pointer in pointers {
@@ -162,7 +164,7 @@ impl<'a> Message<'a> {
                                 Some(DataBlock::new(id, generic_block));
                         }
                         b"CFP" => {
-                            message.specific_diff_phase_data_block =
+                            message.clutter_filter_power_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
                         _ => {
@@ -208,8 +210,8 @@ impl<'a> Message<'a> {
             correlation_coefficient_data_block: self
                 .correlation_coefficient_data_block
                 .map(|b| b.into_owned_with(|inner| inner.into_owned())),
-            specific_diff_phase_data_block: self
-                .specific_diff_phase_data_block
+            clutter_filter_power_data_block: self
+                .clutter_filter_power_data_block
                 .map(|b| b.into_owned_with(|inner| inner.into_owned())),
         }
     }
@@ -268,9 +270,17 @@ impl<'a> Message<'a> {
         self.correlation_coefficient_data_block.as_ref()
     }
 
-    /// Specific differential phase data if included in the message.
+    /// Clutter filter power (CFP) data if included in the message.
+    pub fn clutter_filter_power_data_block(
+        &self,
+    ) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
+        self.clutter_filter_power_data_block.as_ref()
+    }
+
+    /// Deprecated alias for clutter filter power (CFP) data.
+    #[deprecated(note = "CFP is clutter filter power; use clutter_filter_power_data_block")]
     pub fn specific_diff_phase_data_block(&self) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
-        self.specific_diff_phase_data_block.as_ref()
+        self.clutter_filter_power_data_block.as_ref()
     }
 
     /// Get a radial from this digital radar data message.
@@ -315,7 +325,7 @@ impl<'a> Message<'a> {
             self.correlation_coefficient_data_block
                 .as_ref()
                 .map(|block| block.moment_data()),
-            self.specific_diff_phase_data_block
+            self.clutter_filter_power_data_block
                 .as_ref()
                 .map(|block| block.moment_data()),
         ))
@@ -357,7 +367,7 @@ impl<'a> Message<'a> {
                 .map(|block| block.into_inner().into_moment_data()),
             self.correlation_coefficient_data_block
                 .map(|block| block.into_inner().into_moment_data()),
-            self.specific_diff_phase_data_block
+            self.clutter_filter_power_data_block
                 .map(|block| block.into_inner().into_moment_data()),
         ))
     }

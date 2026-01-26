@@ -498,7 +498,7 @@ fn test_at_least_one_moment_present() {
                     || radial.differential_reflectivity().is_some()
                     || radial.differential_phase().is_some()
                     || radial.correlation_coefficient().is_some()
-                    || radial.specific_differential_phase().is_some();
+                    || radial.clutter_filter_power().is_some();
 
                 assert!(
                     has_any_moment,

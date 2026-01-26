@@ -183,8 +183,8 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         ),
         (
             "CFP",
-            "Specific Diff Phase",
-            msg.specific_diff_phase_data_block(),
+            "Clutter Filter Power",
+            msg.clutter_filter_power_data_block(),
         ),
     ];
 
@@ -316,7 +316,7 @@ fn scaled_values_to_ascii(
         "ZDR" => (-8.0, 8.0),   // dB range for differential reflectivity
         "PHI" => (0.0, 360.0),  // degrees for differential phase
         "RHO" => (0.0, 1.05),   // unitless correlation coefficient
-        "CFP" => (0.0, 20.0),   // deg/km for specific differential phase
+        "CFP" => (-20.0, 20.0), // dB difference for clutter filter power
         _ => (-30.0, 75.0),     // default
     };
 

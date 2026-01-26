@@ -303,8 +303,8 @@ fn analyze_chunk(
                         add_data_type("Correlation Coefficient");
                     }
 
-                    if radar.specific_diff_phase_data_block().is_some() {
-                        add_data_type("Specific Differential Phase");
+                    if radar.clutter_filter_power_data_block().is_some() {
+                        add_data_type("Clutter Filter Power");
                     }
 
                     result

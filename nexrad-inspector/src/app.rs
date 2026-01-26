@@ -1093,7 +1093,7 @@ impl App {
                                     products.insert("RHO");
                                 }
                                 if digital_radar_data
-                                    .specific_diff_phase_data_block()
+                                    .clutter_filter_power_data_block()
                                     .is_some()
                                 {
                                     products.insert("CFP");

@@ -101,7 +101,7 @@ fn test_scan_moment_data_presence() {
     assert!(sweep0_radial.differential_reflectivity().is_some());
     assert!(sweep0_radial.differential_phase().is_some());
     assert!(sweep0_radial.correlation_coefficient().is_some());
-    assert!(sweep0_radial.specific_differential_phase().is_some());
+    assert!(sweep0_radial.clutter_filter_power().is_some());
 
     // Sweep 1: Doppler only (no dual-pol)
     let sweep1_radial = sweeps[1].radials().first().unwrap();
@@ -111,7 +111,7 @@ fn test_scan_moment_data_presence() {
     assert!(sweep1_radial.differential_reflectivity().is_none());
     assert!(sweep1_radial.differential_phase().is_none());
     assert!(sweep1_radial.correlation_coefficient().is_none());
-    assert!(sweep1_radial.specific_differential_phase().is_none());
+    assert!(sweep1_radial.clutter_filter_power().is_none());
 
     // Sweep 6: All moment types present
     let sweep6_radial = sweeps[6].radials().first().unwrap();
@@ -121,7 +121,7 @@ fn test_scan_moment_data_presence() {
     assert!(sweep6_radial.differential_reflectivity().is_some());
     assert!(sweep6_radial.differential_phase().is_some());
     assert!(sweep6_radial.correlation_coefficient().is_some());
-    assert!(sweep6_radial.specific_differential_phase().is_some());
+    assert!(sweep6_radial.clutter_filter_power().is_some());
 }
 
 #[test]

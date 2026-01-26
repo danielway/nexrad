@@ -15,7 +15,7 @@ sweeps:
       - ZDR
       - PHI
       - RHO
-      - KDP
+      - CFP
   - elevation_number: 2
     radial_count: 720
     first_azimuth_degrees: 177.23694
@@ -35,4 +35,4 @@ sweeps:
       - ZDR
       - PHI
       - RHO
-      - KDP
+      - CFP

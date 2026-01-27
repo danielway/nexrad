@@ -222,7 +222,13 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
             ));
 
             // Get decoded values and create ASCII visualization
-            let decoded = block.decoded_values();
+            let decoded = if id == "CFP" {
+                block.decoded_values_with_type(
+                    digital_radar_data::DataMomentGenericPointerType::ClutterFilterPower,
+                )
+            } else {
+                block.decoded_values()
+            };
             let gate_count = decoded.len();
 
             if gate_count > 0 {
@@ -254,6 +260,9 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
                     "VEL" => output.push_str(
                         "' '=below ' '..'-'=toward radar '='=zero '+'...'@'=away from radar '~'=folded",
                     ),
+                    "CFP" => output.push_str(
+                        "'!'=status ' '=below threshold '~'=range folded, intensity: . : - = + * # % @",
+                    ),
                     _ => output.push_str(
                         "' '=below threshold '~'=range folded, intensity: . : - = + * # % @",
                     ),
@@ -267,6 +276,8 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
                 let mut min_val = f32::MAX;
                 let mut max_val = f32::MIN;
                 let mut sum = 0.0f64;
+                let mut status_count = 0;
+                let mut reserved_count = 0;
 
                 for val in &decoded {
                     match val {
@@ -278,6 +289,15 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
                         }
                         digital_radar_data::ScaledMomentValue::BelowThreshold => below_count += 1,
                         digital_radar_data::ScaledMomentValue::RangeFolded => folded_count += 1,
+                        digital_radar_data::ScaledMomentValue::CfpStatus(status) => {
+                            status_count += 1;
+                            if matches!(
+                                status,
+                                digital_radar_data::CfpStatus::Reserved(_)
+                            ) {
+                                reserved_count += 1;
+                            }
+                        }
                     }
                 }
 
@@ -285,6 +305,12 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
                     "\nStats: {} values, {} below threshold, {} range folded\n",
                     value_count, below_count, folded_count
                 ));
+                if status_count > 0 {
+                    output.push_str(&format!(
+                        "CFP status: {} ({} reserved)\n",
+                        status_count, reserved_count
+                    ));
+                }
                 if value_count > 0 {
                     let avg = sum / value_count as f64;
                     output.push_str(&format!(
@@ -331,6 +357,7 @@ fn scaled_values_to_ascii(
             }
             digital_radar_data::ScaledMomentValue::BelowThreshold => ' ',
             digital_radar_data::ScaledMomentValue::RangeFolded => '~',
+            digital_radar_data::ScaledMomentValue::CfpStatus(_) => '!',
         })
         .collect()
 }

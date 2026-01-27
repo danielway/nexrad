@@ -22,7 +22,7 @@ mod volume_coverage_pattern;
 pub use volume_coverage_pattern::VolumeCoveragePattern;
 
 mod scaled_moment_value;
-pub use scaled_moment_value::ScaledMomentValue;
+pub use scaled_moment_value::{CfpStatus, ScaledMomentValue};
 
 mod spot_blanking_status;
 pub use spot_blanking_status::SpotBlankingStatus;

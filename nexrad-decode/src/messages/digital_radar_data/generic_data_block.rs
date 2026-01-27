@@ -1,5 +1,5 @@
 use super::raw;
-use super::{GenericDataBlockHeader, ScaledMomentValue};
+use super::{CfpStatus, DataMomentGenericPointerType, GenericDataBlockHeader, ScaledMomentValue};
 use crate::binary_data::BinaryData;
 use crate::result::Result;
 use crate::slice_reader::SliceReader;
@@ -62,6 +62,23 @@ impl<'a> GenericDataBlock<'a> {
     /// their floating point representation. Additionally, identifies special values such as "below
     /// threshold" and "range folded".
     pub fn decoded_values(&self) -> Vec<ScaledMomentValue> {
+        self.decode_generic()
+    }
+
+    /// Decodes raw moment values using the provided data moment type.
+    ///
+    /// CFP has special status codes (0..=7) and should not be decoded using the generic rules.
+    pub fn decoded_values_with_type(
+        &self,
+        moment_type: DataMomentGenericPointerType,
+    ) -> Vec<ScaledMomentValue> {
+        match moment_type {
+            DataMomentGenericPointerType::ClutterFilterPower => self.decode_cfp(),
+            _ => self.decode_generic(),
+        }
+    }
+
+    fn decode_generic(&self) -> Vec<ScaledMomentValue> {
         let scale = self.header.scale();
         let offset = self.header.offset();
 
@@ -77,6 +94,31 @@ impl<'a> GenericDataBlock<'a> {
             }
         };
 
+        self.decode_with(decode)
+    }
+
+    fn decode_cfp(&self) -> Vec<ScaledMomentValue> {
+        let scale = self.header.scale();
+        let offset = self.header.offset();
+
+        let decode = |raw_value: u16| match raw_value {
+            0 => ScaledMomentValue::CfpStatus(CfpStatus::FilterNotApplied),
+            1 => ScaledMomentValue::CfpStatus(CfpStatus::PointClutterFilterApplied),
+            2 => ScaledMomentValue::CfpStatus(CfpStatus::DualPolOnlyFilterApplied),
+            3..=7 => ScaledMomentValue::CfpStatus(CfpStatus::Reserved(raw_value as u8)),
+            _ => {
+                if scale == 0.0 {
+                    ScaledMomentValue::Value(raw_value as f32)
+                } else {
+                    ScaledMomentValue::Value((raw_value as f32 - offset) / scale)
+                }
+            }
+        };
+
+        self.decode_with(decode)
+    }
+
+    fn decode_with(&self, decode: impl Fn(u16) -> ScaledMomentValue) -> Vec<ScaledMomentValue> {
         if self.header.data_word_size() == 16 {
             // 16-bit moments store big-endian u16 values per gate.
             self.encoded_data
@@ -96,8 +138,12 @@ impl<'a> GenericDataBlock<'a> {
 
     /// Get moment data from this generic data block. Note that this will clone the underlying data.
     #[cfg(feature = "nexrad-model")]
-    pub fn moment_data(&self) -> nexrad_model::data::MomentData {
+    pub fn moment_data_with_kind(
+        &self,
+        kind: nexrad_model::data::MomentDataKind,
+    ) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
+            kind,
             self.header.number_of_data_moment_gates(),
             self.header.data_moment_range_raw(),
             self.header.data_moment_range_sample_interval_raw(),
@@ -108,10 +154,21 @@ impl<'a> GenericDataBlock<'a> {
         )
     }
 
+    /// Deprecated alias that uses an unknown moment kind.
+    #[cfg(feature = "nexrad-model")]
+    #[deprecated(note = "use moment_data_with_kind for correct CFP decoding")]
+    pub fn moment_data(&self) -> nexrad_model::data::MomentData {
+        self.moment_data_with_kind(nexrad_model::data::MomentDataKind::Unknown)
+    }
+
     /// Convert this generic data block into common model moment data.
     #[cfg(feature = "nexrad-model")]
-    pub fn into_moment_data(self) -> nexrad_model::data::MomentData {
+    pub fn into_moment_data_with_kind(
+        self,
+        kind: nexrad_model::data::MomentDataKind,
+    ) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
+            kind,
             self.header.number_of_data_moment_gates(),
             self.header.data_moment_range_raw(),
             self.header.data_moment_range_sample_interval_raw(),
@@ -121,11 +178,19 @@ impl<'a> GenericDataBlock<'a> {
             self.encoded_data.into_inner().into_owned(),
         )
     }
+
+    /// Deprecated alias that uses an unknown moment kind.
+    #[cfg(feature = "nexrad-model")]
+    #[deprecated(note = "use into_moment_data_with_kind for correct CFP decoding")]
+    pub fn into_moment_data(self) -> nexrad_model::data::MomentData {
+        self.into_moment_data_with_kind(nexrad_model::data::MomentDataKind::Unknown)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::messages::digital_radar_data::DataMomentGenericPointerType;
     use crate::messages::primitive_aliases::{Integer2, Integer4, Real4, ScaledInteger2};
     use std::borrow::Cow;
 
@@ -163,5 +228,51 @@ mod tests {
             ScaledMomentValue::Value(v) => assert!((v - 10.0).abs() < 0.01),
             _ => panic!("Expected Value"),
         }
+    }
+
+    #[test]
+    fn test_decoded_values_cfp_status_codes() {
+        let raw_header = raw::GenericDataBlockHeader {
+            reserved: Integer4::new(0),
+            number_of_data_moment_gates: Integer2::new(6),
+            data_moment_range: ScaledInteger2::new(0),
+            data_moment_range_sample_interval: ScaledInteger2::new(1),
+            tover: ScaledInteger2::new(0),
+            snr_threshold: ScaledInteger2::new(0),
+            control_flags: 0,
+            data_word_size: 8,
+            scale: Real4::new(1.0),
+            offset: Real4::new(0.0),
+        };
+
+        let header = GenericDataBlockHeader::new(&raw_header);
+        let encoded = vec![0, 1, 2, 3, 7, 8];
+        let block = GenericDataBlock {
+            header,
+            encoded_data: BinaryData::new(Cow::Owned(encoded)),
+        };
+
+        let decoded = block.decoded_values_with_type(DataMomentGenericPointerType::ClutterFilterPower);
+        assert_eq!(
+            decoded[0],
+            ScaledMomentValue::CfpStatus(CfpStatus::FilterNotApplied)
+        );
+        assert_eq!(
+            decoded[1],
+            ScaledMomentValue::CfpStatus(CfpStatus::PointClutterFilterApplied)
+        );
+        assert_eq!(
+            decoded[2],
+            ScaledMomentValue::CfpStatus(CfpStatus::DualPolOnlyFilterApplied)
+        );
+        assert_eq!(
+            decoded[3],
+            ScaledMomentValue::CfpStatus(CfpStatus::Reserved(3))
+        );
+        assert_eq!(
+            decoded[4],
+            ScaledMomentValue::CfpStatus(CfpStatus::Reserved(7))
+        );
+        assert_eq!(decoded[5], ScaledMomentValue::Value(8.0));
     }
 }

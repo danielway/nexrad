@@ -151,6 +151,15 @@ fn hash_moment_values(values: &[nexrad_model::data::MomentValue]) -> String {
             MomentValue::RangeFolded => {
                 hasher.update([1u8]);
             }
+            MomentValue::CfpStatus(status) => {
+                let code = match status {
+                    nexrad_model::data::CfpStatus::FilterNotApplied => 0u8,
+                    nexrad_model::data::CfpStatus::PointClutterFilterApplied => 1u8,
+                    nexrad_model::data::CfpStatus::DualPolOnlyFilterApplied => 2u8,
+                    nexrad_model::data::CfpStatus::Reserved(v) => *v,
+                };
+                hasher.update([2u8, code]);
+            }
         }
     }
     hex::encode(hasher.finalize())

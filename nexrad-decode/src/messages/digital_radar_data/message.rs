@@ -41,7 +41,6 @@ pub struct Message<'a> {
     correlation_coefficient_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Clutter filter power (CFP) data if included in the message.
-    /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
     clutter_filter_power_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 }
 
@@ -270,9 +269,8 @@ impl<'a> Message<'a> {
     }
 
     /// Clutter filter power (CFP) data if included in the message.
-    pub fn clutter_filter_power_data_block(
-        &self,
-    ) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
+    /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
+    pub fn clutter_filter_power_data_block(&self) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
         self.clutter_filter_power_data_block.as_ref()
     }
 

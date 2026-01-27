@@ -2,9 +2,9 @@
 
 use nexrad_render::{
     get_clutter_filter_power_scale, get_correlation_coefficient_scale, get_default_scale,
-    get_differential_phase_scale, get_differential_reflectivity_scale,
-    get_nws_reflectivity_scale, get_spectrum_width_scale, get_velocity_scale, Color,
-    ColorScaleLevel, DiscreteColorScale, Product,
+    get_differential_phase_scale, get_differential_reflectivity_scale, get_nws_reflectivity_scale,
+    get_spectrum_width_scale, get_velocity_scale, Color, ColorScaleLevel, DiscreteColorScale,
+    Product,
 };
 
 #[test]

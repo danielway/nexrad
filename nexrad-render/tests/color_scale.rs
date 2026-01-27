@@ -1,8 +1,8 @@
 //! Tests for color scale functionality.
 
 use nexrad_render::{
-    get_correlation_coefficient_scale, get_default_scale, get_differential_phase_scale,
-    get_differential_reflectivity_scale, get_nws_reflectivity_scale, get_specific_diff_phase_scale,
+    get_clutter_filter_power_scale, get_correlation_coefficient_scale, get_default_scale,
+    get_differential_phase_scale, get_differential_reflectivity_scale, get_nws_reflectivity_scale,
     get_spectrum_width_scale, get_velocity_scale, Color, ColorScaleLevel, DiscreteColorScale,
     Product,
 };
@@ -227,23 +227,23 @@ fn test_differential_phase_scale() {
     assert_eq!(color, Color::rgb(1.0, 0.0, 0.0));
 }
 
-// Tests for specific differential phase scale
+// Tests for clutter filter power scale
 
 #[test]
-fn test_specific_diff_phase_scale() {
-    let scale = get_specific_diff_phase_scale();
+fn test_clutter_filter_power_scale() {
+    let scale = get_clutter_filter_power_scale();
 
-    // Low KDP should be gray
-    let color = scale.get_color(0.25);
+    // Negative CFP should be blue
+    let color = scale.get_color(-15.0);
+    assert_eq!(color, Color::rgb(0.0, 0.0, 0.5451));
+
+    // Near-zero CFP should be gray
+    let color = scale.get_color(0.0);
     assert_eq!(color, Color::rgb(0.6627, 0.6627, 0.6627));
 
-    // Moderate KDP should be green
-    let color = scale.get_color(2.5);
-    assert_eq!(color, Color::rgb(0.0, 0.8039, 0.0));
-
-    // High KDP should be red
-    let color = scale.get_color(8.0);
-    assert_eq!(color, Color::rgb(1.0, 0.0, 0.0));
+    // Positive CFP should be red
+    let color = scale.get_color(12.0);
+    assert_eq!(color, Color::rgb(1.0, 0.4118, 0.4118));
 }
 
 // Tests for get_default_scale
@@ -278,7 +278,7 @@ fn test_get_default_scale_all_products() {
         Product::DifferentialReflectivity,
         Product::DifferentialPhase,
         Product::CorrelationCoefficient,
-        Product::SpecificDiffPhase,
+        Product::ClutterFilterPower,
     ];
 
     for product in products {

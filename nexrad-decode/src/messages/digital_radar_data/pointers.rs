@@ -37,6 +37,6 @@ pub enum DataMomentGenericPointerType {
     DifferentialPhase,
     /// Correlation coefficient (unitless) moment data.
     CorrelationCoefficient,
-    /// Specific differential phase (degrees/km) moment data.
-    SpecificDiffPhase,
+    /// Clutter filter power (CFP) moment data.
+    ClutterFilterPower,
 }

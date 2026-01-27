@@ -41,7 +41,7 @@ fn create_test_radial(azimuth_degrees: f32, reflectivity_value: u8) -> Radial {
         None,              // differential_reflectivity
         None,              // differential_phase
         None,              // correlation_coefficient
-        None,              // specific_differential_phase
+        None,              // clutter_filter_power
     )
 }
 

@@ -101,8 +101,8 @@ fn create_scan_metadata_snapshot(scan: &Scan) -> ScanMetadataSnapshot {
                             if r.correlation_coefficient().is_some() {
                                 moments.push("RHO".to_string());
                             }
-                            if r.specific_differential_phase().is_some() {
-                                moments.push("KDP".to_string());
+                            if r.clutter_filter_power().is_some() {
+                                moments.push("CFP".to_string());
                             }
                             moments
                         })

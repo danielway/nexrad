@@ -34,7 +34,7 @@ pub struct Radial {
     differential_reflectivity: Option<MomentData>,
     differential_phase: Option<MomentData>,
     correlation_coefficient: Option<MomentData>,
-    specific_differential_phase: Option<MomentData>,
+    clutter_filter_power: Option<MomentData>,
 }
 
 impl Radial {
@@ -53,7 +53,7 @@ impl Radial {
         differential_reflectivity: Option<MomentData>,
         differential_phase: Option<MomentData>,
         correlation_coefficient: Option<MomentData>,
-        specific_differential_phase: Option<MomentData>,
+        clutter_filter_power: Option<MomentData>,
     ) -> Self {
         Self {
             collection_timestamp,
@@ -69,7 +69,7 @@ impl Radial {
             differential_reflectivity,
             differential_phase,
             correlation_coefficient,
-            specific_differential_phase,
+            clutter_filter_power,
         }
     }
 
@@ -163,9 +163,10 @@ impl Radial {
         self.correlation_coefficient.as_ref()
     }
 
-    /// Specific differential phase data for this radial if available.
-    pub fn specific_differential_phase(&self) -> Option<&MomentData> {
-        self.specific_differential_phase.as_ref()
+    /// Clutter filter power (CFP) data for this radial if available.
+    /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
+    pub fn clutter_filter_power(&self) -> Option<&MomentData> {
+        self.clutter_filter_power.as_ref()
     }
 }
 
@@ -214,10 +215,7 @@ impl Debug for Radial {
 
         debug.field("correlation_coefficient", &self.correlation_coefficient());
 
-        debug.field(
-            "specific_differential_phase",
-            &self.specific_differential_phase(),
-        );
+        debug.field("clutter_filter_power", &self.clutter_filter_power());
 
         debug.finish()
     }

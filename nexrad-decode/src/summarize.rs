@@ -143,8 +143,8 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                         if radar_data.correlation_coefficient_data_block().is_some() {
                             increment_count("Correlation Coefficient");
                         }
-                        if radar_data.specific_diff_phase_data_block().is_some() {
-                            increment_count("Specific Differential Phase");
+                        if radar_data.clutter_filter_power_data_block().is_some() {
+                            increment_count("Clutter Filter Power");
                         }
                     }
                 }

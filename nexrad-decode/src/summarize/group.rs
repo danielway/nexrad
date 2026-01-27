@@ -91,7 +91,7 @@ impl Display for MessageGroupSummary {
                             "Differential Reflectivity" => "ZDR",
                             "Differential Phase" => "DP",
                             "Correlation Coefficient" => "CC",
-                            "Specific Differential Phase" => "KDP",
+                            "Clutter Filter Power" => "CFP",
                             _ => data_type,
                         };
 

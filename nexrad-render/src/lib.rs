@@ -73,8 +73,8 @@ pub enum Product {
     DifferentialPhase,
     /// Correlation coefficient. Correlation between polarizations (0-1).
     CorrelationCoefficient,
-    /// Specific differential phase (degrees/km). Rate of differential phase change.
-    SpecificDiffPhase,
+    /// Clutter filter power (CFP). Difference between clutter-filtered and unfiltered reflectivity.
+    ClutterFilterPower,
 }
 
 /// Options for rendering radar radials.
@@ -323,7 +323,7 @@ pub fn render_radials_default(
 /// | DifferentialReflectivity | Divergent (-2 to +6 dB) |
 /// | DifferentialPhase | Sequential (0 to 360 deg) |
 /// | CorrelationCoefficient | Sequential (0 to 1) |
-/// | SpecificDiffPhase | Sequential (0 to 10 deg/km) |
+/// | ClutterFilterPower | Divergent (-20 to +20 dB) |
 pub fn get_default_scale(product: Product) -> DiscreteColorScale {
     match product {
         Product::Reflectivity => get_nws_reflectivity_scale(),
@@ -332,7 +332,7 @@ pub fn get_default_scale(product: Product) -> DiscreteColorScale {
         Product::DifferentialReflectivity => get_differential_reflectivity_scale(),
         Product::DifferentialPhase => get_differential_phase_scale(),
         Product::CorrelationCoefficient => get_correlation_coefficient_scale(),
-        Product::SpecificDiffPhase => get_specific_diff_phase_scale(),
+        Product::ClutterFilterPower => get_clutter_filter_power_scale(),
     }
 }
 
@@ -348,7 +348,7 @@ pub fn get_product_value_range(product: Product) -> (f32, f32) {
         Product::DifferentialReflectivity => (-2.0, 6.0),
         Product::DifferentialPhase => (0.0, 360.0),
         Product::CorrelationCoefficient => (0.0, 1.0),
-        Product::SpecificDiffPhase => (0.0, 10.0),
+        Product::ClutterFilterPower => (-20.0, 20.0),
     }
 }
 
@@ -408,6 +408,6 @@ fn get_radial_moment(product: Product, radial: &Radial) -> Option<&MomentData> {
         Product::DifferentialReflectivity => radial.differential_reflectivity(),
         Product::DifferentialPhase => radial.differential_phase(),
         Product::CorrelationCoefficient => radial.correlation_coefficient(),
-        Product::SpecificDiffPhase => radial.specific_differential_phase(),
+        Product::ClutterFilterPower => radial.clutter_filter_power(),
     }
 }

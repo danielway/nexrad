@@ -394,29 +394,31 @@ pub fn get_differential_phase_scale() -> DiscreteColorScale {
     ])
 }
 
-/// Returns a color scale for specific differential phase (KDP) data.
+/// Returns a color scale for clutter filter power (CFP) data.
 ///
-/// This sequential scale shows the rate of differential phase change,
-/// which correlates with rainfall rate. Higher KDP indicates heavier rain.
-/// Range: 0 to 10 degrees/km.
+/// This divergent scale centers around 0 dB, showing negative values
+/// (filtered reflectivity lower than unfiltered) in blues and positive
+/// values in reds.
+/// Default range: -20 to +20 dB.
 ///
-/// | KDP (deg/km) | Color | Meaning |
-/// |--------------|-------|---------|
-/// | 0-0.5 | Gray | Very light/no rain |
-/// | 0.5-1.0 | Light Blue | Light rain |
-/// | 1.0-2.0 | Blue | Light-moderate rain |
-/// | 2.0-3.0 | Green | Moderate rain |
-/// | 3.0-4.5 | Yellow | Moderate-heavy rain |
-/// | 4.5-6.0 | Orange | Heavy rain |
-/// | 6.0-10.0 | Red | Very heavy rain |
-pub fn get_specific_diff_phase_scale() -> DiscreteColorScale {
+/// | CFP (dB) | Color | Meaning |
+/// |----------|-------|---------|
+/// | -20 to -10 | Dark Blue | Strong filtering |
+/// | -10 to -5 | Blue | Moderate filtering |
+/// | -5 to -1 | Light Blue | Light filtering |
+/// | -1 to +1 | Gray | Near zero |
+/// | +1 to +5 | Light Red | Slight increase |
+/// | +5 to +10 | Red | Moderate increase |
+/// | +10 to +20 | Dark Red | Strong increase |
+pub fn get_clutter_filter_power_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
-        ColorScaleLevel::new(0.0, Color::rgb(0.6627, 0.6627, 0.6627)),
-        ColorScaleLevel::new(0.5, Color::rgb(0.6784, 0.8471, 0.9020)),
-        ColorScaleLevel::new(1.0, Color::rgb(0.0000, 0.0000, 0.8039)),
-        ColorScaleLevel::new(2.0, Color::rgb(0.0000, 0.8039, 0.0000)),
-        ColorScaleLevel::new(3.0, Color::rgb(0.9333, 0.9333, 0.0000)),
-        ColorScaleLevel::new(4.5, Color::rgb(1.0000, 0.6471, 0.0000)),
-        ColorScaleLevel::new(6.0, Color::rgb(1.0000, 0.0000, 0.0000)),
+        ColorScaleLevel::new(-20.0, Color::rgb(0.0000, 0.0000, 0.5451)),
+        ColorScaleLevel::new(-10.0, Color::rgb(0.0000, 0.0000, 0.8039)),
+        ColorScaleLevel::new(-5.0, Color::rgb(0.6784, 0.8471, 0.9020)),
+        ColorScaleLevel::new(-1.0, Color::rgb(0.6627, 0.6627, 0.6627)),
+        ColorScaleLevel::new(1.0, Color::rgb(0.6627, 0.6627, 0.6627)),
+        ColorScaleLevel::new(5.0, Color::rgb(1.0000, 0.7529, 0.7961)),
+        ColorScaleLevel::new(10.0, Color::rgb(1.0000, 0.4118, 0.4118)),
+        ColorScaleLevel::new(20.0, Color::rgb(0.8039, 0.0000, 0.0000)),
     ])
 }

@@ -76,6 +76,10 @@ impl<'a> Message<'a> {
         };
 
         for pointer in pointers {
+            if pointer == 0 {
+                continue;
+            }
+
             let relative_position = reader.position() - start_position;
             let pointer_position = pointer as usize;
 
@@ -278,7 +282,9 @@ impl<'a> Message<'a> {
     #[cfg(feature = "nexrad-model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
+        use nexrad_model::data::{
+            MomentDataKind, Radial, RadialStatus as ModelRadialStatus,
+        };
 
         Ok(Radial::new(
             self.header
@@ -300,25 +306,25 @@ impl<'a> Message<'a> {
             self.header.elevation_angle_raw(),
             self.reflectivity_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.moment_data_with_kind(MomentDataKind::Reflectivity)),
             self.velocity_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.moment_data_with_kind(MomentDataKind::Velocity)),
             self.spectrum_width_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.moment_data_with_kind(MomentDataKind::SpectrumWidth)),
             self.differential_reflectivity_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.moment_data_with_kind(MomentDataKind::DifferentialReflectivity)),
             self.differential_phase_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.moment_data_with_kind(MomentDataKind::DifferentialPhase)),
             self.correlation_coefficient_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.moment_data_with_kind(MomentDataKind::CorrelationCoefficient)),
             self.clutter_filter_power_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.moment_data_with_kind(MomentDataKind::ClutterFilterPower)),
         ))
     }
 
@@ -326,7 +332,9 @@ impl<'a> Message<'a> {
     #[cfg(feature = "nexrad-model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
+        use nexrad_model::data::{
+            MomentDataKind, Radial, RadialStatus as ModelRadialStatus,
+        };
 
         Ok(Radial::new(
             self.header
@@ -347,19 +355,58 @@ impl<'a> Message<'a> {
             self.header.elevation_number(),
             self.header.elevation_angle_raw(),
             self.reflectivity_data_block
-                .map(|block| block.into_inner().into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::Reflectivity)),
             self.velocity_data_block
-                .map(|block| block.into_inner().into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::Velocity)),
             self.spectrum_width_data_block
-                .map(|block| block.into_inner().into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::SpectrumWidth)),
             self.differential_reflectivity_data_block
-                .map(|block| block.into_inner().into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::DifferentialReflectivity)),
             self.differential_phase_data_block
-                .map(|block| block.into_inner().into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::DifferentialPhase)),
             self.correlation_coefficient_data_block
-                .map(|block| block.into_inner().into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::CorrelationCoefficient)),
             self.clutter_filter_power_data_block
-                .map(|block| block.into_inner().into_moment_data()),
+                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::ClutterFilterPower)),
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Message;
+    use crate::slice_reader::SliceReader;
+
+    fn build_header_bytes(data_block_count: u16) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"TEST"); // radar_identifier
+        bytes.extend_from_slice(&0u32.to_be_bytes()); // time
+        bytes.extend_from_slice(&0u16.to_be_bytes()); // date
+        bytes.extend_from_slice(&0u16.to_be_bytes()); // azimuth_number
+        bytes.extend_from_slice(&0f32.to_be_bytes()); // azimuth_angle
+        bytes.push(0); // compression_indicator
+        bytes.push(0); // spare
+        bytes.extend_from_slice(&0u16.to_be_bytes()); // radial_length
+        bytes.push(0); // azimuth_resolution_spacing
+        bytes.push(0); // radial_status
+        bytes.push(0); // elevation_number
+        bytes.push(0); // cut_sector_number
+        bytes.extend_from_slice(&0f32.to_be_bytes()); // elevation_angle
+        bytes.push(0); // radial_spot_blanking_status
+        bytes.push(0); // azimuth_indexing_mode
+        bytes.extend_from_slice(&data_block_count.to_be_bytes()); // data_block_count
+        bytes
+    }
+
+    #[test]
+    fn test_parse_skips_zero_pointers() {
+        let mut bytes = build_header_bytes(1);
+        bytes.extend_from_slice(&0u32.to_be_bytes()); // pointer = 0
+
+        let mut reader = SliceReader::new(&bytes);
+        let message = Message::parse(&mut reader).expect("parse should succeed");
+
+        assert!(message.reflectivity_data_block().is_none());
+        assert!(message.velocity_data_block().is_none());
     }
 }

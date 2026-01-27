@@ -1,6 +1,9 @@
 //! Unit tests for nexrad-model types.
 
-use nexrad_model::data::{MomentData, MomentValue, PulseWidth, Scan, Sweep, VolumeCoveragePattern};
+use nexrad_model::data::{
+    CfpStatus, MomentData, MomentDataKind, MomentValue, PulseWidth, Scan, Sweep,
+    VolumeCoveragePattern,
+};
 use nexrad_model::meta::Site;
 
 /// Helper to create a minimal VCP for testing
@@ -126,11 +129,21 @@ fn test_sweep_merge_different_elevation() {
 #[test]
 fn test_moment_data_creation() {
     let values = vec![0, 1, 50, 100, 150, 200, 255];
-    let moment = MomentData::from_fixed_point(7, 500, 250, 8, 2.0, 33.0, values);
+    let moment = MomentData::from_fixed_point(
+        MomentDataKind::Reflectivity,
+        7,
+        500,
+        250,
+        8,
+        2.0,
+        33.0,
+        values,
+    );
 
     assert_eq!(moment.gate_count(), 7);
     assert!((moment.first_gate_range_km() - 0.5).abs() < 0.001);
     assert!((moment.gate_interval_km() - 0.25).abs() < 0.001);
+    assert_eq!(moment.kind(), MomentDataKind::Reflectivity);
 }
 
 #[test]
@@ -143,7 +156,16 @@ fn test_moment_data_values_with_scale() {
     // raw=100 -> (100 - 33) / 2 = 33.5
 
     let values = vec![0, 1, 50, 100];
-    let moment = MomentData::from_fixed_point(4, 500, 250, 8, 2.0, 33.0, values);
+    let moment = MomentData::from_fixed_point(
+        MomentDataKind::Reflectivity,
+        4,
+        500,
+        250,
+        8,
+        2.0,
+        33.0,
+        values,
+    );
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 4);
@@ -168,7 +190,16 @@ fn test_moment_data_values_with_scale() {
 fn test_moment_data_values_without_scale() {
     // When scale=0.0, raw values are passed through directly
     let values = vec![0, 1, 50, 100];
-    let moment = MomentData::from_fixed_point(4, 500, 250, 8, 0.0, 0.0, values);
+    let moment = MomentData::from_fixed_point(
+        MomentDataKind::Reflectivity,
+        4,
+        500,
+        250,
+        8,
+        0.0,
+        0.0,
+        values,
+    );
 
     let decoded_values = moment.values();
 
@@ -189,7 +220,16 @@ fn test_moment_data_values_16bit_with_scale() {
     // Two 16-bit big-endian values: 20 and 30
     // With scale=2.0, offset=10.0 => 5.0 and 10.0
     let values = vec![0x00, 0x14, 0x00, 0x1E];
-    let moment = MomentData::from_fixed_point(2, 500, 250, 16, 2.0, 10.0, values);
+    let moment = MomentData::from_fixed_point(
+        MomentDataKind::Reflectivity,
+        2,
+        500,
+        250,
+        16,
+        2.0,
+        10.0,
+        values,
+    );
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 2);
@@ -211,7 +251,16 @@ fn test_moment_data_values_16bit_with_scale() {
 fn test_moment_data_values_16bit_special_values() {
     // 16-bit raw values 0 and 1 should map to special cases when scale != 0.
     let values = vec![0x00, 0x00, 0x00, 0x01];
-    let moment = MomentData::from_fixed_point(2, 500, 250, 16, 2.0, 0.0, values);
+    let moment = MomentData::from_fixed_point(
+        MomentDataKind::Reflectivity,
+        2,
+        500,
+        250,
+        16,
+        2.0,
+        0.0,
+        values,
+    );
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 2);
@@ -220,13 +269,60 @@ fn test_moment_data_values_16bit_special_values() {
 }
 
 #[test]
+fn test_cfp_moment_values_status_and_data() {
+    let values = vec![0, 1, 2, 3, 7, 8, 10];
+    let moment = MomentData::from_fixed_point(
+        MomentDataKind::ClutterFilterPower,
+        7,
+        500,
+        250,
+        8,
+        1.0,
+        0.0,
+        values,
+    );
+
+    let decoded = moment.values();
+    assert_eq!(
+        decoded[0],
+        MomentValue::CfpStatus(CfpStatus::FilterNotApplied)
+    );
+    assert_eq!(
+        decoded[1],
+        MomentValue::CfpStatus(CfpStatus::PointClutterFilterApplied)
+    );
+    assert_eq!(
+        decoded[2],
+        MomentValue::CfpStatus(CfpStatus::DualPolOnlyFilterApplied)
+    );
+    assert_eq!(
+        decoded[3],
+        MomentValue::CfpStatus(CfpStatus::Reserved(3))
+    );
+    assert_eq!(
+        decoded[4],
+        MomentValue::CfpStatus(CfpStatus::Reserved(7))
+    );
+    assert_eq!(decoded[5], MomentValue::Value(8.0));
+    assert_eq!(decoded[6], MomentValue::Value(10.0));
+}
+
+#[test]
 fn test_moment_value_equality() {
     assert_eq!(MomentValue::BelowThreshold, MomentValue::BelowThreshold);
     assert_eq!(MomentValue::RangeFolded, MomentValue::RangeFolded);
     assert_eq!(MomentValue::Value(10.0), MomentValue::Value(10.0));
+    assert_eq!(
+        MomentValue::CfpStatus(CfpStatus::FilterNotApplied),
+        MomentValue::CfpStatus(CfpStatus::FilterNotApplied)
+    );
 
     assert_ne!(MomentValue::BelowThreshold, MomentValue::RangeFolded);
     assert_ne!(MomentValue::Value(10.0), MomentValue::Value(20.0));
+    assert_ne!(
+        MomentValue::CfpStatus(CfpStatus::FilterNotApplied),
+        MomentValue::CfpStatus(CfpStatus::PointClutterFilterApplied)
+    );
 }
 
 #[test]
@@ -240,4 +336,7 @@ fn test_moment_value_debug() {
 
     let debug = format!("{:?}", MomentValue::RangeFolded);
     assert!(debug.contains("RangeFolded"));
+
+    let debug = format!("{:?}", MomentValue::CfpStatus(CfpStatus::Reserved(7)));
+    assert!(debug.contains("CfpStatus"));
 }

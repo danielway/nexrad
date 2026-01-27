@@ -291,6 +291,7 @@ fn test_scan_moment_values() {
                 has_below_threshold = true;
             }
             MomentValue::RangeFolded => {}
+            MomentValue::CfpStatus(_) => {}
         }
     }
 

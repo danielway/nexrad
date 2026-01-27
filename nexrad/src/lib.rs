@@ -42,39 +42,6 @@
 //! # Ok::<(), nexrad::Error>(())
 //! ```
 //!
-//! ## Terminology
-//!
-//! The [`prelude`] module provides type aliases that align with standard radar terminology:
-//!
-//! | Term | Type | Description |
-//! |------|------|-------------|
-//! | Volume | `model::data::Scan` | Complete radar scan at multiple elevations |
-//! | Sweep | `model::data::Sweep` | Single rotation at one elevation angle |
-//! | Radial | `model::data::Radial` | Single beam direction with moment data |
-//! | Moment | `model::data::MomentData` | Per-gate measurements for one data type |
-//! | Gate | `model::data::MomentValue` | Individual range bin measurement |
-//!
-//! ```ignore
-//! use nexrad::prelude::*;
-//!
-//! let volume: Volume = nexrad::load_file("radar.ar2v")?;
-//! for sweep in volume.sweeps() {
-//!     for radial in sweep.radials() {
-//!         // Access reflectivity moment data
-//!         if let Some(moment) = radial.reflectivity() {
-//!             for gate in moment.values() {
-//!                 match gate {
-//!                     GateValue::Value(dbz) => println!("dBZ: {}", dbz),
-//!                     GateValue::BelowThreshold => {},
-//!                     _ => {}
-//!                 }
-//!             }
-//!         }
-//!     }
-//! }
-//! # Ok::<(), nexrad::Error>(())
-//! ```
-//!
 //! ## Features
 //!
 //! All core features are enabled by default. Additional features can be enabled:
@@ -249,8 +216,6 @@
 #![warn(clippy::correctness)]
 #![deny(missing_docs)]
 
-/// Common types and terminology aliases for NEXRAD data.
-pub mod prelude;
 /// Unified error types for the NEXRAD facade crate.
 pub mod result;
 

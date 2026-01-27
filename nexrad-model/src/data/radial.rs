@@ -34,7 +34,6 @@ pub struct Radial {
     differential_reflectivity: Option<MomentData>,
     differential_phase: Option<MomentData>,
     correlation_coefficient: Option<MomentData>,
-    #[cfg_attr(feature = "serde", serde(alias = "specific_differential_phase"))]
     clutter_filter_power: Option<MomentData>,
 }
 
@@ -167,12 +166,6 @@ impl Radial {
     /// Clutter filter power (CFP) data for this radial if available.
     /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
     pub fn clutter_filter_power(&self) -> Option<&MomentData> {
-        self.clutter_filter_power.as_ref()
-    }
-
-    /// Deprecated alias for clutter filter power (CFP) data.
-    #[deprecated(note = "CFP is clutter filter power; use clutter_filter_power")]
-    pub fn specific_differential_phase(&self) -> Option<&MomentData> {
         self.clutter_filter_power.as_ref()
     }
 }

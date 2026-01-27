@@ -39,7 +39,4 @@ pub enum DataMomentGenericPointerType {
     CorrelationCoefficient,
     /// Clutter filter power (CFP) moment data.
     ClutterFilterPower,
-    /// Deprecated alias for clutter filter power (CFP) moment data.
-    #[deprecated(note = "CFP is clutter filter power; use ClutterFilterPower")]
-    SpecificDiffPhase,
 }

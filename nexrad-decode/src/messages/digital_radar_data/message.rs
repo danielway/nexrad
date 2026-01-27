@@ -276,12 +276,6 @@ impl<'a> Message<'a> {
         self.clutter_filter_power_data_block.as_ref()
     }
 
-    /// Deprecated alias for clutter filter power (CFP) data.
-    #[deprecated(note = "CFP is clutter filter power; use clutter_filter_power_data_block")]
-    pub fn specific_diff_phase_data_block(&self) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
-        self.clutter_filter_power_data_block.as_ref()
-    }
-
     /// Get a radial from this digital radar data message.
     #[cfg(feature = "nexrad-model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {

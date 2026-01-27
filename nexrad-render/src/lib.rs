@@ -75,9 +75,6 @@ pub enum Product {
     CorrelationCoefficient,
     /// Clutter filter power (CFP). Difference between clutter-filtered and unfiltered reflectivity.
     ClutterFilterPower,
-    /// Deprecated alias for clutter filter power (CFP).
-    #[deprecated(note = "CFP is clutter filter power; use ClutterFilterPower")]
-    SpecificDiffPhase,
 }
 
 /// Options for rendering radar radials.
@@ -335,7 +332,7 @@ pub fn get_default_scale(product: Product) -> DiscreteColorScale {
         Product::DifferentialReflectivity => get_differential_reflectivity_scale(),
         Product::DifferentialPhase => get_differential_phase_scale(),
         Product::CorrelationCoefficient => get_correlation_coefficient_scale(),
-        Product::ClutterFilterPower | Product::SpecificDiffPhase => get_clutter_filter_power_scale(),
+        Product::ClutterFilterPower => get_clutter_filter_power_scale(),
     }
 }
 
@@ -351,7 +348,7 @@ pub fn get_product_value_range(product: Product) -> (f32, f32) {
         Product::DifferentialReflectivity => (-2.0, 6.0),
         Product::DifferentialPhase => (0.0, 360.0),
         Product::CorrelationCoefficient => (0.0, 1.0),
-        Product::ClutterFilterPower | Product::SpecificDiffPhase => (-20.0, 20.0),
+        Product::ClutterFilterPower => (-20.0, 20.0),
     }
 }
 
@@ -411,6 +408,6 @@ fn get_radial_moment(product: Product, radial: &Radial) -> Option<&MomentData> {
         Product::DifferentialReflectivity => radial.differential_reflectivity(),
         Product::DifferentialPhase => radial.differential_phase(),
         Product::CorrelationCoefficient => radial.correlation_coefficient(),
-        Product::ClutterFilterPower | Product::SpecificDiffPhase => radial.clutter_filter_power(),
+        Product::ClutterFilterPower => radial.clutter_filter_power(),
     }
 }

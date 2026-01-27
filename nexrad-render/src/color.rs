@@ -422,9 +422,3 @@ pub fn get_clutter_filter_power_scale() -> DiscreteColorScale {
         ColorScaleLevel::new(20.0, Color::rgb(0.8039, 0.0000, 0.0000)),
     ])
 }
-
-/// Deprecated alias for the clutter filter power (CFP) scale.
-#[deprecated(note = "CFP is clutter filter power; use get_clutter_filter_power_scale")]
-pub fn get_specific_diff_phase_scale() -> DiscreteColorScale {
-    get_clutter_filter_power_scale()
-}

@@ -186,7 +186,6 @@ fn scaled_values_to_ascii(values: &[ScaledMomentValue]) -> String {
             }
             ScaledMomentValue::BelowThreshold => ' ',
             ScaledMomentValue::RangeFolded => '~',
-            ScaledMomentValue::CfpStatus(_) => '!',
         })
         .collect()
 }

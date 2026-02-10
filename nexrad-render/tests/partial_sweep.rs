@@ -3,7 +3,7 @@
 //! When rendering a subset of radials that doesn't cover the full 360° azimuth,
 //! pixels in uncovered azimuth sectors should remain the background color.
 
-use nexrad_model::data::{MomentData, MomentDataKind, Radial, RadialStatus};
+use nexrad_model::data::{MomentData, Radial, RadialStatus};
 use nexrad_render::{render_radials, Product, RenderOptions};
 
 /// Creates a test radial at the given azimuth angle with uniform reflectivity data.
@@ -18,7 +18,6 @@ fn create_test_radial(azimuth_degrees: f32, reflectivity_value: u8) -> Radial {
 
     let values = vec![reflectivity_value; gate_count as usize];
     let moment_data = MomentData::from_fixed_point(
-        MomentDataKind::Reflectivity,
         gate_count,
         first_gate_range_m,
         gate_interval_m,

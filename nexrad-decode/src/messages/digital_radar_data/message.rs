@@ -1,7 +1,7 @@
 use super::raw;
 use super::{
-    DataBlock, DataBlockId, ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock,
-    RadialStatus, VolumeDataBlock,
+    CFPDataBlock, DataBlock, DataBlockId, ElevationDataBlock, GenericDataBlock, Header,
+    RadialDataBlock, RadialStatus, VolumeDataBlock,
 };
 use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
@@ -41,7 +41,7 @@ pub struct Message<'a> {
     correlation_coefficient_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Clutter filter power (CFP) data if included in the message.
-    clutter_filter_power_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
+    clutter_filter_power_data_block: Option<DataBlock<'a, CFPDataBlock<'a>>>,
 }
 
 impl<'a> Message<'a> {
@@ -167,7 +167,7 @@ impl<'a> Message<'a> {
                         }
                         b"CFP" => {
                             message.clutter_filter_power_data_block =
-                                Some(DataBlock::new(id, generic_block));
+                                Some(DataBlock::new(id, CFPDataBlock::new(generic_block)));
                         }
                         _ => {
                             // Unknown block type - skip for forward compatibility with newer formats
@@ -274,7 +274,7 @@ impl<'a> Message<'a> {
 
     /// Clutter filter power (CFP) data if included in the message.
     /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
-    pub fn clutter_filter_power_data_block(&self) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
+    pub fn clutter_filter_power_data_block(&self) -> Option<&DataBlock<'a, CFPDataBlock<'a>>> {
         self.clutter_filter_power_data_block.as_ref()
     }
 
@@ -282,9 +282,7 @@ impl<'a> Message<'a> {
     #[cfg(feature = "nexrad-model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{
-            MomentDataKind, Radial, RadialStatus as ModelRadialStatus,
-        };
+        use nexrad_model::data::{MomentData, Radial, RadialStatus as ModelRadialStatus};
 
         Ok(Radial::new(
             self.header
@@ -306,25 +304,25 @@ impl<'a> Message<'a> {
             self.header.elevation_angle_raw(),
             self.reflectivity_data_block
                 .as_ref()
-                .map(|block| block.moment_data_with_kind(MomentDataKind::Reflectivity)),
+                .map(|block| MomentData::new(block.moment_data_block())),
             self.velocity_data_block
                 .as_ref()
-                .map(|block| block.moment_data_with_kind(MomentDataKind::Velocity)),
+                .map(|block| MomentData::new(block.moment_data_block())),
             self.spectrum_width_data_block
                 .as_ref()
-                .map(|block| block.moment_data_with_kind(MomentDataKind::SpectrumWidth)),
+                .map(|block| MomentData::new(block.moment_data_block())),
             self.differential_reflectivity_data_block
                 .as_ref()
-                .map(|block| block.moment_data_with_kind(MomentDataKind::DifferentialReflectivity)),
+                .map(|block| MomentData::new(block.moment_data_block())),
             self.differential_phase_data_block
                 .as_ref()
-                .map(|block| block.moment_data_with_kind(MomentDataKind::DifferentialPhase)),
+                .map(|block| MomentData::new(block.moment_data_block())),
             self.correlation_coefficient_data_block
                 .as_ref()
-                .map(|block| block.moment_data_with_kind(MomentDataKind::CorrelationCoefficient)),
+                .map(|block| MomentData::new(block.moment_data_block())),
             self.clutter_filter_power_data_block
                 .as_ref()
-                .map(|block| block.moment_data_with_kind(MomentDataKind::ClutterFilterPower)),
+                .map(|block| block.moment_data()),
         ))
     }
 
@@ -332,9 +330,7 @@ impl<'a> Message<'a> {
     #[cfg(feature = "nexrad-model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{
-            MomentDataKind, Radial, RadialStatus as ModelRadialStatus,
-        };
+        use nexrad_model::data::{MomentData, Radial, RadialStatus as ModelRadialStatus};
 
         Ok(Radial::new(
             self.header
@@ -355,19 +351,19 @@ impl<'a> Message<'a> {
             self.header.elevation_number(),
             self.header.elevation_angle_raw(),
             self.reflectivity_data_block
-                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::Reflectivity)),
+                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
             self.velocity_data_block
-                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::Velocity)),
+                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
             self.spectrum_width_data_block
-                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::SpectrumWidth)),
+                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
             self.differential_reflectivity_data_block
-                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::DifferentialReflectivity)),
+                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
             self.differential_phase_data_block
-                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::DifferentialPhase)),
+                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
             self.correlation_coefficient_data_block
-                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::CorrelationCoefficient)),
+                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
             self.clutter_filter_power_data_block
-                .map(|block| block.into_inner().into_moment_data_with_kind(MomentDataKind::ClutterFilterPower)),
+                .map(|block| block.into_inner().into_moment_data()),
         ))
     }
 }

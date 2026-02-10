@@ -354,36 +354,38 @@ Message {
                             ],
                         },
                     },
-                    inner: GenericDataBlock {
-                        header: GenericDataBlockHeader {
-                            inner: GenericDataBlockHeader {
-                                reserved: 0,
-                                number_of_data_moment_gates: 1832,
-                                data_moment_range: 2125,
-                                data_moment_range_sample_interval: 250,
-                                tover: 50,
-                                snr_threshold: 16,
-                                control_flags: 0,
-                                data_word_size: 8,
-                                scale: 1.0,
-                                offset: 8.0,
+                    inner: CFPDataBlock {
+                        inner: GenericDataBlock {
+                            header: GenericDataBlockHeader {
+                                inner: GenericDataBlockHeader {
+                                    reserved: 0,
+                                    number_of_data_moment_gates: 1832,
+                                    data_moment_range: 2125,
+                                    data_moment_range_sample_interval: 250,
+                                    tover: 50,
+                                    snr_threshold: 16,
+                                    control_flags: 0,
+                                    data_word_size: 8,
+                                    scale: 1.0,
+                                    offset: 8.0,
+                                },
                             },
-                        },
-                        encoded_data: BinaryData {
-                            len: 1832,
-                            sha256: "67b8a73e70525928da2a1971383b53e692a38033f85acba9a14d7d7cb57005f9",
-                            head: [
-                                8,
-                                9,
-                                12,
-                                9,
-                            ],
-                            tail: [
-                                0,
-                                0,
-                                0,
-                                0,
-                            ],
+                            encoded_data: BinaryData {
+                                len: 1832,
+                                sha256: "67b8a73e70525928da2a1971383b53e692a38033f85acba9a14d7d7cb57005f9",
+                                head: [
+                                    8,
+                                    9,
+                                    12,
+                                    9,
+                                ],
+                                tail: [
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                ],
+                            },
                         },
                     },
                 },

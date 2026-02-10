@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::ops::Deref;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -6,40 +7,11 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "uom")]
 use uom::si::{f64::Length, length::kilometer};
 
-/// Describes the data moment represented by a [`MomentData`] instance.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
-pub enum MomentDataKind {
-    /// Base reflectivity (dBZ).
-    Reflectivity,
-    /// Radial velocity (m/s).
-    Velocity,
-    /// Spectrum width (m/s).
-    SpectrumWidth,
-    /// Differential reflectivity (dB).
-    DifferentialReflectivity,
-    /// Differential phase (degrees).
-    DifferentialPhase,
-    /// Correlation coefficient (unitless).
-    CorrelationCoefficient,
-    /// Clutter filter power (CFP).
-    ClutterFilterPower,
-    /// Unknown or unspecified moment type.
-    Unknown,
-}
-
-impl Default for MomentDataKind {
-    fn default() -> Self {
-        Self::Unknown
-    }
-}
-
 /// CFP status codes for clutter filter power moments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
-pub enum CfpStatus {
+pub enum CFPStatus {
     /// Clutter filter not applied.
     FilterNotApplied,
     /// Point clutter filter applied.
@@ -50,13 +22,14 @@ pub enum CfpStatus {
     Reserved(u8),
 }
 
-/// Moment data from a radial for a particular product where each value corresponds to a gate.
+/// Encoded moment data from a radial containing gate metadata and raw values.
+///
+/// This type provides gate metadata accessors (count, range, interval) shared by both
+/// generic moments and CFP moments. It does not decode values — use [`MomentData`] or
+/// [`CFPMomentData`] for decoded gate values.
 #[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct MomentData {
-    /// The product type this moment represents.
-    #[cfg_attr(feature = "serde", serde(default))]
-    kind: MomentDataKind,
+pub struct MomentDataBlock {
     gate_count: u16,
     first_gate_range: u16,
     gate_interval: u16,
@@ -67,10 +40,9 @@ pub struct MomentData {
     values: Vec<u8>,
 }
 
-impl MomentData {
-    /// Create new moment data from fixed-point encoding.
+impl MomentDataBlock {
+    /// Create new moment data block from fixed-point encoding.
     pub fn from_fixed_point(
-        kind: MomentDataKind,
         gate_count: u16,
         first_gate_range: u16,
         gate_interval: u16,
@@ -80,7 +52,6 @@ impl MomentData {
         values: Vec<u8>,
     ) -> Self {
         Self {
-            kind,
             gate_count,
             first_gate_range,
             gate_interval,
@@ -89,11 +60,6 @@ impl MomentData {
             offset,
             values,
         }
-    }
-
-    /// The kind of data moment stored in this structure.
-    pub fn kind(&self) -> MomentDataKind {
-        self.kind
     }
 
     /// The number of gates in this data moment.
@@ -128,44 +94,7 @@ impl MomentData {
         Length::new::<kilometer>(self.gate_interval as f64 * 0.001)
     }
 
-    /// Values from this data moment corresponding to gates in the radial.
-    pub fn values(&self) -> Vec<MomentValue> {
-        let scale = self.scale;
-        let offset = self.offset;
-
-        let decode_generic = |raw_value: u16| {
-            if scale == 0.0 {
-                return MomentValue::Value(raw_value as f32);
-            }
-
-            match raw_value {
-                0 => MomentValue::BelowThreshold,
-                1 => MomentValue::RangeFolded,
-                _ => MomentValue::Value((raw_value as f32 - offset) / scale),
-            }
-        };
-
-        let decode_cfp = |raw_value: u16| {
-            match raw_value {
-                0 => MomentValue::CfpStatus(CfpStatus::FilterNotApplied),
-                1 => MomentValue::CfpStatus(CfpStatus::PointClutterFilterApplied),
-                2 => MomentValue::CfpStatus(CfpStatus::DualPolOnlyFilterApplied),
-                3..=7 => MomentValue::CfpStatus(CfpStatus::Reserved(raw_value as u8)),
-                _ => {
-                    if scale == 0.0 {
-                        MomentValue::Value(raw_value as f32)
-                    } else {
-                        MomentValue::Value((raw_value as f32 - offset) / scale)
-                    }
-                }
-            }
-        };
-
-        let decode = |raw_value: u16| match self.kind {
-            MomentDataKind::ClutterFilterPower => decode_cfp(raw_value),
-            _ => decode_generic(raw_value),
-        };
-
+    pub(crate) fn decode_with<T>(&self, decode: impl Fn(u16) -> T) -> Vec<T> {
         if self.data_word_size == 16 {
             // 16-bit moments store big-endian u16 values per gate.
             self.values
@@ -184,11 +113,91 @@ impl MomentData {
     }
 }
 
+impl Debug for MomentDataBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MomentDataBlock")
+            .field("gate_count", &self.gate_count)
+            .field("first_gate_range", &self.first_gate_range)
+            .field("gate_interval", &self.gate_interval)
+            .field("data_word_size", &self.data_word_size)
+            .finish()
+    }
+}
+
+/// Moment data from a radial for a particular product where each value corresponds to a gate.
+///
+/// Gate metadata (count, range, interval) is available through [`Deref<Target = MomentDataBlock>`].
+/// Use [`values`](MomentData::values) to decode gates with standard moment semantics
+/// (below threshold, range folded, or numeric value).
+#[derive(Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
+pub struct MomentData {
+    inner: MomentDataBlock,
+}
+
+impl MomentData {
+    /// Create new moment data wrapping a data block.
+    pub fn new(inner: MomentDataBlock) -> Self {
+        Self { inner }
+    }
+
+    /// Create new moment data from fixed-point encoding.
+    pub fn from_fixed_point(
+        gate_count: u16,
+        first_gate_range: u16,
+        gate_interval: u16,
+        data_word_size: u8,
+        scale: f32,
+        offset: f32,
+        values: Vec<u8>,
+    ) -> Self {
+        Self {
+            inner: MomentDataBlock::from_fixed_point(
+                gate_count,
+                first_gate_range,
+                gate_interval,
+                data_word_size,
+                scale,
+                offset,
+                values,
+            ),
+        }
+    }
+
+    /// Values from this data moment corresponding to gates in the radial.
+    pub fn values(&self) -> Vec<MomentValue> {
+        let scale = self.inner.scale;
+        let offset = self.inner.offset;
+
+        let decode = |raw_value: u16| {
+            if scale == 0.0 {
+                return MomentValue::Value(raw_value as f32);
+            }
+
+            match raw_value {
+                0 => MomentValue::BelowThreshold,
+                1 => MomentValue::RangeFolded,
+                _ => MomentValue::Value((raw_value as f32 - offset) / scale),
+            }
+        };
+
+        self.inner.decode_with(decode)
+    }
+}
+
+impl Deref for MomentData {
+    type Target = MomentDataBlock;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
 impl Debug for MomentData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MomentData")
-            .field("kind", &self.kind())
-            .field("data_word_size", &self.data_word_size)
+            .field("data_word_size", &self.inner.data_word_size)
             .field("values", &self.values())
             .finish()
     }
@@ -205,6 +214,95 @@ pub enum MomentValue {
     BelowThreshold,
     /// The value for this gate exceeded the maximum unambiguous range.
     RangeFolded,
-    /// CFP-specific status codes for clutter filter power moments.
-    CfpStatus(CfpStatus),
+}
+
+/// A decoded CFP gate value. Raw values 0–7 are status codes; values 8+ are numeric.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum CFPMomentValue {
+    /// A CFP status code (raw values 0–7).
+    Status(CFPStatus),
+    /// A decoded floating-point CFP value (raw values 8+).
+    Value(f32),
+}
+
+/// Clutter filter power (CFP) moment data wrapping a [`MomentDataBlock`].
+///
+/// Gate metadata (count, range, interval) is available through [`Deref<Target = MomentDataBlock>`].
+/// Use [`values`](CFPMomentData::values) to decode gates with CFP-specific semantics.
+#[derive(Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(transparent))]
+pub struct CFPMomentData {
+    inner: MomentDataBlock,
+}
+
+impl CFPMomentData {
+    /// Create a new CFP moment data wrapper.
+    pub fn new(inner: MomentDataBlock) -> Self {
+        Self { inner }
+    }
+
+    /// Create new CFP moment data from fixed-point encoding.
+    pub fn from_fixed_point(
+        gate_count: u16,
+        first_gate_range: u16,
+        gate_interval: u16,
+        data_word_size: u8,
+        scale: f32,
+        offset: f32,
+        values: Vec<u8>,
+    ) -> Self {
+        Self {
+            inner: MomentDataBlock::from_fixed_point(
+                gate_count,
+                first_gate_range,
+                gate_interval,
+                data_word_size,
+                scale,
+                offset,
+                values,
+            ),
+        }
+    }
+
+    /// Decode gate values with CFP-specific rules.
+    ///
+    /// Raw values 0–7 are decoded as CFP status codes. Values 8+ are decoded as
+    /// floating-point values using the moment's scale and offset.
+    pub fn values(&self) -> Vec<CFPMomentValue> {
+        let scale = self.inner.scale;
+        let offset = self.inner.offset;
+
+        self.inner.decode_with(|raw_value| match raw_value {
+            0 => CFPMomentValue::Status(CFPStatus::FilterNotApplied),
+            1 => CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied),
+            2 => CFPMomentValue::Status(CFPStatus::DualPolOnlyFilterApplied),
+            3..=7 => CFPMomentValue::Status(CFPStatus::Reserved(raw_value as u8)),
+            _ => {
+                if scale == 0.0 {
+                    CFPMomentValue::Value(raw_value as f32)
+                } else {
+                    CFPMomentValue::Value((raw_value as f32 - offset) / scale)
+                }
+            }
+        })
+    }
+}
+
+impl Deref for CFPMomentData {
+    type Target = MomentDataBlock;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl Debug for CFPMomentData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CFPMomentData")
+            .field("data_word_size", &self.inner.data_word_size)
+            .field("values", &self.values())
+            .finish()
+    }
 }

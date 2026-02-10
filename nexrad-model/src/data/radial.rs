@@ -1,4 +1,4 @@
-use crate::data::MomentData;
+use crate::data::{CFPMomentData, MomentData};
 use std::fmt::Debug;
 
 #[cfg(feature = "chrono")]
@@ -34,7 +34,7 @@ pub struct Radial {
     differential_reflectivity: Option<MomentData>,
     differential_phase: Option<MomentData>,
     correlation_coefficient: Option<MomentData>,
-    clutter_filter_power: Option<MomentData>,
+    clutter_filter_power: Option<CFPMomentData>,
 }
 
 impl Radial {
@@ -53,7 +53,7 @@ impl Radial {
         differential_reflectivity: Option<MomentData>,
         differential_phase: Option<MomentData>,
         correlation_coefficient: Option<MomentData>,
-        clutter_filter_power: Option<MomentData>,
+        clutter_filter_power: Option<CFPMomentData>,
     ) -> Self {
         Self {
             collection_timestamp,
@@ -165,7 +165,7 @@ impl Radial {
 
     /// Clutter filter power (CFP) data for this radial if available.
     /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
-    pub fn clutter_filter_power(&self) -> Option<&MomentData> {
+    pub fn clutter_filter_power(&self) -> Option<&CFPMomentData> {
         self.clutter_filter_power.as_ref()
     }
 }

@@ -21,9 +21,6 @@ pub use radial_status::RadialStatus;
 mod volume_coverage_pattern;
 pub use volume_coverage_pattern::VolumeCoveragePattern;
 
-mod scaled_moment_value;
-pub use scaled_moment_value::ScaledMomentValue;
-
 mod spot_blanking_status;
 pub use spot_blanking_status::SpotBlankingStatus;
 
@@ -53,9 +50,6 @@ pub use data_block::DataBlock;
 
 mod generic_data_block;
 pub use generic_data_block::GenericDataBlock;
-
-mod cfp_data_block;
-pub use cfp_data_block::{CFPDataBlock, CFPStatus, ScaledCFPValue};
 
 mod message;
 pub use message::Message;

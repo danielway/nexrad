@@ -1,7 +1,7 @@
 use super::raw;
 use super::{
-    CFPDataBlock, DataBlock, DataBlockId, ElevationDataBlock, GenericDataBlock, Header,
-    RadialDataBlock, RadialStatus, VolumeDataBlock,
+    DataBlock, DataBlockId, ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock,
+    RadialStatus, VolumeDataBlock,
 };
 use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
@@ -41,7 +41,7 @@ pub struct Message<'a> {
     correlation_coefficient_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 
     /// Clutter filter power (CFP) data if included in the message.
-    clutter_filter_power_data_block: Option<DataBlock<'a, CFPDataBlock<'a>>>,
+    clutter_filter_power_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
 }
 
 impl<'a> Message<'a> {
@@ -167,7 +167,7 @@ impl<'a> Message<'a> {
                         }
                         b"CFP" => {
                             message.clutter_filter_power_data_block =
-                                Some(DataBlock::new(id, CFPDataBlock::new(generic_block)));
+                                Some(DataBlock::new(id, generic_block));
                         }
                         _ => {
                             // Unknown block type - skip for forward compatibility with newer formats
@@ -274,7 +274,9 @@ impl<'a> Message<'a> {
 
     /// Clutter filter power (CFP) data if included in the message.
     /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
-    pub fn clutter_filter_power_data_block(&self) -> Option<&DataBlock<'a, CFPDataBlock<'a>>> {
+    pub fn clutter_filter_power_data_block(
+        &self,
+    ) -> Option<&DataBlock<'a, GenericDataBlock<'a>>> {
         self.clutter_filter_power_data_block.as_ref()
     }
 
@@ -282,7 +284,9 @@ impl<'a> Message<'a> {
     #[cfg(feature = "nexrad-model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{MomentData, Radial, RadialStatus as ModelRadialStatus};
+        use nexrad_model::data::{
+            CFPMomentData, MomentData, Radial, RadialStatus as ModelRadialStatus,
+        };
 
         Ok(Radial::new(
             self.header
@@ -322,7 +326,7 @@ impl<'a> Message<'a> {
                 .map(|block| MomentData::new(block.moment_data_block())),
             self.clutter_filter_power_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| CFPMomentData::new(block.moment_data_block())),
         ))
     }
 
@@ -330,7 +334,9 @@ impl<'a> Message<'a> {
     #[cfg(feature = "nexrad-model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{MomentData, Radial, RadialStatus as ModelRadialStatus};
+        use nexrad_model::data::{
+            CFPMomentData, MomentData, Radial, RadialStatus as ModelRadialStatus,
+        };
 
         Ok(Radial::new(
             self.header
@@ -363,7 +369,7 @@ impl<'a> Message<'a> {
             self.correlation_coefficient_data_block
                 .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
             self.clutter_filter_power_data_block
-                .map(|block| block.into_inner().into_moment_data()),
+                .map(|block| CFPMomentData::new(block.into_inner().into_moment_data_block())),
         ))
     }
 }

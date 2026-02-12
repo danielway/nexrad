@@ -1,6 +1,9 @@
 //! Digital Radar Data (Type 31) message parsing and display.
 
 use nexrad_decode::messages::{decode_messages, digital_radar_data, MessageContents};
+use nexrad_model::data::{
+    CFPMomentData, CFPMomentValue, CFPStatus, MomentData, MomentValue,
+};
 
 /// Parses and displays a Digital Radar Data (Type 31) message with full details.
 pub fn parse_digital_radar_data(data: &[u8]) -> String {
@@ -185,14 +188,14 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
 
     for (id, name, block_opt) in moment_blocks {
         if let Some(block) = block_opt {
-            let decoded = block.decoded_values();
+            let decoded = MomentData::new(block.moment_data_block()).values();
             render_moment_block(&mut output, id, name, block.header(), &decoded);
         }
     }
 
     // CFP has its own value type with built-in CFP-aware decoding
     if let Some(block) = msg.clutter_filter_power_data_block() {
-        let decoded = block.decoded_values();
+        let decoded = CFPMomentData::new(block.moment_data_block()).values();
         render_cfp_block(&mut output, block.header(), &decoded);
     }
 
@@ -205,7 +208,7 @@ fn render_moment_block(
     id: &str,
     name: &str,
     header: &digital_radar_data::GenericDataBlockHeader,
-    decoded: &[digital_radar_data::ScaledMomentValue],
+    decoded: &[MomentValue],
 ) {
     render_block_header(output, id, name, header);
 
@@ -245,14 +248,14 @@ fn render_moment_block(
 
         for val in decoded {
             match val {
-                digital_radar_data::ScaledMomentValue::Value(v) => {
+                MomentValue::Value(v) => {
                     value_count += 1;
                     sum += *v as f64;
                     min_val = min_val.min(*v);
                     max_val = max_val.max(*v);
                 }
-                digital_radar_data::ScaledMomentValue::BelowThreshold => below_count += 1,
-                digital_radar_data::ScaledMomentValue::RangeFolded => folded_count += 1,
+                MomentValue::BelowThreshold => below_count += 1,
+                MomentValue::RangeFolded => folded_count += 1,
             }
         }
 
@@ -274,7 +277,7 @@ fn render_moment_block(
 fn render_cfp_block(
     output: &mut String,
     header: &digital_radar_data::GenericDataBlockHeader,
-    decoded: &[digital_radar_data::ScaledCFPValue],
+    decoded: &[CFPMomentValue],
 ) {
     render_block_header(output, "CFP", "Clutter Filter Power", header);
 
@@ -289,9 +292,7 @@ fn render_cfp_block(
         render_ascii_rows(output, header, &ascii, gates_per_row);
 
         output.push_str("\nLegend: ");
-        output.push_str(
-            "'!'=status, intensity: . : - = + * # % @",
-        );
+        output.push_str("'!'=status, intensity: . : - = + * # % @");
         output.push('\n');
 
         // Statistics
@@ -304,15 +305,15 @@ fn render_cfp_block(
 
         for val in decoded {
             match val {
-                digital_radar_data::ScaledCFPValue::Value(v) => {
+                CFPMomentValue::Value(v) => {
                     value_count += 1;
                     sum += *v as f64;
                     min_val = min_val.min(*v);
                     max_val = max_val.max(*v);
                 }
-                digital_radar_data::ScaledCFPValue::Status(status) => {
+                CFPMomentValue::Status(status) => {
                     status_count += 1;
-                    if matches!(status, digital_radar_data::CFPStatus::Reserved(_)) {
+                    if matches!(status, CFPStatus::Reserved(_)) {
                         reserved_count += 1;
                     }
                 }
@@ -399,12 +400,9 @@ fn render_ascii_rows(
     }
 }
 
-/// Converts a slice of ScaledMomentValue to a visual ASCII string representation.
+/// Converts a slice of MomentValue to a visual ASCII string representation.
 /// Uses characters ordered by visual density to represent radar data values.
-fn scaled_values_to_ascii(
-    values: &[digital_radar_data::ScaledMomentValue],
-    product: &str,
-) -> String {
+fn scaled_values_to_ascii(values: &[MomentValue], product: &str) -> String {
     // Characters ordered by increasing visual density
     const CHARS: &[char] = &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
 
@@ -422,32 +420,32 @@ fn scaled_values_to_ascii(
     values
         .iter()
         .map(|v| match v {
-            digital_radar_data::ScaledMomentValue::Value(val) => {
+            MomentValue::Value(val) => {
                 // Normalize to 0.0-1.0 range, then map to character index
                 let normalized = ((val - min_val) / (max_val - min_val)).clamp(0.0, 1.0);
                 let index = (normalized * (CHARS.len() - 1) as f32) as usize;
                 CHARS[index]
             }
-            digital_radar_data::ScaledMomentValue::BelowThreshold => ' ',
-            digital_radar_data::ScaledMomentValue::RangeFolded => '~',
+            MomentValue::BelowThreshold => ' ',
+            MomentValue::RangeFolded => '~',
         })
         .collect()
 }
 
-/// Converts a slice of ScaledCFPValue to a visual ASCII string representation.
-fn cfp_values_to_ascii(values: &[digital_radar_data::ScaledCFPValue]) -> String {
+/// Converts a slice of CFPMomentValue to a visual ASCII string representation.
+fn cfp_values_to_ascii(values: &[CFPMomentValue]) -> String {
     const CHARS: &[char] = &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
     let (min_val, max_val): (f32, f32) = (-20.0, 20.0);
 
     values
         .iter()
         .map(|v| match v {
-            digital_radar_data::ScaledCFPValue::Value(val) => {
+            CFPMomentValue::Value(val) => {
                 let normalized = ((val - min_val) / (max_val - min_val)).clamp(0.0, 1.0);
                 let index = (normalized * (CHARS.len() - 1) as f32) as usize;
                 CHARS[index]
             }
-            digital_radar_data::ScaledCFPValue::Status(_) => '!',
+            CFPMomentValue::Status(_) => '!',
         })
         .collect()
 }

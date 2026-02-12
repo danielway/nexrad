@@ -61,14 +61,10 @@ impl<'a> GenericDataBlock<'a> {
     /// their floating point representation. Additionally, identifies special values such as "below
     /// threshold" and "range folded".
     pub fn decoded_values(&self) -> Vec<ScaledMomentValue> {
-        self.decode_generic()
-    }
-
-    fn decode_generic(&self) -> Vec<ScaledMomentValue> {
         let scale = self.header.scale();
         let offset = self.header.offset();
 
-        let decode = |raw_value: u16| {
+        self.decode_with(|raw_value| {
             if scale == 0.0 {
                 return ScaledMomentValue::Value(raw_value as f32);
             }
@@ -78,9 +74,7 @@ impl<'a> GenericDataBlock<'a> {
                 1 => ScaledMomentValue::RangeFolded,
                 _ => ScaledMomentValue::Value((raw_value as f32 - offset) / scale),
             }
-        };
-
-        self.decode_with(decode)
+        })
     }
 
     pub(crate) fn decode_with<T>(&self, decode: impl Fn(u16) -> T) -> Vec<T> {
@@ -175,5 +169,4 @@ mod tests {
             _ => panic!("Expected Value"),
         }
     }
-
 }

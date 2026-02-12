@@ -94,6 +94,24 @@ impl MomentDataBlock {
         Length::new::<kilometer>(self.gate_interval as f64 * 0.001)
     }
 
+    /// The scale factor used to decode raw gate values into floating-point values.
+    /// A value of `0.0` means raw values are used directly without scaling.
+    pub fn scale(&self) -> f32 {
+        self.scale
+    }
+
+    /// The offset used to decode raw gate values into floating-point values.
+    /// The decoded value is `(raw - offset) / scale`.
+    pub fn offset(&self) -> f32 {
+        self.offset
+    }
+
+    /// The raw encoded gate values as bytes. For 8-bit moments, each byte is one gate.
+    /// For 16-bit moments, each pair of bytes is a big-endian `u16` gate value.
+    pub fn raw_values(&self) -> &[u8] {
+        &self.values
+    }
+
     pub(crate) fn decode_with<T>(&self, decode: impl Fn(u16) -> T) -> Vec<T> {
         if self.data_word_size == 16 {
             // 16-bit moments store big-endian u16 values per gate.

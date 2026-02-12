@@ -280,54 +280,12 @@ impl<'a> Message<'a> {
         self.clutter_filter_power_data_block.as_ref()
     }
 
-    /// Get a radial from this digital radar data message.
+    /// Get a radial from this digital radar data message. This clones the underlying moment
+    /// data; use [`into_radial`](Self::into_radial) to avoid the copy when the message is no
+    /// longer needed.
     #[cfg(feature = "nexrad-model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
-        use crate::result::Error;
-        use nexrad_model::data::{
-            CFPMomentData, MomentData, Radial, RadialStatus as ModelRadialStatus,
-        };
-
-        Ok(Radial::new(
-            self.header
-                .date_time()
-                .ok_or(Error::MessageMissingDateError)?
-                .timestamp_millis(),
-            self.header.azimuth_number(),
-            self.header.azimuth_angle_raw(),
-            self.header.azimuth_resolution_spacing_raw() as f32 * 0.5,
-            match self.header.radial_status() {
-                RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
-                RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
-                RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
-                RadialStatus::VolumeScanStart => ModelRadialStatus::VolumeScanStart,
-                RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
-                RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
-            },
-            self.header.elevation_number(),
-            self.header.elevation_angle_raw(),
-            self.reflectivity_data_block
-                .as_ref()
-                .map(|block| MomentData::new(block.moment_data_block())),
-            self.velocity_data_block
-                .as_ref()
-                .map(|block| MomentData::new(block.moment_data_block())),
-            self.spectrum_width_data_block
-                .as_ref()
-                .map(|block| MomentData::new(block.moment_data_block())),
-            self.differential_reflectivity_data_block
-                .as_ref()
-                .map(|block| MomentData::new(block.moment_data_block())),
-            self.differential_phase_data_block
-                .as_ref()
-                .map(|block| MomentData::new(block.moment_data_block())),
-            self.correlation_coefficient_data_block
-                .as_ref()
-                .map(|block| MomentData::new(block.moment_data_block())),
-            self.clutter_filter_power_data_block
-                .as_ref()
-                .map(|block| CFPMomentData::new(block.moment_data_block())),
-        ))
+        self.clone().into_radial()
     }
 
     /// Convert this digital radar data message into a common model radial, minimizing data copy.

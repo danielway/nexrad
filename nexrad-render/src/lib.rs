@@ -418,26 +418,7 @@ fn get_radial_moment_block<'a>(product: Product, radial: &'a Radial) -> Option<&
 ///
 /// Returns `None` for below-threshold, range-folded, and CFP status gates.
 fn get_radial_float_values(product: Product, radial: &Radial) -> Option<Vec<Option<f32>>> {
-    if product == Product::ClutterFilterPower {
-        radial.clutter_filter_power().map(|cfp| {
-            cfp.values()
-                .into_iter()
-                .map(|v| match v {
-                    CFPMomentValue::Value(f) => Some(f),
-                    CFPMomentValue::Status(_) => None,
-                })
-                .collect()
-        })
-    } else {
-        let moment = match product {
-            Product::Reflectivity => radial.reflectivity(),
-            Product::Velocity => radial.velocity(),
-            Product::SpectrumWidth => radial.spectrum_width(),
-            Product::DifferentialReflectivity => radial.differential_reflectivity(),
-            Product::DifferentialPhase => radial.differential_phase(),
-            Product::CorrelationCoefficient => radial.correlation_coefficient(),
-            Product::ClutterFilterPower => unreachable!(),
-        };
+    fn moment_floats(moment: Option<&nexrad_model::data::MomentData>) -> Option<Vec<Option<f32>>> {
         moment.map(|m| {
             m.values()
                 .into_iter()
@@ -447,5 +428,23 @@ fn get_radial_float_values(product: Product, radial: &Radial) -> Option<Vec<Opti
                 })
                 .collect()
         })
+    }
+
+    match product {
+        Product::Reflectivity => moment_floats(radial.reflectivity()),
+        Product::Velocity => moment_floats(radial.velocity()),
+        Product::SpectrumWidth => moment_floats(radial.spectrum_width()),
+        Product::DifferentialReflectivity => moment_floats(radial.differential_reflectivity()),
+        Product::DifferentialPhase => moment_floats(radial.differential_phase()),
+        Product::CorrelationCoefficient => moment_floats(radial.correlation_coefficient()),
+        Product::ClutterFilterPower => radial.clutter_filter_power().map(|cfp| {
+            cfp.values()
+                .into_iter()
+                .map(|v| match v {
+                    CFPMomentValue::Value(f) => Some(f),
+                    CFPMomentValue::Status(_) => None,
+                })
+                .collect()
+        }),
     }
 }

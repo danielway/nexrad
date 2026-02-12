@@ -112,22 +112,17 @@ impl MomentDataBlock {
         &self.values
     }
 
-    pub(crate) fn decode_with<T>(&self, decode: impl Fn(u16) -> T) -> Vec<T> {
-        if self.data_word_size == 16 {
-            // 16-bit moments store big-endian u16 values per gate.
-            self.values
-                .chunks_exact(2)
-                .map(|chunk| u16::from_be_bytes([chunk[0], chunk[1]]))
-                .map(decode)
-                .collect()
-        } else {
-            // Default to 8-bit decoding.
-            self.values
-                .iter()
-                .copied()
-                .map(|v| decode(v as u16))
-                .collect()
-        }
+    /// Iterator over raw gate values as `u16`, handling both 8-bit and 16-bit word sizes.
+    pub fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
+        let is_16bit = self.data_word_size == 16;
+        let step = if is_16bit { 2 } else { 1 };
+        self.values.chunks(step).map(move |chunk| {
+            if is_16bit {
+                u16::from_be_bytes([chunk[0], chunk[1]])
+            } else {
+                chunk[0] as u16
+            }
+        })
     }
 }
 
@@ -183,12 +178,14 @@ impl MomentData {
         }
     }
 
-    /// Values from this data moment corresponding to gates in the radial.
-    pub fn values(&self) -> Vec<MomentValue> {
+    /// Iterator over decoded gate values without allocating.
+    pub fn iter(&self) -> impl Iterator<Item = MomentValue> + '_ {
         let scale = self.inner.scale;
         let offset = self.inner.offset;
 
-        let decode = |raw_value: u16| {
+        self.inner.raw_gate_values().map(move |raw_value| {
+            // scale == 0.0 is an exact comparison; the value comes from a binary format
+            // where IEEE 754 zero is stored literally.
             if scale == 0.0 {
                 return MomentValue::Value(raw_value as f32);
             }
@@ -198,9 +195,13 @@ impl MomentData {
                 1 => MomentValue::RangeFolded,
                 _ => MomentValue::Value((raw_value as f32 - offset) / scale),
             }
-        };
+        })
+    }
 
-        self.inner.decode_with(decode)
+    /// Decoded gate values collected into a `Vec`. Prefer [`iter`](Self::iter) when
+    /// processing values sequentially to avoid allocation.
+    pub fn values(&self) -> Vec<MomentValue> {
+        self.iter().collect()
     }
 }
 
@@ -284,15 +285,15 @@ impl CFPMomentData {
         }
     }
 
-    /// Decode gate values with CFP-specific rules.
+    /// Iterator over decoded CFP gate values without allocating.
     ///
     /// Raw values 0–7 are decoded as CFP status codes. Values 8+ are decoded as
     /// floating-point values using the moment's scale and offset.
-    pub fn values(&self) -> Vec<CFPMomentValue> {
+    pub fn iter(&self) -> impl Iterator<Item = CFPMomentValue> + '_ {
         let scale = self.inner.scale;
         let offset = self.inner.offset;
 
-        self.inner.decode_with(|raw_value| match raw_value {
+        self.inner.raw_gate_values().map(move |raw_value| match raw_value {
             0 => CFPMomentValue::Status(CFPStatus::FilterNotApplied),
             1 => CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied),
             2 => CFPMomentValue::Status(CFPStatus::DualPolOnlyFilterApplied),
@@ -305,6 +306,12 @@ impl CFPMomentData {
                 }
             }
         })
+    }
+
+    /// Decoded CFP gate values collected into a `Vec`. Prefer [`iter`](Self::iter) when
+    /// processing values sequentially to avoid allocation.
+    pub fn values(&self) -> Vec<CFPMomentValue> {
+        self.iter().collect()
     }
 }
 

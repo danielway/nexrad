@@ -24,7 +24,7 @@ pub const VARIABLE_LENGTH_MESSAGE_SIZE: u16 = 65535;
 #[derive(Clone, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct MessageHeader {
     /// Unknown/reserved bytes from RPG.
-    pub rpg_unknown: BinaryData<[u8; 12]>,
+    pub(crate) rpg_unknown: BinaryData<[u8; 12]>,
 
     /// Size of this segment in half-words. Note that this only describes this segment's size,
     /// though there could be multiple segments. In the case of a variable-length message (indicated

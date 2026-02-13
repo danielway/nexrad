@@ -1,6 +1,5 @@
 use super::raw;
 use super::{ProcessingStatus, VolumeCoveragePattern};
-use crate::binary_data::BinaryData;
 
 #[cfg(feature = "uom")]
 use uom::si::f64::{Angle, Energy, Information, Length};
@@ -189,10 +188,10 @@ impl<'a> VolumeDataBlock<'a> {
     ///
     /// Returns `None` for legacy data (Build 19.0 and earlier) as this field
     /// was added in Build 20.0.
-    pub fn spare(&self) -> Option<&BinaryData<[u8; 6]>> {
+    pub fn spare(&self) -> Option<&[u8; 6]> {
         match &self.inner {
             VolumeDataBlockInner::Legacy(_) => None,
-            VolumeDataBlockInner::Modern(inner) => Some(&inner.spare),
+            VolumeDataBlockInner::Modern(inner) => Some(&inner.spare.0),
         }
     }
 

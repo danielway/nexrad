@@ -45,11 +45,6 @@ impl<'a> GenericDataBlock<'a> {
         &self.header
     }
 
-    /// The generic data block's encoded moment data.
-    pub fn encoded_data(&self) -> &BinaryData<Cow<'a, [u8]>> {
-        &self.encoded_data
-    }
-
     /// Raw gate values for this moment/radial ordered in ascending distance from the radar. These
     /// values are stored in a fixed-point representation using the header's offset and scale fields.
     /// Use [`nexrad_model::data::MomentData`] or [`nexrad_model::data::CFPMomentData`] to decode.

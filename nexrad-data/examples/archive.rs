@@ -144,10 +144,7 @@ async fn main() -> Result<()> {
                             message.header().date_time(),
                         );
                         let values = MomentData::new(block.moment_data_block()).values();
-                        info!(
-                            "  {}",
-                            scaled_values_to_ascii(&values[..100])
-                        );
+                        info!("  {}", scaled_values_to_ascii(&values[..100]));
                     }
                 } else {
                     info!(

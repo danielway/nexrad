@@ -1,11 +1,92 @@
 use std::fmt::Debug;
-use std::ops::Deref;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "uom")]
 use uom::si::{f64::Length, length::kilometer};
+
+/// Common interface for types that provide gate-level moment data.
+///
+/// Both [`MomentData`] and [`CFPMomentData`] implement this trait, providing
+/// access to shared gate metadata, scale/offset encoding parameters, and raw
+/// gate values. Only the decoded value semantics differ between them.
+pub trait DataMoment {
+    /// The number of gates in this data moment.
+    fn gate_count(&self) -> u16;
+
+    /// The range to the center of the first gate in kilometers.
+    fn first_gate_range_km(&self) -> f64;
+
+    /// The range to the center of the first gate.
+    #[cfg(feature = "uom")]
+    fn first_gate_range(&self) -> Length;
+
+    /// The range between the centers of consecutive gates in kilometers.
+    fn gate_interval_km(&self) -> f64;
+
+    /// Number of bits per gate (8 or 16).
+    fn data_word_size(&self) -> u8;
+
+    /// The range between the centers of consecutive gates.
+    #[cfg(feature = "uom")]
+    fn gate_interval(&self) -> Length;
+
+    /// The scale factor used to decode raw gate values into floating-point values.
+    /// A value of `0.0` means raw values are used directly without scaling.
+    fn scale(&self) -> f32;
+
+    /// The offset used to decode raw gate values into floating-point values.
+    /// The decoded value is `(raw - offset) / scale`.
+    fn offset(&self) -> f32;
+
+    /// The raw encoded gate values as bytes. For 8-bit moments, each byte is one gate.
+    /// For 16-bit moments, each pair of bytes is a big-endian `u16` gate value.
+    fn raw_values(&self) -> &[u8];
+
+    /// Iterator over raw gate values as `u16`, handling both 8-bit and 16-bit word sizes.
+    fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_;
+}
+
+/// Implements [`DataMoment`] for a wrapper type that stores a `MomentDataBlock` as `self.inner`.
+macro_rules! impl_data_moment {
+    ($ty:ty) => {
+        impl DataMoment for $ty {
+            fn gate_count(&self) -> u16 {
+                self.inner.gate_count()
+            }
+            fn first_gate_range_km(&self) -> f64 {
+                self.inner.first_gate_range_km()
+            }
+            #[cfg(feature = "uom")]
+            fn first_gate_range(&self) -> Length {
+                self.inner.first_gate_range()
+            }
+            fn gate_interval_km(&self) -> f64 {
+                self.inner.gate_interval_km()
+            }
+            fn data_word_size(&self) -> u8 {
+                self.inner.data_word_size()
+            }
+            #[cfg(feature = "uom")]
+            fn gate_interval(&self) -> Length {
+                self.inner.gate_interval()
+            }
+            fn scale(&self) -> f32 {
+                self.inner.scale()
+            }
+            fn offset(&self) -> f32 {
+                self.inner.offset()
+            }
+            fn raw_values(&self) -> &[u8] {
+                self.inner.raw_values()
+            }
+            fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
+                self.inner.raw_gate_values()
+            }
+        }
+    };
+}
 
 /// CFP status codes for clutter filter power moments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -126,6 +207,41 @@ impl MomentDataBlock {
     }
 }
 
+impl DataMoment for MomentDataBlock {
+    fn gate_count(&self) -> u16 {
+        MomentDataBlock::gate_count(self)
+    }
+    fn first_gate_range_km(&self) -> f64 {
+        MomentDataBlock::first_gate_range_km(self)
+    }
+    #[cfg(feature = "uom")]
+    fn first_gate_range(&self) -> Length {
+        MomentDataBlock::first_gate_range(self)
+    }
+    fn gate_interval_km(&self) -> f64 {
+        MomentDataBlock::gate_interval_km(self)
+    }
+    fn data_word_size(&self) -> u8 {
+        MomentDataBlock::data_word_size(self)
+    }
+    #[cfg(feature = "uom")]
+    fn gate_interval(&self) -> Length {
+        MomentDataBlock::gate_interval(self)
+    }
+    fn scale(&self) -> f32 {
+        MomentDataBlock::scale(self)
+    }
+    fn offset(&self) -> f32 {
+        MomentDataBlock::offset(self)
+    }
+    fn raw_values(&self) -> &[u8] {
+        MomentDataBlock::raw_values(self)
+    }
+    fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
+        MomentDataBlock::raw_gate_values(self)
+    }
+}
+
 impl Debug for MomentDataBlock {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MomentDataBlock")
@@ -139,7 +255,9 @@ impl Debug for MomentDataBlock {
 
 /// Moment data from a radial for a particular product where each value corresponds to a gate.
 ///
-/// Gate metadata (count, range, interval) is available through [`Deref<Target = MomentDataBlock>`].
+/// Gate metadata (count, range, interval) is available through the [`DataMoment`] trait —
+/// see [`gate_count`](DataMoment::gate_count), [`first_gate_range_km`](DataMoment::first_gate_range_km),
+/// and [`gate_interval_km`](DataMoment::gate_interval_km).
 /// Use [`values`](MomentData::values) to decode gates with standard moment semantics
 /// (below threshold, range folded, or numeric value).
 #[derive(Clone, PartialEq)]
@@ -205,13 +323,7 @@ impl MomentData {
     }
 }
 
-impl Deref for MomentData {
-    type Target = MomentDataBlock;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
+impl_data_moment!(MomentData);
 
 impl Debug for MomentData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -247,7 +359,9 @@ pub enum CFPMomentValue {
 
 /// Clutter filter power (CFP) moment data wrapping a [`MomentDataBlock`].
 ///
-/// Gate metadata (count, range, interval) is available through [`Deref<Target = MomentDataBlock>`].
+/// Gate metadata (count, range, interval) is available through the [`DataMoment`] trait —
+/// see [`gate_count`](DataMoment::gate_count), [`first_gate_range_km`](DataMoment::first_gate_range_km),
+/// and [`gate_interval_km`](DataMoment::gate_interval_km).
 /// Use [`values`](CFPMomentData::values) to decode gates with CFP-specific semantics.
 #[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -293,19 +407,21 @@ impl CFPMomentData {
         let scale = self.inner.scale;
         let offset = self.inner.offset;
 
-        self.inner.raw_gate_values().map(move |raw_value| match raw_value {
-            0 => CFPMomentValue::Status(CFPStatus::FilterNotApplied),
-            1 => CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied),
-            2 => CFPMomentValue::Status(CFPStatus::DualPolOnlyFilterApplied),
-            3..=7 => CFPMomentValue::Status(CFPStatus::Reserved(raw_value as u8)),
-            _ => {
-                if scale == 0.0 {
-                    CFPMomentValue::Value(raw_value as f32)
-                } else {
-                    CFPMomentValue::Value((raw_value as f32 - offset) / scale)
+        self.inner
+            .raw_gate_values()
+            .map(move |raw_value| match raw_value {
+                0 => CFPMomentValue::Status(CFPStatus::FilterNotApplied),
+                1 => CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied),
+                2 => CFPMomentValue::Status(CFPStatus::DualPolOnlyFilterApplied),
+                3..=7 => CFPMomentValue::Status(CFPStatus::Reserved(raw_value as u8)),
+                _ => {
+                    if scale == 0.0 {
+                        CFPMomentValue::Value(raw_value as f32)
+                    } else {
+                        CFPMomentValue::Value((raw_value as f32 - offset) / scale)
+                    }
                 }
-            }
-        })
+            })
     }
 
     /// Decoded CFP gate values collected into a `Vec`. Prefer [`iter`](Self::iter) when
@@ -315,13 +431,7 @@ impl CFPMomentData {
     }
 }
 
-impl Deref for CFPMomentData {
-    type Target = MomentDataBlock;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
+impl_data_moment!(CFPMomentData);
 
 impl Debug for CFPMomentData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

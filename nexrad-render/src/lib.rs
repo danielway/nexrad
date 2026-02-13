@@ -48,9 +48,8 @@
 #![deny(missing_docs)]
 
 pub use image::RgbaImage;
-use nexrad_model::data::{CFPMomentValue, MomentDataBlock, MomentValue, Radial};
+use nexrad_model::data::{CFPMomentValue, DataMoment, MomentValue, Radial};
 use result::{Error, Result};
-use std::ops::Deref;
 
 mod color;
 pub use crate::color::*;
@@ -192,11 +191,11 @@ pub fn render_radials(
 
     // Get radar parameters from the first radial
     let first_radial = &radials[0];
-    let data_block =
-        get_radial_moment_block(product, first_radial).ok_or(Error::ProductNotFound)?;
-    let first_gate_km = data_block.first_gate_range_km();
-    let gate_interval_km = data_block.gate_interval_km();
-    let gate_count = data_block.gate_count() as usize;
+    let gate_params =
+        get_gate_params(product, first_radial).ok_or(Error::ProductNotFound)?;
+    let first_gate_km = gate_params.first_gate_km;
+    let gate_interval_km = gate_params.gate_interval_km;
+    let gate_count = gate_params.gate_count;
     let radar_range_km = first_gate_km + gate_count as f64 * gate_interval_km;
 
     // Pre-extract all moment float values indexed by azimuth for efficient lookup
@@ -401,16 +400,30 @@ fn find_closest_radial(sorted_azimuths: &[f32], azimuth: f32) -> (usize, f32) {
     }
 }
 
-/// Retrieve the moment data block (gate metadata) from a radial for the given product.
-fn get_radial_moment_block<'a>(product: Product, radial: &'a Radial) -> Option<&'a MomentDataBlock> {
+/// Gate metadata extracted from a moment data block.
+struct GateParams {
+    first_gate_km: f64,
+    gate_interval_km: f64,
+    gate_count: usize,
+}
+
+/// Retrieve gate metadata from a radial for the given product.
+fn get_gate_params(product: Product, radial: &Radial) -> Option<GateParams> {
+    fn extract(m: &impl DataMoment) -> GateParams {
+        GateParams {
+            first_gate_km: m.first_gate_range_km(),
+            gate_interval_km: m.gate_interval_km(),
+            gate_count: m.gate_count() as usize,
+        }
+    }
     match product {
-        Product::Reflectivity => radial.reflectivity().map(|m| m.deref()),
-        Product::Velocity => radial.velocity().map(|m| m.deref()),
-        Product::SpectrumWidth => radial.spectrum_width().map(|m| m.deref()),
-        Product::DifferentialReflectivity => radial.differential_reflectivity().map(|m| m.deref()),
-        Product::DifferentialPhase => radial.differential_phase().map(|m| m.deref()),
-        Product::CorrelationCoefficient => radial.correlation_coefficient().map(|m| m.deref()),
-        Product::ClutterFilterPower => radial.clutter_filter_power().map(|m| m.deref()),
+        Product::Reflectivity => radial.reflectivity().map(extract),
+        Product::Velocity => radial.velocity().map(extract),
+        Product::SpectrumWidth => radial.spectrum_width().map(extract),
+        Product::DifferentialReflectivity => radial.differential_reflectivity().map(extract),
+        Product::DifferentialPhase => radial.differential_phase().map(extract),
+        Product::CorrelationCoefficient => radial.correlation_coefficient().map(extract),
+        Product::ClutterFilterPower => radial.clutter_filter_power().map(extract),
     }
 }
 

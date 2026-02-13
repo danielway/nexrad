@@ -1,9 +1,7 @@
 //! Digital Radar Data (Type 31) message parsing and display.
 
 use nexrad_decode::messages::{decode_messages, digital_radar_data, MessageContents};
-use nexrad_model::data::{
-    CFPMomentData, CFPMomentValue, CFPStatus, MomentData, MomentValue,
-};
+use nexrad_model::data::{CFPMomentData, CFPMomentValue, CFPStatus, MomentData, MomentValue};
 
 /// Parses and displays a Digital Radar Data (Type 31) message with full details.
 pub fn parse_digital_radar_data(data: &[u8]) -> String {
@@ -232,9 +230,8 @@ fn render_moment_block(
             "VEL" => output.push_str(
                 "' '=below ' '..'-'=toward radar '='=zero '+'...'@'=away from radar '~'=folded",
             ),
-            _ => output.push_str(
-                "' '=below threshold '~'=range folded, intensity: . : - = + * # % @",
-            ),
+            _ => output
+                .push_str("' '=below threshold '~'=range folded, intensity: . : - = + * # % @"),
         }
         output.push('\n');
 
@@ -369,14 +366,8 @@ fn render_block_header(
         header.scale(),
         header.offset()
     ));
-    output.push_str(&format!(
-        "Word Size: {} bits\n",
-        header.data_word_size()
-    ));
-    output.push_str(&format!(
-        "Control Flags: {:?}\n",
-        header.control_flags()
-    ));
+    output.push_str(&format!("Word Size: {} bits\n", header.data_word_size()));
+    output.push_str(&format!("Control Flags: {:?}\n", header.control_flags()));
 }
 
 /// Renders ASCII art rows with range labels.
@@ -389,9 +380,7 @@ fn render_ascii_rows(
     for (row_idx, chunk) in ascii.as_bytes().chunks(gates_per_row).enumerate() {
         let start_gate = row_idx * gates_per_row;
         let start_range = header.data_moment_range_raw() as f32 * 0.001
-            + start_gate as f32
-                * header.data_moment_range_sample_interval_raw() as f32
-                * 0.001;
+            + start_gate as f32 * header.data_moment_range_sample_interval_raw() as f32 * 0.001;
         output.push_str(&format!(
             "{:5.1}km |{}|\n",
             start_range,

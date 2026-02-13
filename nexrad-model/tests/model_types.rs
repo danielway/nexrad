@@ -1,8 +1,8 @@
 //! Unit tests for nexrad-model types.
 
 use nexrad_model::data::{
-    CFPMomentData, CFPMomentValue, CFPStatus, MomentData, MomentValue, PulseWidth, Scan, Sweep,
-    VolumeCoveragePattern,
+    CFPMomentData, CFPMomentValue, CFPStatus, DataMoment, MomentData, MomentValue, PulseWidth,
+    Scan, Sweep, VolumeCoveragePattern,
 };
 use nexrad_model::meta::Site;
 
@@ -146,15 +146,7 @@ fn test_moment_data_values_with_scale() {
     // raw=100 -> (100 - 33) / 2 = 33.5
 
     let values = vec![0, 1, 50, 100];
-    let moment = MomentData::from_fixed_point(
-        4,
-        500,
-        250,
-        8,
-        2.0,
-        33.0,
-        values,
-    );
+    let moment = MomentData::from_fixed_point(4, 500, 250, 8, 2.0, 33.0, values);
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 4);
@@ -179,15 +171,7 @@ fn test_moment_data_values_with_scale() {
 fn test_moment_data_values_without_scale() {
     // When scale=0.0, raw values are passed through directly
     let values = vec![0, 1, 50, 100];
-    let moment = MomentData::from_fixed_point(
-        4,
-        500,
-        250,
-        8,
-        0.0,
-        0.0,
-        values,
-    );
+    let moment = MomentData::from_fixed_point(4, 500, 250, 8, 0.0, 0.0, values);
 
     let decoded_values = moment.values();
 
@@ -208,15 +192,7 @@ fn test_moment_data_values_16bit_with_scale() {
     // Two 16-bit big-endian values: 20 and 30
     // With scale=2.0, offset=10.0 => 5.0 and 10.0
     let values = vec![0x00, 0x14, 0x00, 0x1E];
-    let moment = MomentData::from_fixed_point(
-        2,
-        500,
-        250,
-        16,
-        2.0,
-        10.0,
-        values,
-    );
+    let moment = MomentData::from_fixed_point(2, 500, 250, 16, 2.0, 10.0, values);
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 2);
@@ -238,15 +214,7 @@ fn test_moment_data_values_16bit_with_scale() {
 fn test_moment_data_values_16bit_special_values() {
     // 16-bit raw values 0 and 1 should map to special cases when scale != 0.
     let values = vec![0x00, 0x00, 0x00, 0x01];
-    let moment = MomentData::from_fixed_point(
-        2,
-        500,
-        250,
-        16,
-        2.0,
-        0.0,
-        values,
-    );
+    let moment = MomentData::from_fixed_point(2, 500, 250, 16, 2.0, 0.0, values);
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 2);
@@ -257,15 +225,7 @@ fn test_moment_data_values_16bit_special_values() {
 #[test]
 fn test_cfp_moment_values_status_and_data() {
     let values = vec![0, 1, 2, 3, 7, 8, 10];
-    let moment = CFPMomentData::from_fixed_point(
-        7,
-        500,
-        250,
-        8,
-        1.0,
-        0.0,
-        values,
-    );
+    let moment = CFPMomentData::from_fixed_point(7, 500, 250, 8, 1.0, 0.0, values);
 
     let decoded = moment.values();
     assert_eq!(
@@ -280,14 +240,8 @@ fn test_cfp_moment_values_status_and_data() {
         decoded[2],
         CFPMomentValue::Status(CFPStatus::DualPolOnlyFilterApplied)
     );
-    assert_eq!(
-        decoded[3],
-        CFPMomentValue::Status(CFPStatus::Reserved(3))
-    );
-    assert_eq!(
-        decoded[4],
-        CFPMomentValue::Status(CFPStatus::Reserved(7))
-    );
+    assert_eq!(decoded[3], CFPMomentValue::Status(CFPStatus::Reserved(3)));
+    assert_eq!(decoded[4], CFPMomentValue::Status(CFPStatus::Reserved(7)));
     assert_eq!(decoded[5], CFPMomentValue::Value(8.0));
     assert_eq!(decoded[6], CFPMomentValue::Value(10.0));
 }

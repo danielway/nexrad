@@ -7,7 +7,7 @@
 
 use insta::assert_yaml_snapshot;
 use nexrad_data::volume;
-use nexrad_model::data::Scan;
+use nexrad_model::data::{DataMoment, Scan};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
@@ -228,14 +228,12 @@ fn create_moment_stats(
             gate_interval_km: m.gate_interval_km(),
             data_sha256: hash_moment_values(&m.values()),
         }),
-        correlation_coefficient: radial
-            .correlation_coefficient()
-            .map(|m| MomentBlockStats {
-                gate_count: m.gate_count(),
-                first_gate_range_km: m.first_gate_range_km(),
-                gate_interval_km: m.gate_interval_km(),
-                data_sha256: hash_moment_values(&m.values()),
-            }),
+        correlation_coefficient: radial.correlation_coefficient().map(|m| MomentBlockStats {
+            gate_count: m.gate_count(),
+            first_gate_range_km: m.first_gate_range_km(),
+            gate_interval_km: m.gate_interval_km(),
+            data_sha256: hash_moment_values(&m.values()),
+        }),
         clutter_filter_power: radial.clutter_filter_power().map(|m| MomentBlockStats {
             gate_count: m.gate_count(),
             first_gate_range_km: m.first_gate_range_km(),

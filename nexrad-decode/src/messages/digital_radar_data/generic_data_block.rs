@@ -57,12 +57,11 @@ impl<'a> GenericDataBlock<'a> {
         &self.encoded_data
     }
 
-    /// Get a moment data block from this generic data block. Note that this will clone the
-    /// underlying data. Wrap the result in [`nexrad_model::data::MomentData`] or
-    /// [`nexrad_model::data::CFPMomentData`] to decode gate values.
+    /// Create a [`MomentData`](nexrad_model::data::MomentData) from this generic data block,
+    /// cloning the underlying encoded data.
     #[cfg(feature = "nexrad-model")]
-    pub fn moment_data_block(&self) -> nexrad_model::data::MomentDataBlock {
-        nexrad_model::data::MomentDataBlock::from_fixed_point(
+    pub fn moment_data(&self) -> nexrad_model::data::MomentData {
+        nexrad_model::data::MomentData::from_fixed_point(
             self.header.number_of_data_moment_gates(),
             self.header.data_moment_range_raw(),
             self.header.data_moment_range_sample_interval_raw(),
@@ -73,12 +72,41 @@ impl<'a> GenericDataBlock<'a> {
         )
     }
 
-    /// Convert this generic data block into a model moment data block, consuming the encoded
-    /// data without copying. Wrap the result in [`nexrad_model::data::MomentData`] or
-    /// [`nexrad_model::data::CFPMomentData`] to decode gate values.
+    /// Convert this generic data block into a [`MomentData`](nexrad_model::data::MomentData),
+    /// consuming the encoded data without copying.
     #[cfg(feature = "nexrad-model")]
-    pub fn into_moment_data_block(self) -> nexrad_model::data::MomentDataBlock {
-        nexrad_model::data::MomentDataBlock::from_fixed_point(
+    pub fn into_moment_data(self) -> nexrad_model::data::MomentData {
+        nexrad_model::data::MomentData::from_fixed_point(
+            self.header.number_of_data_moment_gates(),
+            self.header.data_moment_range_raw(),
+            self.header.data_moment_range_sample_interval_raw(),
+            self.header.data_word_size(),
+            self.header.scale(),
+            self.header.offset(),
+            self.encoded_data.into_inner().into_owned(),
+        )
+    }
+
+    /// Create a [`CFPMomentData`](nexrad_model::data::CFPMomentData) from this generic data
+    /// block, cloning the underlying encoded data.
+    #[cfg(feature = "nexrad-model")]
+    pub fn cfp_moment_data(&self) -> nexrad_model::data::CFPMomentData {
+        nexrad_model::data::CFPMomentData::from_fixed_point(
+            self.header.number_of_data_moment_gates(),
+            self.header.data_moment_range_raw(),
+            self.header.data_moment_range_sample_interval_raw(),
+            self.header.data_word_size(),
+            self.header.scale(),
+            self.header.offset(),
+            self.encoded_data.to_vec(),
+        )
+    }
+
+    /// Convert this generic data block into a [`CFPMomentData`](nexrad_model::data::CFPMomentData),
+    /// consuming the encoded data without copying.
+    #[cfg(feature = "nexrad-model")]
+    pub fn into_cfp_moment_data(self) -> nexrad_model::data::CFPMomentData {
+        nexrad_model::data::CFPMomentData::from_fixed_point(
             self.header.number_of_data_moment_gates(),
             self.header.data_moment_range_raw(),
             self.header.data_moment_range_sample_interval_raw(),

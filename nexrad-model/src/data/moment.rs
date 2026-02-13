@@ -105,12 +105,12 @@ pub enum CFPStatus {
 
 /// Encoded moment data from a radial containing gate metadata and raw values.
 ///
-/// This type provides gate metadata accessors (count, range, interval) shared by both
-/// generic moments and CFP moments. It does not decode values — use [`MomentData`] or
-/// [`CFPMomentData`] for decoded gate values.
+/// This is an internal type providing gate metadata accessors (count, range, interval) shared
+/// by both [`MomentData`] and [`CFPMomentData`]. Use those public wrapper types for decoded
+/// gate values and access to gate metadata via the [`DataMoment`] trait.
 #[derive(Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct MomentDataBlock {
+pub(crate) struct MomentDataBlock {
     gate_count: u16,
     first_gate_range: u16,
     gate_interval: u16,
@@ -123,7 +123,7 @@ pub struct MomentDataBlock {
 
 impl MomentDataBlock {
     /// Create new moment data block from fixed-point encoding.
-    pub fn from_fixed_point(
+    pub(crate) fn from_fixed_point(
         gate_count: u16,
         first_gate_range: u16,
         gate_interval: u16,
@@ -144,57 +144,57 @@ impl MomentDataBlock {
     }
 
     /// The number of gates in this data moment.
-    pub fn gate_count(&self) -> u16 {
+    fn gate_count(&self) -> u16 {
         self.gate_count
     }
 
     /// The range to the center of the first gate in kilometers.
-    pub fn first_gate_range_km(&self) -> f64 {
+    fn first_gate_range_km(&self) -> f64 {
         self.first_gate_range as f64 * 0.001
     }
 
     /// The range to the center of the first gate.
     #[cfg(feature = "uom")]
-    pub fn first_gate_range(&self) -> Length {
+    fn first_gate_range(&self) -> Length {
         Length::new::<kilometer>(self.first_gate_range as f64 * 0.001)
     }
 
     /// The range between the centers of consecutive gates in kilometers.
-    pub fn gate_interval_km(&self) -> f64 {
+    fn gate_interval_km(&self) -> f64 {
         self.gate_interval as f64 * 0.001
     }
 
     /// Number of bits per gate (8 or 16).
-    pub fn data_word_size(&self) -> u8 {
+    fn data_word_size(&self) -> u8 {
         self.data_word_size
     }
 
     /// The range between the centers of consecutive gates.
     #[cfg(feature = "uom")]
-    pub fn gate_interval(&self) -> Length {
+    fn gate_interval(&self) -> Length {
         Length::new::<kilometer>(self.gate_interval as f64 * 0.001)
     }
 
     /// The scale factor used to decode raw gate values into floating-point values.
     /// A value of `0.0` means raw values are used directly without scaling.
-    pub fn scale(&self) -> f32 {
+    fn scale(&self) -> f32 {
         self.scale
     }
 
     /// The offset used to decode raw gate values into floating-point values.
     /// The decoded value is `(raw - offset) / scale`.
-    pub fn offset(&self) -> f32 {
+    fn offset(&self) -> f32 {
         self.offset
     }
 
     /// The raw encoded gate values as bytes. For 8-bit moments, each byte is one gate.
     /// For 16-bit moments, each pair of bytes is a big-endian `u16` gate value.
-    pub fn raw_values(&self) -> &[u8] {
+    fn raw_values(&self) -> &[u8] {
         &self.values
     }
 
     /// Iterator over raw gate values as `u16`, handling both 8-bit and 16-bit word sizes.
-    pub fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
+    fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
         let is_16bit = self.data_word_size == 16;
         let step = if is_16bit { 2 } else { 1 };
         self.values.chunks(step).map(move |chunk| {
@@ -204,41 +204,6 @@ impl MomentDataBlock {
                 chunk[0] as u16
             }
         })
-    }
-}
-
-impl DataMoment for MomentDataBlock {
-    fn gate_count(&self) -> u16 {
-        MomentDataBlock::gate_count(self)
-    }
-    fn first_gate_range_km(&self) -> f64 {
-        MomentDataBlock::first_gate_range_km(self)
-    }
-    #[cfg(feature = "uom")]
-    fn first_gate_range(&self) -> Length {
-        MomentDataBlock::first_gate_range(self)
-    }
-    fn gate_interval_km(&self) -> f64 {
-        MomentDataBlock::gate_interval_km(self)
-    }
-    fn data_word_size(&self) -> u8 {
-        MomentDataBlock::data_word_size(self)
-    }
-    #[cfg(feature = "uom")]
-    fn gate_interval(&self) -> Length {
-        MomentDataBlock::gate_interval(self)
-    }
-    fn scale(&self) -> f32 {
-        MomentDataBlock::scale(self)
-    }
-    fn offset(&self) -> f32 {
-        MomentDataBlock::offset(self)
-    }
-    fn raw_values(&self) -> &[u8] {
-        MomentDataBlock::raw_values(self)
-    }
-    fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
-        MomentDataBlock::raw_gate_values(self)
     }
 }
 
@@ -268,11 +233,6 @@ pub struct MomentData {
 }
 
 impl MomentData {
-    /// Create new moment data wrapping a data block.
-    pub fn new(inner: MomentDataBlock) -> Self {
-        Self { inner }
-    }
-
     /// Create new moment data from fixed-point encoding.
     pub fn from_fixed_point(
         gate_count: u16,
@@ -371,11 +331,6 @@ pub struct CFPMomentData {
 }
 
 impl CFPMomentData {
-    /// Create a new CFP moment data wrapper.
-    pub fn new(inner: MomentDataBlock) -> Self {
-        Self { inner }
-    }
-
     /// Create new CFP moment data from fixed-point encoding.
     pub fn from_fixed_point(
         gate_count: u16,

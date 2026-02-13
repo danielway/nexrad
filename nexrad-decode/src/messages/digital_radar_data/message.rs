@@ -290,9 +290,7 @@ impl<'a> Message<'a> {
     #[cfg(feature = "nexrad-model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{
-            CFPMomentData, MomentData, Radial, RadialStatus as ModelRadialStatus,
-        };
+        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
 
         Ok(Radial::new(
             self.header
@@ -313,19 +311,19 @@ impl<'a> Message<'a> {
             self.header.elevation_number(),
             self.header.elevation_angle_raw(),
             self.reflectivity_data_block
-                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
+                .map(|block| block.into_inner().into_moment_data()),
             self.velocity_data_block
-                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
+                .map(|block| block.into_inner().into_moment_data()),
             self.spectrum_width_data_block
-                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
+                .map(|block| block.into_inner().into_moment_data()),
             self.differential_reflectivity_data_block
-                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
+                .map(|block| block.into_inner().into_moment_data()),
             self.differential_phase_data_block
-                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
+                .map(|block| block.into_inner().into_moment_data()),
             self.correlation_coefficient_data_block
-                .map(|block| MomentData::new(block.into_inner().into_moment_data_block())),
+                .map(|block| block.into_inner().into_moment_data()),
             self.clutter_filter_power_data_block
-                .map(|block| CFPMomentData::new(block.into_inner().into_moment_data_block())),
+                .map(|block| block.into_inner().into_cfp_moment_data()),
         ))
     }
 }

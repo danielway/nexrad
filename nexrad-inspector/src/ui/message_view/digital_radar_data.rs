@@ -1,7 +1,7 @@
 //! Digital Radar Data (Type 31) message parsing and display.
 
 use nexrad_decode::messages::{decode_messages, digital_radar_data, MessageContents};
-use nexrad_model::data::{CFPMomentData, CFPMomentValue, CFPStatus, MomentData, MomentValue};
+use nexrad_model::data::{CFPMomentValue, CFPStatus, MomentValue};
 
 /// Parses and displays a Digital Radar Data (Type 31) message with full details.
 pub fn parse_digital_radar_data(data: &[u8]) -> String {
@@ -186,14 +186,14 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
 
     for (id, name, block_opt) in moment_blocks {
         if let Some(block) = block_opt {
-            let decoded = MomentData::new(block.moment_data_block()).values();
+            let decoded = block.moment_data().values();
             render_moment_block(&mut output, id, name, block.header(), &decoded);
         }
     }
 
     // CFP has its own value type with built-in CFP-aware decoding
     if let Some(block) = msg.clutter_filter_power_data_block() {
-        let decoded = CFPMomentData::new(block.moment_data_block()).values();
+        let decoded = block.cfp_moment_data().values();
         render_cfp_block(&mut output, block.header(), &decoded);
     }
 

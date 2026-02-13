@@ -191,8 +191,7 @@ pub fn render_radials(
 
     // Get radar parameters from the first radial
     let first_radial = &radials[0];
-    let gate_params =
-        get_gate_params(product, first_radial).ok_or(Error::ProductNotFound)?;
+    let gate_params = get_gate_params(product, first_radial).ok_or(Error::ProductNotFound)?;
     let first_gate_km = gate_params.first_gate_km;
     let gate_interval_km = gate_params.gate_interval_km;
     let gate_count = gate_params.gate_count;

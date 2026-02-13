@@ -8,7 +8,7 @@ use nexrad_data::aws::archive::{self, download_file, list_files};
 use nexrad_data::result::Result;
 use nexrad_data::volume::File;
 use nexrad_decode::messages::MessageContents;
-use nexrad_model::data::{MomentData, MomentValue};
+use nexrad_model::data::MomentValue;
 use std::fs::create_dir;
 use std::io::Read;
 use std::io::Write;
@@ -143,7 +143,7 @@ async fn main() -> Result<()> {
                             message_index,
                             message.header().date_time(),
                         );
-                        let values = MomentData::new(block.moment_data_block()).values();
+                        let values = block.moment_data().values();
                         info!("  {}", scaled_values_to_ascii(&values[..100]));
                     }
                 } else {

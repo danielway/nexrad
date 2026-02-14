@@ -432,8 +432,7 @@ fn get_gate_params(product: Product, radial: &Radial) -> Option<GateParams> {
 fn get_radial_float_values(product: Product, radial: &Radial) -> Option<Vec<Option<f32>>> {
     fn moment_floats(moment: Option<&nexrad_model::data::MomentData>) -> Option<Vec<Option<f32>>> {
         moment.map(|m| {
-            m.values()
-                .into_iter()
+            m.iter()
                 .map(|v| match v {
                     MomentValue::Value(f) => Some(f),
                     _ => None,
@@ -450,8 +449,7 @@ fn get_radial_float_values(product: Product, radial: &Radial) -> Option<Vec<Opti
         Product::DifferentialPhase => moment_floats(radial.differential_phase()),
         Product::CorrelationCoefficient => moment_floats(radial.correlation_coefficient()),
         Product::ClutterFilterPower => radial.clutter_filter_power().map(|cfp| {
-            cfp.values()
-                .into_iter()
+            cfp.iter()
                 .map(|v| match v {
                     CFPMomentValue::Value(f) => Some(f),
                     CFPMomentValue::Status(_) => None,

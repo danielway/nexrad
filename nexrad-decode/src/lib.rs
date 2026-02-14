@@ -45,7 +45,7 @@
 //!
 //! - [`messages`] - Message parsing and type definitions
 //! - [`summarize`] - Utilities for summarizing message collections
-//! - [`binary_data`] - Wrapper type for binary blobs with debug support
+//! - `binary_data` - Wrapper type for binary blobs with debug support
 //!
 //! # Crate Boundaries
 //!

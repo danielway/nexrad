@@ -323,7 +323,7 @@ pub enum CFPMomentValue {
     Value(f32),
 }
 
-/// Clutter filter power (CFP) moment data wrapping a [`MomentDataBlock`].
+/// Clutter filter power (CFP) moment data.
 ///
 /// Gate metadata (count, range, interval) is available through the [`DataMoment`] trait —
 /// see [`gate_count`](DataMoment::gate_count), [`first_gate_range_km`](DataMoment::first_gate_range_km),

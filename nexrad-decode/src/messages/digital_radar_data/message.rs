@@ -283,33 +283,37 @@ impl<'a> Message<'a> {
     /// longer needed.
     #[cfg(feature = "nexrad-model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
-        self.clone().into_radial()
+        Self::build_radial(
+            &self.header,
+            self.reflectivity_data_block
+                .as_ref()
+                .map(|block| block.inner().moment_data()),
+            self.velocity_data_block
+                .as_ref()
+                .map(|block| block.inner().moment_data()),
+            self.spectrum_width_data_block
+                .as_ref()
+                .map(|block| block.inner().moment_data()),
+            self.differential_reflectivity_data_block
+                .as_ref()
+                .map(|block| block.inner().moment_data()),
+            self.differential_phase_data_block
+                .as_ref()
+                .map(|block| block.inner().moment_data()),
+            self.correlation_coefficient_data_block
+                .as_ref()
+                .map(|block| block.inner().moment_data()),
+            self.clutter_filter_power_data_block
+                .as_ref()
+                .map(|block| block.inner().cfp_moment_data()),
+        )
     }
 
     /// Convert this digital radar data message into a common model radial, minimizing data copy.
     #[cfg(feature = "nexrad-model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
-        use crate::result::Error;
-        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
-
-        Ok(Radial::new(
-            self.header
-                .date_time()
-                .ok_or(Error::MessageMissingDateError)?
-                .timestamp_millis(),
-            self.header.azimuth_number(),
-            self.header.azimuth_angle_raw(),
-            self.header.azimuth_resolution_spacing_raw() as f32 * 0.5,
-            match self.header.radial_status() {
-                RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
-                RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
-                RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
-                RadialStatus::VolumeScanStart => ModelRadialStatus::VolumeScanStart,
-                RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
-                RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
-            },
-            self.header.elevation_number(),
-            self.header.elevation_angle_raw(),
+        Self::build_radial(
+            &self.header,
             self.reflectivity_data_block
                 .map(|block| block.into_inner().into_moment_data()),
             self.velocity_data_block
@@ -324,6 +328,48 @@ impl<'a> Message<'a> {
                 .map(|block| block.into_inner().into_moment_data()),
             self.clutter_filter_power_data_block
                 .map(|block| block.into_inner().into_cfp_moment_data()),
+        )
+    }
+
+    #[cfg(feature = "nexrad-model")]
+    fn build_radial(
+        header: &Header<'_>,
+        reflectivity: Option<nexrad_model::data::MomentData>,
+        velocity: Option<nexrad_model::data::MomentData>,
+        spectrum_width: Option<nexrad_model::data::MomentData>,
+        differential_reflectivity: Option<nexrad_model::data::MomentData>,
+        differential_phase: Option<nexrad_model::data::MomentData>,
+        correlation_coefficient: Option<nexrad_model::data::MomentData>,
+        clutter_filter_power: Option<nexrad_model::data::CFPMomentData>,
+    ) -> crate::result::Result<nexrad_model::data::Radial> {
+        use crate::result::Error;
+        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
+
+        Ok(Radial::new(
+            header
+                .date_time()
+                .ok_or(Error::MessageMissingDateError)?
+                .timestamp_millis(),
+            header.azimuth_number(),
+            header.azimuth_angle_raw(),
+            header.azimuth_resolution_spacing_raw() as f32 * 0.5,
+            match header.radial_status() {
+                RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
+                RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
+                RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
+                RadialStatus::VolumeScanStart => ModelRadialStatus::VolumeScanStart,
+                RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
+                RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
+            },
+            header.elevation_number(),
+            header.elevation_angle_raw(),
+            reflectivity,
+            velocity,
+            spectrum_width,
+            differential_reflectivity,
+            differential_phase,
+            correlation_coefficient,
+            clutter_filter_power,
         ))
     }
 }

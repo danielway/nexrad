@@ -9,10 +9,10 @@ use std::borrow::Cow;
 #[derive(Clone, PartialEq, Debug)]
 pub struct GenericDataBlock<'a> {
     /// The generic data block's header information.
-    pub(crate) header: GenericDataBlockHeader<'a>,
+    header: GenericDataBlockHeader<'a>,
 
     /// The generic data block's encoded moment data.
-    pub(crate) encoded_data: BinaryData<Cow<'a, [u8]>>,
+    encoded_data: BinaryData<Cow<'a, [u8]>>,
 }
 
 impl<'a> GenericDataBlock<'a> {

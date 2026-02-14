@@ -132,6 +132,12 @@ impl MomentDataBlock {
         offset: f32,
         values: Vec<u8>,
     ) -> Self {
+        debug_assert!(
+            data_word_size != 16 || values.len() % 2 == 0,
+            "16-bit moment data must have an even number of bytes, got {}",
+            values.len()
+        );
+
         Self {
             gate_count,
             first_gate_range,
@@ -197,7 +203,7 @@ impl MomentDataBlock {
     fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
         let is_16bit = self.data_word_size == 16;
         let step = if is_16bit { 2 } else { 1 };
-        self.values.chunks(step).map(move |chunk| {
+        self.values.chunks_exact(step).map(move |chunk| {
             if is_16bit {
                 u16::from_be_bytes([chunk[0], chunk[1]])
             } else {

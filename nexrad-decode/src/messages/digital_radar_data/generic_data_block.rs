@@ -47,7 +47,7 @@ impl<'a> GenericDataBlock<'a> {
 
     /// Raw gate values for this moment/radial ordered in ascending distance from the radar. These
     /// values are stored in a fixed-point representation using the header's offset and scale fields.
-    /// Use [`nexrad_model::data::MomentData`] or [`nexrad_model::data::CFPMomentData`] to decode.
+    /// Use `nexrad_model::data::MomentData` or `nexrad_model::data::CFPMomentData` to decode.
     pub fn encoded_values(&self) -> &[u8] {
         &self.encoded_data
     }

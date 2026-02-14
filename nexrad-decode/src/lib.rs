@@ -45,7 +45,7 @@
 //!
 //! - [`messages`] - Message parsing and type definitions
 //! - [`summarize`] - Utilities for summarizing message collections
-//! - [`binary_data`] - Wrapper type for binary blobs with debug support
+//! - `binary_data` - Wrapper type for binary blobs with debug support
 //!
 //! # Crate Boundaries
 //!
@@ -78,7 +78,7 @@
 #![deny(missing_docs)]
 
 /// Wrapper type for binary data with debug formatting support.
-pub mod binary_data;
+pub(crate) mod binary_data;
 /// Message parsing and type definitions for NEXRAD Level II data.
 pub mod messages;
 /// Result and error types for decoding operations.

@@ -16,3 +16,14 @@ differential_reflectivity:
   first_gate_range_km: 2.125
   gate_interval_km: 0.25
   data_sha256: e5e5212148429e52c60215082f2b3cf57fdf497c7023be9450d1aa8bb4289f09
+differential_phase:
+  gate_count: 1192
+  first_gate_range_km: 2.125
+  gate_interval_km: 0.25
+  data_sha256: 77f560d7b61f3f438bfacb1338465a1f775a7411cd5aac76b84f134eee16ab36
+correlation_coefficient:
+  gate_count: 1192
+  first_gate_range_km: 2.125
+  gate_interval_km: 0.25
+  data_sha256: c64b94abfcc344724491e7f9ae4c8aecea33beca03a32fc72a4519d0e1a1429d
+clutter_filter_power: ~

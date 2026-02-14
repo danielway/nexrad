@@ -1,7 +1,7 @@
 #![cfg(feature = "nexrad-model")]
 
 use nexrad_data::volume;
-use nexrad_model::data::RadialStatus;
+use nexrad_model::data::{DataMoment, RadialStatus};
 
 const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
 

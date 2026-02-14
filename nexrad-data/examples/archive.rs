@@ -7,8 +7,8 @@ use log::{debug, info, trace, warn, LevelFilter};
 use nexrad_data::aws::archive::{self, download_file, list_files};
 use nexrad_data::result::Result;
 use nexrad_data::volume::File;
-use nexrad_decode::messages::digital_radar_data::ScaledMomentValue;
 use nexrad_decode::messages::MessageContents;
+use nexrad_model::data::MomentValue;
 use std::fs::create_dir;
 use std::io::Read;
 use std::io::Write;
@@ -143,10 +143,8 @@ async fn main() -> Result<()> {
                             message_index,
                             message.header().date_time(),
                         );
-                        info!(
-                            "  {}",
-                            scaled_values_to_ascii(&block.decoded_values()[..100])
-                        );
+                        let values = block.moment_data().values();
+                        info!("  {}", scaled_values_to_ascii(&values[..100]));
                     }
                 } else {
                     info!(
@@ -165,9 +163,9 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/// Converts a slice of ScaledMomentValue to a visual ASCII string representation.
+/// Converts a slice of MomentValue to a visual ASCII string representation.
 /// Uses characters ordered by visual density to represent radar reflectivity values.
-fn scaled_values_to_ascii(values: &[ScaledMomentValue]) -> String {
+fn scaled_values_to_ascii(values: &[MomentValue]) -> String {
     // Characters ordered by increasing visual density
     const CHARS: &[char] = &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
 
@@ -178,14 +176,14 @@ fn scaled_values_to_ascii(values: &[ScaledMomentValue]) -> String {
     values
         .iter()
         .map(|v| match v {
-            ScaledMomentValue::Value(val) => {
+            MomentValue::Value(val) => {
                 // Normalize to 0.0-1.0 range, then map to character index
                 let normalized = ((val - MIN_DBZ) / (MAX_DBZ - MIN_DBZ)).clamp(0.0, 1.0);
                 let index = (normalized * (CHARS.len() - 1) as f32) as usize;
                 CHARS[index]
             }
-            ScaledMomentValue::BelowThreshold => ' ',
-            ScaledMomentValue::RangeFolded => '~',
+            MomentValue::BelowThreshold => ' ',
+            MomentValue::RangeFolded => '~',
         })
         .collect()
 }

@@ -53,7 +53,7 @@ required-features = ["aws-polling"]
 [[example]]
 name = "archive"
 path = "examples/archive.rs"
-required-features = ["aws"]
+required-features = ["aws", "nexrad-model"]
 
 [[example]]
 name = "latency_analysis"

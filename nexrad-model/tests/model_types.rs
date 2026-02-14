@@ -1,6 +1,9 @@
 //! Unit tests for nexrad-model types.
 
-use nexrad_model::data::{MomentData, MomentValue, PulseWidth, Scan, Sweep, VolumeCoveragePattern};
+use nexrad_model::data::{
+    CFPMomentData, CFPMomentValue, CFPStatus, DataMoment, MomentData, MomentValue, PulseWidth,
+    Scan, Sweep, VolumeCoveragePattern,
+};
 use nexrad_model::meta::Site;
 
 /// Helper to create a minimal VCP for testing
@@ -220,6 +223,30 @@ fn test_moment_data_values_16bit_special_values() {
 }
 
 #[test]
+fn test_cfp_moment_values_status_and_data() {
+    let values = vec![0, 1, 2, 3, 7, 8, 10];
+    let moment = CFPMomentData::from_fixed_point(7, 500, 250, 8, 1.0, 0.0, values);
+
+    let decoded = moment.values();
+    assert_eq!(
+        decoded[0],
+        CFPMomentValue::Status(CFPStatus::FilterNotApplied)
+    );
+    assert_eq!(
+        decoded[1],
+        CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied)
+    );
+    assert_eq!(
+        decoded[2],
+        CFPMomentValue::Status(CFPStatus::DualPolOnlyFilterApplied)
+    );
+    assert_eq!(decoded[3], CFPMomentValue::Status(CFPStatus::Reserved(3)));
+    assert_eq!(decoded[4], CFPMomentValue::Status(CFPStatus::Reserved(7)));
+    assert_eq!(decoded[5], CFPMomentValue::Value(8.0));
+    assert_eq!(decoded[6], CFPMomentValue::Value(10.0));
+}
+
+#[test]
 fn test_moment_value_equality() {
     assert_eq!(MomentValue::BelowThreshold, MomentValue::BelowThreshold);
     assert_eq!(MomentValue::RangeFolded, MomentValue::RangeFolded);
@@ -227,6 +254,20 @@ fn test_moment_value_equality() {
 
     assert_ne!(MomentValue::BelowThreshold, MomentValue::RangeFolded);
     assert_ne!(MomentValue::Value(10.0), MomentValue::Value(20.0));
+}
+
+#[test]
+fn test_cfp_moment_value_equality() {
+    assert_eq!(
+        CFPMomentValue::Status(CFPStatus::FilterNotApplied),
+        CFPMomentValue::Status(CFPStatus::FilterNotApplied)
+    );
+    assert_ne!(
+        CFPMomentValue::Status(CFPStatus::FilterNotApplied),
+        CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied)
+    );
+    assert_eq!(CFPMomentValue::Value(10.0), CFPMomentValue::Value(10.0));
+    assert_ne!(CFPMomentValue::Value(10.0), CFPMomentValue::Value(20.0));
 }
 
 #[test]
@@ -240,4 +281,8 @@ fn test_moment_value_debug() {
 
     let debug = format!("{:?}", MomentValue::RangeFolded);
     assert!(debug.contains("RangeFolded"));
+
+    let debug = format!("{:?}", CFPMomentValue::Status(CFPStatus::Reserved(7)));
+    assert!(debug.contains("Status"));
+    assert!(debug.contains("Reserved"));
 }

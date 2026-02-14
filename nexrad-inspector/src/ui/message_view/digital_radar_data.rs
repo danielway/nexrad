@@ -1,6 +1,7 @@
 //! Digital Radar Data (Type 31) message parsing and display.
 
 use nexrad_decode::messages::{decode_messages, digital_radar_data, MessageContents};
+use nexrad_model::data::{CFPMomentValue, CFPStatus, MomentValue};
 
 /// Parses and displays a Digital Radar Data (Type 31) message with full details.
 pub fn parse_digital_radar_data(data: &[u8]) -> String {
@@ -181,130 +182,216 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
             "Correlation Coefficient",
             msg.correlation_coefficient_data_block(),
         ),
-        (
-            "CFP",
-            "Clutter Filter Power",
-            msg.clutter_filter_power_data_block(),
-        ),
     ];
 
     for (id, name, block_opt) in moment_blocks {
         if let Some(block) = block_opt {
-            output.push_str(&format!("\n--- {} ({}) ---\n", name, id));
-            output.push_str(&format!(
-                "Gates: {}\n",
-                block.header().number_of_data_moment_gates()
-            ));
-            output.push_str(&format!(
-                "First Gate: {:.3} km\n",
-                block.header().data_moment_range_raw() as f32 * 0.001
-            ));
-            output.push_str(&format!(
-                "Gate Interval: {:.3} km\n",
-                block.header().data_moment_range_sample_interval_raw() as f32 * 0.001
-            ));
-            output.push_str(&format!(
-                "SNR Threshold: {:.3} dB\n",
-                block.header().snr_threshold_raw()
-            ));
-            output.push_str(&format!(
-                "Scale/Offset: {:.2}/{:.2}\n",
-                block.header().scale(),
-                block.header().offset()
-            ));
-            output.push_str(&format!(
-                "Word Size: {} bits\n",
-                block.header().data_word_size()
-            ));
-            output.push_str(&format!(
-                "Control Flags: {:?}\n",
-                block.header().control_flags()
-            ));
-
-            // Get decoded values and create ASCII visualization
-            let decoded = block.decoded_values();
-            let gate_count = decoded.len();
-
-            if gate_count > 0 {
-                output.push_str(&format!("\nData ({} gates):\n", gate_count));
-
-                // Show ASCII visualization in rows
-                let gates_per_row = 80;
-                let ascii = scaled_values_to_ascii(&decoded, id);
-
-                for (row_idx, chunk) in ascii.as_bytes().chunks(gates_per_row).enumerate() {
-                    let start_gate = row_idx * gates_per_row;
-                    let start_range = block.header().data_moment_range_raw() as f32 * 0.001
-                        + start_gate as f32
-                            * block.header().data_moment_range_sample_interval_raw() as f32
-                            * 0.001;
-                    output.push_str(&format!(
-                        "{:5.1}km |{}|\n",
-                        start_range,
-                        std::str::from_utf8(chunk).unwrap_or("")
-                    ));
-                }
-
-                // Legend
-                output.push_str("\nLegend: ");
-                match id {
-                    "REF" => output.push_str(
-                        "' '=<-30 '.'=-20 ':'=-10 '-'=0 '='=10 '+'=20 '*'=30 '#'=40 '%'=50 '@'=60+ dBZ",
-                    ),
-                    "VEL" => output.push_str(
-                        "' '=below ' '..'-'=toward radar '='=zero '+'...'@'=away from radar '~'=folded",
-                    ),
-                    _ => output.push_str(
-                        "' '=below threshold '~'=range folded, intensity: . : - = + * # % @",
-                    ),
-                }
-                output.push('\n');
-
-                // Statistics
-                let mut value_count = 0;
-                let mut below_count = 0;
-                let mut folded_count = 0;
-                let mut min_val = f32::MAX;
-                let mut max_val = f32::MIN;
-                let mut sum = 0.0f64;
-
-                for val in &decoded {
-                    match val {
-                        digital_radar_data::ScaledMomentValue::Value(v) => {
-                            value_count += 1;
-                            sum += *v as f64;
-                            min_val = min_val.min(*v);
-                            max_val = max_val.max(*v);
-                        }
-                        digital_radar_data::ScaledMomentValue::BelowThreshold => below_count += 1,
-                        digital_radar_data::ScaledMomentValue::RangeFolded => folded_count += 1,
-                    }
-                }
-
-                output.push_str(&format!(
-                    "\nStats: {} values, {} below threshold, {} range folded\n",
-                    value_count, below_count, folded_count
-                ));
-                if value_count > 0 {
-                    let avg = sum / value_count as f64;
-                    output.push_str(&format!(
-                        "Range: {:.2} to {:.2}, Avg: {:.2}\n",
-                        min_val, max_val, avg
-                    ));
-                }
-            }
+            let decoded = block.moment_data().values();
+            render_moment_block(&mut output, id, name, block.header(), &decoded);
         }
+    }
+
+    // CFP has its own value type with built-in CFP-aware decoding
+    if let Some(block) = msg.clutter_filter_power_data_block() {
+        let decoded = block.cfp_moment_data().values();
+        render_cfp_block(&mut output, block.header(), &decoded);
     }
 
     output
 }
 
-/// Converts a slice of ScaledMomentValue to a visual ASCII string representation.
+/// Renders a single moment data block's header, ASCII visualization, and statistics.
+fn render_moment_block(
+    output: &mut String,
+    id: &str,
+    name: &str,
+    header: &digital_radar_data::GenericDataBlockHeader,
+    decoded: &[MomentValue],
+) {
+    render_block_header(output, id, name, header);
+
+    let gate_count = decoded.len();
+
+    if gate_count > 0 {
+        output.push_str(&format!("\nData ({} gates):\n", gate_count));
+
+        // Show ASCII visualization in rows
+        let gates_per_row = 80;
+        let ascii = scaled_values_to_ascii(decoded, id);
+
+        render_ascii_rows(output, header, &ascii, gates_per_row);
+
+        // Legend
+        output.push_str("\nLegend: ");
+        match id {
+            "REF" => output.push_str(
+                "' '=<-30 '.'=-20 ':'=-10 '-'=0 '='=10 '+'=20 '*'=30 '#'=40 '%'=50 '@'=60+ dBZ",
+            ),
+            "VEL" => output.push_str(
+                "' '=below ' '..'-'=toward radar '='=zero '+'...'@'=away from radar '~'=folded",
+            ),
+            _ => output
+                .push_str("' '=below threshold '~'=range folded, intensity: . : - = + * # % @"),
+        }
+        output.push('\n');
+
+        // Statistics
+        let mut value_count = 0;
+        let mut below_count = 0;
+        let mut folded_count = 0;
+        let mut min_val = f32::MAX;
+        let mut max_val = f32::MIN;
+        let mut sum = 0.0f64;
+
+        for val in decoded {
+            match val {
+                MomentValue::Value(v) => {
+                    value_count += 1;
+                    sum += *v as f64;
+                    min_val = min_val.min(*v);
+                    max_val = max_val.max(*v);
+                }
+                MomentValue::BelowThreshold => below_count += 1,
+                MomentValue::RangeFolded => folded_count += 1,
+            }
+        }
+
+        output.push_str(&format!(
+            "\nStats: {} values, {} below threshold, {} range folded\n",
+            value_count, below_count, folded_count
+        ));
+        if value_count > 0 {
+            let avg = sum / value_count as f64;
+            output.push_str(&format!(
+                "Range: {:.2} to {:.2}, Avg: {:.2}\n",
+                min_val, max_val, avg
+            ));
+        }
+    }
+}
+
+/// Renders the CFP data block with CFP-specific value types.
+fn render_cfp_block(
+    output: &mut String,
+    header: &digital_radar_data::GenericDataBlockHeader,
+    decoded: &[CFPMomentValue],
+) {
+    render_block_header(output, "CFP", "Clutter Filter Power", header);
+
+    let gate_count = decoded.len();
+
+    if gate_count > 0 {
+        output.push_str(&format!("\nData ({} gates):\n", gate_count));
+
+        let gates_per_row = 80;
+        let ascii = cfp_values_to_ascii(decoded);
+
+        render_ascii_rows(output, header, &ascii, gates_per_row);
+
+        output.push_str("\nLegend: ");
+        output.push_str("'!'=status, intensity: . : - = + * # % @");
+        output.push('\n');
+
+        // Statistics
+        let mut value_count = 0;
+        let mut status_count = 0;
+        let mut reserved_count = 0;
+        let mut min_val = f32::MAX;
+        let mut max_val = f32::MIN;
+        let mut sum = 0.0f64;
+
+        for val in decoded {
+            match val {
+                CFPMomentValue::Value(v) => {
+                    value_count += 1;
+                    sum += *v as f64;
+                    min_val = min_val.min(*v);
+                    max_val = max_val.max(*v);
+                }
+                CFPMomentValue::Status(status) => {
+                    status_count += 1;
+                    if matches!(status, CFPStatus::Reserved(_)) {
+                        reserved_count += 1;
+                    }
+                }
+            }
+        }
+
+        output.push_str(&format!(
+            "\nStats: {} values, {} status\n",
+            value_count, status_count
+        ));
+        if status_count > 0 {
+            output.push_str(&format!(
+                "CFP status: {} ({} reserved)\n",
+                status_count, reserved_count
+            ));
+        }
+        if value_count > 0 {
+            let avg = sum / value_count as f64;
+            output.push_str(&format!(
+                "Range: {:.2} to {:.2}, Avg: {:.2}\n",
+                min_val, max_val, avg
+            ));
+        }
+    }
+}
+
+/// Renders the common block header fields shared by all moment data blocks.
+fn render_block_header(
+    output: &mut String,
+    id: &str,
+    name: &str,
+    header: &digital_radar_data::GenericDataBlockHeader,
+) {
+    output.push_str(&format!("\n--- {} ({}) ---\n", name, id));
+    output.push_str(&format!(
+        "Gates: {}\n",
+        header.number_of_data_moment_gates()
+    ));
+    output.push_str(&format!(
+        "First Gate: {:.3} km\n",
+        header.data_moment_range_raw() as f32 * 0.001
+    ));
+    output.push_str(&format!(
+        "Gate Interval: {:.3} km\n",
+        header.data_moment_range_sample_interval_raw() as f32 * 0.001
+    ));
+    output.push_str(&format!(
+        "SNR Threshold: {:.3} dB\n",
+        header.snr_threshold_raw()
+    ));
+    output.push_str(&format!(
+        "Scale/Offset: {:.2}/{:.2}\n",
+        header.scale(),
+        header.offset()
+    ));
+    output.push_str(&format!("Word Size: {} bits\n", header.data_word_size()));
+    output.push_str(&format!("Control Flags: {:?}\n", header.control_flags()));
+}
+
+/// Renders ASCII art rows with range labels.
+fn render_ascii_rows(
+    output: &mut String,
+    header: &digital_radar_data::GenericDataBlockHeader,
+    ascii: &str,
+    gates_per_row: usize,
+) {
+    for (row_idx, chunk) in ascii.as_bytes().chunks(gates_per_row).enumerate() {
+        let start_gate = row_idx * gates_per_row;
+        let start_range = header.data_moment_range_raw() as f32 * 0.001
+            + start_gate as f32 * header.data_moment_range_sample_interval_raw() as f32 * 0.001;
+        output.push_str(&format!(
+            "{:5.1}km |{}|\n",
+            start_range,
+            std::str::from_utf8(chunk).unwrap_or("")
+        ));
+    }
+}
+
+/// Converts a slice of MomentValue to a visual ASCII string representation.
 /// Uses characters ordered by visual density to represent radar data values.
-fn scaled_values_to_ascii(
-    values: &[digital_radar_data::ScaledMomentValue],
-    product: &str,
-) -> String {
+fn scaled_values_to_ascii(values: &[MomentValue], product: &str) -> String {
     // Characters ordered by increasing visual density
     const CHARS: &[char] = &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
 
@@ -316,21 +403,38 @@ fn scaled_values_to_ascii(
         "ZDR" => (-8.0, 8.0),   // dB range for differential reflectivity
         "PHI" => (0.0, 360.0),  // degrees for differential phase
         "RHO" => (0.0, 1.05),   // unitless correlation coefficient
-        "CFP" => (-20.0, 20.0), // dB difference for clutter filter power
         _ => (-30.0, 75.0),     // default
     };
 
     values
         .iter()
         .map(|v| match v {
-            digital_radar_data::ScaledMomentValue::Value(val) => {
+            MomentValue::Value(val) => {
                 // Normalize to 0.0-1.0 range, then map to character index
                 let normalized = ((val - min_val) / (max_val - min_val)).clamp(0.0, 1.0);
                 let index = (normalized * (CHARS.len() - 1) as f32) as usize;
                 CHARS[index]
             }
-            digital_radar_data::ScaledMomentValue::BelowThreshold => ' ',
-            digital_radar_data::ScaledMomentValue::RangeFolded => '~',
+            MomentValue::BelowThreshold => ' ',
+            MomentValue::RangeFolded => '~',
+        })
+        .collect()
+}
+
+/// Converts a slice of CFPMomentValue to a visual ASCII string representation.
+fn cfp_values_to_ascii(values: &[CFPMomentValue]) -> String {
+    const CHARS: &[char] = &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
+    let (min_val, max_val): (f32, f32) = (-20.0, 20.0);
+
+    values
+        .iter()
+        .map(|v| match v {
+            CFPMomentValue::Value(val) => {
+                let normalized = ((val - min_val) / (max_val - min_val)).clamp(0.0, 1.0);
+                let index = (normalized * (CHARS.len() - 1) as f32) as usize;
+                CHARS[index]
+            }
+            CFPMomentValue::Status(_) => '!',
         })
         .collect()
 }

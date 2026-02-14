@@ -7,7 +7,7 @@
 
 use insta::assert_yaml_snapshot;
 use nexrad_data::volume;
-use nexrad_model::data::Scan;
+use nexrad_model::data::{DataMoment, Scan};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
@@ -126,6 +126,9 @@ struct MomentStatsSnapshot {
     velocity: Option<MomentBlockStats>,
     spectrum_width: Option<MomentBlockStats>,
     differential_reflectivity: Option<MomentBlockStats>,
+    differential_phase: Option<MomentBlockStats>,
+    correlation_coefficient: Option<MomentBlockStats>,
+    clutter_filter_power: Option<MomentBlockStats>,
 }
 
 #[derive(Serialize)]
@@ -150,6 +153,32 @@ fn hash_moment_values(values: &[nexrad_model::data::MomentValue]) -> String {
             }
             MomentValue::RangeFolded => {
                 hasher.update([1u8]);
+            }
+        }
+    }
+    hex::encode(hasher.finalize())
+}
+
+fn hash_cfp_moment_values(values: &[nexrad_model::data::CFPMomentValue]) -> String {
+    use nexrad_model::data::{CFPMomentValue, CFPStatus};
+
+    let mut hasher = Sha256::new();
+    for v in values {
+        match v {
+            CFPMomentValue::Value(f) => {
+                hasher.update(f.to_le_bytes());
+            }
+            CFPMomentValue::Status(CFPStatus::FilterNotApplied) => {
+                hasher.update([0u8]);
+            }
+            CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied) => {
+                hasher.update([1u8]);
+            }
+            CFPMomentValue::Status(CFPStatus::DualPolOnlyFilterApplied) => {
+                hasher.update([2u8]);
+            }
+            CFPMomentValue::Status(CFPStatus::Reserved(code)) => {
+                hasher.update([3u8, *code]);
             }
         }
     }
@@ -193,6 +222,24 @@ fn create_moment_stats(
                 gate_interval_km: m.gate_interval_km(),
                 data_sha256: hash_moment_values(&m.values()),
             }),
+        differential_phase: radial.differential_phase().map(|m| MomentBlockStats {
+            gate_count: m.gate_count(),
+            first_gate_range_km: m.first_gate_range_km(),
+            gate_interval_km: m.gate_interval_km(),
+            data_sha256: hash_moment_values(&m.values()),
+        }),
+        correlation_coefficient: radial.correlation_coefficient().map(|m| MomentBlockStats {
+            gate_count: m.gate_count(),
+            first_gate_range_km: m.first_gate_range_km(),
+            gate_interval_km: m.gate_interval_km(),
+            data_sha256: hash_moment_values(&m.values()),
+        }),
+        clutter_filter_power: radial.clutter_filter_power().map(|m| MomentBlockStats {
+            gate_count: m.gate_count(),
+            first_gate_range_km: m.first_gate_range_km(),
+            gate_interval_km: m.gate_interval_km(),
+            data_sha256: hash_cfp_moment_values(&m.values()),
+        }),
     }
 }
 

@@ -76,6 +76,10 @@ impl<'a> Message<'a> {
         };
 
         for pointer in pointers {
+            if pointer == 0 {
+                continue;
+            }
+
             let relative_position = reader.position() - start_position;
             let pointer_position = pointer as usize;
 
@@ -274,78 +278,42 @@ impl<'a> Message<'a> {
         self.clutter_filter_power_data_block.as_ref()
     }
 
-    /// Get a radial from this digital radar data message.
+    /// Get a radial from this digital radar data message. This clones the underlying moment
+    /// data; use [`into_radial`](Self::into_radial) to avoid the copy when the message is no
+    /// longer needed.
     #[cfg(feature = "nexrad-model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
-        use crate::result::Error;
-        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
-
-        Ok(Radial::new(
-            self.header
-                .date_time()
-                .ok_or(Error::MessageMissingDateError)?
-                .timestamp_millis(),
-            self.header.azimuth_number(),
-            self.header.azimuth_angle_raw(),
-            self.header.azimuth_resolution_spacing_raw() as f32 * 0.5,
-            match self.header.radial_status() {
-                RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
-                RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
-                RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
-                RadialStatus::VolumeScanStart => ModelRadialStatus::VolumeScanStart,
-                RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
-                RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
-            },
-            self.header.elevation_number(),
-            self.header.elevation_angle_raw(),
+        Self::build_radial(
+            &self.header,
             self.reflectivity_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.inner().moment_data()),
             self.velocity_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.inner().moment_data()),
             self.spectrum_width_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.inner().moment_data()),
             self.differential_reflectivity_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.inner().moment_data()),
             self.differential_phase_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.inner().moment_data()),
             self.correlation_coefficient_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
+                .map(|block| block.inner().moment_data()),
             self.clutter_filter_power_data_block
                 .as_ref()
-                .map(|block| block.moment_data()),
-        ))
+                .map(|block| block.inner().cfp_moment_data()),
+        )
     }
 
     /// Convert this digital radar data message into a common model radial, minimizing data copy.
     #[cfg(feature = "nexrad-model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
-        use crate::result::Error;
-        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
-
-        Ok(Radial::new(
-            self.header
-                .date_time()
-                .ok_or(Error::MessageMissingDateError)?
-                .timestamp_millis(),
-            self.header.azimuth_number(),
-            self.header.azimuth_angle_raw(),
-            self.header.azimuth_resolution_spacing_raw() as f32 * 0.5,
-            match self.header.radial_status() {
-                RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
-                RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
-                RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
-                RadialStatus::VolumeScanStart => ModelRadialStatus::VolumeScanStart,
-                RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
-                RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
-            },
-            self.header.elevation_number(),
-            self.header.elevation_angle_raw(),
+        Self::build_radial(
+            &self.header,
             self.reflectivity_data_block
                 .map(|block| block.into_inner().into_moment_data()),
             self.velocity_data_block
@@ -359,7 +327,88 @@ impl<'a> Message<'a> {
             self.correlation_coefficient_data_block
                 .map(|block| block.into_inner().into_moment_data()),
             self.clutter_filter_power_data_block
-                .map(|block| block.into_inner().into_moment_data()),
+                .map(|block| block.into_inner().into_cfp_moment_data()),
+        )
+    }
+
+    #[cfg(feature = "nexrad-model")]
+    fn build_radial(
+        header: &Header<'_>,
+        reflectivity: Option<nexrad_model::data::MomentData>,
+        velocity: Option<nexrad_model::data::MomentData>,
+        spectrum_width: Option<nexrad_model::data::MomentData>,
+        differential_reflectivity: Option<nexrad_model::data::MomentData>,
+        differential_phase: Option<nexrad_model::data::MomentData>,
+        correlation_coefficient: Option<nexrad_model::data::MomentData>,
+        clutter_filter_power: Option<nexrad_model::data::CFPMomentData>,
+    ) -> crate::result::Result<nexrad_model::data::Radial> {
+        use crate::result::Error;
+        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
+
+        Ok(Radial::new(
+            header
+                .date_time()
+                .ok_or(Error::MessageMissingDateError)?
+                .timestamp_millis(),
+            header.azimuth_number(),
+            header.azimuth_angle_raw(),
+            header.azimuth_resolution_spacing_raw() as f32 * 0.5,
+            match header.radial_status() {
+                RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
+                RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
+                RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
+                RadialStatus::VolumeScanStart => ModelRadialStatus::VolumeScanStart,
+                RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
+                RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
+            },
+            header.elevation_number(),
+            header.elevation_angle_raw(),
+            reflectivity,
+            velocity,
+            spectrum_width,
+            differential_reflectivity,
+            differential_phase,
+            correlation_coefficient,
+            clutter_filter_power,
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Message;
+    use crate::slice_reader::SliceReader;
+
+    fn build_header_bytes(data_block_count: u16) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"TEST"); // radar_identifier
+        bytes.extend_from_slice(&0u32.to_be_bytes()); // time
+        bytes.extend_from_slice(&0u16.to_be_bytes()); // date
+        bytes.extend_from_slice(&0u16.to_be_bytes()); // azimuth_number
+        bytes.extend_from_slice(&0f32.to_be_bytes()); // azimuth_angle
+        bytes.push(0); // compression_indicator
+        bytes.push(0); // spare
+        bytes.extend_from_slice(&0u16.to_be_bytes()); // radial_length
+        bytes.push(0); // azimuth_resolution_spacing
+        bytes.push(0); // radial_status
+        bytes.push(0); // elevation_number
+        bytes.push(0); // cut_sector_number
+        bytes.extend_from_slice(&0f32.to_be_bytes()); // elevation_angle
+        bytes.push(0); // radial_spot_blanking_status
+        bytes.push(0); // azimuth_indexing_mode
+        bytes.extend_from_slice(&data_block_count.to_be_bytes()); // data_block_count
+        bytes
+    }
+
+    #[test]
+    fn test_parse_skips_zero_pointers() {
+        let mut bytes = build_header_bytes(1);
+        bytes.extend_from_slice(&0u32.to_be_bytes()); // pointer = 0
+
+        let mut reader = SliceReader::new(&bytes);
+        let message = Message::parse(&mut reader).expect("parse should succeed");
+
+        assert!(message.reflectivity_data_block().is_none());
+        assert!(message.velocity_data_block().is_none());
     }
 }

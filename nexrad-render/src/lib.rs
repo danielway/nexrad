@@ -48,7 +48,7 @@
 #![deny(missing_docs)]
 
 pub use image::RgbaImage;
-use nexrad_model::data::{MomentData, MomentValue, Radial};
+use nexrad_model::data::{CFPMomentValue, DataMoment, MomentValue, Radial};
 use result::{Error, Result};
 
 mod color;
@@ -191,18 +191,18 @@ pub fn render_radials(
 
     // Get radar parameters from the first radial
     let first_radial = &radials[0];
-    let data_moment = get_radial_moment(product, first_radial).ok_or(Error::ProductNotFound)?;
-    let first_gate_km = data_moment.first_gate_range_km();
-    let gate_interval_km = data_moment.gate_interval_km();
-    let gate_count = data_moment.gate_count() as usize;
+    let gate_params = get_gate_params(product, first_radial).ok_or(Error::ProductNotFound)?;
+    let first_gate_km = gate_params.first_gate_km;
+    let gate_interval_km = gate_params.gate_interval_km;
+    let gate_count = gate_params.gate_count;
     let radar_range_km = first_gate_km + gate_count as f64 * gate_interval_km;
 
-    // Pre-extract all moment values indexed by azimuth for efficient lookup
-    let mut radial_data: Vec<(f32, Vec<MomentValue>)> = Vec::with_capacity(radials.len());
+    // Pre-extract all moment float values indexed by azimuth for efficient lookup
+    let mut radial_data: Vec<(f32, Vec<Option<f32>>)> = Vec::with_capacity(radials.len());
     for radial in radials {
         let azimuth = radial.azimuth_angle_degrees();
-        if let Some(moment) = get_radial_moment(product, radial) {
-            radial_data.push((azimuth, moment.values()));
+        if let Some(values) = get_radial_float_values(product, radial) {
+            radial_data.push((azimuth, values));
         }
     }
 
@@ -258,7 +258,7 @@ pub fn render_radials(
 
             // Look up the value and apply color
             let (_, ref values) = radial_data[radial_idx];
-            if let Some(MomentValue::Value(value)) = values.get(gate_index) {
+            if let Some(Some(value)) = values.get(gate_index) {
                 let color = lut.get_color(*value);
                 let pixel_index = (y * width + x) * 4;
                 buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
@@ -399,15 +399,62 @@ fn find_closest_radial(sorted_azimuths: &[f32], azimuth: f32) -> (usize, f32) {
     }
 }
 
-/// Retrieve the moment data from a radial for the given product.
-fn get_radial_moment(product: Product, radial: &Radial) -> Option<&MomentData> {
+/// Gate metadata extracted from a moment data block.
+struct GateParams {
+    first_gate_km: f64,
+    gate_interval_km: f64,
+    gate_count: usize,
+}
+
+/// Retrieve gate metadata from a radial for the given product.
+fn get_gate_params(product: Product, radial: &Radial) -> Option<GateParams> {
+    fn extract(m: &impl DataMoment) -> GateParams {
+        GateParams {
+            first_gate_km: m.first_gate_range_km(),
+            gate_interval_km: m.gate_interval_km(),
+            gate_count: m.gate_count() as usize,
+        }
+    }
     match product {
-        Product::Reflectivity => radial.reflectivity(),
-        Product::Velocity => radial.velocity(),
-        Product::SpectrumWidth => radial.spectrum_width(),
-        Product::DifferentialReflectivity => radial.differential_reflectivity(),
-        Product::DifferentialPhase => radial.differential_phase(),
-        Product::CorrelationCoefficient => radial.correlation_coefficient(),
-        Product::ClutterFilterPower => radial.clutter_filter_power(),
+        Product::Reflectivity => radial.reflectivity().map(extract),
+        Product::Velocity => radial.velocity().map(extract),
+        Product::SpectrumWidth => radial.spectrum_width().map(extract),
+        Product::DifferentialReflectivity => radial.differential_reflectivity().map(extract),
+        Product::DifferentialPhase => radial.differential_phase().map(extract),
+        Product::CorrelationCoefficient => radial.correlation_coefficient().map(extract),
+        Product::ClutterFilterPower => radial.clutter_filter_power().map(extract),
+    }
+}
+
+/// Extract decoded float values from a radial for the given product.
+///
+/// Returns `None` for below-threshold, range-folded, and CFP status gates.
+fn get_radial_float_values(product: Product, radial: &Radial) -> Option<Vec<Option<f32>>> {
+    fn moment_floats(moment: Option<&nexrad_model::data::MomentData>) -> Option<Vec<Option<f32>>> {
+        moment.map(|m| {
+            m.iter()
+                .map(|v| match v {
+                    MomentValue::Value(f) => Some(f),
+                    _ => None,
+                })
+                .collect()
+        })
+    }
+
+    match product {
+        Product::Reflectivity => moment_floats(radial.reflectivity()),
+        Product::Velocity => moment_floats(radial.velocity()),
+        Product::SpectrumWidth => moment_floats(radial.spectrum_width()),
+        Product::DifferentialReflectivity => moment_floats(radial.differential_reflectivity()),
+        Product::DifferentialPhase => moment_floats(radial.differential_phase()),
+        Product::CorrelationCoefficient => moment_floats(radial.correlation_coefficient()),
+        Product::ClutterFilterPower => radial.clutter_filter_power().map(|cfp| {
+            cfp.iter()
+                .map(|v| match v {
+                    CFPMomentValue::Value(f) => Some(f),
+                    CFPMomentValue::Status(_) => None,
+                })
+                .collect()
+        }),
     }
 }

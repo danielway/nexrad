@@ -38,7 +38,9 @@ impl<'a> DataBlockId<'a> {
     }
 
     /// Data block name, e.g. "VOL".
-    pub fn data_block_name(&self) -> String {
-        String::from_utf8_lossy(&self.inner.data_name).to_string()
+    ///
+    /// The name is always 3 bytes of ASCII from the binary format.
+    pub fn data_block_name(&self) -> &str {
+        std::str::from_utf8(&self.inner.data_name).expect("data block names are always ASCII")
     }
 }

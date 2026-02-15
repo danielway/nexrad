@@ -197,11 +197,7 @@ fn decode_message_contents<'a>(
             let volume_coverage_message = volume_coverage_pattern::Message::parse(reader)?;
             MessageContents::VolumeCoveragePattern(Box::new(volume_coverage_message))
         }
-        MessageType::RDAClutterFilterMap => {
-            // let clutter_filter_message = clutter_filter_map::Message::parse(reader)?;
-            // MessageContents::ClutterFilterMap(Box::new(clutter_filter_message))
-            MessageContents::Other
-        }
+        // Note: RDAClutterFilterMap is handled by the segmented path in mod.rs
         _ => MessageContents::Other,
     })
 }

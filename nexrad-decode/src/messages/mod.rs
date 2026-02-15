@@ -44,10 +44,12 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
             Err(_) => break,
         };
 
-        // Check if this message actually spans multiple segments
-        let is_multi_segment = header.segment_count().is_some_and(|c| c > 1);
+        // Check if this message uses the segmented path (multi-segment, or a message
+        // type that always requires a SegmentedSliceReader even with one segment).
+        let uses_segmented_path = header.segment_count().is_some_and(|c| c > 1)
+            || header.message_type() == MessageType::RDAClutterFilterMap;
 
-        if is_multi_segment {
+        if uses_segmented_path {
             trace!(
                 "Segmented message: type={:?}, segment={:?}/{:?}",
                 header.message_type(),

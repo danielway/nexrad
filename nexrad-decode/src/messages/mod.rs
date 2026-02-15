@@ -4,7 +4,8 @@ pub mod rda_status_data;
 pub mod volume_coverage_pattern;
 
 mod raw;
-pub use raw::*;
+pub use raw::{MessageHeader, MessageType, RedundantChannel};
+pub(crate) use raw::primitive_aliases;
 
 mod message;
 pub use message::{Message, MessageHeaders};

@@ -15,45 +15,68 @@ pub type Integer1 = u8;
 /// 8-bit scaled unsigned integer (ScaledInteger1 in ICD).
 pub type ScaledInteger1 = u8;
 
-/// Big-endian unsigned 16-bit integer (Code2 in ICD).
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, FromBytes, Immutable, KnownLayout)]
-pub struct Code2(big_endian::U16);
+/// Defines a big-endian wrapper type with standard trait implementations.
+///
+/// Generates: struct definition, `new`/`get` methods, `Debug`, `Display`,
+/// `PartialEq<native>`, `PartialOrd<native>`, and `From<native>`.
+macro_rules! define_be_wrapper {
+    (
+        $(#[$meta:meta])*
+        $name:ident($inner:ty) => $native:ty
+        $(, derive($($extra:ident),+))?
+    ) => {
+        $(#[$meta])*
+        #[repr(transparent)]
+        #[derive(Clone, Copy, PartialEq, FromBytes, Immutable, KnownLayout $($(, $extra)+)?)]
+        pub struct $name($inner);
 
-impl Code2 {
-    /// Creates a new Code2 from a native u16 value.
-    pub fn new(value: u16) -> Self {
-        Self(big_endian::U16::new(value))
-    }
+        impl $name {
+            #[doc = concat!("Creates a new `", stringify!($name), "` from a native `", stringify!($native), "` value.")]
+            pub fn new(value: $native) -> Self {
+                Self(<$inner>::new(value))
+            }
 
-    /// Returns the value as a native u16.
-    pub fn get(self) -> u16 {
-        self.0.get()
-    }
+            #[doc = concat!("Returns the value as a native `", stringify!($native), "`.")]
+            pub fn get(self) -> $native {
+                self.0.get()
+            }
+        }
+
+        impl fmt::Debug for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                self.0.get().fmt(f)
+            }
+        }
+
+        impl fmt::Display for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                self.0.get().fmt(f)
+            }
+        }
+
+        impl PartialEq<$native> for $name {
+            fn eq(&self, other: &$native) -> bool {
+                self.0.get() == *other
+            }
+        }
+
+        impl PartialOrd<$native> for $name {
+            fn partial_cmp(&self, other: &$native) -> Option<Ordering> {
+                self.0.get().partial_cmp(other)
+            }
+        }
+
+        impl From<$native> for $name {
+            fn from(value: $native) -> Self {
+                Self::new(value)
+            }
+        }
+    };
 }
 
-impl fmt::Debug for Code2 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl fmt::Display for Code2 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl PartialEq<u16> for Code2 {
-    fn eq(&self, other: &u16) -> bool {
-        self.0.get() == *other
-    }
-}
-
-impl PartialOrd<u16> for Code2 {
-    fn partial_cmp(&self, other: &u16) -> Option<Ordering> {
-        self.0.get().partial_cmp(other)
-    }
+define_be_wrapper! {
+    /// Big-endian unsigned 16-bit integer (Code2 in ICD).
+    Code2(big_endian::U16) => u16, derive(Eq, Hash)
 }
 
 impl BitAnd<u16> for Code2 {
@@ -70,290 +93,32 @@ impl Shr<i32> for Code2 {
     }
 }
 
-impl From<u16> for Code2 {
-    fn from(value: u16) -> Self {
-        Self::new(value)
-    }
+define_be_wrapper! {
+    /// Big-endian unsigned 16-bit integer (Integer2 in ICD).
+    Integer2(big_endian::U16) => u16, derive(Eq, Hash)
 }
 
-/// Big-endian unsigned 16-bit integer (Integer2 in ICD).
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, FromBytes, Immutable, KnownLayout)]
-pub struct Integer2(big_endian::U16);
-
-impl Integer2 {
-    /// Creates a new Integer2 from a native u16 value.
-    pub fn new(value: u16) -> Self {
-        Self(big_endian::U16::new(value))
-    }
-
-    /// Returns the value as a native u16.
-    pub fn get(self) -> u16 {
-        self.0.get()
-    }
+define_be_wrapper! {
+    /// Big-endian unsigned 32-bit integer (Integer4 in ICD).
+    Integer4(big_endian::U32) => u32, derive(Eq, Hash)
 }
 
-impl fmt::Debug for Integer2 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
+define_be_wrapper! {
+    /// Big-endian 32-bit float (Real4 in ICD).
+    Real4(big_endian::F32) => f32
 }
 
-impl fmt::Display for Integer2 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
+define_be_wrapper! {
+    /// Big-endian unsigned 16-bit integer (ScaledInteger2 in ICD).
+    ScaledInteger2(big_endian::U16) => u16, derive(Eq, Hash)
 }
 
-impl PartialEq<u16> for Integer2 {
-    fn eq(&self, other: &u16) -> bool {
-        self.0.get() == *other
-    }
+define_be_wrapper! {
+    /// Big-endian signed 16-bit integer (ScaledSInteger2 in ICD).
+    ScaledSInteger2(big_endian::I16) => i16, derive(Eq, Hash)
 }
 
-impl PartialOrd<u16> for Integer2 {
-    fn partial_cmp(&self, other: &u16) -> Option<Ordering> {
-        self.0.get().partial_cmp(other)
-    }
-}
-
-impl From<u16> for Integer2 {
-    fn from(value: u16) -> Self {
-        Self::new(value)
-    }
-}
-
-/// Big-endian unsigned 32-bit integer (Integer4 in ICD).
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, FromBytes, Immutable, KnownLayout)]
-pub struct Integer4(big_endian::U32);
-
-impl Integer4 {
-    /// Creates a new Integer4 from a native u32 value.
-    pub fn new(value: u32) -> Self {
-        Self(big_endian::U32::new(value))
-    }
-
-    /// Returns the value as a native u32.
-    pub fn get(self) -> u32 {
-        self.0.get()
-    }
-}
-
-impl fmt::Debug for Integer4 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl fmt::Display for Integer4 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl PartialEq<u32> for Integer4 {
-    fn eq(&self, other: &u32) -> bool {
-        self.0.get() == *other
-    }
-}
-
-impl PartialOrd<u32> for Integer4 {
-    fn partial_cmp(&self, other: &u32) -> Option<Ordering> {
-        self.0.get().partial_cmp(other)
-    }
-}
-
-impl From<u32> for Integer4 {
-    fn from(value: u32) -> Self {
-        Self::new(value)
-    }
-}
-
-/// Big-endian 32-bit float (Real4 in ICD).
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, FromBytes, Immutable, KnownLayout)]
-pub struct Real4(big_endian::F32);
-
-impl Real4 {
-    /// Creates a new Real4 from a native f32 value.
-    pub fn new(value: f32) -> Self {
-        Self(big_endian::F32::new(value))
-    }
-
-    /// Returns the value as a native f32.
-    pub fn get(self) -> f32 {
-        self.0.get()
-    }
-}
-
-impl fmt::Debug for Real4 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl fmt::Display for Real4 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl PartialEq<f32> for Real4 {
-    fn eq(&self, other: &f32) -> bool {
-        self.0.get() == *other
-    }
-}
-
-impl PartialOrd<f32> for Real4 {
-    fn partial_cmp(&self, other: &f32) -> Option<Ordering> {
-        self.0.get().partial_cmp(other)
-    }
-}
-
-impl From<f32> for Real4 {
-    fn from(value: f32) -> Self {
-        Self::new(value)
-    }
-}
-
-/// Big-endian unsigned 16-bit integer (ScaledInteger2 in ICD).
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, FromBytes, Immutable, KnownLayout)]
-pub struct ScaledInteger2(big_endian::U16);
-
-impl ScaledInteger2 {
-    /// Creates a new ScaledInteger2 from a native u16 value.
-    pub fn new(value: u16) -> Self {
-        Self(big_endian::U16::new(value))
-    }
-
-    /// Returns the value as a native u16.
-    pub fn get(self) -> u16 {
-        self.0.get()
-    }
-}
-
-impl fmt::Debug for ScaledInteger2 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl fmt::Display for ScaledInteger2 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl PartialEq<u16> for ScaledInteger2 {
-    fn eq(&self, other: &u16) -> bool {
-        self.0.get() == *other
-    }
-}
-
-impl PartialOrd<u16> for ScaledInteger2 {
-    fn partial_cmp(&self, other: &u16) -> Option<Ordering> {
-        self.0.get().partial_cmp(other)
-    }
-}
-
-impl From<u16> for ScaledInteger2 {
-    fn from(value: u16) -> Self {
-        Self::new(value)
-    }
-}
-
-/// Big-endian signed 16-bit integer (ScaledSInteger2 in ICD).
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, FromBytes, Immutable, KnownLayout)]
-pub struct ScaledSInteger2(big_endian::I16);
-
-impl ScaledSInteger2 {
-    /// Creates a new ScaledSInteger2 from a native i16 value.
-    pub fn new(value: i16) -> Self {
-        Self(big_endian::I16::new(value))
-    }
-
-    /// Returns the value as a native i16.
-    pub fn get(self) -> i16 {
-        self.0.get()
-    }
-}
-
-impl fmt::Debug for ScaledSInteger2 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl fmt::Display for ScaledSInteger2 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl PartialEq<i16> for ScaledSInteger2 {
-    fn eq(&self, other: &i16) -> bool {
-        self.0.get() == *other
-    }
-}
-
-impl PartialOrd<i16> for ScaledSInteger2 {
-    fn partial_cmp(&self, other: &i16) -> Option<Ordering> {
-        self.0.get().partial_cmp(other)
-    }
-}
-
-impl From<i16> for ScaledSInteger2 {
-    fn from(value: i16) -> Self {
-        Self::new(value)
-    }
-}
-
-/// Big-endian signed 16-bit integer (SInteger2 in ICD).
-#[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, FromBytes, Immutable, KnownLayout)]
-pub struct SInteger2(big_endian::I16);
-
-impl SInteger2 {
-    /// Creates a new SInteger2 from a native i16 value.
-    pub fn new(value: i16) -> Self {
-        Self(big_endian::I16::new(value))
-    }
-
-    /// Returns the value as a native i16.
-    pub fn get(self) -> i16 {
-        self.0.get()
-    }
-}
-
-impl fmt::Debug for SInteger2 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl fmt::Display for SInteger2 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.get().fmt(f)
-    }
-}
-
-impl PartialEq<i16> for SInteger2 {
-    fn eq(&self, other: &i16) -> bool {
-        self.0.get() == *other
-    }
-}
-
-impl PartialOrd<i16> for SInteger2 {
-    fn partial_cmp(&self, other: &i16) -> Option<Ordering> {
-        self.0.get().partial_cmp(other)
-    }
-}
-
-impl From<i16> for SInteger2 {
-    fn from(value: i16) -> Self {
-        Self::new(value)
-    }
+define_be_wrapper! {
+    /// Big-endian signed 16-bit integer (SInteger2 in ICD).
+    SInteger2(big_endian::I16) => i16, derive(Eq, Hash)
 }

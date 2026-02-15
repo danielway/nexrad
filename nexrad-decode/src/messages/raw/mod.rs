@@ -7,4 +7,4 @@ pub use message_header::MessageHeader;
 mod message_type;
 pub use message_type::MessageType;
 
-pub mod primitive_aliases;
+pub(crate) mod primitive_aliases;

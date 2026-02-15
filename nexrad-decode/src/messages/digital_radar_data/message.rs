@@ -356,6 +356,7 @@ impl<'a> Message<'a> {
                 RadialStatus::VolumeScanStart => ModelRadialStatus::VolumeScanStart,
                 RadialStatus::VolumeScanEnd => ModelRadialStatus::VolumeScanEnd,
                 RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
+                RadialStatus::Unknown(v) => ModelRadialStatus::Unknown(v),
             },
             header.elevation_number(),
             header.elevation_angle_raw(),

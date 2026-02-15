@@ -3,7 +3,7 @@ use super::{ProcessingStatus, VolumeCoveragePattern};
 use std::borrow::Cow;
 
 #[cfg(feature = "uom")]
-use uom::si::f64::{Angle, Energy, Information, Length};
+use uom::si::f64::{Angle, Information, Length, Power};
 
 /// Internal representation of the volume data block, supporting both legacy and modern formats.
 #[derive(Clone, PartialEq, Debug)]
@@ -228,14 +228,14 @@ impl<'a> VolumeDataBlock<'a> {
 
     /// Transmitter power for horizontal channel.
     #[cfg(feature = "uom")]
-    pub fn horizontal_shv_tx_power(&self) -> Energy {
-        Energy::new::<uom::si::energy::kilojoule>(self.horizontal_shv_tx_power_raw() as f64)
+    pub fn horizontal_shv_tx_power(&self) -> Power {
+        Power::new::<uom::si::power::kilowatt>(self.horizontal_shv_tx_power_raw() as f64)
     }
 
     /// Transmitter power for vertical channel.
     #[cfg(feature = "uom")]
-    pub fn vertical_shv_tx_power(&self) -> Energy {
-        Energy::new::<uom::si::energy::kilojoule>(self.vertical_shv_tx_power_raw() as f64)
+    pub fn vertical_shv_tx_power(&self) -> Power {
+        Power::new::<uom::si::power::kilowatt>(self.vertical_shv_tx_power_raw() as f64)
     }
 
     /// Initial DP for the system.

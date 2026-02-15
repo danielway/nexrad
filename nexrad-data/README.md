@@ -10,7 +10,7 @@ downloading both archival and real-time data from open cloud providers like AWS 
 ## Volume Definitions
 
 The `nexrad-data::volume` module provides model definitions for the NEXRAD Archive II volume file format described in
-the Radar Operations Center's ICD 2620010H for the Archive II/User (as of build 19.0 March 3, 2020). A `volume::File`
+the Radar Operations Center's ICD 2620010J for the Archive II/User (Build 23.0, June 25, 2024). A `volume::File`
 can be constructed with archive or real-time data. It can decode the archive volume header and provide access to LDM
 `volume::Record`s which can be decompressed and decoded into a series of messages.
 

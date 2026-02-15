@@ -5,7 +5,7 @@
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
 
 Decoding functions and models for NEXRAD weather radar data. Decoder and struct definitions are in accordance with
-NOAA's WSR-88D Interface Control Document for the RDA/RPG "ICD 2620002W".
+NOAA's WSR-88D Interface Control Document for the RDA/RPG "ICD 2620002AA".
 
 ## Features
 

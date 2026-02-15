@@ -1,8 +1,8 @@
 //! Binary protocol decoding for NEXRAD Archive II data.
 //!
 //! This crate provides low-level decoding functions and type definitions for NEXRAD
-//! weather radar data, implementing NOAA's WSR-88D Interface Control Document for
-//! Archive II (ICD 2620010H, Build 19.0).
+//! weather radar data, implementing NOAA's WSR-88D Interface Control Document for the
+//! RDA/RPG (ICD 2620002AA, Build 24.0).
 //!
 //! # Overview
 //!
@@ -54,7 +54,7 @@
 //!
 //! ## Responsibilities
 //!
-//! - ✓ Parse binary data per NOAA ICD 2620010H specification
+//! - ✓ Parse binary data per NOAA ICD 2620002AA specification
 //! - ✓ Convert raw bytes into structured message types
 //! - ✓ Provide conversion to `nexrad_model` types (when feature enabled)
 //! - ✓ Validate message structures and checksums

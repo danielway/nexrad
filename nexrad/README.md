@@ -13,7 +13,7 @@ of derived "products". Level II is the highest resolution data available includi
 (reflectivity, mean radial velocity, and spectrum width) and dual polarization variables
 (differential reflectivity, correlation coefficient, and differential phase).
 
-Level II data is available through the Archive II interface described by NOAA's ICD 2620010H.
+Level II data is available through the Archive II interface described by NOAA's ICD 2620010J.
 Section 7 of the ICD specifies the format for this API. This data format is distributed through
 Unidata Local Data Manager (LDM) software. The data is organized into "volumes" (a file with binary
 data) which contain a number of compressed "LDR records", each of which contain "messages" that

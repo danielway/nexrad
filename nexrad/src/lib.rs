@@ -97,7 +97,7 @@
 //! | Crate | Purpose |
 //! |-------|---------|
 //! | `nexrad-model` | Domain types with optional serde/chrono/uom support |
-//! | `nexrad-decode` | Low-level binary parsing per NOAA ICD 2620010H |
+//! | `nexrad-decode` | Low-level binary parsing per NOAA ICD 2620002AA |
 //! | `nexrad-data` | Archive II file handling and AWS S3 access |
 //! | `nexrad-render` | Visualization and image rendering |
 //!
@@ -115,7 +115,7 @@
 //!   - ✗ No rendering or visualization
 //!
 //! - **`nexrad-decode`**: Binary protocol parsing
-//!   - ✓ Parsing NEXRAD Level II message format (NOAA ICD 2620010H)
+//!   - ✓ Parsing NEXRAD Level II message format (NOAA ICD 2620002AA)
 //!   - ✓ Conversion to model types (when feature enabled)
 //!   - ✗ No I/O operations (operates on byte slices)
 //!   - ✗ No file or network access

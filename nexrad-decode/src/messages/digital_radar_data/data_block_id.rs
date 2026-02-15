@@ -39,9 +39,10 @@ impl<'a> DataBlockId<'a> {
 
     /// Data block name, e.g. "VOL".
     ///
-    /// The name is always 3 bytes of ASCII from the binary format.
-    #[allow(clippy::expect_used)]
-    pub fn data_block_name(&self) -> &str {
-        std::str::from_utf8(&self.inner.data_name).expect("data block names are always ASCII")
+    /// The name is always 3 bytes of ASCII from the binary format. If the bytes are
+    /// not valid UTF-8 (e.g. from a malformed file), invalid sequences are replaced
+    /// with the Unicode replacement character.
+    pub fn data_block_name(&self) -> Cow<'_, str> {
+        String::from_utf8_lossy(&self.inner.data_name)
     }
 }

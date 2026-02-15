@@ -172,32 +172,27 @@ impl MessageHeader {
 
     /// The full size of the message in bytes. If the message is [MessageHeader::segmented] then
     /// this is the segment size, otherwise this is the full variable-length message size.
+    ///
+    /// For variable-length messages (segment size = 0xFFFF), the segment count and segment number
+    /// fields are repurposed as a 32-bit message size in bytes per ICD Table II.
     pub fn message_size_bytes(&self) -> u32 {
         match self.segment_count() {
             Some(_) => self.segment_size.get() as u32 * 2,
             None => {
-                let segment_number = self.segment_number.get() as u32;
-                let segment_size = self.segment_size.get() as u32;
-                (segment_number << 16) | (segment_size << 1)
+                let high = self.segment_count.get() as u32;
+                let low = self.segment_number.get() as u32;
+                (high << 16) | low
             }
         }
     }
 
     /// The full size of the message. If the message is [MessageHeader::segmented] then this is the
     /// segment size, otherwise this is the full variable-length message size.
+    ///
+    /// For variable-length messages (segment size = 0xFFFF), the segment count and segment number
+    /// fields are repurposed as a 32-bit message size in bytes per ICD Table II.
     #[cfg(feature = "uom")]
     pub fn message_size(&self) -> Information {
-        match self.segment_count() {
-            Some(_) => {
-                let segment_size_bytes = self.segment_size.get() << 1;
-                Information::new::<byte>(segment_size_bytes as f64)
-            }
-            None => {
-                let segment_number = self.segment_number.get() as u32;
-                let segment_size = self.segment_size.get() as u32;
-                let message_size_bytes = (segment_number << 16) | segment_size;
-                Information::new::<byte>(message_size_bytes as f64)
-            }
-        }
+        Information::new::<byte>(self.message_size_bytes() as f64)
     }
 }

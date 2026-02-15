@@ -107,11 +107,11 @@ impl<'a> VolumeDataBlock<'a> {
         }
     }
 
-    /// Height of feedhorn above ground in meters (raw value).
-    pub fn feedhorn_height_raw(&self) -> u16 {
+    /// Height of radar tower above ground in meters (raw value).
+    pub fn tower_height_raw(&self) -> u16 {
         match &self.inner {
-            VolumeDataBlockInner::Legacy(inner) => inner.feedhorn_height.get(),
-            VolumeDataBlockInner::Modern(inner) => inner.feedhorn_height.get(),
+            VolumeDataBlockInner::Legacy(inner) => inner.tower_height.get(),
+            VolumeDataBlockInner::Modern(inner) => inner.tower_height.get(),
         }
     }
 
@@ -220,10 +220,10 @@ impl<'a> VolumeDataBlock<'a> {
         Length::new::<uom::si::length::meter>(self.site_height_raw() as f64)
     }
 
-    /// Height of feedhorn above ground.
+    /// Height of radar tower above ground.
     #[cfg(feature = "uom")]
-    pub fn feedhorn_height(&self) -> Length {
-        Length::new::<uom::si::length::meter>(self.feedhorn_height_raw() as f64)
+    pub fn tower_height(&self) -> Length {
+        Length::new::<uom::si::length::meter>(self.tower_height_raw() as f64)
     }
 
     /// Transmitter power for horizontal channel.

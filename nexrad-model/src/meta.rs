@@ -20,7 +20,7 @@ pub struct Site {
     latitude: f32,
     longitude: f32,
     height_meters: i16,
-    feedhorn_height_meters: u16,
+    tower_height_meters: u16,
 }
 
 impl Site {
@@ -30,14 +30,14 @@ impl Site {
         latitude: f32,
         longitude: f32,
         height_meters: i16,
-        feedhorn_height_meters: u16,
+        tower_height_meters: u16,
     ) -> Self {
         Self {
             identifier,
             latitude,
             longitude,
             height_meters,
-            feedhorn_height_meters,
+            tower_height_meters,
         }
     }
 
@@ -72,15 +72,15 @@ impl Site {
         Length::new::<meter>(self.height_meters as f32)
     }
 
-    /// The height of the radar site's feedhorn above sea level in meters.
-    pub fn feedhorn_height_meters(&self) -> u16 {
-        self.feedhorn_height_meters
+    /// The height of the radar tower above ground in meters.
+    pub fn tower_height_meters(&self) -> u16 {
+        self.tower_height_meters
     }
 
-    /// The height of the radar site's feedhorn above sea level.
+    /// The height of the radar tower above ground.
     #[cfg(feature = "uom")]
-    pub fn feedhorn_height(&self) -> Length {
-        Length::new::<meter>(self.feedhorn_height_meters as f32)
+    pub fn tower_height(&self) -> Length {
+        Length::new::<meter>(self.tower_height_meters as f32)
     }
 }
 
@@ -112,10 +112,10 @@ impl Debug for Site {
         #[cfg(feature = "uom")]
         debug.field("height", &self.height());
 
-        debug.field("feedhorn_height_meters", &self.feedhorn_height_meters());
+        debug.field("tower_height_meters", &self.tower_height_meters());
 
         #[cfg(feature = "uom")]
-        debug.field("feedhorn_height", &self.feedhorn_height());
+        debug.field("tower_height", &self.tower_height());
 
         debug.finish()
     }

@@ -4,8 +4,8 @@ pub mod rda_status_data;
 pub mod volume_coverage_pattern;
 
 mod raw;
-pub use raw::{MessageHeader, MessageType, RedundantChannel};
 pub(crate) use raw::primitive_aliases;
+pub use raw::{MessageHeader, MessageType, RedundantChannel};
 
 mod message;
 pub use message::{Message, MessageHeaders};
@@ -13,8 +13,8 @@ pub use message::{Message, MessageHeaders};
 mod message_contents;
 pub use message_contents::MessageContents;
 
-use crate::segmented_slice_reader::SegmentedSliceReader;
 use crate::result::{Error, Result};
+use crate::segmented_slice_reader::SegmentedSliceReader;
 use crate::slice_reader::SliceReader;
 use log::{trace, warn};
 

@@ -370,4 +370,3 @@ impl<'a> Message<'a> {
         ))
     }
 }
-

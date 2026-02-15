@@ -207,7 +207,10 @@ pub struct Message {
     /// Flags indicating the various RDA signal processing options.
     pub signal_processor_options: Code2,
 
-    pub spares: [Integer2; 18],
+    pub spares: [Integer2; 17],
+
+    /// The VCP number currently in use, downloaded from the RPG.
+    pub downloaded_pattern_number: Integer2,
 
     /// Version of status message.
     pub status_version: Integer2,

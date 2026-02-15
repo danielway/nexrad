@@ -28,8 +28,8 @@ pub struct VolumeDataBlockLegacy {
     /// Height of site base above sea level in meters.
     pub site_height: SInteger2,
 
-    /// Height of feedhorn above ground in meters.
-    pub feedhorn_height: Integer2,
+    /// Height of radar tower above ground in meters.
+    pub tower_height: Integer2,
 
     /// Reflectivity scaling factor without correction by ground noise scaling factors given in
     /// adaptation data message in dB.
@@ -80,8 +80,8 @@ pub struct VolumeDataBlock {
     /// Height of site base above sea level in meters.
     pub site_height: SInteger2,
 
-    /// Height of feedhorn above ground in meters.
-    pub feedhorn_height: Integer2,
+    /// Height of radar tower above ground in meters.
+    pub tower_height: Integer2,
 
     /// Reflectivity scaling factor without correction by ground noise scaling factors given in
     /// adaptation data message in dB.

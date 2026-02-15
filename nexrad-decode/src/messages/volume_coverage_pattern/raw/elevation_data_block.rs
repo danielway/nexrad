@@ -102,7 +102,7 @@ pub struct ElevationDataBlock {
     pub reserved: Integer2,
 }
 
-/// Decodes an angle as defined in table III-A of ICD 2620002W
+/// Decodes an angle as defined in table III-A of ICD 2620002AA
 pub fn decode_angle(raw: Code2) -> f64 {
     let mut angle: f64 = 0.0;
     for i in 3..16 {
@@ -114,7 +114,7 @@ pub fn decode_angle(raw: Code2) -> f64 {
     angle
 }
 
-/// Decodes an angular velocity as defined in table XI-D of ICD 2620002W
+/// Decodes an angular velocity as defined in table XI-D of ICD 2620002AA
 pub fn decode_angular_velocity(raw: Code2) -> f64 {
     let mut angular_velocity: f64 = 0.0;
 

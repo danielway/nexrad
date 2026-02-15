@@ -79,9 +79,9 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
             vol.longitude_raw()
         ));
         output.push_str(&format!(
-            "Site Height: {} m (feedhorn: {} m)\n",
+            "Site Height: {} m (tower: {} m)\n",
             vol.site_height_raw(),
-            vol.feedhorn_height_raw()
+            vol.tower_height_raw()
         ));
         output.push_str(&format!(
             "VCP: {} ({:?})\n",

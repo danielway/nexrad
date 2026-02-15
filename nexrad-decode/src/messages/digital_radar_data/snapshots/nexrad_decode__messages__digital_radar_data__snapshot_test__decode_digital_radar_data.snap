@@ -79,7 +79,7 @@ Message {
                                 latitude: 41.7312,
                                 longitude: -93.72287,
                                 site_height: 299,
-                                feedhorn_height: 34,
+                                tower_height: 34,
                                 calibration_constant: -42.71957,
                                 horizontal_shv_tx_power: 191.59677,
                                 vertical_shv_tx_power: 201.11363,

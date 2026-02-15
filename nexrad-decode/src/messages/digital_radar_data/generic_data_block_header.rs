@@ -57,7 +57,7 @@ impl<'a> GenericDataBlockHeader<'a> {
     }
 
     /// Signal-to-noise ratio threshold for valid data from -12 to 20 dB (raw scaled value).
-    pub fn snr_threshold_raw(&self) -> u16 {
+    pub fn snr_threshold_raw(&self) -> i16 {
         self.inner.snr_threshold.get()
     }
 

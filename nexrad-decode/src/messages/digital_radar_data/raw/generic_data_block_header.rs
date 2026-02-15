@@ -1,5 +1,5 @@
 use crate::messages::primitive_aliases::{
-    Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger2,
+    Code1, Integer1, Integer2, Integer4, Real4, ScaledInteger2, ScaledSInteger2,
 };
 use std::fmt::Debug;
 use zerocopy::{FromBytes, Immutable, KnownLayout};
@@ -25,7 +25,7 @@ pub struct GenericDataBlockHeader {
     pub tover: ScaledInteger2,
 
     /// Signal-to-noise ratio threshold for valid data from -12 to 20 dB.
-    pub snr_threshold: ScaledInteger2,
+    pub snr_threshold: ScaledSInteger2,
 
     /// Flags indicating special control features.
     ///

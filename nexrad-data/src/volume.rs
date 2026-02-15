@@ -8,9 +8,9 @@
 //! collection time followed by a series of compressed records that contain radar messages with
 //! data.
 //!
-//! The document "Interface Control Document for the Archive II/User" 2620010H (build 19.0 at
-//! writing) describes this archive format in detail, particularly in section 7 "Archive II
-//! Application Layer".
+//! The document "Interface Control Document for the Archive II/User" 2620010J (Build 23.0)
+//! describes this archive format in detail, particularly in section 7 "Archive II Application
+//! Layer".
 //!
 
 mod file;

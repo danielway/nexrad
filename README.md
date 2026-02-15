@@ -25,7 +25,7 @@ who is not necessarily familiar with the NOAA Archive II format.
 [![Docs.rs](https://docs.rs/nexrad-decode/badge.svg)](https://docs.rs/nexrad-decode)
 
 Decoding functions and models for NEXRAD weather radar data. Decoder and struct definitions are in accordance with
-NOAA's WSR-88D Interface Control Document for the RDA/RPG "ICD 2620002W".
+NOAA's WSR-88D Interface Control Document for the RDA/RPG "ICD 2620002AA".
 
 ## `nexrad-data`
 

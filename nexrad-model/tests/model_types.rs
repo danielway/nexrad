@@ -35,7 +35,7 @@ fn test_site_creation() {
     assert!((site.latitude() - 35.3331).abs() < 0.0001);
     assert!((site.longitude() - (-97.2778)).abs() < 0.0001);
     assert_eq!(site.height_meters(), 370);
-    assert_eq!(site.feedhorn_height_meters(), 401);
+    assert_eq!(site.tower_height_meters(), 401);
 }
 
 #[test]

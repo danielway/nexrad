@@ -53,8 +53,8 @@ This decoder's file reading and decompression logic is based on this document se
 | [2620010C.pdf](archive-ii/2620010C.pdf) | C | 8.0 | Feb 8, 2006 | "Open Build 8.0" |
 | [2620010E.pdf](archive-ii/2620010E.pdf) | E | 12.0 | May 24, 2010 | "RPG Build 12.0" |
 | [2620010G.pdf](archive-ii/2620010G.pdf) | G | 18.0 | Jan 18, 2018 | "RPG Build 18.0" |
-| [2620010H.pdf](archive-ii/2620010H.pdf) | H | 19.0 | Mar 3, 2020 | Referenced in codebase |
-| [2620010J.pdf](archive-ii/2620010J.pdf) | J | 23.0 | Jun 25, 2024 | |
+| [2620010H.pdf](archive-ii/2620010H.pdf) | H | 19.0 | Mar 3, 2020 | |
+| [2620010J.pdf](archive-ii/2620010J.pdf) | J | 23.0 | Jun 25, 2024 | Referenced in codebase |
 
 **Missing revisions:** D, F
 
@@ -71,10 +71,10 @@ The ROC ICD index page: https://www.roc.noaa.gov/interface-control-documents.php
 
 Key ICD references in the decoder:
 
-- **`nexrad-decode`** primarily implements message formats from ICD 2620002 (RDA/RPG)
+- **`nexrad-decode`** primarily implements message formats from ICD 2620002AA (RDA/RPG, Build 24.0)
   - Digital Radar Data (Message Type 31)
   - RDA Status Data (Message Type 2)
   - Volume Coverage Pattern (Message Type 5) — references Table XI
   - Clutter Filter Map (Message Type 15) — references Table XIV
-- **`nexrad-data`** implements the Archive II file format from ICD 2620010
+- **`nexrad-data`** implements the Archive II file format from ICD 2620010J (Build 23.0)
 - Build 20.0 introduced a breaking change to the VolumeDataBlock format (40 → 48 bytes)

@@ -27,7 +27,7 @@ pub struct MessageGroupSummary {
     /// Ending azimuth angle in degrees (for DigitalRadarData messages).
     pub end_azimuth: Option<f32>,
     /// Data types present and their counts (for DigitalRadarData messages).
-    pub data_types: Option<HashMap<String, usize>>,
+    pub data_types: Option<HashMap<&'static str, usize>>,
 
     /// RDA status information (for RDAStatusData messages).
     pub rda_status_info: Option<RDAStatusInfo>,
@@ -84,7 +84,7 @@ impl Display for MessageGroupSummary {
                         }
 
                         // Use abbreviated names for common data types
-                        let abbr = match data_type.as_str() {
+                        let abbr = match **data_type {
                             "Reflectivity" => "REF",
                             "Velocity" => "VEL",
                             "Spectrum Width" => "SW",

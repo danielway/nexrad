@@ -241,7 +241,7 @@ fn decode_chunk(
                     // Count data types
                     if let Some(dt) = &group.data_types {
                         for (key, count) in dt {
-                            *data_types.entry(key.clone()).or_insert(0) += count;
+                            *data_types.entry(*key).or_insert(0) += count;
                         }
                     }
                 }
@@ -333,7 +333,7 @@ fn decode_chunk(
                 // Count data types
                 if let Some(dt) = &group.data_types {
                     for (key, count) in dt {
-                        *data_types.entry(key.clone()).or_insert(0) += count;
+                        *data_types.entry(*key).or_insert(0) += count;
                     }
                 }
             }

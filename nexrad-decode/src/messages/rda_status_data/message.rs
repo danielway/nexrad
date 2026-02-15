@@ -290,6 +290,11 @@ impl<'a> Message<'a> {
         self.inner.signal_processor_options.get()
     }
 
+    /// The VCP number currently in use, downloaded from the RPG.
+    pub fn downloaded_pattern_number(&self) -> u16 {
+        self.inner.downloaded_pattern_number.get()
+    }
+
     /// Version of status message.
     pub fn status_version(&self) -> u16 {
         self.inner.status_version.get()

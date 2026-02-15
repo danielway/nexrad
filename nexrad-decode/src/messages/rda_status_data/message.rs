@@ -439,7 +439,7 @@ impl<'a> Message<'a> {
 
     /// Indicates whether this is the RDA system's controlling channel.
     pub fn controlling_channel(&self) -> bool {
-        self.inner.channel_control_status.get() & 1 != 0
+        self.inner.channel_control_status.get() & 1 == 0
     }
 
     /// The RDA system's spot blanking status.

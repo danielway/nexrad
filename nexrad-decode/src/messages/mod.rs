@@ -4,7 +4,8 @@ pub mod rda_status_data;
 pub mod volume_coverage_pattern;
 
 mod raw;
-pub use raw::*;
+pub(crate) use raw::primitive_aliases;
+pub use raw::{MessageHeader, MessageType, RedundantChannel};
 
 mod message;
 pub use message::{Message, MessageHeaders};
@@ -12,8 +13,9 @@ pub use message::{Message, MessageHeaders};
 mod message_contents;
 pub use message_contents::MessageContents;
 
+use crate::result::{Error, Result};
 use crate::segmented_slice_reader::SegmentedSliceReader;
-use crate::{result::Result, slice_reader::SliceReader};
+use crate::slice_reader::SliceReader;
 use log::{trace, warn};
 
 /// Decode a series of NEXRAD Level II messages from a reader.
@@ -107,7 +109,24 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
             // Non-segmented message
             match Message::parse(&mut reader, header, offset) {
                 Ok(message) => messages.push(message),
-                Err(_) => break,
+                Err(e) => {
+                    if matches!(e, Error::UnexpectedEof) {
+                        break;
+                    }
+
+                    warn!(
+                        "Failed to parse message (type {:?}) at offset {}: {:?}",
+                        header.message_type(),
+                        offset,
+                        e
+                    );
+
+                    if !skip_to_message_end(&mut reader, header, offset) {
+                        break;
+                    }
+
+                    continue;
+                }
             }
         }
     }
@@ -130,6 +149,34 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
     }
 
     Ok(messages)
+}
+
+/// Advance the reader past the current message to the next boundary.
+///
+/// For fixed-segment messages, this skips to the 2432-byte boundary.
+/// For variable-length digital radar data, this uses the header's message size.
+/// Returns `false` if there isn't enough data remaining (caller should break).
+fn skip_to_message_end(
+    reader: &mut SliceReader<'_>,
+    header: &MessageHeader,
+    offset: usize,
+) -> bool {
+    let target_pos = if header.message_type() == MessageType::RDADigitalRadarDataGenericFormat {
+        offset + header.message_size_bytes() as usize
+    } else {
+        offset + size_of::<MessageHeader>() + message::FIXED_SEGMENT_SIZE
+    };
+
+    if target_pos > reader.position() {
+        let skip = target_pos - reader.position();
+        if skip <= reader.remaining().len() {
+            reader.advance(skip);
+        } else {
+            return false;
+        }
+    }
+
+    true
 }
 
 /// Parse a complete segmented message from accumulated segments.

@@ -1,16 +1,17 @@
 use super::raw;
 use super::{ProcessingStatus, VolumeCoveragePattern};
+use std::borrow::Cow;
 
 #[cfg(feature = "uom")]
-use uom::si::f64::{Angle, Energy, Information, Length};
+use uom::si::f64::{Angle, Information, Length, Power};
 
 /// Internal representation of the volume data block, supporting both legacy and modern formats.
 #[derive(Clone, PartialEq, Debug)]
 enum VolumeDataBlockInner<'a> {
     /// Legacy format (Build 19.0 and earlier, 40 bytes).
-    Legacy(&'a raw::VolumeDataBlockLegacy),
+    Legacy(Cow<'a, raw::VolumeDataBlockLegacy>),
     /// Modern format (Build 20.0 and later, 48 bytes).
-    Modern(&'a raw::VolumeDataBlock),
+    Modern(Cow<'a, raw::VolumeDataBlock>),
 }
 
 /// A volume data moment block.
@@ -30,30 +31,30 @@ impl<'a> VolumeDataBlock<'a> {
     /// Create a new VolumeDataBlock wrapper from a raw VolumeDataBlock reference (modern format).
     pub(crate) fn new(inner: &'a raw::VolumeDataBlock) -> Self {
         Self {
-            inner: VolumeDataBlockInner::Modern(inner),
+            inner: VolumeDataBlockInner::Modern(Cow::Borrowed(inner)),
         }
     }
 
     /// Create a new VolumeDataBlock wrapper from a raw VolumeDataBlockLegacy reference.
     pub(crate) fn new_legacy(inner: &'a raw::VolumeDataBlockLegacy) -> Self {
         Self {
-            inner: VolumeDataBlockInner::Legacy(inner),
+            inner: VolumeDataBlockInner::Legacy(Cow::Borrowed(inner)),
         }
     }
 
     /// Returns true if this is a legacy format block (Build 19.0 and earlier).
     pub fn is_legacy(&self) -> bool {
-        matches!(self.inner, VolumeDataBlockInner::Legacy(_))
+        matches!(self.inner, VolumeDataBlockInner::Legacy(..))
     }
 
     /// Convert this volume data block to an owned version with `'static` lifetime.
     pub fn into_owned(self) -> VolumeDataBlock<'static> {
         match self.inner {
             VolumeDataBlockInner::Legacy(inner) => VolumeDataBlock {
-                inner: VolumeDataBlockInner::Legacy(Box::leak(Box::new(inner.clone()))),
+                inner: VolumeDataBlockInner::Legacy(Cow::Owned(inner.into_owned())),
             },
             VolumeDataBlockInner::Modern(inner) => VolumeDataBlock {
-                inner: VolumeDataBlockInner::Modern(Box::leak(Box::new(inner.clone()))),
+                inner: VolumeDataBlockInner::Modern(Cow::Owned(inner.into_owned())),
             },
         }
     }
@@ -227,14 +228,14 @@ impl<'a> VolumeDataBlock<'a> {
 
     /// Transmitter power for horizontal channel.
     #[cfg(feature = "uom")]
-    pub fn horizontal_shv_tx_power(&self) -> Energy {
-        Energy::new::<uom::si::energy::kilojoule>(self.horizontal_shv_tx_power_raw() as f64)
+    pub fn horizontal_shv_tx_power(&self) -> Power {
+        Power::new::<uom::si::power::kilowatt>(self.horizontal_shv_tx_power_raw() as f64)
     }
 
     /// Transmitter power for vertical channel.
     #[cfg(feature = "uom")]
-    pub fn vertical_shv_tx_power(&self) -> Energy {
-        Energy::new::<uom::si::energy::kilojoule>(self.vertical_shv_tx_power_raw() as f64)
+    pub fn vertical_shv_tx_power(&self) -> Power {
+        Power::new::<uom::si::power::kilowatt>(self.vertical_shv_tx_power_raw() as f64)
     }
 
     /// Initial DP for the system.

@@ -159,7 +159,8 @@ impl<'a> Header<'a> {
             2 => RadialStatus::ElevationEnd,
             3 => RadialStatus::VolumeScanStart,
             4 => RadialStatus::VolumeScanEnd,
-            _ => RadialStatus::ElevationStartVCPFinal,
+            5 => RadialStatus::ElevationStartVCPFinal,
+            other => RadialStatus::Unknown(other),
         }
     }
 

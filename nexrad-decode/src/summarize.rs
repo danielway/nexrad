@@ -120,9 +120,9 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
 
                 if let Some(group) = &mut current_group {
                     if let Some(data_types) = group.data_types.as_mut() {
-                        let mut increment_count = |data_type: &str| {
+                        let mut increment_count = |data_type: &'static str| {
                             let count = data_types.get(data_type).unwrap_or(&0) + 1;
-                            data_types.insert(data_type.to_string(), count);
+                            data_types.insert(data_type, count);
                         };
 
                         if radar_data.reflectivity_data_block().is_some() {

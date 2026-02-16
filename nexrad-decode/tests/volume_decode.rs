@@ -42,8 +42,7 @@ fn test_decode_kdmx_volume_structure() {
                 MessageContents::RDAStatusData(_) => status_count += 1,
                 MessageContents::VolumeCoveragePattern(_) => vcp_count += 1,
                 MessageContents::DigitalRadarData(_) => radar_data_count += 1,
-                MessageContents::ClutterFilterMap(_) => other_count += 1,
-                MessageContents::Other => other_count += 1,
+                _ => other_count += 1,
             }
         }
     }
@@ -99,8 +98,7 @@ fn test_decode_kcrp_volume_structure() {
                 MessageContents::RDAStatusData(_) => status_count += 1,
                 MessageContents::VolumeCoveragePattern(_) => vcp_count += 1,
                 MessageContents::DigitalRadarData(_) => radar_data_count += 1,
-                MessageContents::ClutterFilterMap(_) => other_count += 1,
-                MessageContents::Other => other_count += 1,
+                _ => other_count += 1,
             }
         }
     }

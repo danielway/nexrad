@@ -130,7 +130,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         sweeps_found.insert(elev);
                     }
                 }
-                MessageContents::Other => {}
+                _ => {}
             }
         }
 

@@ -82,6 +82,36 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
         }
     }
 
+    /// Reads `count` bytes across segment boundaries into an owned `Vec<u8>`.
+    ///
+    /// Unlike [`take_slice`](Self::take_slice), this method handles data that spans
+    /// multiple segments by copying bytes into a contiguous buffer. Use this for
+    /// large data fields (e.g. Clutter Filter Bypass Map range bins) that may not
+    /// fit in a single segment.
+    pub fn read_bytes_owned(&mut self, count: usize) -> Result<Vec<u8>> {
+        if self.remaining_total() < count {
+            return Err(Error::UnexpectedEof);
+        }
+
+        let mut data = Vec::with_capacity(count);
+        let mut remaining_to_read = count;
+
+        while remaining_to_read > 0 {
+            let available = self.remaining_in_current_segment();
+            if available == 0 {
+                self.advance_to_next_segment();
+                continue;
+            }
+
+            let to_read = remaining_to_read.min(available);
+            let chunk = self.take_slice::<u8>(to_read)?;
+            data.extend_from_slice(chunk);
+            remaining_to_read -= to_read;
+        }
+
+        Ok(data)
+    }
+
     /// Advances to the start of the next segment, skipping any remaining bytes
     /// in the current segment (padding).
     pub fn advance_to_next_segment(&mut self) {

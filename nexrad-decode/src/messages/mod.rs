@@ -1,6 +1,16 @@
+pub mod clutter_censor_zones;
+pub mod clutter_filter_bypass_map;
 pub mod clutter_filter_map;
+pub mod console_message;
 pub mod digital_radar_data;
+pub mod loopback_test;
+pub mod performance_maintenance_data;
+pub mod rda_adaptation_data;
+pub mod rda_control_commands;
+pub mod rda_log_data;
+pub mod rda_prf_data;
 pub mod rda_status_data;
+pub mod request_for_data;
 pub mod volume_coverage_pattern;
 
 mod raw;

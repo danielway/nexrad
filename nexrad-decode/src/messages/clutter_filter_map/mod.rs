@@ -20,3 +20,6 @@ mod range_zone;
 pub use range_zone::RangeZone;
 
 pub(crate) mod raw;
+
+#[cfg(test)]
+mod snapshot_test;

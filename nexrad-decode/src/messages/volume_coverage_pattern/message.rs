@@ -1,7 +1,7 @@
 use super::raw;
 use super::{ElevationDataBlock, Header};
 use crate::result::Result;
-use crate::slice_reader::SliceReader;
+use crate::segmented_slice_reader::SegmentedSliceReader;
 
 /// The volume coverage pattern message describes the current scan pattern. This is sent on
 /// wideband connection and the start of each volume scan.
@@ -18,7 +18,7 @@ pub struct Message<'a> {
 
 impl<'a> Message<'a> {
     /// Parse a volume coverage pattern message from the input.
-    pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
+    pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
         let raw_header = reader.take_ref::<raw::Header>()?;
 
         let elevation_cuts = raw_header.number_of_elevation_cuts.get() as usize;

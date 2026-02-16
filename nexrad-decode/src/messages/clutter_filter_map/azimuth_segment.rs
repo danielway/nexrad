@@ -22,7 +22,7 @@ pub struct AzimuthSegment<'a> {
 impl<'a> AzimuthSegment<'a> {
     /// Parse an azimuth segment (expected to be the specified number) from the reader.
     pub(crate) fn parse(
-        reader: &mut SegmentedSliceReader<'a>,
+        reader: &mut SegmentedSliceReader<'a, '_>,
         segment_number: u16,
     ) -> Result<Self> {
         let header = reader.take_ref::<AzimuthSegmentHeader>()?;

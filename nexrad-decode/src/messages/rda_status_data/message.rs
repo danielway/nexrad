@@ -9,7 +9,7 @@ use crate::messages::rda_status_data::{
     VolumeCoveragePatternNumber,
 };
 use crate::result::Result;
-use crate::slice_reader::SliceReader;
+use crate::segmented_slice_reader::SegmentedSliceReader;
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::borrow::Cow;
@@ -23,7 +23,7 @@ pub struct Message<'a> {
 }
 
 impl<'a> Message<'a> {
-    pub(crate) fn parse(reader: &mut SliceReader<'a>) -> Result<Self> {
+    pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
         let inner = reader.take_ref::<raw::Message>()?;
         Ok(Self {
             inner: Cow::Borrowed(inner),

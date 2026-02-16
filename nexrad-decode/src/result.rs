@@ -42,14 +42,6 @@ pub enum Error {
         /// The unrecognized block type identifier.
         block_type: String,
     },
-    /// A segmented message has segments in unexpected order.
-    #[error("segmented message has out-of-order segment: expected {expected}, got {actual}")]
-    SegmentOutOfOrder {
-        /// The expected segment number.
-        expected: u16,
-        /// The actual segment number received.
-        actual: u16,
-    },
     /// A data structure spans across segment boundaries.
     #[error("data structure spans segment boundary at position {position}")]
     DataSpansSegmentBoundary {

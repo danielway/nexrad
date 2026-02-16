@@ -1,6 +1,5 @@
 use crate::messages::rda_status_data::RDABuildNumber;
 use crate::result::{Error, Result};
-use zerocopy::FromBytes;
 
 /// A wrapper around a byte slice that tracks the current read position.
 ///
@@ -62,18 +61,6 @@ impl<'a> SliceReader<'a> {
         let (v, rest) = T::ref_from_prefix(remaining).map_err(|_e| Error::UnexpectedEof)?;
         self.advance(remaining.len() - rest.len());
         Ok(v)
-    }
-
-    /// Returns a typed slice of `count` elements of `T` and advances the reader past them.
-    pub(crate) fn take_slice<T>(&mut self, count: usize) -> Result<&'a [T]>
-    where
-        T: zerocopy::FromBytes + zerocopy::KnownLayout + zerocopy::Immutable,
-    {
-        let remaining = self.remaining();
-        let (slice, rest) = <[T]>::ref_from_prefix_with_elems(remaining, count)
-            .map_err(|_e| Error::UnexpectedEof)?;
-        self.advance(remaining.len() - rest.len());
-        Ok(slice)
     }
 
     /// Returns a byte slice of `count` bytes and advances the reader past them.

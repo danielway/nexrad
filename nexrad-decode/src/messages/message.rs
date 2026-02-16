@@ -1,13 +1,9 @@
 use crate::messages::{
-    digital_radar_data, rda_status_data, volume_coverage_pattern, MessageContents, MessageHeader,
+    clutter_filter_map, rda_status_data, volume_coverage_pattern, MessageContents, MessageHeader,
     MessageType,
 };
-use crate::result::{Error, Result};
-use crate::slice_reader::SliceReader;
-use std::mem::size_of;
-
-/// Expected segment contents size for fixed-length segments.
-pub(crate) const FIXED_SEGMENT_SIZE: usize = 2432 - size_of::<MessageHeader>();
+use crate::result::Result;
+use crate::segmented_slice_reader::SegmentedSliceReader;
 
 /// Container for message headers, supporting both single-segment and multi-segment messages.
 ///
@@ -74,44 +70,7 @@ pub struct Message<'a> {
 }
 
 impl<'a> Message<'a> {
-    /// Parse a single (non-segmented) message from the reader.
-    ///
-    /// The header should already be read; `offset` is the position where it started.
-    pub(crate) fn parse(
-        reader: &mut SliceReader<'a>,
-        header: &'a MessageHeader,
-        offset: usize,
-    ) -> Result<Self> {
-        let contents_start = reader.position();
-        let contents = decode_message_contents(reader, header.message_type())?;
-
-        if header.message_type() != MessageType::RDADigitalRadarDataGenericFormat {
-            let actual_length = reader.position() - contents_start;
-
-            let length_delta: i32 = FIXED_SEGMENT_SIZE as i32 - actual_length as i32;
-            if length_delta > 0 {
-                reader.advance(length_delta as usize);
-            } else if length_delta < 0 {
-                return Err(Error::InvalidMessageLength {
-                    message_type: format!("{:?}", header.message_type()),
-                    delta: length_delta,
-                });
-            }
-        }
-
-        let size = reader.position() - offset;
-
-        Ok(Message {
-            headers: MessageHeaders::Single(header),
-            contents,
-            offset,
-            size,
-        })
-    }
-
     /// Create a new message from pre-parsed components.
-    ///
-    /// Used by decode_messages() when constructing segmented messages.
     pub(crate) fn new(
         headers: MessageHeaders<'a>,
         contents: MessageContents<'a>,
@@ -172,32 +131,29 @@ impl<'a> Message<'a> {
     }
 }
 
-/// Decode the content of a NEXRAD Level II message of the specified type from a reader.
-fn decode_message_contents<'a>(
-    reader: &mut SliceReader<'a>,
+/// Decode the content of a fixed-segment NEXRAD Level II message.
+///
+/// This is the single dispatch table for all fixed-segment message types, both
+/// single-segment (e.g. RDA Status, VCP) and multi-segment (e.g. Clutter Filter Map).
+/// All use `SegmentedSliceReader` — for single-segment messages this is simply a
+/// one-element reader that behaves identically to a contiguous slice.
+pub(super) fn decode_fixed_segment_contents<'a>(
+    reader: &mut SegmentedSliceReader<'a>,
     message_type: MessageType,
 ) -> Result<MessageContents<'a>> {
-    if message_type == MessageType::RDADigitalRadarDataGenericFormat {
-        let radar_data_message = digital_radar_data::Message::parse(reader)?;
-        return Ok(MessageContents::DigitalRadarData(Box::new(
-            radar_data_message,
-        )));
-    }
-
     Ok(match message_type {
         MessageType::RDAStatusData => {
             let rda_status_message = rda_status_data::Message::parse(reader)?;
-
-            // Capture build number for version-aware parsing of subsequent messages
-            reader.set_build_number(rda_status_message.build_number());
-
             MessageContents::RDAStatusData(Box::new(rda_status_message))
         }
         MessageType::RDAVolumeCoveragePattern => {
             let volume_coverage_message = volume_coverage_pattern::Message::parse(reader)?;
             MessageContents::VolumeCoveragePattern(Box::new(volume_coverage_message))
         }
-        // Note: RDAClutterFilterMap is handled by the segmented path in mod.rs
+        MessageType::RDAClutterFilterMap => {
+            let clutter_filter_message = clutter_filter_map::Message::parse(reader)?;
+            MessageContents::ClutterFilterMap(Box::new(clutter_filter_message))
+        }
         _ => MessageContents::Other,
     })
 }

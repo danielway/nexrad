@@ -11,15 +11,13 @@ use uom::si::f64::Information;
 #[cfg(feature = "uom")]
 use uom::si::information::byte;
 
-/// This value in the [MessageHeader::segment_size] field of a message header indicates that the
-/// message is variable-length rather than segmented.
+/// Sentinel value for the `segment_size` field indicating variable-length framing.
 pub const VARIABLE_LENGTH_MESSAGE_SIZE: u16 = 65535;
 
 /// Message and system configuration information appended to the beginning of all messages.
 ///
-/// Note that messages with a segment size of 65535 (0xFFFF) are not segmented and instead
-/// variable-length, with the segment count and segment number positions of the header (bytes 12-15)
-/// specifying the size of the full message in bytes.
+/// Use [`segmented()`](Self::segmented) to determine the framing mode, and
+/// [`message_size_bytes()`](Self::message_size_bytes) for the message size.
 #[repr(C)]
 #[derive(Clone, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct MessageHeader {
@@ -140,12 +138,19 @@ impl MessageHeader {
         )
     }
 
-    /// Whether this message is segmented or variable-length. If the message is segmented, multiple
-    /// message segments compose the full message. If the message is variable-length (indicated by
-    /// a segment size of 65535/0xFFFF), the full message size can be retrieved by
-    /// [MessageHeader::message_size_bytes].
+    /// Whether this message uses fixed-segment framing (2432-byte frames).
+    ///
+    /// Segmented messages occupy one or more fixed-size frames. Variable-length messages
+    /// (where this returns `false`) carry their own size and are not padded to frame
+    /// boundaries. Digital Radar Data (Type 31) is always variable-length.
     pub fn segmented(&self) -> bool {
+        // ICD Table II: segment_size == 0xFFFF indicates variable-length framing.
+        //
+        // Type 31 (Digital Radar Data) is also variable-length, but in practice its
+        // segment_size field contains the actual content halfwords rather than the
+        // ICD-specified 0xFFFF sentinel. We treat Type 31 as variable-length regardless.
         self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE
+            && self.message_type() != MessageType::RDADigitalRadarDataGenericFormat
     }
 
     /// If the message is [MessageHeader::segmented], this indicates the number of segments in the
@@ -177,7 +182,10 @@ impl MessageHeader {
     /// fields are repurposed as a 32-bit message size in bytes per ICD Table II.
     pub fn message_size_bytes(&self) -> u32 {
         match self.segment_count() {
+            // Segmented: segment_size field is in halfwords
             Some(_) => self.segment_size.get() as u32 * 2,
+            // Variable-length: segment_count and segment_number fields are repurposed
+            // as a 32-bit message size in bytes (ICD Table II)
             None => {
                 let high = self.segment_count.get() as u32;
                 let low = self.segment_number.get() as u32;

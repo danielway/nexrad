@@ -35,24 +35,8 @@ impl<'a> SegmentedSliceReader<'a> {
     }
 
     /// Sets the RDA build number for version-aware parsing.
-    #[allow(dead_code)]
     pub fn set_build_number(&mut self, build_number: RDABuildNumber) {
         self.build_number = Some(build_number);
-    }
-
-    /// Gets the RDA build number if set.
-    #[allow(dead_code)]
-    pub fn build_number(&self) -> Option<RDABuildNumber> {
-        self.build_number
-    }
-
-    /// Returns the total position across all segments (bytes read so far).
-    pub fn position(&self) -> usize {
-        let mut pos = 0;
-        for i in 0..self.current_segment {
-            pos += self.segments[i].len();
-        }
-        pos + self.position_in_segment
     }
 
     /// Returns the remaining bytes in the current segment.
@@ -161,11 +145,22 @@ impl<'a> SegmentedSliceReader<'a> {
         self.advance(remaining.len() - rest.len());
         Ok(slice)
     }
+}
+
+#[cfg(test)]
+impl<'a> SegmentedSliceReader<'a> {
+    /// Returns the total position across all segments (bytes read so far).
+    pub fn position(&self) -> usize {
+        let mut pos = 0;
+        for i in 0..self.current_segment {
+            pos += self.segments[i].len();
+        }
+        pos + self.position_in_segment
+    }
 
     /// Returns a byte slice of `count` bytes and advances the reader past them.
     ///
     /// Returns an error if the bytes would span a segment boundary.
-    #[allow(dead_code)]
     pub fn take_bytes(&mut self, count: usize) -> Result<&'a [u8]> {
         let remaining = self.current_remaining();
         if remaining.len() < count {
@@ -183,14 +178,7 @@ impl<'a> SegmentedSliceReader<'a> {
         Ok(bytes)
     }
 
-    /// Returns the number of segments.
-    #[allow(dead_code)]
-    pub fn segment_count(&self) -> usize {
-        self.segments.len()
-    }
-
     /// Returns the current segment index (0-based).
-    #[allow(dead_code)]
     pub fn current_segment_index(&self) -> usize {
         self.current_segment
     }

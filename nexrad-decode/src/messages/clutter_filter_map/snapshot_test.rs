@@ -18,7 +18,12 @@ fn test_decode_clutter_filter_map() {
 
     let cfm_messages: Vec<_> = messages
         .iter()
-        .filter(|m| matches!(m.contents(), crate::messages::MessageContents::ClutterFilterMap(_)))
+        .filter(|m| {
+            matches!(
+                m.contents(),
+                crate::messages::MessageContents::ClutterFilterMap(_)
+            )
+        })
         .collect();
 
     assert_eq!(cfm_messages.len(), 1, "expected exactly one CFM message");

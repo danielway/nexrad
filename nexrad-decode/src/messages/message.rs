@@ -138,7 +138,7 @@ impl<'a> Message<'a> {
 /// All use `SegmentedSliceReader` — for single-segment messages this is simply a
 /// one-element reader that behaves identically to a contiguous slice.
 pub(super) fn decode_fixed_segment_contents<'a>(
-    reader: &mut SegmentedSliceReader<'a>,
+    reader: &mut SegmentedSliceReader<'a, '_>,
     message_type: MessageType,
 ) -> Result<MessageContents<'a>> {
     Ok(match message_type {

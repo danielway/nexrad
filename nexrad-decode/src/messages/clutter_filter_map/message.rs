@@ -27,7 +27,7 @@ impl<'a> Message<'a> {
     ///
     /// Clutter filter maps span multiple fixed-length segments. The data is read
     /// across all segment payloads using the SegmentedSliceReader.
-    pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a>) -> Result<Self> {
+    pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
         let header = reader.take_ref::<Header>()?;
 
         let segment_count = header.elevation_segment_count.get() as u8;

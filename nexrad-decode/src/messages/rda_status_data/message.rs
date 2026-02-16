@@ -23,7 +23,7 @@ pub struct Message<'a> {
 }
 
 impl<'a> Message<'a> {
-    pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a>) -> Result<Self> {
+    pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
         let inner = reader.take_ref::<raw::Message>()?;
         Ok(Self {
             inner: Cow::Borrowed(inner),

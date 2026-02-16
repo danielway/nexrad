@@ -52,6 +52,23 @@ impl<'a> SliceReader<'a> {
         self.pos += n;
     }
 
+    /// Try to skip forward to `target` byte position.
+    ///
+    /// Returns `true` if the reader was advanced (or was already at/past `target`).
+    /// Returns `false` if `target` is beyond the end of the data.
+    pub fn try_skip_to(&mut self, target: usize) -> bool {
+        if target <= self.pos {
+            return true;
+        }
+        let skip = target - self.pos;
+        if skip <= self.remaining().len() {
+            self.advance(skip);
+            true
+        } else {
+            false
+        }
+    }
+
     /// Returns a typed reference to the next `T` and advances the reader past it.
     pub(crate) fn take_ref<T>(&mut self) -> Result<&'a T>
     where

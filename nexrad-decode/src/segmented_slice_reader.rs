@@ -12,9 +12,9 @@ use zerocopy::FromBytes;
 /// boundaries, so `take_ref` and `take_slice` will error if the requested data
 /// would cross a boundary.
 #[derive(Debug, Clone)]
-pub struct SegmentedSliceReader<'a> {
+pub struct SegmentedSliceReader<'a, 'seg> {
     /// The segment payloads (body data, excluding headers).
-    segments: Vec<&'a [u8]>,
+    segments: &'seg [&'a [u8]],
     /// Current segment index.
     current_segment: usize,
     /// Position within current segment.
@@ -23,9 +23,9 @@ pub struct SegmentedSliceReader<'a> {
     build_number: Option<RDABuildNumber>,
 }
 
-impl<'a> SegmentedSliceReader<'a> {
-    /// Creates a new SegmentedSliceReader from a vector of segment payloads.
-    pub fn new(segments: Vec<&'a [u8]>) -> Self {
+impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
+    /// Creates a new SegmentedSliceReader from a slice of segment payloads.
+    pub fn new(segments: &'seg [&'a [u8]]) -> Self {
         Self {
             segments,
             current_segment: 0,
@@ -148,7 +148,7 @@ impl<'a> SegmentedSliceReader<'a> {
 }
 
 #[cfg(test)]
-impl<'a> SegmentedSliceReader<'a> {
+impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
     /// Returns the total position across all segments (bytes read so far).
     pub fn position(&self) -> usize {
         let mut pos = 0;
@@ -191,7 +191,8 @@ mod tests {
     #[test]
     fn test_single_segment() {
         let data = [1u8, 2, 3, 4, 5, 6, 7, 8];
-        let mut reader = SegmentedSliceReader::new(vec![&data]);
+        let segments = [data.as_slice()];
+        let mut reader = SegmentedSliceReader::new(&segments);
 
         assert_eq!(reader.position(), 0);
         assert_eq!(reader.remaining_total(), 8);
@@ -210,7 +211,8 @@ mod tests {
     fn test_multiple_segments_advance() {
         let seg1 = [1u8, 2, 3, 4];
         let seg2 = [5u8, 6, 7, 8];
-        let mut reader = SegmentedSliceReader::new(vec![&seg1, &seg2]);
+        let segments = [seg1.as_slice(), seg2.as_slice()];
+        let mut reader = SegmentedSliceReader::new(&segments);
 
         assert_eq!(reader.remaining_total(), 8);
 
@@ -231,7 +233,8 @@ mod tests {
     fn test_advance_to_next_segment() {
         let seg1 = [1u8, 2, 3, 4];
         let seg2 = [5u8, 6, 7, 8];
-        let mut reader = SegmentedSliceReader::new(vec![&seg1, &seg2]);
+        let segments = [seg1.as_slice(), seg2.as_slice()];
+        let mut reader = SegmentedSliceReader::new(&segments);
 
         reader.take_bytes(2).unwrap();
         reader.advance_to_next_segment();
@@ -247,7 +250,8 @@ mod tests {
     fn test_spans_boundary_error() {
         let seg1 = [1u8, 2];
         let seg2 = [3u8, 4];
-        let mut reader = SegmentedSliceReader::new(vec![&seg1, &seg2]);
+        let segments = [seg1.as_slice(), seg2.as_slice()];
+        let mut reader = SegmentedSliceReader::new(&segments);
 
         // Try to read 4 bytes when only 2 are in current segment
         let result = reader.take_bytes(4);
@@ -260,7 +264,8 @@ mod tests {
     #[test]
     fn test_eof_error() {
         let data = [1u8, 2];
-        let mut reader = SegmentedSliceReader::new(vec![&data]);
+        let segments = [data.as_slice()];
+        let mut reader = SegmentedSliceReader::new(&segments);
 
         // Try to read more than available
         let result = reader.take_bytes(4);

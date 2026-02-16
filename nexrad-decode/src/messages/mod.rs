@@ -57,15 +57,8 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
                         offset,
                         e
                     );
-                    // Try to skip past this message using the header's size
-                    let target = offset + header.message_size_bytes() as usize;
-                    if target > reader.position() {
-                        let skip = target - reader.position();
-                        if skip <= reader.remaining().len() {
-                            reader.advance(skip);
-                        } else {
-                            break;
-                        }
+                    if !reader.try_skip_to(offset + header.message_size_bytes() as usize) {
+                        break;
                     }
                 }
             }
@@ -75,92 +68,83 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
         // Fixed-segment messages
         let segment_num = header.segment_number().unwrap_or(1);
         let segment_count = header.segment_count().unwrap_or(1);
-        let content_size = SEGMENT_FRAME_SIZE - size_of::<MessageHeader>();
 
-        // For multi-segment messages, extract only the declared payload size so that
+        // Multi-segment messages: extract only the declared payload size so that
         // SegmentedSliceReader's auto-skip logic correctly detects segment boundaries.
-        if segment_count > 1 {
+        // Single-segment messages: use the full frame content area as payload so
+        // parsers can read structs that extend beyond the declared message_size.
+        let payload = if segment_count > 1 {
             let payload_size =
                 (header.message_size_bytes() as usize).saturating_sub(size_of::<MessageHeader>());
             let payload = match reader.take_bytes(payload_size) {
                 Ok(p) => p,
                 Err(_) => break,
             };
-
-            // Skip padding to reach the next frame boundary
             let consumed = size_of::<MessageHeader>() + payload_size;
             if consumed < SEGMENT_FRAME_SIZE {
                 reader.advance(SEGMENT_FRAME_SIZE - consumed);
             }
-            trace!(
-                "Segmented message: type={:?}, segment={}/{}",
-                header.message_type(),
-                segment_num,
-                segment_count
-            );
+            payload
+        } else {
+            let content_size = SEGMENT_FRAME_SIZE - size_of::<MessageHeader>();
+            match reader.take_bytes(content_size) {
+                Ok(p) => p,
+                Err(_) => break,
+            }
+        };
 
-            if segment_num == 1 {
-                accumulator.start(offset, segment_count);
-            } else if !accumulator.is_active() {
+        trace!(
+            "Fixed-segment message: type={:?}, segment={}/{}",
+            header.message_type(),
+            segment_num,
+            segment_count
+        );
+
+        // For continuation segments of a multi-segment message, verify the
+        // accumulator is active. For first segments (or single-segment messages),
+        // start a fresh accumulation.
+        if segment_count > 1 && segment_num != 1 {
+            if !accumulator.is_active() {
                 warn!(
                     "Segment {} arrived without preceding segment 1, skipping",
                     segment_num
                 );
                 continue;
             }
-
-            if accumulator.push(header, payload) {
-                match build_fixed_segment_message(
-                    &accumulator.headers,
-                    &accumulator.payloads,
-                    accumulator.first_offset,
-                    &build_number,
-                ) {
-                    Ok((msg, new_bn)) => {
-                        if let Some(bn) = new_bn {
-                            build_number = Some(bn);
-                        }
-                        trace!(
-                            "Parsed segmented message with {} segments",
-                            msg.headers().count()
-                        );
-                        messages.push(msg);
-                    }
-                    Err(e) => {
-                        warn!("Failed to parse segmented message: {:?}", e);
-                    }
-                }
-                accumulator.clear();
-            }
-            continue;
-        }
-
-        // For single fixed-segments, use the full frame content area as payload
-        // so parsers can read structs that extend beyond the declared
-        // message_size into the frame padding.
-        let payload = match reader.take_bytes(content_size) {
-            Ok(p) => p,
-            Err(_) => break,
-        };
-
-        match build_fixed_segment_message(&[header], &[payload], offset, &build_number) {
-            Ok((msg, new_bn)) => {
-                if let Some(bn) = new_bn {
-                    build_number = Some(bn);
-                }
-                messages.push(msg);
-            }
-            Err(e) => {
-                if matches!(e, Error::UnexpectedEof) {
-                    break;
-                }
+        } else {
+            if accumulator.is_active() {
                 warn!(
-                    "Failed to parse message (type {:?}) at offset {}: {:?}",
-                    header.message_type(),
-                    offset,
-                    e
+                    "Discarding incomplete segmented message: got {}/{} segments",
+                    accumulator.headers.len(),
+                    accumulator.expected_count
                 );
             }
+            accumulator.start(offset, segment_count);
+        }
+
+        if accumulator.push(header, payload) {
+            match build_fixed_segment_message(
+                &accumulator.headers,
+                &accumulator.payloads,
+                accumulator.first_offset,
+                &build_number,
+            ) {
+                Ok(msg) => {
+                    if let MessageContents::RDAStatusData(ref status) = msg.contents() {
+                        build_number = Some(status.build_number());
+                    }
+                    messages.push(msg);
+                }
+                Err(e) => {
+                    warn!(
+                        "Failed to parse fixed-segment message (type {:?}) at offset {}: {:?}",
+                        accumulator.headers[0].message_type(),
+                        accumulator.first_offset,
+                        e
+                    );
+                }
+            }
+            accumulator.clear();
         }
     }
 
@@ -186,29 +170,21 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
 /// Build a `Message` from one or more fixed-segment payloads.
 ///
 /// Constructs a `SegmentedSliceReader` over the payloads and dispatches to
-/// `decode_fixed_segment_contents`. Returns the message and optionally a
-/// newly-discovered build number (from RDA Status messages).
+/// `decode_fixed_segment_contents`.
 fn build_fixed_segment_message<'a>(
     headers: &[&'a MessageHeader],
     payloads: &[&'a [u8]],
     offset: usize,
     build_number: &Option<RDABuildNumber>,
-) -> Result<(Message<'a>, Option<RDABuildNumber>)> {
+) -> Result<Message<'a>> {
     let message_type = headers[0].message_type();
 
-    let mut segmented_reader = SegmentedSliceReader::new(payloads.to_vec());
+    let mut segmented_reader = SegmentedSliceReader::new(payloads);
     if let Some(bn) = build_number {
         segmented_reader.set_build_number(*bn);
     }
 
     let contents = message::decode_fixed_segment_contents(&mut segmented_reader, message_type)?;
-
-    // Capture build number from RDA Status messages
-    let new_build_number = if let MessageContents::RDAStatusData(ref status) = contents {
-        Some(status.build_number())
-    } else {
-        None
-    };
 
     let total_size = headers.len() * SEGMENT_FRAME_SIZE;
 
@@ -218,10 +194,7 @@ fn build_fixed_segment_message<'a>(
         MessageHeaders::Multiple(headers.to_vec())
     };
 
-    Ok((
-        Message::new(message_headers, contents, offset, total_size),
-        new_build_number,
-    ))
+    Ok(Message::new(message_headers, contents, offset, total_size))
 }
 
 /// Parse a variable-length message (e.g. Type 31 Digital Radar Data).

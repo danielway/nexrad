@@ -16,7 +16,10 @@ pub struct ElevationSegment<'a> {
 
 impl<'a> ElevationSegment<'a> {
     /// Parse an elevation segment (expected to be the specified number) from the reader.
-    pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a>, segment_number: u8) -> Result<Self> {
+    pub(crate) fn parse(
+        reader: &mut SegmentedSliceReader<'a, '_>,
+        segment_number: u8,
+    ) -> Result<Self> {
         let mut elevation_segment = ElevationSegment {
             elevation_segment_number: segment_number,
             azimuth_segments: Vec::with_capacity(360),

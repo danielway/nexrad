@@ -157,7 +157,7 @@ impl MessageHeader {
     /// full message, otherwise this returns [None]. [MessageHeader::message_size_bytes] can be used
     /// to determine the message's full size.
     pub fn segment_count(&self) -> Option<u16> {
-        if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
+        if self.segmented() {
             Some(self.segment_count.get())
         } else {
             None
@@ -168,7 +168,7 @@ impl MessageHeader {
     /// in the message, otherwise this returns [None]. [MessageHeader::message_size_bytes] can be
     /// used to determine the message's full size.
     pub fn segment_number(&self) -> Option<u16> {
-        if self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
+        if self.segmented() {
             Some(self.segment_number.get())
         } else {
             None
@@ -180,17 +180,20 @@ impl MessageHeader {
     ///
     /// For variable-length messages (segment size = 0xFFFF), the segment count and segment number
     /// fields are repurposed as a 32-bit message size in bytes per ICD Table II.
+    ///
+    /// Note: this uses the raw `segment_size` field rather than [`segmented()`](Self::segmented)
+    /// because Type 31 messages store their halfword count in `segment_size` even though they
+    /// use variable-length framing.
     pub fn message_size_bytes(&self) -> u32 {
-        match self.segment_count() {
-            // Segmented: segment_size field is in halfwords
-            Some(_) => self.segment_size.get() as u32 * 2,
+        if self.segment_size.get() < VARIABLE_LENGTH_MESSAGE_SIZE {
+            // segment_size field is in halfwords
+            self.segment_size.get() as u32 * 2
+        } else {
             // Variable-length: segment_count and segment_number fields are repurposed
             // as a 32-bit message size in bytes (ICD Table II)
-            None => {
-                let high = self.segment_count.get() as u32;
-                let low = self.segment_number.get() as u32;
-                (high << 16) | low
-            }
+            let high = self.segment_count.get() as u32;
+            let low = self.segment_number.get() as u32;
+            (high << 16) | low
         }
     }
 

@@ -61,7 +61,7 @@ struct SweepMetadataSnapshot {
 
 fn create_scan_metadata_snapshot(scan: &Scan) -> ScanMetadataSnapshot {
     ScanMetadataSnapshot {
-        coverage_pattern_number: scan.coverage_pattern_number(),
+        coverage_pattern_number: scan.coverage_pattern_number().number(),
         sweep_count: scan.sweeps().len(),
         sweeps: scan
             .sweeps()

@@ -244,7 +244,7 @@ fn test_file_scan_conversion() {
     );
 
     let scan = scan_result.unwrap();
-    assert_eq!(scan.coverage_pattern_number(), 212);
+    assert_eq!(scan.coverage_pattern_number().number(), 212);
 }
 
 #[cfg(feature = "nexrad-model")]

@@ -88,7 +88,7 @@ fn main() -> nexrad::Result<()> {
     // Load from a local Archive II file
     let volume = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
 
-    println!("VCP: {}", volume.coverage_pattern_number());
+    println!("{}", volume.coverage_pattern_number());
     println!("Sweeps: {}", volume.sweeps().len());
 
     // Iterate through sweeps and radials
@@ -125,7 +125,7 @@ async fn main() -> nexrad::Result<()> {
 
     // Download the latest volume for the day
     let volume = nexrad::download_latest("KTLX", date).await?;
-    println!("VCP: {}", volume.coverage_pattern_number());
+    println!("{}", volume.coverage_pattern_number());
 
     Ok(())
 }

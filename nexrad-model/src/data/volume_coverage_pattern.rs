@@ -1,4 +1,4 @@
-use crate::data::{ElevationCut, PulseWidth};
+use crate::data::{ElevationCut, PulseWidth, VCPNumber};
 use std::fmt::Display;
 
 #[cfg(feature = "serde")]
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct VolumeCoveragePattern {
-    pattern_number: u16,
+    pattern_number: VCPNumber,
     version: u8,
     doppler_velocity_resolution: f32,
     pulse_width: PulseWidth,
@@ -57,7 +57,7 @@ impl VolumeCoveragePattern {
         elevation_cuts: Vec<ElevationCut>,
     ) -> Self {
         Self {
-            pattern_number,
+            pattern_number: VCPNumber::from_number(pattern_number),
             version,
             doppler_velocity_resolution,
             pulse_width,
@@ -74,8 +74,8 @@ impl VolumeCoveragePattern {
         }
     }
 
-    /// The volume coverage pattern number (e.g., 12, 31, 35, 212, 215).
-    pub fn pattern_number(&self) -> u16 {
+    /// The volume coverage pattern identifying the scan strategy.
+    pub fn pattern_number(&self) -> VCPNumber {
         self.pattern_number
     }
 
@@ -159,7 +159,7 @@ impl Display for VolumeCoveragePattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "VCP {} (v{}, {} cuts",
+            "{} (v{}, {} cuts",
             self.pattern_number,
             self.version,
             self.elevation_cuts.len()

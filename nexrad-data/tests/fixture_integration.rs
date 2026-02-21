@@ -325,7 +325,7 @@ fn test_vcp_number_matches_expected() {
         let scan = volume.scan().expect("should convert to scan");
 
         assert_eq!(
-            scan.coverage_pattern_number(),
+            scan.coverage_pattern_number().number(),
             fixture.expected_vcp,
             "Fixture {} VCP mismatch",
             fixture.id

@@ -26,7 +26,7 @@ async fn main() -> nexrad::Result<()> {
     let volume = nexrad::download_latest(site, date).await?;
 
     println!("\n=== Downloaded Volume ===");
-    println!("VCP: {}", volume.coverage_pattern_number());
+    println!("{}", volume.coverage_pattern_number());
     println!("Sweeps: {}", volume.sweeps().len());
 
     for (i, sweep) in volume.sweeps().iter().enumerate() {

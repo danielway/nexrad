@@ -11,7 +11,7 @@ fn test_scan_basic_structure() {
     let scan = volume.scan().expect("Scan conversion should succeed");
 
     // Verify coverage pattern number
-    assert_eq!(scan.coverage_pattern_number(), 212);
+    assert_eq!(scan.coverage_pattern_number().number(), 212);
 
     // Verify number of sweeps (VCP 212 has 23 elevation cuts in this file, with split-cuts)
     assert_eq!(scan.sweeps().len(), 23);

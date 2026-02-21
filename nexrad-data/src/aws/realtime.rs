@@ -69,6 +69,11 @@ mod poll_chunks;
 #[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
 pub use poll_chunks::*;
 
+#[cfg(feature = "nexrad-model")]
+mod assemble;
+#[cfg(feature = "nexrad-model")]
+pub use assemble::*;
+
 mod search;
 
 const REALTIME_BUCKET: &str = "unidata-nexrad-level2-chunks";

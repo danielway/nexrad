@@ -5,6 +5,12 @@ use std::fmt::Display;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "chrono")]
+use chrono::{DateTime, Utc};
+
+#[cfg(feature = "uom")]
+use uom::si::f32::Angle;
+
 /// A single radar sweep composed of a series of radials. This represents a full rotation of the
 /// radar at some elevation angle and contains the Level II data (reflectivity, velocity, and
 /// spectrum width) for each azimuth angle in that sweep. The resolution of the sweep dictates the
@@ -61,9 +67,70 @@ impl Sweep {
         self.elevation_number
     }
 
+    /// The elevation angle in degrees for this sweep, derived from the median of all radial
+    /// elevation angles.
+    ///
+    /// The median is used rather than the first radial because radials at the beginning and end
+    /// of a sweep may report transitional elevation angles as the antenna moves between sweeps.
+    /// The median is robust against these outliers.
+    ///
+    /// Returns `None` if the sweep has no radials.
+    pub fn elevation_angle_degrees(&self) -> Option<f32> {
+        if self.radials.is_empty() {
+            return None;
+        }
+
+        let mut angles: Vec<f32> = self.radials.iter().map(|r| r.elevation_angle_degrees()).collect();
+        angles.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+        let mid = angles.len() / 2;
+        if angles.len() % 2 == 0 {
+            Some((angles[mid - 1] + angles[mid]) / 2.0)
+        } else {
+            Some(angles[mid])
+        }
+    }
+
+    /// The elevation angle for this sweep.
+    ///
+    /// Uses the median of all radial elevation angles for robustness against transitional
+    /// radials at sweep boundaries. See [`elevation_angle_degrees`](Self::elevation_angle_degrees)
+    /// for details.
+    ///
+    /// Returns `None` if the sweep has no radials.
+    #[cfg(feature = "uom")]
+    pub fn elevation_angle(&self) -> Option<Angle> {
+        self.elevation_angle_degrees()
+            .map(Angle::new::<uom::si::angle::degree>)
+    }
+
     /// The radials comprising this sweep.
     pub fn radials(&self) -> &[Radial] {
         &self.radials
+    }
+
+    /// The time range of this sweep as `(earliest, latest)` collection times.
+    ///
+    /// Returns `None` if the sweep has no radials or no valid timestamps.
+    #[cfg(feature = "chrono")]
+    pub fn time_range(&self) -> Option<(DateTime<Utc>, DateTime<Utc>)> {
+        let mut earliest: Option<DateTime<Utc>> = None;
+        let mut latest: Option<DateTime<Utc>> = None;
+
+        for radial in &self.radials {
+            if let Some(time) = radial.collection_time() {
+                earliest = Some(match earliest {
+                    Some(e) => e.min(time),
+                    None => time,
+                });
+                latest = Some(match latest {
+                    Some(l) => l.max(time),
+                    None => time,
+                });
+            }
+        }
+
+        earliest.zip(latest)
     }
 
     /// Merges this sweep with another sweep, combining their radials into a single sweep. The

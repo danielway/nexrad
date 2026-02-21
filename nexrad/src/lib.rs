@@ -17,7 +17,7 @@
 //! ```ignore
 //! // Load from a local file
 //! let volume = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
-//! println!("VCP: {}, {} sweeps",
+//! println!("{}, {} sweeps",
 //!     volume.coverage_pattern_number(),
 //!     volume.sweeps().len());
 //!
@@ -259,7 +259,7 @@ pub fn load(data: &[u8]) -> Result<model::data::Scan> {
 ///
 /// ```ignore
 /// let volume = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
-/// println!("VCP: {}", volume.coverage_pattern_number());
+/// println!("{}", volume.coverage_pattern_number());
 /// # Ok::<(), nexrad::Error>(())
 /// ```
 ///
@@ -289,7 +289,7 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
 /// // Download the first volume of the day
 /// if let Some(id) = volumes.into_iter().next() {
 ///     let volume = nexrad::download(id).await?;
-///     println!("VCP: {}", volume.coverage_pattern_number());
+///     println!("{}", volume.coverage_pattern_number());
 /// }
 /// # Ok::<(), nexrad::Error>(())
 /// ```
@@ -315,7 +315,7 @@ pub async fn download(identifier: data::aws::archive::Identifier) -> Result<mode
 ///
 /// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
 /// let volume = nexrad::download_latest("KTLX", date).await?;
-/// println!("VCP: {}", volume.coverage_pattern_number());
+/// println!("{}", volume.coverage_pattern_number());
 /// # Ok::<(), nexrad::Error>(())
 /// ```
 ///
@@ -406,6 +406,156 @@ pub async fn list_volumes(
     date: chrono::NaiveDate,
 ) -> Result<Vec<data::aws::archive::Identifier>> {
     Ok(data::aws::archive::list_files(site, &date).await?)
+}
+
+// ============================================================================
+// Top-level rendering functions
+// ============================================================================
+
+/// Render a sweep's radar data to an RGBA image using the default color scale.
+///
+/// This is a convenience function that renders with the default color scale for the
+/// given product and a 1024x1024 transparent background. For more control over rendering
+/// options and color scales, use [`render::render_radials`] directly.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::render::Product;
+///
+/// let volume = nexrad::load_file("volume.ar2v")?;
+/// let sweep = volume.sweeps().first().unwrap();
+/// let image = nexrad::render_sweep(sweep, Product::Reflectivity)?;
+/// image.save("output.png").unwrap();
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if the sweep has no radials or the requested product is not present.
+#[cfg(all(feature = "render", feature = "model"))]
+pub fn render_sweep(
+    sweep: &model::data::Sweep,
+    product: render::Product,
+) -> Result<render::RgbaImage> {
+    let options = render::RenderOptions::new(1024, 1024).transparent();
+    Ok(render::render_radials_default(
+        sweep.radials(),
+        product,
+        &options,
+    )?)
+}
+
+/// Render a sweep's radar data to an RGBA image with custom options.
+///
+/// Uses the default color scale for the given product but allows custom render options
+/// (image size, background color). For full control over color scales, use
+/// [`render::render_radials`] directly.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::render::{Product, RenderOptions};
+///
+/// let volume = nexrad::load_file("volume.ar2v")?;
+/// let sweep = volume.sweeps().first().unwrap();
+/// let options = RenderOptions::new(800, 800).with_background([0, 0, 0, 255]);
+/// let image = nexrad::render_sweep_with_options(sweep, Product::Velocity, &options)?;
+/// image.save("velocity.png").unwrap();
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if the sweep has no radials or the requested product is not present.
+#[cfg(all(feature = "render", feature = "model"))]
+pub fn render_sweep_with_options(
+    sweep: &model::data::Sweep,
+    product: render::Product,
+    options: &render::RenderOptions,
+) -> Result<render::RgbaImage> {
+    Ok(render::render_radials_default(
+        sweep.radials(),
+        product,
+        options,
+    )?)
+}
+
+// ============================================================================
+// Real-time data access
+// ============================================================================
+
+/// Stream real-time radar data chunks for a site.
+///
+/// Returns a [`futures::Stream`] that yields chunks as they become available from
+/// NOAA's real-time NEXRAD data feed. This is a convenience wrapper around
+/// [`data::aws::realtime::chunk_stream`] with default retry policies.
+///
+/// # Example
+///
+/// ```ignore
+/// use futures::StreamExt;
+///
+/// let mut stream = nexrad::stream("KTLX");
+/// while let Some(chunk) = stream.next().await {
+///     let chunk = chunk?;
+///     println!("Received chunk: {:?}", chunk.identifier);
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(all(feature = "data", feature = "aws-polling"))]
+pub fn stream(
+    site: &str,
+) -> impl futures::Stream<Item = Result<data::aws::realtime::DownloadedChunk>> {
+    use futures::StreamExt;
+    let config = data::aws::realtime::PollConfig::new(site);
+    data::aws::realtime::chunk_stream(config).map(|r| r.map_err(Error::Data))
+}
+
+// ============================================================================
+// Site registry convenience functions
+// ============================================================================
+
+/// Returns all NEXRAD radar sites in the static registry.
+///
+/// This provides a compile-time list of all operational NEXRAD WSR-88D radar sites.
+///
+/// # Example
+///
+/// ```
+/// for site in nexrad::sites() {
+///     println!("{}: {}, {}", site.id, site.city, site.state);
+/// }
+/// ```
+#[cfg(feature = "model")]
+pub fn sites() -> &'static [model::meta::registry::SiteEntry] {
+    model::meta::registry::sites()
+}
+
+/// Look up a NEXRAD radar site by its ICAO identifier (case-insensitive).
+///
+/// # Example
+///
+/// ```
+/// let site = nexrad::site("KTLX").unwrap();
+/// assert_eq!(site.city, "Oklahoma City");
+/// ```
+#[cfg(feature = "model")]
+pub fn site(id: &str) -> Option<&'static model::meta::registry::SiteEntry> {
+    model::meta::registry::site_by_id(id)
+}
+
+/// Find the nearest NEXRAD site to a given latitude/longitude.
+///
+/// # Example
+///
+/// ```
+/// let site = nexrad::nearest_site(35.4676, -97.5164).unwrap();
+/// assert_eq!(site.id, "KTLX");
+/// ```
+#[cfg(feature = "model")]
+pub fn nearest_site(latitude: f32, longitude: f32) -> Option<&'static model::meta::registry::SiteEntry> {
+    model::meta::registry::nearest_site(latitude, longitude)
 }
 
 // ============================================================================

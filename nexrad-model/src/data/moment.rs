@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use crate::BinaryData;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -108,7 +108,7 @@ pub enum CFPStatus {
 /// This is an internal type providing gate metadata accessors (count, range, interval) shared
 /// by both [`MomentData`] and [`CFPMomentData`]. Use those public wrapper types for decoded
 /// gate values and access to gate metadata via the [`DataMoment`] trait.
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub(crate) struct MomentDataBlock {
     gate_count: u16,
@@ -118,7 +118,7 @@ pub(crate) struct MomentDataBlock {
     data_word_size: u8,
     scale: f32,
     offset: f32,
-    values: Vec<u8>,
+    values: BinaryData<Vec<u8>>,
 }
 
 impl MomentDataBlock {
@@ -145,7 +145,7 @@ impl MomentDataBlock {
             data_word_size,
             scale,
             offset,
-            values,
+            values: BinaryData::new(values),
         }
     }
 
@@ -213,17 +213,6 @@ impl MomentDataBlock {
     }
 }
 
-impl Debug for MomentDataBlock {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MomentDataBlock")
-            .field("gate_count", &self.gate_count)
-            .field("first_gate_range", &self.first_gate_range)
-            .field("gate_interval", &self.gate_interval)
-            .field("data_word_size", &self.data_word_size)
-            .finish()
-    }
-}
-
 /// Moment data from a radial for a particular product where each value corresponds to a gate.
 ///
 /// Gate metadata (count, range, interval) is available through the [`DataMoment`] trait —
@@ -231,7 +220,7 @@ impl Debug for MomentDataBlock {
 /// and [`gate_interval_km`](DataMoment::gate_interval_km).
 /// Use [`values`](MomentData::values) to decode gates with standard moment semantics
 /// (below threshold, range folded, or numeric value).
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 pub struct MomentData {
@@ -291,15 +280,6 @@ impl MomentData {
 
 impl_data_moment!(MomentData);
 
-impl Debug for MomentData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MomentData")
-            .field("data_word_size", &self.inner.data_word_size)
-            .field("values", &self.values())
-            .finish()
-    }
-}
-
 /// The data moment value for a product in a radial's gate. The value may be a floating-point number
 /// or a special case such as "below threshold" or "range folded".
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -329,7 +309,7 @@ pub enum CFPMomentValue {
 /// see [`gate_count`](DataMoment::gate_count), [`first_gate_range_km`](DataMoment::first_gate_range_km),
 /// and [`gate_interval_km`](DataMoment::gate_interval_km).
 /// Use [`values`](CFPMomentData::values) to decode gates with CFP-specific semantics.
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
 pub struct CFPMomentData {
@@ -393,12 +373,3 @@ impl CFPMomentData {
 }
 
 impl_data_moment!(CFPMomentData);
-
-impl Debug for CFPMomentData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("CFPMomentData")
-            .field("data_word_size", &self.inner.data_word_size)
-            .field("values", &self.values())
-            .finish()
-    }
-}

@@ -1,10 +1,10 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// Radar pulse width configuration.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum PulseWidth {
     /// Short pulse width.
@@ -25,8 +25,3 @@ impl Display for PulseWidth {
     }
 }
 
-impl Debug for PulseWidth {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(self, f)
-    }
-}

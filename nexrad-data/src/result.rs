@@ -32,9 +32,6 @@ pub enum Error {
     /// Call `decompress()` first.
     #[error("gzip-compressed volume file must be decompressed before accessing records")]
     CompressedFileError,
-    /// Attempted to decompress a file that is not gzip-compressed.
-    #[error("file is not gzip-compressed")]
-    UncompressedFileError,
     /// Volume file is missing the required VCP (message type 5).
     #[error("volume missing coverage pattern (message type 5)")]
     MissingCoveragePattern,

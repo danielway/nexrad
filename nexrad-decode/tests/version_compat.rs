@@ -17,10 +17,9 @@ use nexrad_decode::messages::{decode_messages, MessageContents};
 
 /// Helper: decode a volume file and extract analysis data.
 fn analyze_volume(data: &[u8]) -> VolumeAnalysis {
-    let mut file = volume::File::new(data.to_vec());
-    if file.compressed() {
-        file = file.decompress().expect("decompresses gzip file");
-    }
+    let file = volume::File::new(data.to_vec())
+        .decompress()
+        .expect("decompresses gzip file");
 
     let mut build_number: Option<RDABuildNumber> = None;
     let mut raw_build_value: Option<u16> = None;
@@ -211,10 +210,9 @@ fn test_message_type1_kabr_2005() {
 /// Validates Message Type 1 field values are physically reasonable.
 #[test]
 fn test_message_type1_field_values() {
-    let mut file = volume::File::new(KABR_2005.to_vec());
-    if file.compressed() {
-        file = file.decompress().expect("decompresses gzip file");
-    }
+    let file = volume::File::new(KABR_2005.to_vec())
+        .decompress()
+        .expect("decompresses gzip file");
     let records = file.records().expect("records");
 
     let mut checked = false;
@@ -814,10 +812,9 @@ struct VolBlockAnalysis {
 
 /// Helper: extract the first VOL block from a volume file.
 fn analyze_volume_first_vol_block(data: &[u8]) -> VolBlockAnalysis {
-    let mut file = volume::File::new(data.to_vec());
-    if file.compressed() {
-        file = file.decompress().expect("decompresses gzip file");
-    }
+    let file = volume::File::new(data.to_vec())
+        .decompress()
+        .expect("decompresses gzip file");
     let records = file.records().expect("records");
 
     for mut record in records {

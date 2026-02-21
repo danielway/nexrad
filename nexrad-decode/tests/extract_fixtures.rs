@@ -37,10 +37,9 @@ fn extract_message_fixtures() {
 
     for (vol_name, vol_data) in &volume_files {
         println!("\n=== Scanning {} ({} bytes) ===", vol_name, vol_data.len());
-        let mut vol = volume::File::new(vol_data.to_vec());
-        if vol.compressed() {
-            vol = vol.decompress().expect("decompresses gzip file");
-        }
+        let vol = volume::File::new(vol_data.to_vec())
+            .decompress()
+            .expect("decompresses gzip file");
         let records: Vec<_> = vol.records().expect("records").into_iter().collect();
 
         let mut type_counts: HashMap<String, usize> = HashMap::new();

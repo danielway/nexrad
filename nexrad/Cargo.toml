@@ -27,7 +27,7 @@ parallel = ["nexrad-data?/parallel"]
 # Basic AWS S3 access (WASM-compatible)
 aws = ["data", "chrono", "nexrad-data?/aws"]
 # Real-time polling functionality (requires tokio, not WASM-compatible)
-aws-polling = ["aws", "nexrad-data?/aws-polling", "tokio"]
+aws-polling = ["aws", "nexrad-data?/aws-polling", "tokio", "dep:futures"]
 
 # All WASM-compatible features
 wasm = ["model", "decode", "data", "render", "aws", "serde", "uom", "chrono"]
@@ -41,6 +41,7 @@ nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model", optional = tr
 nexrad-decode = { version = "1.0.0-rc.2", path = "../nexrad-decode", optional = true }
 nexrad-data = { version = "1.0.0-rc.4", path = "../nexrad-data", optional = true }
 nexrad-render = { version = "1.0.0-rc.3", path = "../nexrad-render", optional = true }
+futures = { workspace = true, optional = true }
 
 # tokio is only available on non-WASM targets
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

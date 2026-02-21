@@ -19,7 +19,7 @@
 //! use nexrad_model::data::{Scan, Sweep, MomentValue};
 //!
 //! fn process_scan(scan: &Scan) {
-//!     println!("VCP: {}", scan.coverage_pattern_number());
+//!     println!("{}", scan.coverage_pattern_number());
 //!
 //!     for sweep in scan.sweeps() {
 //!         for radial in sweep.radials() {

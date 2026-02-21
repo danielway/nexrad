@@ -21,7 +21,7 @@ fn main() -> nexrad::Result<()> {
     let volume = nexrad::load_file(path)?;
 
     println!("\n=== Volume Summary ===");
-    println!("VCP: {}", volume.coverage_pattern_number());
+    println!("{}", volume.coverage_pattern_number());
     println!("Sweeps: {}", volume.sweeps().len());
 
     let vcp = volume.coverage_pattern();

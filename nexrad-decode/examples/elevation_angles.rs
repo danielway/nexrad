@@ -37,12 +37,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     file.read_to_end(&mut buffer)?;
 
     // Parse the Archive II file
-    let mut volume_file = nexrad_data::volume::File::new(buffer);
-    if volume_file.compressed() {
-        volume_file = volume_file
-            .decompress()
-            .expect("Failed to decompress gzip file");
-    }
+    let volume_file = nexrad_data::volume::File::new(buffer)
+        .decompress()
+        .expect("Failed to decompress gzip file");
 
     // Create a HashMap to store elevation angles by elevation and azimuth numbers
     // Key: (elevation_number, azimuth_number), Value: elevation_angle

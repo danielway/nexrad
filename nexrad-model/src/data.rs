@@ -31,5 +31,8 @@ pub use channel_configuration::*;
 mod elevation_cut;
 pub use elevation_cut::*;
 
+mod vcp_number;
+pub use vcp_number::*;
+
 mod volume_coverage_pattern;
 pub use volume_coverage_pattern::*;

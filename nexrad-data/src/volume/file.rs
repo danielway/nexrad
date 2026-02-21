@@ -7,17 +7,16 @@ const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
 
 /// A NEXRAD Archive II volume data file.
 ///
-/// Older NEXRAD archives (pre-~2016) may be gzip-compressed. Use
-/// [`compressed`](Self::compressed) to check, and [`decompress`](Self::decompress)
-/// to inflate before accessing records.
+/// Older NEXRAD archives (pre-~2016) may be gzip-compressed. Call
+/// [`decompress`](Self::decompress) to inflate before accessing records.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct File(Vec<u8>);
 
 impl File {
     /// Creates a new Archive II volume file with the provided data.
     ///
-    /// The data is stored as-is. If the file is gzip-compressed, call
-    /// [`decompress`](Self::decompress) before accessing records.
+    /// The data is stored as-is. Call [`decompress`](Self::decompress) before
+    /// accessing records if the file may be gzip-compressed.
     pub fn new(data: Vec<u8>) -> Self {
         Self(data)
     }
@@ -32,15 +31,15 @@ impl File {
 
     /// Decompresses a gzip-compressed volume file.
     ///
-    /// Returns a new `File` containing the decompressed data. Returns an error
-    /// if the file is not gzip-compressed or if decompression fails.
+    /// Returns a new `File` containing the decompressed data. If the file is not
+    /// gzip-compressed, returns it unchanged. Returns an error only if decompression
+    /// fails.
     pub fn decompress(self) -> crate::result::Result<File> {
-        use crate::result::Error;
         use flate2::read::GzDecoder;
         use std::io::Read;
 
         if !self.compressed() {
-            return Err(Error::UncompressedFileError);
+            return Ok(self);
         }
 
         let mut decoder = GzDecoder::new(self.0.as_slice());
@@ -91,11 +90,20 @@ impl File {
             VolumeCoveragePattern, WaveformType,
         };
 
+        // Site location extracted from a DigitalRadarData volume data block.
+        struct SiteLocation {
+            latitude: f32,
+            longitude: f32,
+            site_height: i16,
+            tower_height: u16,
+        }
+
         let records = self.records()?;
 
         let process_record = |record: Record<'_>| -> crate::result::Result<(
             Option<vcp::Message<'static>>,
             Vec<Radial>,
+            Option<SiteLocation>,
         )> {
             let record = if record.compressed() {
                 record.decompress()?
@@ -105,9 +113,22 @@ impl File {
 
             let mut vcp = None;
             let mut radials = Vec::new();
+            let mut site_location = None;
             for message in record.messages()? {
                 match message.into_contents() {
-                    MessageContents::DigitalRadarData(m) => radials.push(m.into_radial()?),
+                    MessageContents::DigitalRadarData(m) => {
+                        if site_location.is_none() {
+                            if let Some(vol_block) = m.volume_data_block() {
+                                site_location = Some(SiteLocation {
+                                    latitude: vol_block.inner().latitude_raw(),
+                                    longitude: vol_block.inner().longitude_raw(),
+                                    site_height: vol_block.inner().site_height_raw(),
+                                    tower_height: vol_block.inner().tower_height_raw(),
+                                });
+                            }
+                        }
+                        radials.push(m.into_radial()?);
+                    }
                     MessageContents::VolumeCoveragePattern(m) => {
                         if vcp.is_none() {
                             vcp = Some(m.into_owned());
@@ -116,7 +137,7 @@ impl File {
                     _ => {}
                 }
             }
-            Ok((vcp, radials))
+            Ok((vcp, radials, site_location))
         };
 
         #[cfg(feature = "parallel")]
@@ -136,9 +157,13 @@ impl File {
 
         let mut coverage_pattern_message = None;
         let mut radials = Vec::new();
-        for (vcp, r) in results {
+        let mut site_location = None;
+        for (vcp, r, loc) in results {
             if coverage_pattern_message.is_none() {
                 coverage_pattern_message = vcp;
+            }
+            if site_location.is_none() {
+                site_location = loc;
             }
             radials.extend(r);
         }
@@ -217,7 +242,34 @@ impl File {
             elevation_cuts,
         );
 
-        Ok(Scan::new(coverage_pattern, Sweep::from_radials(radials)))
+        // Build the site from the volume header ICAO and the location from radar messages.
+        let site = site_location.map(|loc| {
+            let identifier = self
+                .header()
+                .and_then(|h| h.icao_of_radar())
+                .map(|icao| {
+                    let bytes = icao.as_bytes();
+                    let mut id = [0u8; 4];
+                    let len = bytes.len().min(4);
+                    id[..len].copy_from_slice(&bytes[..len]);
+                    id
+                })
+                .unwrap_or([0u8; 4]);
+
+            nexrad_model::meta::Site::new(
+                identifier,
+                loc.latitude,
+                loc.longitude,
+                loc.site_height,
+                loc.tower_height,
+            )
+        });
+
+        let sweeps = Sweep::from_radials(radials);
+        match site {
+            Some(site) => Ok(Scan::with_site(site, coverage_pattern, sweeps)),
+            None => Ok(Scan::new(coverage_pattern, sweeps)),
+        }
     }
 }
 

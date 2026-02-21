@@ -7,17 +7,16 @@ const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
 
 /// A NEXRAD Archive II volume data file.
 ///
-/// Older NEXRAD archives (pre-~2016) may be gzip-compressed. Use
-/// [`compressed`](Self::compressed) to check, and [`decompress`](Self::decompress)
-/// to inflate before accessing records.
+/// Older NEXRAD archives (pre-~2016) may be gzip-compressed. Call
+/// [`decompress`](Self::decompress) to inflate before accessing records.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct File(Vec<u8>);
 
 impl File {
     /// Creates a new Archive II volume file with the provided data.
     ///
-    /// The data is stored as-is. If the file is gzip-compressed, call
-    /// [`decompress`](Self::decompress) before accessing records.
+    /// The data is stored as-is. Call [`decompress`](Self::decompress) before
+    /// accessing records if the file may be gzip-compressed.
     pub fn new(data: Vec<u8>) -> Self {
         Self(data)
     }
@@ -32,15 +31,15 @@ impl File {
 
     /// Decompresses a gzip-compressed volume file.
     ///
-    /// Returns a new `File` containing the decompressed data. Returns an error
-    /// if the file is not gzip-compressed or if decompression fails.
+    /// Returns a new `File` containing the decompressed data. If the file is not
+    /// gzip-compressed, returns it unchanged. Returns an error only if decompression
+    /// fails.
     pub fn decompress(self) -> crate::result::Result<File> {
-        use crate::result::Error;
         use flate2::read::GzDecoder;
         use std::io::Read;
 
         if !self.compressed() {
-            return Err(Error::UncompressedFileError);
+            return Ok(self);
         }
 
         let mut decoder = GzDecoder::new(self.0.as_slice());

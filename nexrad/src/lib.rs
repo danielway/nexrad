@@ -247,10 +247,7 @@ pub use result::{Error, Result};
 /// decompression fails, or the messages cannot be decoded.
 #[cfg(all(feature = "data", feature = "model"))]
 pub fn load(data: &[u8]) -> Result<model::data::Scan> {
-    let mut file = data::volume::File::new(data.to_vec());
-    if file.compressed() {
-        file = file.decompress()?;
-    }
+    let file = data::volume::File::new(data.to_vec()).decompress()?;
     Ok(file.scan()?)
 }
 
@@ -305,11 +302,7 @@ pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<mode
             site: site.to_string(),
             date: date.to_string(),
         })?;
-    let mut file = data::aws::archive::download_file(file_id).await?;
-    if file.compressed() {
-        file = file.decompress()?;
-    }
-    Ok(file.scan()?)
+    download(file_id).await
 }
 
 /// Download the volume that overlaps a specific datetime.
@@ -355,11 +348,7 @@ pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<
             date: datetime.date().to_string(),
         })?;
 
-    let mut file = data::aws::archive::download_file(file_id).await?;
-    if file.compressed() {
-        file = file.decompress()?;
-    }
-    Ok(file.scan()?)
+    download(file_id).await
 }
 
 /// List available volumes for a site and date.

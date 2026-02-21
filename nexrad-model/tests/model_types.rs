@@ -72,7 +72,10 @@ fn test_scan_creation() {
     let sweeps = vec![Sweep::new(1, vec![]), Sweep::new(2, vec![])];
     let scan = Scan::new(test_vcp(212), sweeps);
 
-    assert_eq!(scan.coverage_pattern_number(), VCPNumber::PrecipitationSz2_212);
+    assert_eq!(
+        scan.coverage_pattern_number(),
+        VCPNumber::PrecipitationSz2_212
+    );
     assert_eq!(scan.sweeps().len(), 2);
 }
 

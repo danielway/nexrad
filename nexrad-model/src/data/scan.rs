@@ -71,10 +71,7 @@ impl Scan {
     /// Uses a 0.05-degree tolerance for matching. SAILS and MRLE VCPs repeat certain
     /// elevation angles at multiple points during a volume scan, so this may yield
     /// more than one sweep.
-    pub fn sweeps_at_elevation(
-        &self,
-        elevation_degrees: f32,
-    ) -> impl Iterator<Item = &Sweep> {
+    pub fn sweeps_at_elevation(&self, elevation_degrees: f32) -> impl Iterator<Item = &Sweep> {
         self.sweeps.iter().filter(move |s| {
             s.elevation_angle_degrees()
                 .map(|a| (a - elevation_degrees).abs() < 0.05)

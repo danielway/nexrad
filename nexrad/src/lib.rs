@@ -299,7 +299,9 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
 /// Returns an error if the download, decompression, or decoding fails.
 #[cfg(all(feature = "data", feature = "model", feature = "aws"))]
 pub async fn download(identifier: data::aws::archive::Identifier) -> Result<model::data::Scan> {
-    let file = data::aws::archive::download_file(identifier).await?.decompress()?;
+    let file = data::aws::archive::download_file(identifier)
+        .await?
+        .decompress()?;
     Ok(file.scan()?)
 }
 
@@ -554,7 +556,10 @@ pub fn site(id: &str) -> Option<&'static model::meta::registry::SiteEntry> {
 /// assert_eq!(site.id, "KTLX");
 /// ```
 #[cfg(feature = "model")]
-pub fn nearest_site(latitude: f32, longitude: f32) -> Option<&'static model::meta::registry::SiteEntry> {
+pub fn nearest_site(
+    latitude: f32,
+    longitude: f32,
+) -> Option<&'static model::meta::registry::SiteEntry> {
     model::meta::registry::nearest_site(latitude, longitude)
 }
 

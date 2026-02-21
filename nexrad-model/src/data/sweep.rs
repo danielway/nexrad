@@ -80,7 +80,11 @@ impl Sweep {
             return None;
         }
 
-        let mut angles: Vec<f32> = self.radials.iter().map(|r| r.elevation_angle_degrees()).collect();
+        let mut angles: Vec<f32> = self
+            .radials
+            .iter()
+            .map(|r| r.elevation_angle_degrees())
+            .collect();
         angles.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
         let mid = angles.len() / 2;

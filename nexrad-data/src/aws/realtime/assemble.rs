@@ -6,7 +6,7 @@ use crate::result::Error;
 /// Assembles a collection of real-time data chunks into a [`Scan`](nexrad_model::data::Scan).
 ///
 /// Takes an iterator of chunks (typically collected from a [`ChunkIterator`](super::ChunkIterator)
-/// or [`chunk_stream`](super::chunk_stream)) and combines them into a complete volume scan.
+/// or `chunk_stream`) and combines them into a complete volume scan.
 ///
 /// The chunks should all belong to the same volume and should include a start chunk.
 /// Chunks are processed in the order provided; radials from all chunks are combined
@@ -34,8 +34,8 @@ pub fn assemble_volume<'a>(
     use nexrad_decode::messages::volume_coverage_pattern as vcp;
     use nexrad_decode::messages::MessageContents;
     use nexrad_model::data::{
-        ChannelConfiguration, ElevationCut, PulseWidth, Radial, Scan, Sweep,
-        VolumeCoveragePattern, WaveformType,
+        ChannelConfiguration, ElevationCut, PulseWidth, Radial, Scan, Sweep, VolumeCoveragePattern,
+        WaveformType,
     };
 
     let mut all_radials: Vec<Radial> = Vec::new();
@@ -204,13 +204,7 @@ pub fn assemble_volume<'a>(
 
     // Build site metadata if available
     let site = site_location.map(|(lat, lon, height, tower)| {
-        nexrad_model::meta::Site::new(
-            site_identifier.unwrap_or([0u8; 4]),
-            lat,
-            lon,
-            height,
-            tower,
-        )
+        nexrad_model::meta::Site::new(site_identifier.unwrap_or([0u8; 4]), lat, lon, height, tower)
     });
 
     match site {

@@ -1,5 +1,5 @@
 use crate::data::{Sweep, VolumeCoveragePattern};
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 /// is composed of multiple sweeps at different elevations. The pattern of sweeps, including
 /// elevations and resolution, is determined by the scanning strategy of the radar. This is
 /// referred to as the Volume Coverage Pattern.
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Scan {
     coverage_pattern: VolumeCoveragePattern,
@@ -51,14 +51,5 @@ impl Display for Scan {
             self.coverage_pattern.pattern_number(),
             self.sweeps.len()
         )
-    }
-}
-
-impl Debug for Scan {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Scan")
-            .field("coverage_pattern", &self.coverage_pattern())
-            .field("sweeps", &self.sweeps())
-            .finish()
     }
 }

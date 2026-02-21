@@ -55,7 +55,7 @@ fn test_site_debug() {
     let debug = format!("{:?}", site);
 
     assert!(debug.contains("Site"));
-    assert!(debug.contains("KTLX"));
+    assert!(debug.contains("identifier"));
 }
 
 #[test]

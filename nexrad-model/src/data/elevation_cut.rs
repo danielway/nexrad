@@ -1,5 +1,4 @@
 use crate::data::{ChannelConfiguration, WaveformType};
-use std::fmt::Debug;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -8,7 +7,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// Each elevation cut defines the radar settings used when scanning at a particular elevation
 /// angle, including waveform type, PRF settings, and various thresholds.
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ElevationCut {
     elevation_angle_degrees: f64,
@@ -204,64 +203,5 @@ impl ElevationCut {
     /// Whether this is a base tilt cut.
     pub fn is_base_tilt_cut(&self) -> bool {
         self.is_base_tilt_cut
-    }
-}
-
-impl Debug for ElevationCut {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ElevationCut")
-            .field("elevation_angle_degrees", &self.elevation_angle_degrees)
-            .field("channel_configuration", &self.channel_configuration)
-            .field("waveform_type", &self.waveform_type)
-            .field(
-                "azimuth_rate_degrees_per_second",
-                &self.azimuth_rate_degrees_per_second,
-            )
-            .field(
-                "super_resolution_half_degree_azimuth",
-                &self.super_resolution_half_degree_azimuth,
-            )
-            .field(
-                "super_resolution_quarter_km_reflectivity",
-                &self.super_resolution_quarter_km_reflectivity,
-            )
-            .field(
-                "super_resolution_doppler_to_300km",
-                &self.super_resolution_doppler_to_300km,
-            )
-            .field(
-                "super_resolution_dual_pol_to_300km",
-                &self.super_resolution_dual_pol_to_300km,
-            )
-            .field("surveillance_prf_number", &self.surveillance_prf_number)
-            .field(
-                "surveillance_prf_pulse_count",
-                &self.surveillance_prf_pulse_count,
-            )
-            .field("reflectivity_threshold_db", &self.reflectivity_threshold_db)
-            .field("velocity_threshold_db", &self.velocity_threshold_db)
-            .field(
-                "spectrum_width_threshold_db",
-                &self.spectrum_width_threshold_db,
-            )
-            .field(
-                "differential_reflectivity_threshold_db",
-                &self.differential_reflectivity_threshold_db,
-            )
-            .field(
-                "differential_phase_threshold_db",
-                &self.differential_phase_threshold_db,
-            )
-            .field(
-                "correlation_coefficient_threshold_db",
-                &self.correlation_coefficient_threshold_db,
-            )
-            .field("is_sails_cut", &self.is_sails_cut)
-            .field("sails_sequence_number", &self.sails_sequence_number)
-            .field("is_mrle_cut", &self.is_mrle_cut)
-            .field("mrle_sequence_number", &self.mrle_sequence_number)
-            .field("is_mpda_cut", &self.is_mpda_cut)
-            .field("is_base_tilt_cut", &self.is_base_tilt_cut)
-            .finish()
     }
 }

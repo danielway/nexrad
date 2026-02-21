@@ -1,5 +1,5 @@
 use crate::data::{ElevationCut, PulseWidth};
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// The VCP defines the scanning strategy including the number of elevation cuts, the settings
 /// for each cut, and various special scanning modes like SAILS, MRLE, and MPDA.
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct VolumeCoveragePattern {
     pattern_number: u16,
@@ -181,29 +181,5 @@ impl Display for VolumeCoveragePattern {
         }
 
         write!(f, ")")
-    }
-}
-
-impl Debug for VolumeCoveragePattern {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("VolumeCoveragePattern")
-            .field("pattern_number", &self.pattern_number)
-            .field("version", &self.version)
-            .field(
-                "doppler_velocity_resolution",
-                &self.doppler_velocity_resolution,
-            )
-            .field("pulse_width", &self.pulse_width)
-            .field("sails_enabled", &self.sails_enabled)
-            .field("sails_cuts", &self.sails_cuts)
-            .field("mrle_enabled", &self.mrle_enabled)
-            .field("mrle_cuts", &self.mrle_cuts)
-            .field("mpda_enabled", &self.mpda_enabled)
-            .field("base_tilt_enabled", &self.base_tilt_enabled)
-            .field("base_tilt_count", &self.base_tilt_count)
-            .field("sequence_active", &self.sequence_active)
-            .field("truncated", &self.truncated)
-            .field("elevation_cuts", &self.elevation_cuts)
-            .finish()
     }
 }

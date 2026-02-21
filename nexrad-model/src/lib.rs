@@ -79,6 +79,9 @@
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
+mod binary_data;
+pub use binary_data::BinaryData;
+
 pub mod data;
 pub mod meta;
 pub mod result;

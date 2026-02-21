@@ -1,26 +1,19 @@
 #![cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, SubsecRound, Utc};
 use clap::Parser;
 use env_logger::{Builder, Env};
 use futures::StreamExt;
-use log::{debug, info, trace, LevelFilter};
+use log::{info, warn, LevelFilter};
 use nexrad_data::result::Result;
 use nexrad_data::{
-    aws::realtime::{self, chunk_stream, Chunk, DownloadedChunk, PollConfig},
+    aws::realtime::{chunk_stream, Chunk, DownloadedChunk, PollConfig},
     volume,
 };
 use nexrad_decode::summarize;
 use std::pin::pin;
 use std::time::Duration;
 use tokio::time::timeout;
-
-// Example output from a real-time chunk:
-//   Scans from 2025-03-17 01:31:40.449 UTC to 2025-03-17 01:31:44.491 UTC (0.07m)
-//   VCPs: VCP35
-//   Messages:
-//     Msg 1-120: Elevation: #6 (1.36°), Azimuth: 108.2° to 167.7°, Time: 01:31:40.449 to 01:31:44.491 (4.04s)
-//       Data types: REF (120), SW (120), VEL (120)
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -36,7 +29,7 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    Builder::from_env(Env::default().default_filter_or("debug"))
+    Builder::from_env(Env::default().default_filter_or("info"))
         .filter_module("reqwest::connect", LevelFilter::Info)
         .init();
 
@@ -45,14 +38,19 @@ async fn main() -> Result<()> {
 
     info!("Starting real-time polling for site {}", cli.site);
 
+    println!(
+        "{:<25} | {:<25} | {:<13} | {:<13} | {:<13} | {:<8}",
+        "Chunk", "Downloaded", "AWS Latency", "First Radial", "Last Radial", "Attempts"
+    );
+    println!("{:-<110}", "");
+
     let config = PollConfig::new(&cli.site);
     let stream = chunk_stream(config);
     let mut stream = pin!(stream);
 
     let mut downloaded_chunk_count = 0;
 
-    // Stream chunks with a 60 second overall timeout
-    let result = timeout(Duration::from_secs(60), async {
+    let result = timeout(Duration::from_secs(300), async {
         while let Some(result) = stream.next().await {
             match result {
                 Ok(downloaded) => {
@@ -66,7 +64,7 @@ async fn main() -> Result<()> {
                     }
                 }
                 Err(e) => {
-                    info!("Error downloading chunk: {:?}", e);
+                    warn!("Error downloading chunk: {:?}", e);
                 }
             }
         }
@@ -82,63 +80,80 @@ async fn main() -> Result<()> {
 }
 
 fn process_chunk(downloaded: &DownloadedChunk, download_time: DateTime<Utc>) {
-    let chunk_id = &downloaded.identifier;
     let chunk = &downloaded.chunk;
-
-    info!(
-        "Downloaded chunk {} from {:?} at {:?} of size {} (attempts: {})",
-        chunk_id.name(),
-        chunk_id.upload_date_time(),
-        download_time,
-        chunk.data().len(),
-        downloaded.attempts
-    );
 
     match chunk {
         Chunk::Start(file) => {
             let records = file.records().expect("records");
-            debug!(
-                "Volume start chunk with {} records. Header: {:?}",
-                records.len(),
-                file.header()
-            );
-
             records
                 .into_iter()
-                .for_each(|record| decode_record(chunk_id, record, download_time));
+                .for_each(|record| decode_record(downloaded, record, download_time));
         }
         Chunk::IntermediateOrEnd(record) => {
-            debug!("Intermediate or end volume chunk.");
-            decode_record(chunk_id, record.clone(), download_time);
+            decode_record(downloaded, record.clone(), download_time);
         }
     }
 }
 
 fn decode_record(
-    chunk_id: &realtime::ChunkIdentifier,
+    downloaded: &DownloadedChunk,
     mut record: volume::Record,
     download_time: DateTime<Utc>,
 ) {
-    debug!("Decoding LDM record...");
+    let chunk_id = &downloaded.identifier;
+
     if record.compressed() {
-        trace!("Decompressing LDM record...");
         record = record.decompress().expect("Failed to decompress record");
     }
 
-    let messages = record.messages().expect("Failed to decode messages");
-    let summary = summarize::messages(messages.as_slice());
-    info!("Record summary:\n{summary}");
+    let messages = match record.messages() {
+        Ok(msgs) => msgs,
+        Err(e) => {
+            warn!("Failed to decode messages: {e}");
+            return;
+        }
+    };
 
-    info!(
-        "Message latency: earliest {:?}, latest {:?}, uploaded: {:?}",
-        summary
-            .earliest_collection_time
-            .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
-        summary
-            .latest_collection_time
-            .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
-        chunk_id
-            .upload_date_time()
-            .map(|time| (download_time - time).num_milliseconds() as f64 / 1000.0),
+    let summary = summarize::messages(messages.as_slice());
+
+    let first_radial_latency = summary
+        .earliest_collection_time
+        .map(|time| {
+            format!(
+                "{:.2}s",
+                (download_time - time).num_milliseconds() as f64 / 1000.0
+            )
+        })
+        .unwrap_or_else(|| "N/A".to_string());
+
+    let last_radial_latency = summary
+        .latest_collection_time
+        .map(|time| {
+            format!(
+                "{:.2}s",
+                (download_time - time).num_milliseconds() as f64 / 1000.0
+            )
+        })
+        .unwrap_or_else(|| "N/A".to_string());
+
+    let rounded_download_time = download_time.round_subsecs(0);
+    let aws_latency = chunk_id
+        .upload_date_time()
+        .map(|time| {
+            format!(
+                "{:.2}s",
+                (rounded_download_time - time).num_milliseconds() as f64 / 1000.0
+            )
+        })
+        .unwrap_or_else(|| "N/A".to_string());
+
+    println!(
+        "{:<25} | {:<25} | {:<13} | {:<13} | {:<13} | {:<8}",
+        format!("{}/{}", chunk_id.volume().as_number(), chunk_id.name()),
+        download_time.format("%Y-%m-%d %H:%M:%S%.3f"),
+        aws_latency,
+        first_radial_latency,
+        last_radial_latency,
+        downloaded.attempts
     );
 }

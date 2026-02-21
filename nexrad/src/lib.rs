@@ -272,6 +272,37 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
     load(&data)
 }
 
+/// Download a specific volume by its archive identifier.
+///
+/// This function downloads the volume file, handles decompression if needed, and decodes
+/// the data into the high-level model. Use [`list_volumes`] to obtain identifiers for
+/// available volumes, then pass the desired one to this function.
+///
+/// # Example
+///
+/// ```ignore
+/// use chrono::NaiveDate;
+///
+/// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
+/// let volumes = nexrad::list_volumes("KTLX", date).await?;
+///
+/// // Download the first volume of the day
+/// if let Some(id) = volumes.into_iter().next() {
+///     let volume = nexrad::download(id).await?;
+///     println!("VCP: {}", volume.coverage_pattern_number());
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if the download, decompression, or decoding fails.
+#[cfg(all(feature = "data", feature = "model", feature = "aws"))]
+pub async fn download(identifier: data::aws::archive::Identifier) -> Result<model::data::Scan> {
+    let file = data::aws::archive::download_file(identifier).await?.decompress()?;
+    Ok(file.scan()?)
+}
+
 /// Download the most recent volume for a site on a given date.
 ///
 /// Returns the last available archive file for the specified date. This is useful

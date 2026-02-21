@@ -254,9 +254,13 @@ fn test_record_radials() {
     let records = volume.records().expect("records");
 
     // Decompress the second record (first contains metadata, second has radar data)
-    let decompressed = records[1].decompress().expect("Decompression should succeed");
+    let decompressed = records[1]
+        .decompress()
+        .expect("Decompression should succeed");
 
-    let radials = decompressed.radials().expect("Radial extraction should succeed");
+    let radials = decompressed
+        .radials()
+        .expect("Radial extraction should succeed");
     assert!(!radials.is_empty(), "Should contain radials");
 
     for radial in &radials {

@@ -100,4 +100,3 @@ impl Display for Sweep {
         }
     }
 }
-

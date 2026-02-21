@@ -205,4 +205,3 @@ impl ElevationCut {
         self.is_base_tilt_cut
     }
 }
-

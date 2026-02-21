@@ -27,4 +27,3 @@ impl Display for ChannelConfiguration {
         }
     }
 }
-

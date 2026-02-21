@@ -33,4 +33,3 @@ impl Display for WaveformType {
         }
     }
 }
-

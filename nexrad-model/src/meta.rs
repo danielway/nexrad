@@ -96,4 +96,3 @@ impl Display for Site {
         )
     }
 }
-

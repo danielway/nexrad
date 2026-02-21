@@ -53,4 +53,3 @@ impl Display for Scan {
         )
     }
 }
-

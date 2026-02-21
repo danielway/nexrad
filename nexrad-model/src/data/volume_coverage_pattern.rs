@@ -183,4 +183,3 @@ impl Display for VolumeCoveragePattern {
         write!(f, ")")
     }
 }
-

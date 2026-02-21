@@ -1,6 +1,17 @@
+pub mod clutter_censor_zones;
+pub mod clutter_filter_bypass_map;
 pub mod clutter_filter_map;
+pub mod console_message;
 pub mod digital_radar_data;
+pub mod digital_radar_data_legacy;
+pub mod loopback_test;
+pub mod performance_maintenance_data;
+pub mod rda_adaptation_data;
+pub mod rda_control_commands;
+pub mod rda_log_data;
+pub mod rda_prf_data;
 pub mod rda_status_data;
+pub mod request_for_data;
 pub mod volume_coverage_pattern;
 
 mod raw;
@@ -13,7 +24,6 @@ pub use message::{Message, MessageHeaders};
 mod message_contents;
 pub use message_contents::MessageContents;
 
-use crate::messages::rda_status_data::RDABuildNumber;
 use crate::result::{Error, Result};
 use crate::segmented_slice_reader::SegmentedSliceReader;
 use crate::slice_reader::SliceReader;
@@ -33,7 +43,6 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
     let mut reader = SliceReader::new(input);
     let mut messages = Vec::new();
     let mut accumulator = SegmentAccumulator::new();
-    let mut build_number: Option<RDABuildNumber> = None;
 
     while reader.remaining().len() >= size_of::<MessageHeader>() {
         let offset = reader.position();
@@ -45,7 +54,7 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
 
         // Variable-length messages
         if !header.segmented() {
-            match decode_variable_length_message(&mut reader, header, offset, &build_number) {
+            match decode_variable_length_message(&mut reader, header, offset) {
                 Ok(msg) => messages.push(msg),
                 Err(e) => {
                     if matches!(e, Error::UnexpectedEof) {
@@ -127,12 +136,8 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
                 &accumulator.headers,
                 &accumulator.payloads,
                 accumulator.first_offset,
-                &build_number,
             ) {
                 Ok(msg) => {
-                    if let MessageContents::RDAStatusData(ref status) = msg.contents() {
-                        build_number = Some(status.build_number());
-                    }
                     messages.push(msg);
                 }
                 Err(e) => {
@@ -175,15 +180,10 @@ fn build_fixed_segment_message<'a>(
     headers: &[&'a MessageHeader],
     payloads: &[&'a [u8]],
     offset: usize,
-    build_number: &Option<RDABuildNumber>,
 ) -> Result<Message<'a>> {
     let message_type = headers[0].message_type();
 
     let mut segmented_reader = SegmentedSliceReader::new(payloads);
-    if let Some(bn) = build_number {
-        segmented_reader.set_build_number(*bn);
-    }
-
     let contents = message::decode_fixed_segment_contents(&mut segmented_reader, message_type)?;
 
     let total_size = headers.len() * SEGMENT_FRAME_SIZE;
@@ -198,20 +198,11 @@ fn build_fixed_segment_message<'a>(
 }
 
 /// Parse a variable-length message (e.g. Type 31 Digital Radar Data).
-///
-/// These messages have `segment_size == 0xFFFF` and use `SliceReader` directly
-/// because the Digital Radar Data parser needs `remaining()` for peek detection
-/// and `build_number()` for version-aware VOL block parsing.
 fn decode_variable_length_message<'a>(
     reader: &mut SliceReader<'a>,
     header: &'a MessageHeader,
     offset: usize,
-    build_number: &Option<RDABuildNumber>,
 ) -> Result<Message<'a>> {
-    if let Some(bn) = build_number {
-        reader.set_build_number(*bn);
-    }
-
     let contents = if header.message_type() == MessageType::RDADigitalRadarDataGenericFormat {
         let radar_data_message = digital_radar_data::Message::parse(reader)?;
         MessageContents::DigitalRadarData(Box::new(radar_data_message))

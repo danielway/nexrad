@@ -143,16 +143,18 @@ Message {
                         },
                     },
                     inner: RadialDataBlock {
-                        inner: RadialDataBlock {
-                            lrtup: 28,
-                            unambiguous_range: 4670,
-                            horizontal_channel_noise_level: -82.29915,
-                            vertical_channel_noise_level: -81.92849,
-                            nyquist_velocity: 885,
-                            radial_flags: 0,
-                            horizontal_channel_calibration_constant: -41.97316,
-                            vertical_channel_calibration_constant: -42.10892,
-                        },
+                        inner: Modern(
+                            RadialDataBlock {
+                                lrtup: 28,
+                                unambiguous_range: 4670,
+                                horizontal_channel_noise_level: -82.29915,
+                                vertical_channel_noise_level: -81.92849,
+                                nyquist_velocity: 885,
+                                radial_flags: 0,
+                                horizontal_channel_calibration_constant: -41.97316,
+                                vertical_channel_calibration_constant: -42.10892,
+                            },
+                        ),
                     },
                 },
             ),

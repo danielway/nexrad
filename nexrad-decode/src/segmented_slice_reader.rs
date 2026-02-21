@@ -1,4 +1,3 @@
-use crate::messages::rda_status_data::RDABuildNumber;
 use crate::result::{Error, Result};
 use zerocopy::FromBytes;
 
@@ -19,8 +18,6 @@ pub struct SegmentedSliceReader<'a, 'seg> {
     current_segment: usize,
     /// Position within current segment.
     position_in_segment: usize,
-    /// RDA build number for version-aware parsing.
-    build_number: Option<RDABuildNumber>,
 }
 
 impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
@@ -30,13 +27,7 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
             segments,
             current_segment: 0,
             position_in_segment: 0,
-            build_number: None,
         }
-    }
-
-    /// Sets the RDA build number for version-aware parsing.
-    pub fn set_build_number(&mut self, build_number: RDABuildNumber) {
-        self.build_number = Some(build_number);
     }
 
     /// Returns the remaining bytes in the current segment.
@@ -80,6 +71,36 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
                 n = 0;
             }
         }
+    }
+
+    /// Reads `count` bytes across segment boundaries into an owned `Vec<u8>`.
+    ///
+    /// Unlike [`take_slice`](Self::take_slice), this method handles data that spans
+    /// multiple segments by copying bytes into a contiguous buffer. Use this for
+    /// large data fields (e.g. Clutter Filter Bypass Map range bins) that may not
+    /// fit in a single segment.
+    pub fn read_bytes_owned(&mut self, count: usize) -> Result<Vec<u8>> {
+        if self.remaining_total() < count {
+            return Err(Error::UnexpectedEof);
+        }
+
+        let mut data = Vec::with_capacity(count);
+        let mut remaining_to_read = count;
+
+        while remaining_to_read > 0 {
+            let available = self.remaining_in_current_segment();
+            if available == 0 {
+                self.advance_to_next_segment();
+                continue;
+            }
+
+            let to_read = remaining_to_read.min(available);
+            let chunk = self.take_slice::<u8>(to_read)?;
+            data.extend_from_slice(chunk);
+            remaining_to_read -= to_read;
+        }
+
+        Ok(data)
     }
 
     /// Advances to the start of the next segment, skipping any remaining bytes

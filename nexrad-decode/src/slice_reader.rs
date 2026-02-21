@@ -1,4 +1,3 @@
-use crate::messages::rda_status_data::RDABuildNumber;
 use crate::result::{Error, Result};
 
 /// A wrapper around a byte slice that tracks the current read position.
@@ -9,27 +8,12 @@ use crate::result::{Error, Result};
 pub struct SliceReader<'a> {
     data: &'a [u8],
     pos: usize,
-    build_number: Option<RDABuildNumber>,
 }
 
 impl<'a> SliceReader<'a> {
     /// Creates a new SliceReader starting at position 0.
     pub fn new(data: &'a [u8]) -> Self {
-        Self {
-            data,
-            pos: 0,
-            build_number: None,
-        }
-    }
-
-    /// Sets the RDA build number for version-aware parsing.
-    pub fn set_build_number(&mut self, build_number: RDABuildNumber) {
-        self.build_number = Some(build_number);
-    }
-
-    /// Gets the RDA build number if set.
-    pub fn build_number(&self) -> Option<RDABuildNumber> {
-        self.build_number
+        Self { data, pos: 0 }
     }
 
     /// Returns the current byte position in the slice.
@@ -67,6 +51,12 @@ impl<'a> SliceReader<'a> {
         } else {
             false
         }
+    }
+
+    /// Peeks at the next two bytes as a big-endian u16 without advancing.
+    pub fn peek_u16(&self) -> Option<u16> {
+        let r = self.remaining();
+        (r.len() >= 2).then(|| u16::from_be_bytes([r[0], r[1]]))
     }
 
     /// Returns a typed reference to the next `T` and advances the reader past it.

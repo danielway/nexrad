@@ -57,14 +57,30 @@ fn test_split_records_size_exceeds_data() {
 
 #[test]
 fn test_split_records_zero_size() {
-    // Size field is zero - should error to prevent infinite loop
+    // Data starting with all-zero first 4 bytes is detected as legacy CTM format
+    // (the first 12 bytes of CTM frames are the rpg_unknown field, which is zeros).
+    // This returns Ok with one record containing the full data.
     let data = vec![0u8, 0u8, 0u8, 0u8, 1u8, 2u8, 3u8, 4u8];
+    let result = split_compressed_records(&data);
+    assert!(result.is_ok());
+    let records = result.unwrap();
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].data().len(), 8);
+}
+
+#[test]
+fn test_split_records_ldm_zero_size() {
+    // LDM record with zero size after a valid first record should error.
+    // Uses non-zero first 4 bytes to avoid CTM detection.
+    let mut data = vec![0u8, 0u8, 0u8, 4u8]; // First record: size=4
+    data.extend_from_slice(&[1u8; 4]); // First record data
+    data.extend_from_slice(&[0u8, 0u8, 0u8, 0u8]); // Second record: size=0 (invalid)
     let result = split_compressed_records(&data);
     assert!(result.is_err());
     match result.unwrap_err() {
         Error::InvalidRecordSize { size, offset } => {
             assert_eq!(size, 0);
-            assert_eq!(offset, 0);
+            assert_eq!(offset, 8);
         }
         other => panic!("Expected InvalidRecordSize error, got: {:?}", other),
     }

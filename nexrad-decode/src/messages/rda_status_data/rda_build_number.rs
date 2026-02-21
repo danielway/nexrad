@@ -1,8 +1,11 @@
 /// Known NEXRAD RDA build numbers.
 ///
-/// These represent discrete software builds of the NEXRAD radar system.
-/// Different builds may have different data formats, particularly in
-/// data block structures like VolumeDataBlock.
+/// These represent discrete software builds of the NEXRAD radar system, ranging
+/// from Build 12.0 (ICD 2620002K) through Build 24.0 (ICD 2620002AA).
+///
+/// Build numbers are extracted from the RDA Status Data message (Type 2).
+/// Different sites upgrade on their own schedules, so the same calendar date may
+/// produce different build numbers from different radar sites.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum RDABuildNumber {
     /// Build 12.0
@@ -38,9 +41,11 @@ pub enum RDABuildNumber {
 impl RDABuildNumber {
     /// Create an RDABuildNumber from the raw build number field value.
     ///
-    /// The build number is stored as a scaled integer. If the value divided
-    /// by 100 is greater than 2, the build version is the value divided by 100,
-    /// otherwise it is divided by 10.
+    /// The build number is stored as a scaled integer with two encoding schemes:
+    ///   - Builds 12.0–20.0: raw value ÷ 10 (e.g. 190 → 19.0, 200 → 20.0)
+    ///   - Builds 21.0+: raw value ÷ 100 (e.g. 2100 → 21.0, 2400 → 24.0)
+    ///
+    /// The heuristic is: if raw_value / 100 > 2.0, divide by 100; otherwise by 10.
     pub fn from_raw(raw_value: u16) -> Self {
         let value = raw_value as f32;
         let build = if value / 100.0 > 2.0 {
@@ -97,8 +102,8 @@ impl RDABuildNumber {
 
     /// Returns true if this build uses the legacy 40-byte VolumeDataBlock format.
     ///
-    /// Builds 19.0 and earlier use a 40-byte VolumeDataBlock that does not include
-    /// the `zdr_bias_estimate_weighted_mean` and `spare` fields added in Build 20.0.
+    /// Build 20.0 (ICD 2620002U, July 2021) expanded the VOL block from 40 to 48
+    /// bytes, adding `zdr_bias_estimate_weighted_mean` and spare fields.
     pub fn uses_legacy_volume_data_block(&self) -> bool {
         self.as_float() < 20.0
     }

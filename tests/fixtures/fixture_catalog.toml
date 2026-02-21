@@ -162,3 +162,78 @@ trimmed_size_kb = 2261
 weather_regime = "stratiform"
 notes = "Washington DC area Nor'easter, VCP 21 precipitation mode"
 status = "available"
+
+# =============================================================================
+# PRE-2008 MESSAGE TYPE 1 FIXTURES (gzip-compressed, legacy radar data format)
+# =============================================================================
+# These files use Message Type 1 (fixed 2432-byte frames) instead of Message
+# Type 31. They are stored as raw downloads (not trimmed) since CTM-format
+# files are a single record and cannot be trimmed at the record level.
+
+[[fixtures]]
+id = "legacy_type1_1991"
+path = "downloads/KTLX19910605_162126.gz"
+site = "KTLX"
+timestamp = "1991-06-05T16:21:26Z"
+label = "Earliest available NEXRAD data"
+file_version = "ARCHIVE2."
+icd_build = "N/A"
+vcp = 21
+sweeps_included = "all"
+original_size_mb = 1.37
+trimmed_size_kb = "N/A (raw download)"
+weather_regime = "clear_air"
+notes = "Original WSR-88D deployment, Message Type 1 only, no dual-pol, no build number, ARCHIVE2. header format"
+status = "available"
+
+[[fixtures]]
+id = "legacy_type1_2005"
+path = "downloads/KABR20050101_000745.gz"
+site = "KABR"
+timestamp = "2005-01-01T00:07:45Z"
+label = "Pre-Build 10.0, Message Type 1"
+file_version = "AR2V0001"
+icd_build = "N/A"
+vcp = 32
+sweeps_included = "all"
+original_size_mb = 0.15
+trimmed_size_kb = "N/A (raw download)"
+weather_regime = "clear_air"
+notes = "Pre-Build 10.0 Message Type 1, AR2V0001 header format, no dual-pol"
+status = "available"
+
+# =============================================================================
+# PRE-2017 LEGACY FORMAT FIXTURES (gzip-compressed, CTM frame format)
+# =============================================================================
+
+[[fixtures]]
+id = "legacy_ctm_v03_2010"
+path = "clear_air/KTLX20100501_000444.bin"
+site = "KTLX"
+timestamp = "2010-05-01T00:04:44Z"
+label = "Legacy CTM format, V03"
+file_version = "AR2V0003"
+icd_build = "11.3"
+vcp = 32
+sweeps_included = [1, 2, 3, 4, 5, 6, 7]
+original_size_mb = 0.87
+trimmed_size_kb = 678
+weather_regime = "clear_air"
+notes = "Pre-LDM gzip-compressed CTM format, Build 11.3, legacy RAD blocks (no calibration constants), pre-dual-pol"
+status = "available"
+
+[[fixtures]]
+id = "legacy_ctm_v06_2014"
+path = "clear_air/KTLX20140101_000624.bin"
+site = "KTLX"
+timestamp = "2014-01-01T00:06:24Z"
+label = "Legacy CTM format, V06"
+file_version = "AR2V0006"
+icd_build = "14.0"
+vcp = 32
+sweeps_included = [1, 2, 3, 4, 5, 6, 7]
+original_size_mb = 0.52
+trimmed_size_kb = 373
+weather_regime = "clear_air"
+notes = "Pre-LDM gzip-compressed CTM format, Build 14.0, legacy RAD blocks (no calibration constants), has dual-pol"
+status = "available"

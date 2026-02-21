@@ -5,8 +5,14 @@ use zerocopy::{FromBytes, Immutable, KnownLayout};
 
 /// Legacy volume data moment block (Build 19.0 and earlier, 40 bytes).
 ///
-/// This format was used in NEXRAD builds through 20.0 and does not include
-/// the ZDR bias estimate fields added in later builds.
+/// This is the original VOL block format used from when Message Type 31 was
+/// introduced (Build 10.0, 2008) through Build 19.0 (2019). It does not include
+/// the `zdr_bias_estimate_weighted_mean` field added in Build 20.0.
+///
+/// The `lrtup` field in this format is 44 (40 struct bytes + 4-byte DataBlockId).
+///
+/// # ICD Reference
+/// RDA/RPG ICD 2620002T (Build 19.0) and earlier, Table XVII-B "Data Block #1".
 #[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct VolumeDataBlockLegacy {
@@ -58,7 +64,19 @@ pub struct VolumeDataBlockLegacy {
     pub processing_status: Integer2,
 }
 
-/// A volume data moment block (Build 18.0 and later, 48 bytes).
+/// Modern volume data moment block (Build 20.0 and later, 48 bytes).
+///
+/// This expanded format was introduced in Build 20.0 (ICD 2620002U, July 2021).
+/// It adds the `zdr_bias_estimate_weighted_mean` field (2 bytes) and 6 spare
+/// bytes compared to the legacy format.
+///
+/// The `lrtup` field in this format is 52 (48 struct bytes + 4-byte DataBlockId).
+///
+/// The Radial Data Block (RAD) also expanded at Build 12.0 (ICD 2620002K, July 2011),
+/// adding channel calibration constants (see [`RadialDataBlockLegacy`](super::RadialDataBlockLegacy)).
+///
+/// # ICD Reference
+/// RDA/RPG ICD 2620002U (Build 20.0), Table XVII-B "Data Block #1".
 #[repr(C)]
 #[derive(Clone, PartialEq, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct VolumeDataBlock {

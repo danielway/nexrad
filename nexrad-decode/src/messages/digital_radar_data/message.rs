@@ -93,36 +93,15 @@ impl<'a> Message<'a> {
 
             match &block_id.data_name {
                 b"VOL" => {
-                    // Determine which format to parse. First check build number if available,
-                    // otherwise peek at lrtup field to detect format.
-                    // Legacy builds (19.0 and earlier) use 40-byte VolumeDataBlock,
-                    // modern builds (20.0+) use 48-byte VolumeDataBlock.
-                    let use_legacy = if let Some(build) = reader.build_number() {
-                        build.uses_legacy_volume_data_block()
-                    } else {
-                        // Fall back to lrtup detection: peek at first 2 bytes to get block size.
-                        // lrtup includes the DataBlockId (4 bytes), so:
-                        // - Legacy format (40-byte struct): lrtup = 44
-                        // - Modern format (48-byte struct): lrtup = 52
-                        let remaining = reader.remaining();
-                        if remaining.len() >= 2 {
-                            let lrtup = u16::from_be_bytes([remaining[0], remaining[1]]);
-                            lrtup <= 44
-                        } else {
-                            false // Default to modern if we can't peek
-                        }
-                    };
-
-                    if use_legacy {
-                        let volume_block = reader.take_ref::<raw::VolumeDataBlockLegacy>()?;
-                        message.volume_data_block = Some(DataBlock::new(
-                            id,
-                            VolumeDataBlock::new_legacy(volume_block),
-                        ));
-                    } else {
-                        let volume_block = reader.take_ref::<raw::VolumeDataBlock>()?;
+                    // VOL expanded from 44 to 52 bytes at Build 20.0 (ICD 2620002U).
+                    if reader.peek_u16().is_some_and(|lrtup| lrtup <= 44) {
+                        let block = reader.take_ref::<raw::VolumeDataBlockLegacy>()?;
                         message.volume_data_block =
-                            Some(DataBlock::new(id, VolumeDataBlock::new(volume_block)));
+                            Some(DataBlock::new(id, VolumeDataBlock::new_legacy(block)));
+                    } else {
+                        let block = reader.take_ref::<raw::VolumeDataBlock>()?;
+                        message.volume_data_block =
+                            Some(DataBlock::new(id, VolumeDataBlock::new(block)));
                     }
                 }
                 b"ELV" => {
@@ -131,9 +110,16 @@ impl<'a> Message<'a> {
                         Some(DataBlock::new(id, ElevationDataBlock::new(elevation_block)));
                 }
                 b"RAD" => {
-                    let radial_block = reader.take_ref::<raw::RadialDataBlock>()?;
-                    message.radial_data_block =
-                        Some(DataBlock::new(id, RadialDataBlock::new(radial_block)));
+                    // RAD expanded from 20 to 28 bytes at Build 12.0 (ICD 2620002K).
+                    if reader.peek_u16().is_some_and(|lrtup| lrtup <= 20) {
+                        let block = reader.take_ref::<raw::RadialDataBlockLegacy>()?;
+                        message.radial_data_block =
+                            Some(DataBlock::new(id, RadialDataBlock::new_legacy(block)));
+                    } else {
+                        let block = reader.take_ref::<raw::RadialDataBlock>()?;
+                        message.radial_data_block =
+                            Some(DataBlock::new(id, RadialDataBlock::new(block)));
+                    }
                 }
                 _ => {
                     let generic_block = GenericDataBlock::parse(reader)?;

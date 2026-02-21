@@ -258,7 +258,11 @@ impl App {
         let mut file_data = Vec::new();
         file.read_to_end(&mut file_data)?;
 
-        let volume_file = volume::File::new(file_data.clone());
+        let mut volume_file = volume::File::new(file_data.clone());
+        if volume_file.compressed() {
+            volume_file = volume_file.decompress()?;
+            file_data = volume_file.data().to_vec();
+        }
         let header = volume_file
             .header()
             .cloned()

@@ -11,7 +11,7 @@ mod header;
 pub use header::Header;
 
 mod radial_data_block;
-pub use radial_data_block::RadialDataBlock;
+pub use radial_data_block::{RadialDataBlock, RadialDataBlockLegacy};
 
 mod volume_data_block;
 pub use volume_data_block::{VolumeDataBlock, VolumeDataBlockLegacy};

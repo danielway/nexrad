@@ -2,22 +2,66 @@ use crate::volume::{split_compressed_records, Header, Record};
 use std::fmt::Debug;
 use zerocopy::Ref;
 
+/// Gzip magic bytes (RFC 1952).
+const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
+
 /// A NEXRAD Archive II volume data file.
+///
+/// Older NEXRAD archives (pre-~2016) may be gzip-compressed. Use
+/// [`compressed`](Self::compressed) to check, and [`decompress`](Self::decompress)
+/// to inflate before accessing records.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct File(Vec<u8>);
 
 impl File {
     /// Creates a new Archive II volume file with the provided data.
+    ///
+    /// The data is stored as-is. If the file is gzip-compressed, call
+    /// [`decompress`](Self::decompress) before accessing records.
     pub fn new(data: Vec<u8>) -> Self {
         Self(data)
     }
 
-    /// The file's encoded and compressed data.
+    /// Whether this file's data is gzip-compressed.
+    ///
+    /// Some older NEXRAD archive files (pre-~2016) are gzip-wrapped. These must
+    /// be decompressed before records can be accessed.
+    pub fn compressed(&self) -> bool {
+        self.0.len() >= 2 && self.0[..2] == GZIP_MAGIC
+    }
+
+    /// Decompresses a gzip-compressed volume file.
+    ///
+    /// Returns a new `File` containing the decompressed data. Returns an error
+    /// if the file is not gzip-compressed or if decompression fails.
+    pub fn decompress(self) -> crate::result::Result<File> {
+        use crate::result::Error;
+        use flate2::read::GzDecoder;
+        use std::io::Read;
+
+        if !self.compressed() {
+            return Err(Error::UncompressedFileError);
+        }
+
+        let mut decoder = GzDecoder::new(self.0.as_slice());
+        let mut decompressed = Vec::new();
+        decoder.read_to_end(&mut decompressed)?;
+
+        Ok(File(decompressed))
+    }
+
+    /// The file's raw data.
+    ///
+    /// If the file is gzip-compressed, this returns the compressed bytes.
+    /// Call [`decompress`](Self::decompress) first to get the decompressed content.
     pub fn data(&self) -> &[u8] {
         &self.0
     }
 
     /// The file's decoded Archive II volume header.
+    ///
+    /// Returns `None` if the header cannot be parsed (e.g. if the file is still
+    /// gzip-compressed).
     pub fn header(&self) -> Option<&Header> {
         Ref::<_, Header>::from_prefix(self.0.as_slice())
             .ok()
@@ -26,8 +70,12 @@ impl File {
 
     /// The file's LDM records.
     ///
-    /// Returns an error if the record data is truncated or malformed.
+    /// Returns an error if the file is gzip-compressed (call [`decompress`](Self::decompress)
+    /// first) or if the record data is truncated or malformed.
     pub fn records(&self) -> crate::result::Result<Vec<Record<'_>>> {
+        if self.compressed() {
+            return Err(crate::result::Error::CompressedFileError);
+        }
         split_compressed_records(&self.0[size_of::<Header>()..])
     }
 

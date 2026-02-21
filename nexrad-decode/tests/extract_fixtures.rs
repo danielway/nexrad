@@ -13,6 +13,10 @@ use std::fs;
 fn extract_message_fixtures() {
     let volume_files: Vec<(&str, &[u8])> = vec![
         (
+            "KABR2005-legacy",
+            include_bytes!("../../downloads/KABR20050101_000745.gz"),
+        ),
+        (
             "KDMX2022",
             include_bytes!("../../downloads/KDMX20220305_232324_V06"),
         ),
@@ -33,7 +37,10 @@ fn extract_message_fixtures() {
 
     for (vol_name, vol_data) in &volume_files {
         println!("\n=== Scanning {} ({} bytes) ===", vol_name, vol_data.len());
-        let vol = volume::File::new(vol_data.to_vec());
+        let mut vol = volume::File::new(vol_data.to_vec());
+        if vol.compressed() {
+            vol = vol.decompress().expect("decompresses gzip file");
+        }
         let records: Vec<_> = vol.records().expect("records").into_iter().collect();
 
         let mut type_counts: HashMap<String, usize> = HashMap::new();
@@ -79,6 +86,7 @@ fn extract_message_fixtures() {
     let fixture_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/messages");
     for (type_id, data) in &extracted {
         let filename = match *type_id {
+            1 => "digital_radar_data_legacy.bin",
             3 => "performance_maintenance_data.bin",
             4 | 10 => "console_message.bin",
             6 => "rda_control_commands.bin",
@@ -99,6 +107,13 @@ fn extract_message_fixtures() {
             }
         };
         let path = fixture_dir.join(filename);
+        if path.exists() {
+            println!(
+                "  Type {} -> {} (already exists, skipping)",
+                type_id, filename
+            );
+            continue;
+        }
         println!("  Type {} -> {} ({} bytes)", type_id, filename, data.len());
         fs::write(&path, data).expect("writes fixture");
     }

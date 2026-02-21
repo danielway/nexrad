@@ -10,7 +10,10 @@ fn main() {
     let mut data = Vec::new();
     file.read_to_end(&mut data).expect("can read file");
 
-    let archive = nexrad_data::volume::File::new(data);
+    let mut archive = nexrad_data::volume::File::new(data);
+    if archive.compressed() {
+        archive = archive.decompress().expect("decompresses gzip");
+    }
 
     let target_elevation_number = 1;
     let mut radials = Vec::new();

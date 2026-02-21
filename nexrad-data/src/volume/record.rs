@@ -101,11 +101,40 @@ impl Debug for Record<'_> {
     }
 }
 
-/// Splits compressed LDM record data into individual records. Will omit the record size prefix from
-/// each record.
+/// Splits record data into individual records.
 ///
-/// Returns an error if the data is truncated or contains invalid record sizes.
+/// Supports two archive formats:
+/// - **Modern (LDM)**: Data is a series of size-prefixed, bzip2-compressed records.
+///   Each record has a 4-byte big-endian size prefix followed by the compressed data.
+/// - **Legacy (CTM)**: Data is a series of uncompressed 2432-byte CTM frames. Each
+///   frame's first 12 bytes are the `rpg_unknown` field of the `MessageHeader`, so
+///   the frames can be passed directly to the message decoder without stripping.
+///   This format is used by older archive files (pre-~2016) and files with tape
+///   filename version 01-04.
+///
+/// The format is auto-detected by checking whether the first 4 bytes form a valid
+/// (non-zero) record size.
 pub fn split_compressed_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
+    if data.len() < 4 {
+        // Not enough data for either format detection or a valid record.
+        // Delegate to split_ldm_records which returns Ok(empty) for truly empty
+        // data, or TruncatedRecord for 1-3 byte inputs.
+        return split_ldm_records(data);
+    }
+
+    // Detect legacy CTM format: first 4 bytes are all zeros (no valid LDM size prefix).
+    // In CTM frames, the first 12 bytes are the rpg_unknown field (zeros), whereas
+    // in LDM records the first 4 bytes are a non-zero record size.
+    let first_four = [data[0], data[1], data[2], data[3]];
+    if first_four == [0, 0, 0, 0] {
+        return split_ctm_frames(data);
+    }
+
+    split_ldm_records(data)
+}
+
+/// Splits modern LDM (Local Data Manager) size-prefixed records.
+fn split_ldm_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
     use crate::result::Error;
 
     let mut records = Vec::new();
@@ -150,4 +179,29 @@ pub fn split_compressed_records(data: &[u8]) -> crate::result::Result<Vec<Record
     }
 
     Ok(records)
+}
+
+/// Returns legacy pre-LDM archive data as a single uncompressed record.
+///
+/// Legacy archive files (pre-~2016, tape filename versions 01-06) store messages
+/// in a mixed format:
+///
+/// - **Overhead messages** (Types 2, 3, 5, 13, 15, 18, etc.) use fixed 2432-byte
+///   frame-aligned segments, identical to modern LDM decompressed records.
+/// - **Type 31 radial data** is contiguously packed at exactly `12 + seg_size * 2`
+///   bytes per message, with NO frame alignment between radials.
+///
+/// The `decode_messages` function handles both modes natively: fixed-segment
+/// messages consume exactly 2432 bytes per segment, and variable-length Type 31
+/// messages consume their declared size. Empty padding frames (all zeros) between
+/// message groups are harmlessly decoded as `MessageContents::Other`.
+///
+/// The data is NOT trimmed to 2432-byte boundaries because the contiguously-packed
+/// Type 31 radials may extend past the last frame boundary.
+fn split_ctm_frames(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
+    if data.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    Ok(vec![Record::from_slice(data)])
 }

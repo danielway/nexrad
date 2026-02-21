@@ -38,6 +38,7 @@ reqwest = { version = "0.13.1", default-features = false, features = [
 ] }
 xml = { version = "1.0.0" }
 bzip2 = { version = "0.6.0" }
+flate2 = { version = "1.1.1" }
 rayon = { version = "1.11.0" }
 tokio = { version = "1.47.1", features = ["full"] }
 env_logger = { version = "0.11.8" }

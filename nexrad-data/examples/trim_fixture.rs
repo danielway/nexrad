@@ -77,15 +77,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         input_size as f64 / 1024.0 / 1024.0
     );
 
-    // Parse the volume file
-    let volume = VolumeFile::new(input_data.clone());
+    // Parse the volume file (transparently decompresses gzip if needed)
+    let volume = VolumeFile::new(input_data);
 
     // Extract header (24 bytes) - we'll copy this unchanged
     let header = volume.header().ok_or("Failed to parse volume header")?;
     println!("Volume header: {:?}", header.icao_of_radar());
 
-    // Get header bytes directly from input data
-    let header_bytes = &input_data[..size_of::<Header>()];
+    // Get header bytes from the (possibly decompressed) volume data
+    let header_bytes = &volume.data()[..size_of::<Header>()];
 
     // Process records
     let records = volume.records()?;
@@ -124,6 +124,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 MessageContents::DigitalRadarData(drd) => {
                     let elev = drd.header().elevation_number();
+                    record_sweeps.insert(elev);
+                    if target_sweeps.contains(&elev) {
+                        has_target_sweep = true;
+                        sweeps_found.insert(elev);
+                    }
+                }
+                MessageContents::DigitalRadarDataLegacy(drd) => {
+                    let elev = drd.elevation_number() as u8;
                     record_sweeps.insert(elev);
                     if target_sweeps.contains(&elev) {
                         has_target_sweep = true;
@@ -247,8 +255,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let messages = decode_messages(decompressed.data())?;
                     verify_messages += messages.len();
                     for msg in messages {
-                        if let MessageContents::DigitalRadarData(drd) = msg.contents() {
-                            verify_sweeps.insert(drd.header().elevation_number());
+                        match msg.contents() {
+                            MessageContents::DigitalRadarData(drd) => {
+                                verify_sweeps.insert(drd.header().elevation_number());
+                            }
+                            MessageContents::DigitalRadarDataLegacy(drd) => {
+                                verify_sweeps.insert(drd.elevation_number() as u8);
+                            }
+                            _ => {}
                         }
                     }
                 }

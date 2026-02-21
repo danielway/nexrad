@@ -1,8 +1,8 @@
 use crate::messages::{
     clutter_censor_zones, clutter_filter_bypass_map, clutter_filter_map, console_message,
-    digital_radar_data, loopback_test, performance_maintenance_data, rda_adaptation_data,
-    rda_control_commands, rda_log_data, rda_prf_data, rda_status_data, request_for_data,
-    volume_coverage_pattern,
+    digital_radar_data, digital_radar_data_legacy, loopback_test, performance_maintenance_data,
+    rda_adaptation_data, rda_control_commands, rda_log_data, rda_prf_data, rda_status_data,
+    request_for_data, volume_coverage_pattern,
 };
 
 /// A decoded NEXRAD Level II message's contents.
@@ -18,6 +18,11 @@ pub enum MessageContents<'a> {
     /// tower/utilities, antenna/pedestal, RF generator/receiver, calibration, file status, RSP/CPU
     /// status, and device status.
     PerformanceMaintenanceData(Box<performance_maintenance_data::Message<'a>>),
+
+    /// Message type 1 "Digital Radar Data" is the legacy base data format used from the original
+    /// WSR-88D deployment (1991) through Build 10.0 (2008). Each message carries a single radial
+    /// of reflectivity, velocity, and/or spectrum width data in fixed 2432-byte frames.
+    DigitalRadarDataLegacy(Box<digital_radar_data_legacy::Message<'a>>),
 
     /// Message type 31 "Digital Radar Data" consists of base data information such as reflectivity,
     /// mean radial velocity, spectrum width, differential reflectivity, differential phase,

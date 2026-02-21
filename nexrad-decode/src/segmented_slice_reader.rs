@@ -1,4 +1,3 @@
-use crate::messages::rda_status_data::RDABuildNumber;
 use crate::result::{Error, Result};
 use zerocopy::FromBytes;
 
@@ -19,8 +18,6 @@ pub struct SegmentedSliceReader<'a, 'seg> {
     current_segment: usize,
     /// Position within current segment.
     position_in_segment: usize,
-    /// RDA build number for version-aware parsing.
-    build_number: Option<RDABuildNumber>,
 }
 
 impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
@@ -30,13 +27,7 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
             segments,
             current_segment: 0,
             position_in_segment: 0,
-            build_number: None,
         }
-    }
-
-    /// Sets the RDA build number for version-aware parsing.
-    pub fn set_build_number(&mut self, build_number: RDABuildNumber) {
-        self.build_number = Some(build_number);
     }
 
     /// Returns the remaining bytes in the current segment.

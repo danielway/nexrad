@@ -1,8 +1,8 @@
 use crate::messages::{
     clutter_censor_zones, clutter_filter_bypass_map, clutter_filter_map, console_message,
-    loopback_test, performance_maintenance_data, rda_adaptation_data, rda_control_commands,
-    rda_log_data, rda_prf_data, rda_status_data, request_for_data, volume_coverage_pattern,
-    MessageContents, MessageHeader, MessageType,
+    digital_radar_data_legacy, loopback_test, performance_maintenance_data, rda_adaptation_data,
+    rda_control_commands, rda_log_data, rda_prf_data, rda_status_data, request_for_data,
+    volume_coverage_pattern, MessageContents, MessageHeader, MessageType,
 };
 use crate::result::Result;
 use crate::segmented_slice_reader::SegmentedSliceReader;
@@ -195,6 +195,10 @@ pub(super) fn decode_fixed_segment_contents<'a>(
         MessageType::RDAAdaptationData => {
             let adaptation_msg = rda_adaptation_data::Message::parse(reader)?;
             MessageContents::RDAAdaptationData(Box::new(adaptation_msg))
+        }
+        MessageType::RDADigitalRadarData => {
+            let legacy_msg = digital_radar_data_legacy::Message::parse(reader)?;
+            MessageContents::DigitalRadarDataLegacy(Box::new(legacy_msg))
         }
         _ => MessageContents::Other,
     })

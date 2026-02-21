@@ -6,11 +6,13 @@ use std::borrow::Cow;
 use uom::si::f64::{Angle, Information, Length, Power};
 
 /// Internal representation of the volume data block, supporting both legacy and modern formats.
+///
+/// The format expanded at Build 20.0 (ICD 2620002U, July 2021).
 #[derive(Clone, PartialEq, Debug)]
 enum VolumeDataBlockInner<'a> {
-    /// Legacy format (Build 19.0 and earlier, 40 bytes).
+    /// Legacy format (Build 10.0–19.0, 40 bytes, lrtup = 44).
     Legacy(Cow<'a, raw::VolumeDataBlockLegacy>),
-    /// Modern format (Build 20.0 and later, 48 bytes).
+    /// Modern format (Build 20.0+, 48 bytes, lrtup = 52).
     Modern(Cow<'a, raw::VolumeDataBlock>),
 }
 

@@ -135,14 +135,12 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
             "Noise Level (V): {:.2} dBm\n",
             rad.vertical_channel_noise_level()
         ));
-        output.push_str(&format!(
-            "Calibration (H): {:.2} dBZ\n",
-            rad.horizontal_channel_calibration_constant()
-        ));
-        output.push_str(&format!(
-            "Calibration (V): {:.2} dBZ\n",
-            rad.vertical_channel_calibration_constant()
-        ));
+        if let Some(cal_h) = rad.horizontal_channel_calibration_constant() {
+            output.push_str(&format!("Calibration (H): {:.2} dBZ\n", cal_h));
+        }
+        if let Some(cal_v) = rad.vertical_channel_calibration_constant() {
+            output.push_str(&format!("Calibration (V): {:.2} dBZ\n", cal_v));
+        }
     }
 
     // Elevation Data Block

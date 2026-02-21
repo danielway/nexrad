@@ -247,6 +247,36 @@ fn test_file_scan_conversion() {
     assert_eq!(scan.coverage_pattern_number(), 212);
 }
 
+#[cfg(feature = "nexrad-model")]
+#[test]
+fn test_record_radials() {
+    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+    let records = volume.records().expect("records");
+
+    // Decompress the second record (first contains metadata, second has radar data)
+    let decompressed = records[1].decompress().expect("Decompression should succeed");
+
+    let radials = decompressed.radials().expect("Radial extraction should succeed");
+    assert!(!radials.is_empty(), "Should contain radials");
+
+    for radial in &radials {
+        assert!(radial.azimuth_angle_degrees() >= 0.0 && radial.azimuth_angle_degrees() < 360.0);
+        assert!(radial.elevation_angle_degrees() >= 0.0);
+        assert!(radial.collection_timestamp() > 946684800000); // After year 2000
+    }
+}
+
+#[cfg(feature = "nexrad-model")]
+#[test]
+fn test_record_radials_compressed_error() {
+    let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
+    let records = volume.records().expect("records");
+
+    // Calling radials() on a compressed record should fail
+    assert!(records[1].compressed());
+    assert!(records[1].radials().is_err());
+}
+
 #[test]
 fn test_file_construction_variants() {
     let empty_volume = volume::File::new(vec![]);

@@ -78,6 +78,28 @@ impl<'a> Record<'a> {
 
         Ok(decode_messages(self.data())?)
     }
+
+    /// Decodes the radar radials contained in this LDM record.
+    ///
+    /// This extracts all digital radar data messages (both modern type 31 and legacy type 1)
+    /// from the record and converts them into [`Radial`](nexrad_model::data::Radial) objects.
+    /// Non-radial messages are skipped.
+    ///
+    /// The record must be decompressed before calling this method.
+    #[cfg(feature = "nexrad-model")]
+    pub fn radials(&self) -> crate::result::Result<Vec<nexrad_model::data::Radial>> {
+        use nexrad_decode::messages::MessageContents;
+
+        let mut radials = Vec::new();
+        for message in self.messages()? {
+            match message.into_contents() {
+                MessageContents::DigitalRadarData(m) => radials.push(m.into_radial()?),
+                MessageContents::DigitalRadarDataLegacy(m) => radials.push(m.into_radial()?),
+                _ => {}
+            }
+        }
+        Ok(radials)
+    }
 }
 
 impl Debug for Record<'_> {

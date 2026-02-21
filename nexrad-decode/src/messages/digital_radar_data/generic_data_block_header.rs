@@ -1,5 +1,5 @@
 use super::raw;
-use super::ControlFlags;
+use super::{ControlFlags, DataWordSize};
 use std::borrow::Cow;
 
 #[cfg(feature = "uom")]
@@ -66,8 +66,8 @@ impl<'a> GenericDataBlockHeader<'a> {
         self.inner.control_flags
     }
 
-    /// Number of bits (8 or 16) used for storing data for each data moment gate.
-    pub fn data_word_size(&self) -> u8 {
+    /// Number of bits (8 or 16) used for storing data for each data moment gate (raw value).
+    pub fn data_word_size_raw(&self) -> u8 {
         self.inner.data_word_size
     }
 
@@ -79,6 +79,25 @@ impl<'a> GenericDataBlockHeader<'a> {
     /// Offset value for converting data moments to floating-point representation.
     pub fn offset(&self) -> f32 {
         self.inner.offset.get()
+    }
+
+    /// Range to center of first range gate in kilometers.
+    pub fn data_moment_range_km(&self) -> f64 {
+        self.inner.data_moment_range.get() as f64 * 0.001
+    }
+
+    /// Size of data moment sample interval in kilometers.
+    pub fn data_moment_range_sample_interval_km(&self) -> f64 {
+        self.inner.data_moment_range_sample_interval.get() as f64 * 0.001
+    }
+
+    /// Number of bits used for storing data for each data moment gate.
+    pub fn data_word_size(&self) -> DataWordSize {
+        match self.inner.data_word_size {
+            8 => DataWordSize::EightBit,
+            16 => DataWordSize::SixteenBit,
+            other => DataWordSize::Unknown(other),
+        }
     }
 
     /// Range to center of first range gate.

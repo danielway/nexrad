@@ -364,7 +364,10 @@ fn render_block_header(
         header.scale(),
         header.offset()
     ));
-    output.push_str(&format!("Word Size: {} bits\n", header.data_word_size()));
+    output.push_str(&format!(
+        "Word Size: {} bits\n",
+        header.data_word_size_raw()
+    ));
     output.push_str(&format!("Control Flags: {:?}\n", header.control_flags()));
 }
 

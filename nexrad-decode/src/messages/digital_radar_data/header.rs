@@ -1,5 +1,5 @@
 use super::raw;
-use super::{CompressionIndicator, RadialStatus, SpotBlankingStatus};
+use super::{AzimuthResolutionSpacing, CompressionIndicator, RadialStatus, SpotBlankingStatus};
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::borrow::Cow;
@@ -184,6 +184,25 @@ impl<'a> Header<'a> {
             Some(Angle::new::<degree>(
                 self.inner.azimuth_indexing_mode as f64 * 0.01,
             ))
+        }
+    }
+
+    /// Azimuthal spacing between adjacent radials as a typed enum.
+    pub fn azimuth_resolution_spacing_type(&self) -> AzimuthResolutionSpacing {
+        match self.inner.azimuth_resolution_spacing {
+            1 => AzimuthResolutionSpacing::HalfDegree,
+            2 => AzimuthResolutionSpacing::OneDegree,
+            other => AzimuthResolutionSpacing::Unknown(other),
+        }
+    }
+
+    /// The azimuth indexing value in degrees (if keyed to constant angles).
+    /// Returns `None` if no indexing (value is 0), otherwise the indexing angle in degrees.
+    pub fn azimuth_indexing_mode_degrees(&self) -> Option<f64> {
+        if self.inner.azimuth_indexing_mode == 0 {
+            None
+        } else {
+            Some(self.inner.azimuth_indexing_mode as f64 * 0.01)
         }
     }
 }

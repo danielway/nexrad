@@ -6,11 +6,23 @@
 //! the type of data associated with that strategy.
 //!
 
+mod azimuth_resolution_spacing;
+pub use azimuth_resolution_spacing::AzimuthResolutionSpacing;
+
 mod compression_indicator;
 pub use compression_indicator::CompressionIndicator;
 
 mod control_flags;
 pub use control_flags::ControlFlags;
+
+mod data_block_name;
+pub use data_block_name::DataBlockName;
+
+mod data_block_type;
+pub use data_block_type::DataBlockType;
+
+mod data_word_size;
+pub use data_word_size::DataWordSize;
 
 mod processing_status;
 pub use processing_status::ProcessingStatus;

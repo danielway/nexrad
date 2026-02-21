@@ -52,26 +52,6 @@ path = "examples/realtime.rs"
 required-features = ["aws-polling"]
 
 [[example]]
-name = "archive"
-path = "examples/archive.rs"
-required-features = ["aws", "nexrad-model"]
-
-[[example]]
-name = "latency_analysis"
-path = "examples/latency_analysis.rs"
-required-features = ["aws-polling"]
-
-[[example]]
-name = "chunk_timing"
-path = "examples/chunk_timing.rs"
-required-features = ["aws"]
-
-[[example]]
-name = "chunk_csv"
-path = "examples/chunk_csv.rs"
-required-features = ["aws"]
-
-[[example]]
 name = "chunk_iterator"
 path = "examples/chunk_iterator.rs"
 required-features = ["aws"]

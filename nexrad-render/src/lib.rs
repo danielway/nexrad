@@ -630,6 +630,14 @@ pub fn get_default_scale(product: Product) -> DiscreteColorScale {
     }
 }
 
+/// Returns the default color scale for a product, wrapped in a [`ColorScale`] enum.
+///
+/// This is a convenience wrapper around [`get_default_scale`] that returns the
+/// [`ColorScale`] enum directly, avoiding the need to call `.into()` at each call site.
+pub fn get_default_color_scale(product: Product) -> ColorScale {
+    get_default_scale(product).into()
+}
+
 /// Find the index in sorted_azimuths closest to the given azimuth and return
 /// the angular distance to that radial.
 ///

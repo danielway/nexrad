@@ -64,6 +64,30 @@ pub use render_result::{PointQuery, RenderMetadata, RenderResult};
 
 pub mod result;
 
+/// Interpolation method for rendering radar data.
+///
+/// Controls how pixel values are sampled from the underlying data grid.
+/// The default is [`Nearest`](Interpolation::Nearest) for backward compatibility.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Interpolation {
+    /// Nearest-neighbor sampling (fastest, produces blocky/aliased output).
+    ///
+    /// Each output pixel takes the value of the single closest data gate.
+    /// This is the legacy behavior and the default.
+    #[default]
+    Nearest,
+    /// Bilinear interpolation (smoother, anti-aliased output).
+    ///
+    /// Each output pixel blends the four surrounding data gates using
+    /// bilinear weights. Interpolation happens in **data value space**
+    /// (the f32 moment value), not in color space, ensuring scientifically
+    /// correct results.
+    ///
+    /// Falls back to nearest-neighbor for any pixel where one or more of
+    /// the four neighbors has a non-[`Valid`](GateStatus::Valid) status.
+    Bilinear,
+}
+
 /// Options for rendering radar radials.
 ///
 /// Use the builder methods to configure rendering options, then pass to
@@ -99,6 +123,11 @@ pub struct RenderOptions {
     /// When provided, the [`RenderResult`] will include geographic metadata
     /// enabling pixel-to-geo and geo-to-pixel coordinate conversions.
     pub coord_system: Option<RadarCoordinateSystem>,
+    /// Interpolation method for pixel sampling.
+    ///
+    /// Default is [`Interpolation::Nearest`]. Use [`Interpolation::Bilinear`]
+    /// for smoother output that blends neighboring data gates.
+    pub interpolation: Interpolation,
 }
 
 impl RenderOptions {
@@ -109,6 +138,7 @@ impl RenderOptions {
             background: Some([0, 0, 0, 255]),
             extent: None,
             coord_system: None,
+            interpolation: Interpolation::Nearest,
         }
     }
 
@@ -153,6 +183,23 @@ impl RenderOptions {
     pub fn native_for(field: &SweepField) -> Self {
         let size = field.gate_count() * 2;
         Self::new(size, size)
+    }
+
+    /// Sets the interpolation method for rendering.
+    ///
+    /// Default is [`Interpolation::Nearest`]. Use [`Interpolation::Bilinear`]
+    /// for smoother output that blends neighboring data gates.
+    pub fn with_interpolation(mut self, interpolation: Interpolation) -> Self {
+        self.interpolation = interpolation;
+        self
+    }
+
+    /// Shorthand to enable bilinear interpolation.
+    ///
+    /// Equivalent to `.with_interpolation(Interpolation::Bilinear)`.
+    pub fn bilinear(mut self) -> Self {
+        self.interpolation = Interpolation::Bilinear;
+        self
     }
 }
 
@@ -401,6 +448,8 @@ pub fn render_sweep(
     let scale_factor = width.max(height) as f64 / 2.0 / radar_range_km;
 
     // Render each pixel by mapping to radar coordinates
+    let use_bilinear = options.interpolation == Interpolation::Bilinear;
+
     for y in 0..height {
         let dy = y as f64 - center_y;
 
@@ -417,7 +466,21 @@ pub fn render_sweep(
             let azimuth_rad = dx.atan2(-dy);
             let azimuth_deg = ((azimuth_rad.to_degrees() + 360.0) % 360.0) as f32;
 
-            let (radial_idx, angular_distance) = find_closest_radial(field.azimuths(), azimuth_deg);
+            // Try bilinear interpolation first, then fall back to nearest-neighbor
+            if use_bilinear {
+                if let Some(val) =
+                    sample_sweep_bilinear(field, azimuth_deg, distance_km, max_azimuth_gap)
+                {
+                    let color = lut.get_color(val);
+                    let pixel_index = (y * width + x) * 4;
+                    buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
+                    continue;
+                }
+            }
+
+            // Nearest-neighbor path (default, or bilinear fallback)
+            let (radial_idx, angular_distance) =
+                find_closest_radial(field.azimuths(), azimuth_deg);
 
             if angular_distance > max_azimuth_gap {
                 continue;
@@ -497,13 +560,35 @@ pub fn render_cartesian(
     let lut = ColorLookupTable::from_color_scale(color_scale, min_val, max_val, 256);
 
     // Map output pixels to field cells
+    let use_bilinear = options.interpolation == Interpolation::Bilinear;
+    let max_row = field_height - 1;
+    let max_col = field_width - 1;
+
     for y in 0..height {
-        let field_row = (y as f64 / height as f64 * field_height as f64) as usize;
-        let field_row = field_row.min(field_height - 1);
+        let row_f = y as f64 / height as f64 * field_height as f64 - 0.5;
+        let row_f = row_f.max(0.0);
 
         for x in 0..width {
-            let field_col = (x as f64 / width as f64 * field_width as f64) as usize;
-            let field_col = field_col.min(field_width - 1);
+            let col_f = x as f64 / width as f64 * field_width as f64 - 0.5;
+            let col_f = col_f.max(0.0);
+
+            // Try bilinear interpolation first, then fall back to nearest-neighbor
+            if use_bilinear {
+                if let Some(val) =
+                    sample_grid_bilinear(row_f, col_f, max_row, max_col, |r, c| field.get(r, c))
+                {
+                    let color = lut.get_color(val);
+                    let pixel_index = (y * width + x) * 4;
+                    buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
+                    continue;
+                }
+            }
+
+            // Nearest-neighbor path (default, or bilinear fallback)
+            let field_row = (row_f + 0.5) as usize;
+            let field_row = field_row.min(max_row);
+            let field_col = (col_f + 0.5) as usize;
+            let field_col = field_col.min(max_col);
 
             let (val, status) = field.get(field_row, field_col);
             if status == GateStatus::Valid {
@@ -567,13 +652,35 @@ pub fn render_vertical(
     let lut = ColorLookupTable::from_color_scale(color_scale, min_val, max_val, 256);
 
     // Map output pixels to field cells
+    let use_bilinear = options.interpolation == Interpolation::Bilinear;
+    let max_row = field_height - 1;
+    let max_col = field_width - 1;
+
     for y in 0..height {
-        let field_row = (y as f64 / height as f64 * field_height as f64) as usize;
-        let field_row = field_row.min(field_height - 1);
+        let row_f = y as f64 / height as f64 * field_height as f64 - 0.5;
+        let row_f = row_f.max(0.0);
 
         for x in 0..width {
-            let field_col = (x as f64 / width as f64 * field_width as f64) as usize;
-            let field_col = field_col.min(field_width - 1);
+            let col_f = x as f64 / width as f64 * field_width as f64 - 0.5;
+            let col_f = col_f.max(0.0);
+
+            // Try bilinear interpolation first, then fall back to nearest-neighbor
+            if use_bilinear {
+                if let Some(val) =
+                    sample_grid_bilinear(row_f, col_f, max_row, max_col, |r, c| field.get(r, c))
+                {
+                    let color = lut.get_color(val);
+                    let pixel_index = (y * width + x) * 4;
+                    buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
+                    continue;
+                }
+            }
+
+            // Nearest-neighbor path (default, or bilinear fallback)
+            let field_row = (row_f + 0.5) as usize;
+            let field_row = field_row.min(max_row);
+            let field_col = (col_f + 0.5) as usize;
+            let field_col = field_col.min(max_col);
 
             let (val, status) = field.get(field_row, field_col);
             if status == GateStatus::Valid {
@@ -683,6 +790,153 @@ fn find_closest_radial(sorted_azimuths: &[f32], azimuth: f32) -> (usize, f32) {
     } else {
         (pos, dist_to_curr)
     }
+}
+
+/// Find the two radials bracketing the given azimuth and the fractional position between them.
+///
+/// Returns `Some((lo_idx, hi_idx, frac))` where:
+/// - `lo_idx` is the index of the radial at or just below `azimuth`
+/// - `hi_idx` is the index of the radial just above `azimuth`
+/// - `frac` is in \[0, 1\] — the fractional distance from lo toward hi
+///
+/// Returns `None` if there are fewer than 2 radials, or if the angular gap between
+/// the two bracketing radials exceeds `max_gap` degrees (partial sweep boundary).
+#[inline]
+fn find_bracketing_radials(
+    sorted_azimuths: &[f32],
+    azimuth: f32,
+    max_gap: f32,
+) -> Option<(usize, usize, f32)> {
+    let len = sorted_azimuths.len();
+    if len < 2 {
+        return None;
+    }
+
+    let pos = sorted_azimuths
+        .binary_search_by(|a| a.partial_cmp(&azimuth).unwrap_or(std::cmp::Ordering::Equal))
+        .unwrap_or_else(|i| i);
+
+    // Determine the bracketing pair (lo, hi) such that lo_az <= azimuth <= hi_az
+    // with 360-degree wraparound at the edges.
+    let (lo_idx, hi_idx) = if pos == 0 || pos >= len {
+        // Wraps around: last azimuth → first azimuth
+        (len - 1, 0)
+    } else {
+        (pos - 1, pos)
+    };
+
+    let lo_az = sorted_azimuths[lo_idx];
+    let hi_az = sorted_azimuths[hi_idx];
+
+    // Angular span with wraparound
+    let span = if hi_az >= lo_az {
+        hi_az - lo_az
+    } else {
+        360.0 - lo_az + hi_az
+    };
+
+    if span > max_gap || span == 0.0 {
+        return None;
+    }
+
+    // Fractional position of azimuth between lo and hi
+    let offset = if azimuth >= lo_az {
+        azimuth - lo_az
+    } else {
+        360.0 - lo_az + azimuth
+    };
+
+    let frac = (offset / span).clamp(0.0, 1.0);
+    Some((lo_idx, hi_idx, frac))
+}
+
+/// Sample a sweep field using bilinear interpolation in data-value space.
+///
+/// Returns the interpolated f32 value, or `None` if any of the four neighbors
+/// is non-Valid, the pixel falls in a sweep gap, or the coordinates are at the
+/// outer edge where interpolation is not possible.
+#[inline]
+fn sample_sweep_bilinear(
+    field: &SweepField,
+    azimuth_deg: f32,
+    distance_km: f64,
+    max_azimuth_gap: f32,
+) -> Option<f32> {
+    let gate_count = field.gate_count();
+    let first_gate_km = field.first_gate_range_km();
+    let gate_interval_km = field.gate_interval_km();
+
+    // Azimuth axis: find bracketing radials
+    let (az_lo, az_hi, az_frac) =
+        find_bracketing_radials(field.azimuths(), azimuth_deg, max_azimuth_gap)?;
+
+    // Range axis: find bracketing gates
+    let gate_f = (distance_km - first_gate_km) / gate_interval_km;
+    let g_lo = gate_f as usize;
+    let g_hi = g_lo + 1;
+
+    if g_hi >= gate_count {
+        return None;
+    }
+
+    let g_frac = (gate_f - g_lo as f64) as f32;
+
+    // Fetch the four corners and require all Valid
+    let (v00, s00) = field.get(az_lo, g_lo);
+    let (v01, s01) = field.get(az_lo, g_hi);
+    let (v10, s10) = field.get(az_hi, g_lo);
+    let (v11, s11) = field.get(az_hi, g_hi);
+
+    if s00 != GateStatus::Valid
+        || s01 != GateStatus::Valid
+        || s10 != GateStatus::Valid
+        || s11 != GateStatus::Valid
+    {
+        return None;
+    }
+
+    // Bilinear blend: lerp along range for each azimuth, then across azimuths
+    let v_lo = v00 + (v01 - v00) * g_frac;
+    let v_hi = v10 + (v11 - v10) * g_frac;
+    Some(v_lo + (v_hi - v_lo) * az_frac)
+}
+
+/// Sample a row-major grid using bilinear interpolation in data-value space.
+///
+/// `row_f` and `col_f` are fractional coordinates into the grid.
+/// Returns the interpolated value, or `None` if any of the four neighbors is non-Valid.
+#[inline]
+fn sample_grid_bilinear(
+    row_f: f64,
+    col_f: f64,
+    max_row: usize,
+    max_col: usize,
+    get_fn: impl Fn(usize, usize) -> (f32, GateStatus),
+) -> Option<f32> {
+    let r0 = row_f as usize;
+    let c0 = col_f as usize;
+    let r1 = (r0 + 1).min(max_row);
+    let c1 = (c0 + 1).min(max_col);
+
+    let rf = (row_f - r0 as f64) as f32;
+    let cf = (col_f - c0 as f64) as f32;
+
+    let (v00, s00) = get_fn(r0, c0);
+    let (v01, s01) = get_fn(r0, c1);
+    let (v10, s10) = get_fn(r1, c0);
+    let (v11, s11) = get_fn(r1, c1);
+
+    if s00 != GateStatus::Valid
+        || s01 != GateStatus::Valid
+        || s10 != GateStatus::Valid
+        || s11 != GateStatus::Valid
+    {
+        return None;
+    }
+
+    let v_top = v00 + (v01 - v00) * cf;
+    let v_bot = v10 + (v11 - v10) * cf;
+    Some(v_top + (v_bot - v_top) * rf)
 }
 
 /// Gate metadata extracted from a moment data block.

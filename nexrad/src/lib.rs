@@ -194,13 +194,13 @@
 //!
 //! ```ignore
 //! use nexrad::model::data::Product;
-//! use nexrad::render::{render_radials, get_nws_reflectivity_scale, RenderOptions};
+//! use nexrad::render::{render_radials, nws_reflectivity_scale, RenderOptions};
 //!
 //! let scan = nexrad::load_file("volume.ar2v")?;
 //! let sweep = scan.sweeps().first().unwrap();
 //!
 //! let options = RenderOptions::new(1024, 1024);
-//! let color_scale = get_nws_reflectivity_scale();
+//! let color_scale = nws_reflectivity_scale();
 //!
 //! let image = render_radials(
 //!     sweep.radials(),
@@ -414,80 +414,6 @@ pub async fn list_scans(
 }
 
 // ============================================================================
-// Top-level rendering functions
-// ============================================================================
-
-/// Render a sweep's radar data to an RGBA image using the default color scale.
-///
-/// This is a convenience function that renders with the default color scale for the
-/// given product and a 1024x1024 transparent background. For more control over rendering
-/// options and color scales, use [`render::render_radials`] directly.
-///
-/// # Example
-///
-/// ```ignore
-/// use nexrad::model::data::Product;
-///
-/// let scan = nexrad::load_file("scan.ar2v")?;
-/// let sweep = scan.sweeps().first().unwrap();
-/// let image = nexrad::render_sweep(sweep, Product::Reflectivity)?;
-/// image.save("output.png").unwrap();
-/// # Ok::<(), nexrad::Error>(())
-/// ```
-///
-/// # Errors
-///
-/// Returns an error if the sweep has no radials or the requested product is not present.
-#[cfg(all(feature = "render", feature = "model"))]
-pub fn render_sweep(
-    sweep: &model::data::Sweep,
-    product: model::data::Product,
-) -> Result<render::RgbaImage> {
-    let options = render::RenderOptions::new(1024, 1024).transparent();
-    Ok(render::render_radials_default(
-        sweep.radials(),
-        product,
-        &options,
-    )?)
-}
-
-/// Render a sweep's radar data to an RGBA image with custom options.
-///
-/// Uses the default color scale for the given product but allows custom render options
-/// (image size, background color). For full control over color scales, use
-/// [`render::render_radials`] directly.
-///
-/// # Example
-///
-/// ```ignore
-/// use nexrad::model::data::Product;
-/// use nexrad::render::RenderOptions;
-///
-/// let scan = nexrad::load_file("scan.ar2v")?;
-/// let sweep = scan.sweeps().first().unwrap();
-/// let options = RenderOptions::new(800, 800).with_background([0, 0, 0, 255]);
-/// let image = nexrad::render_sweep_with_options(sweep, Product::Velocity, &options)?;
-/// image.save("velocity.png").unwrap();
-/// # Ok::<(), nexrad::Error>(())
-/// ```
-///
-/// # Errors
-///
-/// Returns an error if the sweep has no radials or the requested product is not present.
-#[cfg(all(feature = "render", feature = "model"))]
-pub fn render_sweep_with_options(
-    sweep: &model::data::Sweep,
-    product: model::data::Product,
-    options: &render::RenderOptions,
-) -> Result<render::RgbaImage> {
-    Ok(render::render_radials_default(
-        sweep.radials(),
-        product,
-        options,
-    )?)
-}
-
-// ============================================================================
 // Field extraction convenience functions
 // ============================================================================
 
@@ -601,17 +527,12 @@ pub fn coordinate_system(scan: &model::data::Scan) -> Option<model::geo::RadarCo
 ///
 /// # Errors
 ///
-/// Returns an I/O error with [`std::io::ErrorKind::NotFound`] if the scan has no site metadata.
+/// Returns [`Error::MissingSiteMetadata`] if the scan has no site metadata.
 #[cfg(feature = "model")]
 pub fn coordinate_system_required(
     scan: &model::data::Scan,
 ) -> Result<model::geo::RadarCoordinateSystem> {
-    coordinate_system(scan).ok_or_else(|| {
-        Error::Io(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "no site metadata in scan",
-        ))
-    })
+    coordinate_system(scan).ok_or(Error::MissingSiteMetadata)
 }
 
 // ============================================================================

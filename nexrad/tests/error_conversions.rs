@@ -342,3 +342,14 @@ fn test_question_mark_operator() {
         _ => panic!("Expected Error::Decode variant"),
     }
 }
+
+#[test]
+fn test_missing_site_metadata_error() {
+    let err = nexrad::Error::MissingSiteMetadata;
+    let err_string = err.to_string();
+    assert!(
+        err_string.contains("site metadata"),
+        "Expected 'site metadata' in message, got: {}",
+        err_string
+    );
+}

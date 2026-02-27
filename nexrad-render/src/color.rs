@@ -136,6 +136,139 @@ impl DiscreteColorScale {
     }
 }
 
+/// A color stop for a continuous color scale.
+///
+/// Defines a value-to-color control point. Colors are linearly interpolated
+/// between stops.
+#[derive(Debug, Clone)]
+pub struct ColorStop {
+    /// The value at this stop.
+    pub value: f32,
+    /// The color at this stop.
+    pub color: Color,
+}
+
+impl ColorStop {
+    /// Creates a new color stop.
+    pub fn new(value: f32, color: Color) -> Self {
+        Self { value, color }
+    }
+}
+
+/// A continuous color scale that linearly interpolates between color stops.
+///
+/// Unlike [`DiscreteColorScale`], this scale produces smooth color gradients
+/// between control points. This is useful for products where smooth transitions
+/// are more informative than discrete steps.
+///
+/// # Example
+///
+/// ```
+/// use nexrad_render::{ColorStop, ContinuousColorScale, Color};
+///
+/// let scale = ContinuousColorScale::new(vec![
+///     ColorStop::new(0.0, Color::rgb(0.0, 0.0, 1.0)),   // Blue at 0
+///     ColorStop::new(50.0, Color::rgb(0.0, 1.0, 0.0)),  // Green at 50
+///     ColorStop::new(100.0, Color::rgb(1.0, 0.0, 0.0)), // Red at 100
+/// ]);
+///
+/// // Value 25 produces a blue-green blend
+/// let color = scale.get_color(25.0);
+/// ```
+#[derive(Debug, Clone)]
+pub struct ContinuousColorScale {
+    stops: Vec<ColorStop>,
+}
+
+impl ContinuousColorScale {
+    /// Creates a new continuous color scale from color stops.
+    ///
+    /// Stops are automatically sorted by value (lowest to highest).
+    pub fn new(mut stops: Vec<ColorStop>) -> Self {
+        stops.sort_by(|a, b| a.value.total_cmp(&b.value));
+        Self { stops }
+    }
+
+    /// Returns the linearly interpolated color for the given value.
+    ///
+    /// Values below the lowest stop get the lowest stop's color.
+    /// Values above the highest stop get the highest stop's color.
+    pub fn get_color(&self, value: f32) -> Color {
+        if self.stops.is_empty() {
+            return Color::BLACK;
+        }
+
+        if value <= self.stops[0].value {
+            return self.stops[0].color;
+        }
+
+        let last = self.stops.len() - 1;
+        if value >= self.stops[last].value {
+            return self.stops[last].color;
+        }
+
+        // Find the two stops that bracket this value
+        for i in 0..last {
+            let low = &self.stops[i];
+            let high = &self.stops[i + 1];
+
+            if value >= low.value && value <= high.value {
+                let range = high.value - low.value;
+                if range == 0.0 {
+                    return low.color;
+                }
+                let t = ((value - low.value) / range) as f64;
+                return Color::rgba(
+                    low.color.r + (high.color.r - low.color.r) * t,
+                    low.color.g + (high.color.g - low.color.g) * t,
+                    low.color.b + (high.color.b - low.color.b) * t,
+                    low.color.a + (high.color.a - low.color.a) * t,
+                );
+            }
+        }
+
+        self.stops[last].color
+    }
+
+    /// Returns the stops in this color scale (sorted lowest to highest).
+    pub fn stops(&self) -> &[ColorStop] {
+        &self.stops
+    }
+}
+
+/// A color scale that can be either discrete or continuous.
+///
+/// This enum allows rendering functions to accept either type of color scale.
+#[derive(Debug, Clone)]
+pub enum ColorScale {
+    /// A discrete step-function color scale.
+    Discrete(DiscreteColorScale),
+    /// A continuous linear-interpolation color scale.
+    Continuous(ContinuousColorScale),
+}
+
+impl ColorScale {
+    /// Returns the color for the given value.
+    pub fn get_color(&self, value: f32) -> Color {
+        match self {
+            ColorScale::Discrete(scale) => scale.get_color(value),
+            ColorScale::Continuous(scale) => scale.get_color(value),
+        }
+    }
+}
+
+impl From<DiscreteColorScale> for ColorScale {
+    fn from(scale: DiscreteColorScale) -> Self {
+        ColorScale::Discrete(scale)
+    }
+}
+
+impl From<ContinuousColorScale> for ColorScale {
+    fn from(scale: ContinuousColorScale) -> Self {
+        ColorScale::Continuous(scale)
+    }
+}
+
 /// A pre-computed lookup table for O(1) color lookups.
 ///
 /// This table maps a range of values to RGBA colors using a fixed-size array.
@@ -176,6 +309,31 @@ impl ColorLookupTable {
     /// Values outside the min/max range will be clamped to the nearest entry.
     pub fn from_scale(
         scale: &DiscreteColorScale,
+        min_value: f32,
+        max_value: f32,
+        size: usize,
+    ) -> Self {
+        let range = max_value - min_value;
+        let mut table = Vec::with_capacity(size);
+
+        for i in 0..size {
+            let value = min_value + (i as f32 / (size - 1) as f32) * range;
+            let color = scale.get_color(value);
+            table.push(color.to_rgba8());
+        }
+
+        Self {
+            table,
+            min_value,
+            range,
+        }
+    }
+
+    /// Creates a lookup table from any [`ColorScale`] (discrete or continuous).
+    ///
+    /// This is the preferred way to create a LUT for the new rendering entry points.
+    pub fn from_color_scale(
+        scale: &ColorScale,
         min_value: f32,
         max_value: f32,
         size: usize,

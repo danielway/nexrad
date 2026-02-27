@@ -41,6 +41,7 @@ The following crates can be released:
 - `nexrad-data`
 - `nexrad-decode`
 - `nexrad-model`
+- `nexrad-process`
 - `nexrad-render`
 
 ## Crate Dependencies
@@ -50,14 +51,14 @@ The crates have interdependencies that affect release order:
 ```
 nexrad-model (no internal deps)
        │
-   ┌───┴───────────┐
-   ▼               ▼
-nexrad-decode   nexrad-render
+   ┌───┼────────--|--------───────┐
+   ▼              ▼               ▼
+nexrad-decode  nexrad-process  nexrad-render
    │
    ▼
 nexrad-data
 
-       │ (all four)
+       │ (all five)
        ▼
      nexrad (facade)
 ```
@@ -67,7 +68,7 @@ nexrad-data
 When releasing multiple crates, follow this order:
 
 1. **nexrad-model** - foundation crate, no internal dependencies
-2. **nexrad-decode** and **nexrad-render** - both depend only on nexrad-model (can be released in parallel)
+2. **nexrad-decode**, **nexrad-process**, and **nexrad-render** - all depend only on nexrad-model (can be released in parallel)
 3. **nexrad-data** - depends on nexrad-decode and nexrad-model
 4. **nexrad** - facade crate, depends on all others
 

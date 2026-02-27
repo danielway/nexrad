@@ -144,6 +144,16 @@ impl RenderOptions {
         self.coord_system = Some(coord_system);
         self
     }
+
+    /// Creates render options sized for native resolution of a sweep field.
+    ///
+    /// Sets both width and height to `gate_count * 2`, which ensures approximately
+    /// one pixel per gate at the outer edge of the sweep. This produces the highest
+    /// fidelity rendering without wasting pixels.
+    pub fn native_for(field: &SweepField) -> Self {
+        let size = field.gate_count() * 2;
+        Self::new(size, size)
+    }
 }
 
 /// Renders radar radials to an RGBA image.

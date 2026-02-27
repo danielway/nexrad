@@ -144,10 +144,10 @@ fn decode_volume(site: &str, file_name: &str, file: &volume::File) -> Result<Dec
                 }
                 MessageContents::DigitalRadarData(radar_data) => {
                     radar_data_count += 1;
-                    // Check for volume scan boundaries
+                    // Check for scan boundaries
                     match radar_data.header().radial_status_raw() {
-                        3 => has_volume_start = true, // VolumeScanStart
-                        4 => has_volume_end = true,   // VolumeScanEnd
+                        3 => has_volume_start = true, // ScanStart
+                        4 => has_volume_end = true,   // ScanEnd
                         _ => {}
                     }
                 }

@@ -65,7 +65,7 @@ fn test_scan_radial_properties() {
     assert!((first_radial.azimuth_angle_degrees() - 155.22).abs() < 0.01);
     assert!((first_radial.azimuth_spacing_degrees() - 0.50).abs() < 0.01);
     assert!((first_radial.elevation_angle_degrees() - 0.61).abs() < 0.01);
-    assert_eq!(first_radial.radial_status(), RadialStatus::VolumeScanStart);
+    assert_eq!(first_radial.radial_status(), RadialStatus::ScanStart);
     assert_eq!(first_radial.elevation_number(), 1);
 
     let last_radial = sweep0.radials().last().expect("Last radial should exist");

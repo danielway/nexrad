@@ -10,8 +10,8 @@
 //! Three processing traits cover different scopes:
 //!
 //! - [`SweepProcessor`] — single-sweep algorithms (filtering, smoothing)
-//! - [`VolumeProcessor`] — multi-elevation algorithms (velocity dealiasing)
-//! - [`VolumeDerivedProduct`] — produces a [`CartesianField`] from the full volume
+//! - [`ScanProcessor`] — multi-elevation algorithms (velocity dealiasing)
+//! - [`ScanDerivedProduct`] — produces a [`CartesianField`] from a full scan
 //!   (composite reflectivity, VIL)
 //!
 //! # Example
@@ -49,35 +49,35 @@ pub trait SweepProcessor {
     fn process(&self, input: &SweepField) -> Result<SweepField>;
 }
 
-/// Processes fields with full volume context (multiple elevations).
+/// Processes fields with full scan context (multiple elevations).
 ///
 /// This trait is for algorithms that need to consider data across elevations,
 /// such as velocity dealiasing.
-pub trait VolumeProcessor {
+pub trait ScanProcessor {
     /// A human-readable name for this processor.
     fn name(&self) -> &str;
 
-    /// Process sweep fields using the full volume context.
+    /// Process sweep fields using the full scan context.
     ///
     /// Takes the scan metadata and all sweep fields for the relevant product,
     /// returning a new set of processed fields (one per input field).
-    fn process_volume(&self, scan: &Scan, fields: &[SweepField]) -> Result<Vec<SweepField>>;
+    fn process_scan(&self, scan: &Scan, fields: &[SweepField]) -> Result<Vec<SweepField>>;
 }
 
-/// Produces a [`CartesianField`] from the full volume scan.
+/// Produces a [`CartesianField`] from a full scan.
 ///
 /// This trait is for derived products that combine data from multiple elevations
 /// into a single geographic surface, such as composite reflectivity, echo tops,
 /// and vertically integrated liquid (VIL).
-pub trait VolumeDerivedProduct {
+pub trait ScanDerivedProduct {
     /// A human-readable name for this product.
     fn name(&self) -> &str;
 
-    /// Compute the derived product from the volume scan.
+    /// Compute the derived product from the scan.
     ///
     /// # Parameters
     ///
-    /// - `scan` — Volume scan metadata (site info, VCP, etc.)
+    /// - `scan` — Scan metadata (site info, VCP, etc.)
     /// - `fields` — Sweep fields for the relevant product, one per elevation
     /// - `coord_system` — Radar coordinate system for geographic projection
     /// - `output_extent` — Geographic extent of the output grid

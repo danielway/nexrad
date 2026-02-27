@@ -1,4 +1,4 @@
-//! Render a reflectivity image from a radar volume.
+//! Render a reflectivity image from a radar scan.
 //!
 //! This example demonstrates using the render feature to create
 //! a PNG image of radar reflectivity data.
@@ -25,20 +25,20 @@ fn main() -> nexrad::Result<()> {
         .map(String::as_str)
         .unwrap_or("reflectivity.png");
 
-    println!("Loading volume from: {}", input_path);
-    let volume = nexrad::load_file(input_path)?;
+    println!("Loading scan from: {}", input_path);
+    let scan = nexrad::load_file(input_path)?;
 
     println!(
         "{}, {} sweeps",
-        volume.coverage_pattern_number(),
-        volume.sweeps().len()
+        scan.coverage_pattern_number(),
+        scan.sweeps().len()
     );
 
     // Get the first (lowest) sweep
-    let sweep = volume
+    let sweep = scan
         .sweeps()
         .first()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No sweeps in volume"))?;
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No sweeps in scan"))?;
 
     println!(
         "Rendering sweep {} with {} radials...",

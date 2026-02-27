@@ -499,7 +499,7 @@ impl SweepField {
 
 /// A 2D Cartesian grid of values on a geographic extent.
 ///
-/// Used for volume-derived products like composite reflectivity, echo tops, and VIL
+/// Used for scan-derived products like composite reflectivity, echo tops, and VIL
 /// where data from multiple elevations is combined into a single geographic surface.
 ///
 /// Layout: `values[row * width + col]`, row 0 = north edge.
@@ -644,7 +644,7 @@ impl CartesianField {
 /// A 2D vertical cross-section grid of values.
 ///
 /// Used for RHI (Range-Height Indicator) displays and arbitrary vertical slices through
-/// a volume scan. The horizontal axis represents distance from the radar (or from the
+/// a scan. The horizontal axis represents distance from the radar (or from the
 /// start of a cross-section path) and the vertical axis represents altitude.
 ///
 /// Layout: `values[row * width + col]`, row 0 = top (highest altitude).

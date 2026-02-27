@@ -259,8 +259,8 @@ impl<'a> Message<'a> {
             0 => RadialStatus::ElevationStart,
             1 => RadialStatus::IntermediateRadialData,
             2 => RadialStatus::ElevationEnd,
-            3 => RadialStatus::VolumeScanStart,
-            4 => RadialStatus::VolumeScanEnd,
+            3 => RadialStatus::ScanStart,
+            4 => RadialStatus::ScanEnd,
             _ => RadialStatus::IntermediateRadialData,
         };
         let timestamp = self
@@ -382,8 +382,8 @@ impl<'a> Message<'a> {
             0 => RadialStatus::ElevationStart,
             1 => RadialStatus::IntermediateRadialData,
             2 => RadialStatus::ElevationEnd,
-            3 => RadialStatus::VolumeScanStart,
-            4 => RadialStatus::VolumeScanEnd,
+            3 => RadialStatus::ScanStart,
+            4 => RadialStatus::ScanEnd,
             _ => RadialStatus::IntermediateRadialData,
         };
 

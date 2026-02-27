@@ -16,8 +16,8 @@ use std::fmt::Display;
 /// - RDA/RPG ICD (2620002 series)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VCPNumber {
-    /// VCP 12: Precipitation mode. 14 elevation angles in ~4.5 minutes. Fastest volume
-    /// scan; default for severe weather. Does not use SZ-2 phase coding.
+    /// VCP 12: Precipitation mode. 14 elevation angles in ~4.5 minutes. Fastest scan;
+    /// default for severe weather. Does not use SZ-2 phase coding.
     Precipitation12,
 
     /// VCP 31: Clear air mode, long pulse. 5 elevation angles in ~10 minutes. The longer

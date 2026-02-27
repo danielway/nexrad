@@ -22,16 +22,16 @@
 
 use nexrad::model::data::Product;
 use nexrad::model::geo::GeoPoint;
-use nexrad::process::derived::{CompositeReflectivity, StormRelativeVelocity};
+use nexrad::process::derived::{
+    CompositeReflectivity, StormRelativeVelocity, VerticalCrossSection,
+};
 use nexrad::process::filter::{
     CorrelationCoefficientFilter, GaussianSmooth, MedianFilter, ThresholdFilter,
 };
 use nexrad::process::{SweepPipeline, SweepProcessor, VolumeDerivedProduct};
 use nexrad::render::{
-    get_default_scale, render_cartesian, render_sweep, render_vertical, ColorScale, RenderOptions,
+    get_default_color_scale, render_cartesian, render_sweep, render_vertical, RenderOptions,
 };
-
-use nexrad::model::data::{GateStatus, VerticalField};
 
 /// Full 23-sweep volume downloaded from AWS via `download_volume` example.
 /// Falls back to the 3-sweep fixture if the full volume is not present.
@@ -73,11 +73,7 @@ fn main() -> nexrad::Result<()> {
                 .first()
                 .and_then(|r| r.reflectivity())
                 .is_some();
-            let has_vel = sweep
-                .radials()
-                .first()
-                .and_then(|r| r.velocity())
-                .is_some();
+            let has_vel = sweep.radials().first().and_then(|r| r.velocity()).is_some();
             println!(
                 "  Sweep {}: {:.1} deg, {} radials [REF:{} VEL:{}]",
                 i,
@@ -90,13 +86,10 @@ fn main() -> nexrad::Result<()> {
     }
 
     // Build coordinate system for geographic operations
-    let coord_sys = nexrad::coordinate_system(&volume).ok_or_else(|| {
-        std::io::Error::new(std::io::ErrorKind::NotFound, "No site metadata in volume")
-    })?;
+    let coord_sys = nexrad::coordinate_system_required(&volume)?;
 
     // Create output directory
-    std::fs::create_dir_all(OUTPUT_DIR)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+    std::fs::create_dir_all(OUTPUT_DIR)?;
 
     // ========================================================================
     // Compute native resolution from the data itself
@@ -107,6 +100,7 @@ fn main() -> nexrad::Result<()> {
 
     // Native resolution: 2 * gate_count ensures ~1 pixel per gate at the outer edge.
     // For the KDMX reflectivity data: 1832 gates * 0.25 km = 460 km range -> 3664 px image.
+    let native_options = RenderOptions::native_for(&ref_field);
     let native_size = ref_field.gate_count() * 2;
     println!(
         "\n  Native resolution: {} px (from {} gates x {:.2} km = {:.0} km range)",
@@ -122,11 +116,10 @@ fn main() -> nexrad::Result<()> {
     );
 
     // Use native resolution for key renders, a moderate size for processing comparisons
-    let native_options = RenderOptions::new(native_size, native_size);
     let compare_size: usize = 1600;
     let compare_options = RenderOptions::new(compare_size, compare_size);
 
-    let ref_scale = ColorScale::from(get_default_scale(Product::Reflectivity));
+    let ref_scale = get_default_color_scale(Product::Reflectivity);
 
     // ========================================================================
     // Section 1: All Radar Products at Native Resolution
@@ -145,27 +138,18 @@ fn main() -> nexrad::Result<()> {
 
     // For products not on sweep 0, find the first sweep that has them
     for product in &products {
-        let (sweep_idx, field) = volume
-            .sweeps()
-            .iter()
-            .enumerate()
-            .find_map(|(i, s)| nexrad::extract_field(s, *product).map(|f| (i, f)))
-            .map(|(i, f)| (Some(i), Some(f)))
-            .unwrap_or((None, None));
-
-        match field {
-            Some(f) => {
-                // Use native resolution matched to this field's gate count
+        match nexrad::extract_first_field(&volume, *product) {
+            Some((sweep_idx, f)) => {
+                let opts = RenderOptions::native_for(&f);
                 let field_native = f.gate_count() * 2;
-                let opts = RenderOptions::new(field_native, field_native);
-                let scale = ColorScale::from(get_default_scale(*product));
+                let scale = get_default_color_scale(*product);
                 let result = render_sweep(&f, &scale, &opts)?;
                 let path = format!("{}/01_product_{}.png", OUTPUT_DIR, slug(product.label()));
-                result.image().save(&path).map_err(io_err)?;
+                result.save(&path).map_err(io_err)?;
                 println!(
                     "  {} (sweep {}) - {:.1} deg, {:.0} km, {}x{} gates -> {}x{} px",
                     product.label(),
-                    sweep_idx.unwrap_or(0),
+                    sweep_idx,
                     f.elevation_degrees(),
                     f.max_range_km(),
                     f.azimuth_count(),
@@ -207,7 +191,7 @@ fn main() -> nexrad::Result<()> {
             let angle = field.elevation_degrees();
             let result = render_sweep(&field, &ref_scale, &compare_options)?;
             let path = format!("{}/02_elevation_{:02}_{:.1}deg.png", OUTPUT_DIR, i, angle);
-            result.image().save(&path).map_err(io_err)?;
+            result.save(&path).map_err(io_err)?;
             println!("  Sweep {}: {:.1} deg -> {}", i, angle, path);
         }
     }
@@ -221,7 +205,7 @@ fn main() -> nexrad::Result<()> {
     {
         let result = render_sweep(&ref_field, &ref_scale, &native_options)?;
         let path = format!("{}/03a_raw.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!("  Raw (unprocessed, native {}px) -> {}", native_size, path);
     }
 
@@ -231,10 +215,10 @@ fn main() -> nexrad::Result<()> {
             min: Some(10.0),
             max: None,
         };
-        let filtered = filter.process(&ref_field).map_err(process_err)?;
+        let filtered = filter.process(&ref_field)?;
         let result = render_sweep(&filtered, &ref_scale, &compare_options)?;
         let path = format!("{}/03b_threshold_10dbz.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!("  Threshold (>10 dBZ) -> {}", path);
     }
 
@@ -244,10 +228,10 @@ fn main() -> nexrad::Result<()> {
             min: Some(35.0),
             max: None,
         };
-        let filtered = filter.process(&ref_field).map_err(process_err)?;
+        let filtered = filter.process(&ref_field)?;
         let result = render_sweep(&filtered, &ref_scale, &compare_options)?;
         let path = format!("{}/03c_threshold_35dbz.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!("  Threshold (>35 dBZ, strong echoes) -> {}", path);
     }
 
@@ -257,10 +241,10 @@ fn main() -> nexrad::Result<()> {
             sigma_azimuth: 1.5,
             sigma_range: 1.5,
         };
-        let smoothed = smoother.process(&ref_field).map_err(process_err)?;
+        let smoothed = smoother.process(&ref_field)?;
         let result = render_sweep(&smoothed, &ref_scale, &compare_options)?;
         let path = format!("{}/03d_gaussian_light.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!("  Gaussian smooth (sigma=1.5) -> {}", path);
     }
 
@@ -270,10 +254,10 @@ fn main() -> nexrad::Result<()> {
             sigma_azimuth: 4.0,
             sigma_range: 4.0,
         };
-        let smoothed = smoother.process(&ref_field).map_err(process_err)?;
+        let smoothed = smoother.process(&ref_field)?;
         let result = render_sweep(&smoothed, &ref_scale, &compare_options)?;
         let path = format!("{}/03e_gaussian_heavy.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!("  Gaussian smooth (sigma=4.0) -> {}", path);
     }
 
@@ -283,10 +267,10 @@ fn main() -> nexrad::Result<()> {
             azimuth_kernel: 3,
             range_kernel: 3,
         };
-        let filtered = filter.process(&ref_field).map_err(process_err)?;
+        let filtered = filter.process(&ref_field)?;
         let result = render_sweep(&filtered, &ref_scale, &compare_options)?;
         let path = format!("{}/03f_median_3x3.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!("  Median filter (3x3) -> {}", path);
     }
 
@@ -296,10 +280,10 @@ fn main() -> nexrad::Result<()> {
             azimuth_kernel: 7,
             range_kernel: 7,
         };
-        let filtered = filter.process(&ref_field).map_err(process_err)?;
+        let filtered = filter.process(&ref_field)?;
         let result = render_sweep(&filtered, &ref_scale, &compare_options)?;
         let path = format!("{}/03g_median_7x7.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!("  Median filter (7x7) -> {}", path);
     }
 
@@ -308,33 +292,14 @@ fn main() -> nexrad::Result<()> {
         let cc_field = nexrad::extract_field(sweep_0, Product::CorrelationCoefficient);
         match cc_field {
             Some(cc) => {
-                if cc.azimuth_count() == ref_field.azimuth_count()
-                    && cc.gate_count() == ref_field.gate_count()
-                {
-                    let filter =
-                        CorrelationCoefficientFilter::new(0.90, cc).map_err(process_err)?;
-                    let cleaned = filter.process(&ref_field).map_err(process_err)?;
-                    let result = render_sweep(&cleaned, &ref_scale, &compare_options)?;
-                    let path = format!("{}/03h_cc_noise_removal.png", OUTPUT_DIR);
-                    result.image().save(&path).map_err(io_err)?;
-                    println!("  CC noise removal (threshold=0.90) -> {}", path);
-                } else {
-                    // REF has more gates (460 km) than CC (300 km).
-                    // Render CC at its own native resolution for reference.
-                    println!(
-                        "  CC noise removal - geometry mismatch (REF: {}x{}, CC: {}x{}), skipping",
-                        ref_field.azimuth_count(),
-                        ref_field.gate_count(),
-                        cc.azimuth_count(),
-                        cc.gate_count()
-                    );
-                    let cc_scale =
-                        ColorScale::from(get_default_scale(Product::CorrelationCoefficient));
-                    let result = render_sweep(&cc, &cc_scale, &compare_options)?;
-                    let path = format!("{}/03h_cc_field.png", OUTPUT_DIR);
-                    result.image().save(&path).map_err(io_err)?;
-                    println!("    Rendered CC field for reference -> {}", path);
-                }
+                // The CC filter now handles geometry mismatches (e.g., REF at 460 km
+                // vs CC at 300 km) by applying the filter over the shared range.
+                let filter = CorrelationCoefficientFilter::new(0.90, cc)?;
+                let cleaned = filter.process(&ref_field)?;
+                let result = render_sweep(&cleaned, &ref_scale, &compare_options)?;
+                let path = format!("{}/03h_cc_noise_removal.png", OUTPUT_DIR);
+                result.save(&path).map_err(io_err)?;
+                println!("  CC noise removal (threshold=0.90) -> {}", path);
             }
             None => {
                 println!("  CC noise removal - CC product not available, skipping");
@@ -363,10 +328,10 @@ fn main() -> nexrad::Result<()> {
                 sigma_range: 1.5,
             });
 
-        let processed = pipeline.execute(&ref_field).map_err(process_err)?;
+        let processed = pipeline.execute(&ref_field)?;
         let result = render_sweep(&processed, &ref_scale, &compare_options)?;
         let path = format!("{}/04a_pipeline_clean_smooth.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!(
             "  Pipeline (threshold>5 + median 3x3 + gaussian 1.5) -> {}",
             path
@@ -385,10 +350,10 @@ fn main() -> nexrad::Result<()> {
                 range_kernel: 5,
             });
 
-        let processed = pipeline.execute(&ref_field).map_err(process_err)?;
+        let processed = pipeline.execute(&ref_field)?;
         let result = render_sweep(&processed, &ref_scale, &compare_options)?;
         let path = format!("{}/04b_pipeline_structure.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!("  Pipeline (threshold>20 + median 5x5) -> {}", path);
     }
 
@@ -397,62 +362,52 @@ fn main() -> nexrad::Result<()> {
     // ========================================================================
     println!("\n=== Section 5: Storm-Relative Velocity ===");
 
-    // Find a sweep with velocity data
-    let vel_sweep = volume.sweeps().iter().find(|s| {
-        s.radials()
-            .first()
-            .and_then(|r| r.velocity())
-            .is_some()
-    });
+    // Find the first sweep with velocity data
+    if let Some((_, vf)) = nexrad::extract_first_field(&volume, Product::Velocity) {
+        let vel_native_options = RenderOptions::native_for(&vf);
+        let vel_native = vf.gate_count() * 2;
+        let vel_scale = get_default_color_scale(Product::Velocity);
 
-    if let Some(sweep) = vel_sweep {
-        let vel_field = nexrad::extract_field(sweep, Product::Velocity);
-        if let Some(vf) = vel_field {
-            let vel_native = vf.gate_count() * 2;
-            let vel_native_options = RenderOptions::new(vel_native, vel_native);
-            let vel_scale = ColorScale::from(get_default_scale(Product::Velocity));
+        // 5a. Raw velocity at native resolution
+        {
+            let result = render_sweep(&vf, &vel_scale, &vel_native_options)?;
+            let path = format!("{}/05a_velocity_raw.png", OUTPUT_DIR);
+            result.save(&path).map_err(io_err)?;
+            println!(
+                "  Raw velocity ({:.1} deg, {}px native) -> {}",
+                vf.elevation_degrees(),
+                vel_native,
+                path
+            );
+        }
 
-            // 5a. Raw velocity at native resolution
-            {
-                let result = render_sweep(&vf, &vel_scale, &vel_native_options)?;
-                let path = format!("{}/05a_velocity_raw.png", OUTPUT_DIR);
-                result.image().save(&path).map_err(io_err)?;
-                println!(
-                    "  Raw velocity ({:.1} deg, {}px native) -> {}",
-                    vf.elevation_degrees(),
-                    vel_native,
-                    path
-                );
-            }
+        // 5b. Storm-relative velocity (storm moving from SW at 20 m/s)
+        {
+            let srv = StormRelativeVelocity::new(240.0, 20.0)?;
+            let sr_field = srv.process(&vf)?;
+            let result = render_sweep(&sr_field, &vel_scale, &vel_native_options)?;
+            let path = format!("{}/05b_velocity_storm_relative.png", OUTPUT_DIR);
+            result.save(&path).map_err(io_err)?;
+            println!(
+                "  Storm-relative velocity (from 240 deg @ 20 m/s) -> {}",
+                path
+            );
+        }
 
-            // 5b. Storm-relative velocity (storm moving from SW at 20 m/s)
-            {
-                let srv = StormRelativeVelocity::new(240.0, 20.0).map_err(process_err)?;
-                let sr_field = srv.process(&vf).map_err(process_err)?;
-                let result = render_sweep(&sr_field, &vel_scale, &vel_native_options)?;
-                let path = format!("{}/05b_velocity_storm_relative.png", OUTPUT_DIR);
-                result.image().save(&path).map_err(io_err)?;
-                println!(
-                    "  Storm-relative velocity (from 240 deg @ 20 m/s) -> {}",
-                    path
-                );
-            }
+        // 5c. Storm-relative + smoothing pipeline
+        {
+            let pipeline = SweepPipeline::new()
+                .then(StormRelativeVelocity::new(240.0, 20.0)?)
+                .then(GaussianSmooth {
+                    sigma_azimuth: 1.5,
+                    sigma_range: 1.5,
+                });
 
-            // 5c. Storm-relative + smoothing pipeline
-            {
-                let pipeline = SweepPipeline::new()
-                    .then(StormRelativeVelocity::new(240.0, 20.0).map_err(process_err)?)
-                    .then(GaussianSmooth {
-                        sigma_azimuth: 1.5,
-                        sigma_range: 1.5,
-                    });
-
-                let processed = pipeline.execute(&vf).map_err(process_err)?;
-                let result = render_sweep(&processed, &vel_scale, &compare_options)?;
-                let path = format!("{}/05c_velocity_sr_smoothed.png", OUTPUT_DIR);
-                result.image().save(&path).map_err(io_err)?;
-                println!("  Storm-relative + gaussian smooth -> {}", path);
-            }
+            let processed = pipeline.execute(&vf)?;
+            let result = render_sweep(&processed, &vel_scale, &compare_options)?;
+            let path = format!("{}/05c_velocity_sr_smoothed.png", OUTPUT_DIR);
+            result.save(&path).map_err(io_err)?;
+            println!("  Storm-relative + gaussian smooth -> {}", path);
         }
     } else {
         println!("  No velocity data found in this volume");
@@ -475,24 +430,19 @@ fn main() -> nexrad::Result<()> {
 
         println!(
             "  Extent: ({:.2}, {:.2}) to ({:.2}, {:.2})",
-            extent.min.latitude,
-            extent.min.longitude,
-            extent.max.latitude,
-            extent.max.longitude
+            extent.min.latitude, extent.min.longitude, extent.max.latitude, extent.max.longitude
         );
 
         let cref = CompositeReflectivity;
 
         // Full-range composite at native resolution
-        let composite = cref
-            .compute(
-                &volume,
-                &ref_fields,
-                &coord_sys,
-                &extent,
-                (native_size, native_size),
-            )
-            .map_err(process_err)?;
+        let composite = cref.compute(
+            &volume,
+            &ref_fields,
+            &coord_sys,
+            &extent,
+            (native_size, native_size),
+        )?;
 
         let result = render_cartesian(
             &composite,
@@ -501,7 +451,7 @@ fn main() -> nexrad::Result<()> {
         )?;
 
         let path = format!("{}/06a_composite_reflectivity.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
 
         if let Some((min, max)) = composite.value_range() {
             println!("  Composite value range: {:.1} to {:.1} dBZ", min, max);
@@ -515,15 +465,13 @@ fn main() -> nexrad::Result<()> {
 
         // Zoomed composite (half range for more detail)
         let zoom_extent = coord_sys.sweep_extent(max_range / 2.0);
-        let composite_zoom = cref
-            .compute(
-                &volume,
-                &ref_fields,
-                &coord_sys,
-                &zoom_extent,
-                (native_size, native_size),
-            )
-            .map_err(process_err)?;
+        let composite_zoom = cref.compute(
+            &volume,
+            &ref_fields,
+            &coord_sys,
+            &zoom_extent,
+            (native_size, native_size),
+        )?;
 
         let result = render_cartesian(
             &composite_zoom,
@@ -531,8 +479,12 @@ fn main() -> nexrad::Result<()> {
             &RenderOptions::new(native_size, native_size),
         )?;
         let path = format!("{}/06b_composite_zoomed.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
-        println!("  Composite reflectivity (zoomed to {:.0} km) -> {}", max_range / 2.0, path);
+        result.save(&path).map_err(io_err)?;
+        println!(
+            "  Composite reflectivity (zoomed to {:.0} km) -> {}",
+            max_range / 2.0,
+            path
+        );
     }
 
     // ========================================================================
@@ -553,70 +505,15 @@ fn main() -> nexrad::Result<()> {
             distinct_elevations
         );
 
-        // Helper closure to build a vertical cross-section at a given azimuth
-        let build_vertical =
-            |target_azimuth: f32, max_range_km: f64, max_altitude_m: f64| -> VerticalField {
-                let vf_width = 600;
-                let vf_height = 300;
-
-                let mut vert_field = VerticalField::new(
-                    "Reflectivity RHI",
-                    "dBZ",
-                    (0.0, max_range_km),
-                    (0.0, max_altitude_m),
-                    vf_width,
-                    vf_height,
-                );
-
-                let re = 6371.0 * 4.0 / 3.0; // effective earth radius in km
-
-                for field in &ref_fields {
-                    let elevation = field.elevation_degrees();
-                    let elev_rad = (elevation as f64).to_radians();
-
-                    for col in 0..vf_width {
-                        let range_km = (col as f64 + 0.5) / vf_width as f64 * max_range_km;
-
-                        // Beam height using 4/3 earth radius model
-                        let altitude_km =
-                            range_km * elev_rad.sin() + (range_km * range_km) / (2.0 * re);
-                        let altitude_m = altitude_km * 1000.0;
-
-                        if altitude_m < 0.0 || altitude_m > max_altitude_m {
-                            continue;
-                        }
-
-                        // row 0 = top = highest altitude
-                        let row = ((max_altitude_m - altitude_m) / max_altitude_m
-                            * vf_height as f64) as usize;
-                        if row >= vf_height {
-                            continue;
-                        }
-
-                        if let Some((val, status)) =
-                            field.value_at_polar(target_azimuth, range_km)
-                        {
-                            if status == GateStatus::Valid {
-                                let (existing_val, existing_status) = vert_field.get(row, col);
-                                if existing_status != GateStatus::Valid || val > existing_val {
-                                    vert_field.set(row, col, val, GateStatus::Valid);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                vert_field
-            };
-
         let vert_options = RenderOptions::new(1200, 600);
 
         // 7a. Cross-section through the storm line (~200 deg azimuth)
         let az1 = 200.0_f32;
-        let vert1 = build_vertical(az1, 230.0, 18000.0);
+        let vcs1 = VerticalCrossSection::new(az1, 230.0, 18000.0, 600, 300)?;
+        let vert1 = vcs1.compute(&ref_fields)?;
         let result = render_vertical(&vert1, &ref_scale, &vert_options)?;
         let path = format!("{}/07a_vertical_az{:.0}.png", OUTPUT_DIR, az1);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!(
             "  Vertical cross-section at {:.0} deg, 0-230 km, 0-18 km altitude -> {}",
             az1, path
@@ -624,21 +521,20 @@ fn main() -> nexrad::Result<()> {
 
         // 7b. Another azimuth for comparison
         let az2 = 315.0_f32;
-        let vert2 = build_vertical(az2, 230.0, 18000.0);
+        let vcs2 = VerticalCrossSection::new(az2, 230.0, 18000.0, 600, 300)?;
+        let vert2 = vcs2.compute(&ref_fields)?;
         let result = render_vertical(&vert2, &ref_scale, &vert_options)?;
         let path = format!("{}/07b_vertical_az{:.0}.png", OUTPUT_DIR, az2);
-        result.image().save(&path).map_err(io_err)?;
-        println!(
-            "  Vertical cross-section at {:.0} deg -> {}",
-            az2, path
-        );
+        result.save(&path).map_err(io_err)?;
+        println!("  Vertical cross-section at {:.0} deg -> {}", az2, path);
 
         // 7c. Zoomed vertical (close-range, lower altitude for detail)
         let az3 = 200.0_f32;
-        let vert3 = build_vertical(az3, 100.0, 12000.0);
+        let vcs3 = VerticalCrossSection::new(az3, 100.0, 12000.0, 600, 300)?;
+        let vert3 = vcs3.compute(&ref_fields)?;
         let result = render_vertical(&vert3, &ref_scale, &vert_options)?;
         let path = format!("{}/07c_vertical_az{:.0}_zoomed.png", OUTPUT_DIR, az3);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!(
             "  Vertical zoomed at {:.0} deg, 0-100 km, 0-12 km altitude -> {}",
             az3, path
@@ -666,10 +562,7 @@ fn main() -> nexrad::Result<()> {
     if let Some(extent) = &meta.geo_extent {
         println!(
             "  Geo extent: ({:.4}, {:.4}) to ({:.4}, {:.4})",
-            extent.min.latitude,
-            extent.min.longitude,
-            extent.max.latitude,
-            extent.max.longitude
+            extent.min.latitude, extent.min.longitude, extent.max.latitude, extent.max.longitude
         );
     }
 
@@ -710,7 +603,7 @@ fn main() -> nexrad::Result<()> {
     }
 
     let path = format!("{}/08_with_geo_metadata.png", OUTPUT_DIR);
-    result.image().save(&path).map_err(io_err)?;
+    result.save(&path).map_err(io_err)?;
     println!("  Rendered with geo metadata -> {}", path);
 
     // ========================================================================
@@ -719,10 +612,10 @@ fn main() -> nexrad::Result<()> {
     println!("\n=== Section 9: Transparent Background ===");
 
     {
-        let transparent_options = RenderOptions::new(native_size, native_size).transparent();
+        let transparent_options = RenderOptions::native_for(&ref_field).transparent();
         let result = render_sweep(&ref_field, &ref_scale, &transparent_options)?;
         let path = format!("{}/09_transparent_bg.png", OUTPUT_DIR);
-        result.image().save(&path).map_err(io_err)?;
+        result.save(&path).map_err(io_err)?;
         println!(
             "  Transparent background ({}px, for map overlay) -> {}",
             native_size, path
@@ -734,8 +627,7 @@ fn main() -> nexrad::Result<()> {
     // ========================================================================
     println!("\n=== Done! ===");
 
-    let count = std::fs::read_dir(OUTPUT_DIR)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?
+    let count = std::fs::read_dir(OUTPUT_DIR)?
         .filter_map(|e| e.ok())
         .filter(|e| e.path().extension().map_or(false, |ext| ext == "png"))
         .count();
@@ -745,15 +637,14 @@ fn main() -> nexrad::Result<()> {
     println!(
         "  - 01_* : All 7 radar products at native resolution ({}px for REF, {}px for dual-pol)",
         native_size,
-        volume
-            .sweeps()
-            .iter()
-            .find_map(|s| nexrad::extract_field(s, Product::Velocity))
-            .map(|f| f.gate_count() * 2)
+        nexrad::extract_first_field(&volume, Product::Velocity)
+            .map(|(_, f)| f.gate_count() * 2)
             .unwrap_or(0)
     );
     println!("  - 02_* : Reflectivity at every distinct elevation angle in the volume");
-    println!("  - 03_* : Individual processing effects (threshold, smooth, filter, CC noise removal)");
+    println!(
+        "  - 03_* : Individual processing effects (threshold, smooth, filter, CC noise removal)"
+    );
     println!("  - 04_* : Combined processing pipelines");
     println!("  - 05_* : Storm-relative velocity at native resolution");
     println!("  - 06_* : Composite reflectivity (cartesian projection, full + zoomed)");
@@ -769,9 +660,5 @@ fn slug(s: &str) -> String {
 }
 
 fn io_err(e: impl std::fmt::Display) -> std::io::Error {
-    std::io::Error::new(std::io::ErrorKind::Other, e.to_string())
-}
-
-fn process_err(e: nexrad::process::Error) -> std::io::Error {
     std::io::Error::new(std::io::ErrorKind::Other, e.to_string())
 }

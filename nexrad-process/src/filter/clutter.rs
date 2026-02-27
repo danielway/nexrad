@@ -54,18 +54,22 @@ impl SweepProcessor for CorrelationCoefficientFilter {
     }
 
     fn process(&self, input: &SweepField) -> Result<SweepField> {
-        if input.azimuth_count() != self.cc_field.azimuth_count()
-            || input.gate_count() != self.cc_field.gate_count()
-        {
-            return Err(Error::InvalidGeometry(
-                "CC field geometry does not match input field".to_string(),
-            ));
+        if input.azimuth_count() != self.cc_field.azimuth_count() {
+            return Err(Error::InvalidGeometry(format!(
+                "CC field azimuth count ({}) does not match input field ({})",
+                self.cc_field.azimuth_count(),
+                input.azimuth_count(),
+            )));
         }
+
+        // When gate counts differ (e.g., REF at 460 km vs CC at 300 km), apply
+        // the filter over the shared range and leave remaining gates unchanged.
+        let shared_gates = input.gate_count().min(self.cc_field.gate_count());
 
         let mut output = input.clone();
 
         for az_idx in 0..input.azimuth_count() {
-            for gate_idx in 0..input.gate_count() {
+            for gate_idx in 0..shared_gates {
                 let (_, input_status) = input.get(az_idx, gate_idx);
                 if input_status != GateStatus::Valid {
                     continue;
@@ -175,11 +179,47 @@ mod tests {
     }
 
     #[test]
-    fn test_cc_filter_geometry_mismatch() {
-        let (target, _) = make_fields(5);
-        let (_, cc_different) = make_fields(10);
+    fn test_cc_filter_different_gate_counts_ok() {
+        // REF with more gates than CC (common: REF 460 km vs CC 300 km)
+        let (target, _) = make_fields(10);
+        let (_, cc_shorter) = make_fields(5);
 
-        let filter = CorrelationCoefficientFilter::new(0.90, cc_different).unwrap();
+        let filter = CorrelationCoefficientFilter::new(0.90, cc_shorter).unwrap();
+        let result = filter.process(&target).unwrap();
+
+        // Gates in the shared range should be preserved (high CC)
+        let (val, status) = result.get(0, 2);
+        assert_eq!(val, 30.0);
+        assert_eq!(status, GateStatus::Valid);
+
+        // Gates beyond CC range should be left unchanged
+        let (val, status) = result.get(0, 7);
+        assert_eq!(val, 30.0);
+        assert_eq!(status, GateStatus::Valid);
+    }
+
+    #[test]
+    fn test_cc_filter_azimuth_mismatch_error() {
+        // Different azimuth counts should still error
+        let azimuths_3 = vec![0.0, 1.0, 2.0];
+        let azimuths_4 = vec![0.0, 1.0, 2.0, 3.0];
+
+        let mut target =
+            SweepField::new_empty("Reflectivity", "dBZ", 0.5, azimuths_3, 1.0, 2.0, 0.25, 5);
+        let mut cc = SweepField::new_empty("CC", "", 0.5, azimuths_4, 1.0, 2.0, 0.25, 5);
+
+        for az in 0..3 {
+            for gate in 0..5 {
+                target.set(az, gate, 30.0, GateStatus::Valid);
+            }
+        }
+        for az in 0..4 {
+            for gate in 0..5 {
+                cc.set(az, gate, 0.98, GateStatus::Valid);
+            }
+        }
+
+        let filter = CorrelationCoefficientFilter::new(0.90, cc).unwrap();
         assert!(filter.process(&target).is_err());
     }
 }

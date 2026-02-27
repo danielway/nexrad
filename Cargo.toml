@@ -5,6 +5,7 @@ members = [
     "nexrad-model",
     "nexrad-decode",
     "nexrad-data",
+    "nexrad-process",
     "nexrad-render",
     "nexrad-inspector",
 ]

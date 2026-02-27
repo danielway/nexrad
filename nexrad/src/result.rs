@@ -122,6 +122,16 @@ pub enum Error {
     #[error("render error: {0}")]
     Render(#[from] nexrad_render::result::Error),
 
+    /// Error from radar data processing algorithms (nexrad-process).
+    ///
+    /// This variant is available when the `process` feature is enabled (default).
+    ///
+    /// Process errors indicate issues with processing algorithms, such as invalid
+    /// field geometry, missing required data, or invalid parameter values.
+    #[cfg(feature = "process")]
+    #[error("process error: {0}")]
+    Process(#[from] nexrad_process::result::Error),
+
     /// I/O error from file operations.
     ///
     /// This variant wraps standard library I/O errors that occur when reading

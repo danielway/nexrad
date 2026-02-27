@@ -83,5 +83,6 @@ mod binary_data;
 pub use binary_data::BinaryData;
 
 pub mod data;
+pub mod geo;
 pub mod meta;
 pub mod result;

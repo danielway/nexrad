@@ -18,6 +18,7 @@ model = ["dep:nexrad-model"]
 decode = ["dep:nexrad-decode"]
 data = ["dep:nexrad-data"]
 render = ["dep:nexrad-render", "model"]
+process = ["dep:nexrad-process", "model"]
 
 # Pass-through features from sub-crates
 serde = ["nexrad-model?/serde"]
@@ -30,7 +31,7 @@ aws = ["data", "chrono", "nexrad-data?/aws"]
 aws-polling = ["aws", "nexrad-data?/aws-polling", "tokio", "dep:futures"]
 
 # All WASM-compatible features
-wasm = ["model", "decode", "data", "render", "aws", "serde", "uom", "chrono"]
+wasm = ["model", "decode", "data", "render", "process", "aws", "serde", "uom", "chrono"]
 # Convenience feature for everything (includes native-only features, not WASM-compatible)
 full = ["wasm", "aws-polling", "parallel"]
 
@@ -41,6 +42,7 @@ nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model", optional = tr
 nexrad-decode = { version = "1.0.0-rc.2", path = "../nexrad-decode", optional = true }
 nexrad-data = { version = "1.0.0-rc.4", path = "../nexrad-data", optional = true }
 nexrad-render = { version = "1.0.0-rc.3", path = "../nexrad-render", optional = true }
+nexrad-process = { version = "1.0.0-rc.1", path = "../nexrad-process", optional = true }
 futures = { workspace = true, optional = true }
 
 # tokio is only available on non-WASM targets
@@ -61,4 +63,8 @@ required-features = ["aws", "model"]
 [[example]]
 name = "render_reflectivity"
 required-features = ["render", "data"]
+
+[[example]]
+name = "showcase"
+required-features = ["render", "data", "process", "chrono"]
 

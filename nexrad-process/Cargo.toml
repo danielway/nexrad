@@ -1,0 +1,19 @@
+[package]
+name = "nexrad-process"
+version = "1.0.0-rc.1"
+description = "Processing algorithms for NEXRAD weather radar data."
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories = ["science", "algorithms"]
+
+[dependencies]
+thiserror = { workspace = true }
+nexrad-model = { version = "1.0.0-rc.1", path = "../nexrad-model" }
+
+[dev-dependencies]
+nexrad-data = { version = "1.0.0-rc.4", path = "../nexrad-data" }
+nexrad-decode = { version = "1.0.0-rc.2", path = "../nexrad-decode" }

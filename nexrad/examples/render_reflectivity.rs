@@ -9,7 +9,8 @@
 //!     tests/fixtures/convective/KDMX20220305_232324.bin output.png
 //! ```
 
-use nexrad::render::{get_nws_reflectivity_scale, render_radials, Product, RenderOptions};
+use nexrad::model::data::Product;
+use nexrad::render::{get_nws_reflectivity_scale, render_radials, RenderOptions};
 use std::env;
 
 fn main() -> nexrad::Result<()> {

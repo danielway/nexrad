@@ -52,6 +52,7 @@
 //! | `decode` | Protocol decoding (default) | chrono, zerocopy | Yes |
 //! | `data` | Data access (default) | bzip2 | Yes |
 //! | `render` | Visualization and rendering (default) | image | Yes |
+//! | `process` | Radar data processing algorithms (default) | nexrad-model | Yes |
 //! | `aws` | Enable AWS S3 downloads (`download_latest`, `download_at`, `list_volumes`) | reqwest | Yes |
 //! | `aws-polling` | Real-time polling (`poll_chunks`) | reqwest, tokio | No |
 //! | `serde` | Serialization support for model types | serde | Yes |
@@ -99,6 +100,7 @@
 //! | `nexrad-model` | Domain types with optional serde/chrono/uom support |
 //! | `nexrad-decode` | Low-level binary parsing per NOAA ICD 2620002AA |
 //! | `nexrad-data` | Archive II file handling and AWS S3 access |
+//! | `nexrad-process` | Radar data processing and derived products |
 //! | `nexrad-render` | Visualization and image rendering |
 //!
 //! ## Crate Responsibility Boundaries
@@ -191,7 +193,8 @@
 //! Create visualizations from radar data:
 //!
 //! ```ignore
-//! use nexrad::render::{render_radials, get_nws_reflectivity_scale, Product, RenderOptions};
+//! use nexrad::model::data::Product;
+//! use nexrad::render::{render_radials, get_nws_reflectivity_scale, RenderOptions};
 //!
 //! let volume = nexrad::load_file("volume.ar2v")?;
 //! let sweep = volume.sweeps().first().unwrap();
@@ -423,7 +426,7 @@ pub async fn list_volumes(
 /// # Example
 ///
 /// ```ignore
-/// use nexrad::render::Product;
+/// use nexrad::model::data::Product;
 ///
 /// let volume = nexrad::load_file("volume.ar2v")?;
 /// let sweep = volume.sweeps().first().unwrap();
@@ -438,7 +441,7 @@ pub async fn list_volumes(
 #[cfg(all(feature = "render", feature = "model"))]
 pub fn render_sweep(
     sweep: &model::data::Sweep,
-    product: render::Product,
+    product: model::data::Product,
 ) -> Result<render::RgbaImage> {
     let options = render::RenderOptions::new(1024, 1024).transparent();
     Ok(render::render_radials_default(
@@ -457,7 +460,8 @@ pub fn render_sweep(
 /// # Example
 ///
 /// ```ignore
-/// use nexrad::render::{Product, RenderOptions};
+/// use nexrad::model::data::Product;
+/// use nexrad::render::RenderOptions;
 ///
 /// let volume = nexrad::load_file("volume.ar2v")?;
 /// let sweep = volume.sweeps().first().unwrap();
@@ -473,7 +477,7 @@ pub fn render_sweep(
 #[cfg(all(feature = "render", feature = "model"))]
 pub fn render_sweep_with_options(
     sweep: &model::data::Sweep,
-    product: render::Product,
+    product: model::data::Product,
     options: &render::RenderOptions,
 ) -> Result<render::RgbaImage> {
     Ok(render::render_radials_default(
@@ -481,6 +485,133 @@ pub fn render_sweep_with_options(
         product,
         options,
     )?)
+}
+
+// ============================================================================
+// Field extraction convenience functions
+// ============================================================================
+
+/// Extract a [`SweepField`](model::data::SweepField) from a sweep for a specific product.
+///
+/// This is a convenience wrapper around [`SweepField::from_radials`](model::data::SweepField::from_radials).
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::model::data::Product;
+///
+/// let volume = nexrad::load_file("volume.ar2v")?;
+/// let sweep = volume.sweeps().first().unwrap();
+/// let field = nexrad::extract_field(sweep, Product::Reflectivity)
+///     .expect("reflectivity data present");
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "model")]
+pub fn extract_field(
+    sweep: &model::data::Sweep,
+    product: model::data::Product,
+) -> Option<model::data::SweepField> {
+    model::data::SweepField::from_radials(sweep.radials(), product)
+}
+
+/// Extract [`SweepField`](model::data::SweepField)s from all sweeps in a scan for a specific product.
+///
+/// Returns one field per sweep that contains data for the requested product.
+/// Fields are in the same order as the scan's sweeps.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::model::data::Product;
+///
+/// let volume = nexrad::load_file("volume.ar2v")?;
+/// let fields = nexrad::extract_fields(&volume, Product::Reflectivity);
+/// println!("{} sweeps with reflectivity data", fields.len());
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "model")]
+pub fn extract_fields(
+    scan: &model::data::Scan,
+    product: model::data::Product,
+) -> Vec<model::data::SweepField> {
+    scan.sweeps()
+        .iter()
+        .filter_map(|sweep| model::data::SweepField::from_radials(sweep.radials(), product))
+        .collect()
+}
+
+/// Extract the first [`SweepField`](model::data::SweepField) in a scan that contains
+/// data for a specific product, along with its sweep index.
+///
+/// This is useful when you need to find a representative field for a product
+/// without iterating through all sweeps manually.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::model::data::Product;
+///
+/// let volume = nexrad::load_file("volume.ar2v")?;
+/// if let Some((sweep_idx, field)) = nexrad::extract_first_field(&volume, Product::Velocity) {
+///     println!("Velocity data found in sweep {}", sweep_idx);
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "model")]
+pub fn extract_first_field(
+    scan: &model::data::Scan,
+    product: model::data::Product,
+) -> Option<(usize, model::data::SweepField)> {
+    scan.sweeps().iter().enumerate().find_map(|(i, sweep)| {
+        model::data::SweepField::from_radials(sweep.radials(), product).map(|f| (i, f))
+    })
+}
+
+/// Create a [`RadarCoordinateSystem`](model::geo::RadarCoordinateSystem) from a scan's site metadata.
+///
+/// Returns `None` if the scan does not have site metadata.
+///
+/// # Example
+///
+/// ```ignore
+/// let volume = nexrad::load_file("volume.ar2v")?;
+/// let coord_sys = nexrad::coordinate_system(&volume)
+///     .expect("site metadata available");
+/// let extent = coord_sys.sweep_extent(230.0);
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "model")]
+pub fn coordinate_system(scan: &model::data::Scan) -> Option<model::geo::RadarCoordinateSystem> {
+    scan.site().map(model::geo::RadarCoordinateSystem::new)
+}
+
+/// Create a [`RadarCoordinateSystem`](model::geo::RadarCoordinateSystem) from a scan's site metadata,
+/// returning an error if the scan does not contain site information.
+///
+/// This is a convenience wrapper around [`coordinate_system`] for use in contexts
+/// where a coordinate system is required and its absence is an error.
+///
+/// # Example
+///
+/// ```ignore
+/// let volume = nexrad::load_file("volume.ar2v")?;
+/// let coord_sys = nexrad::coordinate_system_required(&volume)?;
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns an I/O error with [`std::io::ErrorKind::NotFound`] if the scan has no site metadata.
+#[cfg(feature = "model")]
+pub fn coordinate_system_required(
+    scan: &model::data::Scan,
+) -> Result<model::geo::RadarCoordinateSystem> {
+    coordinate_system(scan).ok_or_else(|| {
+        Error::Io(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "no site metadata in volume",
+        ))
+    })
 }
 
 // ============================================================================
@@ -582,3 +713,7 @@ pub use nexrad_data as data;
 /// Re-export of `nexrad-render` for visualization and rendering.
 #[cfg(feature = "render")]
 pub use nexrad_render as render;
+
+/// Re-export of `nexrad-process` for radar data processing algorithms.
+#[cfg(feature = "process")]
+pub use nexrad_process as process;

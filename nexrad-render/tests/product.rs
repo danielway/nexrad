@@ -1,6 +1,6 @@
 //! Tests for Product enum.
 
-use nexrad_render::Product;
+use nexrad_model::data::Product;
 
 #[test]
 fn test_product_equality() {

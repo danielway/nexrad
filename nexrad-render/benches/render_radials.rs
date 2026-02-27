@@ -2,8 +2,9 @@ use std::{hint::black_box, time::Duration};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use nexrad_decode::messages::MessageContents;
+use nexrad_model::data::Product;
 use nexrad_model::data::Radial;
-use nexrad_render::{get_nws_reflectivity_scale, render_radials, Product, RenderOptions};
+use nexrad_render::{get_nws_reflectivity_scale, render_radials, RenderOptions};
 
 const VOLUME_FILE: &[u8] =
     include_bytes!("../../tests/fixtures/convective/KDMX20220305_232324.bin");

@@ -293,6 +293,34 @@ pub enum MomentValue {
     RangeFolded,
 }
 
+/// The validity status of a gate value in a field.
+///
+/// Used alongside `f32` values in field types ([`SweepField`](crate::data::SweepField),
+/// [`CartesianField`](crate::data::CartesianField), [`VerticalField`](crate::data::VerticalField))
+/// to indicate whether each gate contains a valid measurement or a special condition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum GateStatus {
+    /// The gate contains a valid floating-point value.
+    Valid,
+    /// The signal was below the detection threshold.
+    BelowThreshold,
+    /// The velocity was range-folded (aliased).
+    RangeFolded,
+    /// No data is available for this gate.
+    NoData,
+}
+
+impl From<&MomentValue> for GateStatus {
+    fn from(value: &MomentValue) -> Self {
+        match value {
+            MomentValue::Value(_) => GateStatus::Valid,
+            MomentValue::BelowThreshold => GateStatus::BelowThreshold,
+            MomentValue::RangeFolded => GateStatus::RangeFolded,
+        }
+    }
+}
+
 /// A decoded CFP gate value. Raw values 0–7 are status codes; values 8+ are numeric.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

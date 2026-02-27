@@ -36,3 +36,9 @@ pub use vcp_number::*;
 
 mod volume_coverage_pattern;
 pub use volume_coverage_pattern::*;
+
+mod product;
+pub use product::*;
+
+mod field;
+pub use field::*;

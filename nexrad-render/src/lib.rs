@@ -8,13 +8,13 @@
 //!
 //! ```ignore
 //! use nexrad_model::data::Product;
-//! use nexrad_render::{render_radials, RenderOptions, get_nws_reflectivity_scale};
+//! use nexrad_render::{render_radials, RenderOptions, nws_reflectivity_scale};
 //!
 //! let options = RenderOptions::new(800, 800);
 //! let image = render_radials(
 //!     sweep.radials(),
 //!     Product::Reflectivity,
-//!     &get_nws_reflectivity_scale(),
+//!     &nws_reflectivity_scale(),
 //!     &options,
 //! ).unwrap();
 //!
@@ -178,9 +178,9 @@ impl RenderOptions {
 /// # Example
 ///
 /// ```ignore
-/// use nexrad_render::{render_radials, Product, RenderOptions, get_nws_reflectivity_scale};
+/// use nexrad_render::{render_radials, Product, RenderOptions, nws_reflectivity_scale};
 ///
-/// let scale = get_nws_reflectivity_scale();
+/// let scale = nws_reflectivity_scale();
 /// let options = RenderOptions::new(800, 800);
 ///
 /// let image = render_radials(
@@ -286,7 +286,7 @@ pub fn render_radials(
             // Look up the value and apply color
             let (_, ref values) = radial_data[radial_idx];
             if let Some(Some(value)) = values.get(gate_index) {
-                let color = lut.get_color(*value);
+                let color = lut.color(*value);
                 let pixel_index = (y * width + x) * 4;
                 buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
             }
@@ -333,7 +333,7 @@ pub fn render_radials_default(
     product: Product,
     options: &RenderOptions,
 ) -> Result<RgbaImage> {
-    let scale = get_default_scale(product);
+    let scale = default_scale(product);
     render_radials(radials, product, &scale, options)
 }
 
@@ -357,7 +357,7 @@ pub fn render_radials_default(
 /// use nexrad_model::data::{SweepField, Product};
 ///
 /// let field = SweepField::from_radials(sweep.radials(), Product::Reflectivity).unwrap();
-/// let scale = ColorScale::from(nexrad_render::get_nws_reflectivity_scale());
+/// let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
 /// let result = render_sweep(&field, &scale, &RenderOptions::new(800, 800))?;
 ///
 /// result.image().save("radar.png").unwrap();
@@ -430,7 +430,7 @@ pub fn render_sweep(
 
             let (val, status) = field.get(radial_idx, gate_index);
             if status == GateStatus::Valid {
-                let color = lut.get_color(val);
+                let color = lut.color(val);
                 let pixel_index = (y * width + x) * 4;
                 buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
             }
@@ -507,7 +507,7 @@ pub fn render_cartesian(
 
             let (val, status) = field.get(field_row, field_col);
             if status == GateStatus::Valid {
-                let color = lut.get_color(val);
+                let color = lut.color(val);
                 let pixel_index = (y * width + x) * 4;
                 buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
             }
@@ -577,7 +577,7 @@ pub fn render_vertical(
 
             let (val, status) = field.get(field_row, field_col);
             if status == GateStatus::Valid {
-                let color = lut.get_color(val);
+                let color = lut.color(val);
                 let pixel_index = (y * width + x) * 4;
                 buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
             }
@@ -618,24 +618,24 @@ pub fn render_vertical(
 /// | DifferentialPhase | Sequential (0 to 360 deg) |
 /// | CorrelationCoefficient | Sequential (0 to 1) |
 /// | ClutterFilterPower | Divergent (-20 to +20 dB) |
-pub fn get_default_scale(product: Product) -> DiscreteColorScale {
+pub fn default_scale(product: Product) -> DiscreteColorScale {
     match product {
-        Product::Reflectivity => get_nws_reflectivity_scale(),
-        Product::Velocity => get_velocity_scale(),
-        Product::SpectrumWidth => get_spectrum_width_scale(),
-        Product::DifferentialReflectivity => get_differential_reflectivity_scale(),
-        Product::DifferentialPhase => get_differential_phase_scale(),
-        Product::CorrelationCoefficient => get_correlation_coefficient_scale(),
-        Product::ClutterFilterPower => get_clutter_filter_power_scale(),
+        Product::Reflectivity => nws_reflectivity_scale(),
+        Product::Velocity => velocity_scale(),
+        Product::SpectrumWidth => spectrum_width_scale(),
+        Product::DifferentialReflectivity => differential_reflectivity_scale(),
+        Product::DifferentialPhase => differential_phase_scale(),
+        Product::CorrelationCoefficient => correlation_coefficient_scale(),
+        Product::ClutterFilterPower => clutter_filter_power_scale(),
     }
 }
 
 /// Returns the default color scale for a product, wrapped in a [`ColorScale`] enum.
 ///
-/// This is a convenience wrapper around [`get_default_scale`] that returns the
+/// This is a convenience wrapper around [`default_scale`] that returns the
 /// [`ColorScale`] enum directly, avoiding the need to call `.into()` at each call site.
-pub fn get_default_color_scale(product: Product) -> ColorScale {
-    get_default_scale(product).into()
+pub fn default_color_scale(product: Product) -> ColorScale {
+    default_scale(product).into()
 }
 
 /// Find the index in sorted_azimuths closest to the given azimuth and return

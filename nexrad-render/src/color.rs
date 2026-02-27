@@ -116,7 +116,7 @@ impl DiscreteColorScale {
     ///
     /// Finds the highest threshold that the value exceeds and returns its color.
     /// If the value is below all thresholds, returns the color of the lowest threshold.
-    pub fn get_color(&self, value: f32) -> Color {
+    pub fn color(&self, value: f32) -> Color {
         let mut color = Color::BLACK;
 
         for level in &self.levels {
@@ -173,7 +173,7 @@ impl ColorStop {
 /// ]);
 ///
 /// // Value 25 produces a blue-green blend
-/// let color = scale.get_color(25.0);
+/// let color = scale.color(25.0);
 /// ```
 #[derive(Debug, Clone)]
 pub struct ContinuousColorScale {
@@ -193,7 +193,7 @@ impl ContinuousColorScale {
     ///
     /// Values below the lowest stop get the lowest stop's color.
     /// Values above the highest stop get the highest stop's color.
-    pub fn get_color(&self, value: f32) -> Color {
+    pub fn color(&self, value: f32) -> Color {
         if self.stops.is_empty() {
             return Color::BLACK;
         }
@@ -249,10 +249,10 @@ pub enum ColorScale {
 
 impl ColorScale {
     /// Returns the color for the given value.
-    pub fn get_color(&self, value: f32) -> Color {
+    pub fn color(&self, value: f32) -> Color {
         match self {
-            ColorScale::Discrete(scale) => scale.get_color(value),
-            ColorScale::Continuous(scale) => scale.get_color(value),
+            ColorScale::Discrete(scale) => scale.color(value),
+            ColorScale::Continuous(scale) => scale.color(value),
         }
     }
 }
@@ -278,13 +278,13 @@ impl From<ContinuousColorScale> for ColorScale {
 /// # Example
 ///
 /// ```
-/// use nexrad_render::{ColorLookupTable, get_nws_reflectivity_scale};
+/// use nexrad_render::{ColorLookupTable, nws_reflectivity_scale};
 ///
-/// let scale = get_nws_reflectivity_scale();
+/// let scale = nws_reflectivity_scale();
 /// let lut = ColorLookupTable::from_scale(&scale, -32.0, 95.0, 256);
 ///
 /// // O(1) lookup returning [R, G, B, A] bytes
-/// let color = lut.get_color(45.0);
+/// let color = lut.color(45.0);
 /// ```
 #[derive(Debug, Clone)]
 pub struct ColorLookupTable {
@@ -318,7 +318,7 @@ impl ColorLookupTable {
 
         for i in 0..size {
             let value = min_value + (i as f32 / (size - 1) as f32) * range;
-            let color = scale.get_color(value);
+            let color = scale.color(value);
             table.push(color.to_rgba8());
         }
 
@@ -343,7 +343,7 @@ impl ColorLookupTable {
 
         for i in 0..size {
             let value = min_value + (i as f32 / (size - 1) as f32) * range;
-            let color = scale.get_color(value);
+            let color = scale.color(value);
             table.push(color.to_rgba8());
         }
 
@@ -358,7 +358,7 @@ impl ColorLookupTable {
     ///
     /// This is an O(1) operation using direct array indexing.
     #[inline]
-    pub fn get_color(&self, value: f32) -> [u8; 4] {
+    pub fn color(&self, value: f32) -> [u8; 4] {
         let normalized = (value - self.min_value) / self.range;
         let index = (normalized * (self.table.len() - 1) as f32) as usize;
         let index = index.min(self.table.len() - 1);
@@ -379,7 +379,7 @@ impl ColorLookupTable {
 /// | 35-50 | Yellow/Orange | Moderate to heavy precipitation |
 /// | 50-65 | Red/Magenta | Heavy precipitation, possible hail |
 /// | 65+ | Purple/White | Extreme precipitation, likely hail |
-pub fn get_nws_reflectivity_scale() -> DiscreteColorScale {
+pub fn nws_reflectivity_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         ColorScaleLevel::new(0.0, Color::rgb(0.0000, 0.0000, 0.0000)),
         ColorScaleLevel::new(5.0, Color::rgb(0.0000, 1.0000, 1.0000)),
@@ -417,7 +417,7 @@ pub fn get_nws_reflectivity_scale() -> DiscreteColorScale {
 /// | +16 to +32 | Light Red/Pink | Light outbound |
 /// | +32 to +48 | Red | Moderate outbound |
 /// | +48 to +64 | Dark Red | Strong outbound |
-pub fn get_velocity_scale() -> DiscreteColorScale {
+pub fn velocity_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         // Strong inbound (toward radar) - dark green
         ColorScaleLevel::new(-64.0, Color::rgb(0.0000, 0.3922, 0.0000)),
@@ -449,7 +449,7 @@ pub fn get_velocity_scale() -> DiscreteColorScale {
 /// | 16-20 | Yellow | Moderate-high turbulence |
 /// | 20-25 | Orange | High turbulence |
 /// | 25-30 | Red | Very high turbulence |
-pub fn get_spectrum_width_scale() -> DiscreteColorScale {
+pub fn spectrum_width_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         ColorScaleLevel::new(0.0, Color::rgb(0.5020, 0.5020, 0.5020)),
         ColorScaleLevel::new(4.0, Color::rgb(0.0000, 0.0000, 0.8039)),
@@ -477,7 +477,7 @@ pub fn get_spectrum_width_scale() -> DiscreteColorScale {
 /// | 1.5 to 2.5 | Yellow | Oblate drops |
 /// | 2.5 to 4 | Orange | Large oblate drops |
 /// | 4 to 6 | Red | Very large drops/hail |
-pub fn get_differential_reflectivity_scale() -> DiscreteColorScale {
+pub fn differential_reflectivity_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         // Negative (vertically oriented)
         ColorScaleLevel::new(-2.0, Color::rgb(0.5020, 0.0000, 0.5020)),
@@ -507,7 +507,7 @@ pub fn get_differential_reflectivity_scale() -> DiscreteColorScale {
 /// | 0.92-0.96 | Green | Rain/snow mix |
 /// | 0.96-0.98 | Yellow | Pure rain or snow |
 /// | 0.98-1.0 | White/Light Gray | Uniform precipitation |
-pub fn get_correlation_coefficient_scale() -> DiscreteColorScale {
+pub fn correlation_coefficient_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         // Low CC - non-meteorological or debris
         ColorScaleLevel::new(0.0, Color::rgb(0.0000, 0.0000, 0.0000)),
@@ -539,7 +539,7 @@ pub fn get_correlation_coefficient_scale() -> DiscreteColorScale {
 /// | 225-270 | Orange |
 /// | 270-315 | Red |
 /// | 315-360 | Magenta |
-pub fn get_differential_phase_scale() -> DiscreteColorScale {
+pub fn differential_phase_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         ColorScaleLevel::new(0.0, Color::rgb(0.5020, 0.0000, 0.5020)),
         ColorScaleLevel::new(45.0, Color::rgb(0.0000, 0.0000, 0.8039)),
@@ -568,7 +568,7 @@ pub fn get_differential_phase_scale() -> DiscreteColorScale {
 /// | +1 to +5 | Light Red | Slight increase |
 /// | +5 to +10 | Red | Moderate increase |
 /// | +10 to +20 | Dark Red | Strong increase |
-pub fn get_clutter_filter_power_scale() -> DiscreteColorScale {
+pub fn clutter_filter_power_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         ColorScaleLevel::new(-20.0, Color::rgb(0.0000, 0.0000, 0.5451)),
         ColorScaleLevel::new(-10.0, Color::rgb(0.0000, 0.0000, 0.8039)),

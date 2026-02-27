@@ -17,4 +17,7 @@ pub enum Error {
     /// The image dimensions were invalid for creating an image buffer.
     #[error("invalid image dimensions")]
     InvalidDimensions,
+    /// An error occurred while saving an image to disk.
+    #[error("image save error: {0}")]
+    ImageSave(String),
 }

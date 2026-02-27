@@ -8,10 +8,9 @@ use chrono::{DateTime, Utc};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// A single radar scan composed of a series of sweeps. This represents a single volume scan which
-/// is composed of multiple sweeps at different elevations. The pattern of sweeps, including
-/// elevations and resolution, is determined by the scanning strategy of the radar. This is
-/// referred to as the Volume Coverage Pattern.
+/// A single radar scan composed of a series of sweeps at different elevations. The pattern of
+/// sweeps, including elevations and resolution, is determined by the scanning strategy of the
+/// radar. This is referred to as the Volume Coverage Pattern (VCP).
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Scan {
@@ -21,7 +20,7 @@ pub struct Scan {
 }
 
 impl Scan {
-    /// Create a new radar scan with the given volume coverage pattern and sweeps.
+    /// Create a new radar scan with the given coverage pattern and sweeps.
     pub fn new(coverage_pattern: VolumeCoveragePattern, sweeps: Vec<Sweep>) -> Self {
         Self {
             site: None,
@@ -30,7 +29,7 @@ impl Scan {
         }
     }
 
-    /// Create a new radar scan with site metadata, volume coverage pattern, and sweeps.
+    /// Create a new radar scan with site metadata, coverage pattern, and sweeps.
     pub fn with_site(
         site: Site,
         coverage_pattern: VolumeCoveragePattern,
@@ -48,14 +47,14 @@ impl Scan {
         self.site.as_ref()
     }
 
-    /// This scan's volume coverage pattern number.
+    /// This scan's coverage pattern number.
     pub fn coverage_pattern_number(&self) -> VCPNumber {
         self.coverage_pattern.pattern_number()
     }
 
-    /// The volume coverage pattern configuration for this scan.
+    /// The coverage pattern configuration for this scan.
     ///
-    /// This contains detailed configuration about how the radar scans the volume, including
+    /// This contains detailed configuration about how the radar performs the scan, including
     /// per-elevation settings, SAILS/MRLE/MPDA capabilities, and various thresholds.
     pub fn coverage_pattern(&self) -> &VolumeCoveragePattern {
         &self.coverage_pattern
@@ -66,11 +65,11 @@ impl Scan {
         &self.sweeps
     }
 
-    /// All sweeps at the given elevation angle in degrees, in volume order.
+    /// All sweeps at the given elevation angle in degrees, in scan order.
     ///
     /// Uses a 0.05-degree tolerance for matching. SAILS and MRLE VCPs repeat certain
-    /// elevation angles at multiple points during a volume scan, so this may yield
-    /// more than one sweep.
+    /// elevation angles at multiple points during a scan, so this may yield more than
+    /// one sweep.
     pub fn sweeps_at_elevation(&self, elevation_degrees: f32) -> impl Iterator<Item = &Sweep> {
         self.sweeps.iter().filter(move |s| {
             s.elevation_angle_degrees()

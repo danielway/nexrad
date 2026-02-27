@@ -7,7 +7,7 @@
 //!
 //! The data model consists of:
 //!
-//! - [`data::Scan`] - A complete volume scan containing multiple sweeps
+//! - [`data::Scan`] - A complete radar scan containing multiple sweeps
 //! - [`data::Sweep`] - A single rotation at one elevation angle
 //! - [`data::Radial`] - A single beam direction with moment data
 //! - [`data::MomentData`] - Gate-by-gate measurements for a product

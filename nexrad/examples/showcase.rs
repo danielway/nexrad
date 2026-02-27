@@ -1,7 +1,7 @@
 //! Comprehensive showcase of NEXRAD rendering and processing capabilities.
 //!
-//! Uses the KDMX (Des Moines, Iowa) radar volume from March 5, 2022 at ~23:16 UTC,
-//! a full 23-sweep volume scan during a significant severe weather event, to demonstrate:
+//! Uses the KDMX (Des Moines, Iowa) radar scan from March 5, 2022 at ~23:16 UTC,
+//! a full 23-sweep scan during a significant severe weather event, to demonstrate:
 //!
 //! 1. All radar products (reflectivity, velocity, spectrum width, ZDR, CC, PhiDP, CFP)
 //! 2. Multiple elevation angles (0.5 to 19.5 degrees)
@@ -28,45 +28,45 @@ use nexrad::process::derived::{
 use nexrad::process::filter::{
     CorrelationCoefficientFilter, GaussianSmooth, MedianFilter, ThresholdFilter,
 };
-use nexrad::process::{SweepPipeline, SweepProcessor, VolumeDerivedProduct};
+use nexrad::process::{ScanDerivedProduct, SweepPipeline, SweepProcessor};
 use nexrad::render::{
     get_default_color_scale, render_cartesian, render_sweep, render_vertical, RenderOptions,
 };
 
-/// Full 23-sweep volume downloaded from AWS via `download_volume` example.
-/// Falls back to the 3-sweep fixture if the full volume is not present.
-const FULL_VOLUME: &str = "tests/fixtures/full/KDMX20220305_231630_V06";
+/// Full 23-sweep scan downloaded from AWS via `download_scan` example.
+/// Falls back to the 3-sweep fixture if the full scan is not present.
+const FULL_SCAN: &str = "tests/fixtures/full/KDMX20220305_231630_V06";
 const FALLBACK_FIXTURE: &str = "tests/fixtures/convective/KDMX20220305_232324.bin";
 const OUTPUT_DIR: &str = "renders";
 
 fn main() -> nexrad::Result<()> {
     // ========================================================================
-    // Load the volume
+    // Load the scan
     // ========================================================================
-    let fixture = if std::path::Path::new(FULL_VOLUME).exists() {
-        FULL_VOLUME
+    let fixture = if std::path::Path::new(FULL_SCAN).exists() {
+        FULL_SCAN
     } else {
-        println!("Full volume not found at {}", FULL_VOLUME);
+        println!("Full scan not found at {}", FULL_SCAN);
         println!(
-            "Run: cargo run --example download_volume -- KDMX 2022-03-05 23:23\n\
+            "Run: cargo run --example download_scan -- KDMX 2022-03-05 23:23\n\
              Falling back to 3-sweep fixture...\n"
         );
         FALLBACK_FIXTURE
     };
 
-    println!("Loading radar volume from {}...", fixture);
-    let volume = nexrad::load_file(fixture)?;
+    println!("Loading radar scan from {}...", fixture);
+    let scan = nexrad::load_file(fixture)?;
 
-    let vcp = volume.coverage_pattern_number();
-    let num_sweeps = volume.sweeps().len();
+    let vcp = scan.coverage_pattern_number();
+    let num_sweeps = scan.sweeps().len();
     println!("  VCP: {}, {} sweeps", vcp, num_sweeps);
 
-    if let Some((start, end)) = volume.time_range() {
+    if let Some((start, end)) = scan.time_range() {
         println!("  Time range: {} to {}", start, end);
     }
 
     // List available elevations
-    for (i, sweep) in volume.sweeps().iter().enumerate() {
+    for (i, sweep) in scan.sweeps().iter().enumerate() {
         if let Some(angle) = sweep.elevation_angle_degrees() {
             let has_ref = sweep
                 .radials()
@@ -86,7 +86,7 @@ fn main() -> nexrad::Result<()> {
     }
 
     // Build coordinate system for geographic operations
-    let coord_sys = nexrad::coordinate_system_required(&volume)?;
+    let coord_sys = nexrad::coordinate_system_required(&scan)?;
 
     // Create output directory
     std::fs::create_dir_all(OUTPUT_DIR)?;
@@ -94,7 +94,7 @@ fn main() -> nexrad::Result<()> {
     // ========================================================================
     // Compute native resolution from the data itself
     // ========================================================================
-    let sweep_0 = &volume.sweeps()[0];
+    let sweep_0 = &scan.sweeps()[0];
     let ref_field = nexrad::extract_field(sweep_0, Product::Reflectivity)
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No reflectivity"))?;
 
@@ -138,7 +138,7 @@ fn main() -> nexrad::Result<()> {
 
     // For products not on sweep 0, find the first sweep that has them
     for product in &products {
-        match nexrad::extract_first_field(&volume, *product) {
+        match nexrad::extract_first_field(&scan, *product) {
             Some((sweep_idx, f)) => {
                 let opts = RenderOptions::native_for(&f);
                 let field_native = f.gate_count() * 2;
@@ -180,7 +180,7 @@ fn main() -> nexrad::Result<()> {
 
     // Deduplicate elevations — only render the first (REF-only) sweep per angle
     let mut seen_elevations = std::collections::HashSet::new();
-    for (i, sweep) in volume.sweeps().iter().enumerate() {
+    for (i, sweep) in scan.sweeps().iter().enumerate() {
         if let Some(field) = nexrad::extract_field(sweep, Product::Reflectivity) {
             // Round to 1 decimal to group identical angles
             let angle_key = (field.elevation_degrees() * 10.0).round() as i32;
@@ -363,7 +363,7 @@ fn main() -> nexrad::Result<()> {
     println!("\n=== Section 5: Storm-Relative Velocity ===");
 
     // Find the first sweep with velocity data
-    if let Some((_, vf)) = nexrad::extract_first_field(&volume, Product::Velocity) {
+    if let Some((_, vf)) = nexrad::extract_first_field(&scan, Product::Velocity) {
         let vel_native_options = RenderOptions::native_for(&vf);
         let vel_native = vf.gate_count() * 2;
         let vel_scale = get_default_color_scale(Product::Velocity);
@@ -410,7 +410,7 @@ fn main() -> nexrad::Result<()> {
             println!("  Storm-relative + gaussian smooth -> {}", path);
         }
     } else {
-        println!("  No velocity data found in this volume");
+        println!("  No velocity data found in this scan");
     }
 
     // ========================================================================
@@ -418,7 +418,7 @@ fn main() -> nexrad::Result<()> {
     // ========================================================================
     println!("\n=== Section 6: Composite Reflectivity ===");
 
-    let ref_fields = nexrad::extract_fields(&volume, Product::Reflectivity);
+    let ref_fields = nexrad::extract_fields(&scan, Product::Reflectivity);
     println!(
         "  Extracted {} reflectivity fields across elevations",
         ref_fields.len()
@@ -437,7 +437,7 @@ fn main() -> nexrad::Result<()> {
 
         // Full-range composite at native resolution
         let composite = cref.compute(
-            &volume,
+            &scan,
             &ref_fields,
             &coord_sys,
             &extent,
@@ -466,7 +466,7 @@ fn main() -> nexrad::Result<()> {
         // Zoomed composite (half range for more detail)
         let zoom_extent = coord_sys.sweep_extent(max_range / 2.0);
         let composite_zoom = cref.compute(
-            &volume,
+            &scan,
             &ref_fields,
             &coord_sys,
             &zoom_extent,
@@ -637,11 +637,11 @@ fn main() -> nexrad::Result<()> {
     println!(
         "  - 01_* : All 7 radar products at native resolution ({}px for REF, {}px for dual-pol)",
         native_size,
-        nexrad::extract_first_field(&volume, Product::Velocity)
+        nexrad::extract_first_field(&scan, Product::Velocity)
             .map(|(_, f)| f.gate_count() * 2)
             .unwrap_or(0)
     );
-    println!("  - 02_* : Reflectivity at every distinct elevation angle in the volume");
+    println!("  - 02_* : Reflectivity at every distinct elevation angle in the scan");
     println!(
         "  - 03_* : Individual processing effects (threshold, smooth, filter, CC noise removal)"
     );

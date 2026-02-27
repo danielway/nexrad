@@ -1,5 +1,5 @@
 use crate::result::{Error, Result};
-use crate::VolumeDerivedProduct;
+use crate::ScanDerivedProduct;
 use nexrad_model::data::{CartesianField, GateStatus, Scan, SweepField};
 use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 
@@ -7,7 +7,7 @@ use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 /// point across all elevation tilts.
 ///
 /// This is one of the most commonly used derived products in operational
-/// meteorology. It provides a plan view of the strongest echoes in the volume
+/// meteorology. It provides a plan view of the strongest echoes in the scan
 /// regardless of altitude, making it useful for identifying convective storms.
 ///
 /// # Algorithm
@@ -21,14 +21,14 @@ use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 ///
 /// ```ignore
 /// use nexrad_process::derived::CompositeReflectivity;
-/// use nexrad_process::VolumeDerivedProduct;
+/// use nexrad_process::ScanDerivedProduct;
 ///
 /// let cref = CompositeReflectivity;
 /// let field = cref.compute(&scan, &ref_fields, &coord_sys, &extent, (800, 800))?;
 /// ```
 pub struct CompositeReflectivity;
 
-impl VolumeDerivedProduct for CompositeReflectivity {
+impl ScanDerivedProduct for CompositeReflectivity {
     fn name(&self) -> &str {
         "CompositeReflectivity"
     }

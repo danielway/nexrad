@@ -15,7 +15,7 @@ use uom::si::f32::Angle;
 /// radar at some elevation angle and contains the Level II data (reflectivity, velocity, and
 /// spectrum width) for each azimuth angle in that sweep. The resolution of the sweep dictates the
 /// azimuthal distance between rays and thus and number of rays in the sweep. Multiple sweeps are
-/// taken at different elevation angles to create a volume scan.
+/// taken at different elevation angles to create a complete scan.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Sweep {
@@ -61,7 +61,7 @@ impl Sweep {
         sweeps
     }
 
-    /// The index number for this radial's elevation in the volume scan. The precise elevation angle
+    /// The index number for this radial's elevation in the scan. The precise elevation angle
     /// varies and can be found in individual radials.
     pub fn elevation_number(&self) -> u8 {
         self.elevation_number

@@ -116,7 +116,7 @@ impl Radial {
         self.radial_status
     }
 
-    /// The elevation number for this radial in the volume scan.
+    /// The elevation number for this radial in the scan.
     pub fn elevation_number(&self) -> u8 {
         self.elevation_number
     }
@@ -173,16 +173,16 @@ impl Radial {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum RadialStatus {
-    /// First radial of an elevation sweep (not the first sweep in the volume).
+    /// First radial of an elevation sweep (not the first sweep in the scan).
     ElevationStart,
     /// A radial within an elevation sweep (not the first or last radial).
     IntermediateRadialData,
     /// Last radial of an elevation sweep.
     ElevationEnd,
-    /// First radial of the first elevation sweep in a volume scan.
-    VolumeScanStart,
-    /// Last radial of the last elevation sweep in a volume scan.
-    VolumeScanEnd,
+    /// First radial of the first elevation sweep in a scan.
+    ScanStart,
+    /// Last radial of the last elevation sweep in a scan.
+    ScanEnd,
     /// Start of new elevation which is the last in the VCP.
     ElevationStartVCPFinal,
     /// An unrecognized radial status value.

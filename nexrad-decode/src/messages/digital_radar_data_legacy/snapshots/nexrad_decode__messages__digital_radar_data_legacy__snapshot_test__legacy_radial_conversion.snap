@@ -7,7 +7,7 @@ Radial {
     azimuth_number: 1,
     azimuth_angle_degrees: 21.92871,
     azimuth_spacing_degrees: 1.0,
-    radial_status: VolumeScanStart,
+    radial_status: ScanStart,
     elevation_number: 1,
     elevation_angle_degrees: 0.57128906,
     reflectivity: Some(

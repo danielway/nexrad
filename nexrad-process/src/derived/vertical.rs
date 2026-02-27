@@ -5,12 +5,12 @@ use nexrad_model::data::{GateStatus, SweepField, VerticalField};
 const EFFECTIVE_EARTH_RADIUS_KM: f64 = 6371.0 * 4.0 / 3.0;
 
 /// Vertical cross-section (RHI-style) — assembles a range-height display from
-/// volume scan data at a fixed azimuth.
+/// scan data at a fixed azimuth.
 ///
 /// For each cell in the output grid, the beam-height equation (standard 4/3
 /// earth-radius model) is used to map range and altitude back to each
 /// elevation tilt's polar coordinates. The maximum valid value across all
-/// tilts is retained, producing a pseudo-RHI from PPI volume data.
+/// tilts is retained, producing a pseudo-RHI from PPI scan data.
 ///
 /// # Example
 ///

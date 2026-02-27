@@ -135,7 +135,7 @@ pub enum Error {
     /// I/O error from file operations.
     ///
     /// This variant wraps standard library I/O errors that occur when reading
-    /// volume files from disk.
+    /// files from disk.
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 

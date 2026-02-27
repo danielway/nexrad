@@ -1,4 +1,4 @@
-//! Decode a NEXRAD volume file and print a summary.
+//! Decode a NEXRAD scan and print a summary.
 //!
 //! This example demonstrates using the facade API to load radar data
 //! and inspect its structure.
@@ -17,14 +17,14 @@ fn main() -> nexrad::Result<()> {
         .map(String::as_str)
         .unwrap_or("tests/fixtures/convective/KDMX20220305_232324.bin");
 
-    println!("Loading volume from: {}", path);
-    let volume = nexrad::load_file(path)?;
+    println!("Loading scan from: {}", path);
+    let scan = nexrad::load_file(path)?;
 
-    println!("\n=== Volume Summary ===");
-    println!("{}", volume.coverage_pattern_number());
-    println!("Sweeps: {}", volume.sweeps().len());
+    println!("\n=== Scan Summary ===");
+    println!("{}", scan.coverage_pattern_number());
+    println!("Sweeps: {}", scan.sweeps().len());
 
-    let vcp = volume.coverage_pattern();
+    let vcp = scan.coverage_pattern();
     println!("\n=== VCP Configuration ===");
     println!("Version: {}", vcp.version());
     println!(
@@ -46,7 +46,7 @@ fn main() -> nexrad::Result<()> {
     }
 
     println!("\n=== Sweep Details ===");
-    for (i, sweep) in volume.sweeps().iter().enumerate() {
+    for (i, sweep) in scan.sweeps().iter().enumerate() {
         let radials = sweep.radials();
         let first = radials.first();
 

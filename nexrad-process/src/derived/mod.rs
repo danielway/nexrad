@@ -1,4 +1,4 @@
-//! Derived products computed from radar volume scans.
+//! Derived products computed from radar scans.
 //!
 //! These algorithms produce new data products by combining information from
 //! multiple elevation sweeps or by applying transformations that require

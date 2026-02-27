@@ -1,4 +1,4 @@
-//! Download the latest radar volume from AWS.
+//! Download the latest radar scan from AWS.
 //!
 //! This example demonstrates using the facade API to download
 //! NEXRAD data directly from the archive.
@@ -21,15 +21,15 @@ async fn main() -> nexrad::Result<()> {
     let date =
         NaiveDate::parse_from_str(date_str, "%Y-%m-%d").expect("Date format should be YYYY-MM-DD");
 
-    println!("Downloading latest volume for {} on {}...", site, date);
+    println!("Downloading latest scan for {} on {}...", site, date);
 
-    let volume = nexrad::download_latest(site, date).await?;
+    let scan = nexrad::download_latest(site, date).await?;
 
-    println!("\n=== Downloaded Volume ===");
-    println!("{}", volume.coverage_pattern_number());
-    println!("Sweeps: {}", volume.sweeps().len());
+    println!("\n=== Downloaded Scan ===");
+    println!("{}", scan.coverage_pattern_number());
+    println!("Sweeps: {}", scan.sweeps().len());
 
-    for (i, sweep) in volume.sweeps().iter().enumerate() {
+    for (i, sweep) in scan.sweeps().iter().enumerate() {
         println!(
             "  Sweep {}: elevation {}, {} radials",
             i + 1,

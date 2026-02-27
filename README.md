@@ -79,20 +79,20 @@ tokio = { version = "1", features = ["full"] }
 nexrad = { version = "1.0", features = ["full"] }
 ```
 
-### Quick Example: Load and Inspect a Volume
+### Quick Example: Load and Inspect a Scan
 
 ```rust,no_run
 use nexrad;
 
 fn main() -> nexrad::Result<()> {
     // Load from a local Archive II file
-    let volume = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
+    let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
 
-    println!("{}", volume.coverage_pattern_number());
-    println!("Sweeps: {}", volume.sweeps().len());
+    println!("{}", scan.coverage_pattern_number());
+    println!("Sweeps: {}", scan.sweeps().len());
 
     // Iterate through sweeps and radials
-    for sweep in volume.sweeps() {
+    for sweep in scan.sweeps() {
         println!("Elevation {}: {} radials",
             sweep.elevation_number(),
             sweep.radials().len());
@@ -119,13 +119,13 @@ use chrono::NaiveDate;
 async fn main() -> nexrad::Result<()> {
     let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
 
-    // List available volumes
-    let volumes = nexrad::list_volumes("KTLX", date).await?;
-    println!("Found {} volumes", volumes.len());
+    // List available scans
+    let scans = nexrad::list_scans("KTLX", date).await?;
+    println!("Found {} scans", scans.len());
 
-    // Download the latest volume for the day
-    let volume = nexrad::download_latest("KTLX", date).await?;
-    println!("{}", volume.coverage_pattern_number());
+    // Download the latest scan for the day
+    let scan = nexrad::download_latest("KTLX", date).await?;
+    println!("{}", scan.coverage_pattern_number());
 
     Ok(())
 }
@@ -139,8 +139,8 @@ With the `render` feature, create PNG images from radar data:
 use nexrad::render::{get_nws_reflectivity_scale, render_radials, Product, RenderOptions};
 
 fn main() -> nexrad::Result<()> {
-    let volume = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
-    let sweep = volume.sweeps().first().unwrap();
+    let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
+    let sweep = scan.sweeps().first().unwrap();
 
     let options = RenderOptions::new(1024, 1024);
     let color_scale = get_nws_reflectivity_scale();

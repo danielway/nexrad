@@ -15,7 +15,7 @@ description = "Curated NEXRAD Archive II fixtures for integration and snapshot t
 # - id: Unique identifier used in test code
 # - path: Relative path from tests/fixtures/
 # - site: 4-letter ICAO radar identifier
-# - timestamp: ISO 8601 UTC timestamp of volume start
+# - timestamp: ISO 8601 UTC timestamp of scan start
 # - label: Human-readable event/condition description
 # - file_version: AR2V00XX format version from tape filename
 # - icd_build: RDA build version (affects message format)

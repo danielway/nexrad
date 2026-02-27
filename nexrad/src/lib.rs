@@ -16,13 +16,13 @@
 //!
 //! ```ignore
 //! // Load from a local file
-//! let volume = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
+//! let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
 //! println!("{}, {} sweeps",
-//!     volume.coverage_pattern_number(),
-//!     volume.sweeps().len());
+//!     scan.coverage_pattern_number(),
+//!     scan.sweeps().len());
 //!
 //! // Access data
-//! for sweep in volume.sweeps() {
+//! for sweep in scan.sweeps() {
 //!     for radial in sweep.radials() {
 //!         if let Some(reflectivity) = radial.reflectivity() {
 //!             println!("{} gates", reflectivity.gate_count());
@@ -38,7 +38,7 @@
 //! use chrono::NaiveDate;
 //!
 //! let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
-//! let volume = nexrad::download_latest("KTLX", date).await?;
+//! let scan = nexrad::download_latest("KTLX", date).await?;
 //! # Ok::<(), nexrad::Error>(())
 //! ```
 //!
@@ -53,7 +53,7 @@
 //! | `data` | Data access (default) | bzip2 | Yes |
 //! | `render` | Visualization and rendering (default) | image | Yes |
 //! | `process` | Radar data processing algorithms (default) | nexrad-model | Yes |
-//! | `aws` | Enable AWS S3 downloads (`download_latest`, `download_at`, `list_volumes`) | reqwest | Yes |
+//! | `aws` | Enable AWS S3 downloads (`download_latest`, `download_at`, `list_scans`) | reqwest | Yes |
 //! | `aws-polling` | Real-time polling (`poll_chunks`) | reqwest, tokio | No |
 //! | `serde` | Serialization support for model types | serde | Yes |
 //! | `uom` | Type-safe units of measure | uom | Yes |
@@ -81,10 +81,10 @@
 //! error propagation:
 //!
 //! ```ignore
-//! fn process_volume() -> nexrad::Result<()> {
+//! fn process_scan() -> nexrad::Result<()> {
 //!     let data = std::fs::read("volume.ar2")?;  // io::Error converts
-//!     let volume = nexrad::data::volume::File::new(data);
-//!     let scan = volume.scan()?;  // data/decode/model errors convert
+//!     let file = nexrad::data::volume::File::new(data);
+//!     let scan = file.scan()?;  // data/decode/model errors convert
 //!     Ok(())
 //! }
 //! ```
@@ -196,8 +196,8 @@
 //! use nexrad::model::data::Product;
 //! use nexrad::render::{render_radials, get_nws_reflectivity_scale, RenderOptions};
 //!
-//! let volume = nexrad::load_file("volume.ar2v")?;
-//! let sweep = volume.sweeps().first().unwrap();
+//! let scan = nexrad::load_file("volume.ar2v")?;
+//! let sweep = scan.sweeps().first().unwrap();
 //!
 //! let options = RenderOptions::new(1024, 1024);
 //! let color_scale = get_nws_reflectivity_scale();
@@ -225,10 +225,10 @@ pub mod result;
 pub use result::{Error, Result};
 
 // ============================================================================
-// Top-level volume loading functions
+// Top-level scan loading functions
 // ============================================================================
 
-/// Load a volume from raw Archive II data bytes.
+/// Load a scan from raw Archive II data bytes.
 ///
 /// This function automatically handles decompression of bzip2-compressed LDM records
 /// and decodes the NEXRAD messages into the high-level data model.
@@ -237,10 +237,10 @@ pub use result::{Error, Result};
 ///
 /// ```ignore
 /// let data = std::fs::read("KTLX20230520_201643_V06.ar2v")?;
-/// let volume = nexrad::load(&data)?;
+/// let scan = nexrad::load(&data)?;
 /// println!("VCP: {}, {} sweeps",
-///     volume.coverage_pattern_number(),
-///     volume.sweeps().len());
+///     scan.coverage_pattern_number(),
+///     scan.sweeps().len());
 /// # Ok::<(), nexrad::Error>(())
 /// ```
 ///
@@ -254,15 +254,15 @@ pub fn load(data: &[u8]) -> Result<model::data::Scan> {
     Ok(file.scan()?)
 }
 
-/// Load a volume from a file path.
+/// Load a scan from a file path.
 ///
 /// This is a convenience wrapper around [`load`] that reads the file from disk first.
 ///
 /// # Example
 ///
 /// ```ignore
-/// let volume = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
-/// println!("{}", volume.coverage_pattern_number());
+/// let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
+/// println!("{}", scan.coverage_pattern_number());
 /// # Ok::<(), nexrad::Error>(())
 /// ```
 ///
@@ -275,11 +275,11 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
     load(&data)
 }
 
-/// Download a specific volume by its archive identifier.
+/// Download a specific scan by its archive identifier.
 ///
-/// This function downloads the volume file, handles decompression if needed, and decodes
-/// the data into the high-level model. Use [`list_volumes`] to obtain identifiers for
-/// available volumes, then pass the desired one to this function.
+/// This function downloads the archive file, handles decompression if needed, and decodes
+/// the data into the high-level model. Use [`list_scans`] to obtain identifiers for
+/// available scans, then pass the desired one to this function.
 ///
 /// # Example
 ///
@@ -287,12 +287,12 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
 /// use chrono::NaiveDate;
 ///
 /// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
-/// let volumes = nexrad::list_volumes("KTLX", date).await?;
+/// let scans = nexrad::list_scans("KTLX", date).await?;
 ///
-/// // Download the first volume of the day
-/// if let Some(id) = volumes.into_iter().next() {
-///     let volume = nexrad::download(id).await?;
-///     println!("{}", volume.coverage_pattern_number());
+/// // Download the first scan of the day
+/// if let Some(id) = scans.into_iter().next() {
+///     let scan = nexrad::download(id).await?;
+///     println!("{}", scan.coverage_pattern_number());
 /// }
 /// # Ok::<(), nexrad::Error>(())
 /// ```
@@ -308,7 +308,7 @@ pub async fn download(identifier: data::aws::archive::Identifier) -> Result<mode
     Ok(file.scan()?)
 }
 
-/// Download the most recent volume for a site on a given date.
+/// Download the most recent scan for a site on a given date.
 ///
 /// Returns the last available archive file for the specified date. This is useful
 /// when you want the most complete data available for a particular day.
@@ -319,8 +319,8 @@ pub async fn download(identifier: data::aws::archive::Identifier) -> Result<mode
 /// use chrono::NaiveDate;
 ///
 /// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
-/// let volume = nexrad::download_latest("KTLX", date).await?;
-/// println!("{}", volume.coverage_pattern_number());
+/// let scan = nexrad::download_latest("KTLX", date).await?;
+/// println!("{}", scan.coverage_pattern_number());
 /// # Ok::<(), nexrad::Error>(())
 /// ```
 ///
@@ -341,23 +341,23 @@ pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<mode
     download(file_id).await
 }
 
-/// Download the volume that overlaps a specific datetime.
+/// Download the scan that overlaps a specific datetime.
 ///
 /// Finds the archive file whose collection period contains the requested datetime.
 /// Archive files typically span approximately 5 minutes of data collection, so this
-/// function returns the volume that was being collected at the specified time.
+/// function returns the scan that was being collected at the specified time.
 ///
 /// # Example
 ///
 /// ```ignore
 /// use chrono::NaiveDateTime;
 ///
-/// // Download the volume that was being collected at 20:16:43 UTC
+/// // Download the scan that was being collected at 20:16:43 UTC
 /// let dt = NaiveDateTime::parse_from_str(
 ///     "2023-05-20 20:16:43",
 ///     "%Y-%m-%d %H:%M:%S"
 /// ).unwrap();
-/// let volume = nexrad::download_at("KTLX", dt).await?;
+/// let scan = nexrad::download_at("KTLX", dt).await?;
 /// # Ok::<(), nexrad::Error>(())
 /// ```
 ///
@@ -387,10 +387,10 @@ pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<
     download(file_id).await
 }
 
-/// List available volumes for a site and date.
+/// List available scans for a site and date.
 ///
 /// Returns identifiers for all archive files available on the specified date.
-/// These identifiers can be used to selectively download specific volumes.
+/// These identifiers can be used to selectively download specific scans.
 ///
 /// # Example
 ///
@@ -398,15 +398,15 @@ pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<
 /// use chrono::NaiveDate;
 ///
 /// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
-/// let volumes = nexrad::list_volumes("KTLX", date).await?;
-/// println!("Found {} volumes", volumes.len());
-/// for vol in &volumes {
-///     println!("  {:?}", vol);
+/// let scans = nexrad::list_scans("KTLX", date).await?;
+/// println!("Found {} scans", scans.len());
+/// for id in &scans {
+///     println!("  {:?}", id);
 /// }
 /// # Ok::<(), nexrad::Error>(())
 /// ```
 #[cfg(all(feature = "data", feature = "aws"))]
-pub async fn list_volumes(
+pub async fn list_scans(
     site: &str,
     date: chrono::NaiveDate,
 ) -> Result<Vec<data::aws::archive::Identifier>> {
@@ -428,8 +428,8 @@ pub async fn list_volumes(
 /// ```ignore
 /// use nexrad::model::data::Product;
 ///
-/// let volume = nexrad::load_file("volume.ar2v")?;
-/// let sweep = volume.sweeps().first().unwrap();
+/// let scan = nexrad::load_file("scan.ar2v")?;
+/// let sweep = scan.sweeps().first().unwrap();
 /// let image = nexrad::render_sweep(sweep, Product::Reflectivity)?;
 /// image.save("output.png").unwrap();
 /// # Ok::<(), nexrad::Error>(())
@@ -463,8 +463,8 @@ pub fn render_sweep(
 /// use nexrad::model::data::Product;
 /// use nexrad::render::RenderOptions;
 ///
-/// let volume = nexrad::load_file("volume.ar2v")?;
-/// let sweep = volume.sweeps().first().unwrap();
+/// let scan = nexrad::load_file("scan.ar2v")?;
+/// let sweep = scan.sweeps().first().unwrap();
 /// let options = RenderOptions::new(800, 800).with_background([0, 0, 0, 255]);
 /// let image = nexrad::render_sweep_with_options(sweep, Product::Velocity, &options)?;
 /// image.save("velocity.png").unwrap();
@@ -500,8 +500,8 @@ pub fn render_sweep_with_options(
 /// ```ignore
 /// use nexrad::model::data::Product;
 ///
-/// let volume = nexrad::load_file("volume.ar2v")?;
-/// let sweep = volume.sweeps().first().unwrap();
+/// let scan = nexrad::load_file("scan.ar2v")?;
+/// let sweep = scan.sweeps().first().unwrap();
 /// let field = nexrad::extract_field(sweep, Product::Reflectivity)
 ///     .expect("reflectivity data present");
 /// # Ok::<(), nexrad::Error>(())
@@ -524,8 +524,8 @@ pub fn extract_field(
 /// ```ignore
 /// use nexrad::model::data::Product;
 ///
-/// let volume = nexrad::load_file("volume.ar2v")?;
-/// let fields = nexrad::extract_fields(&volume, Product::Reflectivity);
+/// let scan = nexrad::load_file("scan.ar2v")?;
+/// let fields = nexrad::extract_fields(&scan, Product::Reflectivity);
 /// println!("{} sweeps with reflectivity data", fields.len());
 /// # Ok::<(), nexrad::Error>(())
 /// ```
@@ -551,8 +551,8 @@ pub fn extract_fields(
 /// ```ignore
 /// use nexrad::model::data::Product;
 ///
-/// let volume = nexrad::load_file("volume.ar2v")?;
-/// if let Some((sweep_idx, field)) = nexrad::extract_first_field(&volume, Product::Velocity) {
+/// let scan = nexrad::load_file("scan.ar2v")?;
+/// if let Some((sweep_idx, field)) = nexrad::extract_first_field(&scan, Product::Velocity) {
 ///     println!("Velocity data found in sweep {}", sweep_idx);
 /// }
 /// # Ok::<(), nexrad::Error>(())
@@ -574,8 +574,8 @@ pub fn extract_first_field(
 /// # Example
 ///
 /// ```ignore
-/// let volume = nexrad::load_file("volume.ar2v")?;
-/// let coord_sys = nexrad::coordinate_system(&volume)
+/// let scan = nexrad::load_file("scan.ar2v")?;
+/// let coord_sys = nexrad::coordinate_system(&scan)
 ///     .expect("site metadata available");
 /// let extent = coord_sys.sweep_extent(230.0);
 /// # Ok::<(), nexrad::Error>(())
@@ -594,8 +594,8 @@ pub fn coordinate_system(scan: &model::data::Scan) -> Option<model::geo::RadarCo
 /// # Example
 ///
 /// ```ignore
-/// let volume = nexrad::load_file("volume.ar2v")?;
-/// let coord_sys = nexrad::coordinate_system_required(&volume)?;
+/// let scan = nexrad::load_file("scan.ar2v")?;
+/// let coord_sys = nexrad::coordinate_system_required(&scan)?;
 /// # Ok::<(), nexrad::Error>(())
 /// ```
 ///
@@ -609,7 +609,7 @@ pub fn coordinate_system_required(
     coordinate_system(scan).ok_or_else(|| {
         Error::Io(std::io::Error::new(
             std::io::ErrorKind::NotFound,
-            "no site metadata in volume",
+            "no site metadata in scan",
         ))
     })
 }

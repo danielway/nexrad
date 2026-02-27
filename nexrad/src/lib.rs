@@ -585,6 +585,35 @@ pub fn coordinate_system(scan: &model::data::Scan) -> Option<model::geo::RadarCo
     scan.site().map(model::geo::RadarCoordinateSystem::new)
 }
 
+/// Create a [`RadarCoordinateSystem`](model::geo::RadarCoordinateSystem) from a scan's site metadata,
+/// returning an error if the scan does not contain site information.
+///
+/// This is a convenience wrapper around [`coordinate_system`] for use in contexts
+/// where a coordinate system is required and its absence is an error.
+///
+/// # Example
+///
+/// ```ignore
+/// let volume = nexrad::load_file("volume.ar2v")?;
+/// let coord_sys = nexrad::coordinate_system_required(&volume)?;
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns an I/O error with [`std::io::ErrorKind::NotFound`] if the scan has no site metadata.
+#[cfg(feature = "model")]
+pub fn coordinate_system_required(
+    scan: &model::data::Scan,
+) -> Result<model::geo::RadarCoordinateSystem> {
+    coordinate_system(scan).ok_or_else(|| {
+        Error::Io(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "no site metadata in volume",
+        ))
+    })
+}
+
 // ============================================================================
 // Real-time data access
 // ============================================================================

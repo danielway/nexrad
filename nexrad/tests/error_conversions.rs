@@ -257,11 +257,12 @@ fn test_all_features_enabled() {
     feature = "model",
     feature = "decode",
     feature = "data",
-    feature = "render"
+    feature = "render",
+    feature = "process"
 ))]
 #[test]
-fn test_all_features_including_render() {
-    // This test verifies all error variants including render
+fn test_all_features_including_render_and_process() {
+    // This test verifies all error variants including render and process
     let model_err = nexrad_model::result::Error::ElevationMismatchError;
     let _: nexrad::Error = model_err.into();
 
@@ -273,6 +274,39 @@ fn test_all_features_including_render() {
 
     let render_err = nexrad_render::result::Error::ProductNotFound;
     let _: nexrad::Error = render_err.into();
+
+    let process_err = nexrad_process::result::Error::MissingData("test".to_string());
+    let _: nexrad::Error = process_err.into();
+}
+
+#[cfg(feature = "process")]
+#[test]
+fn test_process_error_conversion() {
+    // Create a process error
+    let process_err = nexrad_process::result::Error::InvalidParameter("bad threshold".to_string());
+
+    // Convert to unified error
+    let unified_err: nexrad::Error = process_err.into();
+
+    // Verify it's the correct variant
+    match unified_err {
+        nexrad::Error::Process(_) => {}
+        #[allow(unreachable_patterns)]
+        _ => panic!("Expected Error::Process variant"),
+    }
+
+    // Verify the error message contains context
+    let err_string = unified_err.to_string();
+    assert!(
+        err_string.contains("process error"),
+        "Expected 'process error' in message, got: {}",
+        err_string
+    );
+    assert!(
+        err_string.contains("bad threshold"),
+        "Expected 'bad threshold' in message, got: {}",
+        err_string
+    );
 }
 
 #[test]

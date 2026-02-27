@@ -27,6 +27,7 @@
 //! ```
 
 pub mod derived;
+pub mod detection;
 pub mod filter;
 pub mod pipeline;
 pub mod result;

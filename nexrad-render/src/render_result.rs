@@ -4,8 +4,10 @@
 //! application needs to accurately place it on a map, draw overlays, and inspect data values.
 
 use crate::RgbaImage;
+use image::ImageError;
 use nexrad_model::data::{GateStatus, SweepField};
 use nexrad_model::geo::{GeoExtent, GeoPoint, GeoPoint3D, PolarPoint, RadarCoordinateSystem};
+use std::path::Path;
 
 /// The result of a render operation.
 ///
@@ -74,6 +76,18 @@ impl RenderResult {
     /// Metadata describing the pixel-to-coordinate mapping.
     pub fn metadata(&self) -> &RenderMetadata {
         &self.metadata
+    }
+
+    /// Save the rendered image to a file.
+    ///
+    /// The output format is inferred from the file extension (e.g., `.png`, `.jpg`).
+    /// This is a convenience wrapper around [`image::RgbaImage::save`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be written or the format is unsupported.
+    pub fn save<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), ImageError> {
+        self.image.save(path)
     }
 
     /// Query the data value at a pixel coordinate.

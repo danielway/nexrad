@@ -479,8 +479,7 @@ pub fn render_sweep(
             }
 
             // Nearest-neighbor path (default, or bilinear fallback)
-            let (radial_idx, angular_distance) =
-                find_closest_radial(field.azimuths(), azimuth_deg);
+            let (radial_idx, angular_distance) = find_closest_radial(field.azimuths(), azimuth_deg);
 
             if angular_distance > max_azimuth_gap {
                 continue;

@@ -5,7 +5,7 @@ use nexrad_decode::messages::MessageContents;
 use nexrad_model::data::Product;
 use nexrad_model::data::{Radial, SweepField};
 use nexrad_render::{
-    get_nws_reflectivity_scale, render_radials, render_sweep, ColorScale, RenderOptions,
+    nws_reflectivity_scale, render_radials, render_sweep, ColorScale, RenderOptions,
 };
 
 const VOLUME_FILE: &[u8] =
@@ -36,7 +36,7 @@ fn extract_radials(data: &[u8], elevation_number: u8) -> Vec<Radial> {
 fn benchmark_render_radials(c: &mut Criterion) {
     // Extract radials for the 0.5 degree sweep (elevation 1)
     let radials = extract_radials(VOLUME_FILE, 1);
-    let color_scale = get_nws_reflectivity_scale();
+    let color_scale = nws_reflectivity_scale();
 
     let mut group = c.benchmark_group("render_radials");
     group
@@ -64,7 +64,7 @@ fn benchmark_render_sweep(c: &mut Criterion) {
     let radials = extract_radials(VOLUME_FILE, 1);
     let field =
         SweepField::from_radials(&radials, Product::Reflectivity).expect("field is created");
-    let color_scale = ColorScale::from(get_nws_reflectivity_scale());
+    let color_scale = ColorScale::from(nws_reflectivity_scale());
 
     let mut group = c.benchmark_group("render_sweep");
     group

@@ -4,7 +4,6 @@
 //! application needs to accurately place it on a map, draw overlays, and inspect data values.
 
 use crate::RgbaImage;
-use image::ImageError;
 use nexrad_model::data::{GateStatus, SweepField};
 use nexrad_model::geo::{GeoExtent, GeoPoint, GeoPoint3D, PolarPoint, RadarCoordinateSystem};
 use std::path::Path;
@@ -86,8 +85,10 @@ impl RenderResult {
     /// # Errors
     ///
     /// Returns an error if the file cannot be written or the format is unsupported.
-    pub fn save<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), ImageError> {
-        self.image.save(path)
+    pub fn save<P: AsRef<Path>>(&self, path: P) -> crate::result::Result<()> {
+        self.image
+            .save(path)
+            .map_err(|e| crate::result::Error::ImageSave(e.to_string()))
     }
 
     /// Query the data value at a pixel coordinate.

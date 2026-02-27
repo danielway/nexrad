@@ -143,14 +143,14 @@ async fn main() -> nexrad::Result<()> {
 With the `render` feature, create PNG images from radar data:
 
 ```rust,ignore
-use nexrad::render::{get_nws_reflectivity_scale, render_radials, Product, RenderOptions};
+use nexrad::render::{nws_reflectivity_scale, render_radials, Product, RenderOptions};
 
 fn main() -> nexrad::Result<()> {
     let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
     let sweep = scan.sweeps().first().unwrap();
 
     let options = RenderOptions::new(1024, 1024);
-    let color_scale = get_nws_reflectivity_scale();
+    let color_scale = nws_reflectivity_scale();
 
     let image = render_radials(
         sweep.radials(),

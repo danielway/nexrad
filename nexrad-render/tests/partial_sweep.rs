@@ -88,7 +88,7 @@ fn test_partial_sweep_leaves_gaps_as_background() {
     let image = render_radials(
         &radials,
         Product::Reflectivity,
-        &nexrad_render::get_nws_reflectivity_scale(),
+        &nexrad_render::nws_reflectivity_scale(),
         &options,
     )
     .unwrap();
@@ -145,7 +145,7 @@ fn test_full_sweep_covers_all_azimuths() {
     let image = render_radials(
         &radials,
         Product::Reflectivity,
-        &nexrad_render::get_nws_reflectivity_scale(),
+        &nexrad_render::nws_reflectivity_scale(),
         &options,
     )
     .unwrap();
@@ -180,7 +180,7 @@ fn test_partial_sweep_gap_detection_multiple_sectors() {
     let image = render_radials(
         &radials,
         Product::Reflectivity,
-        &nexrad_render::get_nws_reflectivity_scale(),
+        &nexrad_render::nws_reflectivity_scale(),
         &options,
     )
     .unwrap();

@@ -150,4 +150,11 @@ pub enum Error {
         /// The requested date in YYYY-MM-DD format.
         date: String,
     },
+
+    /// The scan does not contain site metadata required for the requested operation.
+    ///
+    /// This typically occurs when the Archive II data does not include a Volume
+    /// Coverage Pattern message with embedded site information.
+    #[error("scan does not contain site metadata")]
+    MissingSiteMetadata,
 }

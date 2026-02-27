@@ -10,7 +10,7 @@
 //! ```
 
 use nexrad::model::data::Product;
-use nexrad::render::{get_nws_reflectivity_scale, render_radials, RenderOptions};
+use nexrad::render::{nws_reflectivity_scale, render_radials, RenderOptions};
 use std::env;
 
 fn main() -> nexrad::Result<()> {
@@ -48,7 +48,7 @@ fn main() -> nexrad::Result<()> {
 
     // Set up rendering options and color scale
     let options = RenderOptions::new(1024, 1024);
-    let color_scale = get_nws_reflectivity_scale();
+    let color_scale = nws_reflectivity_scale();
 
     // Render the image
     let image = render_radials(

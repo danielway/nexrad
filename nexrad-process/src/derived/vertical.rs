@@ -5,20 +5,40 @@ use nexrad_model::data::{GateStatus, SweepField, VerticalField};
 const EFFECTIVE_EARTH_RADIUS_KM: f64 = 6371.0 * 4.0 / 3.0;
 
 /// Vertical cross-section (RHI-style) — assembles a range-height display from
-/// scan data at a fixed azimuth.
+/// PPI scan data at a fixed azimuth.
 ///
 /// For each cell in the output grid, the beam-height equation (standard 4/3
 /// earth-radius model) is used to map range and altitude back to each
 /// elevation tilt's polar coordinates. The maximum valid value across all
 /// tilts is retained, producing a pseudo-RHI from PPI scan data.
 ///
+/// Unlike [`CompositeReflectivity`](super::CompositeReflectivity), this type does not
+/// implement [`ScanDerivedProduct`](crate::ScanDerivedProduct) because its output is a
+/// [`VerticalField`] (range vs. altitude) rather than a
+/// [`CartesianField`](nexrad_model::data::CartesianField). Its
+/// construction parameters (azimuth, range, altitude, dimensions) fully define the
+/// output grid, so no coordinate system or geographic extent is needed at compute time.
+///
 /// # Example
 ///
 /// ```ignore
 /// use nexrad_process::derived::VerticalCrossSection;
+/// use nexrad_model::data::{SweepField, Product};
 ///
+/// // Extract reflectivity fields from all sweeps
+/// let ref_fields: Vec<SweepField> = scan.sweeps().iter()
+///     .filter_map(|s| SweepField::from_radials(s.radials(), Product::Reflectivity))
+///     .collect();
+///
+/// // Create a cross-section at 200° azimuth, 0-230 km range, 0-18 km altitude
 /// let vcs = VerticalCrossSection::new(200.0, 230.0, 18000.0, 600, 300)?;
-/// let field = vcs.compute(&ref_fields)?;
+/// let vertical_field = vcs.compute(&ref_fields)?;
+///
+/// // Render with nexrad-render
+/// use nexrad_render::{render_vertical, default_color_scale, RenderOptions};
+/// let scale = default_color_scale(Product::Reflectivity);
+/// let result = render_vertical(&vertical_field, &scale, &RenderOptions::new(1200, 600))?;
+/// result.save("vertical_cross_section.png")?;
 /// ```
 pub struct VerticalCrossSection {
     /// Target azimuth in degrees (0-360).
@@ -80,7 +100,10 @@ impl VerticalCrossSection {
 
     /// Compute the vertical cross-section from sweep fields at multiple elevations.
     ///
-    /// The label and unit of the output field are taken from the first input field.
+    /// Each input field contributes data at the altitude determined by its elevation
+    /// angle and the beam-height equation. Where multiple tilts overlap the same
+    /// output cell, the maximum valid value is retained. The label and unit of the
+    /// output field are taken from the first input field.
     ///
     /// # Errors
     ///

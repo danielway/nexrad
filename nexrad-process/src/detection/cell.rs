@@ -352,8 +352,7 @@ impl StormCellDetector {
             let (val, _) = field.get(az_idx, gate_idx);
 
             let azimuth_deg = field.azimuths()[az_idx];
-            let range_km =
-                field.first_gate_range_km() + gate_idx as f64 * field.gate_interval_km();
+            let range_km = field.first_gate_range_km() + gate_idx as f64 * field.gate_interval_km();
 
             // Reflectivity statistics
             sum_dbz += val as f64;
@@ -436,7 +435,16 @@ mod tests {
     /// Create a 360-azimuth, `gate_count`-gate field with all gates set to NoData.
     fn make_empty_field(gate_count: usize) -> SweepField {
         let azimuths: Vec<f32> = (0..360).map(|i| i as f32).collect();
-        SweepField::new_empty("Reflectivity", "dBZ", 0.5, azimuths, 1.0, 2.0, 0.25, gate_count)
+        SweepField::new_empty(
+            "Reflectivity",
+            "dBZ",
+            0.5,
+            azimuths,
+            1.0,
+            2.0,
+            0.25,
+            gate_count,
+        )
     }
 
     /// Create a uniform field where all gates have the given value.

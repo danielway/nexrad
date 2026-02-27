@@ -4,7 +4,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use nexrad_decode::messages::MessageContents;
 use nexrad_model::data::Product;
 use nexrad_model::data::Radial;
-use nexrad_render::{get_nws_reflectivity_scale, render_radials, RenderOptions};
+use nexrad_render::{nws_reflectivity_scale, render_radials, RenderOptions};
 
 const VOLUME_FILE: &[u8] =
     include_bytes!("../../tests/fixtures/convective/KDMX20220305_232324.bin");
@@ -34,7 +34,7 @@ fn extract_radials(data: &[u8], elevation_number: u8) -> Vec<Radial> {
 fn benchmark_render_radials(c: &mut Criterion) {
     // Extract radials for the 0.5 degree sweep (elevation 1)
     let radials = extract_radials(VOLUME_FILE, 1);
-    let color_scale = get_nws_reflectivity_scale();
+    let color_scale = nws_reflectivity_scale();
 
     let mut group = c.benchmark_group("render_radials");
     group

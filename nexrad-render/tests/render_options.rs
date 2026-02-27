@@ -1,6 +1,6 @@
 //! Tests for RenderOptions.
 
-use nexrad_render::RenderOptions;
+use nexrad_render::{Interpolation, RenderOptions};
 
 #[test]
 fn test_render_options_new() {
@@ -55,4 +55,25 @@ fn test_render_options_debug() {
 
     assert!(!debug_str.is_empty());
     assert!(debug_str.contains("RenderOptions"));
+}
+
+#[test]
+fn test_render_options_default_is_nearest() {
+    let options = RenderOptions::new(800, 600);
+    assert_eq!(options.interpolation, Interpolation::Nearest);
+}
+
+#[test]
+fn test_render_options_bilinear() {
+    let options = RenderOptions::new(800, 600).bilinear();
+    assert_eq!(options.interpolation, Interpolation::Bilinear);
+}
+
+#[test]
+fn test_render_options_with_interpolation() {
+    let options = RenderOptions::new(800, 600).with_interpolation(Interpolation::Bilinear);
+    assert_eq!(options.interpolation, Interpolation::Bilinear);
+
+    let options = RenderOptions::new(800, 600).with_interpolation(Interpolation::Nearest);
+    assert_eq!(options.interpolation, Interpolation::Nearest);
 }

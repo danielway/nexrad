@@ -34,6 +34,13 @@ NOAA's WSR-88D Interface Control Document for the RDA/RPG "ICD 2620002AA".
 
 Download and processing functions for NEXRAD weather radar data.
 
+## `nexrad-process`
+
+[![Crate](https://img.shields.io/crates/v/nexrad-process.svg)](https://crates.io/crates/nexrad-process)
+[![Docs.rs](https://docs.rs/nexrad-process/badge.svg)](https://docs.rs/nexrad-process)
+
+Processing algorithms for NEXRAD weather radar data.
+
 ## `nexrad-render`
 
 [![Crate](https://img.shields.io/crates/v/nexrad-render.svg)](https://crates.io/crates/nexrad-render)
@@ -165,6 +172,7 @@ fn main() -> nexrad::Result<()> {
 | `decode` | Binary protocol decoding | chrono, zerocopy |
 | `data` | Local file I/O | bzip2 |
 | `render` | Image rendering | image |
+| `process` | Processing algorithms | nexrad-model |
 | `aws` | AWS S3 downloads | reqwest |
 | `parallel` | Parallel decompression | rayon |
 | `serde` | Serialization support | serde |
@@ -182,7 +190,7 @@ The `wasm` feature enables all WASM-compatible functionality:
 nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
 ```
 
-This includes: `model`, `decode`, `data`, `render`, `aws`, `serde`, `uom`, and `chrono`.
+This includes: `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, and `chrono`.
 
 **Not WASM-compatible:**
 - `aws-polling` - requires tokio runtime

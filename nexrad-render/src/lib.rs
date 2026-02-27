@@ -7,7 +7,8 @@
 //! # Example
 //!
 //! ```ignore
-//! use nexrad_render::{render_radials, Product, RenderOptions, get_nws_reflectivity_scale};
+//! use nexrad_model::data::Product;
+//! use nexrad_render::{render_radials, RenderOptions, get_nws_reflectivity_scale};
 //!
 //! let options = RenderOptions::new(800, 800);
 //! let image = render_radials(
@@ -48,34 +49,20 @@
 #![deny(missing_docs)]
 
 pub use image::RgbaImage;
-use nexrad_model::data::{CFPMomentValue, DataMoment, MomentValue, Radial};
+use nexrad_model::data::{
+    CFPMomentValue, CartesianField, DataMoment, GateStatus, MomentValue, Product, Radial,
+    SweepField, VerticalField,
+};
+use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
 use result::{Error, Result};
 
 mod color;
 pub use crate::color::*;
 
-pub mod result;
+mod render_result;
+pub use render_result::{PointQuery, RenderMetadata, RenderResult};
 
-/// Radar data products that can be rendered.
-///
-/// Each product corresponds to a different type of moment data captured by the radar.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum Product {
-    /// Base reflectivity (dBZ). Measures the intensity of precipitation.
-    Reflectivity,
-    /// Radial velocity (m/s). Measures motion toward or away from the radar.
-    Velocity,
-    /// Spectrum width (m/s). Measures turbulence within the radar beam.
-    SpectrumWidth,
-    /// Differential reflectivity (dB). Compares horizontal and vertical reflectivity.
-    DifferentialReflectivity,
-    /// Differential phase (degrees). Phase difference between polarizations.
-    DifferentialPhase,
-    /// Correlation coefficient. Correlation between polarizations (0-1).
-    CorrelationCoefficient,
-    /// Clutter filter power (CFP). Difference between clutter-filtered and unfiltered reflectivity.
-    ClutterFilterPower,
-}
+pub mod result;
 
 /// Options for rendering radar radials.
 ///
@@ -102,6 +89,16 @@ pub struct RenderOptions {
     pub size: (usize, usize),
     /// Background color as RGBA bytes. `None` means transparent (all zeros).
     pub background: Option<[u8; 4]>,
+    /// Geographic extent to render. If `None`, auto-computed from data range.
+    ///
+    /// When set, the image covers exactly this extent, enabling consistent
+    /// spatial mapping across multiple renders for side-by-side comparison.
+    pub extent: Option<GeoExtent>,
+    /// Radar coordinate system for geographic projection.
+    ///
+    /// When provided, the [`RenderResult`] will include geographic metadata
+    /// enabling pixel-to-geo and geo-to-pixel coordinate conversions.
+    pub coord_system: Option<RadarCoordinateSystem>,
 }
 
 impl RenderOptions {
@@ -110,6 +107,8 @@ impl RenderOptions {
         Self {
             size: (width, height),
             background: Some([0, 0, 0, 255]),
+            extent: None,
+            coord_system: None,
         }
     }
 
@@ -125,6 +124,24 @@ impl RenderOptions {
     /// Sets a custom background color as RGBA bytes.
     pub fn with_background(mut self, rgba: [u8; 4]) -> Self {
         self.background = Some(rgba);
+        self
+    }
+
+    /// Sets a geographic extent for the rendered area.
+    ///
+    /// When set, the image covers exactly this extent. This enables
+    /// consistent spatial mapping for side-by-side comparison of multiple renders.
+    pub fn with_extent(mut self, extent: GeoExtent) -> Self {
+        self.extent = Some(extent);
+        self
+    }
+
+    /// Sets a radar coordinate system for geographic projection.
+    ///
+    /// This enables geographic metadata in the [`RenderResult`], including
+    /// pixel-to-geo and geo-to-pixel coordinate conversions.
+    pub fn with_coord_system(mut self, coord_system: RadarCoordinateSystem) -> Self {
+        self.coord_system = Some(coord_system);
         self
     }
 }
@@ -186,7 +203,7 @@ pub fn render_radials(
     }
 
     // Build lookup table for fast color mapping
-    let (min_val, max_val) = get_product_value_range(product);
+    let (min_val, max_val) = product.value_range();
     let lut = ColorLookupTable::from_scale(scale, min_val, max_val, 256);
 
     // Get radar parameters from the first radial
@@ -310,6 +327,273 @@ pub fn render_radials_default(
     render_radials(radials, product, &scale, options)
 }
 
+/// Renders a [`SweepField`] (polar grid) to an image with metadata.
+///
+/// This is the primary rendering entry point for processed data. It accepts
+/// a `SweepField` — the output of data extraction or processing — and produces
+/// a [`RenderResult`] that includes both the rendered image and metadata for
+/// geographic placement and data inspection.
+///
+/// # Arguments
+///
+/// * `field` - The sweep field to render
+/// * `color_scale` - Color scale to apply (discrete or continuous)
+/// * `options` - Rendering options (size, background, extent, coordinate system)
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad_render::{render_sweep, RenderOptions, ColorScale};
+/// use nexrad_model::data::{SweepField, Product};
+///
+/// let field = SweepField::from_radials(sweep.radials(), Product::Reflectivity).unwrap();
+/// let scale = ColorScale::from(nexrad_render::get_nws_reflectivity_scale());
+/// let result = render_sweep(&field, &scale, &RenderOptions::new(800, 800))?;
+///
+/// result.image().save("radar.png").unwrap();
+/// let meta = result.metadata();
+/// let ring_px = meta.km_to_pixel_distance(100.0);
+/// ```
+pub fn render_sweep(
+    field: &SweepField,
+    color_scale: &ColorScale,
+    options: &RenderOptions,
+) -> Result<RenderResult> {
+    let (width, height) = options.size;
+    let mut buffer = vec![0u8; width * height * 4];
+
+    // Fill background
+    if let Some(bg) = options.background {
+        for pixel in buffer.chunks_exact_mut(4) {
+            pixel.copy_from_slice(&bg);
+        }
+    }
+
+    if field.azimuth_count() == 0 {
+        return Err(Error::NoRadials);
+    }
+
+    let first_gate_km = field.first_gate_range_km();
+    let gate_interval_km = field.gate_interval_km();
+    let gate_count = field.gate_count();
+    let radar_range_km = field.max_range_km();
+
+    // Build LUT from the field's value range or product-typical range
+    let (min_val, max_val) = field.value_range().unwrap_or((-32.0, 95.0));
+    let lut = ColorLookupTable::from_color_scale(color_scale, min_val, max_val, 256);
+
+    // Calculate max azimuth gap for partial sweep support
+    let azimuth_spacing = field.azimuth_spacing_degrees();
+    let max_azimuth_gap = azimuth_spacing * 1.5;
+
+    let center_x = width as f64 / 2.0;
+    let center_y = height as f64 / 2.0;
+    let scale_factor = width.max(height) as f64 / 2.0 / radar_range_km;
+
+    // Render each pixel by mapping to radar coordinates
+    for y in 0..height {
+        let dy = y as f64 - center_y;
+
+        for x in 0..width {
+            let dx = x as f64 - center_x;
+
+            let distance_pixels = (dx * dx + dy * dy).sqrt();
+            let distance_km = distance_pixels / scale_factor;
+
+            if distance_km < first_gate_km || distance_km >= radar_range_km {
+                continue;
+            }
+
+            let azimuth_rad = dx.atan2(-dy);
+            let azimuth_deg = ((azimuth_rad.to_degrees() + 360.0) % 360.0) as f32;
+
+            let (radial_idx, angular_distance) = find_closest_radial(field.azimuths(), azimuth_deg);
+
+            if angular_distance > max_azimuth_gap {
+                continue;
+            }
+
+            let gate_index = ((distance_km - first_gate_km) / gate_interval_km) as usize;
+            if gate_index >= gate_count {
+                continue;
+            }
+
+            let (val, status) = field.get(radial_idx, gate_index);
+            if status == GateStatus::Valid {
+                let color = lut.get_color(val);
+                let pixel_index = (y * width + x) * 4;
+                buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
+            }
+        }
+    }
+
+    let image =
+        RgbaImage::from_raw(width as u32, height as u32, buffer).ok_or(Error::InvalidDimensions)?;
+
+    let geo_extent = options.extent.or_else(|| {
+        options
+            .coord_system
+            .as_ref()
+            .map(|cs| cs.sweep_extent(radar_range_km))
+    });
+
+    let metadata = RenderMetadata {
+        width: width as u32,
+        height: height as u32,
+        center_pixel: (center_x, center_y),
+        pixels_per_km: scale_factor,
+        max_range_km: radar_range_km,
+        elevation_degrees: Some(field.elevation_degrees()),
+        geo_extent,
+        coord_system: options.coord_system.clone(),
+    };
+
+    Ok(RenderResult::new(image, metadata))
+}
+
+/// Renders a [`CartesianField`] (geographic grid) to an image with metadata.
+///
+/// This renders volume-derived products like composite reflectivity, echo tops,
+/// and VIL — data that is already projected onto a geographic grid.
+///
+/// # Arguments
+///
+/// * `field` - The Cartesian field to render
+/// * `color_scale` - Color scale to apply
+/// * `options` - Rendering options (size, background)
+pub fn render_cartesian(
+    field: &CartesianField,
+    color_scale: &ColorScale,
+    options: &RenderOptions,
+) -> Result<RenderResult> {
+    let (width, height) = options.size;
+    let mut buffer = vec![0u8; width * height * 4];
+
+    if let Some(bg) = options.background {
+        for pixel in buffer.chunks_exact_mut(4) {
+            pixel.copy_from_slice(&bg);
+        }
+    }
+
+    let field_width = field.width();
+    let field_height = field.height();
+
+    if field_width == 0 || field_height == 0 {
+        return Err(Error::NoRadials);
+    }
+
+    // Build LUT
+    let (min_val, max_val) = field.value_range().unwrap_or((-32.0, 95.0));
+    let lut = ColorLookupTable::from_color_scale(color_scale, min_val, max_val, 256);
+
+    // Map output pixels to field cells
+    for y in 0..height {
+        let field_row = (y as f64 / height as f64 * field_height as f64) as usize;
+        let field_row = field_row.min(field_height - 1);
+
+        for x in 0..width {
+            let field_col = (x as f64 / width as f64 * field_width as f64) as usize;
+            let field_col = field_col.min(field_width - 1);
+
+            let (val, status) = field.get(field_row, field_col);
+            if status == GateStatus::Valid {
+                let color = lut.get_color(val);
+                let pixel_index = (y * width + x) * 4;
+                buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
+            }
+        }
+    }
+
+    let image =
+        RgbaImage::from_raw(width as u32, height as u32, buffer).ok_or(Error::InvalidDimensions)?;
+
+    let metadata = RenderMetadata {
+        width: width as u32,
+        height: height as u32,
+        center_pixel: (width as f64 / 2.0, height as f64 / 2.0),
+        pixels_per_km: 0.0, // Not applicable for Cartesian fields
+        max_range_km: 0.0,
+        elevation_degrees: None,
+        geo_extent: Some(*field.extent()),
+        coord_system: options.coord_system.clone(),
+    };
+
+    Ok(RenderResult::new(image, metadata))
+}
+
+/// Renders a [`VerticalField`] (RHI / cross-section display) to an image with metadata.
+///
+/// This renders vertical cross-sections where the horizontal axis represents
+/// distance from the radar and the vertical axis represents altitude.
+///
+/// # Arguments
+///
+/// * `field` - The vertical field to render
+/// * `color_scale` - Color scale to apply
+/// * `options` - Rendering options (size, background)
+pub fn render_vertical(
+    field: &VerticalField,
+    color_scale: &ColorScale,
+    options: &RenderOptions,
+) -> Result<RenderResult> {
+    let (width, height) = options.size;
+    let mut buffer = vec![0u8; width * height * 4];
+
+    if let Some(bg) = options.background {
+        for pixel in buffer.chunks_exact_mut(4) {
+            pixel.copy_from_slice(&bg);
+        }
+    }
+
+    let field_width = field.width();
+    let field_height = field.height();
+
+    if field_width == 0 || field_height == 0 {
+        return Err(Error::NoRadials);
+    }
+
+    // Build LUT
+    let (min_val, max_val) = field.value_range().unwrap_or((-32.0, 95.0));
+    let lut = ColorLookupTable::from_color_scale(color_scale, min_val, max_val, 256);
+
+    // Map output pixels to field cells
+    for y in 0..height {
+        let field_row = (y as f64 / height as f64 * field_height as f64) as usize;
+        let field_row = field_row.min(field_height - 1);
+
+        for x in 0..width {
+            let field_col = (x as f64 / width as f64 * field_width as f64) as usize;
+            let field_col = field_col.min(field_width - 1);
+
+            let (val, status) = field.get(field_row, field_col);
+            if status == GateStatus::Valid {
+                let color = lut.get_color(val);
+                let pixel_index = (y * width + x) * 4;
+                buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
+            }
+        }
+    }
+
+    let image =
+        RgbaImage::from_raw(width as u32, height as u32, buffer).ok_or(Error::InvalidDimensions)?;
+
+    let (d_min, d_max) = field.distance_range_km();
+    let max_range = d_max - d_min;
+
+    let metadata = RenderMetadata {
+        width: width as u32,
+        height: height as u32,
+        center_pixel: (0.0, height as f64 / 2.0), // Left edge is range 0
+        pixels_per_km: width as f64 / max_range,
+        max_range_km: max_range,
+        elevation_degrees: None,
+        geo_extent: None,
+        coord_system: options.coord_system.clone(),
+    };
+
+    Ok(RenderResult::new(image, metadata))
+}
+
 /// Returns the default color scale for a given product.
 ///
 /// This function selects an appropriate color scale based on the product type,
@@ -333,22 +617,6 @@ pub fn get_default_scale(product: Product) -> DiscreteColorScale {
         Product::DifferentialPhase => get_differential_phase_scale(),
         Product::CorrelationCoefficient => get_correlation_coefficient_scale(),
         Product::ClutterFilterPower => get_clutter_filter_power_scale(),
-    }
-}
-
-/// Returns the value range (min, max) for a given product.
-///
-/// These ranges cover the typical data values for each product type and are
-/// used internally for color mapping.
-pub fn get_product_value_range(product: Product) -> (f32, f32) {
-    match product {
-        Product::Reflectivity => (-32.0, 95.0),
-        Product::Velocity => (-64.0, 64.0),
-        Product::SpectrumWidth => (0.0, 30.0),
-        Product::DifferentialReflectivity => (-2.0, 6.0),
-        Product::DifferentialPhase => (0.0, 360.0),
-        Product::CorrelationCoefficient => (0.0, 1.0),
-        Product::ClutterFilterPower => (-20.0, 20.0),
     }
 }
 
@@ -415,46 +683,41 @@ fn get_gate_params(product: Product, radial: &Radial) -> Option<GateParams> {
             gate_count: m.gate_count() as usize,
         }
     }
-    match product {
-        Product::Reflectivity => radial.reflectivity().map(extract),
-        Product::Velocity => radial.velocity().map(extract),
-        Product::SpectrumWidth => radial.spectrum_width().map(extract),
-        Product::DifferentialReflectivity => radial.differential_reflectivity().map(extract),
-        Product::DifferentialPhase => radial.differential_phase().map(extract),
-        Product::CorrelationCoefficient => radial.correlation_coefficient().map(extract),
-        Product::ClutterFilterPower => radial.clutter_filter_power().map(extract),
+    if let Some(moment) = product.moment_data(radial) {
+        return Some(extract(moment));
     }
+    if let Some(cfp) = product.cfp_moment_data(radial) {
+        return Some(extract(cfp));
+    }
+    None
 }
 
 /// Extract decoded float values from a radial for the given product.
 ///
 /// Returns `None` for below-threshold, range-folded, and CFP status gates.
 fn get_radial_float_values(product: Product, radial: &Radial) -> Option<Vec<Option<f32>>> {
-    fn moment_floats(moment: Option<&nexrad_model::data::MomentData>) -> Option<Vec<Option<f32>>> {
-        moment.map(|m| {
-            m.iter()
+    if let Some(moment) = product.moment_data(radial) {
+        return Some(
+            moment
+                .iter()
                 .map(|v| match v {
                     MomentValue::Value(f) => Some(f),
                     _ => None,
                 })
-                .collect()
-        })
+                .collect(),
+        );
     }
 
-    match product {
-        Product::Reflectivity => moment_floats(radial.reflectivity()),
-        Product::Velocity => moment_floats(radial.velocity()),
-        Product::SpectrumWidth => moment_floats(radial.spectrum_width()),
-        Product::DifferentialReflectivity => moment_floats(radial.differential_reflectivity()),
-        Product::DifferentialPhase => moment_floats(radial.differential_phase()),
-        Product::CorrelationCoefficient => moment_floats(radial.correlation_coefficient()),
-        Product::ClutterFilterPower => radial.clutter_filter_power().map(|cfp| {
+    if let Some(cfp) = product.cfp_moment_data(radial) {
+        return Some(
             cfp.iter()
                 .map(|v| match v {
                     CFPMomentValue::Value(f) => Some(f),
                     CFPMomentValue::Status(_) => None,
                 })
-                .collect()
-        }),
+                .collect(),
+        );
     }
+
+    None
 }

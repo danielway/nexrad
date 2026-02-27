@@ -64,3 +64,7 @@ required-features = ["aws", "model"]
 name = "render_reflectivity"
 required-features = ["render", "data"]
 
+[[example]]
+name = "showcase"
+required-features = ["render", "data", "process", "chrono"]
+

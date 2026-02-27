@@ -24,23 +24,14 @@ pub struct RenderResult {
 /// This is everything a consumer needs to place and query the rendered image.
 #[derive(Debug, Clone)]
 pub struct RenderMetadata {
-    /// Image width in pixels.
-    pub width: u32,
-    /// Image height in pixels.
-    pub height: u32,
-    /// Center of the image in pixel coordinates.
-    pub center_pixel: (f64, f64),
-    /// Scale factor: pixels per kilometer.
-    pub pixels_per_km: f64,
-    /// Maximum range of the rendered data in km.
-    pub max_range_km: f64,
-    /// The elevation angle of the rendered sweep (if applicable).
-    pub elevation_degrees: Option<f32>,
-    /// Geographic extent of the rendered area (if coordinate system was provided).
-    pub geo_extent: Option<GeoExtent>,
-    /// The coordinate system used (if available), enabling conversion between
-    /// pixel, polar, and geographic coordinates.
-    pub coord_system: Option<RadarCoordinateSystem>,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+    pub(crate) center_pixel: (f64, f64),
+    pub(crate) pixels_per_km: f64,
+    pub(crate) max_range_km: f64,
+    pub(crate) elevation_degrees: Option<f32>,
+    pub(crate) geo_extent: Option<GeoExtent>,
+    pub(crate) coord_system: Option<RadarCoordinateSystem>,
 }
 
 /// Result of querying a data value at a specific point.
@@ -145,6 +136,47 @@ impl RenderResult {
 }
 
 impl RenderMetadata {
+    /// Image width in pixels.
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    /// Image height in pixels.
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
+    /// Center of the image in pixel coordinates.
+    pub fn center_pixel(&self) -> (f64, f64) {
+        self.center_pixel
+    }
+
+    /// Scale factor: pixels per kilometer.
+    pub fn pixels_per_km(&self) -> f64 {
+        self.pixels_per_km
+    }
+
+    /// Maximum range of the rendered data in km.
+    pub fn max_range_km(&self) -> f64 {
+        self.max_range_km
+    }
+
+    /// The elevation angle of the rendered sweep (if applicable).
+    pub fn elevation_degrees(&self) -> Option<f32> {
+        self.elevation_degrees
+    }
+
+    /// Geographic extent of the rendered area (if coordinate system was provided).
+    pub fn geo_extent(&self) -> Option<&GeoExtent> {
+        self.geo_extent.as_ref()
+    }
+
+    /// The coordinate system used (if available), enabling conversion between
+    /// pixel, polar, and geographic coordinates.
+    pub fn coord_system(&self) -> Option<&RadarCoordinateSystem> {
+        self.coord_system.as_ref()
+    }
+
     /// Convert a pixel coordinate to polar (azimuth, range) coordinates.
     ///
     /// Returns `None` if the pixel is outside the rendered radar coverage area.

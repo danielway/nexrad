@@ -10,7 +10,7 @@ use std::error::Error as StdError;
 #[test]
 fn test_model_error_conversion() {
     // Create a model error
-    let model_err = nexrad_model::result::Error::ElevationMismatchError;
+    let model_err = nexrad_model::result::Error::ElevationMismatch;
 
     // Convert to unified error
     let unified_err: nexrad::Error = model_err.into();
@@ -40,7 +40,7 @@ fn test_model_error_conversion() {
 #[test]
 fn test_decode_error_conversion() {
     // Create a decode error
-    let decode_err = nexrad_decode::result::Error::MessageMissingDateError;
+    let decode_err = nexrad_decode::result::Error::MessageMissingDate;
 
     // Convert to unified error
     let unified_err: nexrad::Error = decode_err.into();
@@ -65,8 +65,7 @@ fn test_decode_error_conversion() {
 #[test]
 fn test_decode_error_with_string_conversion() {
     // Create a decode error with string detail
-    let decode_err =
-        nexrad_decode::result::Error::DecodingError("invalid magic number".to_string());
+    let decode_err = nexrad_decode::result::Error::Decoding("invalid magic number".to_string());
 
     // Convert to unified error
     let unified_err: nexrad::Error = decode_err.into();
@@ -89,7 +88,7 @@ fn test_decode_error_with_string_conversion() {
 #[test]
 fn test_data_error_conversion() {
     // Create a data error
-    let data_err = nexrad_data::result::Error::CompressedDataError;
+    let data_err = nexrad_data::result::Error::CompressedData;
 
     // Convert to unified error
     let unified_err: nexrad::Error = data_err.into();
@@ -178,7 +177,7 @@ fn test_io_error_conversion_through_data() {
 #[test]
 fn test_error_source_chain() {
     // Create a decode error
-    let decode_err = nexrad_decode::result::Error::DecodingError("test error".to_string());
+    let decode_err = nexrad_decode::result::Error::Decoding("test error".to_string());
 
     // Convert to unified error
     let unified_err: nexrad::Error = decode_err.into();
@@ -200,7 +199,7 @@ fn test_error_source_chain() {
 #[test]
 fn test_error_debug_format() {
     // Create a model error
-    let model_err = nexrad_model::result::Error::ElevationMismatchError;
+    let model_err = nexrad_model::result::Error::ElevationMismatch;
     let unified_err: nexrad::Error = model_err.into();
 
     // Verify Debug format works and contains useful info
@@ -243,13 +242,13 @@ fn test_all_features_enabled() {
     // This test only compiles when default features are enabled
     // It verifies that all error variants are available
 
-    let model_err = nexrad_model::result::Error::ElevationMismatchError;
+    let model_err = nexrad_model::result::Error::ElevationMismatch;
     let _: nexrad::Error = model_err.into();
 
     let decode_err = nexrad_decode::result::Error::UnexpectedEof;
     let _: nexrad::Error = decode_err.into();
 
-    let data_err = nexrad_data::result::Error::CompressedDataError;
+    let data_err = nexrad_data::result::Error::CompressedData;
     let _: nexrad::Error = data_err.into();
 }
 
@@ -263,13 +262,13 @@ fn test_all_features_enabled() {
 #[test]
 fn test_all_features_including_render_and_process() {
     // This test verifies all error variants including render and process
-    let model_err = nexrad_model::result::Error::ElevationMismatchError;
+    let model_err = nexrad_model::result::Error::ElevationMismatch;
     let _: nexrad::Error = model_err.into();
 
     let decode_err = nexrad_decode::result::Error::UnexpectedEof;
     let _: nexrad::Error = decode_err.into();
 
-    let data_err = nexrad_data::result::Error::CompressedDataError;
+    let data_err = nexrad_data::result::Error::CompressedData;
     let _: nexrad::Error = data_err.into();
 
     let render_err = nexrad_render::result::Error::ProductNotFound;

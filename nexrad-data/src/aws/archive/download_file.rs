@@ -1,7 +1,7 @@
 use crate::aws::archive::identifier::Identifier;
 use crate::aws::archive::ARCHIVE_BUCKET;
 use crate::aws::s3::download_object;
-use crate::result::aws::AWSError::{DateTimeError, InvalidSiteIdentifier};
+use crate::result::aws::AWSError::{DateTime, InvalidSiteIdentifier};
 use crate::volume::File;
 
 /// Download a data file specified by its metadata. Returns the downloaded file's encoded contents
@@ -9,7 +9,7 @@ use crate::volume::File;
 pub async fn download_file(identifier: Identifier) -> crate::result::Result<File> {
     let date = identifier
         .date_time()
-        .ok_or_else(|| DateTimeError(identifier.name().to_string()))?;
+        .ok_or_else(|| DateTime(identifier.name().to_string()))?;
 
     let site = identifier
         .site()

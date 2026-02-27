@@ -56,7 +56,7 @@ impl<'a> Message<'a> {
             .chunks_exact(size_of::<u32>())
             .map(|v| {
                 v.try_into()
-                    .map_err(|_| Error::DecodingError("message pointers".to_string()))
+                    .map_err(|_| Error::Decoding("message pointers".to_string()))
                     .map(u32::from_be_bytes)
             })
             .collect::<Result<Vec<_>>>()?;
@@ -330,7 +330,7 @@ impl<'a> Message<'a> {
         Ok(Radial::new(
             header
                 .date_time()
-                .ok_or(Error::MessageMissingDateError)?
+                .ok_or(Error::MessageMissingDate)?
                 .timestamp_millis(),
             header.azimuth_number(),
             header.azimuth_angle_raw(),

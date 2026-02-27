@@ -55,7 +55,7 @@ impl<'a> Record<'a> {
         use std::io::Read;
 
         if !self.compressed() {
-            return Err(Error::UncompressedDataError);
+            return Err(Error::UncompressedData);
         }
 
         // Skip the four-byte record size prefix
@@ -73,7 +73,7 @@ impl<'a> Record<'a> {
         use nexrad_decode::messages::decode_messages;
 
         if self.compressed() {
-            return Err(Error::CompressedDataError);
+            return Err(Error::CompressedData);
         }
 
         Ok(decode_messages(self.data())?)

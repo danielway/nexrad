@@ -265,7 +265,7 @@ impl<'a> Message<'a> {
         };
         let timestamp = self
             .date_time()
-            .ok_or(Error::MessageMissingDateError)?
+            .ok_or(Error::MessageMissingDate)?
             .timestamp_millis();
         let azimuth_number = self.azimuth_number();
         let azimuth_angle = self.azimuth_angle();
@@ -389,7 +389,7 @@ impl<'a> Message<'a> {
 
         let timestamp = msg
             .date_time()
-            .ok_or(Error::MessageMissingDateError)?
+            .ok_or(Error::MessageMissingDate)?
             .timestamp_millis();
 
         Ok(Radial::new(

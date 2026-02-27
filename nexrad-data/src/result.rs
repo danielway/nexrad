@@ -10,10 +10,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// An I/O error occurred while reading or writing data.
     #[error("data file IO error")]
-    FileError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     /// Attempted to decompress data that is not compressed.
     #[error("error decompressing uncompressed data")]
-    UncompressedDataError,
+    UncompressedData,
     /// An AWS-related error occurred (requires `aws` feature).
     #[cfg(feature = "aws")]
     #[error(transparent)]
@@ -27,17 +27,17 @@ pub enum Error {
     Model(#[from] nexrad_model::result::Error),
     /// Cannot decode compressed record data without decompression.
     #[error("compressed data cannot be decoded")]
-    CompressedDataError,
+    CompressedData,
     /// Cannot access records or scan from a gzip-compressed volume file.
     /// Call `decompress()` first.
     #[error("gzip-compressed volume file must be decompressed before accessing records")]
-    CompressedFileError,
+    CompressedFile,
     /// Volume file is missing the required VCP (message type 5).
     #[error("volume missing coverage pattern (message type 5)")]
     MissingCoveragePattern,
     /// BZIP2 decompression of an LDM record failed.
     #[error("ldm record decompression error")]
-    DecompressionError(#[from] bzip2::Error),
+    Decompression(#[from] bzip2::Error),
     /// LDM record was truncated and contains fewer bytes than expected.
     #[error("truncated record: expected {expected} bytes, got {actual}")]
     TruncatedRecord {
@@ -69,7 +69,7 @@ pub mod aws {
         TruncatedListObjectsResponse,
         /// Failed to parse date/time from filename or metadata.
         #[error("error decoding date/time")]
-        DateTimeError(String),
+        DateTime(String),
         /// The radar site identifier is not recognized.
         #[error("invalid radar site identifier")]
         InvalidSiteIdentifier(String),
@@ -87,19 +87,19 @@ pub mod aws {
         UnrecognizedChunkType(Option<char>),
         /// S3 list objects request failed.
         #[error("error listing AWS S3 objects")]
-        S3ListObjectsError(reqwest::Error),
+        S3ListObjects(reqwest::Error),
         /// S3 get object request failed to send.
         #[error("error requesting AWS S3 object")]
-        S3GetObjectRequestError(reqwest::Error),
+        S3GetObjectRequest(reqwest::Error),
         /// S3 get object returned an error response.
         #[error("error getting AWS S3 object")]
-        S3GetObjectError(Option<String>),
+        S3GetObject(Option<String>),
         /// Requested S3 object was not found (404).
         #[error("AWS S3 object not found")]
-        S3ObjectNotFoundError,
+        S3ObjectNotFound,
         /// Error while streaming/downloading S3 object content.
         #[error("error streaming/downloading AWS S3 object")]
-        S3StreamingError(reqwest::Error),
+        S3Streaming(reqwest::Error),
         /// Could not find the latest volume for the requested site/date.
         #[error("failed to locate latest volume")]
         LatestVolumeNotFound,
@@ -108,12 +108,12 @@ pub mod aws {
         ExpectedChunkNotFound,
         /// Error in async channel communication during polling.
         #[error("error sending chunk to receiver")]
-        PollingAsyncError,
+        PollingAsync,
         /// Could not determine the next chunk to poll.
         #[error("failed to determine next chunk")]
         FailedToDetermineNextChunk,
         /// Failed to decode XML response from S3 list objects.
         #[error("error decoding S3 list objects response")]
-        S3ListObjectsDecodingError,
+        S3ListObjectsDecoding,
     }
 }

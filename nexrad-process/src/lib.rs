@@ -26,10 +26,21 @@
 //!     .execute(&field)?;
 //! ```
 
+#![forbid(unsafe_code)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+#![warn(clippy::correctness)]
+#![deny(missing_docs)]
+
+/// Derived products computed from radar scans.
 pub mod derived;
+/// Storm cell detection algorithms.
 pub mod detection;
+/// Filtering algorithms for sweep field data.
 pub mod filter;
+/// Composable processing pipelines.
 pub mod pipeline;
+/// Result and error types for processing operations.
 pub mod result;
 
 pub use pipeline::SweepPipeline;
@@ -54,6 +65,9 @@ pub trait SweepProcessor {
 ///
 /// This trait is for algorithms that need to consider data across elevations,
 /// such as velocity dealiasing.
+///
+/// No built-in implementations are provided. This trait is an extension point
+/// for downstream crates to implement scan-level processing algorithms.
 pub trait ScanProcessor {
     /// A human-readable name for this processor.
     fn name(&self) -> &str;

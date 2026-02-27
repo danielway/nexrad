@@ -1,3 +1,5 @@
+//! Result and error types for NEXRAD processing operations.
+
 /// Errors that can occur during processing.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

@@ -551,15 +551,16 @@ fn main() -> nexrad::Result<()> {
     let result = render_sweep(&ref_field, &ref_scale, &options_with_geo)?;
 
     let meta = result.metadata();
-    println!("  Image: {}x{}", meta.width, meta.height);
+    println!("  Image: {}x{}", meta.width(), meta.height());
     println!(
         "  Center pixel: ({:.1}, {:.1})",
-        meta.center_pixel.0, meta.center_pixel.1
+        meta.center_pixel().0,
+        meta.center_pixel().1
     );
-    println!("  Pixels per km: {:.2}", meta.pixels_per_km);
-    println!("  Max range: {:.1} km", meta.max_range_km);
+    println!("  Pixels per km: {:.2}", meta.pixels_per_km());
+    println!("  Max range: {:.1} km", meta.max_range_km());
 
-    if let Some(extent) = &meta.geo_extent {
+    if let Some(extent) = meta.geo_extent() {
         println!(
             "  Geo extent: ({:.4}, {:.4}) to ({:.4}, {:.4})",
             extent.min.latitude, extent.min.longitude, extent.max.latitude, extent.max.longitude

@@ -10,13 +10,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// An I/O error occurred while reading data.
     #[error("data file IO error")]
-    FileError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     /// A general decoding error with a descriptive message.
     #[error("file decoding error: {0}")]
-    DecodingError(String),
+    Decoding(String),
     /// A message is missing required collection date/time fields.
     #[error("message is missing collection date/time")]
-    MessageMissingDateError,
+    MessageMissingDate,
     /// Reached end of input data unexpectedly during parsing.
     #[error("unexpected end of file to input data")]
     UnexpectedEof,

@@ -540,6 +540,33 @@ pub fn extract_fields(
         .collect()
 }
 
+/// Extract the first [`SweepField`](model::data::SweepField) in a scan that contains
+/// data for a specific product, along with its sweep index.
+///
+/// This is useful when you need to find a representative field for a product
+/// without iterating through all sweeps manually.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::model::data::Product;
+///
+/// let volume = nexrad::load_file("volume.ar2v")?;
+/// if let Some((sweep_idx, field)) = nexrad::extract_first_field(&volume, Product::Velocity) {
+///     println!("Velocity data found in sweep {}", sweep_idx);
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "model")]
+pub fn extract_first_field(
+    scan: &model::data::Scan,
+    product: model::data::Product,
+) -> Option<(usize, model::data::SweepField)> {
+    scan.sweeps().iter().enumerate().find_map(|(i, sweep)| {
+        model::data::SweepField::from_radials(sweep.radials(), product).map(|f| (i, f))
+    })
+}
+
 /// Create a [`RadarCoordinateSystem`](model::geo::RadarCoordinateSystem) from a scan's site metadata.
 ///
 /// Returns `None` if the scan does not have site metadata.

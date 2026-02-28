@@ -554,6 +554,23 @@ pub fn render_sweep(
 /// * `field` - The Cartesian field to render
 /// * `color_scale` - Color scale to apply
 /// * `options` - Rendering options (size, background)
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad_render::{render_cartesian, default_color_scale, RenderOptions};
+/// use nexrad_model::data::Product;
+/// use nexrad_process::{ScanDerivedProduct, derived::CompositeReflectivity};
+///
+/// // Compute composite reflectivity from all elevation tilts
+/// let cref = CompositeReflectivity;
+/// let cartesian = cref.compute(&scan, &ref_fields, &coord_sys, &extent, (800, 800))?;
+///
+/// // Render the cartesian field
+/// let scale = default_color_scale(Product::Reflectivity);
+/// let result = render_cartesian(&cartesian, &scale, &RenderOptions::new(800, 800))?;
+/// result.save("composite_reflectivity.png")?;
+/// ```
 pub fn render_cartesian(
     field: &CartesianField,
     color_scale: &ColorScale,
@@ -646,6 +663,23 @@ pub fn render_cartesian(
 /// * `field` - The vertical field to render
 /// * `color_scale` - Color scale to apply
 /// * `options` - Rendering options (size, background)
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad_render::{render_vertical, default_color_scale, RenderOptions};
+/// use nexrad_model::data::Product;
+/// use nexrad_process::derived::VerticalCrossSection;
+///
+/// // Create a vertical cross-section at 200° azimuth
+/// let vcs = VerticalCrossSection::new(200.0, 230.0, 18000.0, 600, 300)?;
+/// let vertical = vcs.compute(&ref_fields)?;
+///
+/// // Render the vertical field
+/// let scale = default_color_scale(Product::Reflectivity);
+/// let result = render_vertical(&vertical, &scale, &RenderOptions::new(1200, 600))?;
+/// result.save("vertical_cross_section.png")?;
+/// ```
 pub fn render_vertical(
     field: &VerticalField,
     color_scale: &ColorScale,
@@ -745,6 +779,15 @@ pub fn render_vertical(
 /// | DifferentialPhase | Sequential (0 to 360 deg) |
 /// | CorrelationCoefficient | Sequential (0 to 1) |
 /// | ClutterFilterPower | Divergent (-20 to +20 dB) |
+///
+/// # Example
+///
+/// ```
+/// use nexrad_render::{default_scale, Product};
+///
+/// let scale = default_scale(Product::Reflectivity);
+/// // Use with render_radials or build a ColorLookupTable
+/// ```
 pub fn default_scale(product: Product) -> DiscreteColorScale {
     match product {
         Product::Reflectivity => nws_reflectivity_scale(),

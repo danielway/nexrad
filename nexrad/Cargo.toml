@@ -65,6 +65,10 @@ name = "render_reflectivity"
 required-features = ["render", "data"]
 
 [[example]]
+name = "processing_pipeline"
+required-features = ["render", "data", "process"]
+
+[[example]]
 name = "showcase"
 required-features = ["render", "data", "process", "chrono"]
 

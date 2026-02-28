@@ -104,8 +104,8 @@ fn test_decompress_uncompressed_data() {
     let result = record.decompress();
     assert!(result.is_err());
     match result.unwrap_err() {
-        Error::UncompressedDataError => {}
-        other => panic!("Expected UncompressedDataError, got: {:?}", other),
+        Error::UncompressedData => {}
+        other => panic!("Expected UncompressedData, got: {:?}", other),
     }
 }
 
@@ -158,8 +158,8 @@ fn test_record_messages_compressed_data() {
     let result = record.messages();
     assert!(result.is_err());
     match result.unwrap_err() {
-        Error::CompressedDataError => {}
-        other => panic!("Expected CompressedDataError, got: {:?}", other),
+        Error::CompressedData => {}
+        other => panic!("Expected CompressedData, got: {:?}", other),
     }
 }
 

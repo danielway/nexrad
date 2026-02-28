@@ -13,5 +13,5 @@ pub enum Error {
     /// This error occurs when calling [`Sweep::merge`](crate::data::Sweep::merge)
     /// with two sweeps that have different elevation numbers.
     #[error("two sweeps' elevation numbers do not match")]
-    ElevationMismatchError,
+    ElevationMismatch,
 }

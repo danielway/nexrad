@@ -77,7 +77,8 @@ impl SweepProcessor for MedianFilter {
                 }
 
                 if !neighborhood.is_empty() {
-                    neighborhood.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                    neighborhood
+                        .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
                     let median = neighborhood[neighborhood.len() / 2];
                     output.set(az_idx, gate_idx, median, GateStatus::Valid);
                 }

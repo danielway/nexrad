@@ -73,7 +73,7 @@ impl File {
     /// first) or if the record data is truncated or malformed.
     pub fn records(&self) -> crate::result::Result<Vec<Record<'_>>> {
         if self.compressed() {
-            return Err(crate::result::Error::CompressedFileError);
+            return Err(crate::result::Error::CompressedFile);
         }
         split_compressed_records(&self.0[size_of::<Header>()..])
     }

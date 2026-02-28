@@ -159,7 +159,7 @@ pub enum NextChunk {
     /// The next chunk is expected to be located in the same volume at this sequence. Once the next
     /// chunk's identifier is determined, it can be downloaded using the
     /// [crate::aws::realtime::download_chunk()] function. You may need to poll by checking if that
-    /// function returns [crate::result::aws::AWSError::S3ObjectNotFoundError].
+    /// function returns [crate::result::aws::AWSError::S3ObjectNotFound].
     Sequence(ChunkIdentifier),
 
     /// The chunk is expected to be located in the next volume. The next volume's chunks can be

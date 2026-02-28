@@ -420,7 +420,7 @@ impl ChunkIterator {
                     attempts: 1,
                 }))
             }
-            Err(Error::AWS(AWSError::S3ObjectNotFoundError)) => {
+            Err(Error::AWS(AWSError::S3ObjectNotFound)) => {
                 // Chunk not yet available
                 debug!("Chunk {} not yet available", chunk_id.name());
                 Ok(None)

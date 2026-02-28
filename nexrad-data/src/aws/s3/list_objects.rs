@@ -3,7 +3,7 @@ use crate::aws::s3::bucket_list_result::BucketListResult;
 use crate::aws::s3::bucket_object::BucketObject;
 use crate::aws::s3::bucket_object_field::BucketObjectField;
 use crate::result::aws::AWSError;
-use crate::result::aws::AWSError::S3ListObjectsError;
+use crate::result::aws::AWSError::S3ListObjects;
 use chrono::{DateTime, Utc};
 use log::{debug, trace, warn};
 use xml::reader::XmlEvent;
@@ -22,14 +22,10 @@ pub async fn list_objects(
     }
     debug!("Listing objects in bucket \"{bucket}\" with prefix \"{prefix}\"");
 
-    let response = client()
-        .get(&path)
-        .send()
-        .await
-        .map_err(S3ListObjectsError)?;
+    let response = client().get(&path).send().await.map_err(S3ListObjects)?;
     trace!("  List objects response status: {}", response.status());
 
-    let body = response.text().await.map_err(S3ListObjectsError)?;
+    let body = response.text().await.map_err(S3ListObjects)?;
     trace!("  List objects response body length: {}", body.len());
 
     let parser = EventReader::new(body.as_bytes());
@@ -67,7 +63,7 @@ pub async fn list_objects(
 
                     let item = object.as_mut().ok_or_else(|| {
                         warn!("Expected item for object field: {field:?}");
-                        AWSError::S3ListObjectsDecodingError
+                        AWSError::S3ListObjectsDecoding
                     })?;
                     match field {
                         BucketObjectField::Key => item.key.push_str(&chars),
@@ -79,7 +75,7 @@ pub async fn list_objects(
                         BucketObjectField::Size => {
                             item.size = chars.parse().map_err(|_| {
                                 warn!("Error parsing object size: {chars}");
-                                AWSError::S3ListObjectsDecodingError
+                                AWSError::S3ListObjectsDecoding
                             })?;
                         }
                         _ => {}

@@ -141,7 +141,7 @@ impl Sweep {
     /// sweeps must be at the same elevation, and they should not have duplicate azimuth radials.
     pub fn merge(self, other: Self) -> Result<Self> {
         if self.elevation_number != other.elevation_number {
-            return Err(Error::ElevationMismatchError);
+            return Err(Error::ElevationMismatch);
         }
 
         let mut radials = self.radials;

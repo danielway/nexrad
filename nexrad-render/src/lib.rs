@@ -49,9 +49,10 @@
 #![deny(missing_docs)]
 
 pub use image::RgbaImage;
+pub use nexrad_model::data::Product;
 use nexrad_model::data::{
-    CFPMomentValue, CartesianField, DataMoment, GateStatus, MomentValue, Product, Radial,
-    SweepField, VerticalField,
+    CFPMomentValue, CartesianField, DataMoment, GateStatus, MomentValue, Radial, SweepField,
+    VerticalField,
 };
 use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
 use result::{Error, Result};
@@ -109,25 +110,11 @@ pub enum Interpolation {
 /// ```
 #[derive(Debug, Clone)]
 pub struct RenderOptions {
-    /// Output image dimensions (width, height) in pixels.
-    pub size: (usize, usize),
-    /// Background color as RGBA bytes. `None` means transparent (all zeros).
-    pub background: Option<[u8; 4]>,
-    /// Geographic extent to render. If `None`, auto-computed from data range.
-    ///
-    /// When set, the image covers exactly this extent, enabling consistent
-    /// spatial mapping across multiple renders for side-by-side comparison.
-    pub extent: Option<GeoExtent>,
-    /// Radar coordinate system for geographic projection.
-    ///
-    /// When provided, the [`RenderResult`] will include geographic metadata
-    /// enabling pixel-to-geo and geo-to-pixel coordinate conversions.
-    pub coord_system: Option<RadarCoordinateSystem>,
-    /// Interpolation method for pixel sampling.
-    ///
-    /// Default is [`Interpolation::Nearest`]. Use [`Interpolation::Bilinear`]
-    /// for smoother output that blends neighboring data gates.
-    pub interpolation: Interpolation,
+    pub(crate) size: (usize, usize),
+    pub(crate) background: Option<[u8; 4]>,
+    pub(crate) extent: Option<GeoExtent>,
+    pub(crate) coord_system: Option<RadarCoordinateSystem>,
+    pub(crate) interpolation: Interpolation,
 }
 
 impl RenderOptions {
@@ -200,6 +187,40 @@ impl RenderOptions {
     pub fn bilinear(mut self) -> Self {
         self.interpolation = Interpolation::Bilinear;
         self
+    }
+
+    /// Output image dimensions (width, height) in pixels.
+    pub fn size(&self) -> (usize, usize) {
+        self.size
+    }
+
+    /// Background color as RGBA bytes. `None` means transparent (all zeros).
+    pub fn background(&self) -> Option<[u8; 4]> {
+        self.background
+    }
+
+    /// Geographic extent to render. If `None`, auto-computed from data range.
+    ///
+    /// When set, the image covers exactly this extent, enabling consistent
+    /// spatial mapping across multiple renders for side-by-side comparison.
+    pub fn extent(&self) -> Option<&GeoExtent> {
+        self.extent.as_ref()
+    }
+
+    /// Radar coordinate system for geographic projection.
+    ///
+    /// When provided, the [`RenderResult`] will include geographic metadata
+    /// enabling pixel-to-geo and geo-to-pixel coordinate conversions.
+    pub fn coord_system(&self) -> Option<&RadarCoordinateSystem> {
+        self.coord_system.as_ref()
+    }
+
+    /// Interpolation method for pixel sampling.
+    ///
+    /// Default is [`Interpolation::Nearest`]. Use [`Interpolation::Bilinear`]
+    /// for smoother output that blends neighboring data gates.
+    pub fn interpolation(&self) -> Interpolation {
+        self.interpolation
     }
 }
 

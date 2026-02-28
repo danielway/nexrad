@@ -4,20 +4,103 @@
 [![Docs.rs](https://docs.rs/nexrad/badge.svg)](https://docs.rs/nexrad)
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
 
-Provides data structures decoding, and data access functionality for NEXRAD Archive Level II data.
+Ergonomic APIs for accessing, decoding, processing, and rendering NEXRAD weather radar data.
 
-The [NEXRAD system](https://www.ncei.noaa.gov/products/radar/next-generation-weather-radar) provides
-high-resolution weather radar data across North America and other regions. Data from these radars is
-processed and available at Level II which contains base data and Level III which contains a number
-of derived "products". Level II is the highest resolution data available including base data
-(reflectivity, mean radial velocity, and spectrum width) and dual polarization variables
-(differential reflectivity, correlation coefficient, and differential phase).
+This is the main entry point for the NEXRAD library suite. It re-exports the underlying crates
+(`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`) and provides
+top-level convenience functions for common tasks.
 
-Level II data is available through the Archive II interface described by NOAA's ICD 2620010J.
-Section 7 of the ICD specifies the format for this API. This data format is distributed through
-Unidata Local Data Manager (LDM) software. The data is organized into "volumes" (a file with binary
-data) which contain a number of compressed "LDR records", each of which contain "messages" that
-correspond to radials/rays from the radar with corresponding data and parameters.
+## Quick Start
+
+```rust,ignore
+// Load a local Archive II file
+let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
+println!("{}, {} sweeps", scan.coverage_pattern_number(), scan.sweeps().len());
+
+// Iterate through sweeps and radials
+for sweep in scan.sweeps() {
+    for radial in sweep.radials() {
+        if let Some(reflectivity) = radial.reflectivity() {
+            println!("{} gates", reflectivity.gate_count());
+        }
+    }
+}
+```
+
+## Top-Level Functions
+
+### Loading
+
+| Function | Description |
+|----------|-------------|
+| `load(data)` | Load from raw Archive II bytes |
+| `load_file(path)` | Load from a file path |
+
+### AWS Downloads (requires `aws` feature)
+
+| Function | Description |
+|----------|-------------|
+| `list_scans(site, date)` | List available scans for a site and date |
+| `download(identifier)` | Download a specific scan by archive identifier |
+| `download_latest(site, date)` | Download the most recent scan for a date |
+| `download_at(site, datetime)` | Download the scan overlapping a specific time |
+
+### Real-Time Streaming (requires `aws-polling` feature)
+
+| Function | Description |
+|----------|-------------|
+| `stream(site)` | Stream live radar data chunks as a `futures::Stream` |
+
+### Field Extraction
+
+| Function | Description |
+|----------|-------------|
+| `extract_field(sweep, product)` | Extract a `SweepField` from one sweep |
+| `extract_fields(scan, product)` | Extract `SweepField`s from all sweeps |
+| `extract_first_field(scan, product)` | Find the first sweep with data for a product |
+
+### Coordinate System
+
+| Function | Description |
+|----------|-------------|
+| `coordinate_system(scan)` | Create a `RadarCoordinateSystem` from scan metadata |
+| `coordinate_system_required(scan)` | Same, but returns an error if metadata is missing |
+
+### Site Registry
+
+| Function | Description |
+|----------|-------------|
+| `sites()` | All NEXRAD radar sites |
+| `site(id)` | Look up a site by ICAO identifier |
+| `nearest_site(lat, lon)` | Find the nearest site to a location |
+
+## Re-exported Crates
+
+Access sub-crate APIs through module re-exports:
+
+- `nexrad::model` — Core data types (`Scan`, `Sweep`, `Radial`, `SweepField`, `Site`)
+- `nexrad::decode` — Binary protocol decoding (`decode_messages`, message types)
+- `nexrad::data` — File I/O and AWS S3 (`volume::File`, `aws::archive`, `aws::realtime`)
+- `nexrad::process` — Processing algorithms (`SweepPipeline`, filters, derived products)
+- `nexrad::render` — Visualization (`render_sweep`, color scales, `RenderOptions`)
+
+## Features
+
+| Feature | Description | WASM |
+|---------|-------------|------|
+| `model` | Core data types (default) | Yes |
+| `decode` | Protocol decoding (default) | Yes |
+| `data` | Local file I/O (default) | Yes |
+| `render` | Image rendering (default) | Yes |
+| `process` | Processing algorithms (default) | Yes |
+| `aws` | AWS S3 archive downloads | Yes |
+| `aws-polling` | Real-time polling (requires tokio) | No |
+| `serde` | Serialization support | Yes |
+| `uom` | Type-safe units of measure | Yes |
+| `chrono` | DateTime type support | Yes |
+| `parallel` | Parallel decompression (requires rayon) | No |
+| `wasm` | All WASM-compatible features | Yes |
+| `full` | All features (default) | No |
 
 ## WASM Support
 
@@ -27,6 +110,5 @@ For WebAssembly targets, use the `wasm` feature which enables all WASM-compatibl
 nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
 ```
 
-This includes: `model`, `decode`, `data`, `render`, `aws`, `serde`, `uom`, and `chrono`. The
-`aws-polling` and `parallel` features require native runtimes (tokio, rayon) and are not
+The `aws-polling` and `parallel` features require native runtimes (tokio, rayon) and are not
 WASM-compatible.

@@ -17,7 +17,7 @@ image = "0.25"
 
 [dev-dependencies]
 nexrad-decode = { version = "1.0.0-rc.3", path = "../nexrad-decode" }
-nexrad-data = { version = "1.0.0-rc.4", path = "../nexrad-data" }
+nexrad-data = { version = "1.0.0-rc.5", path = "../nexrad-data" }
 criterion = { workspace = true }
 
 [[bench]]

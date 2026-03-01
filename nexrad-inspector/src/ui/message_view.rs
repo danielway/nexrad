@@ -3,9 +3,21 @@
 //! This module handles the main message view layout and delegates
 //! message-type-specific parsing to sub-modules.
 
+mod clutter_censor_zones;
+mod clutter_filter_bypass_map;
+mod clutter_filter_map;
 mod common;
+mod console_message;
 mod digital_radar_data;
+mod digital_radar_data_legacy;
+mod loopback_test;
+mod performance_maintenance_data;
+mod rda_adaptation_data;
+mod rda_control_commands;
+mod rda_log_data;
+mod rda_prf_data;
 mod rda_status_data;
+mod request_for_data;
 mod volume_coverage_pattern;
 
 use nexrad_decode::messages::{MessageHeader, MessageType};
@@ -175,17 +187,39 @@ fn render_parsed_view(frame: &mut Frame, data: &[u8], scroll: usize, area: Rect)
 
     // Parse based on message type - delegate to specialized parsers
     let parsed_text = match msg_type {
-        MessageType::RDADigitalRadarDataGenericFormat => {
-            // Pass full data so decode_messages can work
-            digital_radar_data::parse_digital_radar_data(data)
+        MessageType::RDADigitalRadarData => {
+            digital_radar_data_legacy::parse_digital_radar_data_legacy(data)
         }
         MessageType::RDAStatusData => {
             rda_status_data::parse_rda_status_data(&data[content_offset..])
         }
+        MessageType::RDAPerformanceMaintenanceData => {
+            performance_maintenance_data::parse_performance_maintenance_data(data)
+        }
+        MessageType::RDAConsoleMessage | MessageType::RPGConsoleMessage => {
+            console_message::parse_console_message(data)
+        }
         MessageType::RDAVolumeCoveragePattern => {
-            // Pass full data for full decode with elevation cuts
             volume_coverage_pattern::parse_volume_coverage_pattern(data)
         }
+        MessageType::RDAControlCommands => rda_control_commands::parse_rda_control_commands(data),
+        MessageType::RPGClutterCensorZones => {
+            clutter_censor_zones::parse_clutter_censor_zones(data)
+        }
+        MessageType::RPGRequestForData => request_for_data::parse_request_for_data(data),
+        MessageType::RDALoopBackTest | MessageType::RPGLoopBackTest => {
+            loopback_test::parse_loopback_test(data)
+        }
+        MessageType::RDAClutterFilterBypassMap => {
+            clutter_filter_bypass_map::parse_clutter_filter_bypass_map(data)
+        }
+        MessageType::RDAClutterFilterMap => clutter_filter_map::parse_clutter_filter_map(data),
+        MessageType::RDAAdaptationData => rda_adaptation_data::parse_rda_adaptation_data(data),
+        MessageType::RDADigitalRadarDataGenericFormat => {
+            digital_radar_data::parse_digital_radar_data(data)
+        }
+        MessageType::RDAPRFData => rda_prf_data::parse_rda_prf_data(data),
+        MessageType::RDALogData => rda_log_data::parse_rda_log_data(data),
         _ => common::parse_common_header_only(header),
     };
 

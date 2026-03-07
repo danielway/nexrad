@@ -10,6 +10,10 @@ use nexrad_decode::messages::volume_coverage_pattern::{self, ChannelConfiguratio
 /// chunk. Requires an [ElevationChunkMapper] to describe the relationship between chunk sequence
 /// and VCP elevations. A None result indicates that the chunk is already available or that an
 /// estimate cannot be made.
+///
+/// The estimate is anchored to the previous chunk's upload time rather than the current time,
+/// so querying late will correctly yield a past time (indicating the chunk should already be
+/// available) rather than pushing the estimate forward.
 pub fn estimate_chunk_availability_time(
     chunk: &ChunkIdentifier,
     vcp: &volume_coverage_pattern::Message,
@@ -19,8 +23,8 @@ pub fn estimate_chunk_availability_time(
     let processing_time =
         estimate_chunk_processing_time(chunk, vcp, elevation_chunk_mapper, timing_stats)?;
 
-    let now = Utc::now();
-    let availability_time = now + processing_time;
+    let anchor = chunk.upload_date_time().unwrap_or_else(Utc::now);
+    let availability_time = anchor + processing_time;
 
     Some(availability_time)
 }

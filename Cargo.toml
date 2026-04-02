@@ -44,7 +44,7 @@ rayon = { version = "1.11.0" }
 tokio = { version = "1.47.1", features = ["full"] }
 env_logger = { version = "0.11.8" }
 insta = { version = "1.43.2", features = ["yaml", "redactions"] }
-sha2 = "0.10.9"
+sha2 = "0.11.0"
 hex = "0.4.3"
 criterion = { version = "0.8.1" }
 zerocopy = { version = "0.8.30", features = ["derive"] }

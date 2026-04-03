@@ -1,10 +1,11 @@
 use crate::aws::realtime::{
-    ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType, ElevationChunkMapper,
+    ChunkCharacteristics, ChunkIdentifier, ChunkTimingModel, ChunkTimingStats, ChunkType,
+    ElevationChunkMapper,
 };
 use chrono::Duration as ChronoDuration;
 use chrono::{DateTime, Utc};
 use log::debug;
-use nexrad_decode::messages::volume_coverage_pattern::{self, ChannelConfiguration, WaveformType};
+use nexrad_decode::messages::volume_coverage_pattern;
 
 /// Attempts to estimate the time at which the next chunk will be available given the previous
 /// chunk. Requires an [ElevationChunkMapper] to describe the relationship between chunk sequence
@@ -39,35 +40,34 @@ pub fn estimate_chunk_processing_time(
     elevation_chunk_mapper: &ElevationChunkMapper,
     timing_stats: Option<&ChunkTimingStats>,
 ) -> Option<ChronoDuration> {
+    // Start chunks: use the inter-volume gap model
     if chunk.chunk_type() == ChunkType::Start {
-        return Some(ChronoDuration::seconds(10));
+        let gap_ms = (ChunkTimingModel::inter_volume_gap_secs() * 1000.0) as i64;
+        return Some(ChronoDuration::milliseconds(gap_ms));
     }
 
-    if let Some(elevation) = elevation_chunk_mapper
-        .get_sequence_elevation_number(chunk.sequence())
-        .and_then(|elevation_number| vcp.elevations().get(elevation_number - 1))
-    {
-        let waveform_type = elevation.waveform_type();
-        let channel_config = elevation.channel_configuration();
+    // Try to use the physics-based model via chunk metadata
+    if let Some(next_metadata) = elevation_chunk_mapper.get_chunk_metadata(chunk.sequence() + 1) {
+        let current_metadata = elevation_chunk_mapper.get_chunk_metadata(chunk.sequence());
 
-        let characteristics = ChunkCharacteristics {
-            chunk_type: chunk.chunk_type(),
-            waveform_type,
-            channel_configuration: channel_config,
-        };
+        // Check for historical timing data first
+        if let Some(elevation) = elevation_chunk_mapper
+            .get_sequence_elevation_number(chunk.sequence())
+            .and_then(|elevation_number| vcp.elevations().get(elevation_number - 1))
+        {
+            let characteristics = ChunkCharacteristics {
+                chunk_type: chunk.chunk_type(),
+                waveform_type: elevation.waveform_type(),
+                channel_configuration: elevation.channel_configuration(),
+            };
 
-        let average_timing =
-            timing_stats.and_then(|stats| stats.get_average_timing(&characteristics));
-        let average_attempts =
-            timing_stats.and_then(|stats| stats.get_average_attempts(&characteristics));
+            let average_timing =
+                timing_stats.and_then(|stats| stats.get_average_timing(&characteristics));
+            let average_attempts =
+                timing_stats.and_then(|stats| stats.get_average_attempts(&characteristics));
 
-        // Check if we have historical timing data for this combination
-        let estimated_wait_time =
             if let (Some(avg_timing), Some(avg_attempts)) = (average_timing, average_attempts) {
-                // Use historical average if available
                 let mut wait_time = avg_timing;
-
-                // If we're making multiple attempts, add the average number of attempts to the wait time
                 wait_time += chrono::Duration::seconds(avg_attempts as i64 - 1);
 
                 debug!(
@@ -77,30 +77,57 @@ pub fn estimate_chunk_processing_time(
                     wait_time.num_milliseconds()
                 );
 
-                wait_time
-            } else {
-                // Fall back to the static estimation
-                let wait_time = get_default_wait_time(waveform_type, channel_config);
+                return Some(wait_time);
+            }
+        }
 
-                debug!(
-                    "No historical timing data available, using static estimation of {}ms",
-                    wait_time.num_milliseconds()
-                );
+        // Fall back to physics-based model
+        if let Some(current) = current_metadata {
+            let interval_secs =
+                ChunkTimingModel::estimate_chunk_interval_secs(current, next_metadata);
+            let interval_ms = (interval_secs * 1000.0) as i64;
 
-                wait_time
-            };
+            debug!(
+                "Using physics model: interval={}ms (az_rate={:.1} dps, first_in_sweep={})",
+                interval_ms,
+                next_metadata.azimuth_rate_dps(),
+                next_metadata.is_first_in_sweep()
+            );
 
-        return Some(estimated_wait_time);
+            return Some(ChronoDuration::milliseconds(interval_ms));
+        }
+    }
+
+    // Final fallback: use old static estimation for edge cases where metadata is unavailable
+    if let Some(elevation) = elevation_chunk_mapper
+        .get_sequence_elevation_number(chunk.sequence())
+        .and_then(|elevation_number| vcp.elevations().get(elevation_number - 1))
+    {
+        let wait_time = get_legacy_default_wait_time(
+            elevation.waveform_type(),
+            elevation.channel_configuration(),
+        );
+
+        debug!(
+            "No metadata available, using legacy static estimation of {}ms",
+            wait_time.num_milliseconds()
+        );
+
+        return Some(wait_time);
     }
 
     None
 }
 
-/// Gets the default wait time based on waveform type and channel configuration
-fn get_default_wait_time(
-    waveform_type: WaveformType,
-    channel_config: ChannelConfiguration,
+/// Legacy default wait time based on waveform type and channel configuration.
+///
+/// Only used as a last resort when chunk metadata is unavailable (should be rare).
+fn get_legacy_default_wait_time(
+    waveform_type: nexrad_decode::messages::volume_coverage_pattern::WaveformType,
+    channel_config: nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration,
 ) -> ChronoDuration {
+    use nexrad_decode::messages::volume_coverage_pattern::{ChannelConfiguration, WaveformType};
+
     if waveform_type == WaveformType::CS {
         ChronoDuration::seconds(11)
     } else if channel_config == ChannelConfiguration::ConstantPhase {

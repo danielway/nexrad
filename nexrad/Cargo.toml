@@ -72,3 +72,7 @@ required-features = ["render", "data", "process"]
 name = "showcase"
 required-features = ["render", "data", "process", "chrono"]
 
+[[example]]
+name = "timing_analysis"
+required-features = ["aws", "model", "chrono"]
+

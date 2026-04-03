@@ -2,7 +2,7 @@
 
 use chrono::Duration;
 use nexrad_data::aws::realtime::{
-    ChunkCharacteristics, ChunkTimingStats, ChunkType, ElevationChunkMapper,
+    ChunkCharacteristics, ChunkTimingModel, ChunkTimingStats, ChunkType, ElevationChunkMapper,
 };
 use nexrad_decode::messages::volume_coverage_pattern::{ChannelConfiguration, WaveformType};
 
@@ -136,6 +136,122 @@ fn test_elevation_chunk_mapper_beyond_final_sequence() {
     );
 }
 
+// === ChunkMetadata tests ===
+
+#[test]
+fn test_chunk_metadata_sequence_1_is_start() {
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    let meta = mapper.get_chunk_metadata(1).expect("sequence 1 metadata");
+    assert!(meta.is_start_chunk());
+    assert_eq!(meta.elevation_number(), None);
+    assert_eq!(meta.sequence(), 1);
+}
+
+#[test]
+fn test_chunk_metadata_first_elevation() {
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    let meta = mapper.get_chunk_metadata(2).expect("sequence 2 metadata");
+    assert!(!meta.is_start_chunk());
+    assert_eq!(meta.elevation_number(), Some(1));
+    assert_eq!(meta.chunk_index_in_sweep(), 0);
+    assert!(meta.is_first_in_sweep());
+    assert!(!meta.is_last_in_sweep());
+    assert!(meta.azimuth_rate_dps() > 0.0);
+
+    // First elevation of VCP 212 is super-res (0.5 deg azimuth), so 6 chunks
+    let first_elev = &vcp.elevations()[0];
+    if first_elev.super_resolution_half_degree_azimuth() {
+        assert_eq!(meta.chunks_in_sweep(), 6);
+    } else {
+        assert_eq!(meta.chunks_in_sweep(), 3);
+    }
+}
+
+#[test]
+fn test_chunk_metadata_sweep_boundaries() {
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    let all = mapper.all_chunk_metadata();
+
+    // Skip Start chunk (index 0)
+    let mut current_elev = None;
+    for meta in &all[1..] {
+        if meta.elevation_number() != current_elev {
+            // New sweep started
+            assert!(
+                meta.is_first_in_sweep(),
+                "Chunk seq {} should be first in sweep for elev {:?}",
+                meta.sequence(),
+                meta.elevation_number()
+            );
+            current_elev = meta.elevation_number();
+        }
+
+        if meta.chunk_index_in_sweep() == meta.chunks_in_sweep() - 1 {
+            assert!(
+                meta.is_last_in_sweep(),
+                "Chunk seq {} should be last in sweep",
+                meta.sequence()
+            );
+        }
+    }
+}
+
+#[test]
+fn test_chunk_metadata_total_matches_final_sequence() {
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    // total_chunks includes the Start chunk
+    assert_eq!(mapper.total_chunks(), mapper.final_sequence());
+
+    // Last metadata entry should have sequence == final_sequence
+    let all = mapper.all_chunk_metadata();
+    assert_eq!(all.last().unwrap().sequence(), mapper.final_sequence());
+}
+
+#[test]
+fn test_chunk_metadata_out_of_range() {
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    assert!(mapper.get_chunk_metadata(0).is_none());
+    assert!(mapper
+        .get_chunk_metadata(mapper.final_sequence() + 1)
+        .is_none());
+}
+
+#[test]
+fn test_chunk_metadata_azimuth_rates_match_vcp() {
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    // For each elevation, all chunks should have the same azimuth rate from the VCP
+    for (elev_idx, elev_data) in vcp.elevations().iter().enumerate() {
+        let elev_num = elev_idx + 1;
+        let expected_rate = elev_data.azimuth_rate();
+
+        for meta in mapper.all_chunk_metadata() {
+            if meta.elevation_number() == Some(elev_num) {
+                assert!(
+                    (meta.azimuth_rate_dps() - expected_rate).abs() < 0.001,
+                    "Elevation {} azimuth rate mismatch: meta={}, vcp={}",
+                    elev_num,
+                    meta.azimuth_rate_dps(),
+                    expected_rate
+                );
+            }
+        }
+    }
+}
+
+// === ChunkCharacteristics tests ===
+
 #[test]
 fn test_chunk_characteristics_equality() {
     let char1 = ChunkCharacteristics {
@@ -183,6 +299,8 @@ fn test_chunk_characteristics_hash() {
     // char1 and char2 are equal, so set should have only 1 element
     assert_eq!(set.len(), 1);
 }
+
+// === ChunkTimingStats tests ===
 
 #[test]
 fn test_chunk_timing_stats_new() {
@@ -356,6 +474,8 @@ fn test_chunk_timing_stats_clone() {
     assert_eq!(*avg_timing, Some(Duration::seconds(5)));
 }
 
+// === Timing estimation tests ===
+
 #[test]
 fn test_estimate_chunk_processing_time_start_chunk() {
     use chrono::NaiveDateTime;
@@ -377,9 +497,9 @@ fn test_estimate_chunk_processing_time_start_chunk() {
 
     let estimate = estimate_chunk_processing_time(&start_chunk, &vcp, &mapper, None);
 
-    // Start chunks should have a fixed estimate (10 seconds)
+    // Start chunks use the inter-volume gap model (8.5 seconds)
     assert!(estimate.is_some());
-    assert_eq!(estimate.unwrap(), Duration::seconds(10));
+    assert_eq!(estimate.unwrap(), Duration::milliseconds(8500));
 }
 
 #[test]
@@ -423,7 +543,7 @@ fn test_estimate_chunk_processing_time_with_stats() {
 }
 
 #[test]
-fn test_estimate_chunk_processing_time_without_stats() {
+fn test_estimate_chunk_processing_time_without_stats_uses_physics_model() {
     use chrono::NaiveDateTime;
     use nexrad_data::aws::realtime::{
         estimate_chunk_processing_time, ChunkIdentifier, VolumeIndex,
@@ -443,18 +563,257 @@ fn test_estimate_chunk_processing_time_without_stats() {
 
     let estimate = estimate_chunk_processing_time(&chunk, &vcp, &mapper, None);
 
-    // Should use default timing (4, 7, or 11 seconds depending on waveform/channel config)
     assert!(estimate.is_some());
-    let duration = estimate.unwrap();
+    let duration_secs = estimate.unwrap().num_milliseconds() as f64 / 1000.0;
 
-    // Should be one of the default values
+    // Physics model: chunk duration = (360 / azimuth_rate - 0.67) / chunks_in_sweep
+    // For VCP 212 first elevation, azimuth rate ~21 dps, super-res (6 chunks)
+    // Expected: (360/21.149 - 0.67) / 6 ≈ 2.73s
+    // With inter-sweep gap for first-in-sweep: ~2.73 + 0.7 = ~3.43s
+    // The exact value depends on whether this is first-in-sweep or intra-sweep
     assert!(
-        duration == Duration::seconds(4)
-            || duration == Duration::seconds(7)
-            || duration == Duration::seconds(11),
-        "Expected default timing value, got: {} seconds",
-        duration.num_seconds()
+        duration_secs > 1.0 && duration_secs < 15.0,
+        "Physics-model estimate should be reasonable, got: {:.2}s",
+        duration_secs
     );
+}
+
+// === ChunkTimingModel tests ===
+
+#[test]
+fn test_chunk_timing_model_sweep_duration_precip() {
+    // VCP 212 low elevation: ~21.149 dps
+    let duration = ChunkTimingModel::sweep_duration_secs(21.149).unwrap();
+    // Expected: (360 / 21.149) - 0.67 ≈ 16.36s
+    assert!(
+        (duration - 16.36).abs() < 0.1,
+        "Expected ~16.36s, got {:.2}s",
+        duration
+    );
+}
+
+#[test]
+fn test_chunk_timing_model_sweep_duration_clear_air() {
+    // VCP 35 low elevation: ~4.966 dps
+    let duration = ChunkTimingModel::sweep_duration_secs(4.966).unwrap();
+    // Expected: (360 / 4.966) - 0.67 ≈ 71.82s
+    assert!(
+        (duration - 71.82).abs() < 0.1,
+        "Expected ~71.82s, got {:.2}s",
+        duration
+    );
+}
+
+#[test]
+fn test_chunk_timing_model_sweep_duration_zero_rate() {
+    assert!(ChunkTimingModel::sweep_duration_secs(0.0).is_none());
+    assert!(ChunkTimingModel::sweep_duration_secs(-5.0).is_none());
+}
+
+#[test]
+fn test_chunk_timing_model_chunk_duration() {
+    // 21.149 dps, 6 chunks (super-res)
+    let chunk_dur = ChunkTimingModel::chunk_duration_secs(21.149, 6).unwrap();
+    assert!(
+        (chunk_dur - 2.73).abs() < 0.1,
+        "Expected ~2.73s, got {:.2}s",
+        chunk_dur
+    );
+
+    // 21.149 dps, 3 chunks (standard)
+    let chunk_dur = ChunkTimingModel::chunk_duration_secs(21.149, 3).unwrap();
+    assert!(
+        (chunk_dur - 5.45).abs() < 0.1,
+        "Expected ~5.45s, got {:.2}s",
+        chunk_dur
+    );
+
+    // Zero chunks
+    assert!(ChunkTimingModel::chunk_duration_secs(21.149, 0).is_none());
+}
+
+#[test]
+fn test_chunk_timing_model_inter_sweep_gap_same_elevation() {
+    let gap = ChunkTimingModel::inter_sweep_gap_secs(0.5, 0.5);
+    assert!(
+        (gap - 0.7).abs() < 0.001,
+        "Same elevation gap should be 0.7s"
+    );
+}
+
+#[test]
+fn test_chunk_timing_model_inter_sweep_gap_small_change() {
+    let gap = ChunkTimingModel::inter_sweep_gap_secs(0.5, 0.9);
+    // 0.7 + (0.4 * 0.08) = 0.732
+    assert!(
+        (gap - 0.732).abs() < 0.01,
+        "Expected ~0.732s, got {:.3}s",
+        gap
+    );
+}
+
+#[test]
+fn test_chunk_timing_model_inter_sweep_gap_large_change() {
+    let gap = ChunkTimingModel::inter_sweep_gap_secs(6.4, 15.7);
+    // 0.7 + (9.3 * 0.08) = 1.444
+    assert!(
+        (gap - 1.444).abs() < 0.01,
+        "Expected ~1.444s, got {:.3}s",
+        gap
+    );
+}
+
+#[test]
+fn test_chunk_timing_model_inter_volume_gap() {
+    assert!((ChunkTimingModel::inter_volume_gap_secs() - 8.5).abs() < 0.001);
+}
+
+// === ScanTimingProjection tests ===
+
+#[test]
+fn test_scan_timing_projection_basic() {
+    use chrono::{NaiveDateTime, TimeZone, Utc};
+    use nexrad_data::aws::realtime::{project_scan_timing, ChunkIdentifier, VolumeIndex};
+
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    let anchor_time = Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap();
+    let anchor_chunk = ChunkIdentifier::new(
+        "KDMX".to_string(),
+        VolumeIndex::new(1),
+        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+        5,
+        ChunkType::Intermediate,
+        Some(anchor_time),
+    );
+
+    let projection = project_scan_timing(&anchor_chunk, &vcp, &mapper, None);
+    assert!(projection.is_some(), "Projection should succeed");
+
+    let proj = projection.unwrap();
+    assert_eq!(proj.anchor_sequence(), 5);
+    assert!(!proj.chunks().is_empty());
+
+    // All projected chunks should have monotonically increasing times
+    let mut prev_time = anchor_time;
+    for chunk in proj.chunks() {
+        assert!(
+            chunk.projected_time() > prev_time,
+            "Chunk {} projected time should be after previous",
+            chunk.sequence()
+        );
+        prev_time = chunk.projected_time();
+    }
+
+    // Volume end should be the last projected chunk's time
+    assert_eq!(
+        proj.volume_end_time(),
+        proj.chunks().last().unwrap().projected_time()
+    );
+
+    // Remaining duration should be positive
+    assert!(
+        proj.remaining_duration().num_seconds() > 0,
+        "Remaining duration should be positive"
+    );
+}
+
+#[test]
+fn test_scan_timing_projection_sweep_boundaries() {
+    use chrono::{NaiveDateTime, TimeZone, Utc};
+    use nexrad_data::aws::realtime::{project_scan_timing, ChunkIdentifier, VolumeIndex};
+
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    let anchor_time = Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap();
+    let anchor_chunk = ChunkIdentifier::new(
+        "KDMX".to_string(),
+        VolumeIndex::new(1),
+        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+        1,
+        ChunkType::Start,
+        Some(anchor_time),
+    );
+
+    let projection = project_scan_timing(&anchor_chunk, &vcp, &mapper, None);
+    assert!(projection.is_some());
+
+    let proj = projection.unwrap();
+
+    // Count sweep transitions
+    let sweep_starts: Vec<_> = proj
+        .chunks()
+        .iter()
+        .filter(|c| c.starts_new_sweep())
+        .collect();
+    assert!(
+        !sweep_starts.is_empty(),
+        "Should have at least one sweep start"
+    );
+
+    // Number of sweep starts should equal number of elevations in VCP
+    assert_eq!(
+        sweep_starts.len(),
+        vcp.elevations().len(),
+        "Sweep starts should match VCP elevation count"
+    );
+}
+
+#[test]
+fn test_scan_timing_projection_total_duration() {
+    use chrono::{NaiveDateTime, TimeZone, Utc};
+    use nexrad_data::aws::realtime::{project_scan_timing, ChunkIdentifier, VolumeIndex};
+
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    let anchor_time = Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap();
+    let anchor_chunk = ChunkIdentifier::new(
+        "KDMX".to_string(),
+        VolumeIndex::new(1),
+        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+        1,
+        ChunkType::Start,
+        Some(anchor_time),
+    );
+
+    let projection = project_scan_timing(&anchor_chunk, &vcp, &mapper, None);
+    assert!(projection.is_some());
+
+    let proj = projection.unwrap();
+    let duration_secs = proj.remaining_duration().num_seconds();
+
+    // VCP 212 with SAILS typically takes 200-400 seconds
+    assert!(
+        duration_secs > 100 && duration_secs < 600,
+        "Volume duration should be 100-600s, got {}s",
+        duration_secs
+    );
+}
+
+#[test]
+fn test_scan_timing_projection_at_final_sequence() {
+    use chrono::{NaiveDateTime, TimeZone, Utc};
+    use nexrad_data::aws::realtime::{project_scan_timing, ChunkIdentifier, VolumeIndex};
+
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    let anchor_time = Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap();
+    let anchor_chunk = ChunkIdentifier::new(
+        "KDMX".to_string(),
+        VolumeIndex::new(1),
+        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+        mapper.final_sequence(),
+        ChunkType::End,
+        Some(anchor_time),
+    );
+
+    // At the final sequence, there's nothing to project
+    let projection = project_scan_timing(&anchor_chunk, &vcp, &mapper, None);
+    assert!(projection.is_none());
 }
 
 // Integration tests that require network access and aws-polling feature

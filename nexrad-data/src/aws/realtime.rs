@@ -51,11 +51,17 @@ pub use list_chunks_in_volume::*;
 mod estimate_next_chunk_time;
 pub use estimate_next_chunk_time::*;
 
+mod chunk_timing_model;
+pub use chunk_timing_model::*;
+
 mod chunk_timing_stats;
 pub use chunk_timing_stats::*;
 
 mod elevation_chunk_mapper;
 pub use elevation_chunk_mapper::*;
+
+mod scan_timing_projection;
+pub use scan_timing_projection::*;
 
 mod retry_policy;
 pub use retry_policy::*;

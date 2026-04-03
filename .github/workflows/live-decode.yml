@@ -26,7 +26,8 @@ jobs:
         env:
           TEST_SITE: ${{ matrix.site }}
         run: |
-          cargo test --package nexrad-data --test live_decode test_live_decode_${{ matrix.site }} \
+          SITE_LOWER=$(echo "${{ matrix.site }}" | tr '[:upper:]' '[:lower:]')
+          cargo test --package nexrad-data --test live_decode "test_live_decode_${SITE_LOWER}" \
             --features aws -- --ignored --nocapture
 
   notify-failure:

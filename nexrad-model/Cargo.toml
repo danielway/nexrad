@@ -27,5 +27,5 @@ hex = { workspace = true }
 insta = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
-nexrad-data = { version = "1.0.0-rc.6", path = "../nexrad-data" }
+nexrad-data = { version = "1.0.0-rc.7", path = "../nexrad-data" }
 nexrad-decode = { version = "1.0.0-rc.3", path = "../nexrad-decode" }

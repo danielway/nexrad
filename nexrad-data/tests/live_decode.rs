@@ -13,19 +13,17 @@ use nexrad_data::volume;
 use nexrad_decode::messages::rda_status_data::RDABuildNumber;
 use nexrad_decode::messages::{decode_messages, MessageContents};
 
-/// Expected RDA build numbers per site.
-/// Update these values when sites receive software upgrades.
-///
-/// To update after a build change:
-/// 1. Run the test to see the new build number
-/// 2. Verify the library decodes correctly with the new build
-/// 3. Update the expected value here
-const EXPECTED_BUILDS: &[(&str, RDABuildNumber)] = &[
-    ("KDMX", RDABuildNumber::Build23_0), // Des Moines, IA - Central US
-    ("KTLX", RDABuildNumber::Build24_0), // Norman, OK - Tornado Alley
-    ("KLOT", RDABuildNumber::Build23_0), // Chicago/Romeoville, IL - Great Lakes
-    ("KJAX", RDABuildNumber::Build23_0), // Jacksonville, FL - Southeast US
-    ("KATX", RDABuildNumber::Build23_0), // Seattle, WA - Pacific Northwest
+/// Maximum RDA build number the library is known to support.
+/// Update this when a new build version is added to the RDABuildNumber enum.
+const MAX_SUPPORTED_BUILD: RDABuildNumber = RDABuildNumber::Build24_0;
+
+/// Sites to test against live data.
+const TEST_SITES: &[&str] = &[
+    "KDMX", // Des Moines, IA - Central US
+    "KTLX", // Norman, OK - Tornado Alley
+    "KLOT", // Chicago/Romeoville, IL - Great Lakes
+    "KJAX", // Jacksonville, FL - Southeast US
+    "KATX", // Seattle, WA - Pacific Northwest
 ];
 
 /// Minimum number of radar data messages expected in a complete volume.
@@ -44,18 +42,15 @@ struct DecodeResult {
 }
 
 impl DecodeResult {
-    fn print_report(&self, expected_build: &RDABuildNumber) {
-        let build_status = if self.build_number == *expected_build {
-            "PASS"
-        } else {
-            "FAIL"
-        };
+    fn print_report(&self) {
+        let build_ok = self.build_number.is_known() && self.build_number <= MAX_SUPPORTED_BUILD;
+        let build_status = if build_ok { "PASS" } else { "FAIL" };
 
         println!("=== Decode Results for {} ===", self.site);
         println!("File: {}", self.file_name);
         println!(
-            "Build Number: {:?} (expected: {:?}) - {}",
-            self.build_number, expected_build, build_status
+            "Build Number: {:?} (max supported: {:?}) - {}",
+            self.build_number, MAX_SUPPORTED_BUILD, build_status
         );
         println!("RDA Status Messages: {}", self.rda_status_count);
         println!("VCP Messages: {}", self.vcp_count);
@@ -172,7 +167,7 @@ fn decode_volume(site: &str, file_name: &str, file: &volume::File) -> Result<Dec
 }
 
 /// Run the live decode test for a specific site.
-async fn run_site_test(site: &str, expected_build: &RDABuildNumber) {
+async fn run_site_test(site: &str) {
     println!("\n{}", "=".repeat(60));
     println!("Testing site: {}", site);
     println!("{}\n", "=".repeat(60));
@@ -195,23 +190,33 @@ async fn run_site_test(site: &str, expected_build: &RDABuildNumber) {
         }
     };
 
-    result.print_report(expected_build);
+    result.print_report();
 
     // Collect all assertion failures
     let mut failures = Vec::new();
 
-    // Build number check (primary assertion)
-    if result.build_number != *expected_build {
+    // Build number check
+    if !result.build_number.is_known() {
         let msg = format!(
-            "Build number mismatch: expected {:?}, got {:?}. \
-             Update EXPECTED_BUILDS in live_decode.rs if this is expected.",
-            expected_build, result.build_number
+            "Unknown build number: {:?}. Add a new variant to RDABuildNumber.",
+            result.build_number
         );
-        // GitHub Actions annotation for visibility
         println!(
-            "::error file=nexrad-data/tests/live_decode.rs,title=Build Mismatch::\
-             Site {} build number changed from {:?} to {:?}. Update EXPECTED_BUILDS constant.",
-            site, expected_build, result.build_number
+            "::error file=nexrad-data/tests/live_decode.rs,title=Unknown Build::\
+             Site {} reported unknown build {:?}. Add new variant to RDABuildNumber enum.",
+            site, result.build_number
+        );
+        failures.push(msg);
+    } else if result.build_number > MAX_SUPPORTED_BUILD {
+        let msg = format!(
+            "Build {:?} exceeds MAX_SUPPORTED_BUILD ({:?}). \
+             Update MAX_SUPPORTED_BUILD in live_decode.rs if this is expected.",
+            result.build_number, MAX_SUPPORTED_BUILD
+        );
+        println!(
+            "::error file=nexrad-data/tests/live_decode.rs,title=Build Exceeds Max::\
+             Site {} build {:?} exceeds MAX_SUPPORTED_BUILD {:?}. Update the constant.",
+            site, result.build_number, MAX_SUPPORTED_BUILD
         );
         failures.push(msg);
     }
@@ -253,52 +258,44 @@ async fn run_site_test(site: &str, expected_build: &RDABuildNumber) {
     println!("PASS: {} decoded successfully\n", site);
 }
 
-fn get_expected_build(site: &str) -> &'static RDABuildNumber {
-    EXPECTED_BUILDS
-        .iter()
-        .find(|(s, _)| *s == site)
-        .map(|(_, b)| b)
-        .unwrap_or_else(|| panic!("Site {} not found in EXPECTED_BUILDS", site))
-}
-
 // Individual test functions for each site (allows matrix strategy in CI)
 
 #[tokio::test]
 #[ignore = "requires AWS access - run weekly"]
 async fn test_live_decode_kdmx() {
-    run_site_test("KDMX", get_expected_build("KDMX")).await;
+    run_site_test("KDMX").await;
 }
 
 #[tokio::test]
 #[ignore = "requires AWS access - run weekly"]
 async fn test_live_decode_ktlx() {
-    run_site_test("KTLX", get_expected_build("KTLX")).await;
+    run_site_test("KTLX").await;
 }
 
 #[tokio::test]
 #[ignore = "requires AWS access - run weekly"]
 async fn test_live_decode_klot() {
-    run_site_test("KLOT", get_expected_build("KLOT")).await;
+    run_site_test("KLOT").await;
 }
 
 #[tokio::test]
 #[ignore = "requires AWS access - run weekly"]
 async fn test_live_decode_kjax() {
-    run_site_test("KJAX", get_expected_build("KJAX")).await;
+    run_site_test("KJAX").await;
 }
 
 #[tokio::test]
 #[ignore = "requires AWS access - run weekly"]
 async fn test_live_decode_katx() {
-    run_site_test("KATX", get_expected_build("KATX")).await;
+    run_site_test("KATX").await;
 }
 
 /// Combined test for local development - runs all sites sequentially.
 #[tokio::test]
 #[ignore = "requires AWS access - run weekly"]
 async fn test_live_decode_all_sites() {
-    for (site, expected_build) in EXPECTED_BUILDS {
-        run_site_test(site, expected_build).await;
+    for site in TEST_SITES {
+        run_site_test(site).await;
     }
     println!("\nAll sites decoded successfully!");
 }

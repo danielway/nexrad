@@ -129,10 +129,8 @@ impl File {
                         }
                         radials.push(m.into_radial()?);
                     }
-                    MessageContents::VolumeCoveragePattern(m) => {
-                        if vcp.is_none() {
-                            vcp = Some(m.into_owned());
-                        }
+                    MessageContents::VolumeCoveragePattern(m) if vcp.is_none() => {
+                        vcp = Some(m.into_owned());
                     }
                     _ => {}
                 }

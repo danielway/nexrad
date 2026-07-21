@@ -82,11 +82,9 @@ pub async fn list_objects(
                     }
                 }
             }
-            Ok(XmlEvent::EndElement { name }) => {
-                if name.local_name.as_str() == "Contents" {
-                    if let Some(item) = object.take() {
-                        objects.push(item);
-                    }
+            Ok(XmlEvent::EndElement { name }) if name.local_name.as_str() == "Contents" => {
+                if let Some(item) = object.take() {
+                    objects.push(item);
                 }
             }
             _ => {}

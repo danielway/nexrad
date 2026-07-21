@@ -158,7 +158,7 @@ impl SweepField {
             .enumerate()
             .map(|(row, &(_, orig_idx))| (row, orig_idx))
             .collect();
-        work.sort_by(|a, b| b.1.cmp(&a.1));
+        work.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         // Stash azimuths in order (we already have them from indexed).
         for &(az, _) in &indexed {

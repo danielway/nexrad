@@ -82,10 +82,10 @@ pub fn assemble_volume<'a>(
                                 }
                                 all_radials.push(m.into_radial()?);
                             }
-                            MessageContents::VolumeCoveragePattern(m) => {
-                                if coverage_pattern_message.is_none() {
-                                    coverage_pattern_message = Some(m.into_owned());
-                                }
+                            MessageContents::VolumeCoveragePattern(m)
+                                if coverage_pattern_message.is_none() =>
+                            {
+                                coverage_pattern_message = Some(m.into_owned());
                             }
                             _ => {}
                         }
@@ -114,10 +114,10 @@ pub fn assemble_volume<'a>(
                             }
                             all_radials.push(m.into_radial()?);
                         }
-                        MessageContents::VolumeCoveragePattern(m) => {
-                            if coverage_pattern_message.is_none() {
-                                coverage_pattern_message = Some(m.into_owned());
-                            }
+                        MessageContents::VolumeCoveragePattern(m)
+                            if coverage_pattern_message.is_none() =>
+                        {
+                            coverage_pattern_message = Some(m.into_owned());
                         }
                         _ => {}
                     }

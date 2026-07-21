@@ -103,12 +103,21 @@ pub struct ElevationDataBlock {
 }
 
 /// Decodes an angle as defined in table III-A of ICD 2620002AA
+///
+/// The value is sign-magnitude: bit 15 is the sign bit and bits 3-14 are the
+/// magnitude. Negative tilts (e.g. the sub-horizon cuts used at mountain-top
+/// sites like KMAX) must be negated rather than treated as an extra +180°
+/// contribution, which would wrap them to their ~360° equivalent.
 pub fn decode_angle(raw: Code2) -> f64 {
     let mut angle: f64 = 0.0;
-    for i in 3..16 {
+    for i in 3..15 {
         if ((raw >> i) & 1) == 1 {
             angle += 180.0 * f64::powf(2.0, (i - 15) as f64);
         }
+    }
+
+    if ((raw >> 15) & 1) == 1 {
+        angle = -angle;
     }
 
     angle
@@ -129,4 +138,62 @@ pub fn decode_angular_velocity(raw: Code2) -> f64 {
     }
 
     angular_velocity
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{decode_angle, decode_angular_velocity, Code2};
+
+    // Bit 14 is the most-significant magnitude bit (180 * 2^-1 = 90 degrees) and
+    // bit 15 is the sign bit.
+    const SIGN: u16 = 1 << 15;
+
+    fn angle(raw: u16) -> f64 {
+        decode_angle(Code2::new(raw))
+    }
+
+    fn angular_velocity(raw: u16) -> f64 {
+        decode_angular_velocity(Code2::new(raw))
+    }
+
+    #[test]
+    fn decode_angle_zero() {
+        assert_eq!(angle(0), 0.0);
+    }
+
+    #[test]
+    fn decode_angle_positive() {
+        assert_eq!(angle(1 << 14), 90.0);
+        assert_eq!(angle(1 << 13), 45.0);
+        assert_eq!(angle(1 << 12), 22.5);
+    }
+
+    #[test]
+    fn decode_angle_honors_sign_bit() {
+        assert_eq!(angle(SIGN | (1 << 14)), -90.0);
+        assert_eq!(angle(SIGN | (1 << 13)), -45.0);
+    }
+
+    #[test]
+    fn decode_angle_negative_tilt_does_not_wrap() {
+        // Small negative tilt like KMAX's sub-horizon cuts should decode close to
+        // zero and negative, not to a ~360-degree wrapped value.
+        let magnitude = 1 << 5; // 180 * 2^-10 = 0.17578125 degrees
+        assert_eq!(angle(magnitude), 0.17578125);
+        assert_eq!(angle(SIGN | magnitude), -0.17578125);
+        assert!(angle(SIGN | magnitude) > -1.0);
+    }
+
+    #[test]
+    fn decode_angle_is_symmetric_about_sign_bit() {
+        for raw in [1u16 << 5, 1 << 8, 1 << 13, (1 << 14) | (1 << 10)] {
+            assert_eq!(angle(SIGN | raw), -angle(raw));
+        }
+    }
+
+    #[test]
+    fn decode_angular_velocity_honors_sign_bit() {
+        assert_eq!(angular_velocity(1 << 14), 22.5);
+        assert_eq!(angular_velocity(SIGN | (1 << 14)), -22.5);
+    }
 }

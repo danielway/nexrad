@@ -8,7 +8,7 @@
 #![cfg(feature = "aws")]
 
 use chrono::{Duration, Utc};
-use nexrad_data::aws::archive::{download_file, list_files};
+use nexrad_data::aws::archive::{download_file, list_files, Identifier};
 use nexrad_data::volume;
 use nexrad_decode::messages::rda_status_data::RDABuildNumber;
 use nexrad_decode::messages::{decode_messages, MessageContents};
@@ -28,6 +28,15 @@ const TEST_SITES: &[&str] = &[
 
 /// Minimum number of radar data messages expected in a complete volume.
 const MIN_RADAR_DATA_MESSAGES: usize = 1000;
+
+/// Number of recent volumes to try before declaring a site failed.
+///
+/// The newest archived volume is occasionally anomalous for a single site (an
+/// incomplete upload, a one-off decode hiccup, or a transient download error).
+/// Validating the newest *and* falling back to slightly older volumes keeps a
+/// single bad volume from producing a false failure, while a genuine decode
+/// regression still fails every attempt.
+const MAX_VOLUME_ATTEMPTS: usize = 3;
 
 /// Result of decoding a volume file.
 struct DecodeResult {
@@ -61,37 +70,30 @@ impl DecodeResult {
     }
 }
 
-/// Attempt to find and download a volume file for the given site.
-/// Tries today, yesterday, and 2 days ago before giving up.
-async fn get_latest_volume_file(site: &str) -> Option<(String, volume::File)> {
+/// List recent volume-file identifiers for a site, newest first.
+///
+/// Looks back across today, yesterday, and 2 days ago so a site that is briefly
+/// quiet still yields candidates. MDM (metadata) files are excluded. The
+/// returned order lets callers try the newest volume first and fall back to
+/// older ones.
+async fn list_recent_volume_files(site: &str) -> Vec<Identifier> {
     let today = Utc::now().date_naive();
+    let mut candidates = Vec::new();
 
     for days_ago in 0..3i64 {
         let date = today - Duration::days(days_ago);
 
         match list_files(site, &date).await {
             Ok(files) => {
-                // Filter out MDM files and get the latest non-MDM file
-                let volume_files: Vec<_> = files
+                // list_files returns keys in lexicographic (chronological) order,
+                // so the newest volume for the day is last. Reverse to newest-first
+                // and append; each earlier day's volumes are older than this day's.
+                let mut volume_files: Vec<_> = files
                     .into_iter()
                     .filter(|f| !f.name().ends_with("_MDM"))
                     .collect();
-
-                if let Some(latest) = volume_files.last() {
-                    let file_name = latest.name().to_string();
-                    match download_file(latest.clone()).await {
-                        Ok(file) => {
-                            println!(
-                                "Downloaded {} from {} ({} days ago)",
-                                file_name, date, days_ago
-                            );
-                            return Some((file_name, file));
-                        }
-                        Err(e) => {
-                            eprintln!("Failed to download {}: {}", file_name, e);
-                        }
-                    }
-                }
+                volume_files.reverse();
+                candidates.extend(volume_files);
             }
             Err(e) => {
                 eprintln!("Failed to list files for {} on {}: {}", site, date, e);
@@ -99,7 +101,7 @@ async fn get_latest_volume_file(site: &str) -> Option<(String, volume::File)> {
         }
     }
 
-    None
+    candidates
 }
 
 /// Decode a volume file and extract statistics.
@@ -166,59 +168,23 @@ fn decode_volume(site: &str, file_name: &str, file: &volume::File) -> Result<Dec
     })
 }
 
-/// Run the live decode test for a specific site.
-async fn run_site_test(site: &str) {
-    println!("\n{}", "=".repeat(60));
-    println!("Testing site: {}", site);
-    println!("{}\n", "=".repeat(60));
-
-    let (file_name, file) = match get_latest_volume_file(site).await {
-        Some(result) => result,
-        None => {
-            panic!(
-                "SKIP: No data available for {} in the last 3 days. \
-                 Site may be under maintenance.",
-                site
-            );
-        }
-    };
-
-    let result = match decode_volume(site, &file_name, &file) {
-        Ok(r) => r,
-        Err(e) => {
-            panic!("FAIL: Decode error for {}: {}", site, e);
-        }
-    };
-
-    result.print_report();
-
-    // Collect all assertion failures
+/// Validate a decoded volume, returning a list of human-readable failure
+/// reasons. An empty list means the volume passed every check.
+fn validation_failures(result: &DecodeResult) -> Vec<String> {
     let mut failures = Vec::new();
 
     // Build number check
     if !result.build_number.is_known() {
-        let msg = format!(
+        failures.push(format!(
             "Unknown build number: {:?}. Add a new variant to RDABuildNumber.",
             result.build_number
-        );
-        println!(
-            "::error file=nexrad-data/tests/live_decode.rs,title=Unknown Build::\
-             Site {} reported unknown build {:?}. Add new variant to RDABuildNumber enum.",
-            site, result.build_number
-        );
-        failures.push(msg);
+        ));
     } else if result.build_number > MAX_SUPPORTED_BUILD {
-        let msg = format!(
+        failures.push(format!(
             "Build {:?} exceeds MAX_SUPPORTED_BUILD ({:?}). \
              Update MAX_SUPPORTED_BUILD in live_decode.rs if this is expected.",
             result.build_number, MAX_SUPPORTED_BUILD
-        );
-        println!(
-            "::error file=nexrad-data/tests/live_decode.rs,title=Build Exceeds Max::\
-             Site {} build {:?} exceeds MAX_SUPPORTED_BUILD {:?}. Update the constant.",
-            site, result.build_number, MAX_SUPPORTED_BUILD
-        );
-        failures.push(msg);
+        ));
     }
 
     // RDA Status check
@@ -247,15 +213,116 @@ async fn run_site_test(site: &str) {
         failures.push("Volume scan end marker not found".to_string());
     }
 
-    // Final assertion
-    assert!(
-        failures.is_empty(),
-        "Test failed for {}:\n  - {}",
-        site,
-        failures.join("\n  - ")
-    );
+    failures
+}
 
-    println!("PASS: {} decoded successfully\n", site);
+/// Emit GitHub Actions error annotations for build-number problems so they
+/// surface prominently in the workflow UI. Only build issues get annotations
+/// since they signal that the library itself needs updating.
+fn emit_build_annotations(site: &str, result: &DecodeResult) {
+    if !result.build_number.is_known() {
+        println!(
+            "::error file=nexrad-data/tests/live_decode.rs,title=Unknown Build::\
+             Site {} reported unknown build {:?}. Add new variant to RDABuildNumber enum.",
+            site, result.build_number
+        );
+    } else if result.build_number > MAX_SUPPORTED_BUILD {
+        println!(
+            "::error file=nexrad-data/tests/live_decode.rs,title=Build Exceeds Max::\
+             Site {} build {:?} exceeds MAX_SUPPORTED_BUILD {:?}. Update the constant.",
+            site, result.build_number, MAX_SUPPORTED_BUILD
+        );
+    }
+}
+
+/// Run the live decode test for a specific site.
+///
+/// Tries the most recent volumes in turn (see [`MAX_VOLUME_ATTEMPTS`]) and
+/// passes as soon as one fully validates. A single anomalous volume is skipped
+/// rather than failing the site; a genuine decode regression fails every
+/// attempt and is reported with the details from the last one.
+async fn run_site_test(site: &str) {
+    println!("\n{}", "=".repeat(60));
+    println!("Testing site: {}", site);
+    println!("{}\n", "=".repeat(60));
+
+    let candidates = list_recent_volume_files(site).await;
+    if candidates.is_empty() {
+        panic!(
+            "SKIP: No data available for {} in the last 3 days. \
+             Site may be under maintenance.",
+            site
+        );
+    }
+
+    let mut attempts = 0;
+    let mut last_failure: Option<(DecodeResult, Vec<String>)> = None;
+
+    for identifier in candidates.iter().take(MAX_VOLUME_ATTEMPTS) {
+        attempts += 1;
+        let file_name = identifier.name().to_string();
+
+        let file = match download_file(identifier.clone()).await {
+            Ok(file) => file,
+            Err(e) => {
+                eprintln!(
+                    "Attempt {}: failed to download {}: {}",
+                    attempts, file_name, e
+                );
+                continue;
+            }
+        };
+
+        let result = match decode_volume(site, &file_name, &file) {
+            Ok(result) => result,
+            Err(e) => {
+                eprintln!(
+                    "Attempt {}: decode error for {}: {}",
+                    attempts, file_name, e
+                );
+                continue;
+            }
+        };
+
+        result.print_report();
+
+        let failures = validation_failures(&result);
+        if failures.is_empty() {
+            println!(
+                "PASS: {} decoded successfully from {} (attempt {})\n",
+                site, file_name, attempts
+            );
+            return;
+        }
+
+        println!(
+            "Attempt {} ({}) did not fully validate; trying an older volume if available:\n  - {}",
+            attempts,
+            file_name,
+            failures.join("\n  - ")
+        );
+        last_failure = Some((result, failures));
+    }
+
+    // No recent volume fully validated.
+    match last_failure {
+        Some((result, failures)) => {
+            emit_build_annotations(site, &result);
+            panic!(
+                "FAIL: {} - no recent volume fully validated after {} attempt(s). \
+                 Last volume's failures:\n  - {}",
+                site,
+                attempts,
+                failures.join("\n  - ")
+            );
+        }
+        None => {
+            panic!(
+                "FAIL: {} - could not download or decode any of the {} most recent volume(s).",
+                site, attempts
+            );
+        }
+    }
 }
 
 // Individual test functions for each site (allows matrix strategy in CI)

@@ -1,0 +1,1255 @@
+{
+  "schema_version": 1,
+  "last_verified": "2026-08-20",
+  "source": "https://opengeo.ncep.noaa.gov/geoserver/nws/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=nws%3Aradar_sites&outputFormat=application%2Fjson",
+  "sites": [
+    {
+      "id": "KABR",
+      "registry_name": "Aberdeen",
+      "source_name": "Aberdeen",
+      "latitude": 45.45583,
+      "longitude": -98.41306,
+      "elevation_meters": 421.44208
+    },
+    {
+      "id": "KABX",
+      "registry_name": "Albuquerque",
+      "source_name": "La Mesita Negra",
+      "latitude": 35.14972,
+      "longitude": -106.82389,
+      "elevation_meters": 1813.41564
+    },
+    {
+      "id": "KAKQ",
+      "registry_name": "Wakefield",
+      "source_name": "Wakefield",
+      "latitude": 36.98389,
+      "longitude": -77.0075,
+      "elevation_meters": 77.68011
+    },
+    {
+      "id": "KAMA",
+      "registry_name": "Amarillo",
+      "source_name": "Amarillo",
+      "latitude": 35.23333,
+      "longitude": -101.70928,
+      "elevation_meters": 1128.41105
+    },
+    {
+      "id": "KAMX",
+      "registry_name": "Miami",
+      "source_name": "Miami",
+      "latitude": 25.61056,
+      "longitude": -80.41306,
+      "elevation_meters": 33.9613
+    },
+    {
+      "id": "KAPX",
+      "registry_name": "Gaylord",
+      "source_name": "Gaylord",
+      "latitude": 44.90635,
+      "longitude": -84.71953,
+      "elevation_meters": 475.80816
+    },
+    {
+      "id": "KARX",
+      "registry_name": "La Crosse",
+      "source_name": "La Crosse",
+      "latitude": 43.82278,
+      "longitude": -91.19111,
+      "elevation_meters": 413.51411
+    },
+    {
+      "id": "KATX",
+      "registry_name": "Seattle",
+      "source_name": "Camano Island",
+      "latitude": 48.19461,
+      "longitude": -122.49569,
+      "elevation_meters": 195.6499
+    },
+    {
+      "id": "KBBX",
+      "registry_name": "Beale AFB",
+      "source_name": "Oroville",
+      "latitude": 39.49611,
+      "longitude": -121.63167,
+      "elevation_meters": 67.41274
+    },
+    {
+      "id": "KBGM",
+      "registry_name": "Binghamton",
+      "source_name": "Binghamton",
+      "latitude": 42.19969,
+      "longitude": -75.98472,
+      "elevation_meters": 519.07708
+    },
+    {
+      "id": "KBHX",
+      "registry_name": "Eureka",
+      "source_name": "Bunker Hill",
+      "latitude": 40.49833,
+      "longitude": -124.29217,
+      "elevation_meters": 766.63369
+    },
+    {
+      "id": "KBIS",
+      "registry_name": "Bismarck",
+      "source_name": "Bismarck",
+      "latitude": 46.77083,
+      "longitude": -100.76028,
+      "elevation_meters": 534.92302
+    },
+    {
+      "id": "KBLX",
+      "registry_name": "Billings",
+      "source_name": "Alkali Creek Rd",
+      "latitude": 45.85378,
+      "longitude": -108.60681,
+      "elevation_meters": 1128.41105
+    },
+    {
+      "id": "KBMX",
+      "registry_name": "Birmingham",
+      "source_name": "Alabaster",
+      "latitude": 33.17194,
+      "longitude": -86.76972,
+      "elevation_meters": 231.24079
+    },
+    {
+      "id": "KBOX",
+      "registry_name": "Boston",
+      "source_name": "Taunton",
+      "latitude": 41.95578,
+      "longitude": -71.13686,
+      "elevation_meters": 70.65191
+    },
+    {
+      "id": "KBRO",
+      "registry_name": "Brownsville",
+      "source_name": "Brownsville",
+      "latitude": 25.91556,
+      "longitude": -97.41861,
+      "elevation_meters": 26.70316
+    },
+    {
+      "id": "KBUF",
+      "registry_name": "Buffalo",
+      "source_name": "Cheektowaga",
+      "latitude": 42.94861,
+      "longitude": -78.73694,
+      "elevation_meters": 240.86832
+    },
+    {
+      "id": "KBYX",
+      "registry_name": "Key West",
+      "source_name": "Key West",
+      "latitude": 24.59694,
+      "longitude": -81.70333,
+      "elevation_meters": 27.13305
+    },
+    {
+      "id": "KCAE",
+      "registry_name": "Columbia",
+      "source_name": "Columbia",
+      "latitude": 33.94861,
+      "longitude": -81.11861,
+      "elevation_meters": 105.08309
+    },
+    {
+      "id": "KCBW",
+      "registry_name": "Caribou",
+      "source_name": "Houlton",
+      "latitude": 46.03917,
+      "longitude": -67.80642,
+      "elevation_meters": 262.01291
+    },
+    {
+      "id": "KCBX",
+      "registry_name": "Boise",
+      "source_name": "Wild Horse Corral",
+      "latitude": 43.49022,
+      "longitude": -116.23603,
+      "elevation_meters": 966.45252
+    },
+    {
+      "id": "KCCX",
+      "registry_name": "State College",
+      "source_name": "Rush",
+      "latitude": 40.92306,
+      "longitude": -78.00389,
+      "elevation_meters": 757.54602
+    },
+    {
+      "id": "KCLE",
+      "registry_name": "Cleveland",
+      "source_name": "Cleveland",
+      "latitude": 41.41306,
+      "longitude": -81.86,
+      "elevation_meters": 262.19286
+    },
+    {
+      "id": "KCLX",
+      "registry_name": "Charleston",
+      "source_name": "Grays",
+      "latitude": 32.65553,
+      "longitude": -81.04219,
+      "elevation_meters": 69.68216
+    },
+    {
+      "id": "KCRP",
+      "registry_name": "Corpus Christi",
+      "source_name": "Corpus Christi",
+      "latitude": 27.78389,
+      "longitude": -97.51083,
+      "elevation_meters": 43.40888
+    },
+    {
+      "id": "KCXX",
+      "registry_name": "Burlington",
+      "source_name": "Colchester",
+      "latitude": 44.51111,
+      "longitude": -73.16639,
+      "elevation_meters": 131.28638
+    },
+    {
+      "id": "KCYS",
+      "registry_name": "Cheyenne",
+      "source_name": "Cheyenne",
+      "latitude": 41.15194,
+      "longitude": -104.80611,
+      "elevation_meters": 1887.02679
+    },
+    {
+      "id": "KDAX",
+      "registry_name": "Sacramento",
+      "source_name": "Sacramento",
+      "latitude": 38.50111,
+      "longitude": -121.67783,
+      "elevation_meters": 43.82878
+    },
+    {
+      "id": "KDDC",
+      "registry_name": "Dodge City",
+      "source_name": "Dodge City",
+      "latitude": 37.76083,
+      "longitude": -99.96889,
+      "elevation_meters": 813.92158
+    },
+    {
+      "id": "KDFX",
+      "registry_name": "Laughlin AFB",
+      "source_name": "Brackettville (US Hwy 90)",
+      "latitude": 29.2725,
+      "longitude": -100.28028,
+      "elevation_meters": 364.33671
+    },
+    {
+      "id": "KDGX",
+      "registry_name": "Brandon",
+      "source_name": "Brandon",
+      "latitude": 32.28,
+      "longitude": -89.98444,
+      "elevation_meters": 185.57248
+    },
+    {
+      "id": "KDIX",
+      "registry_name": "Philadelphia",
+      "source_name": "Manchester",
+      "latitude": 39.94694,
+      "longitude": -74.41072,
+      "elevation_meters": 70.10205
+    },
+    {
+      "id": "KDLH",
+      "registry_name": "Duluth",
+      "source_name": "Duluth",
+      "latitude": 46.83694,
+      "longitude": -92.20972,
+      "elevation_meters": 469.82969
+    },
+    {
+      "id": "KDMX",
+      "registry_name": "Des Moines",
+      "source_name": "Johnston",
+      "latitude": 41.73111,
+      "longitude": -93.72286,
+      "elevation_meters": 333.62457
+    },
+    {
+      "id": "KDOX",
+      "registry_name": "Dover AFB",
+      "source_name": "Ellendale State Forest",
+      "latitude": 38.82556,
+      "longitude": -75.44,
+      "elevation_meters": 49.92722
+    },
+    {
+      "id": "KDTX",
+      "registry_name": "Detroit",
+      "source_name": "White Lake",
+      "latitude": 42.7,
+      "longitude": -83.47167,
+      "elevation_meters": 370.6051
+    },
+    {
+      "id": "KDVN",
+      "registry_name": "Davenport",
+      "source_name": "Davenport",
+      "latitude": 41.61167,
+      "longitude": -90.58083,
+      "elevation_meters": 259.45356
+    },
+    {
+      "id": "KDYX",
+      "registry_name": "Dyess AFB",
+      "source_name": "Moran",
+      "latitude": 32.53833,
+      "longitude": -99.25417,
+      "elevation_meters": 481.95659
+    },
+    {
+      "id": "KEAX",
+      "registry_name": "Kansas City",
+      "source_name": "Pleasant Hill",
+      "latitude": 38.81025,
+      "longitude": -94.26447,
+      "elevation_meters": 332.89476
+    },
+    {
+      "id": "KEMX",
+      "registry_name": "Tucson",
+      "source_name": "Empire Mtn",
+      "latitude": 31.89361,
+      "longitude": -110.63028,
+      "elevation_meters": 1620.76498
+    },
+    {
+      "id": "KENX",
+      "registry_name": "Albany",
+      "source_name": "East Berne",
+      "latitude": 42.58656,
+      "longitude": -74.06408,
+      "elevation_meters": 589.54904
+    },
+    {
+      "id": "KEOX",
+      "registry_name": "Fort Rucker",
+      "source_name": "Echo",
+      "latitude": 31.46056,
+      "longitude": -85.45939,
+      "elevation_meters": 163.65809
+    },
+    {
+      "id": "KEPZ",
+      "registry_name": "El Paso",
+      "source_name": "Santa Teresa",
+      "latitude": 31.87306,
+      "longitude": -106.698,
+      "elevation_meters": 1285.27088
+    },
+    {
+      "id": "KESX",
+      "registry_name": "Las Vegas",
+      "source_name": "Opal Mtn",
+      "latitude": 35.70111,
+      "longitude": -114.89139,
+      "elevation_meters": 1507.77391
+    },
+    {
+      "id": "KEVX",
+      "registry_name": "Eglin AFB",
+      "source_name": "Redbay",
+      "latitude": 30.56503,
+      "longitude": -85.92167,
+      "elevation_meters": 67.35275
+    },
+    {
+      "id": "KEWX",
+      "registry_name": "San Antonio",
+      "source_name": "New Braunfels",
+      "latitude": 29.70406,
+      "longitude": -98.02861,
+      "elevation_meters": 233.64017
+    },
+    {
+      "id": "KEYX",
+      "registry_name": "Edwards AFB",
+      "source_name": "Boron",
+      "latitude": 35.09778,
+      "longitude": -117.56075,
+      "elevation_meters": 875.47582
+    },
+    {
+      "id": "KFCX",
+      "registry_name": "Roanoke",
+      "source_name": "Coles Knob",
+      "latitude": 37.02417,
+      "longitude": -80.27417,
+      "elevation_meters": 903.63861
+    },
+    {
+      "id": "KFDR",
+      "registry_name": "Frederick",
+      "source_name": "Frederick",
+      "latitude": 34.36219,
+      "longitude": -98.97667,
+      "elevation_meters": 400.77737
+    },
+    {
+      "id": "KFDX",
+      "registry_name": "Cannon AFB",
+      "source_name": "Field Village (State Rd 89)",
+      "latitude": 34.63417,
+      "longitude": -103.61889,
+      "elevation_meters": 1431.6534
+    },
+    {
+      "id": "KFFC",
+      "registry_name": "Atlanta",
+      "source_name": "Peachtree City",
+      "latitude": 33.36333,
+      "longitude": -84.56583,
+      "elevation_meters": 296.14417
+    },
+    {
+      "id": "KFSD",
+      "registry_name": "Sioux Falls",
+      "source_name": "Sioux Falls",
+      "latitude": 43.58778,
+      "longitude": -96.72889,
+      "elevation_meters": 455.44338
+    },
+    {
+      "id": "KFSX",
+      "registry_name": "Flagstaff",
+      "source_name": "Anderson Mesa",
+      "latitude": 34.57433,
+      "longitude": -111.19844,
+      "elevation_meters": 2289.81365
+    },
+    {
+      "id": "KFTG",
+      "registry_name": "Denver",
+      "source_name": "Front Range Arpt",
+      "latitude": 39.78664,
+      "longitude": -104.54581,
+      "elevation_meters": 1709.75219
+    },
+    {
+      "id": "KFWS",
+      "registry_name": "Dallas/Fort Worth",
+      "source_name": "Fort Worth",
+      "latitude": 32.57278,
+      "longitude": -97.30314,
+      "elevation_meters": 236.6394
+    },
+    {
+      "id": "KGGW",
+      "registry_name": "Glasgow",
+      "source_name": "Glasgow",
+      "latitude": 48.20636,
+      "longitude": -106.62469,
+      "elevation_meters": 726.51396
+    },
+    {
+      "id": "KGJX",
+      "registry_name": "Grand Junction",
+      "source_name": "Grand Mesa",
+      "latitude": 39.06222,
+      "longitude": -108.21376,
+      "elevation_meters": 3077.91185
+    },
+    {
+      "id": "KGLD",
+      "registry_name": "Goodland",
+      "source_name": "Goodland",
+      "latitude": 39.36694,
+      "longitude": -101.70028,
+      "elevation_meters": 1132.23007
+    },
+    {
+      "id": "KGRB",
+      "registry_name": "Green Bay",
+      "source_name": "Ashwaubenon",
+      "latitude": 44.49863,
+      "longitude": -88.11111,
+      "elevation_meters": 245.6371
+    },
+    {
+      "id": "KGRK",
+      "registry_name": "Fort Hood",
+      "source_name": "Granger",
+      "latitude": 30.72167,
+      "longitude": -97.38278,
+      "elevation_meters": 183.63298
+    },
+    {
+      "id": "KGRR",
+      "registry_name": "Grand Rapids",
+      "source_name": "Kent County Arpt",
+      "latitude": 42.89389,
+      "longitude": -85.54489,
+      "elevation_meters": 266.76169
+    },
+    {
+      "id": "KGSP",
+      "registry_name": "Greenville",
+      "source_name": "Greer",
+      "latitude": 34.88331,
+      "longitude": -82.21983,
+      "elevation_meters": 325.61662
+    },
+    {
+      "id": "KGWX",
+      "registry_name": "Columbus AFB",
+      "source_name": "Greenwood Springs (MS Hwy 8 & US Hwy",
+      "latitude": 33.89692,
+      "longitude": -88.32919,
+      "elevation_meters": 179.654
+    },
+    {
+      "id": "KGYX",
+      "registry_name": "Portland",
+      "source_name": "Gray",
+      "latitude": 43.89131,
+      "longitude": -70.25636,
+      "elevation_meters": 144.32304
+    },
+    {
+      "id": "KHDC",
+      "registry_name": "Hammond",
+      "source_name": "Hammond",
+      "latitude": 30.519,
+      "longitude": -90.407,
+      "elevation_meters": 43.1064
+    },
+    {
+      "id": "KHDX",
+      "registry_name": "Holloman AFB",
+      "source_name": "White Sands Missile Range",
+      "latitude": 33.077,
+      "longitude": -106.12003,
+      "elevation_meters": 1301.2368
+    },
+    {
+      "id": "KHGX",
+      "registry_name": "Houston",
+      "source_name": "Dickinson",
+      "latitude": 29.47194,
+      "longitude": -95.07889,
+      "elevation_meters": 35.18099
+    },
+    {
+      "id": "KHNX",
+      "registry_name": "Hanford",
+      "source_name": "Hanford",
+      "latitude": 36.31417,
+      "longitude": -119.63214,
+      "elevation_meters": 103.74343
+    },
+    {
+      "id": "KHPX",
+      "registry_name": "Fort Campbell",
+      "source_name": "Trenton (US Hwy 41N)",
+      "latitude": 36.73667,
+      "longitude": -87.285,
+      "elevation_meters": 190.21129
+    },
+    {
+      "id": "KHTX",
+      "registry_name": "Huntsville",
+      "source_name": "Hytop",
+      "latitude": 34.93056,
+      "longitude": -86.08361,
+      "elevation_meters": 566.61491
+    },
+    {
+      "id": "KICT",
+      "registry_name": "Wichita",
+      "source_name": "Wichita",
+      "latitude": 37.65444,
+      "longitude": -97.44306,
+      "elevation_meters": 426.50079
+    },
+    {
+      "id": "KICX",
+      "registry_name": "Cedar City",
+      "source_name": "Blowhead Mtn",
+      "latitude": 37.59105,
+      "longitude": -112.86222,
+      "elevation_meters": 3277.86065
+    },
+    {
+      "id": "KILN",
+      "registry_name": "Wilmington",
+      "source_name": "Wilmington",
+      "latitude": 39.42028,
+      "longitude": -83.82167,
+      "elevation_meters": 356.47872
+    },
+    {
+      "id": "KILX",
+      "registry_name": "Lincoln",
+      "source_name": "Logan County Arpt",
+      "latitude": 40.1505,
+      "longitude": -89.33679,
+      "elevation_meters": 222.64299
+    },
+    {
+      "id": "KIND",
+      "registry_name": "Indianapolis",
+      "source_name": "Indianapolis",
+      "latitude": 39.7075,
+      "longitude": -86.28028,
+      "elevation_meters": 270.42075
+    },
+    {
+      "id": "KINX",
+      "registry_name": "Tulsa",
+      "source_name": "Inola",
+      "latitude": 36.175,
+      "longitude": -95.56414,
+      "elevation_meters": 228.25155
+    },
+    {
+      "id": "KIWA",
+      "registry_name": "Phoenix",
+      "source_name": "Mesa",
+      "latitude": 33.28917,
+      "longitude": -111.67,
+      "elevation_meters": 434.58872
+    },
+    {
+      "id": "KIWX",
+      "registry_name": "Fort Wayne",
+      "source_name": "North Webster",
+      "latitude": 41.35861,
+      "longitude": -85.7,
+      "elevation_meters": 321.91757
+    },
+    {
+      "id": "KJAX",
+      "registry_name": "Jacksonville",
+      "source_name": "Jacksonville",
+      "latitude": 30.48463,
+      "longitude": -81.7019,
+      "elevation_meters": 48.68753
+    },
+    {
+      "id": "KJGX",
+      "registry_name": "Robins AFB",
+      "source_name": "Jeffersonville (State Hwy 96)",
+      "latitude": 32.675,
+      "longitude": -83.35111,
+      "elevation_meters": 188.45174
+    },
+    {
+      "id": "KJKL",
+      "registry_name": "Jackson",
+      "source_name": "Noctor",
+      "latitude": 37.59083,
+      "longitude": -83.31306,
+      "elevation_meters": 445.33596
+    },
+    {
+      "id": "KLBB",
+      "registry_name": "Lubbock",
+      "source_name": "Lubbock",
+      "latitude": 33.65414,
+      "longitude": -101.81417,
+      "elevation_meters": 1029.4364
+    },
+    {
+      "id": "KLCH",
+      "registry_name": "Lake Charles",
+      "source_name": "Lake Charles",
+      "latitude": 30.12531,
+      "longitude": -93.21589,
+      "elevation_meters": 41.68932
+    },
+    {
+      "id": "KLGX",
+      "registry_name": "Langley Hill",
+      "source_name": "Langley Hill",
+      "latitude": 47.1169,
+      "longitude": -124.10664,
+      "elevation_meters": 107.899
+    },
+    {
+      "id": "KLNX",
+      "registry_name": "North Platte",
+      "source_name": "Thedford",
+      "latitude": 41.95794,
+      "longitude": -100.57622,
+      "elevation_meters": 948.45713
+    },
+    {
+      "id": "KLOT",
+      "registry_name": "Chicago",
+      "source_name": "Romeoville",
+      "latitude": 41.60444,
+      "longitude": -88.08444,
+      "elevation_meters": 231.72066
+    },
+    {
+      "id": "KLRX",
+      "registry_name": "Elko",
+      "source_name": "Sheep Creek Mtn",
+      "latitude": 40.73972,
+      "longitude": -116.80278,
+      "elevation_meters": 2101.16196
+    },
+    {
+      "id": "KLSX",
+      "registry_name": "St. Louis",
+      "source_name": "St Charles",
+      "latitude": 38.69889,
+      "longitude": -90.68278,
+      "elevation_meters": 219.96367
+    },
+    {
+      "id": "KLTX",
+      "registry_name": "Wilmington",
+      "source_name": "Shallotte",
+      "latitude": 33.98917,
+      "longitude": -78.42917,
+      "elevation_meters": 44.19868
+    },
+    {
+      "id": "KLVX",
+      "registry_name": "Louisville",
+      "source_name": "Fort Knox",
+      "latitude": 37.97528,
+      "longitude": -85.94389,
+      "elevation_meters": 253.78501
+    },
+    {
+      "id": "KLWX",
+      "registry_name": "Sterling",
+      "source_name": "Sterling",
+      "latitude": 38.97611,
+      "longitude": -77.4875,
+      "elevation_meters": 123.20845
+    },
+    {
+      "id": "KLZK",
+      "registry_name": "Little Rock",
+      "source_name": "North Little Rock",
+      "latitude": 34.83639,
+      "longitude": -92.26194,
+      "elevation_meters": 197.77936
+    },
+    {
+      "id": "KMAF",
+      "registry_name": "Midland/Odessa",
+      "source_name": "Midland",
+      "latitude": 31.94346,
+      "longitude": -102.18925,
+      "elevation_meters": 902.46891
+    },
+    {
+      "id": "KMAX",
+      "registry_name": "Medford",
+      "source_name": "Mount Ashland",
+      "latitude": 42.08111,
+      "longitude": -122.71736,
+      "elevation_meters": 2304.07
+    },
+    {
+      "id": "KMBX",
+      "registry_name": "Minot AFB",
+      "source_name": "Deering",
+      "latitude": 48.3925,
+      "longitude": -100.86444,
+      "elevation_meters": 484.6459
+    },
+    {
+      "id": "KMHX",
+      "registry_name": "Morehead City",
+      "source_name": "Newport",
+      "latitude": 34.77583,
+      "longitude": -76.87639,
+      "elevation_meters": 44.1387
+    },
+    {
+      "id": "KMKX",
+      "registry_name": "Milwaukee",
+      "source_name": "Dousman",
+      "latitude": 42.96778,
+      "longitude": -88.55056,
+      "elevation_meters": 311.6202
+    },
+    {
+      "id": "KMLB",
+      "registry_name": "Melbourne",
+      "source_name": "Melbourne",
+      "latitude": 28.11306,
+      "longitude": -80.65444,
+      "elevation_meters": 30.0
+    },
+    {
+      "id": "KMOB",
+      "registry_name": "Mobile",
+      "source_name": "Mobile",
+      "latitude": 30.67944,
+      "longitude": -88.23972,
+      "elevation_meters": 88.07745
+    },
+    {
+      "id": "KMPX",
+      "registry_name": "Minneapolis",
+      "source_name": "Chanhassen",
+      "latitude": 44.84889,
+      "longitude": -93.56553,
+      "elevation_meters": 335.61406
+    },
+    {
+      "id": "KMQT",
+      "registry_name": "Marquette",
+      "source_name": "Marquette",
+      "latitude": 46.53111,
+      "longitude": -87.54833,
+      "elevation_meters": 464.65102
+    },
+    {
+      "id": "KMRX",
+      "registry_name": "Knoxville",
+      "source_name": "Morristown",
+      "latitude": 36.16833,
+      "longitude": -83.40194,
+      "elevation_meters": 437.10807
+    },
+    {
+      "id": "KMSX",
+      "registry_name": "Missoula",
+      "source_name": "Point Six Mtn",
+      "latitude": 47.04111,
+      "longitude": -113.98611,
+      "elevation_meters": 2431.07748
+    },
+    {
+      "id": "KMTX",
+      "registry_name": "Salt Lake City",
+      "source_name": "Promontory Pt",
+      "latitude": 41.26278,
+      "longitude": -112.44778,
+      "elevation_meters": 2009.18551
+    },
+    {
+      "id": "KMUX",
+      "registry_name": "San Francisco",
+      "source_name": "Mt Umunhum",
+      "latitude": 37.15522,
+      "longitude": -121.89844,
+      "elevation_meters": 1081.77299
+    },
+    {
+      "id": "KMVX",
+      "registry_name": "Fargo",
+      "source_name": "Mayville",
+      "latitude": 47.52806,
+      "longitude": -97.325,
+      "elevation_meters": 330.14546
+    },
+    {
+      "id": "KMXX",
+      "registry_name": "Maxwell AFB",
+      "source_name": "Carrville",
+      "latitude": 32.53665,
+      "longitude": -85.78975,
+      "elevation_meters": 170.6563
+    },
+    {
+      "id": "KNKX",
+      "registry_name": "San Diego",
+      "source_name": "Miramar MCAS",
+      "latitude": 32.91889,
+      "longitude": -117.04194,
+      "elevation_meters": 320.69788
+    },
+    {
+      "id": "KNQA",
+      "registry_name": "Memphis",
+      "source_name": "Millington",
+      "latitude": 35.34472,
+      "longitude": -89.87333,
+      "elevation_meters": 132.66603
+    },
+    {
+      "id": "KOAX",
+      "registry_name": "Omaha",
+      "source_name": "Valley",
+      "latitude": 41.32028,
+      "longitude": -96.36681,
+      "elevation_meters": 384.51154
+    },
+    {
+      "id": "KOHX",
+      "registry_name": "Nashville",
+      "source_name": "Old Hickory",
+      "latitude": 36.24722,
+      "longitude": -86.5625,
+      "elevation_meters": 206.12722
+    },
+    {
+      "id": "KOKX",
+      "registry_name": "Upton",
+      "source_name": "Upton",
+      "latitude": 40.86553,
+      "longitude": -72.86392,
+      "elevation_meters": 60.59448
+    },
+    {
+      "id": "KOTX",
+      "registry_name": "Spokane",
+      "source_name": "Rambo Rd",
+      "latitude": 47.68056,
+      "longitude": -117.62583,
+      "elevation_meters": 746.14894
+    },
+    {
+      "id": "KPAH",
+      "registry_name": "Paducah",
+      "source_name": "Paducah",
+      "latitude": 37.06833,
+      "longitude": -88.77194,
+      "elevation_meters": 154.14053
+    },
+    {
+      "id": "KPBZ",
+      "registry_name": "Pittsburgh",
+      "source_name": "Coraopolis",
+      "latitude": 40.53167,
+      "longitude": -80.21794,
+      "elevation_meters": 385.79121
+    },
+    {
+      "id": "KPDT",
+      "registry_name": "Pendleton",
+      "source_name": "Pendleton",
+      "latitude": 45.69056,
+      "longitude": -118.85292,
+      "elevation_meters": 481.34674
+    },
+    {
+      "id": "KPOE",
+      "registry_name": "Fort Polk",
+      "source_name": "Leesville",
+      "latitude": 31.15528,
+      "longitude": -92.97583,
+      "elevation_meters": 144.02312
+    },
+    {
+      "id": "KPUX",
+      "registry_name": "Pueblo",
+      "source_name": "Boone Highland Rds",
+      "latitude": 38.45944,
+      "longitude": -104.18139,
+      "elevation_meters": 1634.28151
+    },
+    {
+      "id": "KRAX",
+      "registry_name": "Raleigh",
+      "source_name": "Clayton",
+      "latitude": 35.66528,
+      "longitude": -78.49,
+      "elevation_meters": 140.73396
+    },
+    {
+      "id": "KRGX",
+      "registry_name": "Reno",
+      "source_name": "Virginia Peak",
+      "latitude": 39.75406,
+      "longitude": -119.46203,
+      "elevation_meters": 2558.58483
+    },
+    {
+      "id": "KRIW",
+      "registry_name": "Riverton",
+      "source_name": "Riverton",
+      "latitude": 43.06611,
+      "longitude": -108.4773,
+      "elevation_meters": 1716.39049
+    },
+    {
+      "id": "KRLX",
+      "registry_name": "Charleston",
+      "source_name": "Ruthdale",
+      "latitude": 38.31111,
+      "longitude": -81.72278,
+      "elevation_meters": 369.60536
+    },
+    {
+      "id": "KRTX",
+      "registry_name": "Portland",
+      "source_name": "Dixie Mtn",
+      "latitude": 45.715,
+      "longitude": -122.965,
+      "elevation_meters": 526.56516
+    },
+    {
+      "id": "KSFX",
+      "registry_name": "Pocatello",
+      "source_name": "Springfield",
+      "latitude": 43.1056,
+      "longitude": -112.68613,
+      "elevation_meters": 1383.02585
+    },
+    {
+      "id": "KSGF",
+      "registry_name": "Springfield",
+      "source_name": "Springfield",
+      "latitude": 37.23528,
+      "longitude": -93.40028,
+      "elevation_meters": 419.12268
+    },
+    {
+      "id": "KSHV",
+      "registry_name": "Shreveport",
+      "source_name": "Shreveport",
+      "latitude": 32.45083,
+      "longitude": -93.84125,
+      "elevation_meters": 117.87981
+    },
+    {
+      "id": "KSJT",
+      "registry_name": "San Angelo",
+      "source_name": "San Angelo",
+      "latitude": 31.37111,
+      "longitude": -100.49222,
+      "elevation_meters": 610.61364
+    },
+    {
+      "id": "KSOX",
+      "registry_name": "Santa Ana Mountains",
+      "source_name": "Santa Ana Mtns",
+      "latitude": 33.81773,
+      "longitude": -117.636,
+      "elevation_meters": 946.45764
+    },
+    {
+      "id": "KSRX",
+      "registry_name": "Fort Smith",
+      "source_name": "Ft. Smith",
+      "latitude": 35.29042,
+      "longitude": -94.36189,
+      "elevation_meters": 224.64248
+    },
+    {
+      "id": "KTBW",
+      "registry_name": "Tampa Bay",
+      "source_name": "Ruskin",
+      "latitude": 27.70528,
+      "longitude": -82.40194,
+      "elevation_meters": 37.19048
+    },
+    {
+      "id": "KTFX",
+      "registry_name": "Great Falls",
+      "source_name": "Great Falls",
+      "latitude": 47.45972,
+      "longitude": -111.38528,
+      "elevation_meters": 1159.40312
+    },
+    {
+      "id": "KTLH",
+      "registry_name": "Tallahassee",
+      "source_name": "Tallahassee",
+      "latitude": 30.3975,
+      "longitude": -84.32889,
+      "elevation_meters": 53.8862
+    },
+    {
+      "id": "KTLX",
+      "registry_name": "Oklahoma City",
+      "source_name": "Twin Lakes",
+      "latitude": 35.33306,
+      "longitude": -97.27776,
+      "elevation_meters": 389.32031
+    },
+    {
+      "id": "KTWX",
+      "registry_name": "Topeka",
+      "source_name": "Alma",
+      "latitude": 38.99694,
+      "longitude": -96.2325,
+      "elevation_meters": 431.24957
+    },
+    {
+      "id": "KTYX",
+      "registry_name": "Montague",
+      "source_name": "Montague",
+      "latitude": 43.75583,
+      "longitude": -75.68,
+      "elevation_meters": 597.20707
+    },
+    {
+      "id": "KUDX",
+      "registry_name": "Rapid City",
+      "source_name": "New Underwood",
+      "latitude": 44.12472,
+      "longitude": -102.83,
+      "elevation_meters": 973.45073
+    },
+    {
+      "id": "KUEX",
+      "registry_name": "Hastings",
+      "source_name": "Blue Hill",
+      "latitude": 40.32083,
+      "longitude": -98.44194,
+      "elevation_meters": 626.81949
+    },
+    {
+      "id": "KVAX",
+      "registry_name": "Moody AFB",
+      "source_name": "Stockton (State Rd 129)",
+      "latitude": 30.89028,
+      "longitude": -83.00181,
+      "elevation_meters": 100.67422
+    },
+    {
+      "id": "KVBX",
+      "registry_name": "Vandenberg AFB",
+      "source_name": "Lompoc",
+      "latitude": 34.83855,
+      "longitude": -120.39792,
+      "elevation_meters": 412.59435
+    },
+    {
+      "id": "KVNX",
+      "registry_name": "Vance AFB",
+      "source_name": "Jet",
+      "latitude": 36.74083,
+      "longitude": -98.1275,
+      "elevation_meters": 383.41182
+    },
+    {
+      "id": "KVTX",
+      "registry_name": "Los Angeles",
+      "source_name": "Sulphur Mtn",
+      "latitude": 34.41167,
+      "longitude": -119.17861,
+      "elevation_meters": 855.36097
+    },
+    {
+      "id": "KVWX",
+      "registry_name": "Evansville",
+      "source_name": "Evansville",
+      "latitude": 38.26025,
+      "longitude": -87.72453,
+      "elevation_meters": 190.40124
+    },
+    {
+      "id": "KYUX",
+      "registry_name": "Yuma",
+      "source_name": "Yuma",
+      "latitude": 32.49528,
+      "longitude": -114.65669,
+      "elevation_meters": 72.72138
+    },
+    {
+      "id": "PABC",
+      "registry_name": "Bethel",
+      "source_name": "Bethel",
+      "latitude": 60.79194,
+      "longitude": -161.87639,
+      "elevation_meters": 58.75495
+    },
+    {
+      "id": "PACG",
+      "registry_name": "Sitka",
+      "source_name": "Sitka",
+      "latitude": 56.85278,
+      "longitude": -135.52917,
+      "elevation_meters": 82.76881
+    },
+    {
+      "id": "PAEC",
+      "registry_name": "Nome",
+      "source_name": "Nome",
+      "latitude": 64.51139,
+      "longitude": -165.295,
+      "elevation_meters": 27.37299
+    },
+    {
+      "id": "PAHG",
+      "registry_name": "Anchorage",
+      "source_name": "Kenai",
+      "latitude": 60.72591,
+      "longitude": -151.35147,
+      "elevation_meters": 108.43223
+    },
+    {
+      "id": "PAIH",
+      "registry_name": "Middleton Island",
+      "source_name": "Middleton Island",
+      "latitude": 59.46077,
+      "longitude": -146.30345,
+      "elevation_meters": 40.10973
+    },
+    {
+      "id": "PAKC",
+      "registry_name": "King Salmon",
+      "source_name": "King Salmon",
+      "latitude": 58.67944,
+      "longitude": -156.62944,
+      "elevation_meters": 43.88876
+    },
+    {
+      "id": "PAPD",
+      "registry_name": "Fairbanks",
+      "source_name": "Pedro Dome",
+      "latitude": 65.03511,
+      "longitude": -147.50143,
+      "elevation_meters": 824.83879
+    },
+    {
+      "id": "PGUA",
+      "registry_name": "Andersen AFB",
+      "source_name": "Barrigada Comms Stn",
+      "latitude": 13.45583,
+      "longitude": 144.81111,
+      "elevation_meters": 117.66987
+    },
+    {
+      "id": "PHKI",
+      "registry_name": "South Kauai",
+      "source_name": "South Kauai",
+      "latitude": 21.89389,
+      "longitude": -159.5525,
+      "elevation_meters": 103.67345
+    },
+    {
+      "id": "PHKM",
+      "registry_name": "Kamuela",
+      "source_name": "Kohala Mtns",
+      "latitude": 20.12528,
+      "longitude": -155.77778,
+      "elevation_meters": 1208.39057
+    },
+    {
+      "id": "PHMO",
+      "registry_name": "Molokai",
+      "source_name": "Molokai",
+      "latitude": 21.13278,
+      "longitude": -157.18028,
+      "elevation_meters": 440.02732
+    },
+    {
+      "id": "PHWA",
+      "registry_name": "South Shore",
+      "source_name": "South Shore Hawaii Is",
+      "latitude": 19.095,
+      "longitude": -155.56889,
+      "elevation_meters": 445.206
+    },
+    {
+      "id": "TJUA",
+      "registry_name": "San Juan",
+      "source_name": "Cayey",
+      "latitude": 18.11567,
+      "longitude": -66.07817,
+      "elevation_meters": 901.46916
+    }
+  ]
+}

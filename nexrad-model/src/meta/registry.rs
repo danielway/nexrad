@@ -893,7 +893,7 @@ static SITES: &[SiteEntry] = &[
         city: "Cannon AFB",
         state: "NM",
         latitude: 34.6350,
-        longitude: -103.6297,
+        longitude: -103.6189,
         elevation_meters: 1417,
     },
     SiteEntry {
@@ -1084,7 +1084,7 @@ static SITES: &[SiteEntry] = &[
         city: "Pittsburgh",
         state: "PA",
         latitude: 40.5317,
-        longitude: -80.0183,
+        longitude: -80.2179,
         elevation_meters: 361,
     },
     // Puerto Rico

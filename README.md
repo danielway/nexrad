@@ -222,6 +222,20 @@ For advanced use cases, you can use the sub-crates directly:
 
 See each crate's documentation for detailed API information.
 
+## Maintaining the Radar Site Registry
+
+The checked-in NEXRAD site registry is audited against NOAA's radar site catalog.
+The normal workspace test suite performs the audit automatically when the source
+snapshot is more than 31 days old. To fetch NOAA data and refresh the snapshot
+explicitly, run:
+
+```bash
+cargo run -p xtask -- update-radar-sites
+```
+
+See [Radar site registry maintenance](docs/radar-site-registry.md) for the audit
+policy, failure behavior, and complete update workflow.
+
 ## Acknowledgements
 
 I consulted the following resources when developing this library:

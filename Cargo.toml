@@ -8,6 +8,7 @@ members = [
     "nexrad-process",
     "nexrad-render",
     "nexrad-inspector",
+    "xtask",
 ]
 exclude = [
     "nexrad-decode/fuzz",
@@ -52,3 +53,5 @@ ratatui = { version = "0.30.0" }
 crossterm = { version = "0.29" }
 futures = { version = "0.3.31" }
 once_cell = { version = "1.21.0" }
+anyhow = { version = "1.0.100" }
+serde_json = { version = "1.0.145" }

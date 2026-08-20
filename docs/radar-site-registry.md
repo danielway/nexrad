@@ -48,6 +48,10 @@ with a field-by-field report and writes the newly downloaded candidate to
 `target/radar-sites-current.json`. A source outage also fails the stale audit,
 because an old registry must not be mistaken for a verified one.
 
+The check command prints the number of sites compared and explicitly reports
+whether the NOAA live check passed or was skipped because the snapshot is still
+fresh.
+
 To run the same checks manually:
 
 ```bash

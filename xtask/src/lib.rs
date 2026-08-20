@@ -326,12 +326,28 @@ pub async fn check_radar_sites(force_live: bool) -> Result<()> {
     let today = Utc::now().date_naive();
     let age = snapshot_age_days(&snapshot, today)?;
     if !force_live && age <= SNAPSHOT_MAX_AGE_DAYS {
+        println!(
+            "OK: Rust registry matches the checked-in snapshot ({} sites).",
+            snapshot.sites.len()
+        );
+        println!(
+            "NOAA live check skipped: snapshot verified {} ({} days old; live check required after {} days).",
+            snapshot.last_verified, age, SNAPSHOT_MAX_AGE_DAYS
+        );
         return Ok(());
     }
 
     let live_sites = fetch_operational_sites().await?;
     let source_differences = compare_source(&snapshot, &live_sites);
     if source_differences.is_empty() {
+        println!(
+            "OK: Rust registry and checked-in snapshot match ({} sites).",
+            snapshot.sites.len()
+        );
+        println!(
+            "OK: live NOAA catalog matches the snapshot ({} sites; snapshot verified {}, {} days old).",
+            live_sites.len(), snapshot.last_verified, age
+        );
         return Ok(());
     }
 
@@ -362,6 +378,10 @@ pub async fn update_radar_sites() -> Result<()> {
             &differences
         ));
     }
+    println!(
+        "OK: Rust registry matches the updated NOAA snapshot ({} sites).",
+        snapshot.sites.len()
+    );
     Ok(())
 }
 

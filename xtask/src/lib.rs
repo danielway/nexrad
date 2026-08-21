@@ -1,13 +1,15 @@
-use anyhow::{bail, Context, Result};
 use chrono::{NaiveDate, Utc};
 use nexrad_model::meta::registry;
-use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use std::error::Error;
+use std::fmt::{self, Display};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub const NOAA_RADAR_SITES_URL: &str = "https://opengeo.ncep.noaa.gov/geoserver/nws/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=nws%3Aradar_sites&outputFormat=application%2Fjson";
+pub const NOAA_RADAR_SITES_URL: &str = "https://opengeo.ncep.noaa.gov/geoserver/nws/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=nws%3Aradar_sites&outputFormat=csv";
 pub const SNAPSHOT_MAX_AGE_DAYS: i64 = 31;
+
+pub type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 
 const SNAPSHOT_SCHEMA_VERSION: u32 = 1;
 const REGISTRY_COORDINATE_TOLERANCE: f64 = 0.01;
@@ -15,7 +17,7 @@ const SOURCE_COORDINATE_TOLERANCE: f64 = 0.0001;
 const SOURCE_ELEVATION_TOLERANCE_METERS: f64 = 1.0;
 const EXCLUDED_SITE_IDS: &[&str] = &["KBIX", "KCRI", "KLIX", "KOUN"];
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RadarSiteSnapshot {
     pub schema_version: u32,
     pub last_verified: String,
@@ -23,7 +25,7 @@ pub struct RadarSiteSnapshot {
     pub sites: Vec<RadarSite>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RadarSite {
     pub id: String,
     pub registry_name: String,
@@ -33,23 +35,26 @@ pub struct RadarSite {
     pub elevation_meters: f64,
 }
 
-#[derive(Debug, Deserialize)]
-struct FeatureCollection {
-    features: Vec<Feature>,
+#[derive(Debug)]
+struct MessageError(String);
+
+impl Display for MessageError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(&self.0)
+    }
 }
 
-#[derive(Debug, Deserialize)]
-struct Feature {
-    properties: FeatureProperties,
+impl Error for MessageError {}
+
+fn error(message: impl Into<String>) -> Box<dyn Error + Send + Sync> {
+    Box::new(MessageError(message.into()))
 }
 
-#[derive(Debug, Deserialize)]
-struct FeatureProperties {
-    rda_id: String,
-    name: String,
-    lat: f64,
-    lon: f64,
-    elevmeter: f64,
+fn with_context<T, E: Display>(
+    result: std::result::Result<T, E>,
+    context: impl Display,
+) -> Result<T> {
+    result.map_err(|source| error(format!("{context}: {source}")))
 }
 
 pub fn workspace_root() -> PathBuf {
@@ -60,29 +65,180 @@ pub fn workspace_root() -> PathBuf {
 }
 
 pub fn snapshot_path() -> PathBuf {
-    workspace_root().join("nexrad-model/data/operational-radar-sites.json")
+    workspace_root().join("nexrad-model/data/operational-radar-sites.csv")
 }
 
 pub fn candidate_path() -> PathBuf {
-    workspace_root().join("target/radar-sites-current.json")
+    workspace_root().join("target/radar-sites-current.csv")
+}
+
+fn parse_csv(contents: &str) -> Result<Vec<Vec<String>>> {
+    let mut rows = Vec::new();
+    let mut row = Vec::new();
+    let mut field = String::new();
+    let mut characters = contents.chars().peekable();
+    let mut in_quotes = false;
+    let mut closed_quote = false;
+
+    while let Some(character) = characters.next() {
+        if in_quotes {
+            if character == '"' {
+                if characters.peek() == Some(&'"') {
+                    characters.next();
+                    field.push('"');
+                } else {
+                    in_quotes = false;
+                    closed_quote = true;
+                }
+            } else {
+                field.push(character);
+            }
+            continue;
+        }
+
+        match character {
+            '"' if field.is_empty() && !closed_quote => in_quotes = true,
+            ',' => {
+                row.push(std::mem::take(&mut field));
+                closed_quote = false;
+            }
+            '\n' => {
+                row.push(std::mem::take(&mut field));
+                if row.iter().any(|value| !value.is_empty()) {
+                    rows.push(std::mem::take(&mut row));
+                } else {
+                    row.clear();
+                }
+                closed_quote = false;
+            }
+            '\r' if characters.peek() == Some(&'\n') => {}
+            _ if closed_quote => {
+                return Err(error("unexpected character after closing CSV quote"));
+            }
+            _ => field.push(character),
+        }
+    }
+
+    if in_quotes {
+        return Err(error("unterminated quoted CSV field"));
+    }
+    if !field.is_empty() || !row.is_empty() {
+        row.push(field);
+        rows.push(row);
+    }
+    Ok(rows)
+}
+
+fn csv_column(headers: &[String], name: &str) -> Result<usize> {
+    headers
+        .iter()
+        .position(|header| header == name)
+        .ok_or_else(|| error(format!("CSV is missing required {name:?} column")))
+}
+
+fn csv_value<'a>(row: &'a [String], column: usize, name: &str) -> Result<&'a str> {
+    row.get(column)
+        .map(String::as_str)
+        .ok_or_else(|| error(format!("CSV row is missing {name:?} value")))
+}
+
+fn parse_number(value: &str, field: &str, id: &str) -> Result<f64> {
+    with_context(value.parse(), format!("parse {field} for radar site {id}"))
 }
 
 pub fn load_snapshot(path: &Path) -> Result<RadarSiteSnapshot> {
-    let contents = fs::read_to_string(path)
-        .with_context(|| format!("read radar site snapshot {}", path.display()))?;
-    serde_json::from_str(&contents)
-        .with_context(|| format!("parse radar site snapshot {}", path.display()))
+    let contents = with_context(
+        fs::read_to_string(path),
+        format!("read radar site snapshot {}", path.display()),
+    )?;
+    let rows = with_context(
+        parse_csv(&contents),
+        format!("parse radar site snapshot {}", path.display()),
+    )?;
+    if rows.len() < 4 {
+        return Err(error("radar site snapshot is missing metadata or headers"));
+    }
+
+    let metadata = |index: usize, key: &str| -> Result<&str> {
+        let row = &rows[index];
+        if row.first().map(String::as_str) != Some(key) || row.len() != 2 {
+            return Err(error(format!(
+                "radar site snapshot row {} must be {key},<value>",
+                index + 1
+            )));
+        }
+        Ok(&row[1])
+    };
+    let schema_version = with_context(
+        metadata(0, "schema_version")?.parse::<u32>(),
+        "parse snapshot schema_version",
+    )?;
+    if schema_version != SNAPSHOT_SCHEMA_VERSION {
+        return Err(error(format!(
+            "unsupported radar site snapshot schema version {schema_version}"
+        )));
+    }
+    let last_verified = metadata(1, "last_verified")?.to_string();
+    let source = metadata(2, "source")?.to_string();
+
+    let headers = &rows[3];
+    let id_column = csv_column(headers, "id")?;
+    let registry_name_column = csv_column(headers, "registry_name")?;
+    let source_name_column = csv_column(headers, "source_name")?;
+    let latitude_column = csv_column(headers, "latitude")?;
+    let longitude_column = csv_column(headers, "longitude")?;
+    let elevation_column = csv_column(headers, "elevation_meters")?;
+    let mut sites = Vec::new();
+    let mut identifiers = BTreeSet::new();
+
+    for row in &rows[4..] {
+        let id = csv_value(row, id_column, "id")?.to_string();
+        if !identifiers.insert(id.clone()) {
+            return Err(error(format!(
+                "radar site snapshot contains duplicate identifier {id}"
+            )));
+        }
+        sites.push(RadarSite {
+            registry_name: csv_value(row, registry_name_column, "registry_name")?.to_string(),
+            source_name: csv_value(row, source_name_column, "source_name")?.to_string(),
+            latitude: parse_number(
+                csv_value(row, latitude_column, "latitude")?,
+                "latitude",
+                &id,
+            )?,
+            longitude: parse_number(
+                csv_value(row, longitude_column, "longitude")?,
+                "longitude",
+                &id,
+            )?,
+            elevation_meters: parse_number(
+                csv_value(row, elevation_column, "elevation_meters")?,
+                "elevation",
+                &id,
+            )?,
+            id,
+        });
+    }
+
+    Ok(RadarSiteSnapshot {
+        schema_version,
+        last_verified,
+        source,
+        sites,
+    })
 }
 
 pub fn snapshot_age_days(snapshot: &RadarSiteSnapshot, today: NaiveDate) -> Result<i64> {
-    let verified = NaiveDate::parse_from_str(&snapshot.last_verified, "%Y-%m-%d")
-        .context("parse snapshot last_verified as YYYY-MM-DD")?;
+    let verified = with_context(
+        NaiveDate::parse_from_str(&snapshot.last_verified, "%Y-%m-%d"),
+        "parse snapshot last_verified as YYYY-MM-DD",
+    )?;
     let age = today.signed_duration_since(verified).num_days();
     if age < 0 {
-        bail!(
+        return Err(error(format!(
             "radar site snapshot last_verified {} is in the future",
             snapshot.last_verified
-        );
+        )));
     }
     Ok(age)
 }
@@ -94,21 +250,26 @@ pub fn is_snapshot_stale(snapshot: &RadarSiteSnapshot, today: NaiveDate) -> Resu
 pub async fn fetch_operational_sites() -> Result<Vec<RadarSite>> {
     let client = reqwest::Client::builder()
         .user_agent("nexrad-xtask radar-site-registry-audit")
-        .build()
-        .context("build NOAA radar site client")?;
-    let response = client
-        .get(NOAA_RADAR_SITES_URL)
-        .send()
-        .await
-        .context("download NOAA radar site GeoJSON")?
-        .error_for_status()
-        .context("NOAA radar site GeoJSON returned an error")?;
-    let body = response
-        .text()
-        .await
-        .context("read NOAA radar site GeoJSON")?;
-    let collection: FeatureCollection =
-        serde_json::from_str(&body).context("parse NOAA radar site GeoJSON")?;
+        .build();
+    let client = with_context(client, "build NOAA radar site client")?;
+    let response = with_context(
+        client.get(NOAA_RADAR_SITES_URL).send().await,
+        "download NOAA radar site CSV",
+    )?;
+    let response = with_context(
+        response.error_for_status(),
+        "NOAA radar site CSV returned an error",
+    )?;
+    let body = with_context(response.text().await, "read NOAA radar site CSV")?;
+    let rows = with_context(parse_csv(&body), "parse NOAA radar site CSV")?;
+    let headers = rows
+        .first()
+        .ok_or_else(|| error("NOAA radar site CSV is empty"))?;
+    let id_column = csv_column(headers, "rda_id")?;
+    let name_column = csv_column(headers, "name")?;
+    let latitude_column = csv_column(headers, "lat")?;
+    let longitude_column = csv_column(headers, "lon")?;
+    let elevation_column = csv_column(headers, "elevmeter")?;
 
     let registry_names: BTreeMap<_, _> = registry::sites()
         .iter()
@@ -116,34 +277,44 @@ pub async fn fetch_operational_sites() -> Result<Vec<RadarSite>> {
         .collect();
     let mut sites = BTreeMap::new();
 
-    for feature in collection.features {
-        let properties = feature.properties;
-        let id = properties.rda_id.trim().to_ascii_uppercase();
+    for row in &rows[1..] {
+        let id = csv_value(row, id_column, "rda_id")?
+            .trim()
+            .to_ascii_uppercase();
         if !is_operational_us_wsr88d(&id) {
             continue;
         }
+        let source_name = csv_value(row, name_column, "name")?.trim();
 
         let site = RadarSite {
             registry_name: registry_names
                 .get(id.as_str())
                 .copied()
-                .unwrap_or(properties.name.as_str())
+                .unwrap_or(source_name)
                 .to_string(),
-            source_name: properties.name.trim().to_string(),
-            latitude: properties.lat,
-            longitude: properties.lon,
-            elevation_meters: properties.elevmeter,
+            source_name: source_name.to_string(),
+            latitude: parse_number(csv_value(row, latitude_column, "lat")?, "latitude", &id)?,
+            longitude: parse_number(csv_value(row, longitude_column, "lon")?, "longitude", &id)?,
+            elevation_meters: parse_number(
+                csv_value(row, elevation_column, "elevmeter")?,
+                "elevation",
+                &id,
+            )?,
             id: id.clone(),
         };
 
         if sites.insert(id.clone(), site).is_some() {
-            bail!("NOAA radar site source contains duplicate identifier {id}");
+            return Err(error(format!(
+                "NOAA radar site source contains duplicate identifier {id}"
+            )));
         }
     }
 
     let sites: Vec<_> = sites.into_values().collect();
     if sites.is_empty() {
-        bail!("NOAA radar site source contained no operational WSR-88D sites");
+        return Err(error(
+            "NOAA radar site source contained no operational WSR-88D sites",
+        ));
     }
     Ok(sites)
 }
@@ -302,14 +473,66 @@ pub fn snapshot_from_live(live_sites: Vec<RadarSite>, today: NaiveDate) -> Radar
     }
 }
 
+fn append_csv_row(output: &mut String, values: &[&str]) {
+    for (index, value) in values.iter().enumerate() {
+        if index > 0 {
+            output.push(',');
+        }
+        if value.contains([',', '"', '\r', '\n']) {
+            output.push('"');
+            output.push_str(&value.replace('"', "\"\""));
+            output.push('"');
+        } else {
+            output.push_str(value);
+        }
+    }
+    output.push('\n');
+}
+
 pub fn write_snapshot(snapshot: &RadarSiteSnapshot, path: &Path) -> Result<()> {
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("create snapshot directory {}", parent.display()))?;
+        with_context(
+            fs::create_dir_all(parent),
+            format!("create snapshot directory {}", parent.display()),
+        )?;
     }
-    let mut serialized = serde_json::to_string_pretty(snapshot).context("serialize snapshot")?;
-    serialized.push('\n');
-    fs::write(path, serialized).with_context(|| format!("write snapshot {}", path.display()))
+
+    let mut serialized = String::new();
+    let schema_version = snapshot.schema_version.to_string();
+    append_csv_row(&mut serialized, &["schema_version", &schema_version]);
+    append_csv_row(&mut serialized, &["last_verified", &snapshot.last_verified]);
+    append_csv_row(&mut serialized, &["source", &snapshot.source]);
+    append_csv_row(
+        &mut serialized,
+        &[
+            "id",
+            "registry_name",
+            "source_name",
+            "latitude",
+            "longitude",
+            "elevation_meters",
+        ],
+    );
+    for site in &snapshot.sites {
+        let latitude = site.latitude.to_string();
+        let longitude = site.longitude.to_string();
+        let elevation = site.elevation_meters.to_string();
+        append_csv_row(
+            &mut serialized,
+            &[
+                &site.id,
+                &site.registry_name,
+                &site.source_name,
+                &latitude,
+                &longitude,
+                &elevation,
+            ],
+        );
+    }
+    with_context(
+        fs::write(path, serialized),
+        format!("write snapshot {}", path.display()),
+    )
 }
 
 pub async fn check_radar_sites(force_live: bool) -> Result<()> {
@@ -317,10 +540,10 @@ pub async fn check_radar_sites(force_live: bool) -> Result<()> {
     let snapshot = load_snapshot(&path)?;
     let registry_differences = compare_registry(&snapshot);
     if !registry_differences.is_empty() {
-        bail!(format_differences(
+        return Err(error(format_differences(
             "local registry differs from the checked-in radar site snapshot",
-            &registry_differences
-        ));
+            &registry_differences,
+        )));
     }
 
     let today = Utc::now().date_naive();
@@ -354,14 +577,14 @@ pub async fn check_radar_sites(force_live: bool) -> Result<()> {
     let candidate = snapshot_from_live(live_sites, today);
     let candidate_path = candidate_path();
     write_snapshot(&candidate, &candidate_path)?;
-    bail!(
+    Err(error(format!(
         "{}\n\nCandidate snapshot written to {}.\nRun: cargo run -p xtask -- update-radar-sites",
         format_differences(
             "NOAA operational radar site data differs from the checked-in snapshot",
             &source_differences
         ),
         candidate_path.display()
-    )
+    )))
 }
 
 pub async fn update_radar_sites() -> Result<()> {
@@ -373,10 +596,10 @@ pub async fn update_radar_sites() -> Result<()> {
 
     let differences = compare_registry(&snapshot);
     if !differences.is_empty() {
-        bail!(format_differences(
+        return Err(error(format_differences(
             "snapshot updated, but the Rust registry still needs changes",
-            &differences
-        ));
+            &differences,
+        )));
     }
     println!(
         "OK: Rust registry matches the updated NOAA snapshot ({} sites).",
@@ -457,5 +680,18 @@ mod tests {
         for id in ["KBIX", "KCRI", "KLIX", "KOUN", "RKJK", "TADW"] {
             assert!(!is_operational_us_wsr88d(id));
         }
+    }
+
+    #[test]
+    fn csv_parser_handles_quoted_commas_quotes_and_newlines() {
+        let rows = parse_csv(
+            "id,name\r\nKAAA,Plain\r\nKBBB,\"Comma, Name\"\r\nKCCC,\"Line 1\nLine \"\"2\"\"\"\r\n",
+        )
+        .unwrap();
+
+        assert_eq!(rows[0], ["id", "name"]);
+        assert_eq!(rows[1], ["KAAA", "Plain"]);
+        assert_eq!(rows[2], ["KBBB", "Comma, Name"]);
+        assert_eq!(rows[3], ["KCCC", "Line 1\nLine \"2\""]);
     }
 }

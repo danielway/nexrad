@@ -8,11 +8,16 @@ catalog.
 ## Source and Snapshot
 
 The source snapshot is
-`nexrad-model/data/operational-radar-sites.json`. Its `last_verified` field is
+`nexrad-model/data/operational-radar-sites.csv`. Its `last_verified` row is
 the date on which the list was downloaded from the NOAA NWS GeoServer
 `nws:radar_sites` layer. That catalog describes installed sites independently
 of whether a site is temporarily unavailable, unlike lists inferred from
 currently available Level II files.
+
+The audit requests NOAA's CSV representation and reads and writes CSV with the
+Rust standard library. Its HTTP client and command-line/runtime support reuse
+dependencies already present in the workspace; the maintenance feature adds no
+third-party dependencies.
 
 The snapshot stores both names:
 
@@ -45,7 +50,7 @@ days old, the test also downloads NOAA's current catalog and compares:
 A fresh snapshot keeps ordinary test runs offline. A stale snapshot triggers a
 live read but never modifies tracked files. If NOAA has changed, the test fails
 with a field-by-field report and writes the newly downloaded candidate to
-`target/radar-sites-current.json`. A source outage also fails the stale audit,
+`target/radar-sites-current.csv`. A source outage also fails the stale audit,
 because an old registry must not be mistaken for a verified one.
 
 The check command prints the number of sites compared and explicitly reports
@@ -70,7 +75,7 @@ Run:
 cargo run -p xtask -- update-radar-sites
 ```
 
-This command downloads NOAA's catalog, rebuilds the tracked JSON snapshot, and
+This command downloads NOAA's catalog, rebuilds the tracked CSV snapshot, and
 then checks it against the Rust registry. If NOAA added, removed, renamed, or
 moved a site, the command leaves the new snapshot available for inspection and
 fails with the registry changes still required.

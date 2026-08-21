@@ -9,11 +9,8 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-anyhow = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true }
 nexrad-model = { path = "../nexrad-model" }
 reqwest = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
 tokio = { workspace = true }

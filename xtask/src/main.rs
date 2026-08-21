@@ -1,4 +1,3 @@
-use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
@@ -21,7 +20,7 @@ enum Command {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> xtask::Result<()> {
     match Arguments::parse().command {
         Command::CheckRadarSites { force } => xtask::check_radar_sites(force).await,
         Command::UpdateRadarSites => xtask::update_radar_sites().await,

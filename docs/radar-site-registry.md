@@ -52,6 +52,9 @@ live read but never modifies tracked files. If NOAA has changed, the test fails
 with a field-by-field report and writes the newly downloaded candidate to
 `target/radar-sites-current.csv`. A source outage also fails the stale audit,
 because an old registry must not be mistaken for a verified one.
+Requests have a 10-second connection timeout and a 30-second total timeout.
+Non-finite numbers and out-of-range coordinates are rejected before comparison
+or snapshot updates.
 
 The check command prints the number of sites compared and explicitly reports
 whether the NOAA live check passed or was skipped because the snapshot is still

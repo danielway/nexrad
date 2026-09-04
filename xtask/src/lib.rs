@@ -5,6 +5,7 @@ use std::error::Error;
 use std::fmt::{self, Display};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 pub const NOAA_RADAR_SITES_URL: &str = "https://opengeo.ncep.noaa.gov/geoserver/nws/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=nws%3Aradar_sites&outputFormat=csv";
 pub const SNAPSHOT_MAX_AGE_DAYS: i64 = 31;
@@ -143,7 +144,20 @@ fn csv_value<'a>(row: &'a [String], column: usize, name: &str) -> Result<&'a str
 }
 
 fn parse_number(value: &str, field: &str, id: &str) -> Result<f64> {
-    with_context(value.parse(), format!("parse {field} for radar site {id}"))
+    let number: f64 = with_context(value.parse(), format!("parse {field} for radar site {id}"))?;
+    if !number.is_finite() {
+        return Err(error(format!(
+            "{field} for radar site {id} must be finite, got {value:?}"
+        )));
+    }
+    if (field == "latitude" && !(-90.0..=90.0).contains(&number))
+        || (field == "longitude" && !(-180.0..=180.0).contains(&number))
+    {
+        return Err(error(format!(
+            "{field} for radar site {id} is out of range: {value}"
+        )));
+    }
+    Ok(number)
 }
 
 pub fn load_snapshot(path: &Path) -> Result<RadarSiteSnapshot> {
@@ -250,6 +264,8 @@ pub fn is_snapshot_stale(snapshot: &RadarSiteSnapshot, today: NaiveDate) -> Resu
 pub async fn fetch_operational_sites() -> Result<Vec<RadarSite>> {
     let client = reqwest::Client::builder()
         .user_agent("nexrad-xtask radar-site-registry-audit")
+        .connect_timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(30))
         .build();
     let client = with_context(client, "build NOAA radar site client")?;
     let response = with_context(
@@ -261,7 +277,11 @@ pub async fn fetch_operational_sites() -> Result<Vec<RadarSite>> {
         "NOAA radar site CSV returned an error",
     )?;
     let body = with_context(response.text().await, "read NOAA radar site CSV")?;
-    let rows = with_context(parse_csv(&body), "parse NOAA radar site CSV")?;
+    parse_operational_sites(&body)
+}
+
+fn parse_operational_sites(body: &str) -> Result<Vec<RadarSite>> {
+    let rows = with_context(parse_csv(body), "parse NOAA radar site CSV")?;
     let headers = rows
         .first()
         .ok_or_else(|| error("NOAA radar site CSV is empty"))?;
@@ -620,6 +640,38 @@ pub fn format_differences(title: &str, differences: &[String]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn noaa_csv_rejects_invalid_numbers() {
+        for (latitude, longitude, elevation) in [
+            ("NaN", "-20", "100"),
+            ("10", "NaN", "100"),
+            ("10", "-20", "NaN"),
+            ("inf", "-20", "100"),
+            ("10", "-inf", "100"),
+            ("91", "-20", "100"),
+            ("10", "-181", "100"),
+        ] {
+            let csv = format!(
+                "rda_id,name,lat,lon,elevmeter\nKAAA,Test,{latitude},{longitude},{elevation}\n"
+            );
+            assert!(parse_operational_sites(&csv).is_err(), "accepted {csv}");
+        }
+    }
+
+    #[test]
+    fn noaa_csv_validates_schema_duplicates_and_network_membership() {
+        let headers = "rda_id,name,lat,lon,elevmeter\n";
+        let row = "KAAA,Test,10,-20,100\n";
+        let sites = parse_operational_sites(&format!(
+            "{headers}{row}KLIX,Retired,30,-90,10\nRKJK,Overseas,30,120,10\n"
+        ))
+        .unwrap();
+        assert_eq!(sites, vec![site("KAAA", "Test", 10.0, -20.0)]);
+        assert!(parse_operational_sites(&format!("{headers}{row}{row}")).is_err());
+        assert!(parse_operational_sites(headers).is_err());
+        assert!(parse_operational_sites("rda_id,name\nKAAA,Test\n").is_err());
+    }
 
     fn site(id: &str, name: &str, latitude: f64, longitude: f64) -> RadarSite {
         RadarSite {

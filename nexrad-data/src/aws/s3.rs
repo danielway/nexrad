@@ -1,5 +1,5 @@
 mod list_objects;
-pub(crate) use list_objects::list_objects;
+pub(crate) use list_objects::{list_all_objects, list_objects};
 
 mod download_object;
 pub(crate) use download_object::download_object;

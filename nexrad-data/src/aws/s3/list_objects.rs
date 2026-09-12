@@ -16,13 +16,32 @@ pub async fn list_objects(
     prefix: &str,
     max_keys: Option<usize>,
 ) -> crate::result::Result<BucketListResult> {
+    list_objects_page(bucket, prefix, max_keys, None).await
+}
+
+async fn list_objects_page(
+    bucket: &str,
+    prefix: &str,
+    max_keys: Option<usize>,
+    after: Option<String>,
+) -> crate::result::Result<BucketListResult> {
     let mut path = format!("https://{bucket}.s3.amazonaws.com?list-type=2&prefix={prefix}");
     if let Some(max_keys) = max_keys {
         path.push_str(&format!("&max-keys={max_keys}"));
     }
     debug!("Listing objects in bucket \"{bucket}\" with prefix \"{prefix}\"");
 
-    let response = client().get(&path).send().await.map_err(S3ListObjects)?;
+    let mut url = reqwest::Url::parse(&path).map_err(|_| AWSError::S3ListObjectsDecoding)?;
+    if let Some(after) = after {
+        url.query_pairs_mut().append_pair("start-after", &after);
+    }
+    let response = client()
+        .get(url)
+        .send()
+        .await
+        .map_err(S3ListObjects)?
+        .error_for_status()
+        .map_err(S3ListObjects)?;
     trace!("  List objects response status: {}", response.status());
 
     let body = response.text().await.map_err(S3ListObjects)?;
@@ -94,4 +113,69 @@ pub async fn list_objects(
     trace!("  List objects found: {}", objects.len());
 
     Ok(BucketListResult { truncated, objects })
+}
+
+/// List every page; current radar scans may sort after retained old scans.
+pub(crate) async fn list_all_objects(
+    bucket: &str,
+    prefix: &str,
+) -> crate::result::Result<Vec<BucketObject>> {
+    collect_pages(|after| async move { list_objects_page(bucket, prefix, None, after).await }).await
+}
+
+async fn collect_pages<F: std::future::Future<Output = crate::result::Result<BucketListResult>>>(
+    mut fetch: impl FnMut(Option<String>) -> F,
+) -> crate::result::Result<Vec<BucketObject>> {
+    let mut objects = Vec::new();
+    let mut after: Option<String> = None;
+    loop {
+        let page = fetch(after.clone()).await?;
+        if page.truncated {
+            let last = page.objects.last().ok_or(AWSError::S3ListObjectsDecoding)?;
+            if after.as_ref().is_some_and(|previous| last.key <= *previous) {
+                return Err(AWSError::S3ListObjectsDecoding.into());
+            }
+            after = Some(last.key.clone());
+        }
+        objects.extend(page.objects);
+        if !page.truncated {
+            return Ok(objects);
+        }
+    }
+}
+
+#[cfg(test)]
+mod regression_tests {
+    use super::*;
+    fn page(key: &str, truncated: bool) -> BucketListResult {
+        BucketListResult {
+            truncated,
+            objects: vec![BucketObject {
+                key: key.into(),
+                last_modified: None,
+                size: 0,
+            }],
+        }
+    }
+    #[tokio::test]
+    async fn reads_new_scan_after_old_scan_fills_first_page() {
+        let objects = collect_pages(|after| async move {
+            match after.as_deref() {
+                None => Ok(page("KBYX/589/20260909-013029-100-I", true)),
+                Some("KBYX/589/20260909-013029-100-I") => {
+                    Ok(page("KBYX/589/20260912-140452-001-S", false))
+                }
+                _ => panic!("unexpected pagination cursor"),
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(objects.len(), 2);
+        assert!(objects[1].key.contains("20260912"));
+    }
+    #[tokio::test]
+    async fn rejects_truncated_page_without_progress() {
+        let result = collect_pages(|_| async { Ok(page("same-key", true)) }).await;
+        assert!(result.is_err());
+    }
 }

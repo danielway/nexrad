@@ -1,0 +1,82 @@
+name: Radar Site Registry Audit
+
+on:
+  schedule:
+    # Run every Monday at 6:00 AM UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Compare registry with NOAA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          system-deps: "false"
+
+      - name: Audit radar site registry against NOAA
+        run: cargo test -p xtask --test radar_site_registry -- --ignored --nocapture
+
+      - name: Upload candidate snapshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-sites-current
+          path: target/radar-sites-current.csv
+          if-no-files-found: ignore
+
+  notify-failure:
+    name: Create issue on failure
+    runs-on: ubuntu-latest
+    needs: audit
+    if: failure()
+    permissions:
+      issues: write
+
+    steps:
+      - name: Create GitHub issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const title = `Radar site registry audit failure - ${new Date().toISOString().split('T')[0]}`;
+            const body = `## Radar Site Registry Audit Failure
+
+            The weekly radar site registry audit failed on ${new Date().toISOString()}.
+
+            **Workflow run:** ${runUrl}
+
+            The job log lists the differences between the checked-in snapshot and NOAA's current catalog (or the error that prevented the comparison). If NOAA data changed, the candidate snapshot is attached to the run as the \`radar-sites-current\` artifact. See [docs/radar-site-registry.md](docs/radar-site-registry.md) for the update workflow.
+
+            This issue was automatically created by the radar-site-audit workflow.`;
+
+            // Check for existing open issue to avoid duplicates
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'radar-site-audit-failure'
+            });
+
+            if (existingIssues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['radar-site-audit-failure', 'bug']
+              });
+            } else {
+              // Add a comment to existing issue instead
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssues.data[0].number,
+                body: `Another failure occurred on ${new Date().toISOString()}.\n\n**Workflow run:** ${runUrl}`
+              });
+            }

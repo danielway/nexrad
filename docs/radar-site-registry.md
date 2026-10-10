@@ -32,42 +32,47 @@ registry, which stores four decimal places. Successive NOAA snapshots use a
 
 The operational U.S. WSR-88D filter includes four-character `K` and `P` site
 identifiers plus `TJUA`. It excludes `KBIX`, `KCRI`, `KLIX`, and `KOUN`, which
-NOAA's geographic layer includes but which are not separate sites in the
-156-site operational registry. This explicit policy makes a source or network
-change fail visibly instead of silently changing the public registry.
+NOAA's geographic layer still lists but which are decommissioned or not part of
+the operational network, so they are not in the 156-site registry. This
+explicit policy makes a source or network change fail visibly instead of
+silently changing the public registry.
 
-## Automatic Test Behavior
+Registry elevations are not compared with the snapshot. NOAA's `elevmeter`
+values run about 30 meters above the registry's on average, so the snapshot
+elevations are only used to detect changes in NOAA's own data.
 
-The `xtask/tests/radar_site_registry.rs` integration test always compares the
-checked-in snapshot with the Rust registry. If the snapshot is more than 31
-days old, the test also downloads NOAA's current catalog and compares:
+## Checks
 
-- added or removed operational identifiers;
-- NOAA site names;
-- latitude and longitude; and
-- elevation.
+There are two checks, so ordinary development never depends on the network:
 
-A fresh snapshot keeps ordinary test runs offline. A stale snapshot triggers a
-live read but never modifies tracked files. If NOAA has changed, the test fails
-with a field-by-field report and writes the newly downloaded candidate to
-`target/radar-sites-current.csv`. A source outage also fails the stale audit,
-because an old registry must not be mistaken for a verified one.
-Requests have a 10-second connection timeout and a 30-second total timeout.
-Non-finite numbers and out-of-range coordinates are rejected before comparison
-or snapshot updates.
+- **Offline check (default test suite).** `xtask/tests/radar_site_registry.rs`
+  compares the checked-in snapshot with the Rust registry on every
+  `cargo test --workspace`. It fails if either was edited without the other.
+- **Live NOAA check (scheduled).** The `radar-site-audit` workflow runs weekly
+  and on demand. It downloads NOAA's current catalog and compares it with the
+  snapshot for:
+  - added or removed operational identifiers;
+  - NOAA site names;
+  - latitude and longitude; and
+  - elevation.
 
-The check command prints the number of sites compared and explicitly reports
-whether the NOAA live check passed or was skipped because the snapshot is still
-fresh.
+The live check never modifies tracked files. If NOAA has changed, it fails
+with a field-by-field report, writes the newly downloaded candidate to
+`target/radar-sites-current.csv`, uploads it as a workflow artifact, and opens
+(or comments on) a GitHub issue. A source outage also fails the check, because
+an unreachable source must not be mistaken for a verified registry. Requests
+have a 10-second connection timeout and a 30-second total timeout. Non-finite
+numbers and out-of-range coordinates are rejected before comparison or
+snapshot updates.
 
 To run the same checks manually:
 
 ```bash
-# Use the age policy: fetch only when the snapshot is stale.
+# Offline: compare the Rust registry with the checked-in snapshot.
 cargo run -p xtask -- check-radar-sites
 
-# Fetch and compare even when the snapshot is fresh.
-cargo run -p xtask -- check-radar-sites --force
+# Live: also compare the snapshot with NOAA's current catalog.
+cargo run -p xtask -- check-radar-sites --live
 ```
 
 ## Updating the Snapshot
@@ -93,5 +98,4 @@ cargo test --all-features --workspace
 ```
 
 Commit the registry and snapshot changes together. Even when NOAA data is
-unchanged, maintainers may run the update command to advance `last_verified`
-and keep normal test runs offline for the next 31 days.
+unchanged, maintainers may run the update command to advance `last_verified`.

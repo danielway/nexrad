@@ -1430,7 +1430,10 @@ mod tests {
             (47.1169, -124.1067, "KLGX"),
             (65.0351, -147.5014, "PAPD"),
         ] {
-            assert_eq!(nearest_site(latitude, longitude).unwrap().id, expected);
+            assert_eq!(
+                nearest_site(latitude, longitude).map(|site| site.id),
+                Some(expected)
+            );
         }
     }
 }

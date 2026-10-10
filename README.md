@@ -225,9 +225,9 @@ See each crate's documentation for detailed API information.
 ## Maintaining the Radar Site Registry
 
 The checked-in NEXRAD site registry is audited against NOAA's radar site catalog.
-The normal workspace test suite performs the audit automatically when the source
-snapshot is more than 31 days old. To fetch NOAA data and refresh the snapshot
-explicitly, run:
+The normal workspace test suite checks the registry against a checked-in snapshot
+offline, and a weekly workflow compares that snapshot with NOAA's current data.
+To fetch NOAA data and refresh the snapshot explicitly, run:
 
 ```bash
 cargo run -p xtask -- update-radar-sites

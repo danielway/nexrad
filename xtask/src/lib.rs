@@ -8,7 +8,6 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 pub const NOAA_RADAR_SITES_URL: &str = "https://opengeo.ncep.noaa.gov/geoserver/nws/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=nws%3Aradar_sites&outputFormat=csv";
-pub const SNAPSHOT_MAX_AGE_DAYS: i64 = 31;
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 
@@ -193,6 +192,10 @@ pub fn load_snapshot(path: &Path) -> Result<RadarSiteSnapshot> {
         )));
     }
     let last_verified = metadata(1, "last_verified")?.to_string();
+    with_context(
+        NaiveDate::parse_from_str(&last_verified, "%Y-%m-%d"),
+        "parse snapshot last_verified as YYYY-MM-DD",
+    )?;
     let source = metadata(2, "source")?.to_string();
 
     let headers = &rows[3];
@@ -240,25 +243,6 @@ pub fn load_snapshot(path: &Path) -> Result<RadarSiteSnapshot> {
         source,
         sites,
     })
-}
-
-pub fn snapshot_age_days(snapshot: &RadarSiteSnapshot, today: NaiveDate) -> Result<i64> {
-    let verified = with_context(
-        NaiveDate::parse_from_str(&snapshot.last_verified, "%Y-%m-%d"),
-        "parse snapshot last_verified as YYYY-MM-DD",
-    )?;
-    let age = today.signed_duration_since(verified).num_days();
-    if age < 0 {
-        return Err(error(format!(
-            "radar site snapshot last_verified {} is in the future",
-            snapshot.last_verified
-        )));
-    }
-    Ok(age)
-}
-
-pub fn is_snapshot_stale(snapshot: &RadarSiteSnapshot, today: NaiveDate) -> Result<bool> {
-    Ok(snapshot_age_days(snapshot, today)? > SNAPSHOT_MAX_AGE_DAYS)
 }
 
 pub async fn fetch_operational_sites() -> Result<Vec<RadarSite>> {
@@ -555,9 +539,9 @@ pub fn write_snapshot(snapshot: &RadarSiteSnapshot, path: &Path) -> Result<()> {
     )
 }
 
-pub async fn check_radar_sites(force_live: bool) -> Result<()> {
-    let path = snapshot_path();
-    let snapshot = load_snapshot(&path)?;
+/// Compares the Rust registry with the checked-in snapshot without using the network.
+pub fn check_registry_offline() -> Result<RadarSiteSnapshot> {
+    let snapshot = load_snapshot(&snapshot_path())?;
     let registry_differences = compare_registry(&snapshot);
     if !registry_differences.is_empty() {
         return Err(error(format_differences(
@@ -565,21 +549,15 @@ pub async fn check_radar_sites(force_live: bool) -> Result<()> {
             &registry_differences,
         )));
     }
+    Ok(snapshot)
+}
 
-    let today = Utc::now().date_naive();
-    let age = snapshot_age_days(&snapshot, today)?;
-    if !force_live && age <= SNAPSHOT_MAX_AGE_DAYS {
-        println!(
-            "OK: Rust registry matches the checked-in snapshot ({} sites).",
-            snapshot.sites.len()
-        );
-        println!(
-            "NOAA live check skipped: snapshot verified {} ({} days old; live check required after {} days).",
-            snapshot.last_verified, age, SNAPSHOT_MAX_AGE_DAYS
-        );
-        return Ok(());
-    }
-
+/// Compares the checked-in snapshot with NOAA's current catalog.
+///
+/// This requires network access and is intended for the scheduled audit workflow and manual use,
+/// not for the default test suite.
+pub async fn check_against_noaa() -> Result<()> {
+    let snapshot = check_registry_offline()?;
     let live_sites = fetch_operational_sites().await?;
     let source_differences = compare_source(&snapshot, &live_sites);
     if source_differences.is_empty() {
@@ -588,11 +566,14 @@ pub async fn check_radar_sites(force_live: bool) -> Result<()> {
             snapshot.sites.len()
         );
         println!(
-            "OK: live NOAA catalog matches the snapshot ({} sites; snapshot verified {}, {} days old).",
-            live_sites.len(), snapshot.last_verified, age
+            "OK: live NOAA catalog matches the snapshot ({} sites; snapshot last updated {}).",
+            live_sites.len(),
+            snapshot.last_verified
         );
         return Ok(());
     }
+
+    let today = Utc::now().date_naive();
 
     let candidate = snapshot_from_live(live_sites, today);
     let candidate_path = candidate_path();
@@ -682,23 +663,6 @@ mod tests {
             longitude,
             elevation_meters: 100.0,
         }
-    }
-
-    #[test]
-    fn snapshot_becomes_stale_after_31_days() {
-        let snapshot = RadarSiteSnapshot {
-            schema_version: 1,
-            last_verified: "2026-01-01".to_string(),
-            source: NOAA_RADAR_SITES_URL.to_string(),
-            sites: Vec::new(),
-        };
-
-        assert!(
-            !is_snapshot_stale(&snapshot, NaiveDate::from_ymd_opt(2026, 2, 1).unwrap()).unwrap()
-        );
-        assert!(
-            is_snapshot_stale(&snapshot, NaiveDate::from_ymd_opt(2026, 2, 2).unwrap()).unwrap()
-        );
     }
 
     #[test]

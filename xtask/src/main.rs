@@ -9,11 +9,11 @@ struct Arguments {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Check the Rust registry and, when stale, compare it with NOAA.
+    /// Check the Rust registry against the checked-in radar site snapshot.
     CheckRadarSites {
-        /// Download NOAA data even when the checked-in snapshot is fresh.
+        /// Also compare the snapshot with NOAA's current catalog (requires network access).
         #[arg(long)]
-        force: bool,
+        live: bool,
     },
     /// Download NOAA data and rebuild the checked-in radar site snapshot.
     UpdateRadarSites,
@@ -22,7 +22,16 @@ enum Command {
 #[tokio::main]
 async fn main() -> xtask::Result<()> {
     match Arguments::parse().command {
-        Command::CheckRadarSites { force } => xtask::check_radar_sites(force).await,
+        Command::CheckRadarSites { live: false } => {
+            let snapshot = xtask::check_registry_offline()?;
+            println!(
+                "OK: Rust registry matches the checked-in snapshot ({} sites). \
+                 Pass --live to also compare with NOAA.",
+                snapshot.sites.len()
+            );
+            Ok(())
+        }
+        Command::CheckRadarSites { live: true } => xtask::check_against_noaa().await,
         Command::UpdateRadarSites => xtask::update_radar_sites().await,
     }
 }

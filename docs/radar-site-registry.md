@@ -63,7 +63,8 @@ with a field-by-field report, writes the newly downloaded candidate to
 an unreachable source must not be mistaken for a verified registry. Requests
 have a 10-second connection timeout and a 30-second total timeout. Non-finite
 numbers and out-of-range coordinates are rejected before comparison or
-snapshot updates.
+snapshot updates. NOAA's layer can list a site more than once; identical
+rows are collapsed, and rows that disagree are an error.
 
 To run the same checks manually:
 

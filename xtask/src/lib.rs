@@ -1,5 +1,6 @@
 use chrono::{NaiveDate, Utc};
 use nexrad_model::meta::registry;
+use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt::{self, Display};
@@ -307,10 +308,18 @@ fn parse_operational_sites(body: &str) -> Result<Vec<RadarSite>> {
             id: id.clone(),
         };
 
-        if sites.insert(id.clone(), site).is_some() {
-            return Err(error(format!(
-                "NOAA radar site source contains duplicate identifier {id}"
-            )));
+        // NOAA's layer can list a site more than once (KHDC appears seven times). Identical rows
+        // are collapsed; rows that disagree are an error.
+        match sites.entry(id.clone()) {
+            Entry::Vacant(entry) => {
+                entry.insert(site);
+            }
+            Entry::Occupied(entry) if *entry.get() != site => {
+                return Err(error(format!(
+                    "NOAA radar site source contains conflicting rows for identifier {id}"
+                )));
+            }
+            Entry::Occupied(_) => {}
         }
     }
 
@@ -649,9 +658,16 @@ mod tests {
         ))
         .unwrap();
         assert_eq!(sites, vec![site("KAAA", "Test", 10.0, -20.0)]);
-        assert!(parse_operational_sites(&format!("{headers}{row}{row}")).is_err());
+        assert!(parse_operational_sites(&format!("{headers}{row}KAAA,Test,10,-21,100\n")).is_err());
         assert!(parse_operational_sites(headers).is_err());
         assert!(parse_operational_sites("rda_id,name\nKAAA,Test\n").is_err());
+    }
+
+    #[test]
+    fn noaa_csv_collapses_identical_duplicate_rows() {
+        let csv = "rda_id,name,lat,lon,elevmeter\nKAAA,Test,10,-20,100\nKAAA,Test,10,-20,100\n";
+        let sites = parse_operational_sites(csv).unwrap();
+        assert_eq!(sites, vec![site("KAAA", "Test", 10.0, -20.0)]);
     }
 
     fn site(id: &str, name: &str, latitude: f64, longitude: f64) -> RadarSite {

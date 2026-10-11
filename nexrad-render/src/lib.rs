@@ -779,6 +779,10 @@ pub fn render_vertical(
 /// | DifferentialPhase | Sequential (0 to 360 deg) |
 /// | CorrelationCoefficient | Sequential (0 to 1) |
 /// | ClutterFilterPower | Divergent (-20 to +20 dB) |
+/// | Any other product | Grayscale fallback over [`Product::value_range`] |
+///
+/// Products added to [`Product`] in future releases that do not yet have a
+/// dedicated scale fall back to a neutral two-level grayscale scale.
 ///
 /// # Example
 ///
@@ -797,7 +801,20 @@ pub fn default_scale(product: Product) -> DiscreteColorScale {
         Product::DifferentialPhase => differential_phase_scale(),
         Product::CorrelationCoefficient => correlation_coefficient_scale(),
         Product::ClutterFilterPower => clutter_filter_power_scale(),
+        _ => fallback_scale(product),
     }
+}
+
+/// Neutral fallback scale for products without a dedicated color scale.
+///
+/// Splits the product's [`Product::value_range`] at its midpoint into two gray
+/// levels, so data remains visible without implying any meteorological meaning.
+fn fallback_scale(product: Product) -> DiscreteColorScale {
+    let (min, max) = product.value_range();
+    DiscreteColorScale::new(vec![
+        ColorScaleLevel::new(min, Color::rgb(0.4, 0.4, 0.4)),
+        ColorScaleLevel::new((min + max) / 2.0, Color::rgb(0.8, 0.8, 0.8)),
+    ])
 }
 
 /// Returns the default color scale for a product, wrapped in a [`ColorScale`] enum.

@@ -2,6 +2,7 @@
 
 /// Errors that can occur during processing.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
     /// The input field has invalid geometry for this algorithm.
     #[error("invalid field geometry: {0}")]

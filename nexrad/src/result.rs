@@ -80,6 +80,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Each variant wraps the error type from the corresponding sub-crate, preserving the
 /// full error information and source chain.
 #[derive(ThisError, Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Error from the data model layer (nexrad-model).
     ///

@@ -11,7 +11,11 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["uom", "nexrad-model"]
+default = ["model"]
+# Conversion of decoded messages into `nexrad-model` types
+model = ["dep:nexrad-model"]
+# Type-safe units of measure via the `uom` crate
+uom = ["dep:uom"]
 
 [dependencies]
 log = { workspace = true }

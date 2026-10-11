@@ -54,7 +54,7 @@ impl<'a> GenericDataBlock<'a> {
 
     /// Create a [`MomentData`](nexrad_model::data::MomentData) from this generic data block,
     /// cloning the underlying encoded data.
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     pub fn moment_data(&self) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
             self.header.number_of_data_moment_gates(),
@@ -69,7 +69,7 @@ impl<'a> GenericDataBlock<'a> {
 
     /// Convert this generic data block into a [`MomentData`](nexrad_model::data::MomentData),
     /// consuming the encoded data without copying.
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     pub fn into_moment_data(self) -> nexrad_model::data::MomentData {
         nexrad_model::data::MomentData::from_fixed_point(
             self.header.number_of_data_moment_gates(),
@@ -84,7 +84,7 @@ impl<'a> GenericDataBlock<'a> {
 
     /// Create a [`CFPMomentData`](nexrad_model::data::CFPMomentData) from this generic data
     /// block, cloning the underlying encoded data.
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     pub fn cfp_moment_data(&self) -> nexrad_model::data::CFPMomentData {
         nexrad_model::data::CFPMomentData::from_fixed_point(
             self.header.number_of_data_moment_gates(),
@@ -99,7 +99,7 @@ impl<'a> GenericDataBlock<'a> {
 
     /// Convert this generic data block into a [`CFPMomentData`](nexrad_model::data::CFPMomentData),
     /// consuming the encoded data without copying.
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     pub fn into_cfp_moment_data(self) -> nexrad_model::data::CFPMomentData {
         nexrad_model::data::CFPMomentData::from_fixed_point(
             self.header.number_of_data_moment_gates(),

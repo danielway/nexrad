@@ -15,7 +15,7 @@ fn test_decode_digital_radar_data_legacy() {
 }
 
 /// Tests converting a legacy Message Type 1 to a model Radial.
-#[cfg(feature = "nexrad-model")]
+#[cfg(feature = "model")]
 #[test]
 fn test_legacy_radial_conversion() {
     let messages = decode_messages(TEST_DATA).expect("decodes successfully");

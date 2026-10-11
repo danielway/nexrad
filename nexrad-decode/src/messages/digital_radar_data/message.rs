@@ -1,7 +1,7 @@
 use super::raw;
 use super::{
     DataBlock, DataBlockId, ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock,
-    RadialStatus, VolumeDataBlock,
+    VolumeDataBlock,
 };
 use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
@@ -263,7 +263,7 @@ impl<'a> Message<'a> {
     /// Get a radial from this digital radar data message. This clones the underlying moment
     /// data; use [`into_radial`](Self::into_radial) to avoid the copy when the message is no
     /// longer needed.
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
         Self::build_radial(
             &self.header,
@@ -292,7 +292,7 @@ impl<'a> Message<'a> {
     }
 
     /// Convert this digital radar data message into a common model radial, minimizing data copy.
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
         Self::build_radial(
             &self.header,
@@ -313,7 +313,7 @@ impl<'a> Message<'a> {
         )
     }
 
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     fn build_radial(
         header: &Header<'_>,
         reflectivity: Option<nexrad_model::data::MomentData>,
@@ -324,6 +324,7 @@ impl<'a> Message<'a> {
         correlation_coefficient: Option<nexrad_model::data::MomentData>,
         clutter_filter_power: Option<nexrad_model::data::CFPMomentData>,
     ) -> crate::result::Result<nexrad_model::data::Radial> {
+        use super::RadialStatus;
         use crate::result::Error;
         use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
 

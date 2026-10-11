@@ -94,3 +94,7 @@ pub mod volume;
 
 /// Result and error types for data operations.
 pub mod result;
+pub use result::{Error, Result};
+
+#[cfg(feature = "aws")]
+pub use result::aws::AWSError;

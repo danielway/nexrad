@@ -55,7 +55,6 @@ use nexrad_model::data::{
     VerticalField,
 };
 use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
-use result::{Error, Result};
 
 mod color;
 pub use crate::color::*;
@@ -64,6 +63,7 @@ mod render_result;
 pub use render_result::{PointQuery, RenderMetadata, RenderResult};
 
 pub mod result;
+pub use result::{Error, Result};
 
 /// Interpolation method for rendering radar data.
 ///

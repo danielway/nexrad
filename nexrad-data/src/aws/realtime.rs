@@ -80,6 +80,6 @@ mod assemble;
 #[cfg(feature = "nexrad-model")]
 pub use assemble::*;
 
-mod search;
+mod find_latest;
 
 const REALTIME_BUCKET: &str = "unidata-nexrad-level2-chunks";

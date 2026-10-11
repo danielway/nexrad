@@ -18,9 +18,12 @@ where
     }
 
     let some_target = Some(&target);
-    let mut nearest = None;
-
     let mut first_value = f(0).await?;
+    let mut nearest = first_value
+        .as_ref()
+        .filter(|value| *value <= &target)
+        .map(|_| 0);
+    let mut nearest_value = nearest.and(first_value.clone());
     let mut first_value_ref = first_value.as_ref();
 
     if first_value_ref == some_target {
@@ -51,8 +54,9 @@ where
                 continue;
             }
 
-            if mid_value_ref <= some_target {
+            if mid_value_ref <= some_target && mid_value_ref > nearest_value.as_ref() {
                 nearest = Some(mid);
+                nearest_value = mid_value.clone();
             }
 
             if mid_value_ref == some_target {
@@ -84,8 +88,9 @@ where
         let value = f(mid).await?;
         let value_ref = value.as_ref();
 
-        if value_ref.is_some() && value_ref <= some_target {
+        if value_ref <= some_target && value_ref > nearest_value.as_ref() {
             nearest = Some(mid);
+            nearest_value = value.clone();
         }
 
         if value_ref == some_target {
@@ -429,5 +434,30 @@ mod tests {
         test!(wrapped_below_pivot, 8, 2, 5, true);
         test!(wrapped_above_pivot, 8, 5, 9, false);
         test!(wrapped_preceding, 6, 5, 2, false);
+    }
+}
+
+#[cfg(test)]
+mod generation_regression_tests {
+    use super::*;
+    #[tokio::test]
+    async fn latest_search_finds_maximum_in_every_rotation() {
+        for len in 2..30 {
+            for rotation in 0..len {
+                let values: Vec<_> = (0..len).map(|i| Some((i + rotation) % len)).collect();
+                let result = search(len, usize::MAX, |i| {
+                    let v = values[i];
+                    async move { Ok(v) }
+                })
+                .await
+                .unwrap()
+                .unwrap();
+                assert_eq!(
+                    values[result],
+                    Some(len - 1),
+                    "len={len} rotation={rotation}"
+                );
+            }
+        }
     }
 }

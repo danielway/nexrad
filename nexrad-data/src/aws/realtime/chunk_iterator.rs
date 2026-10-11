@@ -359,13 +359,19 @@ impl ChunkIterator {
         &mut self,
         volume: VolumeIndex,
     ) -> Result<Option<DownloadedChunk>> {
-        let chunks = list_chunks_in_volume(&self.site, volume, 100).await?;
+        let chunks = list_chunks_in_volume(&self.site, volume, usize::MAX).await?;
         self.requests_made += 1;
 
         let latest = match chunks.last() {
             Some(id) => id,
             None => return Ok(None),
         };
+
+        // A reused next volume can still contain only its previous rotation.
+        // Keep polling until a scan newer than our current one arrives.
+        if !advances_volume(self.current(), latest) {
+            return Ok(None);
+        }
 
         let (identifier, chunk) = download_chunk(&self.site, latest).await?;
         self.requests_made += 1;
@@ -577,5 +583,44 @@ impl ChunkIterator {
         self.elevation_mapper
             .as_ref()
             .map(|m| m.all_chunk_metadata())
+    }
+}
+
+fn advances_volume(current: Option<&ChunkIdentifier>, candidate: &ChunkIdentifier) -> bool {
+    current.map_or(true, |current| {
+        candidate.date_time_prefix() > current.date_time_prefix()
+    })
+}
+
+#[cfg(test)]
+mod generation_regression_tests {
+    use super::*;
+    fn id(volume: usize, stamp: &str) -> ChunkIdentifier {
+        ChunkIdentifier::from_name(
+            "KBYX".into(),
+            VolumeIndex::new(volume),
+            format!("{stamp}-001-S"),
+            None,
+        )
+        .unwrap()
+    }
+    #[test]
+    fn waits_for_new_generation_in_reused_next_volume() {
+        let current = id(588, "20260912-140000");
+        assert!(!advances_volume(
+            Some(&current),
+            &id(589, "20260909-013029")
+        ));
+        assert!(!advances_volume(
+            Some(&current),
+            &id(589, "20260912-140000")
+        ));
+        assert!(advances_volume(Some(&current), &id(589, "20260912-140452")));
+    }
+    #[test]
+    fn volume_number_wrap_does_not_reverse_scan_time() {
+        let current = id(999, "20260912-140000");
+        assert!(advances_volume(Some(&current), &id(1, "20260912-140452")));
+        assert!(advances_volume(None, &current));
     }
 }

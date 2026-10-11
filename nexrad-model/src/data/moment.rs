@@ -133,7 +133,7 @@ impl MomentDataBlock {
         values: Vec<u8>,
     ) -> Self {
         debug_assert!(
-            data_word_size != 16 || values.len() % 2 == 0,
+            data_word_size != 16 || values.len().is_multiple_of(2),
             "16-bit moment data must have an even number of bytes, got {}",
             values.len()
         );

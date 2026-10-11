@@ -46,6 +46,7 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
+#![warn(unnameable_types)]
 #![deny(missing_docs)]
 
 pub use image::RgbaImage;
@@ -271,7 +272,7 @@ pub fn render_radials(
 
     // Fill background
     if let Some(bg) = options.background {
-        for pixel in buffer.chunks_exact_mut(4) {
+        for pixel in buffer.as_chunks_mut::<4>().0 {
             pixel.copy_from_slice(&bg);
         }
     }
@@ -442,7 +443,7 @@ pub fn render_sweep(
 
     // Fill background
     if let Some(bg) = options.background {
-        for pixel in buffer.chunks_exact_mut(4) {
+        for pixel in buffer.as_chunks_mut::<4>().0 {
             pixel.copy_from_slice(&bg);
         }
     }
@@ -580,7 +581,7 @@ pub fn render_cartesian(
     let mut buffer = vec![0u8; width * height * 4];
 
     if let Some(bg) = options.background {
-        for pixel in buffer.chunks_exact_mut(4) {
+        for pixel in buffer.as_chunks_mut::<4>().0 {
             pixel.copy_from_slice(&bg);
         }
     }
@@ -689,7 +690,7 @@ pub fn render_vertical(
     let mut buffer = vec![0u8; width * height * 4];
 
     if let Some(bg) = options.background {
-        for pixel in buffer.chunks_exact_mut(4) {
+        for pixel in buffer.as_chunks_mut::<4>().0 {
             pixel.copy_from_slice(&bg);
         }
     }

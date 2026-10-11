@@ -58,6 +58,34 @@ jobs:
       - name: Check feature matrix
         run: cargo hack check --workspace --all-targets --each-feature --optional-deps --release
 
+  msrv:
+    name: MSRV check
+    runs-on: ubuntu-latest
+    env:
+      # rust-toolchain.toml pins the stable channel, which takes precedence over
+      # the default toolchain set by the setup action. RUSTUP_TOOLCHAIN overrides
+      # it so that every cargo invocation in this job uses the MSRV toolchain.
+      RUSTUP_TOOLCHAIN: "1.88.0"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          toolchain: "1.88.0"
+
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hack
+
+      - name: Check workspace
+        run: cargo check --workspace --all-features --all-targets
+
+      - name: Check feature matrix
+        run: cargo hack check --workspace --each-feature --optional-deps
+
   documentation:
     name: Documentation check
     runs-on: ubuntu-latest
@@ -91,12 +119,33 @@ jobs:
       - name: Build all examples
         run: cargo build --workspace --examples --all-features
 
+  fuzz-build:
+    name: Fuzz target build check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          system-deps: "false"
+
+      - name: Check nexrad-decode fuzz targets
+        run: cargo check --manifest-path nexrad-decode/fuzz/Cargo.toml
+
+      - name: Check nexrad-data fuzz targets
+        run: cargo check --manifest-path nexrad-data/fuzz/Cargo.toml
+
   test:
     name: Test (${{ matrix.rust_version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
         rust_version: [stable, nightly]
+    env:
+      # Override rust-toolchain.toml so each matrix entry uses its own toolchain.
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

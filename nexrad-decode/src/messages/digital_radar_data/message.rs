@@ -53,13 +53,12 @@ impl<'a> Message<'a> {
         let pointers_raw = reader.take_bytes(pointers_space)?;
 
         let pointers = pointers_raw
-            .chunks_exact(size_of::<u32>())
-            .map(|v| {
-                v.try_into()
-                    .map_err(|_| Error::Decoding("message pointers".to_string()))
-                    .map(u32::from_be_bytes)
-            })
-            .collect::<Result<Vec<_>>>()?;
+            .as_chunks::<{ size_of::<u32>() }>()
+            .0
+            .iter()
+            .copied()
+            .map(u32::from_be_bytes)
+            .collect::<Vec<_>>();
 
         let mut message = Self {
             header: Header::new(raw_header),

@@ -23,7 +23,7 @@ impl SweepProcessor for MedianFilter {
     }
 
     fn process(&self, input: &SweepField) -> Result<SweepField> {
-        if self.azimuth_kernel % 2 == 0 || self.range_kernel % 2 == 0 {
+        if self.azimuth_kernel.is_multiple_of(2) || self.range_kernel.is_multiple_of(2) {
             return Err(Error::InvalidParameter(
                 "kernel sizes must be odd".to_string(),
             ));

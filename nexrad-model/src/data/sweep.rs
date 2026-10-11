@@ -88,7 +88,7 @@ impl Sweep {
         angles.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
         let mid = angles.len() / 2;
-        if angles.len() % 2 == 0 {
+        if angles.len().is_multiple_of(2) {
             Some((angles[mid - 1] + angles[mid]) / 2.0)
         } else {
             Some(angles[mid])

@@ -76,6 +76,7 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
+#![warn(unnameable_types)]
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 

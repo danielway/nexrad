@@ -217,6 +217,7 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
+#![warn(unnameable_types)]
 #![deny(missing_docs)]
 
 /// Unified error types for the NEXRAD facade crate.

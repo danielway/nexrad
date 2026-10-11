@@ -9,6 +9,7 @@ rust-version.workspace = true
 repository.workspace = true
 keywords = ["nexrad", "radar", "weather", "tui", "inspector"]
 categories = ["command-line-utilities", "visualization"]
+publish = false
 
 [[bin]]
 name = "nexrad-inspector"

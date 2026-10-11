@@ -7,6 +7,7 @@ use crate::messages::{
 
 /// A decoded NEXRAD Level II message's contents.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum MessageContents<'a> {
     /// Message type 2 "RDA Status Data" contains information about the current RDA state, system
     /// control, operating status, scanning strategy, performance parameters like transmitter power

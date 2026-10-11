@@ -15,6 +15,7 @@ use std::fmt::Display;
 /// - WSR-88D Radar Operations Center VCP Info Sheet
 /// - RDA/RPG ICD (2620002 series)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum VCPNumber {
     /// VCP 12: Precipitation mode. 14 elevation angles in ~4.5 minutes. Fastest scan;
     /// default for severe weather. Does not use SZ-2 phase coding.

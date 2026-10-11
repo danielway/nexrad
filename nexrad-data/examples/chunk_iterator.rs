@@ -5,7 +5,7 @@ use clap::Parser;
 use env_logger::{Builder, Env};
 use log::{info, LevelFilter};
 use nexrad_data::aws::realtime::{Chunk, ChunkIterator, DownloadedChunk, RetryPolicy};
-use nexrad_data::result::Result;
+use nexrad_data::Result;
 use std::time::Duration;
 
 /// Example demonstrating the pull-based ChunkIterator for real-time NEXRAD data.

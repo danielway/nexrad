@@ -83,6 +83,7 @@ pub(crate) mod binary_data;
 pub mod messages;
 /// Result and error types for decoding operations.
 pub mod result;
+pub use result::{Error, Result};
 /// Utilities for summarizing collections of decoded messages.
 pub mod summarize;
 

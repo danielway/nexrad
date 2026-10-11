@@ -20,9 +20,9 @@
 //! fn example() -> Result<()> {
 //!     // All sub-crate errors automatically convert to nexrad::Error
 //!     let data = std::fs::read("volume.ar2")
-//!         .map_err(nexrad::data::result::Error::from)?;  // io::Error -> data::Error -> nexrad::Error
+//!         .map_err(nexrad::data::Error::from)?;  // io::Error -> data::Error -> nexrad::Error
 //!     let volume = nexrad::data::volume::File::new(data);
-//!     let scan = volume.scan()?;  // nexrad_data::result::Error automatically converts
+//!     let scan = volume.scan()?;  // nexrad_data::Error automatically converts
 //!     Ok(())
 //! }
 //! ```
@@ -48,7 +48,7 @@
 //! # use nexrad::Result;
 //! # fn example() -> Result<()> {
 //! #     let data = std::fs::read("volume.ar2")
-//! #         .map_err(nexrad::data::result::Error::from)?;
+//! #         .map_err(nexrad::data::Error::from)?;
 //! #     let volume = nexrad::data::volume::File::new(data);
 //! #     let scan = volume.scan()?;
 //! #     Ok(())
@@ -80,6 +80,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Each variant wraps the error type from the corresponding sub-crate, preserving the
 /// full error information and source chain.
 #[derive(ThisError, Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Error from the data model layer (nexrad-model).
     ///

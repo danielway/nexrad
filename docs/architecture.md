@@ -159,6 +159,25 @@ The legacy `render_radials` function operates directly on `&[Radial]` and return
 
 `RenderResult` bundles the image with `RenderMetadata`, enabling pixel-to-geographic coordinate conversion and data value queries — useful for interactive applications and map overlays.
 
+## Enum Stability
+
+Public enums that are expected to gain variants during 1.x are marked `#[non_exhaustive]`, so adding a variant is not a breaking change. Code outside the defining crate must include a wildcard (`_`) arm when matching on them; code inside the defining crate keeps exhaustive matches so the compiler flags every place a new variant must be handled.
+
+Non-exhaustive (new failure modes, ICD message types, products, and scan strategies are added over time):
+
+- Every crate's `Error` enum (`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`, `nexrad`) and `nexrad_data::result::aws::AWSError`
+- `nexrad_decode`: `MessageContents`, `MessageType`, `RedundantChannel`, `DataBlockName`
+- `nexrad_model`: `Product`, `VCPNumber`
+
+Exhaustive by design (variants are fixed by the NOAA ICD or by the crate's own format, and several are matched per gate or per radial in hot loops where an exhaustive match is clearer and lets callers rely on the compiler):
+
+- `nexrad_model`: `MomentValue`, `CFPMomentValue`, `CFPStatus`, `GateStatus`, `RadialStatus`, `PulseWidth`, `WaveformType`, `ChannelConfiguration`
+- `nexrad_decode`: `MessageHeaders`, `RadialStatus`, `PulseWidth`, `WaveformType`, `ChannelConfiguration`, `PatternType`, and the small status enums in the message modules
+- `nexrad_data`: `ChunkType`, `NextChunk`, `Chunk`
+- `nexrad_render`: `Interpolation`, `ColorScale`
+
+Adding a variant to an exhaustive enum is a breaking change and is reserved for a major release.
+
 ## Versioning and Releases
 
 Each crate is versioned independently. Release tags follow the format `crate-name@x.y.z`. See [releasing.md](releasing.md) for the full release process and dependency ordering.

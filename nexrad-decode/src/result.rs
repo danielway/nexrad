@@ -7,6 +7,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Errors that can occur during NEXRAD data decoding.
 #[derive(ThisError, Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// An I/O error occurred while reading data.
     #[error("data file IO error")]

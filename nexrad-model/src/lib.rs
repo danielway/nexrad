@@ -87,3 +87,4 @@ pub mod data;
 pub mod geo;
 pub mod meta;
 pub mod result;
+pub use result::{Error, Result};

@@ -7,6 +7,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Errors that can occur during NEXRAD rendering.
 #[derive(ThisError, Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// The requested radar product was not found in the radial data.
     #[error("requested product not found in radial data")]

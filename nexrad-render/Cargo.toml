@@ -10,6 +10,9 @@ repository.workspace = true
 keywords.workspace = true
 categories = ["science", "visualization", "rendering"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 thiserror = { workspace = true }
 nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model" }

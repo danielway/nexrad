@@ -83,6 +83,7 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
+#![warn(unnameable_types)]
 #![deny(missing_docs)]
 
 #[cfg(feature = "aws")]

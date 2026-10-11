@@ -30,6 +30,7 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
+#![warn(unnameable_types)]
 #![deny(missing_docs)]
 
 /// Derived products computed from radar scans.

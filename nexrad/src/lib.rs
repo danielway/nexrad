@@ -44,30 +44,33 @@
 //!
 //! ## Features
 //!
-//! All core features are enabled by default. Additional features can be enabled:
+//! All features are enabled by default through the `full` feature. Each feature enables the
+//! features it depends on, listed under "Implies":
 //!
-//! | Feature | Description | Dependencies | WASM-compatible |
-//! |---------|-------------|--------------|-----------------|
-//! | `model` | Core data model types (default) | Pure Rust | Yes |
-//! | `decode` | Protocol decoding (default) | chrono, zerocopy | Yes |
-//! | `data` | Data access (default) | bzip2 | Yes |
-//! | `render` | Visualization and rendering (default) | image | Yes |
-//! | `process` | Radar data processing algorithms (default) | nexrad-model | Yes |
-//! | `aws` | Enable AWS S3 downloads (`download_latest`, `download_at`, `list_scans`) | reqwest | Yes |
-//! | `aws-polling` | Real-time polling (`poll_chunks`) | reqwest, tokio | No |
-//! | `serde` | Serialization support for model types | serde | Yes |
-//! | `uom` | Type-safe units of measure | uom | Yes |
-//! | `chrono` | Date/time type support | chrono | Yes |
-//! | `full` | Enable all features | All above | No |
+//! | Feature | Description | Implies | Dependencies | WASM-compatible |
+//! |---------|-------------|---------|--------------|-----------------|
+//! | `model` | Core data model types | | Pure Rust | Yes |
+//! | `decode` | Protocol decoding | `model` | chrono, zerocopy | Yes |
+//! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model` | bzip2 | Yes |
+//! | `render` | Visualization and rendering | `model` | image | Yes |
+//! | `process` | Radar data processing algorithms | `model` | nexrad-model | Yes |
+//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`) | `data`, `chrono` | reqwest | Yes |
+//! | `aws-polling` | Real-time polling (`stream`) | `aws` | reqwest, tokio | No |
+//! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
+//! | `serde` | Serialization support for model types | | serde | Yes |
+//! | `uom` | Type-safe units of measure | | uom | Yes |
+//! | `chrono` | Date/time type support | | chrono | Yes |
+//! | `wasm` | All WASM-compatible features | `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, `chrono` | | Yes |
+//! | `full` | Enable all features (default) | `wasm`, `aws-polling`, `parallel` | All above | No |
 //!
 //! ### Common Configurations
 //!
 //! ```toml
-//! # Minimal - local file processing only (no rendering)
-//! nexrad = { version = "1.0", default-features = false, features = ["model", "decode", "data"] }
+//! # Minimal - local file processing only (no rendering, no networking)
+//! nexrad = { version = "1.0", default-features = false, features = ["data"] }
 //!
 //! # With AWS S3 downloads
-//! nexrad = { version = "1.0", features = ["aws"] }
+//! nexrad = { version = "1.0", default-features = false, features = ["aws"] }
 //! tokio = { version = "1", features = ["full"] }
 //!
 //! # Full feature set
@@ -249,7 +252,7 @@ pub use result::{Error, Result};
 ///
 /// Returns an error if the data cannot be parsed as a valid Archive II file,
 /// decompression fails, or the messages cannot be decoded.
-#[cfg(all(feature = "data", feature = "model"))]
+#[cfg(feature = "data")]
 pub fn load(data: &[u8]) -> Result<model::data::Scan> {
     let file = data::volume::File::new(data.to_vec()).decompress()?;
     Ok(file.scan()?)
@@ -270,7 +273,7 @@ pub fn load(data: &[u8]) -> Result<model::data::Scan> {
 /// # Errors
 ///
 /// Returns an error if the file cannot be read or parsed.
-#[cfg(all(feature = "data", feature = "model"))]
+#[cfg(feature = "data")]
 pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan> {
     let data = std::fs::read(path)?;
     load(&data)
@@ -301,7 +304,7 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
 /// # Errors
 ///
 /// Returns an error if the download, decompression, or decoding fails.
-#[cfg(all(feature = "data", feature = "model", feature = "aws"))]
+#[cfg(feature = "aws")]
 pub async fn download(identifier: data::aws::archive::Identifier) -> Result<model::data::Scan> {
     let file = data::aws::archive::download_file(identifier)
         .await?
@@ -329,7 +332,7 @@ pub async fn download(identifier: data::aws::archive::Identifier) -> Result<mode
 ///
 /// Returns [`Error::NoDataAvailable`] if no archive files exist for the site/date,
 /// or a network/parsing error if download or decoding fails.
-#[cfg(all(feature = "data", feature = "model", feature = "aws"))]
+#[cfg(feature = "aws")]
 pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<model::data::Scan> {
     let files = data::aws::archive::list_files(site, &date).await?;
     let file_id = files
@@ -366,7 +369,7 @@ pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<mode
 ///
 /// Returns [`Error::NoDataAvailable`] if no archive files exist for the site/date
 /// or if no file overlaps the requested time.
-#[cfg(all(feature = "data", feature = "model", feature = "aws"))]
+#[cfg(feature = "aws")]
 pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<model::data::Scan> {
     let files = data::aws::archive::list_files(site, &datetime.date()).await?;
 
@@ -406,7 +409,7 @@ pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<
 /// }
 /// # Ok::<(), nexrad::Error>(())
 /// ```
-#[cfg(all(feature = "data", feature = "aws"))]
+#[cfg(feature = "aws")]
 pub async fn list_scans(
     site: &str,
     date: chrono::NaiveDate,
@@ -558,7 +561,7 @@ pub fn coordinate_system_required(
 /// }
 /// # Ok::<(), nexrad::Error>(())
 /// ```
-#[cfg(all(feature = "data", feature = "aws-polling"))]
+#[cfg(feature = "aws-polling")]
 pub fn stream(
     site: &str,
 ) -> impl futures::Stream<Item = Result<data::aws::realtime::DownloadedChunk>> {

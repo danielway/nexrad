@@ -232,7 +232,7 @@ fn test_file_data_accessor() {
     assert_eq!(ptr1, ptr2, "Should return reference to same data");
 }
 
-#[cfg(feature = "nexrad-model")]
+#[cfg(feature = "model")]
 #[test]
 fn test_file_scan_conversion() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -247,7 +247,7 @@ fn test_file_scan_conversion() {
     assert_eq!(scan.coverage_pattern_number().number(), 212);
 }
 
-#[cfg(feature = "nexrad-model")]
+#[cfg(feature = "model")]
 #[test]
 fn test_record_radials() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());
@@ -270,7 +270,7 @@ fn test_record_radials() {
     }
 }
 
-#[cfg(feature = "nexrad-model")]
+#[cfg(feature = "model")]
 #[test]
 fn test_record_radials_compressed_error() {
     let volume = volume::File::new(TEST_NEXRAD_FILE.to_vec());

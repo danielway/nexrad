@@ -80,7 +80,7 @@ impl File {
 
     /// Decodes this volume file into a common model scan containing sweeps and radials with moment
     /// data.
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     pub fn scan(&self) -> crate::result::Result<nexrad_model::data::Scan> {
         use crate::result::Error;
         use nexrad_decode::messages::volume_coverage_pattern as vcp;
@@ -277,7 +277,7 @@ impl Debug for File {
         debug.field("data.len()", &self.data().len());
         debug.field("header", &self.header());
 
-        #[cfg(feature = "nexrad-model")]
+        #[cfg(feature = "model")]
         debug.field(
             "records.len()",
             &self.records().map(|records| records.len()),

@@ -18,8 +18,8 @@ default = ["full"]
 
 # Core crate features
 model = ["dep:nexrad-model"]
-decode = ["dep:nexrad-decode"]
-data = ["dep:nexrad-data"]
+decode = ["dep:nexrad-decode", "model", "nexrad-decode/model"]
+data = ["dep:nexrad-data", "decode", "nexrad-data/model"]
 render = ["dep:nexrad-render", "model"]
 process = ["dep:nexrad-process", "model"]
 
@@ -27,11 +27,11 @@ process = ["dep:nexrad-process", "model"]
 serde = ["nexrad-model?/serde"]
 uom = ["nexrad-model?/uom", "nexrad-decode?/uom"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
-parallel = ["nexrad-data?/parallel"]
+parallel = ["data", "nexrad-data/parallel"]
 # Basic AWS S3 access (WASM-compatible)
-aws = ["data", "chrono", "nexrad-data?/aws"]
+aws = ["data", "chrono", "nexrad-data/aws"]
 # Real-time polling functionality (requires tokio, not WASM-compatible)
-aws-polling = ["aws", "nexrad-data?/aws-polling", "tokio", "dep:futures"]
+aws-polling = ["aws", "nexrad-data/aws-polling", "dep:tokio", "dep:futures"]
 
 # All WASM-compatible features
 wasm = ["model", "decode", "data", "render", "process", "aws", "serde", "uom", "chrono"]
@@ -41,11 +41,11 @@ full = ["wasm", "aws-polling", "parallel"]
 [dependencies]
 thiserror = { workspace = true }
 chrono = { workspace = true, optional = true }
-nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model", optional = true }
-nexrad-decode = { version = "1.0.0-rc.3", path = "../nexrad-decode", optional = true }
-nexrad-data = { version = "1.0.0-rc.7", path = "../nexrad-data", optional = true }
-nexrad-render = { version = "1.0.0-rc.4", path = "../nexrad-render", optional = true }
-nexrad-process = { version = "1.0.0-rc.1", path = "../nexrad-process", optional = true }
+nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model", optional = true, default-features = false }
+nexrad-decode = { version = "1.0.0-rc.3", path = "../nexrad-decode", optional = true, default-features = false }
+nexrad-data = { version = "1.0.0-rc.7", path = "../nexrad-data", optional = true, default-features = false }
+nexrad-render = { version = "1.0.0-rc.4", path = "../nexrad-render", optional = true, default-features = false }
+nexrad-process = { version = "1.0.0-rc.1", path = "../nexrad-process", optional = true, default-features = false }
 futures = { workspace = true, optional = true }
 
 # tokio is only available on non-WASM targets

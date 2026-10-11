@@ -57,7 +57,7 @@ The decoder handles several message types defined in the ICD:
 
 ## Features
 
-- `nexrad-model`: Provides mappings to the common `nexrad-model` types for higher-level use.
+- `model` (default): Provides mappings to the common `nexrad-model` types for higher-level use.
 - `uom`: Use the `uom` crate for type-safe units of measure.
 
 ## Crate Boundaries

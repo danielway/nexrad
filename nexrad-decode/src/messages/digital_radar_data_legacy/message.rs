@@ -231,7 +231,7 @@ impl<'a> Message<'a> {
     /// Convert this message to a common model radial. This clones the underlying gate data;
     /// use [`into_radial`](Self::into_radial) to avoid the copy when the message is no longer
     /// needed.
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     pub fn radial(&self) -> Result<nexrad_model::data::Radial> {
         Self::build_radial(
             self,
@@ -242,7 +242,7 @@ impl<'a> Message<'a> {
     }
 
     /// Convert this message into a common model radial, consuming the gate data without copying.
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     pub fn into_radial(self) -> Result<nexrad_model::data::Radial> {
         use crate::result::Error;
         use nexrad_model::data::{MomentData, Radial, RadialStatus};
@@ -327,7 +327,7 @@ impl<'a> Message<'a> {
         ))
     }
 
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     fn build_radial(
         msg: &Self,
         reflectivity_gates: Option<Vec<u8>>,

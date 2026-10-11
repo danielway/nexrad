@@ -69,11 +69,14 @@ The facade also provides a unified `nexrad::Error` type that automatically conve
 
 ### Feature Gating
 
-All sub-crate dependencies in the facade are optional and feature-gated:
+All sub-crate dependencies in the facade are optional, depend on the sub-crate with its default features disabled, and
+are feature-gated. Each facade feature enables exactly what it names plus the features it builds on: `decode` implies
+`model`, `data` implies `decode` (and therefore `model`), and `aws` implies `data`. Network dependencies such as reqwest
+are only compiled when `aws` is enabled.
 
 ```toml
-# Minimal
-nexrad = { version = "1.0", default-features = false, features = ["model", "decode", "data"] }
+# Minimal (local files, no networking)
+nexrad = { version = "1.0", default-features = false, features = ["data"] }
 
 # WASM-compatible
 nexrad = { version = "1.0", default-features = false, features = ["wasm"] }

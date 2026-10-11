@@ -75,9 +75,9 @@ mod poll_chunks;
 #[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
 pub use poll_chunks::*;
 
-#[cfg(feature = "nexrad-model")]
+#[cfg(feature = "model")]
 mod assemble;
-#[cfg(feature = "nexrad-model")]
+#[cfg(feature = "model")]
 pub use assemble::*;
 
 mod find_latest;

@@ -35,8 +35,10 @@
 //! - `decode` feature enables the Decode variant
 //! - `data` feature enables the Data variant
 //! - `render` feature enables the Render variant
+//! - `process` feature enables the Process variant
 //!
-//! All features are enabled by default.
+//! Features that build on others enable them too (for example, `data` also enables `decode` and
+//! `model`). All features are enabled by default.
 //!
 //! ## Error Source Chain
 //!

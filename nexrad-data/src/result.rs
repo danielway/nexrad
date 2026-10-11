@@ -22,8 +22,8 @@ pub enum Error {
     /// An error occurred during message decoding.
     #[error("error decoding NEXRAD data")]
     Decode(#[from] nexrad_decode::result::Error),
-    /// An error occurred in the common model layer (requires `nexrad-model` feature).
-    #[cfg(feature = "nexrad-model")]
+    /// An error occurred in the common model layer (requires `model` feature).
+    #[cfg(feature = "model")]
     #[error("error in common model")]
     Model(#[from] nexrad_model::result::Error),
     /// Cannot decode compressed record data without decompression.

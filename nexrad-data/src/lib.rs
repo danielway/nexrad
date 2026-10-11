@@ -50,8 +50,10 @@
 //!
 //! # Features
 //!
-//! - `aws` - Enable AWS S3 data access (requires async runtime)
-//! - `nexrad-model` - Enable conversion to high-level `Scan` model
+//! - `aws` (default) - Enable AWS S3 data access (requires async runtime)
+//! - `aws-polling` - Enable `aws::realtime::chunk_stream` for polling real-time data (requires tokio, not
+//!   WASM-compatible)
+//! - `model` (default) - Enable conversion to high-level `Scan` model
 //! - `parallel` - Parallelize LDM record decompression and decoding using Rayon
 //!
 //! # Crate Boundaries

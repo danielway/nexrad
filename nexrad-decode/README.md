@@ -53,7 +53,7 @@ The decoder handles several message types defined in the ICD:
 
 - `messages` — Message parsing and type definitions
 - `summarize` — Utilities for summarizing message collections (counts, types, elevation coverage)
-- `result` — Error and result types
+- `result` — Error and result types (`Error` and `Result` are also re-exported at the crate root)
 
 ## Features
 

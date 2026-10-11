@@ -185,7 +185,7 @@
 //!     }
 //!     _ => {}
 //! }
-//! # Ok::<(), nexrad::decode::result::Error>(())
+//! # Ok::<(), nexrad::decode::Error>(())
 //! ```
 //!
 //! ### Rendering with nexrad-render

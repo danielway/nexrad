@@ -5,10 +5,9 @@ use clap::Parser;
 use env_logger::{Builder, Env};
 use futures::StreamExt;
 use log::{info, warn, LevelFilter};
-use nexrad_data::result::Result;
 use nexrad_data::{
     aws::realtime::{chunk_stream, Chunk, DownloadedChunk, PollConfig},
-    volume,
+    volume, Result,
 };
 use nexrad_decode::summarize;
 use std::pin::pin;

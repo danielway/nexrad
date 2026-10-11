@@ -816,10 +816,10 @@ fn test_scan_timing_projection_at_final_sequence() {
     assert!(projection.is_none());
 }
 
-// Integration tests that require network access and aws-polling feature
-#[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
+// Integration tests that require network access
+#[cfg(all(feature = "aws", not(target_arch = "wasm32")))]
 mod polling_tests {
-    use futures::StreamExt;
+    use futures_util::StreamExt;
     use nexrad_data::aws::realtime::{chunk_stream, PollConfig};
     use std::pin::pin;
     use std::time::Duration as StdDuration;
@@ -828,7 +828,7 @@ mod polling_tests {
     #[ignore = "requires AWS access and takes time"]
     async fn test_chunk_stream_basic() {
         let config = PollConfig::new("KDMX");
-        let stream = chunk_stream(config);
+        let stream = chunk_stream(config, |d| tokio::time::sleep(d));
         let mut stream = pin!(stream);
 
         let mut chunk_count = 0;

@@ -69,10 +69,7 @@ pub use retry_policy::*;
 mod chunk_iterator;
 pub use chunk_iterator::*;
 
-// Polling functionality requires tokio
-#[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
 mod poll_chunks;
-#[cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
 pub use poll_chunks::*;
 
 #[cfg(feature = "model")]

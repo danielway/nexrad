@@ -28,15 +28,13 @@ serde = ["nexrad-model?/serde"]
 uom = ["nexrad-model?/uom", "nexrad-decode?/uom"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
 parallel = ["data", "nexrad-data/parallel"]
-# Basic AWS S3 access (WASM-compatible)
-aws = ["data", "chrono", "nexrad-data/aws"]
-# Real-time polling functionality (requires tokio, not WASM-compatible)
-aws-polling = ["aws", "nexrad-data/aws-polling", "dep:tokio", "dep:futures"]
+# AWS S3 access, including real-time streaming (WASM-compatible)
+aws = ["data", "chrono", "nexrad-data/aws", "dep:futures-util"]
 
 # All WASM-compatible features
 wasm = ["model", "decode", "data", "render", "process", "aws", "serde", "uom", "chrono"]
-# Convenience feature for everything (includes native-only features, not WASM-compatible)
-full = ["wasm", "aws-polling", "parallel"]
+# Convenience feature for everything (includes native-only `parallel`, not WASM-compatible)
+full = ["wasm", "parallel"]
 
 [dependencies]
 thiserror = { workspace = true }
@@ -46,11 +44,7 @@ nexrad-decode = { version = "1.0.0-rc.3", path = "../nexrad-decode", optional = 
 nexrad-data = { version = "1.0.0-rc.7", path = "../nexrad-data", optional = true, default-features = false }
 nexrad-render = { version = "1.0.0-rc.4", path = "../nexrad-render", optional = true, default-features = false }
 nexrad-process = { version = "1.0.0-rc.1", path = "../nexrad-process", optional = true, default-features = false }
-futures = { workspace = true, optional = true }
-
-# tokio is only available on non-WASM targets
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { workspace = true, optional = true }
+futures-util = { workspace = true, optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true }

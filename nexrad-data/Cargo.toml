@@ -15,10 +15,8 @@ all-features = true
 
 [features]
 default = ["aws", "model"]
-# Basic AWS S3 access (WASM-compatible)
-aws = ["dep:reqwest", "dep:xml", "dep:once_cell"]
-# Real-time polling functionality (requires tokio, not WASM-compatible)
-aws-polling = ["aws", "dep:tokio", "dep:futures"]
+# AWS S3 access, including real-time polling (WASM-compatible)
+aws = ["dep:reqwest", "dep:xml", "dep:once_cell", "dep:futures-util"]
 # Parallel decompression and decoding using rayon
 parallel = ["dep:rayon"]
 # Conversion of volume files and real-time chunks into `nexrad-model` types
@@ -37,15 +35,12 @@ xml = { workspace = true, optional = true }
 nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model", optional = true }
 rayon = { workspace = true, optional = true }
 once_cell = { workspace = true, optional = true }
-futures = { workspace = true, optional = true }
-
-# tokio is only available on non-WASM targets
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { workspace = true, optional = true }
+futures-util = { workspace = true, optional = true }
 
 [dev-dependencies]
 clap = { workspace = true }
 env_logger = { workspace = true }
+futures-util = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true }
@@ -54,7 +49,7 @@ criterion = { workspace = true }
 [[example]]
 name = "realtime"
 path = "examples/realtime.rs"
-required-features = ["aws-polling"]
+required-features = ["aws"]
 
 [[example]]
 name = "chunk_iterator"

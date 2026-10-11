@@ -6,7 +6,7 @@
 //! Fixtures are trimmed Archive II files containing 2-3 elevation sweeps,
 //! stored in tests/fixtures/ and documented in fixture_catalog.toml.
 
-#![cfg(feature = "nexrad-model")]
+#![cfg(feature = "model")]
 
 use chrono::Datelike;
 use nexrad_data::volume;

@@ -1,4 +1,4 @@
-#![cfg(feature = "nexrad-model")]
+#![cfg(feature = "model")]
 
 use nexrad_data::volume;
 use nexrad_model::data::{DataMoment, RadialStatus};

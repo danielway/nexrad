@@ -11,13 +11,15 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["aws", "nexrad-model"]
+default = ["aws", "model"]
 # Basic AWS S3 access (WASM-compatible)
-aws = ["reqwest", "xml", "once_cell"]
+aws = ["dep:reqwest", "dep:xml", "dep:once_cell"]
 # Real-time polling functionality (requires tokio, not WASM-compatible)
-aws-polling = ["aws", "tokio", "futures"]
+aws-polling = ["aws", "dep:tokio", "dep:futures"]
 # Parallel decompression and decoding using rayon
-parallel = ["rayon"]
+parallel = ["dep:rayon"]
+# Conversion of volume files and real-time chunks into `nexrad-model` types
+model = ["dep:nexrad-model", "nexrad-decode/model"]
 
 [dependencies]
 log = { workspace = true }
@@ -26,7 +28,7 @@ chrono = { workspace = true }
 zerocopy = { workspace = true }
 bzip2 = { workspace = true }
 flate2 = { workspace = true }
-nexrad-decode = { version = "1.0.0-rc.3", path = "../nexrad-decode" }
+nexrad-decode = { version = "1.0.0-rc.3", path = "../nexrad-decode", default-features = false }
 reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
 nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model", optional = true }
@@ -59,4 +61,4 @@ required-features = ["aws"]
 [[bench]]
 name = "scan"
 harness = false
-required-features = ["nexrad-model"]
+required-features = ["model"]

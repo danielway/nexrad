@@ -86,7 +86,7 @@ impl<'a> Record<'a> {
     /// Non-radial messages are skipped.
     ///
     /// The record must be decompressed before calling this method.
-    #[cfg(feature = "nexrad-model")]
+    #[cfg(feature = "model")]
     pub fn radials(&self) -> crate::result::Result<Vec<nexrad_model::data::Radial>> {
         use nexrad_decode::messages::MessageContents;
 

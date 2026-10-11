@@ -41,10 +41,13 @@ a pull-based interface with manual timing control.
 ## Features
 
 The APIs in this crate should be configured to require only the dependencies they need, leaving the consumer to include
-as much or little as they desire. By default, all features are included. The following named features are helpful
+as much or little as they desire. By default, the `aws` and `model` features are enabled. Decoding of volume headers
+and LDM records' NEXRAD messages via `nexrad-decode` is always available. The following named features are helpful
 groupings of dependencies/behavior:
 
-- `decode` - Enables both decoding of the volume headers and of decoding the LDM records' NEXRAD messages using `nexrad-decode`.
-- `aws` - Enables accessing archive and real-time NEXRAD data from AWS Open Data.
-- `nexrad-model` - Provides mappings to a common radar data model, particularly for mapping `volume::File` into a `Scan`.
+- `aws` (default) - Enables accessing archive and real-time NEXRAD data from AWS Open Data. WASM-compatible.
+- `aws-polling` - Enables `realtime::chunk_stream`, an async stream that polls for new real-time chunks. Implies `aws`
+  and requires tokio, so it is not WASM-compatible.
+- `model` (default) - Provides mappings to a common radar data model, particularly for mapping `volume::File` into a
+  `Scan`.
 - `parallel` - Parallelize LDM record decompression and decoding using Rayon.

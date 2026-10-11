@@ -70,16 +70,17 @@ Add `nexrad` to your `Cargo.toml`:
 nexrad = "1.0"
 ```
 
-This enables the default features (`model`, `decode`, `data`, `render`) for local file processing and visualization.
+This enables the default `full` feature, which includes every feature: local file processing, AWS downloads, real-time
+polling, processing, and rendering.
 
 **Common configurations:**
 
 ```toml
-# Minimal - local file processing only (no rendering)
-nexrad = { version = "1.0", default-features = false, features = ["model", "decode", "data"] }
+# Minimal - local file processing only (no rendering, no networking)
+nexrad = { version = "1.0", default-features = false, features = ["data"] }
 
 # With AWS S3 downloads
-nexrad = { version = "1.0", features = ["aws"] }
+nexrad = { version = "1.0", default-features = false, features = ["aws"] }
 tokio = { version = "1", features = ["full"] }
 
 # Full feature set
@@ -166,21 +167,23 @@ fn main() -> nexrad::Result<()> {
 
 ### Feature Reference
 
-| Feature | Description | Dependencies |
-|---------|-------------|--------------|
-| `model` | Core data types (Scan, Sweep, Radial) | Pure Rust |
-| `decode` | Binary protocol decoding | chrono, zerocopy |
-| `data` | Local file I/O | bzip2 |
-| `render` | Image rendering | image |
-| `process` | Processing algorithms | nexrad-model |
-| `aws` | AWS S3 downloads | reqwest |
-| `parallel` | Parallel decompression | rayon |
-| `serde` | Serialization support | serde |
-| `uom` | Type-safe units of measure | uom |
-| `chrono` | DateTime type support | chrono |
-| `aws-polling` | Real-time polling | tokio |
-| `wasm` | All WASM-compatible features | (see below) |
-| `full` | All features (native only) | All above |
+Each feature also enables the features listed under "Implies".
+
+| Feature | Description | Implies | Dependencies |
+|---------|-------------|---------|--------------|
+| `model` | Core data types (Scan, Sweep, Radial) | | Pure Rust |
+| `decode` | Binary protocol decoding | `model` | chrono, zerocopy |
+| `data` | Local file I/O | `decode`, `model` | bzip2 |
+| `render` | Image rendering | `model` | image |
+| `process` | Processing algorithms | `model` | nexrad-model |
+| `aws` | AWS S3 downloads | `data`, `chrono` | reqwest |
+| `parallel` | Parallel decompression | `data` | rayon |
+| `serde` | Serialization support | | serde |
+| `uom` | Type-safe units of measure | | uom |
+| `chrono` | DateTime type support | | chrono |
+| `aws-polling` | Real-time polling | `aws` | tokio |
+| `wasm` | All WASM-compatible features | (see below) | (see below) |
+| `full` | All features (native only, default) | `wasm`, `aws-polling`, `parallel` | All above |
 
 ### WASM Support
 

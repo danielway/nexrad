@@ -45,11 +45,11 @@ for sweep in scan.sweeps() {
 | `download_latest(site, date)` | Download the most recent scan for a date |
 | `download_at(site, datetime)` | Download the scan overlapping a specific time |
 
-### Real-Time Streaming (requires `aws-polling` feature)
+### Real-Time Streaming (requires `aws` feature)
 
 | Function | Description |
 |----------|-------------|
-| `stream(site)` | Stream live radar data chunks as a `futures::Stream` |
+| `stream(site, sleep)` | Stream live radar data chunks as a `Stream`, waiting via the supplied sleep function (e.g. `\|d\| tokio::time::sleep(d)`) |
 
 ### Field Extraction
 
@@ -96,14 +96,13 @@ depends on, so `data` alone is enough for local file loading.
 | `data` | Local file I/O (`load`, `load_file`) | `decode`, `model` | Yes |
 | `render` | Image rendering | `model` | Yes |
 | `process` | Processing algorithms | `model` | Yes |
-| `aws` | AWS S3 archive downloads | `data`, `chrono` | Yes |
-| `aws-polling` | Real-time polling (requires tokio) | `aws` | No |
+| `aws` | AWS S3 archive downloads and real-time streaming | `data`, `chrono` | Yes |
 | `serde` | Serialization support | | Yes |
 | `uom` | Type-safe units of measure | | Yes |
 | `chrono` | DateTime type support | | Yes |
 | `parallel` | Parallel decompression (requires rayon) | `data` | No |
 | `wasm` | All WASM-compatible features | all features marked Yes | Yes |
-| `full` | All features (default) | `wasm`, `aws-polling`, `parallel` | No |
+| `full` | All features (default) | `wasm`, `parallel` | No |
 
 For local file processing without rendering or networking:
 
@@ -119,5 +118,5 @@ For WebAssembly targets, use the `wasm` feature which enables all WASM-compatibl
 nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
 ```
 
-The `aws-polling` and `parallel` features require native runtimes (tokio, rayon) and are not
-WASM-compatible.
+The `parallel` feature requires a native thread pool (rayon) and is not WASM-compatible. Real-time
+streaming is part of `aws` and is runtime-agnostic, so it works on WASM with any sleep future.

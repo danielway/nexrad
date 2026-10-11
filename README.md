@@ -178,14 +178,13 @@ Each feature also enables the features listed under "Implies".
 | `data` | Local file I/O | `decode`, `model` | bzip2 |
 | `render` | Image rendering | `model` | image |
 | `process` | Processing algorithms | `model` | nexrad-model |
-| `aws` | AWS S3 downloads | `data`, `chrono` | reqwest |
+| `aws` | AWS S3 downloads and real-time streaming | `data`, `chrono` | reqwest, futures-util |
 | `parallel` | Parallel decompression | `data` | rayon |
 | `serde` | Serialization support | | serde |
 | `uom` | Type-safe units of measure | | uom |
 | `chrono` | DateTime type support | | chrono |
-| `aws-polling` | Real-time polling | `aws` | tokio |
 | `wasm` | All WASM-compatible features | (see below) | (see below) |
-| `full` | All features (native only, default) | `wasm`, `aws-polling`, `parallel` | All above |
+| `full` | All features (native only, default) | `wasm`, `parallel` | All above |
 
 ### WASM Support
 
@@ -198,9 +197,11 @@ nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
 This includes: `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, and `chrono`.
 
 **Not WASM-compatible:**
-- `aws-polling` - requires tokio runtime
 - `parallel` - requires threads (rayon)
-- `full` - includes `aws-polling` and `parallel`
+- `full` - includes `parallel`
+
+Real-time streaming (`nexrad::stream`) is part of `aws` and works on WASM: it takes a caller-supplied sleep
+function instead of depending on a specific async runtime.
 
 ### Examples
 

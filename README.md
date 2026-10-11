@@ -86,6 +86,8 @@ tokio = { version = "1", features = ["full"] }
 nexrad = { version = "1.0", features = ["full"] }
 ```
 
+**Minimum supported Rust version:** 1.88. The MSRV is only raised in minor releases, never in patch releases.
+
 ### Quick Example: Load and Inspect a Scan
 
 ```rust,no_run

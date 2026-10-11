@@ -10,9 +10,10 @@
 //! Three processing traits cover different scopes:
 //!
 //! - [`SweepProcessor`] — single-sweep algorithms (filtering, smoothing)
-//! - [`ScanProcessor`] — multi-elevation algorithms (velocity dealiasing)
+//! - [`ScanProcessor`] — multi-elevation algorithms such as velocity dealiasing (an
+//!   extension point; no built-in implementations)
 //! - [`ScanDerivedProduct`] — produces a [`CartesianField`] from a full scan
-//!   (composite reflectivity, VIL)
+//!   (e.g. [`derived::CompositeReflectivity`])
 //!
 //! # Example
 //!

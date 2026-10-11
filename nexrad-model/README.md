@@ -17,9 +17,9 @@ Scan                           A complete radar volume
 ├── Site                       Radar site metadata (ICAO ID, location, elevation)
 └── Vec<Sweep>                 One sweep per rotation at a fixed elevation angle
     └── Vec<Radial>            One radial per beam direction
-        ├── reflectivity()     → Option<MomentData>
-        ├── velocity()         → Option<MomentData>
-        ├── spectrum_width()   → Option<MomentData>
+        ├── reflectivity()     → Option<&MomentData>
+        ├── velocity()         → Option<&MomentData>
+        ├── spectrum_width()   → Option<&MomentData>
         ├── differential_reflectivity()
         ├── differential_phase()
         ├── correlation_coefficient()

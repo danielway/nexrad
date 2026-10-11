@@ -128,7 +128,7 @@ fn get_legacy_default_wait_time(
 ) -> ChronoDuration {
     use nexrad_decode::messages::volume_coverage_pattern::{ChannelConfiguration, WaveformType};
 
-    if waveform_type == WaveformType::CS {
+    if waveform_type == WaveformType::ContiguousSurveillance {
         ChronoDuration::seconds(11)
     } else if channel_config == ChannelConfiguration::ConstantPhase {
         ChronoDuration::seconds(7)

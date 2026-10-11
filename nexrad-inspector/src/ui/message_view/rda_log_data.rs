@@ -15,7 +15,7 @@ pub fn parse_rda_log_data(data: &[u8]) -> String {
     };
 
     let msg = match message.contents() {
-        MessageContents::RDALogData(data) => data,
+        MessageContents::RdaLogData(data) => data,
         _ => return "Message is not RDA log data".to_string(),
     };
 

@@ -6,7 +6,7 @@ pub enum TransitionPowerSourceStatus {
     /// Transition power source is off.
     Off,
     /// Transition power source is OK.
-    OK,
+    Ok,
     /// Transition power source status is unknown.
     Unknown,
     /// Unrecognized TPS status value for forward compatibility.

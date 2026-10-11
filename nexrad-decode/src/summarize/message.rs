@@ -63,7 +63,7 @@ impl Display for MessageSummary {
         // Messages
         writeln!(f, "Messages:")?;
         for group in self.message_groups.iter() {
-            let prefix = if group.message_type == MessageType::RDADigitalRadarDataGenericFormat {
+            let prefix = if group.message_type == MessageType::RdaDigitalRadarDataGenericFormat {
                 let msg_range = if group.start_message_index == group.end_message_index {
                     format!("  Msg {}", group.start_message_index + 1)
                 } else {

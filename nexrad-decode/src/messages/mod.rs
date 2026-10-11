@@ -203,7 +203,7 @@ fn decode_variable_length_message<'a>(
     header: &'a MessageHeader,
     offset: usize,
 ) -> Result<Message<'a>> {
-    let contents = if header.message_type() == MessageType::RDADigitalRadarDataGenericFormat {
+    let contents = if header.message_type() == MessageType::RdaDigitalRadarDataGenericFormat {
         let radar_data_message = digital_radar_data::Message::parse(reader)?;
         MessageContents::DigitalRadarData(Box::new(radar_data_message))
     } else {

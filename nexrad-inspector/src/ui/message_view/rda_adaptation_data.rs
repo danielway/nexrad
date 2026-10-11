@@ -55,7 +55,7 @@ pub fn parse_rda_adaptation_data(data: &[u8]) -> String {
     };
 
     let msg = match message.contents() {
-        MessageContents::RDAAdaptationData(data) => data,
+        MessageContents::RdaAdaptationData(data) => data,
         _ => return "Message is not RDA adaptation data".to_string(),
     };
 

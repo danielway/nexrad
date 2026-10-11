@@ -1,4 +1,4 @@
-use crate::data::{Sweep, VCPNumber, VolumeCoveragePattern};
+use crate::data::{Sweep, VcpNumber, VolumeCoveragePattern};
 use crate::meta::Site;
 use std::fmt::Display;
 
@@ -48,7 +48,7 @@ impl Scan {
     }
 
     /// This scan's coverage pattern number.
-    pub fn coverage_pattern_number(&self) -> VCPNumber {
+    pub fn coverage_pattern_number(&self) -> VcpNumber {
         self.coverage_pattern.pattern_number()
     }
 

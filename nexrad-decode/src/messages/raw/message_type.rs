@@ -4,58 +4,58 @@
 #[non_exhaustive]
 pub enum MessageType {
     /// Replaced by message type 31.
-    RDADigitalRadarData = 1,
+    RdaDigitalRadarData = 1,
 
     /// Metadata.
-    RDAStatusData = 2,
+    RdaStatusData = 2,
 
     /// Metadata.
-    RDAPerformanceMaintenanceData = 3,
+    RdaPerformanceMaintenanceData = 3,
 
     /// Console message from RDA.
-    RDAConsoleMessage = 4,
+    RdaConsoleMessage = 4,
 
     /// Metadata.
-    RDAVolumeCoveragePattern = 5,
+    RdaVolumeCoveragePattern = 5,
 
     /// Control commands to RDA.
-    RDAControlCommands = 6,
+    RdaControlCommands = 6,
 
     /// VCP from RPG.
-    RPGVolumeCoveragePattern = 7,
+    RpgVolumeCoveragePattern = 7,
 
     /// Clutter censor zones from RPG.
-    RPGClutterCensorZones = 8,
+    RpgClutterCensorZones = 8,
 
     /// Data request from RPG.
-    RPGRequestForData = 9,
+    RpgRequestForData = 9,
 
     /// Console message from RPG.
-    RPGConsoleMessage = 10,
+    RpgConsoleMessage = 10,
 
     /// Loopback test from RDA.
-    RDALoopBackTest = 11,
+    RdaLoopBackTest = 11,
 
     /// Loopback test from RPG.
-    RPGLoopBackTest = 12,
+    RpgLoopBackTest = 12,
 
     /// No longer sent.
-    RDAClutterFilterBypassMap = 13,
+    RdaClutterFilterBypassMap = 13,
 
     /// Spare message type.
     Spare1 = 14,
 
     /// Metadata.
-    RDAClutterFilterMap = 15,
+    RdaClutterFilterMap = 15,
 
     /// Reserved for FAA RMS use.
-    ReservedFAARMSOnly1 = 16,
+    ReservedFaaRmsOnly1 = 16,
 
     /// Reserved for FAA RMS use.
-    ReservedFAARMSOnly2 = 17,
+    ReservedFaaRmsOnly2 = 17,
 
     /// Metadata.
-    RDAAdaptationData = 18,
+    RdaAdaptationData = 18,
 
     /// Reserved message type.
     Reserved1 = 20,
@@ -70,25 +70,25 @@ pub enum MessageType {
     Reserved4 = 23,
 
     /// Reserved for FAA RMS use.
-    ReservedFAARMSOnly3 = 24,
+    ReservedFaaRmsOnly3 = 24,
 
     /// Reserved for FAA RMS use.
-    ReservedFAARMSOnly4 = 25,
+    ReservedFaaRmsOnly4 = 25,
 
     /// Reserved for FAA RMS use.
-    ReservedFAARMSOnly5 = 26,
+    ReservedFaaRmsOnly5 = 26,
 
     /// Reserved message type.
     Reserved5 = 29,
 
     /// Generic format digital radar data (primary data format).
-    RDADigitalRadarDataGenericFormat = 31,
+    RdaDigitalRadarDataGenericFormat = 31,
 
     /// PRF data from RDA.
-    RDAPRFData = 32,
+    RdaPrfData = 32,
 
     /// Log data from RDA.
-    RDALogData = 33,
+    RdaLogData = 33,
 
     /// Unknown message type for forward compatibility.
     Unknown(u8),

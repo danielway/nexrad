@@ -183,16 +183,22 @@ impl File {
                 let channel_config = match elev.channel_configuration() {
                     vcp::ChannelConfiguration::ConstantPhase => ChannelConfiguration::ConstantPhase,
                     vcp::ChannelConfiguration::RandomPhase => ChannelConfiguration::RandomPhase,
-                    vcp::ChannelConfiguration::SZ2Phase => ChannelConfiguration::SZ2Phase,
+                    vcp::ChannelConfiguration::Sz2Phase => ChannelConfiguration::Sz2Phase,
                     vcp::ChannelConfiguration::UnknownPhase => ChannelConfiguration::Unknown,
                 };
 
                 let waveform = match elev.waveform_type() {
-                    vcp::WaveformType::CS => WaveformType::CS,
-                    vcp::WaveformType::CDW => WaveformType::CDW,
-                    vcp::WaveformType::CDWO => WaveformType::CDWO,
-                    vcp::WaveformType::B => WaveformType::B,
-                    vcp::WaveformType::SPP => WaveformType::SPP,
+                    vcp::WaveformType::ContiguousSurveillance => {
+                        WaveformType::ContiguousSurveillance
+                    }
+                    vcp::WaveformType::ContiguousDopplerWithAmbiguityResolution => {
+                        WaveformType::ContiguousDopplerWithAmbiguityResolution
+                    }
+                    vcp::WaveformType::ContiguousDopplerWithoutAmbiguityResolution => {
+                        WaveformType::ContiguousDopplerWithoutAmbiguityResolution
+                    }
+                    vcp::WaveformType::Batch => WaveformType::Batch,
+                    vcp::WaveformType::StaggeredPulsePair => WaveformType::StaggeredPulsePair,
                     vcp::WaveformType::Unknown => WaveformType::Unknown,
                 };
 

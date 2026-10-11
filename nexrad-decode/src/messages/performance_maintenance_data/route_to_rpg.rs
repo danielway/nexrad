@@ -1,6 +1,6 @@
 /// Route to RPG status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub enum RouteToRPG {
+pub enum RouteToRpg {
     /// Normal route.
     Normal,
     /// Backup route in use.

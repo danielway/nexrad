@@ -4,7 +4,7 @@ use crate::messages::rda_status_data::raw;
 use crate::messages::rda_status_data::{
     AuxiliaryPowerGeneratorState, ClutterMitigationDecisionStatus, CommandAcknowledgement,
     ControlAuthorization, ControlStatus, DataTransmissionEnabled, OperabilityStatus,
-    OperationalMode, PerformanceCheckStatus, RDABuildNumber, RDAStatus, RMSControlStatus,
+    OperationalMode, PerformanceCheckStatus, RdaBuildNumber, RdaStatus, RmsControlStatus,
     ScanDataFlags, SpotBlankingStatus, SuperResolutionStatus, TransitionPowerSourceStatus,
     VolumeCoveragePatternNumber,
 };
@@ -301,14 +301,14 @@ impl<'a> Message<'a> {
     }
 
     /// The RDA system's status.
-    pub fn rda_status(&self) -> RDAStatus {
+    pub fn rda_status(&self) -> RdaStatus {
         match self.inner.rda_status.get() {
-            2 => RDAStatus::StartUp,
-            4 => RDAStatus::Standby,
-            8 => RDAStatus::Restart,
-            16 => RDAStatus::Operate,
-            32 => RDAStatus::Spare,
-            other => RDAStatus::Unknown(other),
+            2 => RdaStatus::StartUp,
+            4 => RdaStatus::Standby,
+            8 => RdaStatus::Restart,
+            16 => RdaStatus::Operate,
+            32 => RdaStatus::Spare,
+            other => RdaStatus::Unknown(other),
         }
     }
 
@@ -381,8 +381,8 @@ impl<'a> Message<'a> {
     }
 
     /// The RDA system's major and minor build numbers.
-    pub fn build_number(&self) -> RDABuildNumber {
-        RDABuildNumber::from_raw(self.inner.rda_build_number.get())
+    pub fn build_number(&self) -> RdaBuildNumber {
+        RdaBuildNumber::from_raw(self.inner.rda_build_number.get())
     }
 
     /// Whether the RDA system is operational.
@@ -434,7 +434,7 @@ impl<'a> Message<'a> {
     /// Acknowledgement of command receipt by RDA system.
     pub fn command_acknowledgement(&self) -> Option<CommandAcknowledgement> {
         match self.inner.command_acknowledgement.get() {
-            1 => Some(CommandAcknowledgement::RemoteVCPReceived),
+            1 => Some(CommandAcknowledgement::RemoteVcpReceived),
             2 => Some(CommandAcknowledgement::ClutterBypassMapReceived),
             3 => Some(CommandAcknowledgement::ClutterCensorZonesReceived),
             4 => Some(CommandAcknowledgement::RedundantChannelControlCommandAccepted),
@@ -478,19 +478,19 @@ impl<'a> Message<'a> {
         match self.inner.transition_power_source_status.get() {
             0 => TransitionPowerSourceStatus::NotInstalled,
             1 => TransitionPowerSourceStatus::Off,
-            3 => TransitionPowerSourceStatus::OK,
+            3 => TransitionPowerSourceStatus::Ok,
             4 => TransitionPowerSourceStatus::Unknown,
             other => TransitionPowerSourceStatus::Other(other),
         }
     }
 
     /// The RDA system's RMS control status.
-    pub fn rms_control_status(&self) -> RMSControlStatus {
+    pub fn rms_control_status(&self) -> RmsControlStatus {
         match self.inner.rms_control_status.get() {
-            0 => RMSControlStatus::NonRMS,
-            2 => RMSControlStatus::RMSInControl,
-            4 => RMSControlStatus::RDAInControl,
-            other => RMSControlStatus::Unknown(other),
+            0 => RmsControlStatus::NonRms,
+            2 => RmsControlStatus::RmsInControl,
+            4 => RmsControlStatus::RdaInControl,
+            other => RmsControlStatus::Unknown(other),
         }
     }
 

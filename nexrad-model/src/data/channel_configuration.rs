@@ -12,7 +12,7 @@ pub enum ChannelConfiguration {
     /// Random phase.
     RandomPhase,
     /// SZ2 phase coding.
-    SZ2Phase,
+    Sz2Phase,
     /// Unknown phase configuration.
     Unknown,
 }
@@ -22,7 +22,7 @@ impl Display for ChannelConfiguration {
         match self {
             ChannelConfiguration::ConstantPhase => write!(f, "Constant Phase"),
             ChannelConfiguration::RandomPhase => write!(f, "Random Phase"),
-            ChannelConfiguration::SZ2Phase => write!(f, "SZ2 Phase"),
+            ChannelConfiguration::Sz2Phase => write!(f, "SZ2 Phase"),
             ChannelConfiguration::Unknown => write!(f, "Unknown"),
         }
     }

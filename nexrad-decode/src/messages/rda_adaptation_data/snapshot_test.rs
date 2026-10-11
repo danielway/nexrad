@@ -17,7 +17,7 @@ fn test_decode_rda_adaptation_data() {
         .filter(|m| {
             matches!(
                 m.contents(),
-                crate::messages::MessageContents::RDAAdaptationData(_)
+                crate::messages::MessageContents::RdaAdaptationData(_)
             )
         })
         .collect();
@@ -34,8 +34,8 @@ fn test_decode_rda_adaptation_data() {
     );
 
     let adap = match msg.contents() {
-        crate::messages::MessageContents::RDAAdaptationData(a) => a,
-        _ => panic!("expected RDAAdaptationData"),
+        crate::messages::MessageContents::RdaAdaptationData(a) => a,
+        _ => panic!("expected RdaAdaptationData"),
     };
 
     #[derive(Debug)]

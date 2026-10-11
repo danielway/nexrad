@@ -2,17 +2,17 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VolumeCoveragePattern {
     /// VCP 12 - Precipitation mode with 14 elevations.
-    VCP12,
+    Vcp12,
     /// VCP 31 - Clear air mode with long dwell times.
-    VCP31,
+    Vcp31,
     /// VCP 35 - Clear air mode variant.
-    VCP35,
+    Vcp35,
     /// VCP 112 - Precipitation mode, enhanced low-level coverage.
-    VCP112,
+    Vcp112,
     /// VCP 212 - Precipitation mode with AVSET.
-    VCP212,
+    Vcp212,
     /// VCP 215 - Precipitation mode, similar to VCP 212.
-    VCP215,
+    Vcp215,
     /// Unknown VCP number for forward compatibility with new scan strategies.
     Unknown(u16),
 }

@@ -1,4 +1,4 @@
-use crate::result::{aws::AWSError, Error, Result};
+use crate::result::{aws::AwsError, Error, Result};
 
 /// The position of this chunk within the volume.
 ///
@@ -21,7 +21,7 @@ impl ChunkType {
             'S' => Ok(ChunkType::Start),
             'I' => Ok(ChunkType::Intermediate),
             'E' => Ok(ChunkType::End),
-            _ => Err(Error::AWS(AWSError::UnrecognizedChunkType(Some(c)))),
+            _ => Err(Error::Aws(AwsError::UnrecognizedChunkType(Some(c)))),
         }
     }
 

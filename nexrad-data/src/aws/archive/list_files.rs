@@ -1,8 +1,8 @@
 use crate::aws::archive::identifier::Identifier;
 use crate::aws::archive::ARCHIVE_BUCKET;
 use crate::aws::s3::list_objects;
-use crate::result::aws::AWSError::TruncatedListObjectsResponse;
-use crate::result::Error::AWS;
+use crate::result::aws::AwsError::TruncatedListObjectsResponse;
+use crate::result::Error::Aws;
 use chrono::NaiveDate;
 
 /// List data files for the specified site and date. This effectively returns an index of data files
@@ -11,7 +11,7 @@ pub async fn list_files(site: &str, date: &NaiveDate) -> crate::result::Result<V
     let prefix = format!("{}/{}", date.format("%Y/%m/%d"), site);
     let list_result = list_objects(ARCHIVE_BUCKET, &prefix, None).await?;
     if list_result.truncated {
-        return Err(AWS(TruncatedListObjectsResponse));
+        return Err(Aws(TruncatedListObjectsResponse));
     }
 
     let metas = list_result

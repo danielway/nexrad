@@ -2,8 +2,8 @@ use crate::aws::client::client;
 use crate::aws::s3::bucket_list_result::BucketListResult;
 use crate::aws::s3::bucket_object::BucketObject;
 use crate::aws::s3::bucket_object_field::BucketObjectField;
-use crate::result::aws::AWSError;
-use crate::result::aws::AWSError::S3ListObjects;
+use crate::result::aws::AwsError;
+use crate::result::aws::AwsError::S3ListObjects;
 use chrono::{DateTime, Utc};
 use log::{debug, trace, warn};
 use xml::reader::XmlEvent;
@@ -31,7 +31,7 @@ async fn list_objects_page(
     }
     debug!("Listing objects in bucket \"{bucket}\" with prefix \"{prefix}\"");
 
-    let mut url = reqwest::Url::parse(&path).map_err(|_| AWSError::S3ListObjectsDecoding)?;
+    let mut url = reqwest::Url::parse(&path).map_err(|_| AwsError::S3ListObjectsDecoding)?;
     if let Some(after) = after {
         url.query_pairs_mut().append_pair("start-after", &after);
     }
@@ -82,7 +82,7 @@ async fn list_objects_page(
 
                     let item = object.as_mut().ok_or_else(|| {
                         warn!("Expected item for object field: {field:?}");
-                        AWSError::S3ListObjectsDecoding
+                        AwsError::S3ListObjectsDecoding
                     })?;
                     match field {
                         BucketObjectField::Key => item.key.push_str(&chars),
@@ -94,7 +94,7 @@ async fn list_objects_page(
                         BucketObjectField::Size => {
                             item.size = chars.parse().map_err(|_| {
                                 warn!("Error parsing object size: {chars}");
-                                AWSError::S3ListObjectsDecoding
+                                AwsError::S3ListObjectsDecoding
                             })?;
                         }
                         _ => {}
@@ -131,9 +131,9 @@ async fn collect_pages<F: std::future::Future<Output = crate::result::Result<Buc
     loop {
         let page = fetch(after.clone()).await?;
         if page.truncated {
-            let last = page.objects.last().ok_or(AWSError::S3ListObjectsDecoding)?;
+            let last = page.objects.last().ok_or(AwsError::S3ListObjectsDecoding)?;
             if after.as_ref().is_some_and(|previous| last.key <= *previous) {
-                return Err(AWSError::S3ListObjectsDecoding.into());
+                return Err(AwsError::S3ListObjectsDecoding.into());
             }
             after = Some(last.key.clone());
         }

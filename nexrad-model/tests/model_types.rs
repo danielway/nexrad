@@ -1,8 +1,8 @@
 //! Unit tests for nexrad-model types.
 
 use nexrad_model::data::{
-    CFPMomentData, CFPMomentValue, CFPStatus, DataMoment, MomentData, MomentValue, PulseWidth,
-    Scan, Sweep, VCPNumber, VolumeCoveragePattern,
+    CfpMomentData, CfpMomentValue, CfpStatus, DataMoment, MomentData, MomentValue, PulseWidth,
+    Scan, Sweep, VcpNumber, VolumeCoveragePattern,
 };
 use nexrad_model::meta::Site;
 
@@ -74,7 +74,7 @@ fn test_scan_creation() {
 
     assert_eq!(
         scan.coverage_pattern_number(),
-        VCPNumber::PrecipitationSz2_212
+        VcpNumber::PrecipitationSz2_212
     );
     assert_eq!(scan.sweeps().len(), 2);
 }
@@ -228,25 +228,25 @@ fn test_moment_data_values_16bit_special_values() {
 #[test]
 fn test_cfp_moment_values_status_and_data() {
     let values = vec![0, 1, 2, 3, 7, 8, 10];
-    let moment = CFPMomentData::from_fixed_point(7, 500, 250, 8, 1.0, 0.0, values);
+    let moment = CfpMomentData::from_fixed_point(7, 500, 250, 8, 1.0, 0.0, values);
 
     let decoded = moment.values();
     assert_eq!(
         decoded[0],
-        CFPMomentValue::Status(CFPStatus::FilterNotApplied)
+        CfpMomentValue::Status(CfpStatus::FilterNotApplied)
     );
     assert_eq!(
         decoded[1],
-        CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied)
+        CfpMomentValue::Status(CfpStatus::PointClutterFilterApplied)
     );
     assert_eq!(
         decoded[2],
-        CFPMomentValue::Status(CFPStatus::DualPolOnlyFilterApplied)
+        CfpMomentValue::Status(CfpStatus::DualPolOnlyFilterApplied)
     );
-    assert_eq!(decoded[3], CFPMomentValue::Status(CFPStatus::Reserved(3)));
-    assert_eq!(decoded[4], CFPMomentValue::Status(CFPStatus::Reserved(7)));
-    assert_eq!(decoded[5], CFPMomentValue::Value(8.0));
-    assert_eq!(decoded[6], CFPMomentValue::Value(10.0));
+    assert_eq!(decoded[3], CfpMomentValue::Status(CfpStatus::Reserved(3)));
+    assert_eq!(decoded[4], CfpMomentValue::Status(CfpStatus::Reserved(7)));
+    assert_eq!(decoded[5], CfpMomentValue::Value(8.0));
+    assert_eq!(decoded[6], CfpMomentValue::Value(10.0));
 }
 
 #[test]
@@ -262,15 +262,15 @@ fn test_moment_value_equality() {
 #[test]
 fn test_cfp_moment_value_equality() {
     assert_eq!(
-        CFPMomentValue::Status(CFPStatus::FilterNotApplied),
-        CFPMomentValue::Status(CFPStatus::FilterNotApplied)
+        CfpMomentValue::Status(CfpStatus::FilterNotApplied),
+        CfpMomentValue::Status(CfpStatus::FilterNotApplied)
     );
     assert_ne!(
-        CFPMomentValue::Status(CFPStatus::FilterNotApplied),
-        CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied)
+        CfpMomentValue::Status(CfpStatus::FilterNotApplied),
+        CfpMomentValue::Status(CfpStatus::PointClutterFilterApplied)
     );
-    assert_eq!(CFPMomentValue::Value(10.0), CFPMomentValue::Value(10.0));
-    assert_ne!(CFPMomentValue::Value(10.0), CFPMomentValue::Value(20.0));
+    assert_eq!(CfpMomentValue::Value(10.0), CfpMomentValue::Value(10.0));
+    assert_ne!(CfpMomentValue::Value(10.0), CfpMomentValue::Value(20.0));
 }
 
 #[test]
@@ -285,7 +285,7 @@ fn test_moment_value_debug() {
     let debug = format!("{:?}", MomentValue::RangeFolded);
     assert!(debug.contains("RangeFolded"));
 
-    let debug = format!("{:?}", CFPMomentValue::Status(CFPStatus::Reserved(7)));
+    let debug = format!("{:?}", CfpMomentValue::Status(CfpStatus::Reserved(7)));
     assert!(debug.contains("Status"));
     assert!(debug.contains("Reserved"));
 }

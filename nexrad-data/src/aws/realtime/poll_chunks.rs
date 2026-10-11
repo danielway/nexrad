@@ -9,7 +9,7 @@ use crate::aws::realtime::{
     ElevationChunkMapper, NextChunk, RetryPolicy, RetryState, VolumeIndex,
 };
 use crate::result::Error;
-use crate::result::{aws::AWSError, Result};
+use crate::result::{aws::AwsError, Result};
 use chrono::{Duration, Utc};
 use futures::stream::Stream;
 use log::debug;
@@ -112,11 +112,11 @@ async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
     let latest_volume_result = get_latest_volume(&config.site).await?;
     let latest_volume = latest_volume_result
         .volume
-        .ok_or(AWSError::LatestVolumeNotFound)?;
+        .ok_or(AwsError::LatestVolumeNotFound)?;
 
     let latest_chunk_id = get_latest_chunk(&config.site, latest_volume)
         .await?
-        .ok_or(AWSError::ExpectedChunkNotFound)?;
+        .ok_or(AwsError::ExpectedChunkNotFound)?;
 
     let (latest_chunk_id, _) = download_chunk(&config.site, &latest_chunk_id).await?;
 
@@ -177,7 +177,7 @@ async fn fetch_next_chunk(state: &mut ChunkStreamState) -> Result<DownloadedChun
     let next_chunk_id = match state
         .current_chunk
         .next_chunk(&state.elevation_mapper)
-        .ok_or(AWSError::FailedToDetermineNextChunk)?
+        .ok_or(AwsError::FailedToDetermineNextChunk)?
     {
         NextChunk::Sequence(next_id) => next_id,
         NextChunk::Volume(next_volume) => {
@@ -187,7 +187,7 @@ async fn fetch_next_chunk(state: &mut ChunkStreamState) -> Result<DownloadedChun
             )
             .await;
 
-            chunk_id.ok_or(AWSError::ExpectedChunkNotFound)?
+            chunk_id.ok_or(AwsError::ExpectedChunkNotFound)?
         }
     };
 
@@ -198,7 +198,7 @@ async fn fetch_next_chunk(state: &mut ChunkStreamState) -> Result<DownloadedChun
     )
     .await;
 
-    let (chunk_id, chunk) = result.ok_or(AWSError::ExpectedChunkNotFound)?;
+    let (chunk_id, chunk) = result.ok_or(AwsError::ExpectedChunkNotFound)?;
 
     // Update timing statistics
     if let (Some(upload_time), Some(prev_time)) =
@@ -272,7 +272,7 @@ async fn get_latest_chunk_or_error(site: &str, volume: VolumeIndex) -> Result<Ch
     chunks
         .last()
         .cloned()
-        .ok_or(Error::AWS(AWSError::ExpectedChunkNotFound))
+        .ok_or(Error::Aws(AwsError::ExpectedChunkNotFound))
 }
 
 /// Queries for the latest chunk in the specified volume.

@@ -1,6 +1,6 @@
 /// Contains summary information from the RDA Status Data message.
 #[derive(Clone, PartialEq, Debug)]
-pub struct RDAStatusInfo {
+pub struct RdaStatusInfo {
     /// Current RDA status (e.g., "Operate", "Standby").
     pub rda_status: String,
     /// System operability status.
@@ -32,8 +32,8 @@ pub struct RDAStatusInfo {
 /// Helper function to extract RDA status information from a message
 pub fn extract_rda_status_info(
     message: &crate::messages::rda_status_data::Message,
-) -> RDAStatusInfo {
-    let mut info = RDAStatusInfo {
+) -> RdaStatusInfo {
+    let mut info = RdaStatusInfo {
         rda_status: format!("{:?}", message.rda_status()),
         operability_status: format!("{:?}", message.operability_status()),
         control_status: format!("{:?}", message.control_status()),

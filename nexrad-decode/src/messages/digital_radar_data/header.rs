@@ -133,8 +133,8 @@ impl<'a> Header<'a> {
     pub fn compression_indicator(&self) -> CompressionIndicator {
         match self.inner.compression_indicator {
             0 => CompressionIndicator::Uncompressed,
-            1 => CompressionIndicator::CompressedBZIP2,
-            2 => CompressionIndicator::CompressedZLIB,
+            1 => CompressionIndicator::CompressedBzip2,
+            2 => CompressionIndicator::CompressedZlib,
             _ => CompressionIndicator::FutureUse,
         }
     }
@@ -159,7 +159,7 @@ impl<'a> Header<'a> {
             2 => RadialStatus::ElevationEnd,
             3 => RadialStatus::VolumeScanStart,
             4 => RadialStatus::VolumeScanEnd,
-            5 => RadialStatus::ElevationStartVCPFinal,
+            5 => RadialStatus::ElevationStartVcpFinal,
             other => RadialStatus::Unknown(other),
         }
     }

@@ -7,7 +7,7 @@
 /// Different sites upgrade on their own schedules, so the same calendar date may
 /// produce different build numbers from different radar sites.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-pub enum RDABuildNumber {
+pub enum RdaBuildNumber {
     /// Build 12.0
     Build12_0,
     /// Build 13.0
@@ -38,8 +38,8 @@ pub enum RDABuildNumber {
     Unknown(f32),
 }
 
-impl RDABuildNumber {
-    /// Create an RDABuildNumber from the raw build number field value.
+impl RdaBuildNumber {
+    /// Create an RdaBuildNumber from the raw build number field value.
     ///
     /// The build number is stored as a scaled integer with two encoding schemes:
     ///   - Builds 12.0–20.0: raw value ÷ 10 (e.g. 190 → 19.0, 200 → 20.0)
@@ -58,45 +58,45 @@ impl RDABuildNumber {
         let build_int = build.round() as u16;
 
         match build_int {
-            12 => RDABuildNumber::Build12_0,
-            13 => RDABuildNumber::Build13_0,
-            14 => RDABuildNumber::Build14_0,
-            15 => RDABuildNumber::Build15_0,
-            16 => RDABuildNumber::Build16_0,
-            17 => RDABuildNumber::Build17_0,
-            18 => RDABuildNumber::Build18_0,
-            19 => RDABuildNumber::Build19_0,
-            20 => RDABuildNumber::Build20_0,
-            21 => RDABuildNumber::Build21_0,
-            22 => RDABuildNumber::Build22_0,
-            23 => RDABuildNumber::Build23_0,
-            24 => RDABuildNumber::Build24_0,
-            _ => RDABuildNumber::Unknown(build),
+            12 => RdaBuildNumber::Build12_0,
+            13 => RdaBuildNumber::Build13_0,
+            14 => RdaBuildNumber::Build14_0,
+            15 => RdaBuildNumber::Build15_0,
+            16 => RdaBuildNumber::Build16_0,
+            17 => RdaBuildNumber::Build17_0,
+            18 => RdaBuildNumber::Build18_0,
+            19 => RdaBuildNumber::Build19_0,
+            20 => RdaBuildNumber::Build20_0,
+            21 => RdaBuildNumber::Build21_0,
+            22 => RdaBuildNumber::Build22_0,
+            23 => RdaBuildNumber::Build23_0,
+            24 => RdaBuildNumber::Build24_0,
+            _ => RdaBuildNumber::Unknown(build),
         }
     }
 
     /// Returns true if this build number is known.
     pub fn is_known(&self) -> bool {
-        !matches!(self, RDABuildNumber::Unknown(_))
+        !matches!(self, RdaBuildNumber::Unknown(_))
     }
 
     /// Returns the build number as a float.
     pub fn as_float(&self) -> f32 {
         match self {
-            RDABuildNumber::Build12_0 => 12.0,
-            RDABuildNumber::Build13_0 => 13.0,
-            RDABuildNumber::Build14_0 => 14.0,
-            RDABuildNumber::Build15_0 => 15.0,
-            RDABuildNumber::Build16_0 => 16.0,
-            RDABuildNumber::Build17_0 => 17.0,
-            RDABuildNumber::Build18_0 => 18.0,
-            RDABuildNumber::Build19_0 => 19.0,
-            RDABuildNumber::Build20_0 => 20.0,
-            RDABuildNumber::Build21_0 => 21.0,
-            RDABuildNumber::Build22_0 => 22.0,
-            RDABuildNumber::Build23_0 => 23.0,
-            RDABuildNumber::Build24_0 => 24.0,
-            RDABuildNumber::Unknown(v) => *v,
+            RdaBuildNumber::Build12_0 => 12.0,
+            RdaBuildNumber::Build13_0 => 13.0,
+            RdaBuildNumber::Build14_0 => 14.0,
+            RdaBuildNumber::Build15_0 => 15.0,
+            RdaBuildNumber::Build16_0 => 16.0,
+            RdaBuildNumber::Build17_0 => 17.0,
+            RdaBuildNumber::Build18_0 => 18.0,
+            RdaBuildNumber::Build19_0 => 19.0,
+            RdaBuildNumber::Build20_0 => 20.0,
+            RdaBuildNumber::Build21_0 => 21.0,
+            RdaBuildNumber::Build22_0 => 22.0,
+            RdaBuildNumber::Build23_0 => 23.0,
+            RdaBuildNumber::Build24_0 => 24.0,
+            RdaBuildNumber::Unknown(v) => *v,
         }
     }
 

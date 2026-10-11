@@ -15,7 +15,7 @@ pub fn parse_rda_prf_data(data: &[u8]) -> String {
     };
 
     let msg = match message.contents() {
-        MessageContents::RDAPRFData(data) => data,
+        MessageContents::RdaPrfData(data) => data,
         _ => return "Message is not RDA PRF data".to_string(),
     };
 

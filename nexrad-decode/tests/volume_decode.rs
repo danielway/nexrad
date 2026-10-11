@@ -39,7 +39,7 @@ fn test_decode_kdmx_volume_structure() {
 
         for message in &messages {
             match message.contents() {
-                MessageContents::RDAStatusData(_) => status_count += 1,
+                MessageContents::RdaStatusData(_) => status_count += 1,
                 MessageContents::VolumeCoveragePattern(_) => vcp_count += 1,
                 MessageContents::DigitalRadarData(_) => radar_data_count += 1,
                 _ => other_count += 1,
@@ -95,7 +95,7 @@ fn test_decode_kcrp_volume_structure() {
 
         for message in &messages {
             match message.contents() {
-                MessageContents::RDAStatusData(_) => status_count += 1,
+                MessageContents::RdaStatusData(_) => status_count += 1,
                 MessageContents::VolumeCoveragePattern(_) => vcp_count += 1,
                 MessageContents::DigitalRadarData(_) => radar_data_count += 1,
                 _ => other_count += 1,
@@ -141,7 +141,7 @@ fn test_decode_kdmx_volume_message_ordering() {
     // First record should have status and VCP messages
     let has_status = messages
         .iter()
-        .any(|m| matches!(m.contents(), MessageContents::RDAStatusData(_)));
+        .any(|m| matches!(m.contents(), MessageContents::RdaStatusData(_)));
     let has_vcp = messages
         .iter()
         .any(|m| matches!(m.contents(), MessageContents::VolumeCoveragePattern(_)));
@@ -166,7 +166,7 @@ fn test_decode_kdmx_volume_radar_data_properties() {
         let messages = decode_messages(record.data()).expect("decodes");
 
         for message in messages {
-            if message.header().message_type() != MessageType::RDADigitalRadarDataGenericFormat {
+            if message.header().message_type() != MessageType::RdaDigitalRadarDataGenericFormat {
                 continue;
             }
 

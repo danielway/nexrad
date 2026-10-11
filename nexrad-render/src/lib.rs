@@ -52,7 +52,7 @@
 pub use image::RgbaImage;
 pub use nexrad_model::data::Product;
 use nexrad_model::data::{
-    CFPMomentValue, CartesianField, DataMoment, GateStatus, MomentValue, Radial, SweepField,
+    CartesianField, CfpMomentValue, DataMoment, GateStatus, MomentValue, Radial, SweepField,
     VerticalField,
 };
 use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
@@ -1065,8 +1065,8 @@ fn get_radial_float_values(product: Product, radial: &Radial) -> Option<Vec<Opti
         return Some(
             cfp.iter()
                 .map(|v| match v {
-                    CFPMomentValue::Value(f) => Some(f),
-                    CFPMomentValue::Status(_) => None,
+                    CfpMomentValue::Value(f) => Some(f),
+                    CfpMomentValue::Status(_) => None,
                 })
                 .collect(),
         );

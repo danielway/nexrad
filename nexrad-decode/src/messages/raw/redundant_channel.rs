@@ -9,11 +9,11 @@ pub enum RedundantChannel {
     /// Legacy RDA redundant channel 2.
     LegacyRedundantChannel2,
     /// ORDA single channel configuration.
-    ORDASingleChannel,
+    OrdaSingleChannel,
     /// ORDA redundant channel 1.
-    ORDARedundantChannel1,
+    OrdaRedundantChannel1,
     /// ORDA redundant channel 2.
-    ORDARedundantChannel2,
+    OrdaRedundantChannel2,
     /// Unknown redundant channel value for forward compatibility.
     Unknown(u8),
 }

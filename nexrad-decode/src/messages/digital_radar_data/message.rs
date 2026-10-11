@@ -321,7 +321,7 @@ impl<'a> Message<'a> {
         differential_reflectivity: Option<nexrad_model::data::MomentData>,
         differential_phase: Option<nexrad_model::data::MomentData>,
         correlation_coefficient: Option<nexrad_model::data::MomentData>,
-        clutter_filter_power: Option<nexrad_model::data::CFPMomentData>,
+        clutter_filter_power: Option<nexrad_model::data::CfpMomentData>,
     ) -> crate::result::Result<nexrad_model::data::Radial> {
         use super::RadialStatus;
         use crate::result::Error;
@@ -341,7 +341,7 @@ impl<'a> Message<'a> {
                 RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
                 RadialStatus::VolumeScanStart => ModelRadialStatus::ScanStart,
                 RadialStatus::VolumeScanEnd => ModelRadialStatus::ScanEnd,
-                RadialStatus::ElevationStartVCPFinal => ModelRadialStatus::ElevationStartVCPFinal,
+                RadialStatus::ElevationStartVcpFinal => ModelRadialStatus::ElevationStartVcpFinal,
                 RadialStatus::Unknown(v) => ModelRadialStatus::Unknown(v),
             },
             header.elevation_number(),

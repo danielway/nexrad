@@ -47,7 +47,7 @@ impl<'a> GenericDataBlock<'a> {
 
     /// Raw gate values for this moment/radial ordered in ascending distance from the radar. These
     /// values are stored in a fixed-point representation using the header's offset and scale fields.
-    /// Use `nexrad_model::data::MomentData` or `nexrad_model::data::CFPMomentData` to decode.
+    /// Use `nexrad_model::data::MomentData` or `nexrad_model::data::CfpMomentData` to decode.
     pub fn encoded_values(&self) -> &[u8] {
         &self.encoded_data
     }
@@ -82,11 +82,11 @@ impl<'a> GenericDataBlock<'a> {
         )
     }
 
-    /// Create a [`CFPMomentData`](nexrad_model::data::CFPMomentData) from this generic data
+    /// Create a [`CfpMomentData`](nexrad_model::data::CfpMomentData) from this generic data
     /// block, cloning the underlying encoded data.
     #[cfg(feature = "model")]
-    pub fn cfp_moment_data(&self) -> nexrad_model::data::CFPMomentData {
-        nexrad_model::data::CFPMomentData::from_fixed_point(
+    pub fn cfp_moment_data(&self) -> nexrad_model::data::CfpMomentData {
+        nexrad_model::data::CfpMomentData::from_fixed_point(
             self.header.number_of_data_moment_gates(),
             self.header.data_moment_range_raw(),
             self.header.data_moment_range_sample_interval_raw(),
@@ -97,11 +97,11 @@ impl<'a> GenericDataBlock<'a> {
         )
     }
 
-    /// Convert this generic data block into a [`CFPMomentData`](nexrad_model::data::CFPMomentData),
+    /// Convert this generic data block into a [`CfpMomentData`](nexrad_model::data::CfpMomentData),
     /// consuming the encoded data without copying.
     #[cfg(feature = "model")]
-    pub fn into_cfp_moment_data(self) -> nexrad_model::data::CFPMomentData {
-        nexrad_model::data::CFPMomentData::from_fixed_point(
+    pub fn into_cfp_moment_data(self) -> nexrad_model::data::CfpMomentData {
+        nexrad_model::data::CfpMomentData::from_fixed_point(
             self.header.number_of_data_moment_gates(),
             self.header.data_moment_range_raw(),
             self.header.data_moment_range_sample_interval_raw(),

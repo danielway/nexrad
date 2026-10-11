@@ -24,10 +24,10 @@ mod group;
 pub use group::MessageGroupSummary;
 
 mod rda;
-pub use rda::RDAStatusInfo;
+pub use rda::RdaStatusInfo;
 
 mod vcp;
-pub use vcp::{VCPElevationInfo, VCPInfo};
+pub use vcp::{VcpElevationInfo, VcpInfo};
 
 /// Processes a collection of NEXRAD messages and generates a comprehensive summary.
 ///
@@ -80,7 +80,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                 let elevation_number = radar_data.header().elevation_number();
 
                 let can_continue = if let Some(group) = &current_group {
-                    group.message_type == MessageType::RDADigitalRadarDataGenericFormat
+                    group.message_type == MessageType::RdaDigitalRadarDataGenericFormat
                         && group.elevation_number == Some(elevation_number)
                 } else {
                     false
@@ -92,7 +92,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                     }
 
                     current_group = Some(MessageGroupSummary {
-                        message_type: MessageType::RDADigitalRadarDataGenericFormat,
+                        message_type: MessageType::RdaDigitalRadarDataGenericFormat,
                         start_time: message_time,
                         end_time: message_time,
                         message_count: 1,
@@ -105,7 +105,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                         vcp_info: None,
                         is_continued: !summary.message_groups.is_empty()
                             && summary.message_groups.iter().rev().any(|g| {
-                                g.message_type == MessageType::RDADigitalRadarDataGenericFormat
+                                g.message_type == MessageType::RdaDigitalRadarDataGenericFormat
                                     && g.elevation_number == Some(elevation_number)
                             }),
                         start_message_index: i,
@@ -155,7 +155,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                         .insert(volume_data.volume_coverage_pattern());
                 }
             }
-            MessageContents::RDAStatusData(status_data) => {
+            MessageContents::RdaStatusData(status_data) => {
                 if let Some(time) = message_time {
                     if (summary.earliest_collection_time.is_none()
                         || summary.earliest_collection_time > Some(time))
@@ -176,7 +176,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                 }
 
                 current_group = Some(MessageGroupSummary {
-                    message_type: MessageType::RDAStatusData,
+                    message_type: MessageType::RdaStatusData,
                     start_time: message_time,
                     end_time: message_time,
                     message_count: 1,
@@ -199,7 +199,7 @@ pub fn messages(messages: &[Message]) -> MessageSummary {
                 }
 
                 current_group = Some(MessageGroupSummary {
-                    message_type: MessageType::RDAVolumeCoveragePattern,
+                    message_type: MessageType::RdaVolumeCoveragePattern,
                     start_time: message_time,
                     end_time: message_time,
                     message_count: 1,

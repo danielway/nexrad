@@ -1,4 +1,4 @@
-use crate::data::{CFPMomentValue, DataMoment, GateStatus, MomentValue, Product, Radial};
+use crate::data::{CfpMomentValue, DataMoment, GateStatus, MomentValue, Product, Radial};
 use crate::geo::{GeoExtent, GeoPoint};
 
 #[cfg(feature = "serde")]
@@ -484,11 +484,11 @@ impl SweepField {
                     break;
                 }
                 match cv {
-                    CFPMomentValue::Value(v) => {
+                    CfpMomentValue::Value(v) => {
                         values[i] = v;
                         status[i] = GateStatus::Valid;
                     }
-                    CFPMomentValue::Status(_) => {
+                    CfpMomentValue::Status(_) => {
                         // values[i] stays 0.0, status stays NoData (initial values)
                     }
                 }

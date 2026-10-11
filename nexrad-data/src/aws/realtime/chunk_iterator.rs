@@ -9,7 +9,7 @@ use crate::aws::realtime::{
     project_scan_timing, Chunk, ChunkIdentifier, ChunkMetadata, ChunkTimingStats, ChunkType,
     ElevationChunkMapper, NextChunk, RetryPolicy, RetryState, ScanTimingProjection, VolumeIndex,
 };
-use crate::result::{aws::AWSError, Error, Result};
+use crate::result::{aws::AwsError, Error, Result};
 use chrono::{DateTime, Duration, Utc};
 use log::debug;
 use nexrad_decode::messages::volume_coverage_pattern;
@@ -104,7 +104,7 @@ impl ChunkIterator {
         let latest_volume_result = get_latest_volume(site).await?;
         let volume = latest_volume_result
             .volume
-            .ok_or(AWSError::LatestVolumeNotFound)?;
+            .ok_or(AwsError::LatestVolumeNotFound)?;
 
         debug!(
             "ChunkIterator initialized for site {} at volume {}",
@@ -170,7 +170,7 @@ impl ChunkIterator {
         let latest_chunk = self
             .fetch_latest_chunk_in_volume(volume)
             .await?
-            .ok_or(Error::AWS(AWSError::ExpectedChunkNotFound))?;
+            .ok_or(Error::Aws(AwsError::ExpectedChunkNotFound))?;
 
         let mut start_chunk = None;
 
@@ -261,9 +261,9 @@ impl ChunkIterator {
                     .next_chunk(
                         self.elevation_mapper
                             .as_ref()
-                            .ok_or(AWSError::FailedToDetermineNextChunk)?,
+                            .ok_or(AwsError::FailedToDetermineNextChunk)?,
                     )
-                    .ok_or(AWSError::FailedToDetermineNextChunk)?;
+                    .ok_or(AwsError::FailedToDetermineNextChunk)?;
 
                 match next {
                     NextChunk::Sequence(next_id) => self.try_fetch_chunk(next_id).await,
@@ -351,7 +351,7 @@ impl ChunkIterator {
         }
 
         // Exhausted retries
-        Err(Error::AWS(AWSError::ExpectedChunkNotFound))
+        Err(Error::Aws(AwsError::ExpectedChunkNotFound))
     }
 
     /// Fetches the latest chunk in a volume.
@@ -426,7 +426,7 @@ impl ChunkIterator {
                     attempts: 1,
                 }))
             }
-            Err(Error::AWS(AWSError::S3ObjectNotFound)) => {
+            Err(Error::Aws(AwsError::S3ObjectNotFound)) => {
                 // Chunk not yet available
                 debug!("Chunk {} not yet available", chunk_id.name());
                 Ok(None)

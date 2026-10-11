@@ -1,4 +1,4 @@
-use super::{RDAStatusInfo, VCPInfo};
+use super::{RdaStatusInfo, VcpInfo};
 use crate::messages::MessageType;
 use chrono::{DateTime, Utc};
 use std::{
@@ -29,11 +29,11 @@ pub struct MessageGroupSummary {
     /// Data types present and their counts (for DigitalRadarData messages).
     pub data_types: Option<HashMap<&'static str, usize>>,
 
-    /// RDA status information (for RDAStatusData messages).
-    pub rda_status_info: Option<RDAStatusInfo>,
+    /// RDA status information (for RdaStatusData messages).
+    pub rda_status_info: Option<RdaStatusInfo>,
 
     /// VCP information (for VolumeCoveragePattern messages).
-    pub vcp_info: Option<VCPInfo>,
+    pub vcp_info: Option<VcpInfo>,
 
     /// Whether this group continues from a previous group.
     pub is_continued: bool,
@@ -46,7 +46,7 @@ pub struct MessageGroupSummary {
 
 impl Display for MessageGroupSummary {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        if self.message_type == MessageType::RDADigitalRadarDataGenericFormat {
+        if self.message_type == MessageType::RdaDigitalRadarDataGenericFormat {
             write!(f, "Elevation: #{}", self.elevation_number.unwrap_or(0))?;
 
             if let Some(elev_angle) = self.elevation_angle {
@@ -99,7 +99,7 @@ impl Display for MessageGroupSummary {
                     }
                 }
             }
-        } else if self.message_type == MessageType::RDAStatusData {
+        } else if self.message_type == MessageType::RdaStatusData {
             if let Some(status_info) = &self.rda_status_info {
                 write!(
                     f,
@@ -178,7 +178,7 @@ impl Display for MessageGroupSummary {
                     write!(f, " ({})", self.message_count)?;
                 }
             }
-        } else if self.message_type == MessageType::RDAVolumeCoveragePattern {
+        } else if self.message_type == MessageType::RdaVolumeCoveragePattern {
             if let Some(vcp_info) = &self.vcp_info {
                 write!(
                     f,

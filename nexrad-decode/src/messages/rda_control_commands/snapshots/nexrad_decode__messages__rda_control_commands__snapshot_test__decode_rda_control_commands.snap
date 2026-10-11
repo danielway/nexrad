@@ -31,7 +31,7 @@ Message {
             segment_number: 1,
         },
     ),
-    contents: RDAControlCommands(
+    contents: RdaControlCommands(
         Message {
             inner: Message {
                 rda_state_command: 32772,

@@ -28,8 +28,8 @@ coverage_pattern:
   truncated: false
   elevation_cuts:
     - elevation_angle_degrees: 0.4833984375
-      channel_configuration: SZ2Phase
-      waveform_type: CS
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousSurveillance
       azimuth_rate_degrees_per_second: 21.148681640625
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -50,8 +50,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 0.4833984375
-      channel_configuration: SZ2Phase
-      waveform_type: CDW
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousDopplerWithAmbiguityResolution
       azimuth_rate_degrees_per_second: 15.831298828125
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -72,8 +72,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 0.87890625
-      channel_configuration: SZ2Phase
-      waveform_type: CS
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousSurveillance
       azimuth_rate_degrees_per_second: 21.148681640625
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -94,8 +94,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 0.87890625
-      channel_configuration: SZ2Phase
-      waveform_type: CDW
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousDopplerWithAmbiguityResolution
       azimuth_rate_degrees_per_second: 15.831298828125
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -116,8 +116,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 1.318359375
-      channel_configuration: SZ2Phase
-      waveform_type: CS
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousSurveillance
       azimuth_rate_degrees_per_second: 23.02734375
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -138,8 +138,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 1.318359375
-      channel_configuration: SZ2Phase
-      waveform_type: CDW
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousDopplerWithAmbiguityResolution
       azimuth_rate_degrees_per_second: 15.831298828125
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -161,7 +161,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 1.8017578125
       channel_configuration: ConstantPhase
-      waveform_type: B
+      waveform_type: Batch
       azimuth_rate_degrees_per_second: 26.38916015625
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true
@@ -183,7 +183,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 2.4169921875
       channel_configuration: ConstantPhase
-      waveform_type: B
+      waveform_type: Batch
       azimuth_rate_degrees_per_second: 27.333984375
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true
@@ -205,7 +205,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 3.1201171875
       channel_configuration: ConstantPhase
-      waveform_type: B
+      waveform_type: Batch
       azimuth_rate_degrees_per_second: 28.223876953125
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true
@@ -227,7 +227,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 3.9990234375
       channel_configuration: ConstantPhase
-      waveform_type: B
+      waveform_type: Batch
       azimuth_rate_degrees_per_second: 26.400146484375
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true
@@ -249,7 +249,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 5.09765625
       channel_configuration: ConstantPhase
-      waveform_type: B
+      waveform_type: Batch
       azimuth_rate_degrees_per_second: 26.400146484375
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true
@@ -270,8 +270,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 0.4833984375
-      channel_configuration: SZ2Phase
-      waveform_type: CS
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousSurveillance
       azimuth_rate_degrees_per_second: 21.148681640625
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -292,8 +292,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 0.4833984375
-      channel_configuration: SZ2Phase
-      waveform_type: CDW
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousDopplerWithAmbiguityResolution
       azimuth_rate_degrees_per_second: 15.831298828125
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -314,8 +314,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 0.87890625
-      channel_configuration: SZ2Phase
-      waveform_type: CS
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousSurveillance
       azimuth_rate_degrees_per_second: 21.148681640625
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -336,8 +336,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 0.87890625
-      channel_configuration: SZ2Phase
-      waveform_type: CDW
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousDopplerWithAmbiguityResolution
       azimuth_rate_degrees_per_second: 15.831298828125
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -358,8 +358,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 1.318359375
-      channel_configuration: SZ2Phase
-      waveform_type: CS
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousSurveillance
       azimuth_rate_degrees_per_second: 23.02734375
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -380,8 +380,8 @@ coverage_pattern:
       is_mpda_cut: false
       is_base_tilt_cut: false
     - elevation_angle_degrees: 1.318359375
-      channel_configuration: SZ2Phase
-      waveform_type: CDW
+      channel_configuration: Sz2Phase
+      waveform_type: ContiguousDopplerWithAmbiguityResolution
       azimuth_rate_degrees_per_second: 15.831298828125
       super_resolution_half_degree_azimuth: true
       super_resolution_quarter_km_reflectivity: true
@@ -403,7 +403,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 6.416015625
       channel_configuration: ConstantPhase
-      waveform_type: B
+      waveform_type: Batch
       azimuth_rate_degrees_per_second: 26.400146484375
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true
@@ -425,7 +425,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 7.998046875
       channel_configuration: ConstantPhase
-      waveform_type: CDWO
+      waveform_type: ContiguousDopplerWithoutAmbiguityResolution
       azimuth_rate_degrees_per_second: 28.421630859375
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true
@@ -447,7 +447,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 10.01953125
       channel_configuration: ConstantPhase
-      waveform_type: CDWO
+      waveform_type: ContiguousDopplerWithoutAmbiguityResolution
       azimuth_rate_degrees_per_second: 28.41064453125
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true
@@ -469,7 +469,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 12.48046875
       channel_configuration: ConstantPhase
-      waveform_type: CDWO
+      waveform_type: ContiguousDopplerWithoutAmbiguityResolution
       azimuth_rate_degrees_per_second: 28.740234375
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true
@@ -491,7 +491,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 15.6005859375
       channel_configuration: ConstantPhase
-      waveform_type: CDWO
+      waveform_type: ContiguousDopplerWithoutAmbiguityResolution
       azimuth_rate_degrees_per_second: 28.740234375
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true
@@ -513,7 +513,7 @@ coverage_pattern:
       is_base_tilt_cut: false
     - elevation_angle_degrees: 19.51171875
       channel_configuration: ConstantPhase
-      waveform_type: CDWO
+      waveform_type: ContiguousDopplerWithoutAmbiguityResolution
       azimuth_rate_degrees_per_second: 28.740234375
       super_resolution_half_degree_azimuth: false
       super_resolution_quarter_km_reflectivity: true

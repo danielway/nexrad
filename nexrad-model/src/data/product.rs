@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 /// scale to use for rendering.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[non_exhaustive]
 pub enum Product {
     /// Base reflectivity (dBZ). Measures the intensity of precipitation.
     Reflectivity,

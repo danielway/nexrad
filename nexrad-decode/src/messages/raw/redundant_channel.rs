@@ -1,5 +1,6 @@
 /// The possible RDA redundant channels.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum RedundantChannel {
     /// Legacy RDA single channel configuration.
     LegacySingleChannel,

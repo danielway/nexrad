@@ -7,6 +7,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Errors that can occur during NEXRAD data operations.
 #[derive(ThisError, Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// An I/O error occurred while reading or writing data.
     #[error("data file IO error")]
@@ -63,6 +64,7 @@ pub mod aws {
 
     /// Errors that can occur during AWS S3 operations.
     #[derive(ThisError, Debug)]
+    #[non_exhaustive]
     pub enum AWSError {
         /// S3 list objects response was unexpectedly truncated.
         #[error("unexpected truncated S3 list objects response")]

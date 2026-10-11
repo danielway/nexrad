@@ -165,5 +165,6 @@ fn format_message_type(msg_type: &MessageType) -> &'static str {
         MessageType::RDAPRFData => "RDA PRF",
         MessageType::RDALogData => "RDA Log",
         MessageType::Unknown(_) => "Unknown",
+        _ => "Unsupported",
     }
 }

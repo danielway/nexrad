@@ -7,6 +7,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Errors that can occur during NEXRAD model operations.
 #[derive(ThisError, Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Attempted to merge sweeps with mismatched elevation numbers.
     ///

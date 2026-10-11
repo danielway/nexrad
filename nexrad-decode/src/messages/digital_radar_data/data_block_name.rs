@@ -1,5 +1,6 @@
 /// The named identity of a data block.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum DataBlockName {
     /// Volume metadata block ("VOL").
     Volume,

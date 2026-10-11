@@ -587,9 +587,7 @@ impl ChunkIterator {
 }
 
 fn advances_volume(current: Option<&ChunkIdentifier>, candidate: &ChunkIdentifier) -> bool {
-    current.map_or(true, |current| {
-        candidate.date_time_prefix() > current.date_time_prefix()
-    })
+    current.is_none_or(|current| candidate.date_time_prefix() > current.date_time_prefix())
 }
 
 #[cfg(test)]

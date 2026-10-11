@@ -101,7 +101,7 @@ mod tests {
     /// element originally at index `rotation` comes first.
     fn sequence(populated: usize, empty: usize, rotation: usize) -> Vec<Option<usize>> {
         let mut base: Vec<_> = (0..populated).map(Some).collect();
-        base.extend(std::iter::repeat(None).take(empty));
+        base.extend(std::iter::repeat_n(None, empty));
         let len = base.len();
         (0..len).map(|i| base[(i + rotation) % len]).collect()
     }

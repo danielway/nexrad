@@ -20,22 +20,14 @@ for message in &messages {
     match message.contents() {
         MessageContents::DigitalRadarData(data) => {
             println!("Azimuth: {:.1}°, Elevation: {:.1}°",
-                data.azimuth_angle(), data.elevation_angle());
+                data.header().azimuth_angle_raw(), data.header().elevation_angle_raw());
         }
         MessageContents::VolumeCoveragePattern(vcp) => {
-            println!("VCP: {}", vcp.pattern_number());
+            println!("VCP: {}", vcp.header().pattern_number());
         }
         _ => {}
     }
 }
-```
-
-For single-message parsing (e.g., streaming), use `decode_message` which returns the remaining bytes:
-
-```rust,ignore
-use nexrad_decode::messages::decode_message;
-
-let (remaining, message) = decode_message(message_bytes)?;
 ```
 
 ## Message Types

@@ -18,7 +18,7 @@
 //!
 //! // Access the volume header
 //! if let Some(header) = volume.header() {
-//!     println!("Volume date: {:?}", header.date());
+//!     println!("Volume date: {:?}", header.date_time());
 //! }
 //!
 //! // Process LDM records
@@ -42,10 +42,10 @@
 //!
 //! // List available files for a date and site
 //! let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
-//! let files = archive::list_files("KTLX", date).await?;
+//! let files = archive::list_files("KTLX", &date).await?;
 //!
 //! // Download a specific file
-//! let data = archive::download_file(&files[0]).await?;
+//! let file = archive::download_file(files[0].clone()).await?;
 //! ```
 //!
 //! # Features

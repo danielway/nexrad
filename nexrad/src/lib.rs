@@ -15,6 +15,8 @@
 //! Load radar data with a single function call:
 //!
 //! ```ignore
+//! use nexrad::model::data::DataMoment; // provides gate_count()
+//!
 //! // Load from a local file
 //! let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
 //! println!("{}, {} sweeps",
@@ -160,7 +162,7 @@
 //! for record in file.records()? {
 //!     println!("Record: {} bytes, compressed: {}",
 //!         record.data().len(),
-//!         record.is_compressed());
+//!         record.compressed());
 //! }
 //!
 //! // Or decode directly to a Scan
@@ -170,23 +172,27 @@
 //!
 //! ### Binary Message Decoding with nexrad-decode
 //!
-//! Parse individual NEXRAD messages from raw bytes:
+//! Parse NEXRAD messages from raw (decompressed) bytes:
 //!
 //! ```ignore
-//! use nexrad::decode::messages::{decode_message, Message};
+//! use nexrad::decode::messages::{decode_messages, MessageContents};
 //!
-//! // After extracting message bytes from an Archive II file
-//! let (remaining, message) = decode_message(message_bytes)?;
+//! // After extracting decompressed message bytes from an Archive II LDM record
+//! let messages = decode_messages(message_bytes)?;
 //!
-//! match message {
-//!     Message::DigitalRadarData(msg31) => {
-//!         println!("Azimuth: {} deg", msg31.azimuth_angle());
-//!         println!("Elevation: {} deg", msg31.elevation_angle());
+//! for message in &messages {
+//!     match message.contents() {
+//!         MessageContents::DigitalRadarData(m) => {
+//!             let header = m.header();
+//!             println!("Site: {}", header.radar_identifier());
+//!             println!("Azimuth: {} deg", header.azimuth_angle_raw());
+//!             println!("Elevation: {} deg", header.elevation_angle_raw());
+//!         }
+//!         MessageContents::VolumeCoveragePattern(v) => {
+//!             println!("VCP: {}", v.header().pattern_number());
+//!         }
+//!         _ => {}
 //!     }
-//!     Message::VolumeData(msg2) => {
-//!         println!("Site: {}", msg2.site_id());
-//!     }
-//!     _ => {}
 //! }
 //! # Ok::<(), nexrad::decode::Error>(())
 //! ```

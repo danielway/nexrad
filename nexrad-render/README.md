@@ -14,7 +14,7 @@ Three entry points match the three field types from `nexrad-model`:
 | Function | Input | Output | Use Case |
 |----------|-------|--------|----------|
 | `render_sweep` | `SweepField` | `RenderResult` | PPI display (polar → Cartesian) |
-| `render_cartesian` | `CartesianField` | `RenderResult` | Composite reflectivity, VIL |
+| `render_cartesian` | `CartesianField` | `RenderResult` | Composite reflectivity |
 | `render_vertical` | `VerticalField` | `RenderResult` | RHI / vertical cross-sections |
 
 A legacy function `render_radials` operates directly on `&[Radial]` and returns a plain `RgbaImage`.

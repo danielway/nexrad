@@ -43,7 +43,7 @@ The data model (`nexrad-model`) and the binary parser (`nexrad-decode`) are inte
 
 - **nexrad-model** defines the domain language: `Scan`, `Sweep`, `Radial`, `SweepField`, `Site`. These types are ergonomic, well-documented, and designed for application developers who may not know the NOAA ICD specification. The model crate has no I/O and no parsing — it is a pure data layer.
 
-- **nexrad-decode** implements the NOAA ICD 2620002AA specification. Its types mirror the binary wire format (message headers, data block descriptors, etc.) and are primarily useful for developers working at the protocol level. When the `nexrad-model` feature is enabled, decoded messages can be converted to model types.
+- **nexrad-decode** implements the NOAA ICD 2620002AA specification. Its types mirror the binary wire format (message headers, data block descriptors, etc.) and are primarily useful for developers working at the protocol level. When the `model` feature is enabled, decoded messages can be converted to model types.
 
 This split serves several purposes:
 
@@ -120,7 +120,7 @@ Processing and rendering operate on three field types, all defined in `nexrad-mo
 | Type | Axes | Use Case |
 |------|------|----------|
 | `SweepField` | azimuth × range (polar) | Single-sweep PPI display |
-| `CartesianField` | lat × lon (geographic) | Composite reflectivity, VIL |
+| `CartesianField` | lat × lon (geographic) | Composite reflectivity |
 | `VerticalField` | range × altitude | RHI / vertical cross-sections |
 
 ## Processing Architecture

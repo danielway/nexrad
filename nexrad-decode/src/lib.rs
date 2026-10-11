@@ -45,7 +45,7 @@
 //!
 //! - [`messages`] - Message parsing and type definitions
 //! - [`summarize`] - Utilities for summarizing message collections
-//! - `binary_data` - Wrapper type for binary blobs with debug support
+//! - [`result`] - Error and result types ([`Error`] and [`Result`] are re-exported at the root)
 //!
 //! # Crate Boundaries
 //!
@@ -57,7 +57,7 @@
 //! - ✓ Parse binary data per NOAA ICD 2620002AA specification
 //! - ✓ Convert raw bytes into structured message types
 //! - ✓ Provide conversion to `nexrad_model` types (when feature enabled)
-//! - ✓ Validate message structures and checksums
+//! - ✓ Validate message structures
 //!
 //! ## Constraints
 //!

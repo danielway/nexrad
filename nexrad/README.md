@@ -13,6 +13,8 @@ top-level convenience functions for common tasks.
 ## Quick Start
 
 ```rust,ignore
+use nexrad::model::data::DataMoment; // provides gate_count()
+
 // Load a local Archive II file
 let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
 println!("{}, {} sweeps", scan.coverage_pattern_number(), scan.sweeps().len());

@@ -119,6 +119,24 @@ jobs:
       - name: Build all examples
         run: cargo build --workspace --examples --all-features
 
+  fuzz-build:
+    name: Fuzz target build check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          system-deps: "false"
+
+      - name: Check nexrad-decode fuzz targets
+        run: cargo check --manifest-path nexrad-decode/fuzz/Cargo.toml
+
+      - name: Check nexrad-data fuzz targets
+        run: cargo check --manifest-path nexrad-data/fuzz/Cargo.toml
+
   test:
     name: Test (${{ matrix.rust_version }})
     runs-on: ubuntu-latest

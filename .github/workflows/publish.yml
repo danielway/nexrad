@@ -13,6 +13,7 @@ jobs:
     name: Publish crate
     needs: ci
     runs-on: ubuntu-latest
+    environment: crates-io
 
     steps:
       - name: Checkout repository at the published tag

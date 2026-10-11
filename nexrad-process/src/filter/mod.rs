@@ -1,6 +1,6 @@
 //! Filtering algorithms for sweep field data.
 //!
-//! Filters transform a [`SweepField`](nexrad_model::data::SweepField) by modifying gate values
+//! Filters transform a [`SweepField`] by modifying gate values
 //! or statuses based on various criteria such as value thresholds, spatial patterns, or
 //! cross-product relationships.
 

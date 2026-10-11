@@ -1,0 +1,160 @@
+schema_version,1
+last_verified,2026-08-21
+source,https://opengeo.ncep.noaa.gov/geoserver/nws/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=nws%3Aradar_sites&outputFormat=csv
+id,registry_name,source_name,latitude,longitude,elevation_meters
+KABR,Aberdeen,Aberdeen,45.4558,-98.4131,421.4421
+KABX,Albuquerque,La Mesita Negra,35.1497,-106.8239,1813.4156
+KAKQ,Wakefield,Wakefield,36.9839,-77.0075,77.6801
+KAMA,Amarillo,Amarillo,35.2333,-101.7093,1128.411
+KAMX,Miami,Miami,25.6106,-80.4131,33.9613
+KAPX,Gaylord,Gaylord,44.9064,-84.7195,475.8082
+KARX,La Crosse,La Crosse,43.8228,-91.1911,413.5141
+KATX,Seattle,Camano Island,48.1946,-122.4957,195.6499
+KBBX,Beale AFB,Oroville,39.4961,-121.6317,67.4127
+KBGM,Binghamton,Binghamton,42.1997,-75.9847,519.0771
+KBHX,Eureka,Bunker Hill,40.4983,-124.2922,766.6337
+KBIS,Bismarck,Bismarck,46.7708,-100.7603,534.923
+KBLX,Billings,Alkali Creek Rd,45.8538,-108.6068,1128.411
+KBMX,Birmingham,Alabaster,33.1719,-86.7697,231.2408
+KBOX,Boston,Taunton,41.9558,-71.1369,70.6519
+KBRO,Brownsville,Brownsville,25.9156,-97.4186,26.7032
+KBUF,Buffalo,Cheektowaga,42.9486,-78.7369,240.8683
+KBYX,Key West,Key West,24.5969,-81.7033,27.133
+KCAE,Columbia,Columbia,33.9486,-81.1186,105.0831
+KCBW,Caribou,Houlton,46.0392,-67.8064,262.0129
+KCBX,Boise,Wild Horse Corral,43.4902,-116.236,966.4525
+KCCX,State College,Rush,40.9231,-78.0039,757.546
+KCLE,Cleveland,Cleveland,41.4131,-81.86,262.1929
+KCLX,Charleston,Grays,32.6555,-81.0422,69.6822
+KCRP,Corpus Christi,Corpus Christi,27.7839,-97.5108,43.4089
+KCXX,Burlington,Colchester,44.5111,-73.1664,131.2864
+KCYS,Cheyenne,Cheyenne,41.1519,-104.8061,1887.0268
+KDAX,Sacramento,Sacramento,38.5011,-121.6778,43.8288
+KDDC,Dodge City,Dodge City,37.7608,-99.9689,813.9216
+KDFX,Laughlin AFB,Brackettville (US Hwy 90),29.2725,-100.2803,364.3367
+KDGX,Brandon,Brandon,32.28,-89.9844,185.5725
+KDIX,Philadelphia,Manchester,39.9469,-74.4107,70.102
+KDLH,Duluth,Duluth,46.8369,-92.2097,469.8297
+KDMX,Des Moines,Johnston,41.7311,-93.7229,333.6246
+KDOX,Dover AFB,Ellendale State Forest,38.8256,-75.44,49.9272
+KDTX,Detroit,White Lake,42.7,-83.4717,370.6051
+KDVN,Davenport,Davenport,41.6117,-90.5808,259.4536
+KDYX,Dyess AFB,Moran,32.5383,-99.2542,481.9566
+KEAX,Kansas City,Pleasant Hill,38.8103,-94.2645,332.8948
+KEMX,Tucson,Empire Mtn,31.8936,-110.6303,1620.765
+KENX,Albany,East Berne,42.5866,-74.0641,589.549
+KEOX,Fort Rucker,Echo,31.4606,-85.4594,163.6581
+KEPZ,El Paso,Santa Teresa,31.8731,-106.698,1285.2709
+KESX,Las Vegas,Opal Mtn,35.7011,-114.8914,1507.7739
+KEVX,Eglin AFB,Redbay,30.565,-85.9217,67.3528
+KEWX,San Antonio,New Braunfels,29.7041,-98.0286,233.6402
+KEYX,Edwards AFB,Boron,35.0978,-117.5607,875.4758
+KFCX,Roanoke,Coles Knob,37.0242,-80.2742,903.6386
+KFDR,Frederick,Frederick,34.3622,-98.9767,400.7774
+KFDX,Cannon AFB,Field Village (State Rd 89),34.6342,-103.6189,1431.6534
+KFFC,Atlanta,Peachtree City,33.3633,-84.5658,296.1442
+KFSD,Sioux Falls,Sioux Falls,43.5878,-96.7289,455.4434
+KFSX,Flagstaff,Anderson Mesa,34.5743,-111.1984,2289.8136
+KFTG,Denver,Front Range Arpt,39.7866,-104.5458,1709.7522
+KFWS,Dallas/Fort Worth,Fort Worth,32.5728,-97.3031,236.6394
+KGGW,Glasgow,Glasgow,48.2064,-106.6247,726.514
+KGJX,Grand Junction,Grand Mesa,39.0622,-108.2138,3077.9118
+KGLD,Goodland,Goodland,39.3669,-101.7003,1132.2301
+KGRB,Green Bay,Ashwaubenon,44.4986,-88.1111,245.6371
+KGRK,Fort Hood,Granger,30.7217,-97.3828,183.633
+KGRR,Grand Rapids,Kent County Arpt,42.8939,-85.5449,266.7617
+KGSP,Greenville,Greer,34.8833,-82.2198,325.6166
+KGWX,Columbus AFB,Greenwood Springs (MS Hwy 8 & US Hwy,33.8969,-88.3292,179.654
+KGYX,Portland,Gray,43.8913,-70.2564,144.323
+KHDC,Hammond,Hammond,30.519,-90.407,43.1064
+KHDX,Holloman AFB,White Sands Missile Range,33.077,-106.12,1301.2368
+KHGX,Houston,Dickinson,29.4719,-95.0789,35.181
+KHNX,Hanford,Hanford,36.3142,-119.6321,103.7434
+KHPX,Fort Campbell,Trenton (US Hwy 41N),36.7367,-87.285,190.2113
+KHTX,Huntsville,Hytop,34.9306,-86.0836,566.6149
+KICT,Wichita,Wichita,37.6544,-97.4431,426.5008
+KICX,Cedar City,Blowhead Mtn,37.5911,-112.8622,3277.8606
+KILN,Wilmington,Wilmington,39.4203,-83.8217,356.4787
+KILX,Lincoln,Logan County Arpt,40.1505,-89.3368,222.643
+KIND,Indianapolis,Indianapolis,39.7075,-86.2803,270.4208
+KINX,Tulsa,Inola,36.175,-95.5641,228.2516
+KIWA,Phoenix,Mesa,33.2892,-111.67,434.5887
+KIWX,Fort Wayne,North Webster,41.3586,-85.7,321.9176
+KJAX,Jacksonville,Jacksonville,30.4846,-81.7019,48.6875
+KJGX,Robins AFB,Jeffersonville (State Hwy 96),32.675,-83.3511,188.4517
+KJKL,Jackson,Noctor,37.5908,-83.3131,445.336
+KLBB,Lubbock,Lubbock,33.6541,-101.8142,1029.4364
+KLCH,Lake Charles,Lake Charles,30.1253,-93.2159,41.6893
+KLGX,Langley Hill,Langley Hill,47.1169,-124.1066,107.899
+KLNX,North Platte,Thedford,41.9579,-100.5762,948.4571
+KLOT,Chicago,Romeoville,41.6044,-88.0844,231.7207
+KLRX,Elko,Sheep Creek Mtn,40.7397,-116.8028,2101.162
+KLSX,St. Louis,St Charles,38.6989,-90.6828,219.9637
+KLTX,Wilmington,Shallotte,33.9892,-78.4292,44.1987
+KLVX,Louisville,Fort Knox,37.9753,-85.9439,253.785
+KLWX,Sterling,Sterling,38.9761,-77.4875,123.2084
+KLZK,Little Rock,North Little Rock,34.8364,-92.2619,197.7794
+KMAF,Midland/Odessa,Midland,31.9435,-102.1893,902.4689
+KMAX,Medford,Mount Ashland,42.0811,-122.7174,2304.07
+KMBX,Minot AFB,Deering,48.3925,-100.8644,484.6459
+KMHX,Morehead City,Newport,34.7758,-76.8764,44.1387
+KMKX,Milwaukee,Dousman,42.9678,-88.5506,311.6202
+KMLB,Melbourne,Melbourne,28.1131,-80.6544,30
+KMOB,Mobile,Mobile,30.6794,-88.2397,88.0774
+KMPX,Minneapolis,Chanhassen,44.8489,-93.5655,335.6141
+KMQT,Marquette,Marquette,46.5311,-87.5483,464.651
+KMRX,Knoxville,Morristown,36.1683,-83.4019,437.1081
+KMSX,Missoula,Point Six Mtn,47.0411,-113.9861,2431.0775
+KMTX,Salt Lake City,Promontory Pt,41.2628,-112.4478,2009.1855
+KMUX,San Francisco,Mt Umunhum,37.1552,-121.8984,1081.773
+KMVX,Fargo,Mayville,47.5281,-97.325,330.1455
+KMXX,Maxwell AFB,Carrville,32.5367,-85.7897,170.6563
+KNKX,San Diego,Miramar MCAS,32.9189,-117.0419,320.6979
+KNQA,Memphis,Millington,35.3447,-89.8733,132.666
+KOAX,Omaha,Valley,41.3203,-96.3668,384.5115
+KOHX,Nashville,Old Hickory,36.2472,-86.5625,206.1272
+KOKX,Upton,Upton,40.8655,-72.8639,60.5945
+KOTX,Spokane,Rambo Rd,47.6806,-117.6258,746.1489
+KPAH,Paducah,Paducah,37.0683,-88.7719,154.1405
+KPBZ,Pittsburgh,Coraopolis,40.5317,-80.2179,385.7912
+KPDT,Pendleton,Pendleton,45.6906,-118.8529,481.3467
+KPOE,Fort Polk,Leesville,31.1553,-92.9758,144.0231
+KPUX,Pueblo,Boone Highland Rds,38.4594,-104.1814,1634.2815
+KRAX,Raleigh,Clayton,35.6653,-78.49,140.734
+KRGX,Reno,Virginia Peak,39.7541,-119.462,2558.5848
+KRIW,Riverton,Riverton,43.0661,-108.4773,1716.3905
+KRLX,Charleston,Ruthdale,38.3111,-81.7228,369.6054
+KRTX,Portland,Dixie Mtn,45.715,-122.965,526.5652
+KSFX,Pocatello,Springfield,43.1056,-112.6861,1383.0258
+KSGF,Springfield,Springfield,37.2353,-93.4003,419.1227
+KSHV,Shreveport,Shreveport,32.4508,-93.8413,117.8798
+KSJT,San Angelo,San Angelo,31.3711,-100.4922,610.6136
+KSOX,Santa Ana Mountains,Santa Ana Mtns,33.8177,-117.636,946.4576
+KSRX,Fort Smith,Ft. Smith,35.2904,-94.3619,224.6425
+KTBW,Tampa Bay,Ruskin,27.7053,-82.4019,37.1905
+KTFX,Great Falls,Great Falls,47.4597,-111.3853,1159.4031
+KTLH,Tallahassee,Tallahassee,30.3975,-84.3289,53.8862
+KTLX,Oklahoma City,Twin Lakes,35.3331,-97.2778,389.3203
+KTWX,Topeka,Alma,38.9969,-96.2325,431.2496
+KTYX,Montague,Montague,43.7558,-75.68,597.2071
+KUDX,Rapid City,New Underwood,44.1247,-102.83,973.4507
+KUEX,Hastings,Blue Hill,40.3208,-98.4419,626.8195
+KVAX,Moody AFB,Stockton (State Rd 129),30.8903,-83.0018,100.6742
+KVBX,Vandenberg AFB,Lompoc,34.8385,-120.3979,412.5944
+KVNX,Vance AFB,Jet,36.7408,-98.1275,383.4118
+KVTX,Los Angeles,Sulphur Mtn,34.4117,-119.1786,855.361
+KVWX,Evansville,Evansville,38.2602,-87.7245,190.4012
+KYUX,Yuma,Yuma,32.4953,-114.6567,72.7214
+PABC,Bethel,Bethel,60.7919,-161.8764,58.755
+PACG,Sitka,Sitka,56.8528,-135.5292,82.7688
+PAEC,Nome,Nome,64.5114,-165.295,27.373
+PAHG,Anchorage,Kenai,60.7259,-151.3515,108.4322
+PAIH,Middleton Island,Middleton Island,59.4608,-146.3034,40.1097
+PAKC,King Salmon,King Salmon,58.6794,-156.6294,43.8888
+PAPD,Fairbanks,Pedro Dome,65.0351,-147.5014,824.8388
+PGUA,Andersen AFB,Barrigada Comms Stn,13.4558,144.8111,117.6699
+PHKI,South Kauai,South Kauai,21.8939,-159.5525,103.6734
+PHKM,Kamuela,Kohala Mtns,20.1253,-155.7778,1208.3906
+PHMO,Molokai,Molokai,21.1328,-157.1803,440.0273
+PHWA,South Shore,South Shore Hawaii Is,19.095,-155.5689,445.206
+TJUA,San Juan,Cayey,18.1157,-66.0782,901.4692

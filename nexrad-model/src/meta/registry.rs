@@ -1,8 +1,9 @@
 //! Static registry of NEXRAD radar sites.
 //!
 //! This module provides a compile-time registry of all operational NEXRAD WSR-88D radar
-//! sites in the United States and its territories. Site data is sourced from NOAA's
-//! official radar network documentation.
+//! sites in the United States and its territories. Operational status is sourced from the
+//! [NOAA Radar Operations Center](https://www.roc.noaa.gov/build-loaded.php), with location data
+//! from the [NCEI station report](https://www.ncei.noaa.gov/access/homr/file/nexrad-stations.txt).
 
 /// Metadata for a NEXRAD radar site in the static registry.
 #[derive(Debug, Clone, PartialEq)]
@@ -141,54 +142,6 @@ static SITES: &[SiteEntry] = &[
     },
     // Alaska
     SiteEntry {
-        id: "KABC",
-        city: "Bethel",
-        state: "AK",
-        latitude: 60.7919,
-        longitude: -161.8764,
-        elevation_meters: 48,
-    },
-    SiteEntry {
-        id: "KAKQ",
-        city: "Wakefield",
-        state: "VA",
-        latitude: 36.9839,
-        longitude: -77.0072,
-        elevation_meters: 34,
-    },
-    SiteEntry {
-        id: "KAPX",
-        city: "Gaylord",
-        state: "MI",
-        latitude: 44.9072,
-        longitude: -84.7197,
-        elevation_meters: 446,
-    },
-    SiteEntry {
-        id: "KACG",
-        city: "Sitka",
-        state: "AK",
-        latitude: 56.8525,
-        longitude: -135.5294,
-        elevation_meters: 63,
-    },
-    SiteEntry {
-        id: "KAIH",
-        city: "Middleton Island",
-        state: "AK",
-        latitude: 59.4614,
-        longitude: -146.3031,
-        elevation_meters: 20,
-    },
-    SiteEntry {
-        id: "KAKC",
-        city: "King Salmon",
-        state: "AK",
-        latitude: 58.6794,
-        longitude: -156.6297,
-        elevation_meters: 19,
-    },
-    SiteEntry {
         id: "PABC",
         city: "Bethel",
         state: "AK",
@@ -235,6 +188,14 @@ static SITES: &[SiteEntry] = &[
         latitude: 58.6794,
         longitude: -156.6297,
         elevation_meters: 19,
+    },
+    SiteEntry {
+        id: "PAPD",
+        city: "Fairbanks",
+        state: "AK",
+        latitude: 65.0351,
+        longitude: -147.5014,
+        elevation_meters: 825,
     },
     // Arizona
     SiteEntry {
@@ -294,6 +255,14 @@ static SITES: &[SiteEntry] = &[
         latitude: 39.4961,
         longitude: -121.6317,
         elevation_meters: 53,
+    },
+    SiteEntry {
+        id: "KBHX",
+        city: "Eureka",
+        state: "CA",
+        latitude: 40.4986,
+        longitude: -124.2922,
+        elevation_meters: 767,
     },
     SiteEntry {
         id: "KEYX",
@@ -383,6 +352,15 @@ static SITES: &[SiteEntry] = &[
         latitude: 38.4594,
         longitude: -104.1817,
         elevation_meters: 1600,
+    },
+    // Delaware
+    SiteEntry {
+        id: "KDOX",
+        city: "Dover AFB",
+        state: "DE",
+        latitude: 38.8258,
+        longitude: -75.4401,
+        elevation_meters: 50,
     },
     // Connecticut / New England
     SiteEntry {
@@ -668,12 +646,12 @@ static SITES: &[SiteEntry] = &[
         elevation_meters: 4,
     },
     SiteEntry {
-        id: "KLIX",
-        city: "New Orleans",
+        id: "KHDC",
+        city: "Hammond",
         state: "LA",
-        latitude: 30.3367,
-        longitude: -89.8256,
-        elevation_meters: 7,
+        latitude: 30.5193,
+        longitude: -90.4074,
+        elevation_meters: 13,
     },
     SiteEntry {
         id: "KPOE",
@@ -727,6 +705,14 @@ static SITES: &[SiteEntry] = &[
         elevation_meters: 36,
     },
     // Michigan
+    SiteEntry {
+        id: "KAPX",
+        city: "Gaylord",
+        state: "MI",
+        latitude: 44.9072,
+        longitude: -84.7197,
+        elevation_meters: 446,
+    },
     SiteEntry {
         id: "KDTX",
         city: "Detroit",
@@ -907,7 +893,7 @@ static SITES: &[SiteEntry] = &[
         city: "Cannon AFB",
         state: "NM",
         latitude: 34.6350,
-        longitude: -103.6297,
+        longitude: -103.6189,
         elevation_meters: 1417,
     },
     SiteEntry {
@@ -1098,7 +1084,7 @@ static SITES: &[SiteEntry] = &[
         city: "Pittsburgh",
         state: "PA",
         latitude: 40.5317,
-        longitude: -80.0183,
+        longitude: -80.2179,
         elevation_meters: 361,
     },
     // Puerto Rico
@@ -1310,6 +1296,14 @@ static SITES: &[SiteEntry] = &[
     },
     // Virginia
     SiteEntry {
+        id: "KAKQ",
+        city: "Wakefield",
+        state: "VA",
+        latitude: 36.9839,
+        longitude: -77.0072,
+        elevation_meters: 34,
+    },
+    SiteEntry {
         id: "KFCX",
         city: "Roanoke",
         state: "VA",
@@ -1325,6 +1319,14 @@ static SITES: &[SiteEntry] = &[
         latitude: 48.1944,
         longitude: -122.4958,
         elevation_meters: 151,
+    },
+    SiteEntry {
+        id: "KLGX",
+        city: "Langley Hill",
+        state: "WA",
+        latitude: 47.1169,
+        longitude: -124.1067,
+        elevation_meters: 112,
     },
     SiteEntry {
         id: "KOTX",
@@ -1394,13 +1396,44 @@ static SITES: &[SiteEntry] = &[
         longitude: 144.8111,
         elevation_meters: 78,
     },
-    // DoD/CONUS
-    SiteEntry {
-        id: "KCCX",
-        city: "State College",
-        state: "PA",
-        latitude: 40.9231,
-        longitude: -78.0039,
-        elevation_meters: 733,
-    },
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    #[test]
+    fn registry_contains_unique_operational_us_sites() {
+        let ids: HashSet<_> = sites().iter().map(|site| site.id).collect();
+
+        // NOAA operates 159 sites, including three overseas DoD sites outside this registry's
+        // documented United States and territories scope.
+        assert_eq!(sites().len(), 156);
+        assert_eq!(ids.len(), sites().len(), "site identifiers must be unique");
+
+        for id in ["KBHX", "KDOX", "KHDC", "KLGX", "PAPD"] {
+            assert!(site_by_id(id).is_some(), "missing operational site {id}");
+        }
+
+        for id in ["KABC", "KACG", "KAIH", "KAKC", "KLIX"] {
+            assert!(site_by_id(id).is_none(), "unexpected obsolete site {id}");
+        }
+    }
+
+    #[test]
+    fn nearest_site_finds_repaired_registry_entries() {
+        for (latitude, longitude, expected) in [
+            (40.4986, -124.2922, "KBHX"),
+            (38.8258, -75.4401, "KDOX"),
+            (30.5193, -90.4074, "KHDC"),
+            (47.1169, -124.1067, "KLGX"),
+            (65.0351, -147.5014, "PAPD"),
+        ] {
+            assert_eq!(
+                nearest_site(latitude, longitude).map(|site| site.id),
+                Some(expected)
+            );
+        }
+    }
+}

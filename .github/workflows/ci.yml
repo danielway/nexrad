@@ -143,6 +143,9 @@ jobs:
     strategy:
       matrix:
         rust_version: [stable, nightly]
+    env:
+      # Override rust-toolchain.toml so each matrix entry uses its own toolchain.
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -7,7 +7,7 @@ Message {
         MessageHeader {
             rpg_unknown: BinaryData {
                 len: 12,
-                sha256: "15ec7bf0b50732b49f8228e07d24365338f9e3ab994b00af08e5a3bffe55fd8b",
+                fnv1a: 0x5467b0da1d106495,
                 head: [
                     0,
                     0,
@@ -90,7 +90,7 @@ Message {
                                 zdr_bias_estimate_weighted_mean: 421,
                                 spare: BinaryData {
                                     len: 6,
-                                    sha256: "b0f66adc83641586656866813fd9dd0b8ebb63796075661ba45d1aa8089e1d44",
+                                    fnv1a: 0xd7e4fcfa299d713d,
                                     head: [
                                         0,
                                         0,
@@ -187,7 +187,7 @@ Message {
                         },
                         encoded_data: BinaryData {
                             len: 1832,
-                            sha256: "cdff6c84364d51f345bd3fa2df34ed33a9051f7a349576e54bca8f5227ab6596",
+                            fnv1a: 0x24a3c6826d88ae0b,
                             head: [
                                 148,
                                 135,
@@ -235,7 +235,7 @@ Message {
                         },
                         encoded_data: BinaryData {
                             len: 2384,
-                            sha256: "54631ca25760cf401abf792230ec43460b9238f02934193f4a95d0e92e02f4fd",
+                            fnv1a: 0xde35fa7e2813bd3c,
                             head: [
                                 1,
                                 253,
@@ -281,7 +281,7 @@ Message {
                         },
                         encoded_data: BinaryData {
                             len: 2384,
-                            sha256: "b9498549c8d1d88945c5fc2df5d5e2f8165f446cdba63ca41b010c5cd870cbf5",
+                            fnv1a: 0x4ea295924e177ab4,
                             head: [
                                 0,
                                 219,
@@ -327,7 +327,7 @@ Message {
                         },
                         encoded_data: BinaryData {
                             len: 1192,
-                            sha256: "fe6e7bcab83faf9aff3d0441430a7660788409d345688e44ff8816746e6d4cff",
+                            fnv1a: 0x6055e8813cc15a48,
                             head: [
                                 239,
                                 239,
@@ -373,7 +373,7 @@ Message {
                         },
                         encoded_data: BinaryData {
                             len: 1832,
-                            sha256: "67b8a73e70525928da2a1971383b53e692a38033f85acba9a14d7d7cb57005f9",
+                            fnv1a: 0x5ff3deddddcbd1fd,
                             head: [
                                 8,
                                 9,

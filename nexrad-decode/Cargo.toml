@@ -26,8 +26,6 @@ thiserror = { workspace = true }
 chrono = { workspace = true }
 nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model", optional = true }
 uom = { workspace = true, optional = true }
-sha2 = { workspace = true }
-hex = { workspace = true }
 zerocopy = { workspace = true }
 
 [dev-dependencies]

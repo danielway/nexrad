@@ -537,7 +537,7 @@ pub fn render_sweep(
         center_pixel: (center_x, center_y),
         pixels_per_km: scale_factor,
         max_range_km: radar_range_km,
-        elevation_degrees: Some(field.elevation_degrees()),
+        elevation_degrees: Some(field.elevation_degrees() as f64),
         geo_extent,
         coord_system: options.coord_system.clone(),
     };

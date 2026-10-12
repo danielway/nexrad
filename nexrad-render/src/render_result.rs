@@ -29,7 +29,7 @@ pub struct RenderMetadata {
     pub(crate) center_pixel: (f64, f64),
     pub(crate) pixels_per_km: f64,
     pub(crate) max_range_km: f64,
-    pub(crate) elevation_degrees: Option<f32>,
+    pub(crate) elevation_degrees: Option<f64>,
     pub(crate) geo_extent: Option<GeoExtent>,
     pub(crate) coord_system: Option<RadarCoordinateSystem>,
 }
@@ -95,7 +95,7 @@ impl RenderResult {
     pub fn query_polar(
         &self,
         field: &SweepField,
-        azimuth_degrees: f32,
+        azimuth_degrees: f64,
         range_km: f64,
     ) -> Option<PointQuery> {
         let polar = PolarPoint {
@@ -162,7 +162,7 @@ impl RenderMetadata {
     }
 
     /// The elevation angle of the rendered sweep (if applicable).
-    pub fn elevation_degrees(&self) -> Option<f32> {
+    pub fn elevation_degrees(&self) -> Option<f64> {
         self.elevation_degrees
     }
 
@@ -194,15 +194,15 @@ impl RenderMetadata {
         let azimuth_degrees = (azimuth_rad.to_degrees() + 360.0) % 360.0;
 
         Some(PolarPoint {
-            azimuth_degrees: azimuth_degrees as f32,
+            azimuth_degrees,
             range_km,
             elevation_degrees: self.elevation_degrees.unwrap_or(0.0),
         })
     }
 
     /// Convert polar coordinates to a pixel coordinate.
-    pub fn polar_to_pixel(&self, azimuth_degrees: f32, range_km: f64) -> (f64, f64) {
-        let az_rad = (azimuth_degrees as f64).to_radians();
+    pub fn polar_to_pixel(&self, azimuth_degrees: f64, range_km: f64) -> (f64, f64) {
+        let az_rad = azimuth_degrees.to_radians();
         let distance_px = range_km * self.pixels_per_km;
         let x = self.center_pixel.0 + distance_px * az_rad.sin();
         let y = self.center_pixel.1 - distance_px * az_rad.cos();

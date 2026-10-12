@@ -208,7 +208,13 @@ pub fn assemble_volume<'a>(
 
     // Build site metadata if available
     let site = site_location.map(|(lat, lon, height, tower)| {
-        nexrad_model::meta::Site::new(site_identifier.unwrap_or([0u8; 4]), lat, lon, height, tower)
+        nexrad_model::meta::Site::new(
+            site_identifier.unwrap_or([0u8; 4]),
+            lat as f64,
+            lon as f64,
+            height,
+            tower,
+        )
     });
 
     match site {

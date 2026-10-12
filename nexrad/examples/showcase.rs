@@ -508,7 +508,7 @@ fn main() -> nexrad::Result<()> {
         let vert_options = RenderOptions::new(1200, 600);
 
         // 7a. Cross-section through the storm line (~200 deg azimuth)
-        let az1 = 200.0_f32;
+        let az1 = 200.0_f64;
         let vcs1 = VerticalCrossSection::new(az1, 230.0, 18000.0, 600, 300)?;
         let vert1 = vcs1.compute(&ref_fields)?;
         let result = render_vertical(&vert1, &ref_scale, &vert_options)?;
@@ -520,7 +520,7 @@ fn main() -> nexrad::Result<()> {
         );
 
         // 7b. Another azimuth for comparison
-        let az2 = 315.0_f32;
+        let az2 = 315.0_f64;
         let vcs2 = VerticalCrossSection::new(az2, 230.0, 18000.0, 600, 300)?;
         let vert2 = vcs2.compute(&ref_fields)?;
         let result = render_vertical(&vert2, &ref_scale, &vert_options)?;
@@ -529,7 +529,7 @@ fn main() -> nexrad::Result<()> {
         println!("  Vertical cross-section at {:.0} deg -> {}", az2, path);
 
         // 7c. Zoomed vertical (close-range, lower altitude for detail)
-        let az3 = 200.0_f32;
+        let az3 = 200.0_f64;
         let vcs3 = VerticalCrossSection::new(az3, 100.0, 12000.0, 600, 300)?;
         let vert3 = vcs3.compute(&ref_fields)?;
         let result = render_vertical(&vert3, &ref_scale, &vert_options)?;

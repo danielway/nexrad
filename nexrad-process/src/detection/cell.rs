@@ -364,9 +364,9 @@ impl StormCellDetector {
 
             // Geographic position of this gate
             let geo = coord_system.polar_to_geo(PolarPoint {
-                azimuth_degrees: azimuth_deg,
+                azimuth_degrees: azimuth_deg as f64,
                 range_km,
-                elevation_degrees: field.elevation_degrees(),
+                elevation_degrees: field.elevation_degrees() as f64,
             });
 
             // Reflectivity-weighted centroid
@@ -694,7 +694,7 @@ mod tests {
         // The weighted centroid should be shifted toward the high-end (gate 43-45)
         // meaning further from the radar than the geometric midpoint
         let centroid_range_km = {
-            let polar = cs.geo_to_polar(cells[0].centroid(), cells[0].elevation_degrees());
+            let polar = cs.geo_to_polar(cells[0].centroid(), cells[0].elevation_degrees() as f64);
             polar.range_km
         };
 

@@ -339,7 +339,7 @@ impl SweepField {
     /// Query the value at a polar coordinate (finds nearest azimuth and gate).
     ///
     /// Returns `None` if the coordinate is outside the field's range.
-    pub fn value_at_polar(&self, azimuth_degrees: f32, range_km: f64) -> Option<(f32, GateStatus)> {
+    pub fn value_at_polar(&self, azimuth_degrees: f64, range_km: f64) -> Option<(f32, GateStatus)> {
         if range_km < self.first_gate_range_km || range_km >= self.max_range_km() {
             return None;
         }
@@ -380,7 +380,7 @@ impl SweepField {
     // --- Internal helpers ---
 
     /// Find the nearest azimuth index for the given angle.
-    fn find_nearest_azimuth(&self, azimuth_degrees: f32) -> Option<usize> {
+    fn find_nearest_azimuth(&self, azimuth_degrees: f64) -> Option<usize> {
         if self.azimuths.is_empty() {
             return None;
         }
@@ -389,30 +389,31 @@ impl SweepField {
         let pos = self
             .azimuths
             .binary_search_by(|a| {
-                a.partial_cmp(&azimuth_degrees)
+                (*a as f64)
+                    .partial_cmp(&azimuth_degrees)
                     .unwrap_or(std::cmp::Ordering::Equal)
             })
             .unwrap_or_else(|i| i);
 
         if pos == 0 {
-            let dist_first = (self.azimuths[0] - azimuth_degrees).abs();
-            let dist_last = 360.0 - self.azimuths[len - 1] + azimuth_degrees;
+            let dist_first = ((self.azimuths[0] as f64) - azimuth_degrees).abs();
+            let dist_last = 360.0 - (self.azimuths[len - 1] as f64) + azimuth_degrees;
             if dist_last < dist_first {
                 Some(len - 1)
             } else {
                 Some(0)
             }
         } else if pos >= len {
-            let dist_last = (azimuth_degrees - self.azimuths[len - 1]).abs();
-            let dist_first = 360.0 - azimuth_degrees + self.azimuths[0];
+            let dist_last = (azimuth_degrees - (self.azimuths[len - 1] as f64)).abs();
+            let dist_first = 360.0 - azimuth_degrees + (self.azimuths[0] as f64);
             if dist_first < dist_last {
                 Some(0)
             } else {
                 Some(len - 1)
             }
         } else {
-            let dist_prev = (azimuth_degrees - self.azimuths[pos - 1]).abs();
-            let dist_curr = (self.azimuths[pos] - azimuth_degrees).abs();
+            let dist_prev = (azimuth_degrees - (self.azimuths[pos - 1] as f64)).abs();
+            let dist_curr = ((self.azimuths[pos] as f64) - azimuth_degrees).abs();
             if dist_prev <= dist_curr {
                 Some(pos - 1)
             } else {

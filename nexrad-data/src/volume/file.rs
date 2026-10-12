@@ -262,8 +262,8 @@ impl File {
 
             nexrad_model::meta::Site::new(
                 identifier,
-                loc.latitude,
-                loc.longitude,
+                loc.latitude as f64,
+                loc.longitude as f64,
                 loc.site_height,
                 loc.tower_height,
             )

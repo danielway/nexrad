@@ -369,17 +369,13 @@ pub fn compare_registry(snapshot: &RadarSiteSnapshot) -> Vec<String> {
                 expected_site.registry_name, actual_site.city
             ));
         }
-        if (actual_site.latitude as f64 - expected_site.latitude).abs()
-            > REGISTRY_COORDINATE_TOLERANCE
-        {
+        if (actual_site.latitude - expected_site.latitude).abs() > REGISTRY_COORDINATE_TOLERANCE {
             differences.push(format!(
                 "{id} latitude differs: snapshot {:.5}, registry {:.5}",
                 expected_site.latitude, actual_site.latitude
             ));
         }
-        if (actual_site.longitude as f64 - expected_site.longitude).abs()
-            > REGISTRY_COORDINATE_TOLERANCE
-        {
+        if (actual_site.longitude - expected_site.longitude).abs() > REGISTRY_COORDINATE_TOLERANCE {
             differences.push(format!(
                 "{id} longitude differs: snapshot {:.5}, registry {:.5}",
                 expected_site.longitude, actual_site.longitude

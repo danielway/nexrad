@@ -4,7 +4,7 @@ use crate::data::{CfpMomentData, MomentData};
 use chrono::{DateTime, Utc};
 
 #[cfg(feature = "uom")]
-use uom::si::{angle::degree, f32::Angle};
+use uom::si::{angle::degree, f64::Angle};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -97,7 +97,7 @@ impl Radial {
     /// Azimuth angle this radial's data was collected at.
     #[cfg(feature = "uom")]
     pub fn azimuth(&self) -> Angle {
-        Angle::new::<degree>(self.azimuth_angle_degrees)
+        Angle::new::<degree>(self.azimuth_angle_degrees as f64)
     }
 
     /// Azimuthal distance between radials in the sweep in degrees.
@@ -108,7 +108,7 @@ impl Radial {
     /// Azimuthal distance between radials in the sweep.
     #[cfg(feature = "uom")]
     pub fn azimuth_spacing(&self) -> Angle {
-        Angle::new::<degree>(self.azimuth_spacing_degrees)
+        Angle::new::<degree>(self.azimuth_spacing_degrees as f64)
     }
 
     /// The radial's position in the sequence of radials making up a scan.
@@ -129,7 +129,7 @@ impl Radial {
     /// Elevation angle this radial's data was collected at.
     #[cfg(feature = "uom")]
     pub fn elevation_angle(&self) -> Angle {
-        Angle::new::<degree>(self.elevation_angle_degrees)
+        Angle::new::<degree>(self.elevation_angle_degrees as f64)
     }
 
     /// Reflectivity data for this radial if available.

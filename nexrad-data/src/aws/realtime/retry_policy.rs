@@ -3,19 +3,29 @@
 //! This module provides platform-independent retry logic by returning delay durations
 //! rather than performing sleep operations internally. The caller controls timing.
 
-use chrono::Duration;
+use std::time::Duration;
 
 /// Configuration for retry behavior with exponential backoff.
+///
+/// Start from [`default_download`](Self::default_download),
+/// [`default_discovery`](Self::default_discovery), or [`Default`] and adjust with the chainable
+/// `with_*` setters:
+///
+/// ```
+/// use nexrad_data::aws::realtime::RetryPolicy;
+/// use std::time::Duration;
+///
+/// let policy = RetryPolicy::default_download()
+///     .with_max_attempts(3)
+///     .with_initial_delay(Duration::from_millis(250));
+/// assert_eq!(policy.max_attempts(), 3);
+/// ```
 #[derive(Debug, Clone)]
 pub struct RetryPolicy {
-    /// Maximum number of attempts before giving up.
-    pub max_attempts: usize,
-    /// Initial delay before the first retry.
-    pub initial_delay: Duration,
-    /// Multiplier applied to delay after each attempt.
-    pub backoff_multiplier: f64,
-    /// Maximum delay between attempts (caps exponential growth).
-    pub max_delay: Duration,
+    max_attempts: usize,
+    initial_delay: Duration,
+    backoff_multiplier: f64,
+    max_delay: Duration,
 }
 
 impl RetryPolicy {
@@ -28,9 +38,9 @@ impl RetryPolicy {
     pub fn default_download() -> Self {
         Self {
             max_attempts: 5,
-            initial_delay: Duration::milliseconds(500),
+            initial_delay: Duration::from_millis(500),
             backoff_multiplier: 2.0,
-            max_delay: Duration::seconds(8),
+            max_delay: Duration::from_secs(8),
         }
     }
 
@@ -43,10 +53,30 @@ impl RetryPolicy {
     pub fn default_discovery() -> Self {
         Self {
             max_attempts: 10,
-            initial_delay: Duration::milliseconds(500),
+            initial_delay: Duration::from_millis(500),
             backoff_multiplier: 2.0,
-            max_delay: Duration::seconds(16),
+            max_delay: Duration::from_secs(16),
         }
+    }
+
+    /// Maximum number of attempts before giving up.
+    pub fn max_attempts(&self) -> usize {
+        self.max_attempts
+    }
+
+    /// Delay before the first retry.
+    pub fn initial_delay(&self) -> Duration {
+        self.initial_delay
+    }
+
+    /// Multiplier applied to the delay after each attempt.
+    pub fn backoff_multiplier(&self) -> f64 {
+        self.backoff_multiplier
+    }
+
+    /// Maximum delay between attempts (caps exponential growth).
+    pub fn max_delay(&self) -> Duration {
+        self.max_delay
     }
 
     /// Sets the maximum number of retry attempts.
@@ -120,10 +150,13 @@ impl RetryState {
             self.policy.initial_delay
         } else {
             let multiplier = self.policy.backoff_multiplier.powi(self.attempt as i32 - 1);
-            let delay_ms =
-                (self.policy.initial_delay.num_milliseconds() as f64 * multiplier) as i64;
-            let delay = Duration::milliseconds(delay_ms);
-            std::cmp::min(delay, self.policy.max_delay)
+            let delay_nanos = self.policy.initial_delay.as_nanos() as f64 * multiplier;
+            if delay_nanos.is_finite() && delay_nanos < self.policy.max_delay.as_nanos() as f64 {
+                // Negative products (from a negative multiplier) saturate to zero.
+                Duration::from_nanos(delay_nanos as u64)
+            } else {
+                self.policy.max_delay
+            }
         };
 
         self.attempt += 1;
@@ -144,21 +177,24 @@ mod tests {
     #[test]
     fn test_retry_policy_defaults() {
         let download = RetryPolicy::default_download();
-        assert_eq!(download.max_attempts, 5);
-        assert_eq!(download.initial_delay, Duration::milliseconds(500));
+        assert_eq!(download.max_attempts(), 5);
+        assert_eq!(download.initial_delay(), Duration::from_millis(500));
+        assert_eq!(download.backoff_multiplier(), 2.0);
+        assert_eq!(download.max_delay(), Duration::from_secs(8));
 
         let discovery = RetryPolicy::default_discovery();
-        assert_eq!(discovery.max_attempts, 10);
+        assert_eq!(discovery.max_attempts(), 10);
+        assert_eq!(discovery.max_delay(), Duration::from_secs(16));
     }
 
     #[test]
     fn test_retry_policy_builder() {
         let policy = RetryPolicy::default_download()
             .with_max_attempts(3)
-            .with_initial_delay(Duration::milliseconds(100));
+            .with_initial_delay(Duration::from_millis(100));
 
-        assert_eq!(policy.max_attempts, 3);
-        assert_eq!(policy.initial_delay, Duration::milliseconds(100));
+        assert_eq!(policy.max_attempts(), 3);
+        assert_eq!(policy.initial_delay(), Duration::from_millis(100));
     }
 
     #[test]
@@ -194,36 +230,36 @@ mod tests {
     fn test_retry_state_backoff() {
         let policy = RetryPolicy::default_download()
             .with_max_attempts(4)
-            .with_initial_delay(Duration::milliseconds(100))
+            .with_initial_delay(Duration::from_millis(100))
             .with_backoff_multiplier(2.0)
-            .with_max_delay(Duration::seconds(10));
+            .with_max_delay(Duration::from_secs(10));
 
         let mut state = RetryState::new(policy);
 
         // First delay is initial
         let delay1 = state.next_delay().unwrap();
-        assert_eq!(delay1, Duration::milliseconds(100));
+        assert_eq!(delay1, Duration::from_millis(100));
 
         // Second delay is initial (first retry)
         let delay2 = state.next_delay().unwrap();
-        assert_eq!(delay2, Duration::milliseconds(100));
+        assert_eq!(delay2, Duration::from_millis(100));
 
         // Third delay is 2x
         let delay3 = state.next_delay().unwrap();
-        assert_eq!(delay3, Duration::milliseconds(200));
+        assert_eq!(delay3, Duration::from_millis(200));
 
         // Fourth delay is 4x
         let delay4 = state.next_delay().unwrap();
-        assert_eq!(delay4, Duration::milliseconds(400));
+        assert_eq!(delay4, Duration::from_millis(400));
     }
 
     #[test]
     fn test_retry_state_max_delay_cap() {
         let policy = RetryPolicy::default_download()
             .with_max_attempts(10)
-            .with_initial_delay(Duration::seconds(1))
+            .with_initial_delay(Duration::from_secs(1))
             .with_backoff_multiplier(10.0)
-            .with_max_delay(Duration::seconds(5));
+            .with_max_delay(Duration::from_secs(5));
 
         let mut state = RetryState::new(policy);
 
@@ -233,7 +269,7 @@ mod tests {
         let _ = state.next_delay();
         // Third delay would be 10s but capped at 5s
         let delay = state.next_delay().unwrap();
-        assert_eq!(delay, Duration::seconds(5));
+        assert_eq!(delay, Duration::from_secs(5));
     }
 
     #[test]

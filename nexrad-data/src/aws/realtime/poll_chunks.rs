@@ -17,14 +17,13 @@ use nexrad_decode::messages::volume_coverage_pattern;
 use std::future::Future;
 
 /// Configuration for polling real-time NEXRAD chunks.
+///
+/// Create one with [`PollConfig::new`] and adjust it with the chainable `with_*` setters.
 #[derive(Debug, Clone)]
 pub struct PollConfig {
-    /// The radar site identifier (e.g., "KDMX").
-    pub site: String,
-    /// Retry policy for downloading individual chunks.
-    pub download_policy: RetryPolicy,
-    /// Retry policy for discovering new volumes.
-    pub discovery_policy: RetryPolicy,
+    site: String,
+    download_policy: RetryPolicy,
+    discovery_policy: RetryPolicy,
 }
 
 impl PollConfig {
@@ -35,6 +34,21 @@ impl PollConfig {
             download_policy: RetryPolicy::default_download(),
             discovery_policy: RetryPolicy::default_discovery(),
         }
+    }
+
+    /// The radar site identifier (e.g., "KDMX").
+    pub fn site(&self) -> &str {
+        &self.site
+    }
+
+    /// Retry policy for downloading individual chunks.
+    pub fn download_policy(&self) -> &RetryPolicy {
+        &self.download_policy
+    }
+
+    /// Retry policy for discovering new volumes.
+    pub fn discovery_policy(&self) -> &RetryPolicy {
+        &self.discovery_policy
     }
 
     /// Sets the retry policy for downloading individual chunks.
@@ -354,7 +368,7 @@ where
             return (state.attempt(), Some(result));
         }
 
-        sleep(to_std_duration(delay)).await;
+        sleep(delay).await;
     }
 
     (state.attempt(), None)

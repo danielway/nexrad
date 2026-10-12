@@ -16,7 +16,13 @@ use log::debug;
 use nexrad_decode::messages::volume_coverage_pattern;
 
 /// A downloaded chunk with metadata about the download process.
+///
+/// Returned by [`download_chunk`](super::download_chunk), [`ChunkIterator`], and
+/// [`chunk_stream`](super::chunk_stream). The fields are public so they can be read and moved
+/// out, but the struct is `#[non_exhaustive]`: it cannot be constructed outside this crate, and
+/// fields may be added in a minor release.
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct DownloadedChunk {
     /// The chunk identifier.
     pub identifier: ChunkIdentifier,
@@ -31,7 +37,12 @@ pub struct DownloadedChunk {
 /// When creating a new iterator, the latest chunk in the volume is fetched and returned
 /// in `latest_chunk`. If joining mid-volume (the latest chunk is not a Start chunk),
 /// the Start chunk is also fetched to extract the VCP and is returned in `start_chunk`.
+///
+/// The fields are public so they can be read and moved out, but the struct is
+/// `#[non_exhaustive]`: it cannot be constructed outside this crate, and fields may be added in a
+/// minor release.
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct ChunkIteratorInit {
     /// The initialized iterator, ready for subsequent `try_next()` calls.
     pub iterator: ChunkIterator,

@@ -8,27 +8,19 @@ use nexrad_model::meta::Site;
 
 /// Helper to create a minimal VCP for testing
 fn test_vcp(pattern_number: u16) -> VolumeCoveragePattern {
-    VolumeCoveragePattern::new(
-        pattern_number,
-        1,   // version
-        0.5, // doppler_velocity_resolution
-        PulseWidth::Short,
-        false,  // sails_enabled
-        0,      // sails_cuts
-        false,  // mrle_enabled
-        0,      // mrle_cuts
-        false,  // mpda_enabled
-        false,  // base_tilt_enabled
-        0,      // base_tilt_count
-        false,  // sequence_active
-        false,  // truncated
-        vec![], // elevation_cuts
-    )
+    VolumeCoveragePattern::builder(VcpNumber::from_number(pattern_number))
+        .version(1)
+        .doppler_velocity_resolution(0.5)
+        .pulse_width(PulseWidth::Short)
+        .build()
 }
 
 #[test]
 fn test_site_creation() {
-    let site = Site::new(*b"KTLX", 35.3331, -97.2778, 370, 401);
+    let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
+        .height_meters(370)
+        .tower_height_meters(401)
+        .build();
 
     assert_eq!(site.identifier(), b"KTLX");
     assert_eq!(site.identifier_string(), "KTLX");
@@ -40,7 +32,10 @@ fn test_site_creation() {
 
 #[test]
 fn test_site_display() {
-    let site = Site::new(*b"KTLX", 35.3331, -97.2778, 370, 401);
+    let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
+        .height_meters(370)
+        .tower_height_meters(401)
+        .build();
     let display = format!("{}", site);
 
     assert!(display.contains("KTLX"));
@@ -51,7 +46,10 @@ fn test_site_display() {
 
 #[test]
 fn test_site_debug() {
-    let site = Site::new(*b"KTLX", 35.3331, -97.2778, 370, 401);
+    let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
+        .height_meters(370)
+        .tower_height_meters(401)
+        .build();
     let debug = format!("{:?}", site);
 
     assert!(debug.contains("Site"));
@@ -60,7 +58,10 @@ fn test_site_debug() {
 
 #[test]
 fn test_site_clone() {
-    let site = Site::new(*b"KTLX", 35.3331, -97.2778, 370, 401);
+    let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
+        .height_meters(370)
+        .tower_height_meters(401)
+        .build();
     let cloned = site.clone();
 
     assert_eq!(site.identifier(), cloned.identifier());
@@ -288,4 +289,172 @@ fn test_moment_value_debug() {
     let debug = format!("{:?}", CfpMomentValue::Status(CfpStatus::Reserved(7)));
     assert!(debug.contains("Status"));
     assert!(debug.contains("Reserved"));
+}
+
+#[test]
+fn test_radial_builder_defaults() {
+    use nexrad_model::data::{Radial, RadialStatus};
+
+    let radial = Radial::builder(12, 6.5, 2, 0.9).build();
+
+    assert_eq!(radial.azimuth_number(), 12);
+    assert_eq!(radial.azimuth_angle_degrees(), 6.5);
+    assert_eq!(radial.elevation_number(), 2);
+    assert_eq!(radial.elevation_angle_degrees(), 0.9);
+    assert_eq!(radial.collection_timestamp(), 0);
+    assert_eq!(radial.azimuth_spacing_degrees(), 1.0);
+    assert_eq!(radial.radial_status(), RadialStatus::IntermediateRadialData);
+    assert!(radial.reflectivity().is_none());
+    assert!(radial.velocity().is_none());
+    assert!(radial.spectrum_width().is_none());
+    assert!(radial.differential_reflectivity().is_none());
+    assert!(radial.differential_phase().is_none());
+    assert!(radial.correlation_coefficient().is_none());
+    assert!(radial.clutter_filter_power().is_none());
+}
+
+#[test]
+fn test_radial_builder_setters() {
+    use nexrad_model::data::{Radial, RadialStatus};
+
+    let moment = MomentData::from_fixed_point(3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120]);
+    let radial = Radial::builder(1, 0.25, 1, 0.5)
+        .collection_timestamp(1_700_000_000_000)
+        .azimuth_spacing_degrees(0.5)
+        .radial_status(RadialStatus::ScanStart)
+        .reflectivity(moment.clone())
+        .build();
+
+    assert_eq!(radial.collection_timestamp(), 1_700_000_000_000);
+    assert_eq!(radial.azimuth_spacing_degrees(), 0.5);
+    assert_eq!(radial.radial_status(), RadialStatus::ScanStart);
+    assert_eq!(radial.reflectivity(), Some(&moment));
+    assert!(radial.velocity().is_none());
+}
+
+#[test]
+fn test_elevation_cut_builder_defaults() {
+    use nexrad_model::data::{ChannelConfiguration, ElevationCut, WaveformType};
+
+    let cut = ElevationCut::builder(
+        0.5,
+        WaveformType::ContiguousSurveillance,
+        ChannelConfiguration::Sz2Phase,
+    )
+    .is_sails_cut(true)
+    .sails_sequence_number(1)
+    .build();
+
+    assert_eq!(cut.elevation_angle_degrees(), 0.5);
+    assert_eq!(cut.waveform_type(), WaveformType::ContiguousSurveillance);
+    assert_eq!(cut.channel_configuration(), ChannelConfiguration::Sz2Phase);
+    assert_eq!(cut.azimuth_rate_degrees_per_second(), 0.0);
+    assert!(!cut.super_resolution_half_degree_azimuth());
+    assert_eq!(cut.surveillance_prf_number(), 0);
+    assert_eq!(cut.reflectivity_threshold_db(), 0.0);
+    assert!(cut.is_sails_cut());
+    assert_eq!(cut.sails_sequence_number(), 1);
+    assert!(!cut.is_mrle_cut());
+}
+
+#[test]
+fn test_vcp_builder_defaults_and_cuts() {
+    use nexrad_model::data::{ChannelConfiguration, ElevationCut, WaveformType};
+
+    let cut = ElevationCut::builder(
+        0.5,
+        WaveformType::ContiguousSurveillance,
+        ChannelConfiguration::ConstantPhase,
+    )
+    .build();
+
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+    assert_eq!(vcp.pattern_number(), VcpNumber::from_number(212));
+    assert_eq!(vcp.version(), 0);
+    assert_eq!(vcp.doppler_velocity_resolution(), 0.5);
+    assert_eq!(vcp.pulse_width(), PulseWidth::Short);
+    assert!(!vcp.sails_enabled());
+    assert!(vcp.elevation_cuts().is_empty());
+
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212))
+        .elevation_cut(cut.clone())
+        .elevation_cut(cut.clone())
+        .build();
+    assert_eq!(vcp.number_of_elevation_cuts(), 2);
+
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212))
+        .elevation_cut(cut.clone())
+        .elevation_cuts(vec![cut])
+        .build();
+    assert_eq!(vcp.number_of_elevation_cuts(), 1);
+}
+
+#[test]
+fn test_site_builder_defaults() {
+    let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build();
+    assert_eq!(site.identifier(), b"KTLX");
+    assert_eq!(site.height_meters(), 0);
+    assert_eq!(site.tower_height_meters(), 0);
+}
+
+#[test]
+fn test_sweep_field_builder() {
+    use nexrad_model::data::{GateStatus, SweepField};
+
+    let field = SweepField::builder("Reflectivity", "dBZ")
+        .elevation_degrees(0.5)
+        .azimuths(vec![0.0, 1.0, 2.0])
+        .first_gate_range_km(2.0)
+        .gate_interval_km(0.25)
+        .gate_count(4)
+        .build()
+        .expect("valid geometry");
+
+    assert_eq!(field.label(), "Reflectivity");
+    assert_eq!(field.unit(), "dBZ");
+    assert_eq!(field.elevation_degrees(), 0.5);
+    assert_eq!(field.azimuth_count(), 3);
+    assert_eq!(field.azimuth_spacing_degrees(), 1.0);
+    assert_eq!(field.first_gate_range_km(), 2.0);
+    assert_eq!(field.gate_interval_km(), 0.25);
+    assert_eq!(field.gate_count(), 4);
+    assert_eq!(field.values(), &[0.0; 12]);
+    assert!(field.statuses().iter().all(|s| *s == GateStatus::NoData));
+
+    let like = field.new_like("Copy", "m/s");
+    assert_eq!(like.label(), "Copy");
+    assert_eq!(like.azimuths(), field.azimuths());
+    assert_eq!(like.gate_count(), field.gate_count());
+}
+
+#[test]
+fn test_sweep_field_builder_rejects_invalid_geometry() {
+    use nexrad_model::data::SweepField;
+    use nexrad_model::Error;
+
+    let valid = SweepField::builder("Test", "dBZ")
+        .azimuths(vec![0.0])
+        .gate_interval_km(0.25)
+        .gate_count(1);
+
+    assert!(matches!(
+        valid.clone().azimuths(vec![]).build(),
+        Err(Error::InvalidSweepGeometry(_))
+    ));
+    assert!(matches!(
+        valid.clone().gate_count(0).build(),
+        Err(Error::InvalidSweepGeometry(_))
+    ));
+    assert!(matches!(
+        valid.clone().gate_interval_km(0.0).build(),
+        Err(Error::InvalidSweepGeometry(_))
+    ));
+    assert!(matches!(
+        valid.clone().gate_interval_km(f64::NAN).build(),
+        Err(Error::InvalidSweepGeometry(_))
+    ));
+    assert!(valid.build().is_ok());
+
+    // The defaults alone do not describe a valid geometry.
+    assert!(SweepField::builder("Test", "dBZ").build().is_err());
 }

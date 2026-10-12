@@ -38,39 +38,27 @@ pub struct VolumeCoveragePattern {
 }
 
 impl VolumeCoveragePattern {
-    /// Create a new volume coverage pattern with the given configuration.
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        pattern_number: u16,
-        version: u8,
-        doppler_velocity_resolution: f32,
-        pulse_width: PulseWidth,
-        sails_enabled: bool,
-        sails_cuts: u8,
-        mrle_enabled: bool,
-        mrle_cuts: u8,
-        mpda_enabled: bool,
-        base_tilt_enabled: bool,
-        base_tilt_count: u8,
-        sequence_active: bool,
-        truncated: bool,
-        elevation_cuts: Vec<ElevationCut>,
-    ) -> Self {
-        Self {
-            pattern_number: VcpNumber::from_number(pattern_number),
-            version,
-            doppler_velocity_resolution,
-            pulse_width,
-            sails_enabled,
-            sails_cuts,
-            mrle_enabled,
-            mrle_cuts,
-            mpda_enabled,
-            base_tilt_enabled,
-            base_tilt_count,
-            sequence_active,
-            truncated,
-            elevation_cuts,
+    /// Start building a volume coverage pattern for the given pattern number.
+    ///
+    /// All other properties take the defaults documented on [`VolumeCoveragePatternBuilder`].
+    pub fn builder(pattern_number: VcpNumber) -> VolumeCoveragePatternBuilder {
+        VolumeCoveragePatternBuilder {
+            vcp: VolumeCoveragePattern {
+                pattern_number,
+                version: 0,
+                doppler_velocity_resolution: 0.5,
+                pulse_width: PulseWidth::Short,
+                sails_enabled: false,
+                sails_cuts: 0,
+                mrle_enabled: false,
+                mrle_cuts: 0,
+                mpda_enabled: false,
+                base_tilt_enabled: false,
+                base_tilt_count: 0,
+                sequence_active: false,
+                truncated: false,
+                elevation_cuts: Vec::new(),
+            },
         }
     }
 
@@ -181,5 +169,121 @@ impl Display for VolumeCoveragePattern {
         }
 
         write!(f, ")")
+    }
+}
+
+/// Builder for [`VolumeCoveragePattern`], created with [`VolumeCoveragePattern::builder`].
+///
+/// The pattern number is required. All other properties are optional and default to:
+///
+/// - `version`: `0`
+/// - `doppler_velocity_resolution`: `0.5`
+/// - `pulse_width`: `PulseWidth::Short`
+/// - `sails_enabled`: `false`
+/// - `sails_cuts`: `0`
+/// - `mrle_enabled`: `false`
+/// - `mrle_cuts`: `0`
+/// - `mpda_enabled`: `false`
+/// - `base_tilt_enabled`: `false`
+/// - `base_tilt_count`: `0`
+/// - `sequence_active`: `false`
+/// - `truncated`: `false`
+/// - `elevation_cuts`: empty
+#[derive(Debug, Clone)]
+#[must_use]
+pub struct VolumeCoveragePatternBuilder {
+    vcp: VolumeCoveragePattern,
+}
+
+impl VolumeCoveragePatternBuilder {
+    /// Set the VCP version number. Defaults to `0`.
+    pub fn version(mut self, version: u8) -> Self {
+        self.vcp.version = version;
+        self
+    }
+
+    /// Set the Doppler velocity resolution in m/s. Defaults to `0.5`.
+    pub fn doppler_velocity_resolution(mut self, doppler_velocity_resolution: f32) -> Self {
+        self.vcp.doppler_velocity_resolution = doppler_velocity_resolution;
+        self
+    }
+
+    /// Set the pulse width configuration. Defaults to `PulseWidth::Short`.
+    pub fn pulse_width(mut self, pulse_width: PulseWidth) -> Self {
+        self.vcp.pulse_width = pulse_width;
+        self
+    }
+
+    /// Set whether SAILS (Supplemental Adaptive Intra-volume Low-level Scan) is enabled. Defaults to `false`.
+    pub fn sails_enabled(mut self, sails_enabled: bool) -> Self {
+        self.vcp.sails_enabled = sails_enabled;
+        self
+    }
+
+    /// Set the number of SAILS cuts in this VCP. Defaults to `0`.
+    pub fn sails_cuts(mut self, sails_cuts: u8) -> Self {
+        self.vcp.sails_cuts = sails_cuts;
+        self
+    }
+
+    /// Set whether MRLE (Mid-volume Rescan of Low Elevation) is enabled. Defaults to `false`.
+    pub fn mrle_enabled(mut self, mrle_enabled: bool) -> Self {
+        self.vcp.mrle_enabled = mrle_enabled;
+        self
+    }
+
+    /// Set the number of MRLE cuts in this VCP. Defaults to `0`.
+    pub fn mrle_cuts(mut self, mrle_cuts: u8) -> Self {
+        self.vcp.mrle_cuts = mrle_cuts;
+        self
+    }
+
+    /// Set whether MPDA (Multiple PRF Dealiasing Algorithm) is enabled. Defaults to `false`.
+    pub fn mpda_enabled(mut self, mpda_enabled: bool) -> Self {
+        self.vcp.mpda_enabled = mpda_enabled;
+        self
+    }
+
+    /// Set whether base tilt scanning is enabled. Defaults to `false`.
+    pub fn base_tilt_enabled(mut self, base_tilt_enabled: bool) -> Self {
+        self.vcp.base_tilt_enabled = base_tilt_enabled;
+        self
+    }
+
+    /// Set the number of base tilts in this VCP. Defaults to `0`.
+    pub fn base_tilt_count(mut self, base_tilt_count: u8) -> Self {
+        self.vcp.base_tilt_count = base_tilt_count;
+        self
+    }
+
+    /// Set whether the VCP sequence is currently active. Defaults to `false`.
+    pub fn sequence_active(mut self, sequence_active: bool) -> Self {
+        self.vcp.sequence_active = sequence_active;
+        self
+    }
+
+    /// Set whether the VCP was truncated. Defaults to `false`.
+    pub fn truncated(mut self, truncated: bool) -> Self {
+        self.vcp.truncated = truncated;
+        self
+    }
+
+    /// Set the elevation cuts comprising this pattern, replacing any previously added cuts.
+    /// Defaults to empty.
+    pub fn elevation_cuts(mut self, elevation_cuts: Vec<ElevationCut>) -> Self {
+        self.vcp.elevation_cuts = elevation_cuts;
+        self
+    }
+
+    /// Append a single elevation cut to this pattern. Elevation cuts default to empty.
+    pub fn elevation_cut(mut self, elevation_cut: ElevationCut) -> Self {
+        self.vcp.elevation_cuts.push(elevation_cut);
+        self
+    }
+
+    /// Build the [`VolumeCoveragePattern`].
+    #[must_use]
+    pub fn build(self) -> VolumeCoveragePattern {
+        self.vcp
     }
 }

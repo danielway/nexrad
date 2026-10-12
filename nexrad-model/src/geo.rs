@@ -245,7 +245,10 @@ mod tests {
 
     fn test_site() -> Site {
         // KTLX (Oklahoma City) approximate coordinates
-        Site::new(*b"KTLX", 35.3331, -97.2778, 370, 10)
+        Site::builder(*b"KTLX", 35.3331, -97.2778)
+            .height_meters(370)
+            .tower_height_meters(10)
+            .build()
     }
 
     #[test]

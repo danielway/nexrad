@@ -15,4 +15,12 @@ pub enum Error {
     /// with two sweeps that have different elevation numbers.
     #[error("two sweeps' elevation numbers do not match")]
     ElevationMismatch,
+
+    /// Attempted to build a sweep field with invalid geometry.
+    ///
+    /// This error occurs when calling
+    /// [`SweepFieldBuilder::build`](crate::data::SweepFieldBuilder::build) with no azimuths, a
+    /// gate count of zero, or a non-positive gate interval.
+    #[error("invalid sweep field geometry: {0}")]
+    InvalidSweepGeometry(String),
 }

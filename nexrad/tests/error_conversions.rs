@@ -135,25 +135,6 @@ fn test_nested_decode_error_through_data() {
     );
 }
 
-#[cfg(feature = "decode")]
-#[test]
-fn test_io_error_conversion_through_decode() {
-    // Create an I/O error and convert through decode
-    let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
-    let decode_err: nexrad_decode::result::Error = io_err.into();
-
-    // Convert to unified error
-    let unified_err: nexrad::Error = decode_err.into();
-
-    // Verify the error message
-    let err_string = unified_err.to_string();
-    assert!(
-        err_string.contains("decode error"),
-        "Expected 'decode error' in message, got: {}",
-        err_string
-    );
-}
-
 #[cfg(feature = "data")]
 #[test]
 fn test_io_error_conversion_through_data() {

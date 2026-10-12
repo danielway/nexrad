@@ -51,6 +51,9 @@ For processing and rendering, moment data is extracted into flat 2D grids:
 
 Each field stores parallel `f32` and `GateStatus` arrays in row-major order for efficient numerical processing.
 
+`Sweep::field(product)` extracts a `SweepField` from one sweep; `Scan::fields(product)` and
+`Scan::first_field(product)` do the same across a scan's sweeps.
+
 ## Geographic Types
 
 The `geo` module provides coordinate types and transformations:
@@ -59,6 +62,8 @@ The `geo` module provides coordinate types and transformations:
 - `GeoExtent` — axis-aligned bounding box
 - `PolarPoint` — azimuth, range, and elevation from a radar
 - `RadarCoordinateSystem` — converts between polar and geographic coordinates
+
+`Scan::coordinate_system()` builds a `RadarCoordinateSystem` from a scan's site metadata.
 
 ## Site Registry
 

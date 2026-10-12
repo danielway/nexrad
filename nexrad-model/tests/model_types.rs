@@ -648,3 +648,111 @@ fn test_sweep_field_product() {
         .unwrap();
     assert_eq!(built.product(), Some(Product::Reflectivity));
 }
+
+/// Helper to create a single-radial sweep carrying the given moments.
+fn sweep_with_moments(elevation_number: u8, moments: Vec<MomentData>) -> Sweep {
+    use nexrad_model::data::Radial;
+
+    let mut builder = Radial::builder(0, 0.0, elevation_number, 0.5);
+    for moment in moments {
+        builder = builder.moment(moment);
+    }
+    Sweep::new(elevation_number, vec![builder.build()])
+}
+
+/// Helper to create a moment with one gate per raw value.
+fn test_moment(product: Product, values: Vec<u8>) -> MomentData {
+    MomentData::from_fixed_point(
+        product,
+        values.len() as u16,
+        2000,
+        250,
+        8,
+        2.0,
+        66.0,
+        values,
+    )
+}
+
+#[test]
+fn test_sweep_field() {
+    use nexrad_model::data::SweepField;
+
+    let sweep = sweep_with_moments(1, vec![test_moment(Product::Reflectivity, vec![100, 110])]);
+
+    let field = sweep
+        .field(Product::Reflectivity)
+        .expect("reflectivity data");
+    assert_eq!(
+        Some(field),
+        SweepField::from_radials(sweep.radials(), Product::Reflectivity)
+    );
+    assert!(sweep.field(Product::Velocity).is_none());
+    assert!(Sweep::new(1, vec![]).field(Product::Reflectivity).is_none());
+}
+
+#[test]
+fn test_scan_fields() {
+    let scan = Scan::new(
+        test_vcp(212),
+        vec![
+            sweep_with_moments(1, vec![test_moment(Product::Reflectivity, vec![100])]),
+            sweep_with_moments(2, vec![test_moment(Product::Velocity, vec![120])]),
+            sweep_with_moments(
+                3,
+                vec![test_moment(Product::Reflectivity, vec![100, 110, 120])],
+            ),
+        ],
+    );
+
+    let fields = scan.fields(Product::Reflectivity);
+    assert_eq!(fields.len(), 2);
+    assert_eq!(fields[0].gate_count(), 1);
+    assert_eq!(fields[1].gate_count(), 3);
+
+    assert_eq!(scan.fields(Product::Velocity).len(), 1);
+    assert!(scan.fields(Product::SpectrumWidth).is_empty());
+}
+
+#[test]
+fn test_scan_first_field() {
+    let scan = Scan::new(
+        test_vcp(212),
+        vec![
+            sweep_with_moments(1, vec![test_moment(Product::Reflectivity, vec![100])]),
+            sweep_with_moments(2, vec![test_moment(Product::Velocity, vec![120, 130])]),
+            sweep_with_moments(3, vec![test_moment(Product::Velocity, vec![120])]),
+        ],
+    );
+
+    let (index, field) = scan.first_field(Product::Velocity).expect("velocity data");
+    assert_eq!(index, 1);
+    assert_eq!(field.gate_count(), 2);
+    assert_eq!(field.product(), Some(Product::Velocity));
+
+    let (index, _) = scan
+        .first_field(Product::Reflectivity)
+        .expect("reflectivity data");
+    assert_eq!(index, 0);
+
+    assert!(scan.first_field(Product::SpectrumWidth).is_none());
+}
+
+#[test]
+fn test_scan_coordinate_system() {
+    use nexrad_model::geo::RadarCoordinateSystem;
+
+    let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
+        .height_meters(370)
+        .tower_height_meters(20)
+        .build();
+    let scan = Scan::with_site(site.clone(), test_vcp(212), vec![]);
+
+    let coords = scan.coordinate_system().expect("site metadata");
+    assert_eq!(coords, RadarCoordinateSystem::new(&site));
+    assert_eq!(coords.antenna_height_meters(), 390.0);
+
+    assert!(Scan::new(test_vcp(212), vec![])
+        .coordinate_system()
+        .is_none());
+}

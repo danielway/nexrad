@@ -9,10 +9,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(ThisError, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// An I/O error occurred while reading data.
-    #[error("data file IO error")]
-    Io(#[from] std::io::Error),
-    /// A general decoding error with a descriptive message.
+    /// Malformed input that does not match a more specific variant.
+    ///
+    /// This is the catch-all for decoding failures; the message describes
+    /// what was wrong with the input.
     #[error("file decoding error: {0}")]
     Decoding(String),
     /// A message is missing required collection date/time fields.

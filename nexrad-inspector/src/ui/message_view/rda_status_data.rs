@@ -15,7 +15,7 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
     };
 
     let message = match message.contents() {
-        MessageContents::RDAStatusData(data) => data,
+        MessageContents::RdaStatusData(data) => data,
         _ => return "Message is not RDA Status Data".to_string(),
     };
 

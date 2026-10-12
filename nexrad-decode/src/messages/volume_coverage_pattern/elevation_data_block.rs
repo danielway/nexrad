@@ -172,7 +172,7 @@ impl<'a> ElevationDataBlock<'a> {
         match self.inner.channel_configuration {
             0 => ChannelConfiguration::ConstantPhase,
             1 => ChannelConfiguration::RandomPhase,
-            2 => ChannelConfiguration::SZ2Phase,
+            2 => ChannelConfiguration::Sz2Phase,
             _ => ChannelConfiguration::UnknownPhase,
         }
     }
@@ -180,11 +180,11 @@ impl<'a> ElevationDataBlock<'a> {
     /// The waveform type for this cut
     pub fn waveform_type(&self) -> WaveformType {
         match self.inner.waveform_type {
-            1 => WaveformType::CS,
-            2 => WaveformType::CDW,
-            3 => WaveformType::CDWO,
-            4 => WaveformType::B,
-            5 => WaveformType::SPP,
+            1 => WaveformType::ContiguousSurveillance,
+            2 => WaveformType::ContiguousDopplerWithAmbiguityResolution,
+            3 => WaveformType::ContiguousDopplerWithoutAmbiguityResolution,
+            4 => WaveformType::Batch,
+            5 => WaveformType::StaggeredPulsePair,
             _ => WaveformType::Unknown,
         }
     }

@@ -2,7 +2,7 @@
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum CommandAcknowledgement {
     /// Remote VCP command was received.
-    RemoteVCPReceived,
+    RemoteVcpReceived,
     /// Clutter bypass map was received.
     ClutterBypassMapReceived,
     /// Clutter censor zones were received.

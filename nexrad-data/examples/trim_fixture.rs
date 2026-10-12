@@ -117,7 +117,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         for message in &messages {
             match message.contents() {
-                MessageContents::RDAStatusData(_)
+                MessageContents::RdaStatusData(_)
                 | MessageContents::VolumeCoveragePattern(_)
                 | MessageContents::ClutterFilterMap(_) => {
                     has_metadata = true;

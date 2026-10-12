@@ -31,7 +31,7 @@ Message {
             segment_number: 1,
         },
     ),
-    contents: RDAPRFData(
+    contents: RdaPrfData(
         Message {
             header: Header {
                 number_of_waveforms: 3,

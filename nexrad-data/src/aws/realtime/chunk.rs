@@ -1,5 +1,5 @@
-use crate::result::aws::AWSError::UnrecognizedChunkFormat;
-use crate::result::Error::AWS;
+use crate::result::aws::AwsError::UnrecognizedChunkFormat;
+use crate::result::Error::Aws;
 use crate::volume;
 
 /// A chunk of real-time data within a volume. Chunks are ordered and when concatenated together
@@ -34,7 +34,7 @@ impl Chunk<'_> {
             return Ok(Self::IntermediateOrEnd(record));
         }
 
-        Err(AWS(UnrecognizedChunkFormat))
+        Err(Aws(UnrecognizedChunkFormat))
     }
 
     /// The data contained within this chunk.

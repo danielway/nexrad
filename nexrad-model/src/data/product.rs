@@ -1,4 +1,4 @@
-use crate::data::{CFPMomentData, MomentData, Radial};
+use crate::data::{CfpMomentData, MomentData, Radial};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -48,7 +48,7 @@ impl Product {
 
     /// Returns the CFP moment data from a radial, if this product is
     /// [`Product::ClutterFilterPower`] and the data is present.
-    pub fn cfp_moment_data<'a>(&self, radial: &'a Radial) -> Option<&'a CFPMomentData> {
+    pub fn cfp_moment_data<'a>(&self, radial: &'a Radial) -> Option<&'a CfpMomentData> {
         match self {
             Product::ClutterFilterPower => radial.clutter_filter_power(),
             _ => None,

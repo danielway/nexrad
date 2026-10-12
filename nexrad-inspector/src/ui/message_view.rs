@@ -187,39 +187,39 @@ fn render_parsed_view(frame: &mut Frame, data: &[u8], scroll: usize, area: Rect)
 
     // Parse based on message type - delegate to specialized parsers
     let parsed_text = match msg_type {
-        MessageType::RDADigitalRadarData => {
+        MessageType::RdaDigitalRadarData => {
             digital_radar_data_legacy::parse_digital_radar_data_legacy(data)
         }
-        MessageType::RDAStatusData => {
+        MessageType::RdaStatusData => {
             rda_status_data::parse_rda_status_data(&data[content_offset..])
         }
-        MessageType::RDAPerformanceMaintenanceData => {
+        MessageType::RdaPerformanceMaintenanceData => {
             performance_maintenance_data::parse_performance_maintenance_data(data)
         }
-        MessageType::RDAConsoleMessage | MessageType::RPGConsoleMessage => {
+        MessageType::RdaConsoleMessage | MessageType::RpgConsoleMessage => {
             console_message::parse_console_message(data)
         }
-        MessageType::RDAVolumeCoveragePattern => {
+        MessageType::RdaVolumeCoveragePattern => {
             volume_coverage_pattern::parse_volume_coverage_pattern(data)
         }
-        MessageType::RDAControlCommands => rda_control_commands::parse_rda_control_commands(data),
-        MessageType::RPGClutterCensorZones => {
+        MessageType::RdaControlCommands => rda_control_commands::parse_rda_control_commands(data),
+        MessageType::RpgClutterCensorZones => {
             clutter_censor_zones::parse_clutter_censor_zones(data)
         }
-        MessageType::RPGRequestForData => request_for_data::parse_request_for_data(data),
-        MessageType::RDALoopBackTest | MessageType::RPGLoopBackTest => {
+        MessageType::RpgRequestForData => request_for_data::parse_request_for_data(data),
+        MessageType::RdaLoopBackTest | MessageType::RpgLoopBackTest => {
             loopback_test::parse_loopback_test(data)
         }
-        MessageType::RDAClutterFilterBypassMap => {
+        MessageType::RdaClutterFilterBypassMap => {
             clutter_filter_bypass_map::parse_clutter_filter_bypass_map(data)
         }
-        MessageType::RDAClutterFilterMap => clutter_filter_map::parse_clutter_filter_map(data),
-        MessageType::RDAAdaptationData => rda_adaptation_data::parse_rda_adaptation_data(data),
-        MessageType::RDADigitalRadarDataGenericFormat => {
+        MessageType::RdaClutterFilterMap => clutter_filter_map::parse_clutter_filter_map(data),
+        MessageType::RdaAdaptationData => rda_adaptation_data::parse_rda_adaptation_data(data),
+        MessageType::RdaDigitalRadarDataGenericFormat => {
             digital_radar_data::parse_digital_radar_data(data)
         }
-        MessageType::RDAPRFData => rda_prf_data::parse_rda_prf_data(data),
-        MessageType::RDALogData => rda_log_data::parse_rda_log_data(data),
+        MessageType::RdaPrfData => rda_prf_data::parse_rda_prf_data(data),
+        MessageType::RdaLogData => rda_log_data::parse_rda_log_data(data),
         _ => common::parse_common_header_only(header),
     };
 

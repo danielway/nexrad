@@ -168,13 +168,13 @@ Public enums that are expected to gain variants during 1.x are marked `#[non_exh
 
 Non-exhaustive (new failure modes, ICD message types, products, and scan strategies are added over time):
 
-- Every crate's `Error` enum (`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`, `nexrad`) and `nexrad_data::result::aws::AWSError`
+- Every crate's `Error` enum (`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`, `nexrad`) and `nexrad_data::result::aws::AwsError`
 - `nexrad_decode`: `MessageContents`, `MessageType`, `RedundantChannel`, `DataBlockName`
-- `nexrad_model`: `Product`, `VCPNumber`
+- `nexrad_model`: `Product`, `VcpNumber`
 
 Exhaustive by design (variants are fixed by the NOAA ICD or by the crate's own format, and several are matched per gate or per radial in hot loops where an exhaustive match is clearer and lets callers rely on the compiler):
 
-- `nexrad_model`: `MomentValue`, `CFPMomentValue`, `CFPStatus`, `GateStatus`, `RadialStatus`, `PulseWidth`, `WaveformType`, `ChannelConfiguration`
+- `nexrad_model`: `MomentValue`, `CfpMomentValue`, `CfpStatus`, `GateStatus`, `RadialStatus`, `PulseWidth`, `WaveformType`, `ChannelConfiguration`
 - `nexrad_decode`: `MessageHeaders`, `RadialStatus`, `PulseWidth`, `WaveformType`, `ChannelConfiguration`, `PatternType`, and the small status enums in the message modules
 - `nexrad_data`: `ChunkType`, `NextChunk`, `Chunk`
 - `nexrad_render`: `Interpolation`, `ColorScale`

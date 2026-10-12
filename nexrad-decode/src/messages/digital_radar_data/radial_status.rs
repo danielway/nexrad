@@ -12,7 +12,7 @@ pub enum RadialStatus {
     /// Last radial of the last elevation sweep in a volume scan.
     VolumeScanEnd,
     /// Start of new elevation which is the last in the VCP.
-    ElevationStartVCPFinal,
+    ElevationStartVcpFinal,
     /// An unrecognized radial status value.
     Unknown(u8),
 }

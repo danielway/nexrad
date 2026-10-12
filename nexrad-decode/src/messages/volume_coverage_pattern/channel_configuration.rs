@@ -6,7 +6,7 @@ pub enum ChannelConfiguration {
     /// Random phase processing.
     RandomPhase,
     /// SZ-2 phase coding for range dealiasing.
-    SZ2Phase,
+    Sz2Phase,
     /// Unknown phase configuration.
     UnknownPhase,
 }

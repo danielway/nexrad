@@ -15,7 +15,7 @@ pub fn parse_rda_control_commands(data: &[u8]) -> String {
     };
 
     let msg = match message.contents() {
-        MessageContents::RDAControlCommands(data) => data,
+        MessageContents::RdaControlCommands(data) => data,
         _ => return "Message is not RDA control commands".to_string(),
     };
 

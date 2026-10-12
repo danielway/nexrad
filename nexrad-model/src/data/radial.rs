@@ -1,4 +1,4 @@
-use crate::data::{CFPMomentData, MomentData};
+use crate::data::{CfpMomentData, MomentData};
 
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
@@ -33,7 +33,7 @@ pub struct Radial {
     differential_reflectivity: Option<MomentData>,
     differential_phase: Option<MomentData>,
     correlation_coefficient: Option<MomentData>,
-    clutter_filter_power: Option<CFPMomentData>,
+    clutter_filter_power: Option<CfpMomentData>,
 }
 
 impl Radial {
@@ -52,7 +52,7 @@ impl Radial {
         differential_reflectivity: Option<MomentData>,
         differential_phase: Option<MomentData>,
         correlation_coefficient: Option<MomentData>,
-        clutter_filter_power: Option<CFPMomentData>,
+        clutter_filter_power: Option<CfpMomentData>,
     ) -> Self {
         Self {
             collection_timestamp,
@@ -164,7 +164,7 @@ impl Radial {
 
     /// Clutter filter power (CFP) data for this radial if available.
     /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
-    pub fn clutter_filter_power(&self) -> Option<&CFPMomentData> {
+    pub fn clutter_filter_power(&self) -> Option<&CfpMomentData> {
         self.clutter_filter_power.as_ref()
     }
 }
@@ -184,7 +184,7 @@ pub enum RadialStatus {
     /// Last radial of the last elevation sweep in a scan.
     ScanEnd,
     /// Start of new elevation which is the last in the VCP.
-    ElevationStartVCPFinal,
+    ElevationStartVcpFinal,
     /// An unrecognized radial status value.
     Unknown(u8),
 }

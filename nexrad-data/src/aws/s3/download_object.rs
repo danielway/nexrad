@@ -1,8 +1,8 @@
 use crate::aws::client::client;
 use crate::aws::s3::bucket_object::BucketObject;
 use crate::aws::s3::downloaded_bucket_object::DownloadedBucketObject;
-use crate::result::aws::AWSError;
-use crate::result::aws::AWSError::{S3GetObject, S3GetObjectRequest, S3Streaming};
+use crate::result::aws::AwsError;
+use crate::result::aws::AwsError::{S3GetObject, S3GetObjectRequest, S3Streaming};
 use crate::result::Error;
 use chrono::{DateTime, Utc};
 use log::{debug, trace};
@@ -29,7 +29,7 @@ pub async fn download_object(
     );
 
     match response.status() {
-        StatusCode::NOT_FOUND => Err(Error::AWS(AWSError::S3ObjectNotFound)),
+        StatusCode::NOT_FOUND => Err(Error::Aws(AwsError::S3ObjectNotFound)),
         StatusCode::OK => {
             let last_modified = get_last_modified_header(response.headers());
             trace!("  Object \"{key}\" last modified: {last_modified:?}");
@@ -46,7 +46,7 @@ pub async fn download_object(
                 data,
             })
         }
-        _ => Err(Error::AWS(S3GetObject(response.text().await.ok()))),
+        _ => Err(Error::Aws(S3GetObject(response.text().await.ok()))),
     }
 }
 

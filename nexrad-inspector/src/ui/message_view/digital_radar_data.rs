@@ -1,7 +1,7 @@
 //! Digital Radar Data (Type 31) message parsing and display.
 
 use nexrad_decode::messages::{decode_messages, digital_radar_data, MessageContents};
-use nexrad_model::data::{CFPMomentValue, CFPStatus, MomentValue};
+use nexrad_model::data::{CfpMomentValue, CfpStatus, MomentValue};
 
 /// Parses and displays a Digital Radar Data (Type 31) message with full details.
 pub fn parse_digital_radar_data(data: &[u8]) -> String {
@@ -272,7 +272,7 @@ fn render_moment_block(
 fn render_cfp_block(
     output: &mut String,
     header: &digital_radar_data::GenericDataBlockHeader,
-    decoded: &[CFPMomentValue],
+    decoded: &[CfpMomentValue],
 ) {
     render_block_header(output, "CFP", "Clutter Filter Power", header);
 
@@ -300,15 +300,15 @@ fn render_cfp_block(
 
         for val in decoded {
             match val {
-                CFPMomentValue::Value(v) => {
+                CfpMomentValue::Value(v) => {
                     value_count += 1;
                     sum += *v as f64;
                     min_val = min_val.min(*v);
                     max_val = max_val.max(*v);
                 }
-                CFPMomentValue::Status(status) => {
+                CfpMomentValue::Status(status) => {
                     status_count += 1;
-                    if matches!(status, CFPStatus::Reserved(_)) {
+                    if matches!(status, CfpStatus::Reserved(_)) {
                         reserved_count += 1;
                     }
                 }
@@ -422,20 +422,20 @@ fn scaled_values_to_ascii(values: &[MomentValue], product: &str) -> String {
         .collect()
 }
 
-/// Converts a slice of CFPMomentValue to a visual ASCII string representation.
-fn cfp_values_to_ascii(values: &[CFPMomentValue]) -> String {
+/// Converts a slice of CfpMomentValue to a visual ASCII string representation.
+fn cfp_values_to_ascii(values: &[CfpMomentValue]) -> String {
     const CHARS: &[char] = &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
     let (min_val, max_val): (f32, f32) = (-20.0, 20.0);
 
     values
         .iter()
         .map(|v| match v {
-            CFPMomentValue::Value(val) => {
+            CfpMomentValue::Value(val) => {
                 let normalized = ((val - min_val) / (max_val - min_val)).clamp(0.0, 1.0);
                 let index = (normalized * (CHARS.len() - 1) as f32) as usize;
                 CHARS[index]
             }
-            CFPMomentValue::Status(_) => '!',
+            CfpMomentValue::Status(_) => '!',
         })
         .collect()
 }

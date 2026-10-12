@@ -250,12 +250,12 @@ impl<'a> VolumeDataBlock<'a> {
     pub fn volume_coverage_pattern(&self) -> VolumeCoveragePattern {
         let volume_coverage_pattern = self.volume_coverage_pattern_number();
         match volume_coverage_pattern {
-            12 => VolumeCoveragePattern::VCP12,
-            31 => VolumeCoveragePattern::VCP31,
-            35 => VolumeCoveragePattern::VCP35,
-            112 => VolumeCoveragePattern::VCP112,
-            212 => VolumeCoveragePattern::VCP212,
-            215 => VolumeCoveragePattern::VCP215,
+            12 => VolumeCoveragePattern::Vcp12,
+            31 => VolumeCoveragePattern::Vcp31,
+            35 => VolumeCoveragePattern::Vcp35,
+            112 => VolumeCoveragePattern::Vcp112,
+            212 => VolumeCoveragePattern::Vcp212,
+            215 => VolumeCoveragePattern::Vcp215,
             other => VolumeCoveragePattern::Unknown(other),
         }
     }
@@ -264,8 +264,8 @@ impl<'a> VolumeDataBlock<'a> {
     pub fn processing_status(&self) -> ProcessingStatus {
         let processing_status = self.processing_status_raw();
         match processing_status {
-            0 => ProcessingStatus::RxRNoise,
-            1 => ProcessingStatus::CBT,
+            0 => ProcessingStatus::RxrNoise,
+            1 => ProcessingStatus::Cbt,
             _ => ProcessingStatus::Other(processing_status),
         }
     }

@@ -1,6 +1,6 @@
 use crate::{
     aws::realtime::{ChunkType, ElevationChunkMapper, VolumeIndex},
-    result::{aws::AWSError, Error, Result},
+    result::{aws::AwsError, Error, Result},
 };
 use chrono::{DateTime, NaiveDateTime, Utc};
 
@@ -61,20 +61,20 @@ impl ChunkIdentifier {
     ) -> Result<Self> {
         // Chunk names must be at least 20 characters: "YYYYMMDD-HHMMSS-NNN-T"
         if name.len() < 20 {
-            return Err(Error::AWS(AWSError::UnrecognizedChunkFormat));
+            return Err(Error::Aws(AwsError::UnrecognizedChunkFormat));
         }
 
         let date_str = name
             .get(..15)
-            .ok_or_else(|| Error::AWS(AWSError::UnrecognizedChunkDateTime(name.clone())))?;
+            .ok_or_else(|| Error::Aws(AwsError::UnrecognizedChunkDateTime(name.clone())))?;
         let date_time_prefix = NaiveDateTime::parse_from_str(date_str, "%Y%m%d-%H%M%S")
-            .map_err(|_| Error::AWS(AWSError::UnrecognizedChunkDateTime(date_str.to_string())))?;
+            .map_err(|_| Error::Aws(AwsError::UnrecognizedChunkDateTime(date_str.to_string())))?;
 
         let sequence_str = name
             .get(16..19)
-            .ok_or_else(|| Error::AWS(AWSError::UnrecognizedChunkFormat))?;
+            .ok_or_else(|| Error::Aws(AwsError::UnrecognizedChunkFormat))?;
         let sequence = sequence_str.parse::<usize>().map_err(|_| {
-            Error::AWS(AWSError::UnrecognizedChunkSequence(
+            Error::Aws(AwsError::UnrecognizedChunkSequence(
                 sequence_str.to_string(),
             ))
         })?;
@@ -82,7 +82,7 @@ impl ChunkIdentifier {
         let chunk_type = ChunkType::from_abbreviation(
             name.chars()
                 .last()
-                .ok_or(Error::AWS(AWSError::UnrecognizedChunkType(None)))?,
+                .ok_or(Error::Aws(AwsError::UnrecognizedChunkType(None)))?,
         )?;
 
         Ok(Self {
@@ -159,7 +159,7 @@ pub enum NextChunk {
     /// The next chunk is expected to be located in the same volume at this sequence. Once the next
     /// chunk's identifier is determined, it can be downloaded using the
     /// [crate::aws::realtime::download_chunk()] function. You may need to poll by checking if that
-    /// function returns [crate::result::aws::AWSError::S3ObjectNotFound].
+    /// function returns [crate::result::aws::AwsError::S3ObjectNotFound].
     Sequence(ChunkIdentifier),
 
     /// The chunk is expected to be located in the next volume. The next volume's chunks can be

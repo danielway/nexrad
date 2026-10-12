@@ -8,15 +8,15 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum WaveformType {
     /// Contiguous Surveillance.
-    CS,
+    ContiguousSurveillance,
     /// Contiguous Doppler with Ambiguity Resolution.
-    CDW,
+    ContiguousDopplerWithAmbiguityResolution,
     /// Contiguous Doppler without Ambiguity Resolution.
-    CDWO,
+    ContiguousDopplerWithoutAmbiguityResolution,
     /// Batch.
-    B,
+    Batch,
     /// Staggered Pulse Pair.
-    SPP,
+    StaggeredPulsePair,
     /// Unknown waveform type.
     Unknown,
 }
@@ -24,11 +24,15 @@ pub enum WaveformType {
 impl Display for WaveformType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            WaveformType::CS => write!(f, "Contiguous Surveillance"),
-            WaveformType::CDW => write!(f, "Contiguous Doppler w/ Ambiguity Resolution"),
-            WaveformType::CDWO => write!(f, "Contiguous Doppler w/o Ambiguity Resolution"),
-            WaveformType::B => write!(f, "Batch"),
-            WaveformType::SPP => write!(f, "Staggered Pulse Pair"),
+            WaveformType::ContiguousSurveillance => write!(f, "Contiguous Surveillance"),
+            WaveformType::ContiguousDopplerWithAmbiguityResolution => {
+                write!(f, "Contiguous Doppler w/ Ambiguity Resolution")
+            }
+            WaveformType::ContiguousDopplerWithoutAmbiguityResolution => {
+                write!(f, "Contiguous Doppler w/o Ambiguity Resolution")
+            }
+            WaveformType::Batch => write!(f, "Batch"),
+            WaveformType::StaggeredPulsePair => write!(f, "Staggered Pulse Pair"),
             WaveformType::Unknown => write!(f, "Unknown"),
         }
     }

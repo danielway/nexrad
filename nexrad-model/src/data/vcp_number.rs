@@ -16,7 +16,7 @@ use std::fmt::Display;
 /// - RDA/RPG ICD (2620002 series)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-pub enum VCPNumber {
+pub enum VcpNumber {
     /// VCP 12: Precipitation mode. 14 elevation angles in ~4.5 minutes. Fastest scan;
     /// default for severe weather. Does not use SZ-2 phase coding.
     Precipitation12,
@@ -53,8 +53,8 @@ pub enum VCPNumber {
     Unknown(u16),
 }
 
-impl VCPNumber {
-    /// Creates a `VCPNumber` from a raw `u16` pattern number.
+impl VcpNumber {
+    /// Creates a `VcpNumber` from a raw `u16` pattern number.
     pub fn from_number(number: u16) -> Self {
         match number {
             12 => Self::Precipitation12,
@@ -97,7 +97,7 @@ impl VCPNumber {
     }
 }
 
-impl Display for VCPNumber {
+impl Display for VcpNumber {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Unknown(n) => write!(f, "VCP {n}"),
@@ -106,14 +106,14 @@ impl Display for VCPNumber {
     }
 }
 
-impl From<u16> for VCPNumber {
+impl From<u16> for VcpNumber {
     fn from(number: u16) -> Self {
         Self::from_number(number)
     }
 }
 
-impl From<VCPNumber> for u16 {
-    fn from(vcp: VCPNumber) -> Self {
+impl From<VcpNumber> for u16 {
+    fn from(vcp: VcpNumber) -> Self {
         vcp.number()
     }
 }
@@ -121,14 +121,14 @@ impl From<VCPNumber> for u16 {
 // Serialize as the raw u16 pattern number for backward compatibility with archival formats
 // and existing snapshot tests.
 #[cfg(feature = "serde")]
-impl serde::Serialize for VCPNumber {
+impl serde::Serialize for VcpNumber {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_u16(self.number())
     }
 }
 
 #[cfg(feature = "serde")]
-impl<'de> serde::Deserialize<'de> for VCPNumber {
+impl<'de> serde::Deserialize<'de> for VcpNumber {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let number = u16::deserialize(deserializer)?;
         Ok(Self::from_number(number))

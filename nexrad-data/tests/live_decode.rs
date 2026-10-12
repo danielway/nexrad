@@ -10,12 +10,12 @@
 use chrono::{Duration, Utc};
 use nexrad_data::aws::archive::{download_file, list_files, Identifier};
 use nexrad_data::volume;
-use nexrad_decode::messages::rda_status_data::RDABuildNumber;
+use nexrad_decode::messages::rda_status_data::RdaBuildNumber;
 use nexrad_decode::messages::{decode_messages, MessageContents};
 
 /// Maximum RDA build number the library is known to support.
-/// Update this when a new build version is added to the RDABuildNumber enum.
-const MAX_SUPPORTED_BUILD: RDABuildNumber = RDABuildNumber::Build24_0;
+/// Update this when a new build version is added to the RdaBuildNumber enum.
+const MAX_SUPPORTED_BUILD: RdaBuildNumber = RdaBuildNumber::Build24_0;
 
 /// Sites to test against live data.
 const TEST_SITES: &[&str] = &[
@@ -42,7 +42,7 @@ const MAX_VOLUME_ATTEMPTS: usize = 3;
 struct DecodeResult {
     site: String,
     file_name: String,
-    build_number: RDABuildNumber,
+    build_number: RdaBuildNumber,
     rda_status_count: usize,
     vcp_count: usize,
     radar_data_count: usize,
@@ -109,7 +109,7 @@ fn decode_volume(site: &str, file_name: &str, file: &volume::File) -> Result<Dec
     let mut rda_status_count = 0;
     let mut vcp_count = 0;
     let mut radar_data_count = 0;
-    let mut build_number: Option<RDABuildNumber> = None;
+    let mut build_number: Option<RdaBuildNumber> = None;
     let mut has_volume_start = false;
     let mut has_volume_end = false;
 
@@ -130,7 +130,7 @@ fn decode_volume(site: &str, file_name: &str, file: &volume::File) -> Result<Dec
 
         for message in messages {
             match message.contents() {
-                MessageContents::RDAStatusData(status) => {
+                MessageContents::RdaStatusData(status) => {
                     rda_status_count += 1;
                     if build_number.is_none() {
                         build_number = Some(status.build_number());
@@ -176,7 +176,7 @@ fn validation_failures(result: &DecodeResult) -> Vec<String> {
     // Build number check
     if !result.build_number.is_known() {
         failures.push(format!(
-            "Unknown build number: {:?}. Add a new variant to RDABuildNumber.",
+            "Unknown build number: {:?}. Add a new variant to RdaBuildNumber.",
             result.build_number
         ));
     } else if result.build_number > MAX_SUPPORTED_BUILD {
@@ -223,7 +223,7 @@ fn emit_build_annotations(site: &str, result: &DecodeResult) {
     if !result.build_number.is_known() {
         println!(
             "::error file=nexrad-data/tests/live_decode.rs,title=Unknown Build::\
-             Site {} reported unknown build {:?}. Add new variant to RDABuildNumber enum.",
+             Site {} reported unknown build {:?}. Add new variant to RdaBuildNumber enum.",
             site, result.build_number
         );
     } else if result.build_number > MAX_SUPPORTED_BUILD {

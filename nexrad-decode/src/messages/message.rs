@@ -144,59 +144,59 @@ pub(super) fn decode_fixed_segment_contents<'a>(
     message_type: MessageType,
 ) -> Result<MessageContents<'a>> {
     Ok(match message_type {
-        MessageType::RDAStatusData => {
+        MessageType::RdaStatusData => {
             let rda_status_message = rda_status_data::Message::parse(reader)?;
-            MessageContents::RDAStatusData(Box::new(rda_status_message))
+            MessageContents::RdaStatusData(Box::new(rda_status_message))
         }
-        MessageType::RDAPerformanceMaintenanceData => {
+        MessageType::RdaPerformanceMaintenanceData => {
             let perf_maint_message = performance_maintenance_data::Message::parse(reader)?;
             MessageContents::PerformanceMaintenanceData(Box::new(perf_maint_message))
         }
-        MessageType::RDAVolumeCoveragePattern => {
+        MessageType::RdaVolumeCoveragePattern => {
             let volume_coverage_message = volume_coverage_pattern::Message::parse(reader)?;
             MessageContents::VolumeCoveragePattern(Box::new(volume_coverage_message))
         }
-        MessageType::RDAClutterFilterMap => {
+        MessageType::RdaClutterFilterMap => {
             let clutter_filter_message = clutter_filter_map::Message::parse(reader)?;
             MessageContents::ClutterFilterMap(Box::new(clutter_filter_message))
         }
-        MessageType::RDAConsoleMessage | MessageType::RPGConsoleMessage => {
+        MessageType::RdaConsoleMessage | MessageType::RpgConsoleMessage => {
             let console_msg = console_message::Message::parse(reader)?;
             MessageContents::ConsoleMessage(Box::new(console_msg))
         }
-        MessageType::RDALoopBackTest | MessageType::RPGLoopBackTest => {
+        MessageType::RdaLoopBackTest | MessageType::RpgLoopBackTest => {
             let loopback_msg = loopback_test::Message::parse(reader)?;
             MessageContents::LoopbackTest(Box::new(loopback_msg))
         }
-        MessageType::RPGRequestForData => {
+        MessageType::RpgRequestForData => {
             let request_msg = request_for_data::Message::parse(reader)?;
             MessageContents::RequestForData(Box::new(request_msg))
         }
-        MessageType::RDAControlCommands => {
+        MessageType::RdaControlCommands => {
             let control_commands_msg = rda_control_commands::Message::parse(reader)?;
-            MessageContents::RDAControlCommands(Box::new(control_commands_msg))
+            MessageContents::RdaControlCommands(Box::new(control_commands_msg))
         }
-        MessageType::RPGClutterCensorZones => {
+        MessageType::RpgClutterCensorZones => {
             let clutter_censor_msg = clutter_censor_zones::Message::parse(reader)?;
             MessageContents::ClutterCensorZones(Box::new(clutter_censor_msg))
         }
-        MessageType::RDAClutterFilterBypassMap => {
+        MessageType::RdaClutterFilterBypassMap => {
             let bypass_map_msg = clutter_filter_bypass_map::Message::parse(reader)?;
             MessageContents::ClutterFilterBypassMap(Box::new(bypass_map_msg))
         }
-        MessageType::RDAPRFData => {
+        MessageType::RdaPrfData => {
             let prf_msg = rda_prf_data::Message::parse(reader)?;
-            MessageContents::RDAPRFData(Box::new(prf_msg))
+            MessageContents::RdaPrfData(Box::new(prf_msg))
         }
-        MessageType::RDALogData => {
+        MessageType::RdaLogData => {
             let log_msg = rda_log_data::Message::parse(reader)?;
-            MessageContents::RDALogData(Box::new(log_msg))
+            MessageContents::RdaLogData(Box::new(log_msg))
         }
-        MessageType::RDAAdaptationData => {
+        MessageType::RdaAdaptationData => {
             let adaptation_msg = rda_adaptation_data::Message::parse(reader)?;
-            MessageContents::RDAAdaptationData(Box::new(adaptation_msg))
+            MessageContents::RdaAdaptationData(Box::new(adaptation_msg))
         }
-        MessageType::RDADigitalRadarData => {
+        MessageType::RdaDigitalRadarData => {
             let legacy_msg = digital_radar_data_legacy::Message::parse(reader)?;
             MessageContents::DigitalRadarDataLegacy(Box::new(legacy_msg))
         }

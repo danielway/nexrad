@@ -256,19 +256,19 @@ fn test_chunk_metadata_azimuth_rates_match_vcp() {
 fn test_chunk_characteristics_equality() {
     let char1 = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
     let char2 = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
     let char3 = ChunkCharacteristics {
         chunk_type: ChunkType::End,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
@@ -282,13 +282,13 @@ fn test_chunk_characteristics_hash() {
 
     let char1 = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
     let char2 = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
@@ -317,7 +317,7 @@ fn test_chunk_timing_stats_add_and_retrieve() {
 
     let characteristics = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
@@ -342,7 +342,7 @@ fn test_chunk_timing_stats_average() {
 
     let characteristics = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
@@ -369,13 +369,13 @@ fn test_chunk_timing_stats_different_characteristics() {
 
     let char1 = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
     let char2 = ChunkCharacteristics {
         chunk_type: ChunkType::End,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
@@ -412,7 +412,7 @@ fn test_chunk_timing_stats_rolling_window() {
 
     let characteristics = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
@@ -439,7 +439,7 @@ fn test_chunk_timing_stats_attempts_tracking() {
 
     let characteristics = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 
@@ -460,7 +460,7 @@ fn test_chunk_timing_stats_clone() {
 
     let characteristics = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
-        waveform_type: WaveformType::CS,
+        waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
     };
 

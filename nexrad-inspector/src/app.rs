@@ -1000,8 +1000,8 @@ impl App {
             if let Some(header) = Self::get_message_header(&msg.data) {
                 let msg_type = header.message_type();
                 match msg_type {
-                    MessageType::RDADigitalRadarData
-                    | MessageType::RDADigitalRadarDataGenericFormat => {
+                    MessageType::RdaDigitalRadarData
+                    | MessageType::RdaDigitalRadarDataGenericFormat => {
                         radar_data_count += 1;
                     }
                     _ => {
@@ -1059,8 +1059,8 @@ impl App {
                 let msg_type = header.message_type();
                 if matches!(
                     msg_type,
-                    MessageType::RDADigitalRadarData
-                        | MessageType::RDADigitalRadarDataGenericFormat
+                    MessageType::RdaDigitalRadarData
+                        | MessageType::RdaDigitalRadarDataGenericFormat
                 ) {
                     // Parse the message to get detailed radar data
                     if let Ok(parsed_messages) = decode_messages(&msg.data) {
@@ -1150,22 +1150,22 @@ impl App {
         let mut type_list: Vec<_> = types
             .iter()
             .map(|t| match t {
-                MessageType::RDAStatusData => "Status",
-                MessageType::RDAPerformanceMaintenanceData => "Perf/Maint",
-                MessageType::RDAConsoleMessage => "RDA Console",
-                MessageType::RDAVolumeCoveragePattern => "RDA VCP",
-                MessageType::RDAControlCommands => "Control",
-                MessageType::RPGVolumeCoveragePattern => "RPG VCP",
-                MessageType::RPGClutterCensorZones => "Clutter Zones",
-                MessageType::RPGRequestForData => "Request",
-                MessageType::RPGConsoleMessage => "RPG Console",
-                MessageType::RDALoopBackTest => "RDA Loopback",
-                MessageType::RPGLoopBackTest => "RPG Loopback",
-                MessageType::RDAClutterFilterBypassMap => "Clutter Bypass",
-                MessageType::RDAClutterFilterMap => "Clutter Map",
-                MessageType::RDAAdaptationData => "Adaptation",
-                MessageType::RDAPRFData => "PRF",
-                MessageType::RDALogData => "Log",
+                MessageType::RdaStatusData => "Status",
+                MessageType::RdaPerformanceMaintenanceData => "Perf/Maint",
+                MessageType::RdaConsoleMessage => "RDA Console",
+                MessageType::RdaVolumeCoveragePattern => "RDA VCP",
+                MessageType::RdaControlCommands => "Control",
+                MessageType::RpgVolumeCoveragePattern => "RPG VCP",
+                MessageType::RpgClutterCensorZones => "Clutter Zones",
+                MessageType::RpgRequestForData => "Request",
+                MessageType::RpgConsoleMessage => "RPG Console",
+                MessageType::RdaLoopBackTest => "RDA Loopback",
+                MessageType::RpgLoopBackTest => "RPG Loopback",
+                MessageType::RdaClutterFilterBypassMap => "Clutter Bypass",
+                MessageType::RdaClutterFilterMap => "Clutter Map",
+                MessageType::RdaAdaptationData => "Adaptation",
+                MessageType::RdaPrfData => "PRF",
+                MessageType::RdaLogData => "Log",
                 _ => "Other",
             })
             .collect();

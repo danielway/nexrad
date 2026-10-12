@@ -35,10 +35,10 @@ mod performance_check_status;
 pub use performance_check_status::PerformanceCheckStatus;
 
 mod rda_status;
-pub use rda_status::RDAStatus;
+pub use rda_status::RdaStatus;
 
 mod rms_control_status;
-pub use rms_control_status::RMSControlStatus;
+pub use rms_control_status::RmsControlStatus;
 
 mod scan_data_flags;
 pub use scan_data_flags::ScanDataFlags;
@@ -56,7 +56,7 @@ mod volume_coverage_pattern;
 pub use volume_coverage_pattern::VolumeCoveragePatternNumber;
 
 mod rda_build_number;
-pub use rda_build_number::RDABuildNumber;
+pub use rda_build_number::RdaBuildNumber;
 
 mod message;
 pub use message::Message;

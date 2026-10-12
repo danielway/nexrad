@@ -1,6 +1,6 @@
 /// Contains summary information from the Volume Coverage Pattern message.
 #[derive(Clone, PartialEq, Debug)]
-pub struct VCPInfo {
+pub struct VcpInfo {
     /// VCP pattern number (e.g., 12, 31, 212).
     pub pattern_number: u16,
     /// VCP version number.
@@ -14,12 +14,12 @@ pub struct VCPInfo {
     /// VCP features enabled (SAILS, MRLE, MPDA, etc.).
     pub vcp_features: Vec<String>,
     /// Information about each elevation cut.
-    pub elevations: Vec<VCPElevationInfo>,
+    pub elevations: Vec<VcpElevationInfo>,
 }
 
 /// Summary information about a single elevation cut in a VCP.
 #[derive(Clone, PartialEq, Debug)]
-pub struct VCPElevationInfo {
+pub struct VcpElevationInfo {
     /// Elevation angle in degrees.
     pub elevation_angle: f64,
     /// Channel configuration description.
@@ -35,7 +35,7 @@ pub struct VCPElevationInfo {
 }
 
 /// Helper function to extract Volume Coverage Pattern information from a message
-pub fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Message) -> VCPInfo {
+pub fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Message) -> VcpInfo {
     let mut vcp_features = Vec::new();
 
     if message.header().is_sails_vcp() {
@@ -95,7 +95,7 @@ pub fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Mess
             special_cut_type = Some("Base tilt".to_string());
         }
 
-        elevations.push(VCPElevationInfo {
+        elevations.push(VcpElevationInfo {
             elevation_angle: elev.elevation_angle(),
             channel_configuration: format!("{:?}", elev.channel_configuration()),
             waveform_type: format!("{:?}", elev.waveform_type()),
@@ -106,7 +106,7 @@ pub fn extract_vcp_info(message: &crate::messages::volume_coverage_pattern::Mess
     }
 
     let doppler_res = message.header().doppler_velocity_resolution();
-    VCPInfo {
+    VcpInfo {
         pattern_number: message.header().pattern_number(),
         version: message.header().version(),
         number_of_elevation_cuts: message.header().number_of_elevation_cuts(),

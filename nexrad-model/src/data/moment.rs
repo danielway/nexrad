@@ -8,7 +8,7 @@ use uom::si::{f64::Length, length::kilometer};
 
 /// Common interface for types that provide gate-level moment data.
 ///
-/// Both [`MomentData`] and [`CFPMomentData`] implement this trait, providing
+/// Both [`MomentData`] and [`CfpMomentData`] implement this trait, providing
 /// access to shared gate metadata, scale/offset encoding parameters, and raw
 /// gate values. Only the decoded value semantics differ between them.
 pub trait DataMoment {
@@ -92,7 +92,7 @@ macro_rules! impl_data_moment {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
-pub enum CFPStatus {
+pub enum CfpStatus {
     /// Clutter filter not applied.
     FilterNotApplied,
     /// Point clutter filter applied.
@@ -106,7 +106,7 @@ pub enum CFPStatus {
 /// Encoded moment data from a radial containing gate metadata and raw values.
 ///
 /// This is an internal type providing gate metadata accessors (count, range, interval) shared
-/// by both [`MomentData`] and [`CFPMomentData`]. Use those public wrapper types for decoded
+/// by both [`MomentData`] and [`CfpMomentData`]. Use those public wrapper types for decoded
 /// gate values and access to gate metadata via the [`DataMoment`] trait.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -324,9 +324,9 @@ impl From<&MomentValue> for GateStatus {
 /// A decoded CFP gate value. Raw values 0–7 are status codes; values 8+ are numeric.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum CFPMomentValue {
+pub enum CfpMomentValue {
     /// A CFP status code (raw values 0–7).
-    Status(CFPStatus),
+    Status(CfpStatus),
     /// A decoded floating-point CFP value (raw values 8+).
     Value(f32),
 }
@@ -336,15 +336,15 @@ pub enum CFPMomentValue {
 /// Gate metadata (count, range, interval) is available through the [`DataMoment`] trait —
 /// see [`gate_count`](DataMoment::gate_count), [`first_gate_range_km`](DataMoment::first_gate_range_km),
 /// and [`gate_interval_km`](DataMoment::gate_interval_km).
-/// Use [`values`](CFPMomentData::values) to decode gates with CFP-specific semantics.
+/// Use [`values`](CfpMomentData::values) to decode gates with CFP-specific semantics.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
-pub struct CFPMomentData {
+pub struct CfpMomentData {
     inner: MomentDataBlock,
 }
 
-impl CFPMomentData {
+impl CfpMomentData {
     /// Create new CFP moment data from fixed-point encoding.
     pub fn from_fixed_point(
         gate_count: u16,
@@ -372,22 +372,22 @@ impl CFPMomentData {
     ///
     /// Raw values 0–7 are decoded as CFP status codes. Values 8+ are decoded as
     /// floating-point values using the moment's scale and offset.
-    pub fn iter(&self) -> impl Iterator<Item = CFPMomentValue> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = CfpMomentValue> + '_ {
         let scale = self.inner.scale;
         let offset = self.inner.offset;
 
         self.inner
             .raw_gate_values()
             .map(move |raw_value| match raw_value {
-                0 => CFPMomentValue::Status(CFPStatus::FilterNotApplied),
-                1 => CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied),
-                2 => CFPMomentValue::Status(CFPStatus::DualPolOnlyFilterApplied),
-                3..=7 => CFPMomentValue::Status(CFPStatus::Reserved(raw_value as u8)),
+                0 => CfpMomentValue::Status(CfpStatus::FilterNotApplied),
+                1 => CfpMomentValue::Status(CfpStatus::PointClutterFilterApplied),
+                2 => CfpMomentValue::Status(CfpStatus::DualPolOnlyFilterApplied),
+                3..=7 => CfpMomentValue::Status(CfpStatus::Reserved(raw_value as u8)),
                 _ => {
                     if scale == 0.0 {
-                        CFPMomentValue::Value(raw_value as f32)
+                        CfpMomentValue::Value(raw_value as f32)
                     } else {
-                        CFPMomentValue::Value((raw_value as f32 - offset) / scale)
+                        CfpMomentValue::Value((raw_value as f32 - offset) / scale)
                     }
                 }
             })
@@ -395,9 +395,9 @@ impl CFPMomentData {
 
     /// Decoded CFP gate values collected into a `Vec`. Prefer [`iter`](Self::iter) when
     /// processing values sequentially to avoid allocation.
-    pub fn values(&self) -> Vec<CFPMomentValue> {
+    pub fn values(&self) -> Vec<CfpMomentValue> {
         self.iter().collect()
     }
 }
 
-impl_data_moment!(CFPMomentData);
+impl_data_moment!(CfpMomentData);

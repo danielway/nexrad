@@ -159,25 +159,25 @@ fn hash_moment_values(values: &[nexrad_model::data::MomentValue]) -> String {
     hex::encode(hasher.finalize())
 }
 
-fn hash_cfp_moment_values(values: &[nexrad_model::data::CFPMomentValue]) -> String {
-    use nexrad_model::data::{CFPMomentValue, CFPStatus};
+fn hash_cfp_moment_values(values: &[nexrad_model::data::CfpMomentValue]) -> String {
+    use nexrad_model::data::{CfpMomentValue, CfpStatus};
 
     let mut hasher = Sha256::new();
     for v in values {
         match v {
-            CFPMomentValue::Value(f) => {
+            CfpMomentValue::Value(f) => {
                 hasher.update(f.to_le_bytes());
             }
-            CFPMomentValue::Status(CFPStatus::FilterNotApplied) => {
+            CfpMomentValue::Status(CfpStatus::FilterNotApplied) => {
                 hasher.update([0u8]);
             }
-            CFPMomentValue::Status(CFPStatus::PointClutterFilterApplied) => {
+            CfpMomentValue::Status(CfpStatus::PointClutterFilterApplied) => {
                 hasher.update([1u8]);
             }
-            CFPMomentValue::Status(CFPStatus::DualPolOnlyFilterApplied) => {
+            CfpMomentValue::Status(CfpStatus::DualPolOnlyFilterApplied) => {
                 hasher.update([2u8]);
             }
-            CFPMomentValue::Status(CFPStatus::Reserved(code)) => {
+            CfpMomentValue::Status(CfpStatus::Reserved(code)) => {
                 hasher.update([3u8, *code]);
             }
         }

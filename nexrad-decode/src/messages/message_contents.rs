@@ -12,7 +12,7 @@ pub enum MessageContents<'a> {
     /// Message type 2 "RDA Status Data" contains information about the current RDA state, system
     /// control, operating status, scanning strategy, performance parameters like transmitter power
     /// and calibration, and system alarms.
-    RDAStatusData(Box<rda_status_data::Message<'a>>),
+    RdaStatusData(Box<rda_status_data::Message<'a>>),
 
     /// Message type 3 "Performance/Maintenance Data" contains detailed performance and maintenance
     /// information about the RDA system, including communications, AME, power, transmitter,
@@ -50,7 +50,7 @@ pub enum MessageContents<'a> {
 
     /// Message type 6 "RDA Control Commands" contains commands sent from the RPG to control the
     /// RDA system's state, scanning strategy, and various operational parameters.
-    RDAControlCommands(Box<rda_control_commands::Message<'a>>),
+    RdaControlCommands(Box<rda_control_commands::Message<'a>>),
 
     /// Message type 8 "Clutter Censor Zones" contains override regions that control clutter
     /// filtering behavior for specific range, azimuth, and elevation zones.
@@ -62,15 +62,15 @@ pub enum MessageContents<'a> {
 
     /// Message type 32 "RDA PRF Data" contains pulse repetition frequency data for each waveform
     /// type used by the radar.
-    RDAPRFData(Box<rda_prf_data::Message<'a>>),
+    RdaPrfData(Box<rda_prf_data::Message<'a>>),
 
     /// Message type 33 "RDA Log Data" contains log file data from the RDA, potentially compressed.
-    RDALogData(Box<rda_log_data::Message<'a>>),
+    RdaLogData(Box<rda_log_data::Message<'a>>),
 
     /// Message type 18 "RDA Adaptation Data" contains site-specific configuration parameters
     /// for the radar system, including antenna parameters, site location, RF path losses,
     /// calibration values, temperature alarm thresholds, and transmitter characteristics.
-    RDAAdaptationData(Box<rda_adaptation_data::Message<'a>>),
+    RdaAdaptationData(Box<rda_adaptation_data::Message<'a>>),
 
     /// Message type not recognized or not yet implemented.
     Other,

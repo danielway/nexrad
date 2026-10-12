@@ -250,7 +250,7 @@ fn test_metadata_messages_present() {
 
             for message in decode_messages(record.data()).expect("should decode") {
                 match message.contents() {
-                    MessageContents::RDAStatusData(_) => found_status = true,
+                    MessageContents::RdaStatusData(_) => found_status = true,
                     MessageContents::VolumeCoveragePattern(_) => found_vcp = true,
                     MessageContents::ClutterFilterMap(_) => found_clutter_map = true,
                     _ => {}

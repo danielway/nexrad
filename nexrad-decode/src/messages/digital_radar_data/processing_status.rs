@@ -2,9 +2,9 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProcessingStatus {
     /// Receiver noise (RxR Noise) processing.
-    RxRNoise,
+    RxrNoise,
     /// Clutter Bypass Thresholding (CBT) processing.
-    CBT,
+    Cbt,
     /// Other processing status value.
     Other(u16),
 }

@@ -12,7 +12,7 @@
 //! spanning the earliest available NEXRAD data (June 1991) through Build 24.0 (2026).
 
 use nexrad_data::volume;
-use nexrad_decode::messages::rda_status_data::RDABuildNumber;
+use nexrad_decode::messages::rda_status_data::RdaBuildNumber;
 use nexrad_decode::messages::{decode_messages, MessageContents};
 
 /// Helper: decode a volume file and extract analysis data.
@@ -21,7 +21,7 @@ fn analyze_volume(data: &[u8]) -> VolumeAnalysis {
         .decompress()
         .expect("decompresses gzip file");
 
-    let mut build_number: Option<RDABuildNumber> = None;
+    let mut build_number: Option<RdaBuildNumber> = None;
     let mut raw_build_value: Option<u16> = None;
     let mut legacy_vol_count: usize = 0;
     let mut modern_vol_count: usize = 0;
@@ -46,7 +46,7 @@ fn analyze_volume(data: &[u8]) -> VolumeAnalysis {
 
         for message in &messages {
             match message.contents() {
-                MessageContents::RDAStatusData(status) => {
+                MessageContents::RdaStatusData(status) => {
                     if build_number.is_none() {
                         build_number = Some(status.build_number());
                         raw_build_value = Some(status.raw_rda_build_number());
@@ -118,7 +118,7 @@ fn analyze_volume(data: &[u8]) -> VolumeAnalysis {
 }
 
 struct VolumeAnalysis {
-    build_number: Option<RDABuildNumber>,
+    build_number: Option<RdaBuildNumber>,
     raw_build_value: Option<u16>,
     legacy_vol_count: usize,
     modern_vol_count: usize,
@@ -922,46 +922,46 @@ fn test_rad_block_format_across_eras() {
     }
 }
 
-/// Verifies the RDABuildNumber scaling logic produces correct results for
+/// Verifies the RdaBuildNumber scaling logic produces correct results for
 /// known raw values.
 #[test]
 fn test_build_number_scaling() {
     // Build 19.0: raw value 190 (190/100 = 1.9 < 2.0, so 190/10 = 19.0)
     assert_eq!(
-        RDABuildNumber::from_raw(190),
-        RDABuildNumber::Build19_0,
+        RdaBuildNumber::from_raw(190),
+        RdaBuildNumber::Build19_0,
         "raw 190 should decode to Build 19.0"
     );
 
     // Build 20.0: raw value 200 (200/100 = 2.0, not > 2.0, so 200/10 = 20.0)
     assert_eq!(
-        RDABuildNumber::from_raw(200),
-        RDABuildNumber::Build20_0,
+        RdaBuildNumber::from_raw(200),
+        RdaBuildNumber::Build20_0,
         "raw 200 should decode to Build 20.0"
     );
 
     // Build 21.0: raw value 2100 (2100/100 = 21.0 > 2.0, so 2100/100 = 21.0)
     assert_eq!(
-        RDABuildNumber::from_raw(2100),
-        RDABuildNumber::Build21_0,
+        RdaBuildNumber::from_raw(2100),
+        RdaBuildNumber::Build21_0,
         "raw 2100 should decode to Build 21.0"
     );
 
     // Build 24.0: raw value 2400 (2400/100 = 24.0 > 2.0, so 2400/100 = 24.0)
     assert_eq!(
-        RDABuildNumber::from_raw(2400),
-        RDABuildNumber::Build24_0,
+        RdaBuildNumber::from_raw(2400),
+        RdaBuildNumber::Build24_0,
         "raw 2400 should decode to Build 24.0"
     );
 
     // Build 12.0: raw value 120 (120/100 = 1.2 < 2.0, so 120/10 = 12.0)
     assert_eq!(
-        RDABuildNumber::from_raw(120),
-        RDABuildNumber::Build12_0,
+        RdaBuildNumber::from_raw(120),
+        RdaBuildNumber::Build12_0,
         "raw 120 should decode to Build 12.0"
     );
 
     // Verify legacy boundary
-    assert!(RDABuildNumber::Build19_0.uses_legacy_volume_data_block());
-    assert!(!RDABuildNumber::Build20_0.uses_legacy_volume_data_block());
+    assert!(RdaBuildNumber::Build19_0.uses_legacy_volume_data_block());
+    assert!(!RdaBuildNumber::Build20_0.uses_legacy_volume_data_block());
 }

@@ -87,9 +87,9 @@ impl MessageHeader {
             0 => RedundantChannel::LegacySingleChannel,
             1 => RedundantChannel::LegacyRedundantChannel1,
             2 => RedundantChannel::LegacyRedundantChannel2,
-            8 => RedundantChannel::ORDASingleChannel,
-            9 => RedundantChannel::ORDARedundantChannel1,
-            10 => RedundantChannel::ORDARedundantChannel2,
+            8 => RedundantChannel::OrdaSingleChannel,
+            9 => RedundantChannel::OrdaRedundantChannel1,
+            10 => RedundantChannel::OrdaRedundantChannel2,
             other => RedundantChannel::Unknown(other),
         }
     }
@@ -97,35 +97,35 @@ impl MessageHeader {
     /// Message type discriminator.
     pub fn message_type(&self) -> MessageType {
         match self.message_type {
-            1 => MessageType::RDADigitalRadarData,
-            2 => MessageType::RDAStatusData,
-            3 => MessageType::RDAPerformanceMaintenanceData,
-            4 => MessageType::RDAConsoleMessage,
-            5 => MessageType::RDAVolumeCoveragePattern,
-            6 => MessageType::RDAControlCommands,
-            7 => MessageType::RPGVolumeCoveragePattern,
-            8 => MessageType::RPGClutterCensorZones,
-            9 => MessageType::RPGRequestForData,
-            10 => MessageType::RPGConsoleMessage,
-            11 => MessageType::RDALoopBackTest,
-            12 => MessageType::RPGLoopBackTest,
-            13 => MessageType::RDAClutterFilterBypassMap,
+            1 => MessageType::RdaDigitalRadarData,
+            2 => MessageType::RdaStatusData,
+            3 => MessageType::RdaPerformanceMaintenanceData,
+            4 => MessageType::RdaConsoleMessage,
+            5 => MessageType::RdaVolumeCoveragePattern,
+            6 => MessageType::RdaControlCommands,
+            7 => MessageType::RpgVolumeCoveragePattern,
+            8 => MessageType::RpgClutterCensorZones,
+            9 => MessageType::RpgRequestForData,
+            10 => MessageType::RpgConsoleMessage,
+            11 => MessageType::RdaLoopBackTest,
+            12 => MessageType::RpgLoopBackTest,
+            13 => MessageType::RdaClutterFilterBypassMap,
             14 => MessageType::Spare1,
-            15 => MessageType::RDAClutterFilterMap,
-            16 => MessageType::ReservedFAARMSOnly1,
-            17 => MessageType::ReservedFAARMSOnly2,
-            18 => MessageType::RDAAdaptationData,
+            15 => MessageType::RdaClutterFilterMap,
+            16 => MessageType::ReservedFaaRmsOnly1,
+            17 => MessageType::ReservedFaaRmsOnly2,
+            18 => MessageType::RdaAdaptationData,
             20 => MessageType::Reserved1,
             21 => MessageType::Reserved2,
             22 => MessageType::Reserved3,
             23 => MessageType::Reserved4,
-            24 => MessageType::ReservedFAARMSOnly3,
-            25 => MessageType::ReservedFAARMSOnly4,
-            26 => MessageType::ReservedFAARMSOnly5,
+            24 => MessageType::ReservedFaaRmsOnly3,
+            25 => MessageType::ReservedFaaRmsOnly4,
+            26 => MessageType::ReservedFaaRmsOnly5,
             29 => MessageType::Reserved5,
-            31 => MessageType::RDADigitalRadarDataGenericFormat,
-            32 => MessageType::RDAPRFData,
-            33 => MessageType::RDALogData,
+            31 => MessageType::RdaDigitalRadarDataGenericFormat,
+            32 => MessageType::RdaPrfData,
+            33 => MessageType::RdaLogData,
             _ => MessageType::Unknown(self.message_type),
         }
     }
@@ -150,7 +150,7 @@ impl MessageHeader {
         // segment_size field contains the actual content halfwords rather than the
         // ICD-specified 0xFFFF sentinel. We treat Type 31 as variable-length regardless.
         self.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE
-            && self.message_type() != MessageType::RDADigitalRadarDataGenericFormat
+            && self.message_type() != MessageType::RdaDigitalRadarDataGenericFormat
     }
 
     /// If the message is [MessageHeader::segmented], this indicates the number of segments in the

@@ -18,7 +18,7 @@ pub enum Error {
     /// An AWS-related error occurred (requires `aws` feature).
     #[cfg(feature = "aws")]
     #[error(transparent)]
-    AWS(#[from] aws::AWSError),
+    Aws(#[from] aws::AwsError),
     /// An error occurred during message decoding.
     #[error("error decoding NEXRAD data")]
     Decode(#[from] nexrad_decode::result::Error),
@@ -65,7 +65,7 @@ pub mod aws {
     /// Errors that can occur during AWS S3 operations.
     #[derive(ThisError, Debug)]
     #[non_exhaustive]
-    pub enum AWSError {
+    pub enum AwsError {
         /// S3 list objects response was unexpectedly truncated.
         #[error("unexpected truncated S3 list objects response")]
         TruncatedListObjectsResponse,

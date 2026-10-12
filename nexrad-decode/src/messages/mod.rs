@@ -16,7 +16,13 @@ pub mod volume_coverage_pattern;
 
 mod raw;
 pub(crate) use raw::primitive_aliases;
-pub use raw::{MessageHeader, MessageType, RedundantChannel};
+pub use raw::RedundantChannel;
+
+mod message_header;
+pub use message_header::MessageHeader;
+
+mod message_type;
+pub use message_type::MessageType;
 
 mod message;
 pub use message::{Message, MessageHeaders};
@@ -47,17 +53,17 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
     let mut messages = Vec::new();
     let mut accumulator = SegmentAccumulator::new();
 
-    while reader.remaining().len() >= size_of::<MessageHeader>() {
+    while reader.remaining().len() >= MessageHeader::SIZE {
         let offset = reader.position();
 
-        let header = match reader.take_ref::<MessageHeader>() {
-            Ok(h) => h,
+        let header = match reader.take_ref::<raw::MessageHeader>() {
+            Ok(h) => MessageHeader::from_raw(h),
             Err(_) => break,
         };
 
         // Variable-length messages
         if !header.segmented() {
-            match decode_variable_length_message(&mut reader, header, offset) {
+            match decode_variable_length_message(&mut reader, header.clone(), offset) {
                 Ok(msg) => messages.push(msg),
                 Err(e) => {
                     if matches!(e, Error::UnexpectedEof) {
@@ -87,18 +93,18 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
         // parsers can read structs that extend beyond the declared message_size.
         let payload = if segment_count > 1 {
             let payload_size =
-                (header.message_size_bytes() as usize).saturating_sub(size_of::<MessageHeader>());
+                (header.message_size_bytes() as usize).saturating_sub(MessageHeader::SIZE);
             let payload = match reader.take_bytes(payload_size) {
                 Ok(p) => p,
                 Err(_) => break,
             };
-            let consumed = size_of::<MessageHeader>() + payload_size;
+            let consumed = MessageHeader::SIZE + payload_size;
             if consumed < SEGMENT_FRAME_SIZE {
                 reader.advance(SEGMENT_FRAME_SIZE - consumed);
             }
             payload
         } else {
-            let content_size = SEGMENT_FRAME_SIZE - size_of::<MessageHeader>();
+            let content_size = SEGMENT_FRAME_SIZE - MessageHeader::SIZE;
             match reader.take_bytes(content_size) {
                 Ok(p) => p,
                 Err(_) => break,
@@ -180,7 +186,7 @@ pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
 /// Constructs a `SegmentedSliceReader` over the payloads and dispatches to
 /// `decode_fixed_segment_contents`.
 fn build_fixed_segment_message<'a>(
-    headers: &[&'a MessageHeader],
+    headers: &[MessageHeader<'a>],
     payloads: &[&'a [u8]],
     offset: usize,
 ) -> Result<Message<'a>> {
@@ -192,7 +198,7 @@ fn build_fixed_segment_message<'a>(
     let total_size = headers.len() * SEGMENT_FRAME_SIZE;
 
     let message_headers = if headers.len() == 1 {
-        MessageHeaders::Single(headers[0])
+        MessageHeaders::Single(headers[0].clone())
     } else {
         MessageHeaders::Multiple(headers.to_vec())
     };
@@ -203,7 +209,7 @@ fn build_fixed_segment_message<'a>(
 /// Parse a variable-length message (e.g. Type 31 Digital Radar Data).
 fn decode_variable_length_message<'a>(
     reader: &mut SliceReader<'a>,
-    header: &'a MessageHeader,
+    header: MessageHeader<'a>,
     offset: usize,
 ) -> Result<Message<'a>> {
     let contents = if header.message_type() == MessageType::RdaDigitalRadarDataGenericFormat {
@@ -212,7 +218,7 @@ fn decode_variable_length_message<'a>(
     } else {
         // Unknown variable-length message type — skip its payload
         let payload_size =
-            (header.message_size_bytes() as usize).saturating_sub(size_of::<MessageHeader>());
+            (header.message_size_bytes() as usize).saturating_sub(MessageHeader::SIZE);
         reader.advance(payload_size);
         MessageContents::Other
     };
@@ -228,7 +234,7 @@ fn decode_variable_length_message<'a>(
 
 /// Accumulates segments for an in-progress multi-segment message.
 struct SegmentAccumulator<'a> {
-    headers: Vec<&'a MessageHeader>,
+    headers: Vec<MessageHeader<'a>>,
     payloads: Vec<&'a [u8]>,
     first_offset: usize,
     expected_count: u16,
@@ -253,7 +259,7 @@ impl<'a> SegmentAccumulator<'a> {
     }
 
     /// Add a segment. Returns `true` if the message is now complete.
-    fn push(&mut self, header: &'a MessageHeader, payload: &'a [u8]) -> bool {
+    fn push(&mut self, header: MessageHeader<'a>, payload: &'a [u8]) -> bool {
         self.headers.push(header);
         self.payloads.push(payload);
         self.headers.len() as u16 >= self.expected_count

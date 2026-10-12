@@ -23,5 +23,4 @@ nexrad-data = { path = "../nexrad-data", features = ["aws"] }
 nexrad-decode = { path = "../nexrad-decode" }
 nexrad-model = { path = "../nexrad-model" }
 chrono = { workspace = true }
-zerocopy = { workspace = true }
 tokio = { workspace = true }

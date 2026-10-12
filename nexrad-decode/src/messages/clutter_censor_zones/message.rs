@@ -1,4 +1,4 @@
-use crate::messages::clutter_censor_zones::raw;
+use crate::messages::clutter_censor_zones::{raw, Region};
 use crate::result::Result;
 use crate::segmented_slice_reader::SegmentedSliceReader;
 use std::borrow::Cow;
@@ -13,7 +13,7 @@ use std::fmt::Debug;
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Message<'a> {
     header: Cow<'a, raw::Header>,
-    regions: Cow<'a, [raw::Region]>,
+    regions: Vec<Region<'a>>,
 }
 
 impl<'a> Message<'a> {
@@ -25,7 +25,7 @@ impl<'a> Message<'a> {
 
         Ok(Self {
             header: Cow::Borrowed(header),
-            regions: Cow::Borrowed(regions),
+            regions: regions.iter().map(Region::from_raw).collect(),
         })
     }
 
@@ -35,7 +35,7 @@ impl<'a> Message<'a> {
     }
 
     /// The override regions defined in this message.
-    pub fn regions(&self) -> &[raw::Region] {
+    pub fn regions(&self) -> &[Region<'a>] {
         &self.regions
     }
 
@@ -43,7 +43,7 @@ impl<'a> Message<'a> {
     pub fn into_owned(self) -> Message<'static> {
         Message {
             header: Cow::Owned(self.header.into_owned()),
-            regions: Cow::Owned(self.regions.into_owned()),
+            regions: self.regions.into_iter().map(Region::into_owned).collect(),
         }
     }
 }

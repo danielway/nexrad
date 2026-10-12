@@ -8,6 +8,9 @@
 mod message;
 pub use message::Message;
 
+mod region;
+pub use region::{OperatorSelectCode, Region};
+
 pub(crate) mod raw;
 
 #[cfg(test)]

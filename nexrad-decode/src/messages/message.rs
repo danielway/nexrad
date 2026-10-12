@@ -15,9 +15,9 @@ use crate::segmented_slice_reader::SegmentedSliceReader;
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageHeaders<'a> {
     /// A single-segment message (most common case).
-    Single(&'a MessageHeader),
+    Single(MessageHeader<'a>),
     /// A multi-segment message with headers from each segment.
-    Multiple(Vec<&'a MessageHeader>),
+    Multiple(Vec<MessageHeader<'a>>),
 }
 
 impl<'a> MessageHeaders<'a> {
@@ -25,10 +25,10 @@ impl<'a> MessageHeaders<'a> {
     ///
     /// For single-segment messages, this returns the only header.
     /// For multi-segment messages, this returns the first segment's header.
-    pub fn primary(&self) -> &'a MessageHeader {
+    pub fn primary(&self) -> &MessageHeader<'a> {
         match self {
             MessageHeaders::Single(h) => h,
-            MessageHeaders::Multiple(headers) => headers[0],
+            MessageHeaders::Multiple(headers) => &headers[0],
         }
     }
 
@@ -36,12 +36,12 @@ impl<'a> MessageHeaders<'a> {
     ///
     /// For single-segment messages, yields one header.
     /// For multi-segment messages, yields headers in segment order.
-    pub fn iter(&self) -> impl Iterator<Item = &'a MessageHeader> + '_ {
-        let slice: &[&'a MessageHeader] = match self {
+    pub fn iter(&self) -> impl Iterator<Item = &MessageHeader<'a>> + '_ {
+        let slice: &[MessageHeader<'a>] = match self {
             MessageHeaders::Single(h) => std::slice::from_ref(h),
             MessageHeaders::Multiple(headers) => headers.as_slice(),
         };
-        slice.iter().copied()
+        slice.iter()
     }
 
     /// Returns the number of segments (headers).
@@ -91,7 +91,7 @@ impl<'a> Message<'a> {
     ///
     /// For single-segment messages, returns the only header.
     /// For multi-segment messages, returns the first segment's header.
-    pub fn header(&self) -> &MessageHeader {
+    pub fn header(&self) -> &MessageHeader<'a> {
         self.headers.primary()
     }
 
@@ -109,7 +109,7 @@ impl<'a> Message<'a> {
     }
 
     /// This message's contents.
-    pub fn contents(&self) -> &MessageContents<'_> {
+    pub fn contents(&self) -> &MessageContents<'a> {
         &self.contents
     }
 

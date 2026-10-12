@@ -9,7 +9,6 @@ use nexrad_data::aws::archive::Identifier;
 use nexrad_data::volume::{self, Record};
 use nexrad_decode::messages::{MessageHeader, MessageType};
 use tokio::task::JoinHandle;
-use zerocopy::FromBytes;
 
 use crate::ui::text_input::TextInput;
 
@@ -677,12 +676,8 @@ impl App {
     }
 
     /// Get the message header for a message
-    pub fn get_message_header(data: &[u8]) -> Option<&MessageHeader> {
-        if data.len() >= std::mem::size_of::<MessageHeader>() {
-            MessageHeader::ref_from_prefix(data).ok().map(|(h, _)| h)
-        } else {
-            None
-        }
+    pub fn get_message_header(data: &[u8]) -> Option<MessageHeader<'_>> {
+        MessageHeader::parse(data).ok()
     }
 
     /// Get the decompressed size for a record (if cached)

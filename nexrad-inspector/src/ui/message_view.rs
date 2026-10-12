@@ -77,7 +77,7 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
 /// Compute hex regions for header/payload visualization
 fn compute_hex_regions(msg_info: &MessageInfo) -> Vec<HexRegion> {
     let mut regions = Vec::new();
-    let header_size = std::mem::size_of::<MessageHeader>();
+    let header_size = MessageHeader::SIZE;
 
     if msg_info.segment_count > 1 {
         // Multi-segment message: each segment is 2432 bytes (header + payload + padding)
@@ -142,7 +142,11 @@ fn render_header_info(frame: &mut Frame, msg_info: &MessageInfo, area: Rect) {
              Sequence: {}\n\
              DateTime: {}\n\
              {}",
-            hdr.message_type, msg_type, hdr.sequence_number, datetime, segment_info
+            hdr.message_type_raw(),
+            msg_type,
+            hdr.sequence_number(),
+            datetime,
+            segment_info
         )
     } else {
         "Unable to parse message header".to_string()
@@ -183,7 +187,7 @@ fn render_parsed_view(frame: &mut Frame, data: &[u8], scroll: usize, area: Rect)
     };
 
     let msg_type = header.message_type();
-    let content_offset = std::mem::size_of::<nexrad_decode::messages::MessageHeader>();
+    let content_offset = MessageHeader::SIZE;
 
     // Parse based on message type - delegate to specialized parsers
     let parsed_text = match msg_type {
@@ -220,7 +224,7 @@ fn render_parsed_view(frame: &mut Frame, data: &[u8], scroll: usize, area: Rect)
         }
         MessageType::RdaPrfData => rda_prf_data::parse_rda_prf_data(data),
         MessageType::RdaLogData => rda_log_data::parse_rda_log_data(data),
-        _ => common::parse_common_header_only(header),
+        _ => common::parse_common_header_only(&header),
     };
 
     // Handle scrolling for parsed text

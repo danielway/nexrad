@@ -61,7 +61,11 @@ fn render_message_list(frame: &mut Frame, app: &mut App, area: Rect) {
 
             let (type_str, datetime_str, segment_str) = if let Some(hdr) = header_info {
                 let msg_type = hdr.message_type();
-                let type_str = format!("{} ({})", hdr.message_type, format_message_type(&msg_type));
+                let type_str = format!(
+                    "{} ({})",
+                    hdr.message_type_raw(),
+                    format_message_type(&msg_type)
+                );
 
                 let datetime_str = hdr
                     .date_time()
@@ -148,19 +152,9 @@ fn format_message_type(msg_type: &MessageType) -> &'static str {
         MessageType::RdaLoopBackTest => "RDA Loopback",
         MessageType::RpgLoopBackTest => "RPG Loopback",
         MessageType::RdaClutterFilterBypassMap => "RDA Clutter Bypass",
-        MessageType::Spare1 => "Spare",
         MessageType::RdaClutterFilterMap => "RDA Clutter Map",
-        MessageType::ReservedFaaRmsOnly1 => "Reserved FAARMS",
-        MessageType::ReservedFaaRmsOnly2 => "Reserved FAARMS",
         MessageType::RdaAdaptationData => "RDA Adaptation",
-        MessageType::Reserved1 => "Reserved",
-        MessageType::Reserved2 => "Reserved",
-        MessageType::Reserved3 => "Reserved",
-        MessageType::Reserved4 => "Reserved",
-        MessageType::ReservedFaaRmsOnly3 => "Reserved FAARMS",
-        MessageType::ReservedFaaRmsOnly4 => "Reserved FAARMS",
-        MessageType::ReservedFaaRmsOnly5 => "Reserved FAARMS",
-        MessageType::Reserved5 => "Reserved",
+        MessageType::Reserved(_) => "Reserved",
         MessageType::RdaDigitalRadarDataGenericFormat => "Digital Radar Data",
         MessageType::RdaPrfData => "RDA PRF",
         MessageType::RdaLogData => "RDA Log",

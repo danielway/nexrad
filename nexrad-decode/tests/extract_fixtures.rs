@@ -56,7 +56,7 @@ fn extract_message_fixtures() {
                 let type_name = format!("{:?}", message.header().message_type());
                 *type_counts.entry(type_name.clone()).or_insert(0) += 1;
 
-                let type_id = message.header().message_type;
+                let type_id = message.header().message_type_raw();
                 if skip_types.contains(&type_id) || extracted.contains_key(&type_id) {
                     continue;
                 }

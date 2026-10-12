@@ -144,6 +144,7 @@ async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
 
     let latest_volume = get_latest_volume(&config.site)
         .await?
+        .volume
         .ok_or(AwsError::LatestVolumeNotFound)?;
 
     let latest_chunk_id = get_latest_chunk(&config.site, latest_volume)
@@ -155,14 +156,7 @@ async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
         .identifier;
 
     // Get VCP from start chunk
-    let latest_metadata_id = ChunkIdentifier::new(
-        config.site.clone(),
-        latest_volume,
-        *latest_chunk_id.date_time_prefix(),
-        1,
-        ChunkType::Start,
-        None,
-    );
+    let latest_metadata_id = latest_chunk_id.with_sequence(1, ChunkType::Start);
     let latest_metadata = download_chunk(&config.site, &latest_metadata_id).await?;
     let vcp = get_latest_vcp(&latest_metadata.chunk)?;
     let elevation_mapper = ElevationChunkMapper::new(&vcp);
@@ -279,11 +273,7 @@ where
     state.previous_chunk_time = chunk_id.upload_date_time();
     state.current_chunk = chunk_id.clone();
 
-    Ok(DownloadedChunk {
-        identifier: chunk_id,
-        chunk,
-        attempts,
-    })
+    Ok(DownloadedChunk::new(chunk_id, chunk, attempts))
 }
 
 /// Helper function to update timing statistics for a downloaded chunk

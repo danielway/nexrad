@@ -34,6 +34,8 @@
 //! - [ChunkIterator] is a pull-based alternative for callers that schedule polling themselves,
 //!   using [ChunkIterator::next_expected_time()] or [ChunkIterator::time_until_next()].
 //! - [list_chunks_in_volume()] and [download_chunk()] are the building blocks for custom polling.
+//!   A client that persisted the last volume it saw can rediscover the current one cheaply with
+//!   [get_latest_volume_from_hint()].
 //!
 //! Both [chunk_stream()] and [ChunkIterator] estimate when the next chunk will be uploaded from
 //! the volume coverage pattern and observed upload timings. That model is an internal detail and
@@ -59,8 +61,7 @@ mod download_chunk;
 pub use download_chunk::download_chunk;
 
 mod get_latest_volume;
-pub use get_latest_volume::get_latest_volume;
-pub(crate) use get_latest_volume::get_latest_volume_counting_calls;
+pub use get_latest_volume::{get_latest_volume, get_latest_volume_from_hint, LatestVolumeResult};
 
 mod list_chunks_in_volume;
 pub use list_chunks_in_volume::list_chunks_in_volume;

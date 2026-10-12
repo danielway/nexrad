@@ -6,9 +6,9 @@
 
 use crate::aws::realtime::scan_timing_projection::ScanTimingProjection;
 use crate::aws::realtime::{
-    download_chunk, estimate_chunk_availability_time, get_latest_volume_counting_calls,
-    list_chunks_in_volume, project_scan_timing, Chunk, ChunkIdentifier, ChunkTimingStats,
-    ChunkType, ElevationChunkMapper, NextChunk, RetryPolicy, RetryState, VolumeIndex,
+    download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
+    project_scan_timing, Chunk, ChunkIdentifier, ChunkTimingStats, ChunkType, ElevationChunkMapper,
+    NextChunk, RetryPolicy, RetryState, VolumeIndex,
 };
 use crate::result::{aws::AwsError, Error, Result};
 use chrono::{DateTime, Duration, Utc};
@@ -19,8 +19,8 @@ use nexrad_decode::messages::volume_coverage_pattern;
 ///
 /// Returned by [`download_chunk`](super::download_chunk), [`ChunkIterator`], and
 /// [`chunk_stream`](super::chunk_stream). The fields are public so they can be read and moved
-/// out, but the struct is `#[non_exhaustive]`: it cannot be constructed outside this crate, and
-/// fields may be added in a minor release.
+/// out. The struct is `#[non_exhaustive]` so fields may be added in a minor release; construct it
+/// with [`DownloadedChunk::new`] rather than a struct literal.
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct DownloadedChunk {
@@ -30,6 +30,18 @@ pub struct DownloadedChunk {
     pub chunk: Chunk,
     /// Number of attempts required to download this chunk.
     pub attempts: usize,
+}
+
+impl DownloadedChunk {
+    /// Creates a downloaded chunk from its identifier, data, and the number of download attempts
+    /// it took.
+    pub fn new(identifier: ChunkIdentifier, chunk: Chunk, attempts: usize) -> Self {
+        Self {
+            identifier,
+            chunk,
+            attempts,
+        }
+    }
 }
 
 /// Result of initializing a [`ChunkIterator`].
@@ -113,8 +125,8 @@ impl ChunkIterator {
         download_policy: RetryPolicy,
         discovery_policy: RetryPolicy,
     ) -> Result<ChunkIteratorInit> {
-        let (latest_volume, calls) = get_latest_volume_counting_calls(site).await?;
-        let volume = latest_volume.ok_or(AwsError::LatestVolumeNotFound)?;
+        let latest = get_latest_volume(site).await?;
+        let volume = latest.volume.ok_or(AwsError::LatestVolumeNotFound)?;
 
         debug!(
             "ChunkIterator initialized for site {} at volume {}",
@@ -131,7 +143,7 @@ impl ChunkIterator {
             download_policy,
             discovery_policy,
             last_chunk_time: None,
-            requests_made: calls,
+            requests_made: latest.calls,
             bytes_downloaded: 0,
         };
 
@@ -192,14 +204,7 @@ impl ChunkIterator {
             }
         } else {
             // Joined mid-volume: fetch the Start chunk for VCP
-            let start_id = ChunkIdentifier::new(
-                self.site.clone(),
-                volume,
-                *latest_chunk.identifier.date_time_prefix(),
-                1,
-                ChunkType::Start,
-                None,
-            );
+            let start_id = latest_chunk.identifier.with_sequence(1, ChunkType::Start);
 
             if let Ok(downloaded) = download_chunk(&self.site, &start_id).await {
                 self.requests_made += 1;
@@ -304,14 +309,7 @@ impl ChunkIterator {
                     if downloaded.identifier.chunk_type() != ChunkType::Start
                         && self.elevation_mapper.is_none()
                     {
-                        let start_id = ChunkIdentifier::new(
-                            self.site.clone(),
-                            volume,
-                            *downloaded.identifier.date_time_prefix(),
-                            1,
-                            ChunkType::Start,
-                            None,
-                        );
+                        let start_id = downloaded.identifier.with_sequence(1, ChunkType::Start);
                         if let Ok(start) = download_chunk(&self.site, &start_id).await {
                             self.requests_made += 1;
                             self.bytes_downloaded += start.chunk.data().len() as u64;
@@ -560,7 +558,7 @@ mod generation_regression_tests {
     use super::*;
     fn id(volume: usize, stamp: &str) -> ChunkIdentifier {
         ChunkIdentifier::from_name(
-            "KBYX".into(),
+            "KBYX",
             VolumeIndex::new(volume),
             format!("{stamp}-001-S"),
             None,

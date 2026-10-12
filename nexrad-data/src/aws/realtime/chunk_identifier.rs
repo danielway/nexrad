@@ -27,7 +27,7 @@ pub struct ChunkIdentifier {
 impl ChunkIdentifier {
     /// Creates a new chunk identifier.
     pub fn new(
-        site: String,
+        site: impl Into<String>,
         volume: VolumeIndex,
         date_time_prefix: NaiveDateTime,
         sequence: usize,
@@ -42,7 +42,7 @@ impl ChunkIdentifier {
         );
 
         Self {
-            site,
+            site: site.into(),
             volume,
             date_time_prefix,
             sequence,
@@ -54,11 +54,14 @@ impl ChunkIdentifier {
 
     /// Creates a new chunk identifier by parsing a chunk name.
     pub fn from_name(
-        site: String,
+        site: impl Into<String>,
         volume: VolumeIndex,
-        name: String,
+        name: impl Into<String>,
         upload_date_time: Option<DateTime<Utc>>,
     ) -> Result<Self> {
+        let site = site.into();
+        let name = name.into();
+
         // Chunk names must be at least 20 characters: "YYYYMMDD-HHMMSS-NNN-T"
         if name.len() < 20 {
             return Err(Error::Aws(AwsError::UnrecognizedChunkFormat));
@@ -131,6 +134,23 @@ impl ChunkIdentifier {
         self.upload_date_time
     }
 
+    /// Returns the identifier of a sibling chunk: the chunk at `sequence` with `chunk_type` in the
+    /// same site, volume, and scan (date-time prefix) as this one.
+    ///
+    /// The sibling's [upload time](Self::upload_date_time) is `None` because it has not been
+    /// downloaded. For example, `id.with_sequence(1, ChunkType::Start)` identifies the Start chunk
+    /// of `id`'s scan.
+    pub fn with_sequence(&self, sequence: usize, chunk_type: ChunkType) -> ChunkIdentifier {
+        ChunkIdentifier::new(
+            self.site.clone(),
+            self.volume,
+            self.date_time_prefix,
+            sequence,
+            chunk_type,
+            None,
+        )
+    }
+
     /// Identifies the next chunk's expected location.
     pub(crate) fn next_chunk(
         &self,
@@ -141,18 +161,14 @@ impl ChunkIdentifier {
             return Some(NextChunk::Volume(self.volume.next()));
         }
 
-        Some(NextChunk::Sequence(ChunkIdentifier::new(
-            self.site().to_string(),
-            self.volume,
-            self.date_time_prefix,
-            self.sequence + 1,
-            if self.sequence + 1 == final_sequence {
-                ChunkType::End
-            } else {
-                ChunkType::Intermediate
-            },
-            None,
-        )))
+        let chunk_type = if self.sequence + 1 == final_sequence {
+            ChunkType::End
+        } else {
+            ChunkType::Intermediate
+        };
+        Some(NextChunk::Sequence(
+            self.with_sequence(self.sequence + 1, chunk_type),
+        ))
     }
 }
 

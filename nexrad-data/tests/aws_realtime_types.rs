@@ -346,6 +346,36 @@ fn test_chunk_too_small_for_bz_check() {
 }
 
 #[test]
+fn test_chunk_identifier_with_sequence() {
+    use chrono::{TimeZone, Utc};
+
+    let uploaded = Utc
+        .with_ymd_and_hms(2022, 3, 5, 12, 0, 30)
+        .single()
+        .unwrap();
+    let id = ChunkIdentifier::from_name(
+        "KDMX",
+        VolumeIndex::new(42),
+        "20220305-120000-007-I",
+        Some(uploaded),
+    )
+    .unwrap();
+
+    let start = id.with_sequence(1, ChunkType::Start);
+    assert_eq!(start.site(), "KDMX");
+    assert_eq!(start.volume(), id.volume());
+    assert_eq!(start.date_time_prefix(), id.date_time_prefix());
+    assert_eq!(start.sequence(), 1);
+    assert_eq!(start.chunk_type(), ChunkType::Start);
+    assert_eq!(start.name(), "20220305-120000-001-S");
+    assert_eq!(start.upload_date_time(), None);
+
+    let end = id.with_sequence(55, ChunkType::End);
+    assert_eq!(end.name(), "20220305-120000-055-E");
+    assert_eq!(end.upload_date_time(), None);
+}
+
+#[test]
 fn test_volume_index_equality() {
     let vol1a = VolumeIndex::new(100);
     let vol1b = VolumeIndex::new(100);

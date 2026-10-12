@@ -38,7 +38,7 @@ when starting from a previously seen volume. The `realtime::chunk_stream` functi
 continuously yields chunks as they become available; it is runtime-agnostic and takes a caller-supplied sleep function
 (with tokio, `chunk_stream(config, |d| tokio::time::sleep(d))`). For caller-controlled scheduling,
 `realtime::ChunkIterator` provides a pull-based interface with manual timing control: its `next_expected_time` and
-`time_until_next` methods estimate when the next chunk will be uploaded.
+`time_until_next` methods estimate when the next chunk becomes available for download from S3.
 
 ## Features
 

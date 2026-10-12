@@ -32,16 +32,17 @@
 //!   [DownloadedChunk]s configured by a [PollConfig]; it waits between polls using a
 //!   caller-supplied sleep function.
 //! - [ChunkIterator] is a pull-based alternative for callers that schedule polling themselves,
-//!   using [ChunkIterator::next_expected_time()] or [ChunkIterator::time_until_next()].
+//!   using [ChunkIterator::next_expected_time()] or [ChunkIterator::time_until_next()], which
+//!   estimate when the next chunk becomes available for download from S3.
 //! - [list_chunks_in_volume()] and [download_chunk()] are the building blocks for custom polling.
 //!   A client that persisted the last volume it saw can rediscover the current one cheaply with
 //!   [get_latest_volume_from_hint()].
 //!
-//! Both [chunk_stream()] and [ChunkIterator] estimate when the next chunk will be uploaded from
-//! the volume coverage pattern and observed upload timings. That model is an internal detail and
-//! may be tuned in any release; only its results (such as
-//! [ChunkIterator::next_expected_time()] and [ChunkIterator::projected_volume_end_time()]) are
-//! part of the public API.
+//! Both [chunk_stream()] and [ChunkIterator] estimate when the next chunk becomes available for
+//! download from S3, using the volume coverage pattern and observed upload timings. That model is
+//! an internal detail and may be refined in any release. Its results are part of the public API,
+//! and they always mean S3 availability times: [ChunkIterator::next_expected_time()] for the next
+//! chunk and [ChunkIterator::projected_volume_end_time()] for the volume's final chunk.
 //!
 
 mod volume_index;

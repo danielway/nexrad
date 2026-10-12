@@ -207,10 +207,12 @@ impl ChunkIterator {
         Ok((latest_chunk, start_chunk))
     }
 
-    /// Returns the estimated time when the next chunk will be available.
+    /// Returns the estimated time at which the next chunk becomes available for download from the
+    /// real-time S3 bucket.
     ///
-    /// Returns `None` if timing cannot be estimated (e.g., VCP not yet known).
-    /// The caller can use this to schedule when to call [`try_next`](Self::try_next).
+    /// The estimate is anchored to the current chunk's upload time, so it may already be in the
+    /// past if the next chunk is due. Returns `None` if timing cannot be estimated (e.g., VCP not
+    /// yet known). The caller can use this to schedule when to call [`try_next`](Self::try_next).
     pub fn next_expected_time(&self) -> Option<DateTime<Utc>> {
         let chunk_id = match &self.state {
             IteratorState::NeedVolumeStart(_) => return None,
@@ -223,19 +225,16 @@ impl ChunkIterator {
         estimate_chunk_availability_time(chunk_id, vcp, mapper, Some(&self.timing_stats))
     }
 
-    /// Returns the estimated duration until the next chunk is available.
+    /// Returns the estimated duration from now until the next chunk becomes available for download
+    /// (see [`next_expected_time`](Self::next_expected_time)).
     ///
-    /// Returns `None` if timing cannot be estimated or if the chunk should
-    /// already be available.
-    pub fn time_until_next(&self) -> Option<Duration> {
+    /// The result is a [`std::time::Duration`], the same type taken by the `sleep` function passed
+    /// to [`chunk_stream`](super::chunk_stream) and by [`RetryPolicy`](super::RetryPolicy), so it
+    /// can be handed directly to a sleep. Returns `None` if timing cannot be estimated or if the
+    /// chunk should already be available.
+    pub fn time_until_next(&self) -> Option<std::time::Duration> {
         let expected = self.next_expected_time()?;
-        let now = Utc::now();
-
-        if expected <= now {
-            None
-        } else {
-            Some(expected - now)
-        }
+        (expected - Utc::now()).to_std().ok()
     }
 
     /// Attempts to fetch the next chunk.
@@ -518,9 +517,11 @@ impl ChunkIterator {
         project_scan_timing(chunk_id, vcp, mapper, Some(&self.timing_stats))
     }
 
-    /// Returns the projected time when the current volume will complete.
+    /// Returns the projected time at which the current volume's final chunk becomes available for
+    /// download from the real-time S3 bucket.
     ///
-    /// Returns `None` if a projection cannot be made.
+    /// Returns `None` if a projection cannot be made, for example before the VCP is known or when
+    /// the current chunk is already the volume's final chunk.
     pub fn projected_volume_end_time(&self) -> Option<DateTime<Utc>> {
         self.project_remaining_scan().map(|p| p.volume_end_time())
     }

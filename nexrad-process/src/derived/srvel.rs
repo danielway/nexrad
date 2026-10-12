@@ -103,8 +103,14 @@ mod tests {
         let azimuths = vec![0.0, 90.0, 180.0, 270.0];
         let gate_count = 5;
 
-        let mut field =
-            SweepField::new_empty("Velocity", "m/s", 0.5, azimuths, 1.0, 2.0, 0.25, gate_count);
+        let mut field = SweepField::builder("Velocity", "m/s")
+            .elevation_degrees(0.5)
+            .azimuths(azimuths)
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(gate_count)
+            .build()
+            .expect("valid geometry");
 
         // Set uniform velocity of 10 m/s at all azimuths
         for az in 0..4 {

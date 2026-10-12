@@ -95,18 +95,23 @@ mod tests {
     fn make_fields(gate_count: usize) -> (SweepField, SweepField) {
         let azimuths = vec![0.0, 1.0, 2.0];
 
-        let mut target = SweepField::new_empty(
-            "Reflectivity",
-            "dBZ",
-            0.5,
-            azimuths.clone(),
-            1.0,
-            2.0,
-            0.25,
-            gate_count,
-        );
+        let mut target = SweepField::builder("Reflectivity", "dBZ")
+            .elevation_degrees(0.5)
+            .azimuths(azimuths.clone())
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(gate_count)
+            .build()
+            .expect("valid geometry");
 
-        let mut cc = SweepField::new_empty("CC", "", 0.5, azimuths, 1.0, 2.0, 0.25, gate_count);
+        let mut cc = SweepField::builder("CC", "")
+            .elevation_degrees(0.5)
+            .azimuths(azimuths)
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(gate_count)
+            .build()
+            .expect("valid geometry");
 
         // Fill target with valid data
         for az in 0..3 {
@@ -204,9 +209,22 @@ mod tests {
         let azimuths_3 = vec![0.0, 1.0, 2.0];
         let azimuths_4 = vec![0.0, 1.0, 2.0, 3.0];
 
-        let mut target =
-            SweepField::new_empty("Reflectivity", "dBZ", 0.5, azimuths_3, 1.0, 2.0, 0.25, 5);
-        let mut cc = SweepField::new_empty("CC", "", 0.5, azimuths_4, 1.0, 2.0, 0.25, 5);
+        let mut target = SweepField::builder("Reflectivity", "dBZ")
+            .elevation_degrees(0.5)
+            .azimuths(azimuths_3)
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(5)
+            .build()
+            .expect("valid geometry");
+        let mut cc = SweepField::builder("CC", "")
+            .elevation_degrees(0.5)
+            .azimuths(azimuths_4)
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(5)
+            .build()
+            .expect("valid geometry");
 
         for az in 0..3 {
             for gate in 0..5 {

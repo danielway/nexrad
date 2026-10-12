@@ -184,16 +184,14 @@ mod tests {
     use super::*;
 
     fn make_test_field() -> SweepField {
-        let mut field = SweepField::new_empty(
-            "Test",
-            "dBZ",
-            0.5,
-            vec![0.0, 1.0, 2.0, 3.0, 4.0],
-            1.0,
-            2.0,
-            0.25,
-            5,
-        );
+        let mut field = SweepField::builder("Test", "dBZ")
+            .elevation_degrees(0.5)
+            .azimuths(vec![0.0, 1.0, 2.0, 3.0, 4.0])
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(5)
+            .build()
+            .expect("valid geometry");
 
         // Set uniform values
         for az in 0..5 {

@@ -43,55 +43,39 @@ pub struct ElevationCut {
 }
 
 impl ElevationCut {
-    /// Create a new elevation cut with the given configuration.
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    /// Start building an elevation cut from its required configuration.
+    ///
+    /// All other properties take the defaults documented on [`ElevationCutBuilder`].
+    pub fn builder(
         elevation_angle_degrees: f64,
-        channel_configuration: ChannelConfiguration,
         waveform_type: WaveformType,
-        azimuth_rate_degrees_per_second: f64,
-        super_resolution_half_degree_azimuth: bool,
-        super_resolution_quarter_km_reflectivity: bool,
-        super_resolution_doppler_to_300km: bool,
-        super_resolution_dual_pol_to_300km: bool,
-        surveillance_prf_number: u8,
-        surveillance_prf_pulse_count: u16,
-        reflectivity_threshold_db: f32,
-        velocity_threshold_db: f32,
-        spectrum_width_threshold_db: f32,
-        differential_reflectivity_threshold_db: f32,
-        differential_phase_threshold_db: f32,
-        correlation_coefficient_threshold_db: f32,
-        is_sails_cut: bool,
-        sails_sequence_number: u8,
-        is_mrle_cut: bool,
-        mrle_sequence_number: u8,
-        is_mpda_cut: bool,
-        is_base_tilt_cut: bool,
-    ) -> Self {
-        Self {
-            elevation_angle_degrees,
-            channel_configuration,
-            waveform_type,
-            azimuth_rate_degrees_per_second,
-            super_resolution_half_degree_azimuth,
-            super_resolution_quarter_km_reflectivity,
-            super_resolution_doppler_to_300km,
-            super_resolution_dual_pol_to_300km,
-            surveillance_prf_number,
-            surveillance_prf_pulse_count,
-            reflectivity_threshold_db,
-            velocity_threshold_db,
-            spectrum_width_threshold_db,
-            differential_reflectivity_threshold_db,
-            differential_phase_threshold_db,
-            correlation_coefficient_threshold_db,
-            is_sails_cut,
-            sails_sequence_number,
-            is_mrle_cut,
-            mrle_sequence_number,
-            is_mpda_cut,
-            is_base_tilt_cut,
+        channel_configuration: ChannelConfiguration,
+    ) -> ElevationCutBuilder {
+        ElevationCutBuilder {
+            cut: ElevationCut {
+                elevation_angle_degrees,
+                channel_configuration,
+                waveform_type,
+                azimuth_rate_degrees_per_second: 0.0,
+                super_resolution_half_degree_azimuth: false,
+                super_resolution_quarter_km_reflectivity: false,
+                super_resolution_doppler_to_300km: false,
+                super_resolution_dual_pol_to_300km: false,
+                surveillance_prf_number: 0,
+                surveillance_prf_pulse_count: 0,
+                reflectivity_threshold_db: 0.0,
+                velocity_threshold_db: 0.0,
+                spectrum_width_threshold_db: 0.0,
+                differential_reflectivity_threshold_db: 0.0,
+                differential_phase_threshold_db: 0.0,
+                correlation_coefficient_threshold_db: 0.0,
+                is_sails_cut: false,
+                sails_sequence_number: 0,
+                is_mrle_cut: false,
+                mrle_sequence_number: 0,
+                is_mpda_cut: false,
+                is_base_tilt_cut: false,
+            },
         }
     }
 
@@ -203,5 +187,176 @@ impl ElevationCut {
     /// Whether this is a base tilt cut.
     pub fn is_base_tilt_cut(&self) -> bool {
         self.is_base_tilt_cut
+    }
+}
+
+/// Builder for [`ElevationCut`], created with [`ElevationCut::builder`].
+///
+/// The elevation angle, waveform type, and channel configuration are required. All other
+/// properties are optional and default to:
+///
+/// - `azimuth_rate_degrees_per_second`: `0.0`
+/// - `super_resolution_half_degree_azimuth`: `false`
+/// - `super_resolution_quarter_km_reflectivity`: `false`
+/// - `super_resolution_doppler_to_300km`: `false`
+/// - `super_resolution_dual_pol_to_300km`: `false`
+/// - `surveillance_prf_number`: `0`
+/// - `surveillance_prf_pulse_count`: `0`
+/// - `reflectivity_threshold_db`: `0.0`
+/// - `velocity_threshold_db`: `0.0`
+/// - `spectrum_width_threshold_db`: `0.0`
+/// - `differential_reflectivity_threshold_db`: `0.0`
+/// - `differential_phase_threshold_db`: `0.0`
+/// - `correlation_coefficient_threshold_db`: `0.0`
+/// - `is_sails_cut`: `false`
+/// - `sails_sequence_number`: `0`
+/// - `is_mrle_cut`: `false`
+/// - `mrle_sequence_number`: `0`
+/// - `is_mpda_cut`: `false`
+/// - `is_base_tilt_cut`: `false`
+#[derive(Debug, Clone)]
+#[must_use]
+pub struct ElevationCutBuilder {
+    cut: ElevationCut,
+}
+
+impl ElevationCutBuilder {
+    /// Set the azimuth rotation rate in degrees per second. Defaults to `0.0`.
+    pub fn azimuth_rate_degrees_per_second(mut self, azimuth_rate_degrees_per_second: f64) -> Self {
+        self.cut.azimuth_rate_degrees_per_second = azimuth_rate_degrees_per_second;
+        self
+    }
+
+    /// Set whether 0.5 degree azimuth super resolution is enabled. Defaults to `false`.
+    pub fn super_resolution_half_degree_azimuth(
+        mut self,
+        super_resolution_half_degree_azimuth: bool,
+    ) -> Self {
+        self.cut.super_resolution_half_degree_azimuth = super_resolution_half_degree_azimuth;
+        self
+    }
+
+    /// Set whether 1/4 km reflectivity super resolution is enabled. Defaults to `false`.
+    pub fn super_resolution_quarter_km_reflectivity(
+        mut self,
+        super_resolution_quarter_km_reflectivity: bool,
+    ) -> Self {
+        self.cut.super_resolution_quarter_km_reflectivity =
+            super_resolution_quarter_km_reflectivity;
+        self
+    }
+
+    /// Set whether Doppler to 300 km super resolution is enabled. Defaults to `false`.
+    pub fn super_resolution_doppler_to_300km(
+        mut self,
+        super_resolution_doppler_to_300km: bool,
+    ) -> Self {
+        self.cut.super_resolution_doppler_to_300km = super_resolution_doppler_to_300km;
+        self
+    }
+
+    /// Set whether dual polarization to 300 km super resolution is enabled. Defaults to `false`.
+    pub fn super_resolution_dual_pol_to_300km(
+        mut self,
+        super_resolution_dual_pol_to_300km: bool,
+    ) -> Self {
+        self.cut.super_resolution_dual_pol_to_300km = super_resolution_dual_pol_to_300km;
+        self
+    }
+
+    /// Set the pulse repetition frequency number for surveillance cuts. Defaults to `0`.
+    pub fn surveillance_prf_number(mut self, surveillance_prf_number: u8) -> Self {
+        self.cut.surveillance_prf_number = surveillance_prf_number;
+        self
+    }
+
+    /// Set the pulse count per radial for surveillance cuts. Defaults to `0`.
+    pub fn surveillance_prf_pulse_count(mut self, surveillance_prf_pulse_count: u16) -> Self {
+        self.cut.surveillance_prf_pulse_count = surveillance_prf_pulse_count;
+        self
+    }
+
+    /// Set the signal to noise ratio threshold for reflectivity in dB. Defaults to `0.0`.
+    pub fn reflectivity_threshold_db(mut self, reflectivity_threshold_db: f32) -> Self {
+        self.cut.reflectivity_threshold_db = reflectivity_threshold_db;
+        self
+    }
+
+    /// Set the signal to noise ratio threshold for velocity in dB. Defaults to `0.0`.
+    pub fn velocity_threshold_db(mut self, velocity_threshold_db: f32) -> Self {
+        self.cut.velocity_threshold_db = velocity_threshold_db;
+        self
+    }
+
+    /// Set the signal to noise ratio threshold for spectrum width in dB. Defaults to `0.0`.
+    pub fn spectrum_width_threshold_db(mut self, spectrum_width_threshold_db: f32) -> Self {
+        self.cut.spectrum_width_threshold_db = spectrum_width_threshold_db;
+        self
+    }
+
+    /// Set the signal to noise ratio threshold for differential reflectivity in dB. Defaults to `0.0`.
+    pub fn differential_reflectivity_threshold_db(
+        mut self,
+        differential_reflectivity_threshold_db: f32,
+    ) -> Self {
+        self.cut.differential_reflectivity_threshold_db = differential_reflectivity_threshold_db;
+        self
+    }
+
+    /// Set the signal to noise ratio threshold for differential phase in dB. Defaults to `0.0`.
+    pub fn differential_phase_threshold_db(mut self, differential_phase_threshold_db: f32) -> Self {
+        self.cut.differential_phase_threshold_db = differential_phase_threshold_db;
+        self
+    }
+
+    /// Set the signal to noise ratio threshold for correlation coefficient in dB. Defaults to `0.0`.
+    pub fn correlation_coefficient_threshold_db(
+        mut self,
+        correlation_coefficient_threshold_db: f32,
+    ) -> Self {
+        self.cut.correlation_coefficient_threshold_db = correlation_coefficient_threshold_db;
+        self
+    }
+
+    /// Set whether this is a SAILS (Supplemental Adaptive Intra-volume Low-level Scan) cut. Defaults to `false`.
+    pub fn is_sails_cut(mut self, is_sails_cut: bool) -> Self {
+        self.cut.is_sails_cut = is_sails_cut;
+        self
+    }
+
+    /// Set the SAILS sequence number for this cut. Defaults to `0`.
+    pub fn sails_sequence_number(mut self, sails_sequence_number: u8) -> Self {
+        self.cut.sails_sequence_number = sails_sequence_number;
+        self
+    }
+
+    /// Set whether this is an MRLE (Mid-volume Rescan of Low Elevation) cut. Defaults to `false`.
+    pub fn is_mrle_cut(mut self, is_mrle_cut: bool) -> Self {
+        self.cut.is_mrle_cut = is_mrle_cut;
+        self
+    }
+
+    /// Set the MRLE sequence number for this cut. Defaults to `0`.
+    pub fn mrle_sequence_number(mut self, mrle_sequence_number: u8) -> Self {
+        self.cut.mrle_sequence_number = mrle_sequence_number;
+        self
+    }
+
+    /// Set whether this is an MPDA (Multiple PRF Dealiasing Algorithm) cut. Defaults to `false`.
+    pub fn is_mpda_cut(mut self, is_mpda_cut: bool) -> Self {
+        self.cut.is_mpda_cut = is_mpda_cut;
+        self
+    }
+
+    /// Set whether this is a base tilt cut. Defaults to `false`.
+    pub fn is_base_tilt_cut(mut self, is_base_tilt_cut: bool) -> Self {
+        self.cut.is_base_tilt_cut = is_base_tilt_cut;
+        self
+    }
+
+    /// Build the [`ElevationCut`].
+    #[must_use]
+    pub fn build(self) -> ElevationCut {
+        self.cut
     }
 }

@@ -1,8 +1,7 @@
 //! Tests for bilinear interpolation rendering.
 
 use nexrad_model::data::{
-    CartesianField, GateStatus, MomentData, Product, Radial, RadialStatus, SweepField,
-    VerticalField,
+    CartesianField, GateStatus, MomentData, Product, Radial, SweepField, VerticalField,
 };
 use nexrad_model::geo::{GeoExtent, GeoPoint};
 use nexrad_render::{render_cartesian, render_sweep, render_vertical, ColorScale, RenderOptions};
@@ -29,22 +28,9 @@ fn create_test_radial(azimuth_degrees: f32, raw_value: u8) -> Radial {
         values,
     );
 
-    Radial::new(
-        0,
-        0,
-        azimuth_degrees,
-        1.0,
-        RadialStatus::IntermediateRadialData,
-        1,
-        0.5,
-        Some(moment_data),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    )
+    Radial::builder(0, azimuth_degrees, 1, 0.5)
+        .reflectivity(moment_data)
+        .build()
 }
 
 /// Create a full 360-degree sweep of radials with a gradient in raw value.

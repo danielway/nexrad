@@ -77,7 +77,6 @@
 #![deny(clippy::expect_used)]
 #![warn(clippy::correctness)]
 #![warn(unnameable_types)]
-#![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
 
 mod binary_data;

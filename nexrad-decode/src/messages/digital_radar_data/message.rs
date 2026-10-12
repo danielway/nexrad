@@ -327,32 +327,51 @@ impl<'a> Message<'a> {
         use crate::result::Error;
         use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
 
-        Ok(Radial::new(
+        let mut builder = Radial::builder(
+            header.azimuth_number(),
+            header.azimuth_angle_raw(),
+            header.elevation_number(),
+            header.elevation_angle_raw(),
+        )
+        .collection_timestamp(
             header
                 .date_time()
                 .ok_or(Error::MessageMissingDate)?
                 .timestamp_millis(),
-            header.azimuth_number(),
-            header.azimuth_angle_raw(),
-            header.azimuth_resolution_spacing_raw() as f32 * 0.5,
-            match header.radial_status() {
-                RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
-                RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
-                RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
-                RadialStatus::VolumeScanStart => ModelRadialStatus::ScanStart,
-                RadialStatus::VolumeScanEnd => ModelRadialStatus::ScanEnd,
-                RadialStatus::ElevationStartVcpFinal => ModelRadialStatus::ElevationStartVcpFinal,
-                RadialStatus::Unknown(v) => ModelRadialStatus::Unknown(v),
-            },
-            header.elevation_number(),
-            header.elevation_angle_raw(),
-            reflectivity,
-            velocity,
-            spectrum_width,
-            differential_reflectivity,
-            differential_phase,
-            correlation_coefficient,
-            clutter_filter_power,
-        ))
+        )
+        .azimuth_spacing_degrees(header.azimuth_resolution_spacing_raw() as f32 * 0.5)
+        .radial_status(match header.radial_status() {
+            RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
+            RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
+            RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
+            RadialStatus::VolumeScanStart => ModelRadialStatus::ScanStart,
+            RadialStatus::VolumeScanEnd => ModelRadialStatus::ScanEnd,
+            RadialStatus::ElevationStartVcpFinal => ModelRadialStatus::ElevationStartVcpFinal,
+            RadialStatus::Unknown(v) => ModelRadialStatus::Unknown(v),
+        });
+
+        if let Some(reflectivity) = reflectivity {
+            builder = builder.reflectivity(reflectivity);
+        }
+        if let Some(velocity) = velocity {
+            builder = builder.velocity(velocity);
+        }
+        if let Some(spectrum_width) = spectrum_width {
+            builder = builder.spectrum_width(spectrum_width);
+        }
+        if let Some(differential_reflectivity) = differential_reflectivity {
+            builder = builder.differential_reflectivity(differential_reflectivity);
+        }
+        if let Some(differential_phase) = differential_phase {
+            builder = builder.differential_phase(differential_phase);
+        }
+        if let Some(correlation_coefficient) = correlation_coefficient {
+            builder = builder.correlation_coefficient(correlation_coefficient);
+        }
+        if let Some(clutter_filter_power) = clutter_filter_power {
+            builder = builder.clutter_filter_power(clutter_filter_power);
+        }
+
+        Ok(builder.build())
     }
 }

@@ -1,5 +1,6 @@
 use crate::data::{CfpMomentValue, DataMoment, GateStatus, MomentValue, Product, Radial};
 use crate::geo::{GeoExtent, GeoPoint};
+use crate::result::{Error, Result};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -191,46 +192,40 @@ impl SweepField {
         })
     }
 
-    /// Create an empty field with the given geometry (for processing output).
+    /// Start building an empty field (for processing output) with the given label and unit.
     ///
-    /// All values are initialized to `0.0` with [`GateStatus::NoData`].
-    pub fn new_empty(
-        label: impl Into<String>,
-        unit: impl Into<String>,
-        elevation_degrees: f32,
-        azimuths: Vec<f32>,
-        azimuth_spacing_degrees: f32,
-        first_gate_range_km: f64,
-        gate_interval_km: f64,
-        gate_count: usize,
-    ) -> Self {
-        let total = azimuths.len() * gate_count;
-        Self {
+    /// The geometry is set with the builder's setters; see [`SweepFieldBuilder`] for defaults
+    /// and validation rules.
+    pub fn builder(label: impl Into<String>, unit: impl Into<String>) -> SweepFieldBuilder {
+        SweepFieldBuilder {
             label: label.into(),
             unit: unit.into(),
-            elevation_degrees,
-            azimuths,
-            azimuth_spacing_degrees,
-            first_gate_range_km,
-            gate_interval_km,
-            gate_count,
-            values: vec![0.0; total],
-            status: vec![GateStatus::NoData; total],
+            elevation_degrees: 0.0,
+            azimuths: Vec::new(),
+            azimuth_spacing_degrees: 1.0,
+            first_gate_range_km: 0.0,
+            gate_interval_km: 0.0,
+            gate_count: 0,
         }
     }
 
     /// Create a new field with the same geometry as this one but empty data.
+    ///
+    /// All values are initialized to `0.0` with [`GateStatus::NoData`].
     pub fn new_like(&self, label: impl Into<String>, unit: impl Into<String>) -> Self {
-        Self::new_empty(
-            label,
-            unit,
-            self.elevation_degrees,
-            self.azimuths.clone(),
-            self.azimuth_spacing_degrees,
-            self.first_gate_range_km,
-            self.gate_interval_km,
-            self.gate_count,
-        )
+        let total = self.azimuths.len() * self.gate_count;
+        Self {
+            label: label.into(),
+            unit: unit.into(),
+            elevation_degrees: self.elevation_degrees,
+            azimuths: self.azimuths.clone(),
+            azimuth_spacing_degrees: self.azimuth_spacing_degrees,
+            first_gate_range_km: self.first_gate_range_km,
+            gate_interval_km: self.gate_interval_km,
+            gate_count: self.gate_count,
+            values: vec![0.0; total],
+            status: vec![GateStatus::NoData; total],
+        }
     }
 
     // --- Accessors ---
@@ -495,6 +490,130 @@ impl SweepField {
                 }
             }
         }
+    }
+}
+
+/// Builder for an empty [`SweepField`], created with [`SweepField::builder`].
+///
+/// The label and unit are required. The geometry defaults to:
+///
+/// - `elevation_degrees`: `0.0`
+/// - `azimuths`: empty
+/// - `azimuth_spacing_degrees`: `1.0`
+/// - `first_gate_range_km`: `0.0`
+/// - `gate_interval_km`: `0.0`
+/// - `gate_count`: `0`
+///
+/// [`build`](Self::build) returns [`Error::InvalidSweepGeometry`] unless `azimuths` is
+/// non-empty, `gate_count` is greater than zero, and `gate_interval_km` is greater than zero.
+/// All values of the built field are initialized to `0.0` with [`GateStatus::NoData`].
+///
+/// # Example
+///
+/// ```
+/// use nexrad_model::data::SweepField;
+///
+/// let field = SweepField::builder("Reflectivity", "dBZ")
+///     .elevation_degrees(0.5)
+///     .azimuths(vec![0.0, 1.0, 2.0])
+///     .first_gate_range_km(2.0)
+///     .gate_interval_km(0.25)
+///     .gate_count(100)
+///     .build()
+///     .expect("valid geometry");
+/// assert_eq!(field.azimuth_count(), 3);
+/// assert_eq!(field.gate_count(), 100);
+/// ```
+#[derive(Debug, Clone)]
+#[must_use]
+pub struct SweepFieldBuilder {
+    label: String,
+    unit: String,
+    elevation_degrees: f32,
+    azimuths: Vec<f32>,
+    azimuth_spacing_degrees: f32,
+    first_gate_range_km: f64,
+    gate_interval_km: f64,
+    gate_count: usize,
+}
+
+impl SweepFieldBuilder {
+    /// Set the elevation angle in degrees. Defaults to `0.0`.
+    pub fn elevation_degrees(mut self, elevation_degrees: f32) -> Self {
+        self.elevation_degrees = elevation_degrees;
+        self
+    }
+
+    /// Set the azimuth angle in degrees for each radial row, sorted ascending. Defaults to
+    /// empty; must be non-empty for [`build`](Self::build) to succeed.
+    pub fn azimuths(mut self, azimuths: Vec<f32>) -> Self {
+        self.azimuths = azimuths;
+        self
+    }
+
+    /// Set the azimuthal spacing between radials in degrees. Defaults to `1.0`.
+    pub fn azimuth_spacing_degrees(mut self, azimuth_spacing_degrees: f32) -> Self {
+        self.azimuth_spacing_degrees = azimuth_spacing_degrees;
+        self
+    }
+
+    /// Set the range to the center of the first gate in km. Defaults to `0.0`.
+    pub fn first_gate_range_km(mut self, first_gate_range_km: f64) -> Self {
+        self.first_gate_range_km = first_gate_range_km;
+        self
+    }
+
+    /// Set the gate spacing in km. Defaults to `0.0`; must be greater than zero for
+    /// [`build`](Self::build) to succeed.
+    pub fn gate_interval_km(mut self, gate_interval_km: f64) -> Self {
+        self.gate_interval_km = gate_interval_km;
+        self
+    }
+
+    /// Set the number of gates per radial. Defaults to `0`; must be greater than zero for
+    /// [`build`](Self::build) to succeed.
+    pub fn gate_count(mut self, gate_count: usize) -> Self {
+        self.gate_count = gate_count;
+        self
+    }
+
+    /// Build the empty [`SweepField`], with all values `0.0` and [`GateStatus::NoData`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidSweepGeometry`] if no azimuths were set, `gate_count` is zero,
+    /// or `gate_interval_km` is not greater than zero (including NaN).
+    pub fn build(self) -> Result<SweepField> {
+        if self.azimuths.is_empty() {
+            return Err(Error::InvalidSweepGeometry(
+                "at least one azimuth is required".to_string(),
+            ));
+        }
+        if self.gate_count == 0 {
+            return Err(Error::InvalidSweepGeometry(
+                "gate count must be greater than zero".to_string(),
+            ));
+        }
+        if self.gate_interval_km.is_nan() || self.gate_interval_km <= 0.0 {
+            return Err(Error::InvalidSweepGeometry(format!(
+                "gate interval must be greater than zero, got {} km",
+                self.gate_interval_km
+            )));
+        }
+
+        let total = self.azimuths.len() * self.gate_count;
+        Ok(SweepField {
+            label: self.label,
+            unit: self.unit,
+            elevation_degrees: self.elevation_degrees,
+            azimuths: self.azimuths,
+            azimuth_spacing_degrees: self.azimuth_spacing_degrees,
+            first_gate_range_km: self.first_gate_range_km,
+            gate_interval_km: self.gate_interval_km,
+            gate_count: self.gate_count,
+            values: vec![0.0; total],
+            status: vec![GateStatus::NoData; total],
+        })
     }
 }
 

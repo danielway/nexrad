@@ -30,7 +30,9 @@ impl SiteEntry {
         let len = bytes.len().min(4);
         id[..len].copy_from_slice(&bytes[..len]);
 
-        super::Site::new(id, self.latitude, self.longitude, self.elevation_meters, 0)
+        super::Site::builder(id, self.latitude, self.longitude)
+            .height_meters(self.elevation_meters)
+            .build()
     }
 }
 

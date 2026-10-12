@@ -18,20 +18,18 @@ pub struct Site {
 }
 
 impl Site {
-    /// Create new radar site metadata with the given properties.
-    pub fn new(
-        identifier: [u8; 4],
-        latitude: f64,
-        longitude: f64,
-        height_meters: i16,
-        tower_height_meters: u16,
-    ) -> Self {
-        Self {
-            identifier,
-            latitude,
-            longitude,
-            height_meters,
-            tower_height_meters,
+    /// Start building radar site metadata from its identifier and location.
+    ///
+    /// All other properties take the defaults documented on [`SiteBuilder`].
+    pub fn builder(identifier: [u8; 4], latitude: f64, longitude: f64) -> SiteBuilder {
+        SiteBuilder {
+            site: Site {
+                identifier,
+                latitude,
+                longitude,
+                height_meters: 0,
+                tower_height_meters: 0,
+            },
         }
     }
 
@@ -75,6 +73,39 @@ impl Site {
     #[cfg(feature = "uom")]
     pub fn tower_height(&self) -> Length {
         Length::new::<meter>(self.tower_height_meters as f64)
+    }
+}
+
+/// Builder for [`Site`], created with [`Site::builder`].
+///
+/// The identifier, latitude, and longitude are required. All other properties are optional and
+/// default to:
+///
+/// - `height_meters`: `0`
+/// - `tower_height_meters`: `0`
+#[derive(Debug, Clone)]
+#[must_use]
+pub struct SiteBuilder {
+    site: Site,
+}
+
+impl SiteBuilder {
+    /// Set the height of the radar site above sea level in meters. Defaults to `0`.
+    pub fn height_meters(mut self, height_meters: i16) -> Self {
+        self.site.height_meters = height_meters;
+        self
+    }
+
+    /// Set the height of the radar tower above ground in meters. Defaults to `0`.
+    pub fn tower_height_meters(mut self, tower_height_meters: u16) -> Self {
+        self.site.tower_height_meters = tower_height_meters;
+        self
+    }
+
+    /// Build the [`Site`].
+    #[must_use]
+    pub fn build(self) -> Site {
+        self.site
     }
 }
 

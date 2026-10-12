@@ -37,38 +37,32 @@ pub struct Radial {
 }
 
 impl Radial {
-    /// Create a new radial with the given properties.
-    pub fn new(
-        collection_timestamp: i64,
+    /// Start building a radial from its required identifying properties.
+    ///
+    /// All other properties take the defaults documented on [`RadialBuilder`].
+    pub fn builder(
         azimuth_number: u16,
         azimuth_angle_degrees: f32,
-        azimuth_spacing_degrees: f32,
-        radial_status: RadialStatus,
         elevation_number: u8,
         elevation_angle_degrees: f32,
-        reflectivity: Option<MomentData>,
-        velocity: Option<MomentData>,
-        spectrum_width: Option<MomentData>,
-        differential_reflectivity: Option<MomentData>,
-        differential_phase: Option<MomentData>,
-        correlation_coefficient: Option<MomentData>,
-        clutter_filter_power: Option<CfpMomentData>,
-    ) -> Self {
-        Self {
-            collection_timestamp,
-            azimuth_number,
-            azimuth_angle_degrees,
-            azimuth_spacing_degrees,
-            radial_status,
-            elevation_number,
-            elevation_angle_degrees,
-            reflectivity,
-            velocity,
-            spectrum_width,
-            differential_reflectivity,
-            differential_phase,
-            correlation_coefficient,
-            clutter_filter_power,
+    ) -> RadialBuilder {
+        RadialBuilder {
+            radial: Radial {
+                collection_timestamp: 0,
+                azimuth_number,
+                azimuth_angle_degrees,
+                azimuth_spacing_degrees: 1.0,
+                radial_status: RadialStatus::IntermediateRadialData,
+                elevation_number,
+                elevation_angle_degrees,
+                reflectivity: None,
+                velocity: None,
+                spectrum_width: None,
+                differential_reflectivity: None,
+                differential_phase: None,
+                correlation_coefficient: None,
+                clutter_filter_power: None,
+            },
         }
     }
 
@@ -166,6 +160,93 @@ impl Radial {
     /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
     pub fn clutter_filter_power(&self) -> Option<&CfpMomentData> {
         self.clutter_filter_power.as_ref()
+    }
+}
+
+/// Builder for [`Radial`], created with [`Radial::builder`].
+///
+/// The azimuth number, azimuth angle, elevation number, and elevation angle are required. All
+/// other properties are optional and default to:
+///
+/// - `collection_timestamp`: `0`
+/// - `azimuth_spacing_degrees`: `1.0`
+/// - `radial_status`: [`RadialStatus::IntermediateRadialData`]
+/// - all moment data (`reflectivity`, `velocity`, `spectrum_width`,
+///   `differential_reflectivity`, `differential_phase`, `correlation_coefficient`,
+///   `clutter_filter_power`): `None`
+#[derive(Debug, Clone)]
+#[must_use]
+pub struct RadialBuilder {
+    radial: Radial,
+}
+
+impl RadialBuilder {
+    /// Set the collection timestamp in milliseconds since the UNIX epoch. Defaults to `0`.
+    pub fn collection_timestamp(mut self, collection_timestamp: i64) -> Self {
+        self.radial.collection_timestamp = collection_timestamp;
+        self
+    }
+
+    /// Set the azimuthal distance between radials in the sweep in degrees. Defaults to `1.0`.
+    pub fn azimuth_spacing_degrees(mut self, azimuth_spacing_degrees: f32) -> Self {
+        self.radial.azimuth_spacing_degrees = azimuth_spacing_degrees;
+        self
+    }
+
+    /// Set the radial's position in the sequence of radials making up a scan. Defaults to
+    /// [`RadialStatus::IntermediateRadialData`].
+    pub fn radial_status(mut self, radial_status: RadialStatus) -> Self {
+        self.radial.radial_status = radial_status;
+        self
+    }
+
+    /// Set the reflectivity data for this radial. Defaults to `None` (no reflectivity data).
+    pub fn reflectivity(mut self, reflectivity: MomentData) -> Self {
+        self.radial.reflectivity = Some(reflectivity);
+        self
+    }
+
+    /// Set the velocity data for this radial. Defaults to `None` (no velocity data).
+    pub fn velocity(mut self, velocity: MomentData) -> Self {
+        self.radial.velocity = Some(velocity);
+        self
+    }
+
+    /// Set the spectrum width data for this radial. Defaults to `None` (no spectrum width data).
+    pub fn spectrum_width(mut self, spectrum_width: MomentData) -> Self {
+        self.radial.spectrum_width = Some(spectrum_width);
+        self
+    }
+
+    /// Set the differential reflectivity data for this radial. Defaults to `None` (no differential reflectivity data).
+    pub fn differential_reflectivity(mut self, differential_reflectivity: MomentData) -> Self {
+        self.radial.differential_reflectivity = Some(differential_reflectivity);
+        self
+    }
+
+    /// Set the differential phase data for this radial. Defaults to `None` (no differential phase data).
+    pub fn differential_phase(mut self, differential_phase: MomentData) -> Self {
+        self.radial.differential_phase = Some(differential_phase);
+        self
+    }
+
+    /// Set the correlation coefficient data for this radial. Defaults to `None` (no correlation coefficient data).
+    pub fn correlation_coefficient(mut self, correlation_coefficient: MomentData) -> Self {
+        self.radial.correlation_coefficient = Some(correlation_coefficient);
+        self
+    }
+
+    /// Set the clutter filter power (CFP) data for this radial. Defaults to `None` (no CFP
+    /// data).
+    pub fn clutter_filter_power(mut self, clutter_filter_power: CfpMomentData) -> Self {
+        self.radial.clutter_filter_power = Some(clutter_filter_power);
+        self
+    }
+
+    /// Build the [`Radial`].
+    #[must_use]
+    pub fn build(self) -> Radial {
+        self.radial
     }
 }
 

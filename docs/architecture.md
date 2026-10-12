@@ -43,7 +43,7 @@ The data model (`nexrad-model`) and the binary parser (`nexrad-decode`) are inte
 
 - **nexrad-model** defines the domain language: `Scan`, `Sweep`, `Radial`, `SweepField`, `Site`. These types are ergonomic, well-documented, and designed for application developers who may not know the NOAA ICD specification. The model crate has no I/O and no parsing — it is a pure data layer.
 
-- **nexrad-decode** implements the NOAA ICD 2620002AA specification. Its types mirror the binary wire format (message headers, data block descriptors, etc.) and are primarily useful for developers working at the protocol level. When the `model` feature is enabled, decoded messages can be converted to model types.
+- **nexrad-decode** implements the NOAA ICD 2620002AA specification. Its types mirror the binary wire format (message headers, data block descriptors, etc.) and are primarily useful for developers working at the protocol level. When the `model` feature is enabled, decoded messages can be converted to model types. All protocol-to-model conversion lives here: `nexrad_decode::model::ScanBuilder` assembles messages into a `Scan`, and `nexrad-data` only decompresses records and feeds their messages to it.
 
 This split serves several purposes:
 
@@ -100,7 +100,7 @@ Decompressed message bytes
     ▼  nexrad-decode: parse binary protocol
 Vec<Message> (low-level ICD types)
     │
-    ▼  nexrad-model conversion (via nexrad-data)
+    ▼  nexrad-decode: ScanBuilder converts to nexrad-model (driven by nexrad-data)
 Scan { sweeps: [Sweep { radials: [Radial { moments... }] }] }
     │
     ▼  nexrad-model: extract field

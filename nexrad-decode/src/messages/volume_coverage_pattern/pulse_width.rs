@@ -8,3 +8,14 @@ pub enum PulseWidth {
     /// Unknown pulse width value.
     Unknown,
 }
+
+#[cfg(feature = "model")]
+impl From<PulseWidth> for nexrad_model::data::PulseWidth {
+    fn from(value: PulseWidth) -> Self {
+        match value {
+            PulseWidth::Short => Self::Short,
+            PulseWidth::Long => Self::Long,
+            PulseWidth::Unknown => Self::Unknown,
+        }
+    }
+}

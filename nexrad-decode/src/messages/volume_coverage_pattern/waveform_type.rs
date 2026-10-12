@@ -14,3 +14,21 @@ pub enum WaveformType {
     /// Unknown waveform type.
     Unknown,
 }
+
+#[cfg(feature = "model")]
+impl From<WaveformType> for nexrad_model::data::WaveformType {
+    fn from(value: WaveformType) -> Self {
+        match value {
+            WaveformType::ContiguousSurveillance => Self::ContiguousSurveillance,
+            WaveformType::ContiguousDopplerWithAmbiguityResolution => {
+                Self::ContiguousDopplerWithAmbiguityResolution
+            }
+            WaveformType::ContiguousDopplerWithoutAmbiguityResolution => {
+                Self::ContiguousDopplerWithoutAmbiguityResolution
+            }
+            WaveformType::Batch => Self::Batch,
+            WaveformType::StaggeredPulsePair => Self::StaggeredPulsePair,
+            WaveformType::Unknown => Self::Unknown,
+        }
+    }
+}

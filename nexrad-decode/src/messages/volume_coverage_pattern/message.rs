@@ -51,4 +51,62 @@ impl<'a> Message<'a> {
     pub fn elevations(&self) -> &[ElevationDataBlock<'a>] {
         &self.elevations
     }
+
+    /// Convert this message into the common model's volume coverage pattern, including every
+    /// elevation cut.
+    #[cfg(feature = "model")]
+    pub fn to_model(&self) -> nexrad_model::data::VolumeCoveragePattern {
+        use nexrad_model::data::{ElevationCut, VcpNumber, VolumeCoveragePattern};
+
+        let header = &self.header;
+        let elevation_cuts = self
+            .elevations
+            .iter()
+            .map(|elev| {
+                ElevationCut::builder(
+                    elev.elevation_angle(),
+                    elev.waveform_type().into(),
+                    elev.channel_configuration().into(),
+                )
+                .azimuth_rate_degrees_per_second(elev.azimuth_rate())
+                .super_resolution_half_degree_azimuth(elev.super_resolution_half_degree_azimuth())
+                .super_resolution_quarter_km_reflectivity(
+                    elev.super_resolution_quarter_km_reflectivity(),
+                )
+                .super_resolution_doppler_to_300km(elev.super_resolution_doppler_to_300km())
+                .super_resolution_dual_pol_to_300km(elev.super_resolution_dual_pol_to_300km())
+                .surveillance_prf_number(elev.surveillance_prf_number())
+                .surveillance_prf_pulse_count(elev.surveillance_prf_pulse_count_radial())
+                .reflectivity_threshold_db(elev.reflectivity_threshold())
+                .velocity_threshold_db(elev.velocity_threshold())
+                .spectrum_width_threshold_db(elev.spectrum_width_threshold())
+                .differential_reflectivity_threshold_db(elev.differential_reflectivity_threshold())
+                .differential_phase_threshold_db(elev.differential_phase_threshold())
+                .correlation_coefficient_threshold_db(elev.correlation_coefficient_threshold())
+                .is_sails_cut(elev.is_sails_cut())
+                .sails_sequence_number(elev.sails_sequence_number())
+                .is_mrle_cut(elev.is_mrle_cut())
+                .mrle_sequence_number(elev.mrle_sequence_number())
+                .is_mpda_cut(elev.is_mpda_cut())
+                .is_base_tilt_cut(elev.is_base_tilt_cut())
+                .build()
+            })
+            .collect();
+
+        VolumeCoveragePattern::builder(VcpNumber::from_number(header.pattern_number()))
+            .version(header.version())
+            .doppler_velocity_resolution(header.doppler_velocity_resolution())
+            .pulse_width(header.pulse_width().into())
+            .sails_enabled(header.is_sails_vcp())
+            .sails_cuts(header.number_of_sails_cuts())
+            .mrle_enabled(header.is_mrle_vcp())
+            .mrle_cuts(header.number_of_mrle_cuts())
+            .mpda_enabled(header.is_mpda_vcp())
+            .base_tilt_enabled(header.is_base_tilt_vcp())
+            .base_tilt_count(header.number_of_base_tilts())
+            .sequence_active(header.vcp_sequencing_sequence_active())
+            .truncated(header.vcp_sequencing_truncated())
+            .elevation_cuts(elevation_cuts)
+            .build()
+    }
 }

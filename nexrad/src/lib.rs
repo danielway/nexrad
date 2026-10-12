@@ -42,6 +42,12 @@
 //! # Ok::<(), nexrad::Error>(())
 //! ```
 //!
+//! Helpers that need only model types are methods on those types: `Sweep::field`,
+//! `Scan::fields` and `Scan::first_field` extract `SweepField`s, and
+//! `Scan::coordinate_system` builds a `RadarCoordinateSystem` from the scan's site. The
+//! static site registry lives in `nexrad::model::meta::registry` (`sites`, `site_by_id`,
+//! `nearest_site`).
+//!
 //! ## Features
 //!
 //! All features are enabled by default through the `full` feature. Each feature enables the
@@ -421,128 +427,6 @@ pub async fn list_scans(
 }
 
 // ============================================================================
-// Field extraction convenience functions
-// ============================================================================
-
-/// Extract a [`SweepField`](model::data::SweepField) from a sweep for a specific product.
-///
-/// This is a convenience wrapper around [`SweepField::from_radials`](model::data::SweepField::from_radials).
-///
-/// # Example
-///
-/// ```ignore
-/// use nexrad::model::data::Product;
-///
-/// let scan = nexrad::load_file("scan.ar2v")?;
-/// let sweep = scan.sweeps().first().unwrap();
-/// let field = nexrad::extract_field(sweep, Product::Reflectivity)
-///     .expect("reflectivity data present");
-/// # Ok::<(), nexrad::Error>(())
-/// ```
-#[cfg(feature = "model")]
-pub fn extract_field(
-    sweep: &model::data::Sweep,
-    product: model::data::Product,
-) -> Option<model::data::SweepField> {
-    model::data::SweepField::from_radials(sweep.radials(), product)
-}
-
-/// Extract [`SweepField`](model::data::SweepField)s from all sweeps in a scan for a specific product.
-///
-/// Returns one field per sweep that contains data for the requested product.
-/// Fields are in the same order as the scan's sweeps.
-///
-/// # Example
-///
-/// ```ignore
-/// use nexrad::model::data::Product;
-///
-/// let scan = nexrad::load_file("scan.ar2v")?;
-/// let fields = nexrad::extract_fields(&scan, Product::Reflectivity);
-/// println!("{} sweeps with reflectivity data", fields.len());
-/// # Ok::<(), nexrad::Error>(())
-/// ```
-#[cfg(feature = "model")]
-pub fn extract_fields(
-    scan: &model::data::Scan,
-    product: model::data::Product,
-) -> Vec<model::data::SweepField> {
-    scan.sweeps()
-        .iter()
-        .filter_map(|sweep| model::data::SweepField::from_radials(sweep.radials(), product))
-        .collect()
-}
-
-/// Extract the first [`SweepField`](model::data::SweepField) in a scan that contains
-/// data for a specific product, along with its sweep index.
-///
-/// This is useful when you need to find a representative field for a product
-/// without iterating through all sweeps manually.
-///
-/// # Example
-///
-/// ```ignore
-/// use nexrad::model::data::Product;
-///
-/// let scan = nexrad::load_file("scan.ar2v")?;
-/// if let Some((sweep_idx, field)) = nexrad::extract_first_field(&scan, Product::Velocity) {
-///     println!("Velocity data found in sweep {}", sweep_idx);
-/// }
-/// # Ok::<(), nexrad::Error>(())
-/// ```
-#[cfg(feature = "model")]
-pub fn extract_first_field(
-    scan: &model::data::Scan,
-    product: model::data::Product,
-) -> Option<(usize, model::data::SweepField)> {
-    scan.sweeps().iter().enumerate().find_map(|(i, sweep)| {
-        model::data::SweepField::from_radials(sweep.radials(), product).map(|f| (i, f))
-    })
-}
-
-/// Create a [`RadarCoordinateSystem`](model::geo::RadarCoordinateSystem) from a scan's site metadata.
-///
-/// Returns `None` if the scan does not have site metadata.
-///
-/// # Example
-///
-/// ```ignore
-/// let scan = nexrad::load_file("scan.ar2v")?;
-/// let coord_sys = nexrad::coordinate_system(&scan)
-///     .expect("site metadata available");
-/// let extent = coord_sys.sweep_extent(230.0);
-/// # Ok::<(), nexrad::Error>(())
-/// ```
-#[cfg(feature = "model")]
-pub fn coordinate_system(scan: &model::data::Scan) -> Option<model::geo::RadarCoordinateSystem> {
-    scan.site().map(model::geo::RadarCoordinateSystem::new)
-}
-
-/// Create a [`RadarCoordinateSystem`](model::geo::RadarCoordinateSystem) from a scan's site metadata,
-/// returning an error if the scan does not contain site information.
-///
-/// This is a convenience wrapper around [`coordinate_system`] for use in contexts
-/// where a coordinate system is required and its absence is an error.
-///
-/// # Example
-///
-/// ```ignore
-/// let scan = nexrad::load_file("scan.ar2v")?;
-/// let coord_sys = nexrad::coordinate_system_required(&scan)?;
-/// # Ok::<(), nexrad::Error>(())
-/// ```
-///
-/// # Errors
-///
-/// Returns [`Error::MissingSiteMetadata`] if the scan has no site metadata.
-#[cfg(feature = "model")]
-pub fn coordinate_system_required(
-    scan: &model::data::Scan,
-) -> Result<model::geo::RadarCoordinateSystem> {
-    coordinate_system(scan).ok_or(Error::MissingSiteMetadata)
-}
-
-// ============================================================================
 // Real-time data access
 // ============================================================================
 
@@ -583,55 +467,6 @@ where
     use futures_util::StreamExt;
     let config = data::aws::realtime::PollConfig::new(site);
     data::aws::realtime::chunk_stream(config, sleep).map(|r| r.map_err(Error::Data))
-}
-
-// ============================================================================
-// Site registry convenience functions
-// ============================================================================
-
-/// Returns all NEXRAD radar sites in the static registry.
-///
-/// This provides a compile-time list of all operational NEXRAD WSR-88D radar sites.
-///
-/// # Example
-///
-/// ```
-/// for site in nexrad::sites() {
-///     println!("{}: {}, {}", site.id, site.city, site.state);
-/// }
-/// ```
-#[cfg(feature = "model")]
-pub fn sites() -> &'static [model::meta::registry::SiteEntry] {
-    model::meta::registry::sites()
-}
-
-/// Look up a NEXRAD radar site by its ICAO identifier (case-insensitive).
-///
-/// # Example
-///
-/// ```
-/// let site = nexrad::site("KTLX").unwrap();
-/// assert_eq!(site.city, "Oklahoma City");
-/// ```
-#[cfg(feature = "model")]
-pub fn site(id: &str) -> Option<&'static model::meta::registry::SiteEntry> {
-    model::meta::registry::site_by_id(id)
-}
-
-/// Find the nearest NEXRAD site to a given latitude/longitude.
-///
-/// # Example
-///
-/// ```
-/// let site = nexrad::nearest_site(35.4676, -97.5164).unwrap();
-/// assert_eq!(site.id, "KTLX");
-/// ```
-#[cfg(feature = "model")]
-pub fn nearest_site(
-    latitude: f64,
-    longitude: f64,
-) -> Option<&'static model::meta::registry::SiteEntry> {
-    model::meta::registry::nearest_site(latitude, longitude)
 }
 
 // ============================================================================

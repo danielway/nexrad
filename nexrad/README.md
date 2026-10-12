@@ -51,29 +51,6 @@ for sweep in scan.sweeps() {
 |----------|-------------|
 | `stream(site, sleep)` | Stream live radar data chunks as a `Stream`, waiting via the supplied sleep function (e.g. `\|d\| tokio::time::sleep(d)`) |
 
-### Field Extraction
-
-| Function | Description |
-|----------|-------------|
-| `extract_field(sweep, product)` | Extract a `SweepField` from one sweep |
-| `extract_fields(scan, product)` | Extract `SweepField`s from all sweeps |
-| `extract_first_field(scan, product)` | Find the first sweep with data for a product |
-
-### Coordinate System
-
-| Function | Description |
-|----------|-------------|
-| `coordinate_system(scan)` | Create a `RadarCoordinateSystem` from scan metadata |
-| `coordinate_system_required(scan)` | Same, but returns an error if metadata is missing |
-
-### Site Registry
-
-| Function | Description |
-|----------|-------------|
-| `sites()` | All NEXRAD radar sites |
-| `site(id)` | Look up a site by ICAO identifier |
-| `nearest_site(lat, lon)` | Find the nearest site to a location |
-
 ## Re-exported Crates
 
 Access sub-crate APIs through module re-exports:
@@ -83,6 +60,12 @@ Access sub-crate APIs through module re-exports:
 - `nexrad::data` — File I/O and AWS S3 (`volume::File`, `aws::archive`, `aws::realtime`)
 - `nexrad::process` — Processing algorithms (`SweepPipeline`, filters, derived products)
 - `nexrad::render` — Visualization (`render_sweep`, color scales, `RenderOptions`)
+
+Helpers that only need model types live on those types: `sweep.field(product)`,
+`scan.fields(product)` and `scan.first_field(product)` extract `SweepField`s,
+`scan.coordinate_system()` builds a `RadarCoordinateSystem` from the scan's site, and
+`nexrad::model::meta::registry` provides `sites()`, `site_by_id(id)` and
+`nearest_site(lat, lon)` for the static site registry.
 
 ## Features
 

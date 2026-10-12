@@ -134,7 +134,7 @@ async fn test_list_files_basic() {
     let site = "KDMX";
     let date = NaiveDate::from_ymd_opt(2022, 3, 5).unwrap();
 
-    let result = archive::list_files(site, &date).await;
+    let result = archive::list_files(site, date).await;
 
     assert!(result.is_ok(), "Failed to list files: {:?}", result.err());
     let files = result.unwrap();
@@ -159,7 +159,7 @@ async fn test_list_files_no_data() {
     // Use a date far in the future where no data should exist
     let date = NaiveDate::from_ymd_opt(2099, 12, 31).unwrap();
 
-    let result = archive::list_files(site, &date).await;
+    let result = archive::list_files(site, date).await;
 
     assert!(result.is_ok());
     let files = result.unwrap();
@@ -178,7 +178,7 @@ async fn test_list_files_sorted() {
     let site = "KDMX";
     let date = NaiveDate::from_ymd_opt(2022, 3, 5).unwrap();
 
-    let result = archive::list_files(site, &date).await;
+    let result = archive::list_files(site, date).await;
     assert!(result.is_ok());
     let files = result.unwrap();
 
@@ -207,7 +207,7 @@ async fn test_download_file_basic() {
     let date = NaiveDate::from_ymd_opt(2022, 3, 5).unwrap();
 
     // First list files to get an actual file that exists
-    let list_result = archive::list_files(site, &date).await;
+    let list_result = archive::list_files(site, date).await;
     assert!(list_result.is_ok(), "Failed to list files");
     let files = list_result.unwrap();
 
@@ -219,7 +219,7 @@ async fn test_download_file_basic() {
 
     // Download the first available file
     let identifier = files.first().unwrap().clone();
-    let result = archive::download_file(identifier.clone()).await;
+    let result = archive::download_file(&identifier).await;
 
     assert!(
         result.is_ok(),
@@ -245,7 +245,7 @@ async fn test_download_file_nonexistent() {
     // Use an identifier that should not exist
     let identifier = Identifier::new("KDMX20990101_000000_V06".to_string());
 
-    let result = archive::download_file(identifier).await;
+    let result = archive::download_file(&identifier).await;
 
     // Should return an error for non-existent file
     assert!(result.is_err(), "Expected error for non-existent file");
@@ -257,7 +257,7 @@ async fn test_download_file_invalid_identifier() {
     // Identifier without valid site
     let identifier = Identifier::new("INVALID_NAME".to_string());
 
-    let result = archive::download_file(identifier).await;
+    let result = archive::download_file(&identifier).await;
 
     assert!(result.is_err(), "Expected error for invalid identifier");
 }
@@ -270,7 +270,7 @@ async fn test_list_and_download_workflow() {
     let date = NaiveDate::from_ymd_opt(2022, 3, 5).unwrap();
 
     // List files
-    let list_result = archive::list_files(site, &date).await;
+    let list_result = archive::list_files(site, date).await;
     assert!(list_result.is_ok());
     let files = list_result.unwrap();
 
@@ -281,7 +281,7 @@ async fn test_list_and_download_workflow() {
 
     // Download the first file
     let first_file = files.first().unwrap().clone();
-    let download_result = archive::download_file(first_file.clone()).await;
+    let download_result = archive::download_file(&first_file).await;
     assert!(
         download_result.is_ok(),
         "Failed to download: {:?}",
@@ -346,7 +346,7 @@ async fn test_list_files_different_sites() {
     let sites = vec!["KDMX", "KABR"];
 
     for site in sites {
-        let result = archive::list_files(site, &date).await;
+        let result = archive::list_files(site, date).await;
         assert!(result.is_ok(), "Failed to list files for site: {}", site);
 
         let files = result.unwrap();

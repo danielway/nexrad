@@ -309,7 +309,7 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
 /// Returns an error if the download, decompression, or decoding fails.
 #[cfg(feature = "aws")]
 pub async fn download(identifier: data::aws::archive::Identifier) -> Result<model::data::Scan> {
-    let file = data::aws::archive::download_file(identifier)
+    let file = data::aws::archive::download_file(&identifier)
         .await?
         .decompress()?;
     Ok(file.scan()?)
@@ -337,7 +337,7 @@ pub async fn download(identifier: data::aws::archive::Identifier) -> Result<mode
 /// or a network/parsing error if download or decoding fails.
 #[cfg(feature = "aws")]
 pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<model::data::Scan> {
-    let files = data::aws::archive::list_files(site, &date).await?;
+    let files = data::aws::archive::list_files(site, date).await?;
     let file_id = files
         .last()
         .cloned()
@@ -374,7 +374,7 @@ pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<mode
 /// or if no file overlaps the requested time.
 #[cfg(feature = "aws")]
 pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<model::data::Scan> {
-    let files = data::aws::archive::list_files(site, &datetime.date()).await?;
+    let files = data::aws::archive::list_files(site, datetime.date()).await?;
 
     // Find the archive file that would contain data at the requested time.
     // Files are sorted chronologically; find the last one with start_time <= requested time.
@@ -417,7 +417,7 @@ pub async fn list_scans(
     site: &str,
     date: chrono::NaiveDate,
 ) -> Result<Vec<data::aws::archive::Identifier>> {
-    Ok(data::aws::archive::list_files(site, &date).await?)
+    Ok(data::aws::archive::list_files(site, date).await?)
 }
 
 // ============================================================================

@@ -15,9 +15,9 @@ pub struct SiteEntry {
     /// Two-letter state/territory abbreviation (e.g., "OK").
     pub state: &'static str,
     /// Latitude in degrees.
-    pub latitude: f32,
+    pub latitude: f64,
     /// Longitude in degrees.
-    pub longitude: f32,
+    pub longitude: f64,
     /// Elevation above sea level in meters.
     pub elevation_meters: i16,
 }
@@ -75,7 +75,7 @@ pub fn site_by_id(id: &str) -> Option<&'static SiteEntry> {
 /// let site = registry::nearest_site(35.4676, -97.5164).unwrap();
 /// assert_eq!(site.id, "KTLX");
 /// ```
-pub fn nearest_site(latitude: f32, longitude: f32) -> Option<&'static SiteEntry> {
+pub fn nearest_site(latitude: f64, longitude: f64) -> Option<&'static SiteEntry> {
     SITES.iter().min_by(|a, b| {
         let dist_a = approx_distance_squared(latitude, longitude, a.latitude, a.longitude);
         let dist_b = approx_distance_squared(latitude, longitude, b.latitude, b.longitude);
@@ -88,7 +88,7 @@ pub fn nearest_site(latitude: f32, longitude: f32) -> Option<&'static SiteEntry>
 /// Approximate squared distance for comparison purposes (not actual distance).
 /// Uses equirectangular approximation, which is adequate for nearest-neighbor queries
 /// within CONUS-scale distances.
-fn approx_distance_squared(lat1: f32, lon1: f32, lat2: f32, lon2: f32) -> f32 {
+fn approx_distance_squared(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
     let dlat = lat2 - lat1;
     let dlon = (lon2 - lon1) * ((lat1 + lat2) * 0.5).to_radians().cos();
     dlat * dlat + dlon * dlon

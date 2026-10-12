@@ -42,7 +42,7 @@ const EFFECTIVE_EARTH_RADIUS_KM: f64 = 6371.0 * 4.0 / 3.0;
 /// ```
 pub struct VerticalCrossSection {
     /// Target azimuth in degrees (0-360).
-    azimuth_degrees: f32,
+    azimuth_degrees: f64,
     /// Maximum range in km for the horizontal axis.
     max_range_km: f64,
     /// Maximum altitude in meters for the vertical axis.
@@ -68,7 +68,7 @@ impl VerticalCrossSection {
     ///
     /// Returns an error if any parameter is non-positive.
     pub fn new(
-        azimuth_degrees: f32,
+        azimuth_degrees: f64,
         max_range_km: f64,
         max_altitude_m: f64,
         width: usize,

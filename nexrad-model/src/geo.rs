@@ -45,11 +45,11 @@ pub struct GeoExtent {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PolarPoint {
     /// Azimuth angle in degrees clockwise from north (0-360).
-    pub azimuth_degrees: f32,
+    pub azimuth_degrees: f64,
     /// Slant range from the radar in kilometers.
     pub range_km: f64,
     /// Elevation angle in degrees above the horizon.
-    pub elevation_degrees: f32,
+    pub elevation_degrees: f64,
 }
 
 /// Standard 4/3 effective earth radius in meters.
@@ -80,8 +80,8 @@ impl RadarCoordinateSystem {
     /// The antenna height is computed as the site's ground elevation plus its tower height.
     pub fn new(site: &Site) -> Self {
         Self {
-            latitude: site.latitude() as f64,
-            longitude: site.longitude() as f64,
+            latitude: site.latitude(),
+            longitude: site.longitude(),
             antenna_height_meters: site.height_meters() as f64 + site.tower_height_meters() as f64,
         }
     }
@@ -108,8 +108,8 @@ impl RadarCoordinateSystem {
     /// and elevation from the radar.
     pub fn polar_to_geo(&self, polar: PolarPoint) -> GeoPoint3D {
         let range_m = polar.range_km * 1000.0;
-        let elev_rad = (polar.elevation_degrees as f64).to_radians();
-        let az_rad = (polar.azimuth_degrees as f64).to_radians();
+        let elev_rad = polar.elevation_degrees.to_radians();
+        let az_rad = polar.azimuth_degrees.to_radians();
 
         // Beam height using 4/3 earth radius model
         // h = sqrt(r^2 + R_e^2 + 2*r*R_e*sin(el)) - R_e + h_antenna
@@ -150,7 +150,7 @@ impl RadarCoordinateSystem {
     ///
     /// Computes the azimuth and range from the radar to the given geographic point
     /// at the specified elevation angle.
-    pub fn geo_to_polar(&self, point: GeoPoint, elevation_degrees: f32) -> PolarPoint {
+    pub fn geo_to_polar(&self, point: GeoPoint, elevation_degrees: f64) -> PolarPoint {
         let lat1 = self.latitude.to_radians();
         let lon1 = self.longitude.to_radians();
         let lat2 = point.latitude.to_radians();
@@ -171,11 +171,11 @@ impl RadarCoordinateSystem {
         let ground_range_m = angular_distance * 6_371_000.0;
 
         // Invert the beam height equation to get slant range
-        let elev_rad = (elevation_degrees as f64).to_radians();
+        let elev_rad = elevation_degrees.to_radians();
         let range_m = ground_range_m / elev_rad.cos(); // Approximation for small elevations
 
         PolarPoint {
-            azimuth_degrees: azimuth_degrees as f32,
+            azimuth_degrees,
             range_km: range_m / 1000.0,
             elevation_degrees,
         }
@@ -223,8 +223,8 @@ impl RadarCoordinateSystem {
     /// Compute the geographic location of a specific gate in a radial.
     pub fn gate_location(
         &self,
-        azimuth_degrees: f32,
-        elevation_degrees: f32,
+        azimuth_degrees: f64,
+        elevation_degrees: f64,
         gate_index: usize,
         first_gate_km: f64,
         gate_interval_km: f64,

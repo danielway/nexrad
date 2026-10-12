@@ -630,8 +630,8 @@ pub fn site(id: &str) -> Option<&'static model::meta::registry::SiteEntry> {
 /// ```
 #[cfg(feature = "model")]
 pub fn nearest_site(
-    latitude: f32,
-    longitude: f32,
+    latitude: f64,
+    longitude: f64,
 ) -> Option<&'static model::meta::registry::SiteEntry> {
     model::meta::registry::nearest_site(latitude, longitude)
 }

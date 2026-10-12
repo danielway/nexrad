@@ -4,15 +4,15 @@ use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "uom")]
-use uom::si::{f32::Length, length::meter};
+use uom::si::{f64::Length, length::meter};
 
 /// A radar site's metadata including a variety of infrequently-changing properties.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Site {
     identifier: [u8; 4],
-    latitude: f32,
-    longitude: f32,
+    latitude: f64,
+    longitude: f64,
     height_meters: i16,
     tower_height_meters: u16,
 }
@@ -21,8 +21,8 @@ impl Site {
     /// Create new radar site metadata with the given properties.
     pub fn new(
         identifier: [u8; 4],
-        latitude: f32,
-        longitude: f32,
+        latitude: f64,
+        longitude: f64,
         height_meters: i16,
         tower_height_meters: u16,
     ) -> Self {
@@ -46,12 +46,12 @@ impl Site {
     }
 
     /// The latitude of the radar site in degrees.
-    pub fn latitude(&self) -> f32 {
+    pub fn latitude(&self) -> f64 {
         self.latitude
     }
 
     /// The longitude of the radar site in degrees.
-    pub fn longitude(&self) -> f32 {
+    pub fn longitude(&self) -> f64 {
         self.longitude
     }
 
@@ -63,7 +63,7 @@ impl Site {
     /// The height of the radar site above sea level.
     #[cfg(feature = "uom")]
     pub fn height(&self) -> Length {
-        Length::new::<meter>(self.height_meters as f32)
+        Length::new::<meter>(self.height_meters as f64)
     }
 
     /// The height of the radar tower above ground in meters.
@@ -74,7 +74,7 @@ impl Site {
     /// The height of the radar tower above ground.
     #[cfg(feature = "uom")]
     pub fn tower_height(&self) -> Length {
-        Length::new::<meter>(self.tower_height_meters as f32)
+        Length::new::<meter>(self.tower_height_meters as f64)
     }
 }
 

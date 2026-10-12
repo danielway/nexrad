@@ -81,7 +81,8 @@ impl ScanDerivedProduct for CompositeReflectivity {
                 let mut found_valid = false;
 
                 for field in fields {
-                    let polar = coord_system.geo_to_polar(geo_point, field.elevation_degrees());
+                    let polar =
+                        coord_system.geo_to_polar(geo_point, field.elevation_degrees() as f64);
 
                     if let Some((val, status)) =
                         field.value_at_polar(polar.azimuth_degrees, polar.range_km)

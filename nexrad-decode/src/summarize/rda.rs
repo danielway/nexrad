@@ -1,3 +1,5 @@
+use crate::messages::rda_status_data::VcpSelection;
+
 /// Contains summary information from the RDA Status Data message.
 #[derive(Clone, PartialEq, Debug)]
 pub struct RdaStatusInfo {
@@ -9,10 +11,8 @@ pub struct RdaStatusInfo {
     pub control_status: String,
     /// Operational mode (operational/maintenance).
     pub operational_mode: String,
-    /// Active VCP number, if any.
-    pub vcp_number: Option<i16>,
-    /// Whether the VCP was set locally.
-    pub vcp_is_local: bool,
+    /// Active VCP and where it was specified, if any.
+    pub vcp: Option<VcpSelection>,
     /// Average transmitter power in watts.
     pub average_transmitter_power: u16,
     /// Reflectivity calibration correction in dB.
@@ -38,11 +38,7 @@ pub fn extract_rda_status_info(
         operability_status: format!("{:?}", message.operability_status()),
         control_status: format!("{:?}", message.control_status()),
         operational_mode: format!("{:?}", message.operational_mode()),
-        vcp_number: message.volume_coverage_pattern().map(|vcp| vcp.number()),
-        vcp_is_local: message
-            .volume_coverage_pattern()
-            .map(|vcp| vcp.local())
-            .unwrap_or(false),
+        vcp: message.volume_coverage_pattern(),
         average_transmitter_power: message.average_transmitter_power(),
         reflectivity_calibration: message.horizontal_reflectivity_calibration_correction(),
         super_resolution_status: format!("{:?}", message.super_resolution_status()),

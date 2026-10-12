@@ -1,4 +1,5 @@
 use super::{RdaStatusInfo, VcpInfo};
+use crate::messages::rda_status_data::VcpSource;
 use crate::messages::MessageType;
 use chrono::{DateTime, Utc};
 use std::{
@@ -114,13 +115,12 @@ impl Display for MessageGroupSummary {
                     status_info.control_status, status_info.operational_mode
                 )?;
 
-                if let Some(vcp) = status_info.vcp_number {
-                    let source = if status_info.vcp_is_local {
-                        "local"
-                    } else {
-                        "remote"
+                if let Some(vcp) = status_info.vcp {
+                    let source = match vcp.source() {
+                        VcpSource::Local => "local",
+                        VcpSource::Remote => "remote",
                     };
-                    write!(f, ", VCP: {vcp} ({source})")?;
+                    write!(f, ", {} ({source})", vcp.number())?;
                 }
 
                 writeln!(f)?;

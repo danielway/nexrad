@@ -30,9 +30,6 @@ pub use processing_status::ProcessingStatus;
 mod radial_status;
 pub use radial_status::RadialStatus;
 
-mod volume_coverage_pattern;
-pub use volume_coverage_pattern::VolumeCoveragePattern;
-
 mod spot_blanking_status;
 pub use spot_blanking_status::SpotBlankingStatus;
 

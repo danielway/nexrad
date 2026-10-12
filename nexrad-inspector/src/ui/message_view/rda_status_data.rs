@@ -1,5 +1,6 @@
 //! RDA Status Data (Type 2) message parsing and display.
 
+use nexrad_decode::messages::rda_status_data::VcpSource;
 use nexrad_decode::messages::{decode_messages, rda_status_data, MessageContents};
 
 /// Parses and displays an RDA Status Data (Type 2) message with full details.
@@ -77,7 +78,10 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
         output.push_str(&format!(
             "VCP Number: {} ({})\n",
             vcp.number(),
-            if vcp.remote() { "remote" } else { "local" }
+            match vcp.source() {
+                VcpSource::Local => "local",
+                VcpSource::Remote => "remote",
+            }
         ));
     } else {
         output.push_str("VCP: None\n");

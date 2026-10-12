@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use crate::messages::{digital_radar_data, MessageType};
+use crate::messages::{MessageType, VcpNumber};
 use std::{
     collections::HashSet,
     fmt::{Display, Formatter, Result},
@@ -12,7 +12,7 @@ use super::MessageGroupSummary;
 #[derive(Clone, PartialEq, Debug)]
 pub struct MessageSummary {
     /// The distinct volume coverage patterns found in these messages.
-    pub volume_coverage_patterns: HashSet<digital_radar_data::VolumeCoveragePattern>,
+    pub volume_coverage_patterns: HashSet<VcpNumber>,
 
     /// All messages in sequence, with related messages grouped together.
     pub message_groups: Vec<MessageGroupSummary>,
@@ -55,7 +55,7 @@ impl Display for MessageSummary {
                 if i > 0 {
                     write!(f, ", ")?;
                 }
-                write!(f, "{vcp:?}")?;
+                write!(f, "{vcp}")?;
             }
             writeln!(f)?;
         }

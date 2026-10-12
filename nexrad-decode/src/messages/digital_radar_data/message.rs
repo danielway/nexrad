@@ -1,7 +1,7 @@
 use super::raw;
 use super::{
-    DataBlock, DataBlockId, ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock,
-    VolumeDataBlock,
+    DataBlock, DataBlockId, DataBlockName, ElevationDataBlock, GenericDataBlock, Header,
+    RadialDataBlock, VolumeDataBlock,
 };
 use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
@@ -90,8 +90,8 @@ impl<'a> Message<'a> {
             let block_id = reader.take_ref::<raw::DataBlockId>()?;
             let id = DataBlockId::new(block_id);
 
-            match &block_id.data_name {
-                b"VOL" => {
+            match id.data_block_name() {
+                DataBlockName::Volume => {
                     // VOL expanded from 44 to 52 bytes at Build 20.0 (ICD 2620002U).
                     if reader.peek_u16().is_some_and(|lrtup| lrtup <= 44) {
                         let block = reader.take_ref::<raw::VolumeDataBlockLegacy>()?;
@@ -103,12 +103,12 @@ impl<'a> Message<'a> {
                             Some(DataBlock::new(id, VolumeDataBlock::new(block)));
                     }
                 }
-                b"ELV" => {
+                DataBlockName::Elevation => {
                     let elevation_block = reader.take_ref::<raw::ElevationDataBlock>()?;
                     message.elevation_data_block =
                         Some(DataBlock::new(id, ElevationDataBlock::new(elevation_block)));
                 }
-                b"RAD" => {
+                DataBlockName::Radial => {
                     // RAD expanded from 20 to 28 bytes at Build 12.0 (ICD 2620002K).
                     if reader.peek_u16().is_some_and(|lrtup| lrtup <= 20) {
                         let block = reader.take_ref::<raw::RadialDataBlockLegacy>()?;
@@ -120,33 +120,33 @@ impl<'a> Message<'a> {
                             Some(DataBlock::new(id, RadialDataBlock::new(block)));
                     }
                 }
-                _ => {
+                name => {
                     let generic_block = GenericDataBlock::parse(reader)?;
-                    match &block_id.data_name {
-                        b"REF" => {
+                    match name {
+                        DataBlockName::Reflectivity => {
                             message.reflectivity_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        b"VEL" => {
+                        DataBlockName::Velocity => {
                             message.velocity_data_block = Some(DataBlock::new(id, generic_block));
                         }
-                        b"SW " => {
+                        DataBlockName::SpectrumWidth => {
                             message.spectrum_width_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        b"ZDR" => {
+                        DataBlockName::DifferentialReflectivity => {
                             message.differential_reflectivity_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        b"PHI" => {
+                        DataBlockName::DifferentialPhase => {
                             message.differential_phase_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        b"RHO" => {
+                        DataBlockName::CorrelationCoefficient => {
                             message.correlation_coefficient_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        b"CFP" => {
+                        DataBlockName::ClutterFilterPower => {
                             message.clutter_filter_power_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }

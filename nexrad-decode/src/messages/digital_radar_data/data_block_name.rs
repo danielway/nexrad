@@ -12,7 +12,7 @@ pub enum DataBlockName {
     Reflectivity,
     /// Velocity data moment ("VEL").
     Velocity,
-    /// Spectrum width data moment ("SW\0").
+    /// Spectrum width data moment ("SW ", with a trailing space).
     SpectrumWidth,
     /// Differential reflectivity data moment ("ZDR").
     DifferentialReflectivity,
@@ -24,4 +24,28 @@ pub enum DataBlockName {
     ClutterFilterPower,
     /// Unknown data block name for forward compatibility.
     Unknown([u8; 3]),
+}
+
+impl DataBlockName {
+    /// The model product carried by a data moment block with this name, or `None` for the
+    /// metadata blocks ([`Volume`](Self::Volume), [`Elevation`](Self::Elevation),
+    /// [`Radial`](Self::Radial)) and unknown names.
+    #[cfg(feature = "model")]
+    pub fn product(&self) -> Option<nexrad_model::data::Product> {
+        use nexrad_model::data::Product;
+
+        match self {
+            DataBlockName::Reflectivity => Some(Product::Reflectivity),
+            DataBlockName::Velocity => Some(Product::Velocity),
+            DataBlockName::SpectrumWidth => Some(Product::SpectrumWidth),
+            DataBlockName::DifferentialReflectivity => Some(Product::DifferentialReflectivity),
+            DataBlockName::DifferentialPhase => Some(Product::DifferentialPhase),
+            DataBlockName::CorrelationCoefficient => Some(Product::CorrelationCoefficient),
+            DataBlockName::ClutterFilterPower => Some(Product::ClutterFilterPower),
+            DataBlockName::Volume
+            | DataBlockName::Elevation
+            | DataBlockName::Radial
+            | DataBlockName::Unknown(_) => None,
+        }
+    }
 }

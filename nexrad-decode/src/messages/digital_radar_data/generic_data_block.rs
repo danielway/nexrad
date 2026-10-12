@@ -57,20 +57,9 @@ impl<'a> GenericDataBlock<'a> {
 impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
     /// The model product for this block, derived from its data block name.
     fn product(&self) -> Result<nexrad_model::data::Product> {
-        use nexrad_model::data::Product;
-
-        Ok(match self.id().data_name_raw() {
-            b"REF" => Product::Reflectivity,
-            b"VEL" => Product::Velocity,
-            b"SW " => Product::SpectrumWidth,
-            b"ZDR" => Product::DifferentialReflectivity,
-            b"PHI" => Product::DifferentialPhase,
-            b"RHO" => Product::CorrelationCoefficient,
-            b"CFP" => Product::ClutterFilterPower,
-            _ => {
-                return Err(crate::result::Error::UnknownDataBlockType {
-                    block_type: self.id().data_block_name_str().into_owned(),
-                })
+        self.id().data_block_name().product().ok_or_else(|| {
+            crate::result::Error::UnknownDataBlockType {
+                block_type: self.id().data_block_name_str().into_owned(),
             }
         })
     }

@@ -55,7 +55,7 @@ impl<'a> DataBlockId<'a> {
             b"RAD" => DataBlockName::Radial,
             b"REF" => DataBlockName::Reflectivity,
             b"VEL" => DataBlockName::Velocity,
-            b"SW\0" => DataBlockName::SpectrumWidth,
+            b"SW " => DataBlockName::SpectrumWidth,
             b"ZDR" => DataBlockName::DifferentialReflectivity,
             b"PHI" => DataBlockName::DifferentialPhase,
             b"RHO" => DataBlockName::CorrelationCoefficient,
@@ -71,5 +71,24 @@ impl<'a> DataBlockId<'a> {
     /// with the Unicode replacement character.
     pub fn data_block_name_str(&self) -> Cow<'_, str> {
         String::from_utf8_lossy(&self.inner.data_name)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn name_of(data_name: [u8; 3]) -> DataBlockName {
+        let raw = raw::DataBlockId {
+            data_block_type: b'D',
+            data_name,
+        };
+        DataBlockId::new(&raw).data_block_name()
+    }
+
+    #[test]
+    fn spectrum_width_name_has_trailing_space() {
+        assert_eq!(name_of(*b"SW "), DataBlockName::SpectrumWidth);
+        assert_eq!(name_of(*b"SW\0"), DataBlockName::Unknown(*b"SW\0"));
     }
 }

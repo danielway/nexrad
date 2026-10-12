@@ -8,7 +8,7 @@ use crate::aws::realtime::scan_timing_projection::ScanTimingProjection;
 use crate::aws::realtime::{
     download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
     project_scan_timing, Chunk, ChunkIdentifier, ChunkTimingStats, ChunkType, ElevationChunkMapper,
-    NextChunk, RetryPolicy, RetryState, VolumeIndex,
+    NextChunk, PollConfig, RetryState, VolumeIndex,
 };
 use crate::result::{aws::AwsError, Error, Result};
 use chrono::{DateTime, Duration, Utc};
@@ -83,13 +83,11 @@ enum IteratorState {
 /// to determine when to call [`try_next`](Self::try_next).
 #[derive(Debug)]
 pub struct ChunkIterator {
-    site: String,
+    config: PollConfig,
     state: IteratorState,
     elevation_mapper: Option<ElevationChunkMapper>,
     vcp: Option<volume_coverage_pattern::Message<'static>>,
     timing_stats: ChunkTimingStats,
-    download_policy: RetryPolicy,
-    discovery_policy: RetryPolicy,
     last_chunk_time: Option<DateTime<Utc>>,
     requests_made: usize,
     bytes_downloaded: u64,
@@ -108,40 +106,31 @@ impl ChunkIterator {
     /// - `iterator`: The initialized iterator ready for `try_next()` calls
     /// - `latest_chunk`: The most recent chunk in the volume
     /// - `start_chunk`: The Start chunk if it differs from `latest_chunk` (contains VCP metadata)
+    ///
+    /// This is shorthand for [`start_with(PollConfig::new(site))`](Self::start_with).
     pub async fn start(site: &str) -> Result<ChunkIteratorInit> {
-        Self::start_with_policies(
-            site,
-            RetryPolicy::default_download(),
-            RetryPolicy::default_discovery(),
-        )
-        .await
+        Self::start_with(PollConfig::new(site)).await
     }
 
-    /// Starts a new chunk iterator with custom retry policies.
+    /// Starts a new chunk iterator with the given configuration.
     ///
     /// See [`start`](Self::start) for details on the return value.
-    pub async fn start_with_policies(
-        site: &str,
-        download_policy: RetryPolicy,
-        discovery_policy: RetryPolicy,
-    ) -> Result<ChunkIteratorInit> {
-        let latest = get_latest_volume(site).await?;
+    pub async fn start_with(config: PollConfig) -> Result<ChunkIteratorInit> {
+        let latest = get_latest_volume(config.site()).await?;
         let volume = latest.volume.ok_or(AwsError::LatestVolumeNotFound)?;
 
         debug!(
             "ChunkIterator initialized for site {} at volume {}",
-            site,
+            config.site(),
             volume.as_number()
         );
 
         let mut iterator = Self {
-            site: site.to_string(),
+            config,
             state: IteratorState::NeedVolumeStart(volume),
             elevation_mapper: None,
             vcp: None,
             timing_stats: ChunkTimingStats::new(),
-            download_policy,
-            discovery_policy,
             last_chunk_time: None,
             requests_made: latest.calls,
             bytes_downloaded: 0,
@@ -161,20 +150,13 @@ impl ChunkIterator {
     ///
     /// This is useful for resuming from a known position. Note that the VCP and
     /// elevation mapper will not be available until a Start chunk is encountered.
-    pub fn from_chunk(
-        site: &str,
-        chunk_id: ChunkIdentifier,
-        download_policy: RetryPolicy,
-        discovery_policy: RetryPolicy,
-    ) -> Self {
+    pub fn from_chunk(config: PollConfig, chunk_id: ChunkIdentifier) -> Self {
         Self {
-            site: site.to_string(),
+            config,
             state: IteratorState::Ready(chunk_id),
             elevation_mapper: None,
             vcp: None,
             timing_stats: ChunkTimingStats::new(),
-            download_policy,
-            discovery_policy,
             last_chunk_time: None,
             requests_made: 0,
             bytes_downloaded: 0,
@@ -206,7 +188,7 @@ impl ChunkIterator {
             // Joined mid-volume: fetch the Start chunk for VCP
             let start_id = latest_chunk.identifier.with_sequence(1, ChunkType::Start);
 
-            if let Ok(downloaded) = download_chunk(&self.site, &start_id).await {
+            if let Ok(downloaded) = download_chunk(self.config.site(), &start_id).await {
                 self.requests_made += 1;
                 self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
@@ -291,7 +273,7 @@ impl ChunkIterator {
         &mut self,
         volume: VolumeIndex,
     ) -> Result<Option<DownloadedChunk>> {
-        let mut retry_state = RetryState::new(self.discovery_policy.clone());
+        let mut retry_state = RetryState::new(self.config.discovery_policy().clone());
 
         while retry_state.should_retry() {
             match self.fetch_latest_chunk_in_volume(volume).await {
@@ -310,7 +292,7 @@ impl ChunkIterator {
                         && self.elevation_mapper.is_none()
                     {
                         let start_id = downloaded.identifier.with_sequence(1, ChunkType::Start);
-                        if let Ok(start) = download_chunk(&self.site, &start_id).await {
+                        if let Ok(start) = download_chunk(self.config.site(), &start_id).await {
                             self.requests_made += 1;
                             self.bytes_downloaded += start.chunk.data().len() as u64;
 
@@ -363,7 +345,7 @@ impl ChunkIterator {
         &mut self,
         volume: VolumeIndex,
     ) -> Result<Option<DownloadedChunk>> {
-        let chunks = list_chunks_in_volume(&self.site, volume, usize::MAX).await?;
+        let chunks = list_chunks_in_volume(self.config.site(), volume, usize::MAX).await?;
         self.requests_made += 1;
 
         let latest = match chunks.last() {
@@ -377,7 +359,7 @@ impl ChunkIterator {
             return Ok(None);
         }
 
-        let downloaded = download_chunk(&self.site, latest).await?;
+        let downloaded = download_chunk(self.config.site(), latest).await?;
         self.requests_made += 1;
         self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
@@ -396,7 +378,7 @@ impl ChunkIterator {
     ) -> Result<Option<DownloadedChunk>> {
         self.requests_made += 1;
 
-        match download_chunk(&self.site, &chunk_id).await {
+        match download_chunk(self.config.site(), &chunk_id).await {
             Ok(downloaded) => {
                 let identifier = &downloaded.identifier;
                 self.bytes_downloaded += downloaded.chunk.data().len() as u64;
@@ -496,17 +478,12 @@ impl ChunkIterator {
 
     /// Returns the site identifier.
     pub fn site(&self) -> &str {
-        &self.site
+        self.config.site()
     }
 
-    /// Returns the download retry policy.
-    pub fn download_policy(&self) -> &RetryPolicy {
-        &self.download_policy
-    }
-
-    /// Returns the discovery retry policy.
-    pub fn discovery_policy(&self) -> &RetryPolicy {
-        &self.discovery_policy
+    /// Returns the configuration this iterator was created with.
+    pub fn config(&self) -> &PollConfig {
+        &self.config
     }
 
     /// Returns the total number of HTTP requests made by this iterator.

@@ -6,7 +6,7 @@
 use crate::aws::realtime::{
     download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
     Chunk, ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, DownloadedChunk,
-    ElevationChunkMapper, NextChunk, RetryPolicy, RetryState, VolumeIndex,
+    ElevationChunkMapper, NextChunk, PollConfig, RetryPolicy, RetryState, VolumeIndex,
 };
 use crate::result::Error;
 use crate::result::{aws::AwsError, Result};
@@ -15,54 +15,6 @@ use futures_util::stream::Stream;
 use log::debug;
 use nexrad_decode::messages::volume_coverage_pattern;
 use std::future::Future;
-
-/// Configuration for polling real-time NEXRAD chunks.
-///
-/// Create one with [`PollConfig::new`] and adjust it with the chainable `with_*` setters.
-#[derive(Debug, Clone)]
-pub struct PollConfig {
-    site: String,
-    download_policy: RetryPolicy,
-    discovery_policy: RetryPolicy,
-}
-
-impl PollConfig {
-    /// Creates a new poll configuration for the specified site with default policies.
-    pub fn new(site: impl Into<String>) -> Self {
-        Self {
-            site: site.into(),
-            download_policy: RetryPolicy::default_download(),
-            discovery_policy: RetryPolicy::default_discovery(),
-        }
-    }
-
-    /// The radar site identifier (e.g., "KDMX").
-    pub fn site(&self) -> &str {
-        &self.site
-    }
-
-    /// Retry policy for downloading individual chunks.
-    pub fn download_policy(&self) -> &RetryPolicy {
-        &self.download_policy
-    }
-
-    /// Retry policy for discovering new volumes.
-    pub fn discovery_policy(&self) -> &RetryPolicy {
-        &self.discovery_policy
-    }
-
-    /// Sets the retry policy for downloading individual chunks.
-    pub fn with_download_policy(mut self, policy: RetryPolicy) -> Self {
-        self.download_policy = policy;
-        self
-    }
-
-    /// Sets the retry policy for discovering new volumes.
-    pub fn with_discovery_policy(mut self, policy: RetryPolicy) -> Self {
-        self.discovery_policy = policy;
-        self
-    }
-}
 
 /// Internal state for the chunk stream.
 struct ChunkStreamState {
@@ -142,41 +94,41 @@ fn to_std_duration(duration: Duration) -> std::time::Duration {
 async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
     use crate::aws::realtime::ChunkType;
 
-    let latest_volume = get_latest_volume(&config.site)
+    let latest_volume = get_latest_volume(config.site())
         .await?
         .volume
         .ok_or(AwsError::LatestVolumeNotFound)?;
 
-    let latest_chunk_id = get_latest_chunk(&config.site, latest_volume)
+    let latest_chunk_id = get_latest_chunk(config.site(), latest_volume)
         .await?
         .ok_or(AwsError::ExpectedChunkNotFound)?;
 
-    let latest_chunk_id = download_chunk(&config.site, &latest_chunk_id)
+    let latest_chunk_id = download_chunk(config.site(), &latest_chunk_id)
         .await?
         .identifier;
 
     // Get VCP from start chunk
     let latest_metadata_id = latest_chunk_id.with_sequence(1, ChunkType::Start);
-    let latest_metadata = download_chunk(&config.site, &latest_metadata_id).await?;
+    let latest_metadata = download_chunk(config.site(), &latest_metadata_id).await?;
     let vcp = get_latest_vcp(&latest_metadata.chunk)?;
     let elevation_mapper = ElevationChunkMapper::new(&vcp);
 
     debug!(
         "Stream initialized for {} at volume {} with VCP {}",
-        config.site,
+        config.site(),
         latest_volume.as_number(),
         vcp.header().pattern_number()
     );
 
     Ok(ChunkStreamState {
-        site: config.site.clone(),
+        site: config.site().to_string(),
         current_chunk: latest_chunk_id,
         elevation_mapper,
         vcp,
         timing_stats: ChunkTimingStats::new(),
         previous_chunk_time: None,
-        download_policy: config.download_policy.clone(),
-        discovery_policy: config.discovery_policy.clone(),
+        download_policy: config.download_policy().clone(),
+        discovery_policy: config.discovery_policy().clone(),
     })
 }
 

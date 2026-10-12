@@ -88,8 +88,11 @@ pub(crate) use retry_policy::RetryState;
 mod chunk_iterator;
 pub use chunk_iterator::{ChunkIterator, ChunkIteratorInit, DownloadedChunk};
 
+mod poll_config;
+pub use poll_config::PollConfig;
+
 mod poll_chunks;
-pub use poll_chunks::{chunk_stream, PollConfig};
+pub use poll_chunks::chunk_stream;
 
 #[cfg(feature = "model")]
 mod assemble;

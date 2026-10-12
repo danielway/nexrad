@@ -4,7 +4,7 @@ use chrono::Utc;
 use clap::Parser;
 use env_logger::{Builder, Env};
 use log::{info, LevelFilter};
-use nexrad_data::aws::realtime::{Chunk, ChunkIterator, DownloadedChunk, RetryPolicy};
+use nexrad_data::aws::realtime::{Chunk, ChunkIterator, DownloadedChunk, PollConfig, RetryPolicy};
 use nexrad_data::Result;
 use std::time::Duration;
 
@@ -40,12 +40,10 @@ async fn main() -> Result<()> {
     info!("Creating ChunkIterator for site {}", cli.site);
 
     // Create the iterator - this discovers the latest volume and fetches initial chunks
-    let init = ChunkIterator::start_with_policies(
-        &cli.site,
-        RetryPolicy::default_download(),
-        RetryPolicy::default_discovery(),
-    )
-    .await?;
+    let config = PollConfig::new(&cli.site)
+        .with_download_policy(RetryPolicy::default_download())
+        .with_discovery_policy(RetryPolicy::default_discovery());
+    let init = ChunkIterator::start_with(config).await?;
 
     let mut iterator = init.iterator;
 

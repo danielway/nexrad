@@ -86,24 +86,24 @@ impl Default for RetryPolicy {
 /// allowing the caller to control timing. This makes it suitable for use in any
 /// async runtime or environment.
 #[derive(Debug, Clone)]
-pub struct RetryState {
+pub(crate) struct RetryState {
     policy: RetryPolicy,
     attempt: usize,
 }
 
 impl RetryState {
     /// Creates a new retry state with the given policy.
-    pub fn new(policy: RetryPolicy) -> Self {
+    pub(crate) fn new(policy: RetryPolicy) -> Self {
         Self { policy, attempt: 0 }
     }
 
     /// Returns the current attempt number (1-indexed after first attempt).
-    pub fn attempt(&self) -> usize {
+    pub(crate) fn attempt(&self) -> usize {
         self.attempt
     }
 
     /// Returns true if more retry attempts are available.
-    pub fn should_retry(&self) -> bool {
+    pub(crate) fn should_retry(&self) -> bool {
         self.attempt < self.policy.max_attempts
     }
 
@@ -111,7 +111,7 @@ impl RetryState {
     ///
     /// Returns `Some(duration)` if another attempt should be made after waiting,
     /// or `None` if max attempts have been exhausted.
-    pub fn next_delay(&mut self) -> Option<Duration> {
+    pub(crate) fn next_delay(&mut self) -> Option<Duration> {
         if self.attempt >= self.policy.max_attempts {
             return None;
         }
@@ -131,13 +131,9 @@ impl RetryState {
     }
 
     /// Resets the retry state to attempt 0.
-    pub fn reset(&mut self) {
+    #[cfg_attr(not(test), allow(dead_code))] // Only used by the unit tests.
+    pub(crate) fn reset(&mut self) {
         self.attempt = 0;
-    }
-
-    /// Returns the underlying retry policy.
-    pub fn policy(&self) -> &RetryPolicy {
-        &self.policy
     }
 }
 

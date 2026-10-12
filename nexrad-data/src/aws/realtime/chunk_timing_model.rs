@@ -31,7 +31,7 @@ const INTER_VOLUME_GAP_SECS: f64 = 8.5;
 /// All predictions are derived from analysis of 59 archive volumes across 12 NEXRAD sites,
 /// 8 VCP types, and diverse meteorological scenarios. The azimuth rate from the VCP is the
 /// dominant predictor, achieving a mean absolute error of 0.33s for sweep duration prediction.
-pub struct ChunkTimingModel;
+pub(crate) struct ChunkTimingModel;
 
 impl ChunkTimingModel {
     /// Predicted sweep duration in seconds based on azimuth rotation rate.
@@ -39,7 +39,7 @@ impl ChunkTimingModel {
     /// Formula: `(360 / azimuth_rate_dps) - 0.67`
     ///
     /// Returns `None` if `azimuth_rate_dps` is zero or negative.
-    pub fn sweep_duration_secs(azimuth_rate_dps: f64) -> Option<f64> {
+    pub(crate) fn sweep_duration_secs(azimuth_rate_dps: f64) -> Option<f64> {
         if azimuth_rate_dps <= 0.0 {
             return None;
         }
@@ -51,7 +51,10 @@ impl ChunkTimingModel {
     /// Chunks divide a sweep evenly: `sweep_duration / chunks_in_sweep`.
     ///
     /// Returns `None` if `azimuth_rate_dps` is zero or negative, or `chunks_in_sweep` is zero.
-    pub fn chunk_duration_secs(azimuth_rate_dps: f64, chunks_in_sweep: usize) -> Option<f64> {
+    pub(crate) fn chunk_duration_secs(
+        azimuth_rate_dps: f64,
+        chunks_in_sweep: usize,
+    ) -> Option<f64> {
         if chunks_in_sweep == 0 {
             return None;
         }
@@ -64,13 +67,13 @@ impl ChunkTimingModel {
     ///
     /// The base 0.7s represents mode switching overhead. The 0.08s per degree represents
     /// antenna slew rate during transitions (much faster than the survey rotation rate).
-    pub fn inter_sweep_gap_secs(from_elevation_deg: f64, to_elevation_deg: f64) -> f64 {
+    pub(crate) fn inter_sweep_gap_secs(from_elevation_deg: f64, to_elevation_deg: f64) -> f64 {
         let elevation_change = (to_elevation_deg - from_elevation_deg).abs();
         INTER_SWEEP_BASE_GAP_SECS + (elevation_change * INTER_SWEEP_ELEVATION_RATE_SECS_PER_DEG)
     }
 
     /// Predicted inter-volume gap in seconds (constant 8.5s).
-    pub fn inter_volume_gap_secs() -> f64 {
+    pub(crate) fn inter_volume_gap_secs() -> f64 {
         INTER_VOLUME_GAP_SECS
     }
 
@@ -82,7 +85,10 @@ impl ChunkTimingModel {
     /// 3. **Intra-sweep chunk**: Pure chunk duration (sweep_duration / chunks_in_sweep).
     ///
     /// Falls back to static defaults if the azimuth rate is zero or unavailable.
-    pub fn estimate_chunk_interval_secs(previous: &ChunkMetadata, next: &ChunkMetadata) -> f64 {
+    pub(crate) fn estimate_chunk_interval_secs(
+        previous: &ChunkMetadata,
+        next: &ChunkMetadata,
+    ) -> f64 {
         // Case 1: Start chunk (beginning of new volume)
         if next.is_start_chunk() {
             return Self::inter_volume_gap_secs();

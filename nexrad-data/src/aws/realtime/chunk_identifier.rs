@@ -132,7 +132,10 @@ impl ChunkIdentifier {
     }
 
     /// Identifies the next chunk's expected location.
-    pub fn next_chunk(&self, elevation_chunk_mapper: &ElevationChunkMapper) -> Option<NextChunk> {
+    pub(crate) fn next_chunk(
+        &self,
+        elevation_chunk_mapper: &ElevationChunkMapper,
+    ) -> Option<NextChunk> {
         let final_sequence = elevation_chunk_mapper.final_sequence();
         if self.sequence == final_sequence {
             return Some(NextChunk::Volume(self.volume.next()));
@@ -155,7 +158,7 @@ impl ChunkIdentifier {
 
 /// Identifies where to find the next expected chunk.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum NextChunk {
+pub(crate) enum NextChunk {
     /// The next chunk is expected to be located in the same volume at this sequence. Once the next
     /// chunk's identifier is determined, it can be downloaded using the
     /// [crate::aws::realtime::download_chunk()] function. You may need to poll by checking if that

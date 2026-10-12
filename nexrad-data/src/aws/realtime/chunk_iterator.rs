@@ -4,10 +4,11 @@
 //! timing externally, making it suitable for environments without tokio or
 //! where manual timing control is preferred.
 
+use crate::aws::realtime::scan_timing_projection::ScanTimingProjection;
 use crate::aws::realtime::{
     download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
-    project_scan_timing, Chunk, ChunkIdentifier, ChunkMetadata, ChunkTimingStats, ChunkType,
-    ElevationChunkMapper, NextChunk, RetryPolicy, RetryState, ScanTimingProjection, VolumeIndex,
+    project_scan_timing, Chunk, ChunkIdentifier, ChunkTimingStats, ChunkType, ElevationChunkMapper,
+    NextChunk, RetryPolicy, RetryState, VolumeIndex,
 };
 use crate::result::{aws::AwsError, Error, Result};
 use chrono::{DateTime, Duration, Utc};
@@ -493,24 +494,9 @@ impl ChunkIterator {
         }
     }
 
-    /// Returns a reference to the timing statistics.
-    pub fn timing_stats(&self) -> &ChunkTimingStats {
-        &self.timing_stats
-    }
-
-    /// Returns a mutable reference to the timing statistics.
-    pub fn timing_stats_mut(&mut self) -> &mut ChunkTimingStats {
-        &mut self.timing_stats
-    }
-
     /// Returns the current VCP if available.
     pub fn vcp(&self) -> Option<&volume_coverage_pattern::Message<'static>> {
         self.vcp.as_ref()
-    }
-
-    /// Returns the current elevation chunk mapper if available.
-    pub fn elevation_mapper(&self) -> Option<&ElevationChunkMapper> {
-        self.elevation_mapper.as_ref()
     }
 
     /// Returns the site identifier.
@@ -548,7 +534,7 @@ impl ChunkIterator {
     ///
     /// Returns `None` if the VCP or elevation mapper is not yet available, or if
     /// there are no remaining chunks to project.
-    pub fn project_remaining_scan(&self) -> Option<ScanTimingProjection> {
+    fn project_remaining_scan(&self) -> Option<ScanTimingProjection> {
         let chunk_id = match &self.state {
             IteratorState::Ready(id) => id,
             IteratorState::NeedVolumeStart(_) => return None,
@@ -565,24 +551,6 @@ impl ChunkIterator {
     /// Returns `None` if a projection cannot be made.
     pub fn projected_volume_end_time(&self) -> Option<DateTime<Utc>> {
         self.project_remaining_scan().map(|p| p.volume_end_time())
-    }
-
-    /// Returns metadata for a specific chunk sequence number in the current volume.
-    ///
-    /// Returns `None` if the elevation mapper is not available or the sequence is out of range.
-    pub fn chunk_metadata(&self, sequence: usize) -> Option<&ChunkMetadata> {
-        self.elevation_mapper
-            .as_ref()
-            .and_then(|m| m.get_chunk_metadata(sequence))
-    }
-
-    /// Returns metadata for all chunks in the current volume.
-    ///
-    /// Returns `None` if the elevation mapper is not yet available.
-    pub fn all_chunk_metadata(&self) -> Option<&[ChunkMetadata]> {
-        self.elevation_mapper
-            .as_ref()
-            .map(|m| m.all_chunk_metadata())
     }
 }
 

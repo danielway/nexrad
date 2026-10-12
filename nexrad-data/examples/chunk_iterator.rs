@@ -103,20 +103,16 @@ async fn main() -> Result<()> {
         }
     }
 
-    // Display timing statistics
-    let stats = iterator.timing_stats();
-    let stat_entries = stats.get_statistics();
-    info!(
-        "Timing statistics: {} characteristic groups tracked",
-        stat_entries.len()
-    );
-
-    // Display network statistics
+    // Display a session summary
     info!(
         "Network statistics: {} requests, {} bytes downloaded",
         iterator.requests_made(),
         iterator.bytes_downloaded()
     );
+    match iterator.projected_volume_end_time() {
+        Some(end_time) => info!("Current volume projected to complete at: {}", end_time),
+        None => info!("Current volume completion time cannot be projected yet"),
+    }
 
     info!("Done! Downloaded {} chunks", downloaded);
 

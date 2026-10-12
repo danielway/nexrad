@@ -28,54 +28,59 @@
 //!
 
 mod volume_index;
-pub use volume_index::*;
+pub use volume_index::VolumeIndex;
 
 mod chunk;
-pub use chunk::*;
+pub use chunk::Chunk;
 
 mod chunk_type;
-pub use chunk_type::*;
+pub use chunk_type::ChunkType;
 
 mod chunk_identifier;
-pub use chunk_identifier::*;
+pub use chunk_identifier::ChunkIdentifier;
+pub(crate) use chunk_identifier::NextChunk;
 
 mod download_chunk;
-pub use download_chunk::*;
+pub use download_chunk::download_chunk;
 
 mod get_latest_volume;
-pub use get_latest_volume::*;
+pub use get_latest_volume::{get_latest_volume, LatestVolumeResult};
 
 mod list_chunks_in_volume;
-pub use list_chunks_in_volume::*;
+pub use list_chunks_in_volume::list_chunks_in_volume;
 
 mod estimate_next_chunk_time;
-pub use estimate_next_chunk_time::*;
+pub(crate) use estimate_next_chunk_time::estimate_chunk_availability_time;
 
 mod chunk_timing_model;
-pub use chunk_timing_model::*;
+pub(crate) use chunk_timing_model::ChunkTimingModel;
 
 mod chunk_timing_stats;
-pub use chunk_timing_stats::*;
+pub(crate) use chunk_timing_stats::{ChunkCharacteristics, ChunkTimingStats};
 
 mod elevation_chunk_mapper;
-pub use elevation_chunk_mapper::*;
+pub(crate) use elevation_chunk_mapper::{ChunkMetadata, ElevationChunkMapper};
 
 mod scan_timing_projection;
-pub use scan_timing_projection::*;
+pub(crate) use scan_timing_projection::project_scan_timing;
 
 mod retry_policy;
-pub use retry_policy::*;
+pub use retry_policy::RetryPolicy;
+pub(crate) use retry_policy::RetryState;
 
 mod chunk_iterator;
-pub use chunk_iterator::*;
+pub use chunk_iterator::{ChunkIterator, ChunkIteratorInit, DownloadedChunk};
 
 mod poll_chunks;
-pub use poll_chunks::*;
+pub use poll_chunks::{chunk_stream, PollConfig};
 
 #[cfg(feature = "model")]
 mod assemble;
 #[cfg(feature = "model")]
-pub use assemble::*;
+pub use assemble::assemble_volume;
+
+#[cfg(test)]
+mod tests;
 
 mod find_latest;
 

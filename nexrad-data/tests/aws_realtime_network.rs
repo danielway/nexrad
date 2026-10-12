@@ -20,21 +20,7 @@ async fn test_get_latest_volume_basic() {
     let latest = result.unwrap();
 
     // Should have found a volume
-    assert!(
-        latest.volume.is_some(),
-        "No latest volume found for {}",
-        site
-    );
-
-    // Should have made some network calls
-    assert!(latest.calls > 0, "Expected at least one network call");
-
-    // Network calls should be reasonable (binary search should be efficient)
-    assert!(
-        latest.calls < 20,
-        "Too many network calls: {}",
-        latest.calls
-    );
+    assert!(latest.is_some(), "No latest volume found for {}", site);
 }
 
 #[tokio::test]
@@ -47,7 +33,7 @@ async fn test_get_latest_volume_different_sites() {
         assert!(result.is_ok(), "Failed to get latest volume for {}", site);
 
         let latest = result.unwrap();
-        if let Some(volume) = latest.volume {
+        if let Some(volume) = latest {
             // Volume should be in valid range
             assert!(volume.as_number() >= 1 && volume.as_number() <= 999);
         }
@@ -63,9 +49,9 @@ async fn test_list_chunks_in_volume_basic() {
     let latest_result = realtime::get_latest_volume(site).await;
     assert!(latest_result.is_ok());
     let latest = latest_result.unwrap();
-    assert!(latest.volume.is_some());
+    assert!(latest.is_some());
 
-    let volume = latest.volume.unwrap();
+    let volume = latest.unwrap();
 
     // List chunks in that volume
     let chunks_result = realtime::list_chunks_in_volume(site, volume, 100).await;
@@ -107,9 +93,9 @@ async fn test_list_chunks_in_volume_with_limit() {
     let latest_result = realtime::get_latest_volume(site).await;
     assert!(latest_result.is_ok());
     let latest = latest_result.unwrap();
-    assert!(latest.volume.is_some());
+    assert!(latest.is_some());
 
-    let volume = latest.volume.unwrap();
+    let volume = latest.unwrap();
 
     // Request a limited number of chunks
     let limit = 5;
@@ -148,9 +134,9 @@ async fn test_download_chunk_basic() {
     let latest_result = realtime::get_latest_volume(site).await;
     assert!(latest_result.is_ok());
     let latest = latest_result.unwrap();
-    assert!(latest.volume.is_some());
+    assert!(latest.is_some());
 
-    let volume = latest.volume.unwrap();
+    let volume = latest.unwrap();
 
     // List chunks
     let chunks_result = realtime::list_chunks_in_volume(site, volume, 10).await;
@@ -172,7 +158,9 @@ async fn test_download_chunk_basic() {
         download_result.err()
     );
 
-    let (returned_chunk_id, chunk) = download_result.unwrap();
+    let downloaded = download_result.unwrap();
+    let (returned_chunk_id, chunk) = (downloaded.identifier, downloaded.chunk);
+    assert_eq!(downloaded.attempts, 1);
 
     // Verify chunk identifier matches
     assert_eq!(returned_chunk_id.site(), site);
@@ -205,9 +193,9 @@ async fn test_download_chunk_has_upload_time() {
     let latest_result = realtime::get_latest_volume(site).await;
     assert!(latest_result.is_ok());
     let latest = latest_result.unwrap();
-    assert!(latest.volume.is_some());
+    assert!(latest.is_some());
 
-    let volume = latest.volume.unwrap();
+    let volume = latest.unwrap();
 
     let chunks_result = realtime::list_chunks_in_volume(site, volume, 5).await;
     assert!(chunks_result.is_ok());
@@ -222,7 +210,7 @@ async fn test_download_chunk_has_upload_time() {
     let download_result = realtime::download_chunk(site, chunk_id).await;
     assert!(download_result.is_ok());
 
-    let (returned_chunk_id, _chunk) = download_result.unwrap();
+    let returned_chunk_id = download_result.unwrap().identifier;
 
     // Downloaded chunk should have upload time populated
     assert!(
@@ -263,9 +251,9 @@ async fn test_complete_workflow() {
     let latest_result = realtime::get_latest_volume(site).await;
     assert!(latest_result.is_ok());
     let latest = latest_result.unwrap();
-    assert!(latest.volume.is_some());
+    assert!(latest.is_some());
 
-    let volume = latest.volume.unwrap();
+    let volume = latest.unwrap();
     println!("Latest volume for {}: {}", site, volume.as_number());
 
     // Step 2: List chunks in that volume
@@ -285,7 +273,8 @@ async fn test_complete_workflow() {
     let download_result = realtime::download_chunk(site, first_chunk).await;
     assert!(download_result.is_ok());
 
-    let (chunk_id, chunk) = download_result.unwrap();
+    let downloaded = download_result.unwrap();
+    let (chunk_id, chunk) = (downloaded.identifier, downloaded.chunk);
 
     println!(
         "Downloaded chunk: {} (sequence {}, size {} bytes)",
@@ -309,9 +298,9 @@ async fn test_chunk_sequencing() {
     let latest_result = realtime::get_latest_volume(site).await;
     assert!(latest_result.is_ok());
     let latest = latest_result.unwrap();
-    assert!(latest.volume.is_some());
+    assert!(latest.is_some());
 
-    let volume = latest.volume.unwrap();
+    let volume = latest.unwrap();
 
     let chunks_result = realtime::list_chunks_in_volume(site, volume, 100).await;
     assert!(chunks_result.is_ok());
@@ -391,9 +380,9 @@ async fn test_download_intermediate_and_end_chunks() {
     let latest_result = realtime::get_latest_volume(site).await;
     assert!(latest_result.is_ok());
     let latest = latest_result.unwrap();
-    assert!(latest.volume.is_some());
+    assert!(latest.is_some());
 
-    let volume = latest.volume.unwrap();
+    let volume = latest.unwrap();
 
     let chunks_result = realtime::list_chunks_in_volume(site, volume, 100).await;
     assert!(chunks_result.is_ok());
@@ -413,7 +402,8 @@ async fn test_download_intermediate_and_end_chunks() {
             chunk_id.sequence()
         );
 
-        let (returned_id, chunk) = download_result.unwrap();
+        let downloaded = download_result.unwrap();
+        let (returned_id, chunk) = (downloaded.identifier, downloaded.chunk);
         assert!(!chunk.data().is_empty());
         assert_eq!(returned_id.sequence(), chunk_id.sequence());
     }

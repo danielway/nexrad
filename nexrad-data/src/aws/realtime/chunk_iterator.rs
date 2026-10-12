@@ -6,9 +6,9 @@
 
 use crate::aws::realtime::scan_timing_projection::ScanTimingProjection;
 use crate::aws::realtime::{
-    download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
-    project_scan_timing, Chunk, ChunkIdentifier, ChunkTimingStats, ChunkType, ElevationChunkMapper,
-    NextChunk, RetryPolicy, RetryState, VolumeIndex,
+    download_chunk, estimate_chunk_availability_time, get_latest_volume_counting_calls,
+    list_chunks_in_volume, project_scan_timing, Chunk, ChunkIdentifier, ChunkTimingStats,
+    ChunkType, ElevationChunkMapper, NextChunk, RetryPolicy, RetryState, VolumeIndex,
 };
 use crate::result::{aws::AwsError, Error, Result};
 use chrono::{DateTime, Duration, Utc};
@@ -21,7 +21,7 @@ pub struct DownloadedChunk {
     /// The chunk identifier.
     pub identifier: ChunkIdentifier,
     /// The chunk data.
-    pub chunk: Chunk<'static>,
+    pub chunk: Chunk,
     /// Number of attempts required to download this chunk.
     pub attempts: usize,
 }
@@ -102,10 +102,8 @@ impl ChunkIterator {
         download_policy: RetryPolicy,
         discovery_policy: RetryPolicy,
     ) -> Result<ChunkIteratorInit> {
-        let latest_volume_result = get_latest_volume(site).await?;
-        let volume = latest_volume_result
-            .volume
-            .ok_or(AwsError::LatestVolumeNotFound)?;
+        let (latest_volume, calls) = get_latest_volume_counting_calls(site).await?;
+        let volume = latest_volume.ok_or(AwsError::LatestVolumeNotFound)?;
 
         debug!(
             "ChunkIterator initialized for site {} at volume {}",
@@ -122,7 +120,7 @@ impl ChunkIterator {
             download_policy,
             discovery_policy,
             last_chunk_time: None,
-            requests_made: latest_volume_result.calls,
+            requests_made: calls,
             bytes_downloaded: 0,
         };
 
@@ -192,20 +190,16 @@ impl ChunkIterator {
                 None,
             );
 
-            if let Ok((identifier, chunk)) = download_chunk(&self.site, &start_id).await {
+            if let Ok(downloaded) = download_chunk(&self.site, &start_id).await {
                 self.requests_made += 1;
-                self.bytes_downloaded += chunk.data().len() as u64;
+                self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
-                if let Ok(vcp) = Self::extract_vcp(&chunk) {
+                if let Ok(vcp) = Self::extract_vcp(&downloaded.chunk) {
                     self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
                     self.vcp = Some(vcp);
                 }
 
-                start_chunk = Some(DownloadedChunk {
-                    identifier,
-                    chunk,
-                    attempts: 1,
-                });
+                start_chunk = Some(downloaded);
             }
         }
 
@@ -307,11 +301,11 @@ impl ChunkIterator {
                             ChunkType::Start,
                             None,
                         );
-                        if let Ok((_, start_chunk)) = download_chunk(&self.site, &start_id).await {
+                        if let Ok(start) = download_chunk(&self.site, &start_id).await {
                             self.requests_made += 1;
-                            self.bytes_downloaded += start_chunk.data().len() as u64;
+                            self.bytes_downloaded += start.chunk.data().len() as u64;
 
-                            if let Ok(vcp) = Self::extract_vcp(&start_chunk) {
+                            if let Ok(vcp) = Self::extract_vcp(&start.chunk) {
                                 self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
                                 self.vcp = Some(vcp);
                             }
@@ -374,18 +368,13 @@ impl ChunkIterator {
             return Ok(None);
         }
 
-        let (identifier, chunk) = download_chunk(&self.site, latest).await?;
+        let downloaded = download_chunk(&self.site, latest).await?;
         self.requests_made += 1;
-        self.bytes_downloaded += chunk.data().len() as u64;
+        self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
-        Ok(Some(DownloadedChunk {
-            identifier,
-            chunk,
-            attempts: 1,
-        }))
+        Ok(Some(downloaded))
     }
 
-    /// Attempts to fetch a specific chunk.
     /// Attempts to fetch a specific chunk.
     ///
     /// This is a single-attempt fetch for pull-based iteration. Returns:
@@ -399,12 +388,13 @@ impl ChunkIterator {
         self.requests_made += 1;
 
         match download_chunk(&self.site, &chunk_id).await {
-            Ok((identifier, chunk)) => {
-                self.bytes_downloaded += chunk.data().len() as u64;
+            Ok(downloaded) => {
+                let identifier = &downloaded.identifier;
+                self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
                 // Update VCP if this is a start chunk
                 if identifier.chunk_type() == ChunkType::Start {
-                    if let Ok(vcp) = Self::extract_vcp(&chunk) {
+                    if let Ok(vcp) = Self::extract_vcp(&downloaded.chunk) {
                         self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
                         self.vcp = Some(vcp);
                     }
@@ -415,17 +405,13 @@ impl ChunkIterator {
                     (identifier.upload_date_time(), self.last_chunk_time)
                 {
                     let duration = upload_time - prev_time;
-                    self.update_timing_stats(&identifier, duration, 1);
+                    self.update_timing_stats(identifier, duration, 1);
                 }
 
                 self.last_chunk_time = identifier.upload_date_time();
                 self.state = IteratorState::Ready(identifier.clone());
 
-                Ok(Some(DownloadedChunk {
-                    identifier,
-                    chunk,
-                    attempts: 1,
-                }))
+                Ok(Some(downloaded))
             }
             Err(Error::Aws(AwsError::S3ObjectNotFound)) => {
                 // Chunk not yet available

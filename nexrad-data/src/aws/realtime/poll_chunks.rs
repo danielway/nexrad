@@ -128,16 +128,17 @@ fn to_std_duration(duration: Duration) -> std::time::Duration {
 async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
     use crate::aws::realtime::ChunkType;
 
-    let latest_volume_result = get_latest_volume(&config.site).await?;
-    let latest_volume = latest_volume_result
-        .volume
+    let latest_volume = get_latest_volume(&config.site)
+        .await?
         .ok_or(AwsError::LatestVolumeNotFound)?;
 
     let latest_chunk_id = get_latest_chunk(&config.site, latest_volume)
         .await?
         .ok_or(AwsError::ExpectedChunkNotFound)?;
 
-    let (latest_chunk_id, _) = download_chunk(&config.site, &latest_chunk_id).await?;
+    let latest_chunk_id = download_chunk(&config.site, &latest_chunk_id)
+        .await?
+        .identifier;
 
     // Get VCP from start chunk
     let latest_metadata_id = ChunkIdentifier::new(
@@ -148,8 +149,8 @@ async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
         ChunkType::Start,
         None,
     );
-    let (_, latest_metadata) = download_chunk(&config.site, &latest_metadata_id).await?;
-    let vcp = get_latest_vcp(&latest_metadata)?;
+    let latest_metadata = download_chunk(&config.site, &latest_metadata_id).await?;
+    let vcp = get_latest_vcp(&latest_metadata.chunk)?;
     let elevation_mapper = ElevationChunkMapper::new(&vcp);
 
     debug!(
@@ -227,7 +228,11 @@ where
     )
     .await;
 
-    let (chunk_id, chunk) = result.ok_or(AwsError::ExpectedChunkNotFound)?;
+    let DownloadedChunk {
+        identifier: chunk_id,
+        chunk,
+        ..
+    } = result.ok_or(AwsError::ExpectedChunkNotFound)?;
 
     // Update timing statistics
     if let (Some(upload_time), Some(prev_time)) =
@@ -311,9 +316,7 @@ async fn get_latest_chunk(site: &str, volume: VolumeIndex) -> Result<Option<Chun
 }
 
 /// Gets the volume coverage pattern from the latest metadata chunk.
-fn get_latest_vcp(
-    latest_metadata: &Chunk<'_>,
-) -> Result<volume_coverage_pattern::Message<'static>> {
+fn get_latest_vcp(latest_metadata: &Chunk) -> Result<volume_coverage_pattern::Message<'static>> {
     if let Chunk::Start(file) = latest_metadata {
         for mut record in file.records()? {
             if record.compressed() {

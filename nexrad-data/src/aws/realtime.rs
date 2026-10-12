@@ -44,7 +44,8 @@ mod download_chunk;
 pub use download_chunk::download_chunk;
 
 mod get_latest_volume;
-pub use get_latest_volume::{get_latest_volume, LatestVolumeResult};
+pub use get_latest_volume::get_latest_volume;
+pub(crate) use get_latest_volume::get_latest_volume_counting_calls;
 
 mod list_chunks_in_volume;
 pub use list_chunks_in_volume::list_chunks_in_volume;

@@ -1,15 +1,26 @@
 use crate::aws::realtime::find_latest::find_latest;
 use crate::aws::realtime::list_chunks_in_volume::list_chunks_in_volume;
 use crate::aws::realtime::VolumeIndex;
-use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::Relaxed;
-use std::sync::Arc;
 
 /// Identifies the volume index with the most recent data for the specified radar site. Real-time
-/// NEXRAD data is uploaded to a series of rotating volumes 0..=999, each containing ~55 chunks.
+/// NEXRAD data is uploaded to a series of rotating volumes `1..=999`, each containing ~55 chunks.
 /// This function performs a binary search to find the volume with the most recent upload time.
-pub async fn get_latest_volume(site: &str) -> crate::result::Result<LatestVolumeResult> {
-    let calls = Arc::new(AtomicI32::new(0));
+///
+/// Returns `None` if none of the site's volumes contain any chunks.
+pub async fn get_latest_volume(site: &str) -> crate::result::Result<Option<VolumeIndex>> {
+    get_latest_volume_counting_calls(site)
+        .await
+        .map(|(volume, _)| volume)
+}
+
+/// Like [`get_latest_volume`], but also returns the number of network calls made to find the
+/// latest volume so callers can account for them.
+pub(crate) async fn get_latest_volume_counting_calls(
+    site: &str,
+) -> crate::result::Result<(Option<VolumeIndex>, usize)> {
+    let calls = AtomicUsize::new(0);
     let latest_volume = find_latest(998, |volume| {
         calls.fetch_add(1, Relaxed);
         async move {
@@ -20,18 +31,5 @@ pub async fn get_latest_volume(site: &str) -> crate::result::Result<LatestVolume
     .await
     .map(|volume| volume.map(|index| VolumeIndex::new(index + 1)))?;
 
-    Ok(LatestVolumeResult {
-        volume: latest_volume,
-        calls: calls.load(Relaxed) as usize,
-    })
-}
-
-/// Represents the most recent volume index and the number of network calls made to find it.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LatestVolumeResult {
-    /// The most recent volume index, if found.
-    pub volume: Option<VolumeIndex>,
-
-    /// The number of network calls made to find the most recent volume.
-    pub calls: usize,
+    Ok((latest_volume, calls.load(Relaxed)))
 }

@@ -85,7 +85,7 @@ nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
 nexrad = { version = "1.0" }  # default = "full"
 ```
 
-Features that require a native runtime (`aws-polling` needs tokio, `parallel` needs rayon) are excluded from the `wasm` feature set.
+Features that require a native runtime (`parallel` needs rayon threads) are excluded from the `wasm` feature set. The library does not depend on a specific async runtime: real-time streaming (`chunk_stream` and `nexrad::stream`, part of `aws`) takes a caller-supplied sleep function, so it builds for WASM.
 
 ## Data Flow
 

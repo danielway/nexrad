@@ -1,9 +1,9 @@
-#![cfg(all(feature = "aws-polling", not(target_arch = "wasm32")))]
+#![cfg(all(feature = "aws", not(target_arch = "wasm32")))]
 
 use chrono::{DateTime, SubsecRound, Utc};
 use clap::Parser;
 use env_logger::{Builder, Env};
-use futures::StreamExt;
+use futures_util::StreamExt;
 use log::{info, warn, LevelFilter};
 use nexrad_data::{
     aws::realtime::{chunk_stream, Chunk, DownloadedChunk, PollConfig},
@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     println!("{:-<110}", "");
 
     let config = PollConfig::new(&cli.site);
-    let stream = chunk_stream(config);
+    let stream = chunk_stream(config, |d| tokio::time::sleep(d));
     let mut stream = pin!(stream);
 
     let mut downloaded_chunk_count = 0;

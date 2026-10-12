@@ -11,11 +11,10 @@ use crate::aws::realtime::{
 use crate::result::Error;
 use crate::result::{aws::AwsError, Result};
 use chrono::{Duration, Utc};
-use futures::stream::Stream;
+use futures_util::stream::Stream;
 use log::debug;
 use nexrad_decode::messages::volume_coverage_pattern;
 use std::future::Future;
-use tokio::time::sleep;
 
 /// Configuration for polling real-time NEXRAD chunks.
 #[derive(Debug, Clone)]
@@ -66,16 +65,25 @@ struct ChunkStreamState {
 /// Returns a stream of downloaded chunks for the specified configuration.
 ///
 /// This is the preferred API for consuming real-time NEXRAD data. It returns
-/// a `futures::Stream` that yields chunks as they become available.
+/// a [`Stream`] that yields chunks as they become available.
+///
+/// The stream is runtime-agnostic: it waits between polls by calling the
+/// caller-supplied `sleep` function, which receives the duration to wait and
+/// returns a future that completes once that duration has elapsed. With tokio,
+/// pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a timer crate such as
+/// `gloo-timers` provides an equivalent sleep future.
+///
+/// The returned stream is `Send` whenever `S` and `F` are `Send`.
 ///
 /// # Example
 ///
 /// ```ignore
-/// use futures::StreamExt;
+/// use futures_util::StreamExt;
 /// use nexrad_data::aws::realtime::{chunk_stream, PollConfig};
 ///
 /// let config = PollConfig::new("KDMX");
-/// let mut stream = chunk_stream(config);
+/// let stream = chunk_stream(config, |d| tokio::time::sleep(d));
+/// let mut stream = std::pin::pin!(stream);
 ///
 /// while let Some(result) = stream.next().await {
 ///     match result {
@@ -84,26 +92,37 @@ struct ChunkStreamState {
 ///     }
 /// }
 /// ```
-pub fn chunk_stream(config: PollConfig) -> impl Stream<Item = Result<DownloadedChunk>> {
-    futures::stream::unfold(None, move |state: Option<ChunkStreamState>| {
-        let config = config.clone();
-        async move {
+pub fn chunk_stream<S, F>(
+    config: PollConfig,
+    sleep: S,
+) -> impl Stream<Item = Result<DownloadedChunk>>
+where
+    S: Fn(std::time::Duration) -> F,
+    F: Future<Output = ()>,
+{
+    futures_util::stream::unfold(
+        (config, sleep, None),
+        |(config, mut sleep, state): (PollConfig, S, Option<ChunkStreamState>)| async move {
             // Initialize state if needed
             let mut state = match state {
                 Some(s) => s,
                 None => match init_stream_state(&config).await {
                     Ok(s) => s,
-                    Err(e) => return Some((Err(e), None)),
+                    Err(e) => return Some((Err(e), (config, sleep, None))),
                 },
             };
 
             // Fetch the next chunk
-            match fetch_next_chunk(&mut state).await {
-                Ok(chunk) => Some((Ok(chunk), Some(state))),
-                Err(e) => Some((Err(e), Some(state))),
-            }
-        }
-    })
+            let result = fetch_next_chunk(&mut state, &mut sleep).await;
+            Some((result, (config, sleep, Some(state))))
+        },
+    )
+}
+
+/// Converts a `chrono::Duration` into a `std::time::Duration`, clamping negative
+/// durations to zero.
+fn to_std_duration(duration: Duration) -> std::time::Duration {
+    duration.to_std().unwrap_or(std::time::Duration::ZERO)
 }
 
 async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
@@ -152,7 +171,16 @@ async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
     })
 }
 
-async fn fetch_next_chunk(state: &mut ChunkStreamState) -> Result<DownloadedChunk> {
+// The sleep function is passed as `&mut S` rather than `&S` so that the
+// resulting future is `Send` whenever `S: Send`, without also requiring `S: Sync`.
+async fn fetch_next_chunk<S, F>(
+    state: &mut ChunkStreamState,
+    sleep: &mut S,
+) -> Result<DownloadedChunk>
+where
+    S: Fn(std::time::Duration) -> F,
+    F: Future<Output = ()>,
+{
     use crate::aws::realtime::ChunkType;
 
     // Estimate when the next chunk will be available
@@ -166,10 +194,9 @@ async fn fetch_next_chunk(state: &mut ChunkStreamState) -> Result<DownloadedChun
     if let Some(estimate) = next_chunk_estimate {
         let now = Utc::now();
         if estimate > now {
-            if let Ok(wait_duration) = (estimate - now).to_std() {
-                debug!("Waiting {}ms for next chunk", wait_duration.as_millis());
-                sleep(wait_duration).await;
-            }
+            let wait_duration = to_std_duration(estimate - now);
+            debug!("Waiting {}ms for next chunk", wait_duration.as_millis());
+            sleep(wait_duration).await;
         }
     }
 
@@ -184,6 +211,7 @@ async fn fetch_next_chunk(state: &mut ChunkStreamState) -> Result<DownloadedChun
             let (_, chunk_id) = try_resiliently_with_policy(
                 || get_latest_chunk_or_error(&state.site, next_volume),
                 &state.discovery_policy,
+                sleep,
             )
             .await;
 
@@ -195,6 +223,7 @@ async fn fetch_next_chunk(state: &mut ChunkStreamState) -> Result<DownloadedChun
     let (attempts, result) = try_resiliently_with_policy(
         || download_chunk(&state.site, &next_chunk_id),
         &state.download_policy,
+        sleep,
     )
     .await;
 
@@ -305,12 +334,15 @@ fn get_latest_vcp(
 }
 
 /// Attempts an action with retries using the provided retry policy.
-async fn try_resiliently_with_policy<F, R>(
-    action: impl Fn() -> F,
+async fn try_resiliently_with_policy<A, R, S, F>(
+    action: impl Fn() -> A,
     policy: &RetryPolicy,
+    sleep: &mut S,
 ) -> (usize, Option<R>)
 where
-    F: Future<Output = Result<R>>,
+    A: Future<Output = Result<R>>,
+    S: Fn(std::time::Duration) -> F,
+    F: Future<Output = ()>,
 {
     let mut state = RetryState::new(policy.clone());
 
@@ -319,10 +351,21 @@ where
             return (state.attempt(), Some(result));
         }
 
-        if let Ok(wait) = delay.to_std() {
-            sleep(wait).await;
-        }
+        sleep(to_std_duration(delay)).await;
     }
 
     (state.attempt(), None)
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests {
+    use super::*;
+
+    fn assert_send<T: Send>(_: &T) {}
+
+    #[test]
+    fn chunk_stream_is_send_with_tokio_sleep() {
+        let stream = chunk_stream(PollConfig::new("KDMX"), |d| tokio::time::sleep(d));
+        assert_send(&stream);
+    }
 }

@@ -35,8 +35,9 @@ function queries a volume for its chunks, returning identifiers for each chunk. 
 downloads a chunk by its identifier. The `realtime::get_latest_volume` function can be used to identify which of the 999
 volume directories contain the latest data, and the `realtime::estimate_chunk_availability_time` function can be used to
 estimate when the next chunk will be uploaded. The `realtime::chunk_stream` function returns an async stream that
-continuously yields chunks as they become available. For environments without tokio, `realtime::ChunkIterator` provides
-a pull-based interface with manual timing control.
+continuously yields chunks as they become available; it is runtime-agnostic and takes a caller-supplied sleep function
+(with tokio, `chunk_stream(config, |d| tokio::time::sleep(d))`). For caller-controlled scheduling,
+`realtime::ChunkIterator` provides a pull-based interface with manual timing control.
 
 ## Features
 
@@ -45,9 +46,8 @@ as much or little as they desire. By default, the `aws` and `model` features are
 and LDM records' NEXRAD messages via `nexrad-decode` is always available. The following named features are helpful
 groupings of dependencies/behavior:
 
-- `aws` (default) - Enables accessing archive and real-time NEXRAD data from AWS Open Data. WASM-compatible.
-- `aws-polling` - Enables `realtime::chunk_stream`, an async stream that polls for new real-time chunks. Implies `aws`
-  and requires tokio, so it is not WASM-compatible.
+- `aws` (default) - Enables accessing archive and real-time NEXRAD data from AWS Open Data, including
+  `realtime::chunk_stream`, an async stream that polls for new real-time chunks. WASM-compatible.
 - `model` (default) - Provides mappings to a common radar data model, particularly for mapping `volume::File` into a
   `Scan`.
 - `parallel` - Parallelize LDM record decompression and decoding using Rayon.

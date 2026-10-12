@@ -56,14 +56,13 @@
 //! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model` | bzip2 | Yes |
 //! | `render` | Visualization and rendering | `model` | image | Yes |
 //! | `process` | Radar data processing algorithms | `model` | nexrad-model | Yes |
-//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`) | `data`, `chrono` | reqwest | Yes |
-//! | `aws-polling` | Real-time polling (`stream`) | `aws` | reqwest, tokio | No |
+//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`) and real-time streaming (`stream`) | `data`, `chrono` | reqwest, futures-util | Yes |
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
 //! | `serde` | Serialization support for model types | | serde | Yes |
 //! | `uom` | Type-safe units of measure | | uom | Yes |
 //! | `chrono` | Date/time type support | | chrono | Yes |
 //! | `wasm` | All WASM-compatible features | `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, `chrono` | | Yes |
-//! | `full` | Enable all features (default) | `wasm`, `aws-polling`, `parallel` | All above | No |
+//! | `full` | Enable all features (default) | `wasm`, `parallel` | All above | No |
 //!
 //! ### Common Configurations
 //!
@@ -551,29 +550,41 @@ pub fn coordinate_system_required(
 
 /// Stream real-time radar data chunks for a site.
 ///
-/// Returns a [`futures::Stream`] that yields chunks as they become available from
-/// NOAA's real-time NEXRAD data feed. This is a convenience wrapper around
+/// Returns a [`Stream`](futures_util::stream::Stream) that yields chunks as they become available
+/// from NOAA's real-time NEXRAD data feed. This is a convenience wrapper around
 /// [`data::aws::realtime::chunk_stream`] with default retry policies.
+///
+/// The stream is runtime-agnostic: `sleep` is called with each duration the
+/// stream needs to wait and must return a future that completes after that
+/// duration. With tokio, pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a
+/// timer crate such as `gloo-timers` provides an equivalent sleep future. The
+/// stream is `Send` whenever `S` and `F` are `Send`.
 ///
 /// # Example
 ///
 /// ```ignore
-/// use futures::StreamExt;
+/// use futures_util::StreamExt;
 ///
-/// let mut stream = nexrad::stream("KTLX");
+/// let stream = nexrad::stream("KTLX", |d| tokio::time::sleep(d));
+/// let mut stream = std::pin::pin!(stream);
 /// while let Some(chunk) = stream.next().await {
 ///     let chunk = chunk?;
 ///     println!("Received chunk: {:?}", chunk.identifier);
 /// }
 /// # Ok::<(), nexrad::Error>(())
 /// ```
-#[cfg(feature = "aws-polling")]
-pub fn stream(
+#[cfg(feature = "aws")]
+pub fn stream<S, F>(
     site: &str,
-) -> impl futures::Stream<Item = Result<data::aws::realtime::DownloadedChunk>> {
-    use futures::StreamExt;
+    sleep: S,
+) -> impl futures_util::stream::Stream<Item = Result<data::aws::realtime::DownloadedChunk>>
+where
+    S: Fn(std::time::Duration) -> F,
+    F: std::future::Future<Output = ()>,
+{
+    use futures_util::StreamExt;
     let config = data::aws::realtime::PollConfig::new(site);
-    data::aws::realtime::chunk_stream(config).map(|r| r.map_err(Error::Data))
+    data::aws::realtime::chunk_stream(config, sleep).map(|r| r.map_err(Error::Data))
 }
 
 // ============================================================================

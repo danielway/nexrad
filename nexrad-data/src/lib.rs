@@ -50,9 +50,8 @@
 //!
 //! # Features
 //!
-//! - `aws` (default) - Enable AWS S3 data access (requires async runtime)
-//! - `aws-polling` - Enable `aws::realtime::chunk_stream` for polling real-time data (requires tokio, not
-//!   WASM-compatible)
+//! - `aws` (default) - Enable AWS S3 data access, including `aws::realtime::chunk_stream` for polling
+//!   real-time data (requires an async runtime; WASM-compatible)
 //! - `model` (default) - Enable conversion to high-level `Scan` model
 //! - `parallel` - Parallelize LDM record decompression and decoding using Rayon
 //!

@@ -49,4 +49,7 @@ pub enum Error {
         /// Position where the boundary was crossed.
         position: usize,
     },
+    /// No volume coverage pattern message was found while assembling a scan.
+    #[error("no volume coverage pattern message found")]
+    MissingCoveragePattern,
 }

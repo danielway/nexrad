@@ -375,3 +375,23 @@ impl<'a> Message<'a> {
         Ok(builder.build())
     }
 }
+
+#[cfg(feature = "model")]
+impl Message<'_> {
+    /// The radar site that produced this message, built from the header's radar identifier and
+    /// the volume data block's location and heights. Returns `None` when the message carries no
+    /// volume data block.
+    pub fn site(&self) -> Option<nexrad_model::meta::Site> {
+        let volume = self.volume_data_block.as_ref()?.inner();
+        Some(
+            nexrad_model::meta::Site::builder(
+                *self.header.radar_identifier_raw(),
+                volume.latitude_raw() as f64,
+                volume.longitude_raw() as f64,
+            )
+            .height_meters(volume.site_height_raw())
+            .tower_height_meters(volume.tower_height_raw())
+            .build(),
+        )
+    }
+}

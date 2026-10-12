@@ -27,6 +27,10 @@
 //! }
 //! ```
 //!
+//! With the `model` feature, `model::ScanBuilder` assembles decoded messages into a
+//! `nexrad_model::data::Scan`, converting radar data messages to radials and taking the
+//! volume coverage pattern and site from the first messages that carry them.
+//!
 //! # Message Types
 //!
 //! The decoder handles several message types defined in the ICD:
@@ -80,6 +84,8 @@
 pub(crate) mod binary_data;
 /// Message parsing and type definitions for NEXRAD Level II data.
 pub mod messages;
+#[cfg(feature = "model")]
+pub mod model;
 /// Result and error types for decoding operations.
 pub mod result;
 pub use result::{Error, Result};

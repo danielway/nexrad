@@ -30,6 +30,23 @@ for message in &messages {
 }
 ```
 
+## Building a Scan
+
+With the `model` feature, `model::ScanBuilder` assembles decoded messages into a `nexrad_model::data::Scan`.
+Radar data messages (types 1 and 31) become radials, the first volume coverage pattern message (type 5) becomes the
+scan's coverage pattern, and the first volume data block identifies the site:
+
+```rust,ignore
+use nexrad_decode::model::ScanBuilder;
+
+let mut builder = ScanBuilder::new();
+builder.add_messages(decode_messages(&decompressed_data)?)?;
+let scan = builder.build()?;
+```
+
+Builders filled independently (for example, one per record decoded in parallel) can be combined in order with
+`ScanBuilder::merge`.
+
 ## Message Types
 
 The decoder handles several message types defined in the ICD:

@@ -24,6 +24,9 @@ pub use message::{Message, MessageHeaders};
 mod message_contents;
 pub use message_contents::MessageContents;
 
+mod vcp_number;
+pub use vcp_number::VcpNumber;
+
 use crate::result::{Error, Result};
 use crate::segmented_slice_reader::SegmentedSliceReader;
 use crate::slice_reader::SliceReader;

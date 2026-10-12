@@ -6,7 +6,7 @@ use crate::messages::rda_status_data::{
     ControlAuthorization, ControlStatus, DataTransmissionEnabled, OperabilityStatus,
     OperationalMode, PerformanceCheckStatus, RdaBuildNumber, RdaStatus, RmsControlStatus,
     ScanDataFlags, SpotBlankingStatus, SuperResolutionStatus, TransitionPowerSourceStatus,
-    VolumeCoveragePatternNumber,
+    VcpSelection,
 };
 use crate::result::Result;
 use crate::segmented_slice_reader::SegmentedSliceReader;
@@ -359,15 +359,10 @@ impl<'a> Message<'a> {
         DataTransmissionEnabled::new(self.inner.data_transmission_enabled)
     }
 
-    /// The radar's volume coverage pattern number.
-    pub fn volume_coverage_pattern(&self) -> Option<VolumeCoveragePatternNumber> {
-        if self.inner.volume_coverage_pattern == 0 {
-            return None;
-        }
-
-        Some(VolumeCoveragePatternNumber::new(
-            self.inner.volume_coverage_pattern,
-        ))
+    /// The radar's active volume coverage pattern and whether it was specified locally or
+    /// remotely, or `None` if no pattern is set.
+    pub fn volume_coverage_pattern(&self) -> Option<VcpSelection> {
+        VcpSelection::from_raw(self.inner.volume_coverage_pattern.get())
     }
 
     /// The RDA system's mode of control.

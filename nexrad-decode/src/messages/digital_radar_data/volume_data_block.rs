@@ -1,5 +1,6 @@
 use super::raw;
-use super::{ProcessingStatus, VolumeCoveragePattern};
+use super::ProcessingStatus;
+use crate::messages::VcpNumber;
 use std::borrow::Cow;
 
 #[cfg(feature = "uom")]
@@ -247,17 +248,8 @@ impl<'a> VolumeDataBlock<'a> {
     }
 
     /// Identifies the volume coverage pattern in use.
-    pub fn volume_coverage_pattern(&self) -> VolumeCoveragePattern {
-        let volume_coverage_pattern = self.volume_coverage_pattern_number();
-        match volume_coverage_pattern {
-            12 => VolumeCoveragePattern::Vcp12,
-            31 => VolumeCoveragePattern::Vcp31,
-            35 => VolumeCoveragePattern::Vcp35,
-            112 => VolumeCoveragePattern::Vcp112,
-            212 => VolumeCoveragePattern::Vcp212,
-            215 => VolumeCoveragePattern::Vcp215,
-            other => VolumeCoveragePattern::Unknown(other),
-        }
+    pub fn volume_coverage_pattern(&self) -> VcpNumber {
+        VcpNumber::from_number(self.volume_coverage_pattern_number())
     }
 
     /// Processing option flags.

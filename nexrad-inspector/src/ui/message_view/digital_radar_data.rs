@@ -83,11 +83,7 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
             vol.site_height_raw(),
             vol.tower_height_raw()
         ));
-        output.push_str(&format!(
-            "VCP: {} ({:?})\n",
-            vol.volume_coverage_pattern_number(),
-            vol.volume_coverage_pattern()
-        ));
+        output.push_str(&format!("VCP: {}\n", vol.volume_coverage_pattern()));
         output.push_str(&format!(
             "Calibration Constant: {:.2} dB\n",
             vol.calibration_constant()

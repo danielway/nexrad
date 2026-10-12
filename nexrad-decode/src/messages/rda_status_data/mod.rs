@@ -53,7 +53,7 @@ mod transition_power_source_status;
 pub use transition_power_source_status::TransitionPowerSourceStatus;
 
 mod volume_coverage_pattern;
-pub use volume_coverage_pattern::VolumeCoveragePatternNumber;
+pub use volume_coverage_pattern::{VcpSelection, VcpSource};
 
 mod rda_build_number;
 pub use rda_build_number::RdaBuildNumber;

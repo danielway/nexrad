@@ -225,11 +225,11 @@ fn test_message_type1_field_values() {
         for message in &messages {
             if let MessageContents::DigitalRadarDataLegacy(drd) = message.contents() {
                 // Azimuth should be 0-360
-                let az = drd.azimuth_angle();
+                let az = drd.azimuth_angle_degrees();
                 assert!((0.0..360.0).contains(&az), "azimuth {az} out of range");
 
                 // Elevation should be reasonable (-1 to 60 degrees)
-                let el = drd.elevation_angle();
+                let el = drd.elevation_angle_degrees();
                 assert!((-1.0..60.0).contains(&el), "elevation {el} out of range");
 
                 // Elevation number should be 1-25
@@ -240,7 +240,7 @@ fn test_message_type1_field_values() {
                 );
 
                 // VCP should be a valid number
-                let vcp = drd.vcp_number();
+                let vcp = drd.vcp_number_raw();
                 assert!(vcp > 0, "VCP number should be positive, got {vcp}");
 
                 // Gate counts should be reasonable

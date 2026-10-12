@@ -1,4 +1,6 @@
+use crate::messages::digital_radar_data::RadialStatus;
 use crate::messages::digital_radar_data_legacy::raw;
+use crate::messages::VcpNumber;
 use crate::result::Result;
 use crate::segmented_slice_reader::SegmentedSliceReader;
 use crate::util::get_datetime;
@@ -121,7 +123,7 @@ impl<'a> Message<'a> {
     }
 
     /// Azimuth angle in degrees (0.0 to 360.0).
-    pub fn azimuth_angle(&self) -> f32 {
+    pub fn azimuth_angle_degrees(&self) -> f32 {
         self.header.azimuth_angle.get() as f32 * 180.0 / 32768.0
     }
 
@@ -131,29 +133,46 @@ impl<'a> Message<'a> {
     }
 
     /// Elevation angle in degrees.
-    pub fn elevation_angle(&self) -> f32 {
+    pub fn elevation_angle_degrees(&self) -> f32 {
         self.header.elevation_angle.get() as f32 * 180.0 / 32768.0
     }
 
     /// Elevation number within the volume scan (1-indexed).
-    pub fn elevation_number(&self) -> u16 {
-        self.header.elevation_number.get()
+    ///
+    /// The ICD range is 1 to 25. The wire field is two bytes wide; a value that does not fit in
+    /// a `u8` (only possible in malformed data) is reported as `u8::MAX`.
+    pub fn elevation_number(&self) -> u8 {
+        u8::try_from(self.header.elevation_number.get()).unwrap_or(u8::MAX)
     }
 
-    /// Radial status indicator.
+    /// Radial status indicator (raw value). See [`radial_status()`](Self::radial_status) for the
+    /// decoded value.
     ///
     /// - 0 = Start of new elevation
     /// - 1 = Intermediate radial
     /// - 2 = End of elevation
     /// - 3 = Beginning of volume scan
     /// - 4 = End of volume scan
-    pub fn radial_status(&self) -> u16 {
+    pub fn radial_status_raw(&self) -> u16 {
         self.header.radial_status.get()
     }
 
-    /// Volume Coverage Pattern number.
-    pub fn vcp_number(&self) -> u16 {
+    /// The radial's status within the larger scan, using the same code mapping as the Message
+    /// Type 31 header. A value that does not fit in a `u8` (only possible in malformed data) is
+    /// reported as [`RadialStatus::Unknown(u8::MAX)`](RadialStatus::Unknown).
+    pub fn radial_status(&self) -> RadialStatus {
+        RadialStatus::from_raw(u8::try_from(self.radial_status_raw()).unwrap_or(u8::MAX))
+    }
+
+    /// Volume Coverage Pattern number (raw value). See [`vcp_number()`](Self::vcp_number) for the
+    /// decoded value.
+    pub fn vcp_number_raw(&self) -> u16 {
         self.header.vcp_number.get()
+    }
+
+    /// Volume Coverage Pattern number.
+    pub fn vcp_number(&self) -> VcpNumber {
+        VcpNumber::from(self.vcp_number_raw())
     }
 
     /// Unambiguous range in kilometers.
@@ -162,7 +181,7 @@ impl<'a> Message<'a> {
     }
 
     /// System gain calibration constant in dB.
-    pub fn calibration_constant(&self) -> f32 {
+    pub fn calibration_constant_db(&self) -> f32 {
         self.header.calibration_constant.get()
     }
 
@@ -177,27 +196,27 @@ impl<'a> Message<'a> {
     }
 
     /// Surveillance gate spacing in meters.
-    pub fn surveillance_gate_interval(&self) -> u16 {
+    pub fn surveillance_gate_interval_meters(&self) -> u16 {
         self.header.surveillance_gate_interval.get()
     }
 
     /// Doppler gate spacing in meters.
-    pub fn doppler_gate_interval(&self) -> u16 {
+    pub fn doppler_gate_interval_meters(&self) -> u16 {
         self.header.doppler_gate_interval.get()
     }
 
     /// Range to first surveillance gate in meters.
-    pub fn surveillance_first_gate_range(&self) -> i16 {
+    pub fn surveillance_first_gate_range_meters(&self) -> i16 {
         self.header.surveillance_first_gate_range.get()
     }
 
     /// Range to first Doppler gate in meters.
-    pub fn doppler_first_gate_range(&self) -> i16 {
+    pub fn doppler_first_gate_range_meters(&self) -> i16 {
         self.header.doppler_first_gate_range.get()
     }
 
     /// Doppler velocity resolution in m/s (0.5 or 1.0).
-    pub fn doppler_velocity_resolution(&self) -> f32 {
+    pub fn doppler_velocity_resolution_mps(&self) -> f32 {
         match self.header.doppler_velocity_resolution.get() {
             4 => 1.0,
             _ => 0.5,
@@ -245,32 +264,25 @@ impl<'a> Message<'a> {
     #[cfg(feature = "model")]
     pub fn into_radial(self) -> Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{MomentData, Product, Radial, RadialStatus};
+        use nexrad_model::data::{MomentData, Product, Radial};
 
         // Extract header values before moving gate data out of self.
         let num_surv_gates = self.num_surveillance_gates();
-        let surv_first_range = self.surveillance_first_gate_range().unsigned_abs();
-        let surv_interval = self.surveillance_gate_interval();
+        let surv_first_range = self.surveillance_first_gate_range_meters().unsigned_abs();
+        let surv_interval = self.surveillance_gate_interval_meters();
         let num_dopp_gates = self.num_doppler_gates();
-        let dopp_first_range = self.doppler_first_gate_range().unsigned_abs();
-        let dopp_interval = self.doppler_gate_interval();
-        let vel_resolution = self.doppler_velocity_resolution();
-        let radial_status = match self.radial_status() {
-            0 => RadialStatus::ElevationStart,
-            1 => RadialStatus::IntermediateRadialData,
-            2 => RadialStatus::ElevationEnd,
-            3 => RadialStatus::ScanStart,
-            4 => RadialStatus::ScanEnd,
-            _ => RadialStatus::IntermediateRadialData,
-        };
+        let dopp_first_range = self.doppler_first_gate_range_meters().unsigned_abs();
+        let dopp_interval = self.doppler_gate_interval_meters();
+        let vel_resolution = self.doppler_velocity_resolution_mps();
+        let radial_status: nexrad_model::data::RadialStatus = self.radial_status().into();
         let timestamp = self
             .date_time()
             .ok_or(Error::MessageMissingDate)?
             .timestamp_millis();
         let azimuth_number = self.azimuth_number();
-        let azimuth_angle = self.azimuth_angle();
-        let elevation_number = self.elevation_number() as u8;
-        let elevation_angle = self.elevation_angle();
+        let azimuth_angle = self.azimuth_angle_degrees();
+        let elevation_number = self.elevation_number();
+        let elevation_angle = self.elevation_angle_degrees();
 
         let reflectivity = self.reflectivity_gates.map(|gates| {
             MomentData::from_fixed_point(
@@ -339,14 +351,14 @@ impl<'a> Message<'a> {
         spectrum_width_gates: Option<Vec<u8>>,
     ) -> Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{MomentData, Product, Radial, RadialStatus};
+        use nexrad_model::data::{MomentData, Product, Radial};
 
         let reflectivity = reflectivity_gates.map(|gates| {
             MomentData::from_fixed_point(
                 Product::Reflectivity,
                 msg.num_surveillance_gates(),
-                msg.surveillance_first_gate_range().unsigned_abs(),
-                msg.surveillance_gate_interval(),
+                msg.surveillance_first_gate_range_meters().unsigned_abs(),
+                msg.surveillance_gate_interval_meters(),
                 8,
                 2.0,
                 66.0,
@@ -355,7 +367,7 @@ impl<'a> Message<'a> {
         });
 
         let velocity = velocity_gates.map(|gates| {
-            let (scale, offset) = if msg.doppler_velocity_resolution() > 0.9 {
+            let (scale, offset) = if msg.doppler_velocity_resolution_mps() > 0.9 {
                 (1.0, 129.0)
             } else {
                 (2.0, 129.0)
@@ -363,8 +375,8 @@ impl<'a> Message<'a> {
             MomentData::from_fixed_point(
                 Product::Velocity,
                 msg.num_doppler_gates(),
-                msg.doppler_first_gate_range().unsigned_abs(),
-                msg.doppler_gate_interval(),
+                msg.doppler_first_gate_range_meters().unsigned_abs(),
+                msg.doppler_gate_interval_meters(),
                 8,
                 scale,
                 offset,
@@ -376,23 +388,14 @@ impl<'a> Message<'a> {
             MomentData::from_fixed_point(
                 Product::SpectrumWidth,
                 msg.num_doppler_gates(),
-                msg.doppler_first_gate_range().unsigned_abs(),
-                msg.doppler_gate_interval(),
+                msg.doppler_first_gate_range_meters().unsigned_abs(),
+                msg.doppler_gate_interval_meters(),
                 8,
                 2.0,
                 129.0,
                 gates,
             )
         });
-
-        let radial_status = match msg.radial_status() {
-            0 => RadialStatus::ElevationStart,
-            1 => RadialStatus::IntermediateRadialData,
-            2 => RadialStatus::ElevationEnd,
-            3 => RadialStatus::ScanStart,
-            4 => RadialStatus::ScanEnd,
-            _ => RadialStatus::IntermediateRadialData,
-        };
 
         let timestamp = msg
             .date_time()
@@ -401,13 +404,13 @@ impl<'a> Message<'a> {
 
         let mut builder = Radial::builder(
             msg.azimuth_number(),
-            msg.azimuth_angle(),
-            msg.elevation_number() as u8,
-            msg.elevation_angle(),
+            msg.azimuth_angle_degrees(),
+            msg.elevation_number(),
+            msg.elevation_angle_degrees(),
         )
         .collection_timestamp(timestamp)
         .azimuth_spacing_degrees(1.0)
-        .radial_status(radial_status);
+        .radial_status(msg.radial_status().into());
         for moment in [reflectivity, velocity, spectrum_width]
             .into_iter()
             .flatten()
@@ -434,24 +437,27 @@ impl<'a> Message<'a> {
 impl Debug for Message<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DigitalRadarDataLegacy")
-            .field("azimuth_angle", &self.azimuth_angle())
+            .field("azimuth_angle_degrees", &self.azimuth_angle_degrees())
             .field("azimuth_number", &self.azimuth_number())
-            .field("elevation_angle", &self.elevation_angle())
+            .field("elevation_angle_degrees", &self.elevation_angle_degrees())
             .field("elevation_number", &self.elevation_number())
             .field("radial_status", &self.radial_status())
             .field("vcp_number", &self.vcp_number())
             .field("unambiguous_range_km", &self.unambiguous_range_km())
-            .field("calibration_constant", &self.calibration_constant())
+            .field("calibration_constant_db", &self.calibration_constant_db())
             .field("num_surveillance_gates", &self.num_surveillance_gates())
             .field("num_doppler_gates", &self.num_doppler_gates())
             .field(
-                "surveillance_gate_interval",
-                &self.surveillance_gate_interval(),
+                "surveillance_gate_interval_meters",
+                &self.surveillance_gate_interval_meters(),
             )
-            .field("doppler_gate_interval", &self.doppler_gate_interval())
             .field(
-                "doppler_velocity_resolution",
-                &self.doppler_velocity_resolution(),
+                "doppler_gate_interval_meters",
+                &self.doppler_gate_interval_meters(),
+            )
+            .field(
+                "doppler_velocity_resolution_mps",
+                &self.doppler_velocity_resolution_mps(),
             )
             .field("has_reflectivity", &self.reflectivity_gates.is_some())
             .field("has_velocity", &self.velocity_gates.is_some())

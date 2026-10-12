@@ -20,7 +20,7 @@ pub async fn list_chunks_in_volume(
                 .unwrap_or_else(|| object.key.as_ref())
                 .to_string();
 
-            ChunkIdentifier::from_name(site.to_string(), volume, identifier, object.last_modified)
+            ChunkIdentifier::from_name(site, volume, identifier, object.last_modified)
         })
         .collect::<crate::result::Result<Vec<_>>>()?;
 
@@ -42,7 +42,7 @@ fn latest_generation(mut chunks: Vec<ChunkIdentifier>) -> Vec<ChunkIdentifier> {
 mod regression_tests {
     use super::*;
     fn id(name: &str) -> ChunkIdentifier {
-        ChunkIdentifier::from_name("KBYX".into(), VolumeIndex::new(589), name.into(), None).unwrap()
+        ChunkIdentifier::from_name("KBYX", VolumeIndex::new(589), name, None).unwrap()
     }
     #[test]
     fn reused_volume_contains_only_newest_scan_in_sequence_order() {

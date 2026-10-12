@@ -4,7 +4,7 @@ use chrono::Utc;
 use clap::Parser;
 use env_logger::{Builder, Env};
 use log::{info, LevelFilter};
-use nexrad_data::aws::realtime::{Chunk, ChunkIterator, DownloadedChunk, RetryPolicy};
+use nexrad_data::aws::realtime::{Chunk, ChunkIterator, DownloadedChunk, PollConfig, RetryPolicy};
 use nexrad_data::Result;
 use std::time::Duration;
 
@@ -40,12 +40,10 @@ async fn main() -> Result<()> {
     info!("Creating ChunkIterator for site {}", cli.site);
 
     // Create the iterator - this discovers the latest volume and fetches initial chunks
-    let init = ChunkIterator::start_with_policies(
-        &cli.site,
-        RetryPolicy::default_download(),
-        RetryPolicy::default_discovery(),
-    )
-    .await?;
+    let config = PollConfig::new(&cli.site)
+        .with_download_policy(RetryPolicy::default_download())
+        .with_discovery_policy(RetryPolicy::default_discovery());
+    let init = ChunkIterator::start_with(config).await?;
 
     let mut iterator = init.iterator;
 
@@ -80,12 +78,12 @@ async fn main() -> Result<()> {
             info!("Next chunk expected at: {}", expected_time);
 
             if let Some(wait_duration) = iterator.time_until_next() {
-                let wait_secs = wait_duration.num_milliseconds() as f64 / 1000.0;
-                if wait_secs > 0.0 {
-                    let actual_wait = wait_secs.min(cli.max_wait as f64);
-                    info!("Waiting {:.2}s for next chunk...", actual_wait);
-                    tokio::time::sleep(Duration::from_secs_f64(actual_wait)).await;
-                }
+                let actual_wait = wait_duration.min(Duration::from_secs(cli.max_wait));
+                info!(
+                    "Waiting {:.2}s for next chunk...",
+                    actual_wait.as_secs_f64()
+                );
+                tokio::time::sleep(actual_wait).await;
             }
         }
 
@@ -103,20 +101,16 @@ async fn main() -> Result<()> {
         }
     }
 
-    // Display timing statistics
-    let stats = iterator.timing_stats();
-    let stat_entries = stats.get_statistics();
-    info!(
-        "Timing statistics: {} characteristic groups tracked",
-        stat_entries.len()
-    );
-
-    // Display network statistics
+    // Display a session summary
     info!(
         "Network statistics: {} requests, {} bytes downloaded",
         iterator.requests_made(),
         iterator.bytes_downloaded()
     );
+    match iterator.projected_volume_end_time() {
+        Some(end_time) => info!("Final chunk of this volume expected at: {}", end_time),
+        None => info!("Current volume completion time cannot be projected yet"),
+    }
 
     info!("Done! Downloaded {} chunks", downloaded);
 

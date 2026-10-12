@@ -39,6 +39,35 @@ async fn test_get_latest_volume_basic() {
 
 #[tokio::test]
 #[ignore = "requires AWS access"]
+async fn test_get_latest_volume_from_hint() {
+    let site = "KDMX";
+
+    let latest = realtime::get_latest_volume(site)
+        .await
+        .expect("full search");
+    let volume = latest.volume.expect("latest volume");
+
+    // A hint at the latest volume should resolve to it (or a newer one if a volume rolled over)
+    // without falling back to the full search.
+    let from_hint = realtime::get_latest_volume_from_hint(site, volume)
+        .await
+        .expect("hint search");
+    let hinted = from_hint.volume.expect("volume from hint");
+    assert!(
+        hinted == volume || hinted == volume.next(),
+        "Expected {} or its successor, got {}",
+        volume.as_number(),
+        hinted.as_number()
+    );
+    assert!(
+        from_hint.calls >= 2 && from_hint.calls <= 3,
+        "Unexpected call count: {}",
+        from_hint.calls
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires AWS access"]
 async fn test_get_latest_volume_different_sites() {
     let sites = vec!["KDMX", "KABR", "KATX"];
 
@@ -172,7 +201,9 @@ async fn test_download_chunk_basic() {
         download_result.err()
     );
 
-    let (returned_chunk_id, chunk) = download_result.unwrap();
+    let downloaded = download_result.unwrap();
+    let (returned_chunk_id, chunk) = (downloaded.identifier, downloaded.chunk);
+    assert_eq!(downloaded.attempts, 1);
 
     // Verify chunk identifier matches
     assert_eq!(returned_chunk_id.site(), site);
@@ -222,7 +253,7 @@ async fn test_download_chunk_has_upload_time() {
     let download_result = realtime::download_chunk(site, chunk_id).await;
     assert!(download_result.is_ok());
 
-    let (returned_chunk_id, _chunk) = download_result.unwrap();
+    let returned_chunk_id = download_result.unwrap().identifier;
 
     // Downloaded chunk should have upload time populated
     assert!(
@@ -285,7 +316,8 @@ async fn test_complete_workflow() {
     let download_result = realtime::download_chunk(site, first_chunk).await;
     assert!(download_result.is_ok());
 
-    let (chunk_id, chunk) = download_result.unwrap();
+    let downloaded = download_result.unwrap();
+    let (chunk_id, chunk) = (downloaded.identifier, downloaded.chunk);
 
     println!(
         "Downloaded chunk: {} (sequence {}, size {} bytes)",
@@ -413,7 +445,8 @@ async fn test_download_intermediate_and_end_chunks() {
             chunk_id.sequence()
         );
 
-        let (returned_id, chunk) = download_result.unwrap();
+        let downloaded = download_result.unwrap();
+        let (returned_id, chunk) = (downloaded.identifier, downloaded.chunk);
         assert!(!chunk.data().is_empty());
         assert_eq!(returned_id.sequence(), chunk_id.sequence());
     }

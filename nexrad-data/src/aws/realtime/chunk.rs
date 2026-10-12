@@ -4,17 +4,20 @@ use crate::volume;
 
 /// A chunk of real-time data within a volume. Chunks are ordered and when concatenated together
 /// form a complete volume of radar data. All chunks contain an LDM record with radar data messages.
+///
+/// A chunk always owns its data, so it can be stored, sent between threads, or collected for
+/// later assembly without borrowing from anything.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Chunk<'a> {
+pub enum Chunk {
     /// The start of a new volume. This chunk will begin with an Archive II volume header followed
     /// by a compressed LDM record.
     Start(volume::File),
     /// An intermediate or end chunk. This chunk will contain a compressed LDM record with radar
     /// data messages.
-    IntermediateOrEnd(volume::Record<'a>),
+    IntermediateOrEnd(volume::Record<'static>),
 }
 
-impl Chunk<'_> {
+impl Chunk {
     /// Creates a new chunk from the provided data. The data is expected to be in one of two formats:
     ///
     /// 1. An Archive II volume header followed by a compressed LDM record, or a "start" chunk.

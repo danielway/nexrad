@@ -346,72 +346,33 @@ fn test_chunk_too_small_for_bz_check() {
 }
 
 #[test]
-fn test_chunk_identifier_next_chunk_intermediate() {
-    use nexrad_data::aws::realtime::{ElevationChunkMapper, NextChunk};
+fn test_chunk_identifier_with_sequence() {
+    use chrono::{TimeZone, Utc};
 
-    // This test requires a real VCP message to create the mapper
-    // For now, we'll test the basic structure
-    const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
-    let volume_file = nexrad_data::volume::File::new(TEST_NEXRAD_FILE.to_vec());
+    let uploaded = Utc
+        .with_ymd_and_hms(2022, 3, 5, 12, 0, 30)
+        .single()
+        .unwrap();
+    let id = ChunkIdentifier::from_name(
+        "KDMX",
+        VolumeIndex::new(42),
+        "20220305-120000-007-I",
+        Some(uploaded),
+    )
+    .unwrap();
 
-    // Get VCP from the file
-    let mut vcp = None;
-    for mut record in volume_file.records().expect("records") {
-        if record.compressed() {
-            record = record.decompress().unwrap();
-        }
-        for message in record.messages().unwrap() {
-            if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp_msg) =
-                message.contents()
-            {
-                vcp = Some(vcp_msg.clone().into_owned());
-                break;
-            }
-        }
-        if vcp.is_some() {
-            break;
-        }
-    }
+    let start = id.with_sequence(1, ChunkType::Start);
+    assert_eq!(start.site(), "KDMX");
+    assert_eq!(start.volume(), id.volume());
+    assert_eq!(start.date_time_prefix(), id.date_time_prefix());
+    assert_eq!(start.sequence(), 1);
+    assert_eq!(start.chunk_type(), ChunkType::Start);
+    assert_eq!(start.name(), "20220305-120000-001-S");
+    assert_eq!(start.upload_date_time(), None);
 
-    let vcp = vcp.expect("VCP should be found in test file");
-    let mapper = ElevationChunkMapper::new(&vcp);
-    let final_seq = mapper.final_sequence();
-
-    // Test non-final chunk progresses to next sequence
-    let chunk_id = ChunkIdentifier::new(
-        "KDMX".to_string(),
-        VolumeIndex::new(1),
-        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
-        2,
-        ChunkType::Intermediate,
-        None,
-    );
-
-    match chunk_id.next_chunk(&mapper) {
-        Some(NextChunk::Sequence(next)) => {
-            assert_eq!(next.sequence(), 3);
-            assert_eq!(next.site(), "KDMX");
-            assert_eq!(next.volume().as_number(), 1);
-        }
-        _ => panic!("Expected NextChunk::Sequence for intermediate chunk"),
-    }
-
-    // Test final chunk progresses to next volume
-    let chunk_id = ChunkIdentifier::new(
-        "KDMX".to_string(),
-        VolumeIndex::new(1),
-        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
-        final_seq,
-        ChunkType::End,
-        None,
-    );
-
-    match chunk_id.next_chunk(&mapper) {
-        Some(NextChunk::Volume(next_volume)) => {
-            assert_eq!(next_volume.as_number(), 2);
-        }
-        _ => panic!("Expected NextChunk::Volume for final chunk"),
-    }
+    let end = id.with_sequence(55, ChunkType::End);
+    assert_eq!(end.name(), "20220305-120000-055-E");
+    assert_eq!(end.upload_date_time(), None);
 }
 
 #[test]

@@ -6,7 +6,7 @@
 use crate::aws::realtime::{
     download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
     Chunk, ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, DownloadedChunk,
-    ElevationChunkMapper, NextChunk, RetryPolicy, RetryState, VolumeIndex,
+    ElevationChunkMapper, NextChunk, PollConfig, RetryPolicy, RetryState, VolumeIndex,
 };
 use crate::result::Error;
 use crate::result::{aws::AwsError, Result};
@@ -15,40 +15,6 @@ use futures_util::stream::Stream;
 use log::debug;
 use nexrad_decode::messages::volume_coverage_pattern;
 use std::future::Future;
-
-/// Configuration for polling real-time NEXRAD chunks.
-#[derive(Debug, Clone)]
-pub struct PollConfig {
-    /// The radar site identifier (e.g., "KDMX").
-    pub site: String,
-    /// Retry policy for downloading individual chunks.
-    pub download_policy: RetryPolicy,
-    /// Retry policy for discovering new volumes.
-    pub discovery_policy: RetryPolicy,
-}
-
-impl PollConfig {
-    /// Creates a new poll configuration for the specified site with default policies.
-    pub fn new(site: impl Into<String>) -> Self {
-        Self {
-            site: site.into(),
-            download_policy: RetryPolicy::default_download(),
-            discovery_policy: RetryPolicy::default_discovery(),
-        }
-    }
-
-    /// Sets the retry policy for downloading individual chunks.
-    pub fn with_download_policy(mut self, policy: RetryPolicy) -> Self {
-        self.download_policy = policy;
-        self
-    }
-
-    /// Sets the retry policy for discovering new volumes.
-    pub fn with_discovery_policy(mut self, policy: RetryPolicy) -> Self {
-        self.discovery_policy = policy;
-        self
-    }
-}
 
 /// Internal state for the chunk stream.
 struct ChunkStreamState {
@@ -128,46 +94,41 @@ fn to_std_duration(duration: Duration) -> std::time::Duration {
 async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
     use crate::aws::realtime::ChunkType;
 
-    let latest_volume_result = get_latest_volume(&config.site).await?;
-    let latest_volume = latest_volume_result
+    let latest_volume = get_latest_volume(config.site())
+        .await?
         .volume
         .ok_or(AwsError::LatestVolumeNotFound)?;
 
-    let latest_chunk_id = get_latest_chunk(&config.site, latest_volume)
+    let latest_chunk_id = get_latest_chunk(config.site(), latest_volume)
         .await?
         .ok_or(AwsError::ExpectedChunkNotFound)?;
 
-    let (latest_chunk_id, _) = download_chunk(&config.site, &latest_chunk_id).await?;
+    let latest_chunk_id = download_chunk(config.site(), &latest_chunk_id)
+        .await?
+        .identifier;
 
     // Get VCP from start chunk
-    let latest_metadata_id = ChunkIdentifier::new(
-        config.site.clone(),
-        latest_volume,
-        *latest_chunk_id.date_time_prefix(),
-        1,
-        ChunkType::Start,
-        None,
-    );
-    let (_, latest_metadata) = download_chunk(&config.site, &latest_metadata_id).await?;
-    let vcp = get_latest_vcp(&latest_metadata)?;
+    let latest_metadata_id = latest_chunk_id.with_sequence(1, ChunkType::Start);
+    let latest_metadata = download_chunk(config.site(), &latest_metadata_id).await?;
+    let vcp = get_latest_vcp(&latest_metadata.chunk)?;
     let elevation_mapper = ElevationChunkMapper::new(&vcp);
 
     debug!(
         "Stream initialized for {} at volume {} with VCP {}",
-        config.site,
+        config.site(),
         latest_volume.as_number(),
         vcp.header().pattern_number()
     );
 
     Ok(ChunkStreamState {
-        site: config.site.clone(),
+        site: config.site().to_string(),
         current_chunk: latest_chunk_id,
         elevation_mapper,
         vcp,
         timing_stats: ChunkTimingStats::new(),
         previous_chunk_time: None,
-        download_policy: config.download_policy.clone(),
-        discovery_policy: config.discovery_policy.clone(),
+        download_policy: config.download_policy().clone(),
+        discovery_policy: config.discovery_policy().clone(),
     })
 }
 
@@ -227,7 +188,11 @@ where
     )
     .await;
 
-    let (chunk_id, chunk) = result.ok_or(AwsError::ExpectedChunkNotFound)?;
+    let DownloadedChunk {
+        identifier: chunk_id,
+        chunk,
+        ..
+    } = result.ok_or(AwsError::ExpectedChunkNotFound)?;
 
     // Update timing statistics
     if let (Some(upload_time), Some(prev_time)) =
@@ -260,11 +225,7 @@ where
     state.previous_chunk_time = chunk_id.upload_date_time();
     state.current_chunk = chunk_id.clone();
 
-    Ok(DownloadedChunk {
-        identifier: chunk_id,
-        chunk,
-        attempts,
-    })
+    Ok(DownloadedChunk::new(chunk_id, chunk, attempts))
 }
 
 /// Helper function to update timing statistics for a downloaded chunk
@@ -311,9 +272,7 @@ async fn get_latest_chunk(site: &str, volume: VolumeIndex) -> Result<Option<Chun
 }
 
 /// Gets the volume coverage pattern from the latest metadata chunk.
-fn get_latest_vcp(
-    latest_metadata: &Chunk<'_>,
-) -> Result<volume_coverage_pattern::Message<'static>> {
+fn get_latest_vcp(latest_metadata: &Chunk) -> Result<volume_coverage_pattern::Message<'static>> {
     if let Chunk::Start(file) = latest_metadata {
         for mut record in file.records()? {
             if record.compressed() {
@@ -351,7 +310,7 @@ where
             return (state.attempt(), Some(result));
         }
 
-        sleep(to_std_duration(delay)).await;
+        sleep(delay).await;
     }
 
     (state.attempt(), None)

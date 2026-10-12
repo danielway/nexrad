@@ -26,56 +26,82 @@
 //! for a session, a different routine should be used to poll new data for that volume and advance
 //! to the next volume when the active one is filled.
 //!
+//! # Consuming real-time data
+//!
+//! - [chunk_stream()] returns a runtime-agnostic [`Stream`](futures_util::stream::Stream) of
+//!   [DownloadedChunk]s configured by a [PollConfig]; it waits between polls using a
+//!   caller-supplied sleep function.
+//! - [ChunkIterator] is a pull-based alternative for callers that schedule polling themselves,
+//!   using [ChunkIterator::next_expected_time()] or [ChunkIterator::time_until_next()], which
+//!   estimate when the next chunk becomes available for download from S3.
+//! - [list_chunks_in_volume()] and [download_chunk()] are the building blocks for custom polling.
+//!   A client that persisted the last volume it saw can rediscover the current one cheaply with
+//!   [get_latest_volume_from_hint()].
+//!
+//! Both [chunk_stream()] and [ChunkIterator] estimate when the next chunk becomes available for
+//! download from S3, using the volume coverage pattern and observed upload timings. That model is
+//! an internal detail and may be refined in any release. Its results are part of the public API,
+//! and they always mean S3 availability times: [ChunkIterator::next_expected_time()] for the next
+//! chunk and [ChunkIterator::projected_volume_end_time()] for the volume's final chunk.
+//!
 
 mod volume_index;
-pub use volume_index::*;
+pub use volume_index::VolumeIndex;
 
 mod chunk;
-pub use chunk::*;
+pub use chunk::Chunk;
 
 mod chunk_type;
-pub use chunk_type::*;
+pub use chunk_type::ChunkType;
 
 mod chunk_identifier;
-pub use chunk_identifier::*;
+pub use chunk_identifier::ChunkIdentifier;
+pub(crate) use chunk_identifier::NextChunk;
 
 mod download_chunk;
-pub use download_chunk::*;
+pub use download_chunk::download_chunk;
 
 mod get_latest_volume;
-pub use get_latest_volume::*;
+pub use get_latest_volume::{get_latest_volume, get_latest_volume_from_hint, LatestVolumeResult};
 
 mod list_chunks_in_volume;
-pub use list_chunks_in_volume::*;
+pub use list_chunks_in_volume::list_chunks_in_volume;
 
 mod estimate_next_chunk_time;
-pub use estimate_next_chunk_time::*;
+pub(crate) use estimate_next_chunk_time::estimate_chunk_availability_time;
 
 mod chunk_timing_model;
-pub use chunk_timing_model::*;
+pub(crate) use chunk_timing_model::ChunkTimingModel;
 
 mod chunk_timing_stats;
-pub use chunk_timing_stats::*;
+pub(crate) use chunk_timing_stats::{ChunkCharacteristics, ChunkTimingStats};
 
 mod elevation_chunk_mapper;
-pub use elevation_chunk_mapper::*;
+pub(crate) use elevation_chunk_mapper::{ChunkMetadata, ElevationChunkMapper};
 
 mod scan_timing_projection;
-pub use scan_timing_projection::*;
+pub(crate) use scan_timing_projection::project_volume_end_time;
 
 mod retry_policy;
-pub use retry_policy::*;
+pub use retry_policy::RetryPolicy;
+pub(crate) use retry_policy::RetryState;
 
 mod chunk_iterator;
-pub use chunk_iterator::*;
+pub use chunk_iterator::{ChunkIterator, ChunkIteratorInit, DownloadedChunk};
+
+mod poll_config;
+pub use poll_config::PollConfig;
 
 mod poll_chunks;
-pub use poll_chunks::*;
+pub use poll_chunks::chunk_stream;
 
 #[cfg(feature = "model")]
 mod assemble;
 #[cfg(feature = "model")]
-pub use assemble::*;
+pub use assemble::assemble_volume;
+
+#[cfg(test)]
+mod tests;
 
 mod find_latest;
 

@@ -33,11 +33,12 @@ rotated through with chunks being added to each directory until they comprise a 
 `nexrad_data::aws::realtime` module provides functions for accessing these chunks. The `realtime::list_chunks_in_volume`
 function queries a volume for its chunks, returning identifiers for each chunk. The `realtime::download_chunk` function
 downloads a chunk by its identifier. The `realtime::get_latest_volume` function can be used to identify which of the 999
-volume directories contain the latest data, and the `realtime::estimate_chunk_availability_time` function can be used to
-estimate when the next chunk will be uploaded. The `realtime::chunk_stream` function returns an async stream that
+volume directories contain the latest data, and `realtime::get_latest_volume_from_hint` does the same in a few calls
+when starting from a previously seen volume. The `realtime::chunk_stream` function returns an async stream that
 continuously yields chunks as they become available; it is runtime-agnostic and takes a caller-supplied sleep function
 (with tokio, `chunk_stream(config, |d| tokio::time::sleep(d))`). For caller-controlled scheduling,
-`realtime::ChunkIterator` provides a pull-based interface with manual timing control.
+`realtime::ChunkIterator` provides a pull-based interface with manual timing control: its `next_expected_time` and
+`time_until_next` methods estimate when the next chunk becomes available for download from S3.
 
 ## Features
 

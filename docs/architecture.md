@@ -176,7 +176,7 @@ Exhaustive by design (variants are fixed by the NOAA ICD or by the crate's own f
 
 - `nexrad_model`: `MomentValue`, `CfpMomentValue`, `CfpStatus`, `GateStatus`, `RadialStatus`, `PulseWidth`, `WaveformType`, `ChannelConfiguration`
 - `nexrad_decode`: `MessageHeaders`, `RadialStatus`, `PulseWidth`, `WaveformType`, `ChannelConfiguration`, `PatternType`, and the small status enums in the message modules
-- `nexrad_data`: `ChunkType`, `NextChunk`, `Chunk`
+- `nexrad_data`: `ChunkType`, `Chunk`
 - `nexrad_render`: `Interpolation`, `ColorScale`
 
 Adding a variant to an exhaustive enum is a breaking change and is reserved for a major release.

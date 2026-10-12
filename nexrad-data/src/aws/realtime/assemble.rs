@@ -28,8 +28,8 @@ use crate::result::Error;
 /// // ... collect more chunks ...
 /// let scan = assemble_volume(chunks.into_iter().map(|dc| dc.chunk))?;
 /// ```
-pub fn assemble_volume<'a>(
-    chunks: impl IntoIterator<Item = Chunk<'a>>,
+pub fn assemble_volume(
+    chunks: impl IntoIterator<Item = Chunk>,
 ) -> crate::result::Result<nexrad_model::data::Scan> {
     use nexrad_decode::messages::volume_coverage_pattern as vcp;
     use nexrad_decode::messages::MessageContents;

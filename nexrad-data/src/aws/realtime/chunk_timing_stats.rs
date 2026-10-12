@@ -9,13 +9,13 @@ const MAX_TIMING_SAMPLES: usize = 10;
 
 /// Characteristics of a chunk that affect timing
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub struct ChunkCharacteristics {
+pub(crate) struct ChunkCharacteristics {
     /// Type of the chunk
-    pub chunk_type: ChunkType,
+    pub(crate) chunk_type: ChunkType,
     /// Waveform type of the elevation
-    pub waveform_type: WaveformType,
+    pub(crate) waveform_type: WaveformType,
     /// Channel configuration of the elevation
-    pub channel_configuration: ChannelConfiguration,
+    pub(crate) channel_configuration: ChannelConfiguration,
 }
 
 impl Hash for ChunkCharacteristics {
@@ -37,21 +37,21 @@ pub(crate) struct TimingStat {
 
 /// Statistics for timing between chunks
 #[derive(Debug, Clone, Default)]
-pub struct ChunkTimingStats {
+pub(crate) struct ChunkTimingStats {
     /// Timing statistics for each chunk characteristics
     timings: HashMap<ChunkCharacteristics, VecDeque<TimingStat>>,
 }
 
 impl ChunkTimingStats {
     /// Create a new empty timing statistics
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             timings: HashMap::new(),
         }
     }
 
     /// Add a timing sample for the given chunk characteristics
-    pub fn add_timing(
+    pub(crate) fn add_timing(
         &mut self,
         characteristics: ChunkCharacteristics,
         duration: Duration,
@@ -100,19 +100,5 @@ impl ChunkTimingStats {
             let total_attempts: usize = timings.iter().map(|timing| timing.attempts).sum();
             Some(total_attempts as f64 / timings.len() as f64)
         })
-    }
-
-    /// Get all chunk statistics for display purposes
-    pub fn get_statistics(&self) -> Vec<(ChunkCharacteristics, Option<Duration>, Option<f64>)> {
-        self.timings
-            .keys()
-            .map(|characteristics| {
-                (
-                    *characteristics,
-                    self.get_average_timing(characteristics),
-                    self.get_average_attempts(characteristics),
-                )
-            })
-            .collect()
     }
 }

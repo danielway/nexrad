@@ -6,8 +6,8 @@
 
 use crate::aws::realtime::{
     download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
-    project_scan_timing, Chunk, ChunkIdentifier, ChunkMetadata, ChunkTimingStats, ChunkType,
-    ElevationChunkMapper, NextChunk, RetryPolicy, RetryState, ScanTimingProjection, VolumeIndex,
+    project_volume_end_time, Chunk, ChunkIdentifier, ChunkTimingStats, ChunkType,
+    ElevationChunkMapper, NextChunk, PollConfig, RetryState, VolumeIndex,
 };
 use crate::result::{aws::AwsError, Error, Result};
 use chrono::{DateTime, Duration, Utc};
@@ -15,14 +15,32 @@ use log::debug;
 use nexrad_decode::messages::volume_coverage_pattern;
 
 /// A downloaded chunk with metadata about the download process.
+///
+/// Returned by [`download_chunk`](super::download_chunk), [`ChunkIterator`], and
+/// [`chunk_stream`](super::chunk_stream). The fields are public so they can be read and moved
+/// out. The struct is `#[non_exhaustive]` so fields may be added in a minor release; construct it
+/// with [`DownloadedChunk::new`] rather than a struct literal.
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct DownloadedChunk {
     /// The chunk identifier.
     pub identifier: ChunkIdentifier,
     /// The chunk data.
-    pub chunk: Chunk<'static>,
+    pub chunk: Chunk,
     /// Number of attempts required to download this chunk.
     pub attempts: usize,
+}
+
+impl DownloadedChunk {
+    /// Creates a downloaded chunk from its identifier, data, and the number of download attempts
+    /// it took.
+    pub fn new(identifier: ChunkIdentifier, chunk: Chunk, attempts: usize) -> Self {
+        Self {
+            identifier,
+            chunk,
+            attempts,
+        }
+    }
 }
 
 /// Result of initializing a [`ChunkIterator`].
@@ -30,7 +48,12 @@ pub struct DownloadedChunk {
 /// When creating a new iterator, the latest chunk in the volume is fetched and returned
 /// in `latest_chunk`. If joining mid-volume (the latest chunk is not a Start chunk),
 /// the Start chunk is also fetched to extract the VCP and is returned in `start_chunk`.
+///
+/// The fields are public so they can be read and moved out, but the struct is
+/// `#[non_exhaustive]`: it cannot be constructed outside this crate, and fields may be added in a
+/// minor release.
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct ChunkIteratorInit {
     /// The initialized iterator, ready for subsequent `try_next()` calls.
     pub iterator: ChunkIterator,
@@ -59,13 +82,11 @@ enum IteratorState {
 /// to determine when to call [`try_next`](Self::try_next).
 #[derive(Debug)]
 pub struct ChunkIterator {
-    site: String,
+    config: PollConfig,
     state: IteratorState,
     elevation_mapper: Option<ElevationChunkMapper>,
     vcp: Option<volume_coverage_pattern::Message<'static>>,
     timing_stats: ChunkTimingStats,
-    download_policy: RetryPolicy,
-    discovery_policy: RetryPolicy,
     last_chunk_time: Option<DateTime<Utc>>,
     requests_made: usize,
     bytes_downloaded: u64,
@@ -84,44 +105,33 @@ impl ChunkIterator {
     /// - `iterator`: The initialized iterator ready for `try_next()` calls
     /// - `latest_chunk`: The most recent chunk in the volume
     /// - `start_chunk`: The Start chunk if it differs from `latest_chunk` (contains VCP metadata)
+    ///
+    /// This is shorthand for [`start_with(PollConfig::new(site))`](Self::start_with).
     pub async fn start(site: &str) -> Result<ChunkIteratorInit> {
-        Self::start_with_policies(
-            site,
-            RetryPolicy::default_download(),
-            RetryPolicy::default_discovery(),
-        )
-        .await
+        Self::start_with(PollConfig::new(site)).await
     }
 
-    /// Starts a new chunk iterator with custom retry policies.
+    /// Starts a new chunk iterator with the given configuration.
     ///
     /// See [`start`](Self::start) for details on the return value.
-    pub async fn start_with_policies(
-        site: &str,
-        download_policy: RetryPolicy,
-        discovery_policy: RetryPolicy,
-    ) -> Result<ChunkIteratorInit> {
-        let latest_volume_result = get_latest_volume(site).await?;
-        let volume = latest_volume_result
-            .volume
-            .ok_or(AwsError::LatestVolumeNotFound)?;
+    pub async fn start_with(config: PollConfig) -> Result<ChunkIteratorInit> {
+        let latest = get_latest_volume(config.site()).await?;
+        let volume = latest.volume.ok_or(AwsError::LatestVolumeNotFound)?;
 
         debug!(
             "ChunkIterator initialized for site {} at volume {}",
-            site,
+            config.site(),
             volume.as_number()
         );
 
         let mut iterator = Self {
-            site: site.to_string(),
+            config,
             state: IteratorState::NeedVolumeStart(volume),
             elevation_mapper: None,
             vcp: None,
             timing_stats: ChunkTimingStats::new(),
-            download_policy,
-            discovery_policy,
             last_chunk_time: None,
-            requests_made: latest_volume_result.calls,
+            requests_made: latest.calls,
             bytes_downloaded: 0,
         };
 
@@ -139,20 +149,13 @@ impl ChunkIterator {
     ///
     /// This is useful for resuming from a known position. Note that the VCP and
     /// elevation mapper will not be available until a Start chunk is encountered.
-    pub fn from_chunk(
-        site: &str,
-        chunk_id: ChunkIdentifier,
-        download_policy: RetryPolicy,
-        discovery_policy: RetryPolicy,
-    ) -> Self {
+    pub fn from_chunk(config: PollConfig, chunk_id: ChunkIdentifier) -> Self {
         Self {
-            site: site.to_string(),
+            config,
             state: IteratorState::Ready(chunk_id),
             elevation_mapper: None,
             vcp: None,
             timing_stats: ChunkTimingStats::new(),
-            download_policy,
-            discovery_policy,
             last_chunk_time: None,
             requests_made: 0,
             bytes_downloaded: 0,
@@ -182,29 +185,18 @@ impl ChunkIterator {
             }
         } else {
             // Joined mid-volume: fetch the Start chunk for VCP
-            let start_id = ChunkIdentifier::new(
-                self.site.clone(),
-                volume,
-                *latest_chunk.identifier.date_time_prefix(),
-                1,
-                ChunkType::Start,
-                None,
-            );
+            let start_id = latest_chunk.identifier.with_sequence(1, ChunkType::Start);
 
-            if let Ok((identifier, chunk)) = download_chunk(&self.site, &start_id).await {
+            if let Ok(downloaded) = download_chunk(self.config.site(), &start_id).await {
                 self.requests_made += 1;
-                self.bytes_downloaded += chunk.data().len() as u64;
+                self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
-                if let Ok(vcp) = Self::extract_vcp(&chunk) {
+                if let Ok(vcp) = Self::extract_vcp(&downloaded.chunk) {
                     self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
                     self.vcp = Some(vcp);
                 }
 
-                start_chunk = Some(DownloadedChunk {
-                    identifier,
-                    chunk,
-                    attempts: 1,
-                });
+                start_chunk = Some(downloaded);
             }
         }
 
@@ -214,10 +206,12 @@ impl ChunkIterator {
         Ok((latest_chunk, start_chunk))
     }
 
-    /// Returns the estimated time when the next chunk will be available.
+    /// Returns the estimated time at which the next chunk becomes available for download from the
+    /// real-time S3 bucket.
     ///
-    /// Returns `None` if timing cannot be estimated (e.g., VCP not yet known).
-    /// The caller can use this to schedule when to call [`try_next`](Self::try_next).
+    /// The estimate is anchored to the current chunk's upload time, so it may already be in the
+    /// past if the next chunk is due. Returns `None` if timing cannot be estimated (e.g., VCP not
+    /// yet known). The caller can use this to schedule when to call [`try_next`](Self::try_next).
     pub fn next_expected_time(&self) -> Option<DateTime<Utc>> {
         let chunk_id = match &self.state {
             IteratorState::NeedVolumeStart(_) => return None,
@@ -230,19 +224,16 @@ impl ChunkIterator {
         estimate_chunk_availability_time(chunk_id, vcp, mapper, Some(&self.timing_stats))
     }
 
-    /// Returns the estimated duration until the next chunk is available.
+    /// Returns the estimated duration from now until the next chunk becomes available for download
+    /// (see [`next_expected_time`](Self::next_expected_time)).
     ///
-    /// Returns `None` if timing cannot be estimated or if the chunk should
-    /// already be available.
-    pub fn time_until_next(&self) -> Option<Duration> {
+    /// The result is a [`std::time::Duration`], the same type taken by the `sleep` function passed
+    /// to [`chunk_stream`](super::chunk_stream) and by [`RetryPolicy`](super::RetryPolicy), so it
+    /// can be handed directly to a sleep. Returns `None` if timing cannot be estimated or if the
+    /// chunk should already be available.
+    pub fn time_until_next(&self) -> Option<std::time::Duration> {
         let expected = self.next_expected_time()?;
-        let now = Utc::now();
-
-        if expected <= now {
-            None
-        } else {
-            Some(expected - now)
-        }
+        (expected - Utc::now()).to_std().ok()
     }
 
     /// Attempts to fetch the next chunk.
@@ -280,7 +271,7 @@ impl ChunkIterator {
         &mut self,
         volume: VolumeIndex,
     ) -> Result<Option<DownloadedChunk>> {
-        let mut retry_state = RetryState::new(self.discovery_policy.clone());
+        let mut retry_state = RetryState::new(self.config.discovery_policy().clone());
 
         while retry_state.should_retry() {
             match self.fetch_latest_chunk_in_volume(volume).await {
@@ -298,19 +289,12 @@ impl ChunkIterator {
                     if downloaded.identifier.chunk_type() != ChunkType::Start
                         && self.elevation_mapper.is_none()
                     {
-                        let start_id = ChunkIdentifier::new(
-                            self.site.clone(),
-                            volume,
-                            *downloaded.identifier.date_time_prefix(),
-                            1,
-                            ChunkType::Start,
-                            None,
-                        );
-                        if let Ok((_, start_chunk)) = download_chunk(&self.site, &start_id).await {
+                        let start_id = downloaded.identifier.with_sequence(1, ChunkType::Start);
+                        if let Ok(start) = download_chunk(self.config.site(), &start_id).await {
                             self.requests_made += 1;
-                            self.bytes_downloaded += start_chunk.data().len() as u64;
+                            self.bytes_downloaded += start.chunk.data().len() as u64;
 
-                            if let Ok(vcp) = Self::extract_vcp(&start_chunk) {
+                            if let Ok(vcp) = Self::extract_vcp(&start.chunk) {
                                 self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
                                 self.vcp = Some(vcp);
                             }
@@ -359,7 +343,7 @@ impl ChunkIterator {
         &mut self,
         volume: VolumeIndex,
     ) -> Result<Option<DownloadedChunk>> {
-        let chunks = list_chunks_in_volume(&self.site, volume, usize::MAX).await?;
+        let chunks = list_chunks_in_volume(self.config.site(), volume, usize::MAX).await?;
         self.requests_made += 1;
 
         let latest = match chunks.last() {
@@ -373,18 +357,13 @@ impl ChunkIterator {
             return Ok(None);
         }
 
-        let (identifier, chunk) = download_chunk(&self.site, latest).await?;
+        let downloaded = download_chunk(self.config.site(), latest).await?;
         self.requests_made += 1;
-        self.bytes_downloaded += chunk.data().len() as u64;
+        self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
-        Ok(Some(DownloadedChunk {
-            identifier,
-            chunk,
-            attempts: 1,
-        }))
+        Ok(Some(downloaded))
     }
 
-    /// Attempts to fetch a specific chunk.
     /// Attempts to fetch a specific chunk.
     ///
     /// This is a single-attempt fetch for pull-based iteration. Returns:
@@ -397,13 +376,14 @@ impl ChunkIterator {
     ) -> Result<Option<DownloadedChunk>> {
         self.requests_made += 1;
 
-        match download_chunk(&self.site, &chunk_id).await {
-            Ok((identifier, chunk)) => {
-                self.bytes_downloaded += chunk.data().len() as u64;
+        match download_chunk(self.config.site(), &chunk_id).await {
+            Ok(downloaded) => {
+                let identifier = &downloaded.identifier;
+                self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
                 // Update VCP if this is a start chunk
                 if identifier.chunk_type() == ChunkType::Start {
-                    if let Ok(vcp) = Self::extract_vcp(&chunk) {
+                    if let Ok(vcp) = Self::extract_vcp(&downloaded.chunk) {
                         self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
                         self.vcp = Some(vcp);
                     }
@@ -414,17 +394,13 @@ impl ChunkIterator {
                     (identifier.upload_date_time(), self.last_chunk_time)
                 {
                     let duration = upload_time - prev_time;
-                    self.update_timing_stats(&identifier, duration, 1);
+                    self.update_timing_stats(identifier, duration, 1);
                 }
 
                 self.last_chunk_time = identifier.upload_date_time();
                 self.state = IteratorState::Ready(identifier.clone());
 
-                Ok(Some(DownloadedChunk {
-                    identifier,
-                    chunk,
-                    attempts: 1,
-                }))
+                Ok(Some(downloaded))
             }
             Err(Error::Aws(AwsError::S3ObjectNotFound)) => {
                 // Chunk not yet available
@@ -493,39 +469,19 @@ impl ChunkIterator {
         }
     }
 
-    /// Returns a reference to the timing statistics.
-    pub fn timing_stats(&self) -> &ChunkTimingStats {
-        &self.timing_stats
-    }
-
-    /// Returns a mutable reference to the timing statistics.
-    pub fn timing_stats_mut(&mut self) -> &mut ChunkTimingStats {
-        &mut self.timing_stats
-    }
-
     /// Returns the current VCP if available.
     pub fn vcp(&self) -> Option<&volume_coverage_pattern::Message<'static>> {
         self.vcp.as_ref()
     }
 
-    /// Returns the current elevation chunk mapper if available.
-    pub fn elevation_mapper(&self) -> Option<&ElevationChunkMapper> {
-        self.elevation_mapper.as_ref()
-    }
-
     /// Returns the site identifier.
     pub fn site(&self) -> &str {
-        &self.site
+        self.config.site()
     }
 
-    /// Returns the download retry policy.
-    pub fn download_policy(&self) -> &RetryPolicy {
-        &self.download_policy
-    }
-
-    /// Returns the discovery retry policy.
-    pub fn discovery_policy(&self) -> &RetryPolicy {
-        &self.discovery_policy
+    /// Returns the configuration this iterator was created with.
+    pub fn config(&self) -> &PollConfig {
+        &self.config
     }
 
     /// Returns the total number of HTTP requests made by this iterator.
@@ -544,11 +500,12 @@ impl ChunkIterator {
         self.bytes_downloaded
     }
 
-    /// Projects timing for all remaining chunks in the current volume scan.
+    /// Returns the projected time at which the current volume's final chunk becomes available for
+    /// download from the real-time S3 bucket.
     ///
-    /// Returns `None` if the VCP or elevation mapper is not yet available, or if
-    /// there are no remaining chunks to project.
-    pub fn project_remaining_scan(&self) -> Option<ScanTimingProjection> {
+    /// Returns `None` if a projection cannot be made, for example before the VCP is known or when
+    /// the current chunk is already the volume's final chunk.
+    pub fn projected_volume_end_time(&self) -> Option<DateTime<Utc>> {
         let chunk_id = match &self.state {
             IteratorState::Ready(id) => id,
             IteratorState::NeedVolumeStart(_) => return None,
@@ -557,32 +514,7 @@ impl ChunkIterator {
         let vcp = self.vcp.as_ref()?;
         let mapper = self.elevation_mapper.as_ref()?;
 
-        project_scan_timing(chunk_id, vcp, mapper, Some(&self.timing_stats))
-    }
-
-    /// Returns the projected time when the current volume will complete.
-    ///
-    /// Returns `None` if a projection cannot be made.
-    pub fn projected_volume_end_time(&self) -> Option<DateTime<Utc>> {
-        self.project_remaining_scan().map(|p| p.volume_end_time())
-    }
-
-    /// Returns metadata for a specific chunk sequence number in the current volume.
-    ///
-    /// Returns `None` if the elevation mapper is not available or the sequence is out of range.
-    pub fn chunk_metadata(&self, sequence: usize) -> Option<&ChunkMetadata> {
-        self.elevation_mapper
-            .as_ref()
-            .and_then(|m| m.get_chunk_metadata(sequence))
-    }
-
-    /// Returns metadata for all chunks in the current volume.
-    ///
-    /// Returns `None` if the elevation mapper is not yet available.
-    pub fn all_chunk_metadata(&self) -> Option<&[ChunkMetadata]> {
-        self.elevation_mapper
-            .as_ref()
-            .map(|m| m.all_chunk_metadata())
+        project_volume_end_time(chunk_id, vcp, mapper, Some(&self.timing_stats))
     }
 }
 
@@ -595,7 +527,7 @@ mod generation_regression_tests {
     use super::*;
     fn id(volume: usize, stamp: &str) -> ChunkIdentifier {
         ChunkIdentifier::from_name(
-            "KBYX".into(),
+            "KBYX",
             VolumeIndex::new(volume),
             format!("{stamp}-001-S"),
             None,

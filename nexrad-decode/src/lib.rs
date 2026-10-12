@@ -44,7 +44,6 @@
 //! # Module Organization
 //!
 //! - [`messages`] - Message parsing and type definitions
-//! - [`summarize`] - Utilities for summarizing message collections
 //! - [`result`] - Error and result types ([`Error`] and [`Result`] are re-exported at the root)
 //!
 //! # Crate Boundaries
@@ -84,8 +83,6 @@ pub mod messages;
 /// Result and error types for decoding operations.
 pub mod result;
 pub use result::{Error, Result};
-/// Utilities for summarizing collections of decoded messages.
-pub mod summarize;
 
 mod segmented_slice_reader;
 mod slice_reader;

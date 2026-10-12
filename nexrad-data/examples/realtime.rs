@@ -9,7 +9,8 @@ use nexrad_data::{
     aws::realtime::{chunk_stream, Chunk, DownloadedChunk, PollConfig},
     volume, Result,
 };
-use nexrad_decode::summarize;
+use nexrad_decode::messages::{Message, MessageContents};
+use std::collections::{BTreeMap, BTreeSet};
 use std::pin::pin;
 use std::time::Duration;
 use tokio::time::timeout;
@@ -113,10 +114,10 @@ fn decode_record(
         }
     };
 
-    let summary = summarize::messages(messages.as_slice());
+    let summary = summarize_messages(&messages);
 
     let first_radial_latency = summary
-        .earliest_collection_time
+        .earliest_radial
         .map(|time| {
             format!(
                 "{:.2}s",
@@ -126,7 +127,7 @@ fn decode_record(
         .unwrap_or_else(|| "N/A".to_string());
 
     let last_radial_latency = summary
-        .latest_collection_time
+        .latest_radial
         .map(|time| {
             format!(
                 "{:.2}s",
@@ -155,4 +156,44 @@ fn decode_record(
         last_radial_latency,
         downloaded.attempts
     );
+}
+
+/// A minimal per-record summary used for logging.
+struct RecordSummary {
+    earliest_radial: Option<DateTime<Utc>>,
+    latest_radial: Option<DateTime<Utc>>,
+}
+
+/// Logs message counts by type and the elevations covered by radar data, and
+/// returns the collection time range of the record's radials.
+fn summarize_messages(messages: &[Message]) -> RecordSummary {
+    let mut counts = BTreeMap::new();
+    let mut elevations = BTreeSet::new();
+    let mut radial_count = 0;
+    let mut summary = RecordSummary {
+        earliest_radial: None,
+        latest_radial: None,
+    };
+
+    for message in messages {
+        *counts.entry(message.header().message_type()).or_insert(0) += 1;
+
+        if let MessageContents::DigitalRadarData(radar_data) = message.contents() {
+            radial_count += 1;
+            elevations.insert(radar_data.header().elevation_number());
+
+            // Skip unset (epoch) timestamps so they don't skew the latency range.
+            let time = message.header().date_time();
+            if let Some(time) = time.filter(|t| t.timestamp_millis() > 0) {
+                summary.earliest_radial =
+                    Some(summary.earliest_radial.map_or(time, |t| t.min(time)));
+                summary.latest_radial = Some(summary.latest_radial.map_or(time, |t| t.max(time)));
+            }
+        }
+    }
+
+    info!("Message counts: {counts:?}");
+    info!("{radial_count} radar data messages covering elevations {elevations:?}");
+
+    summary
 }

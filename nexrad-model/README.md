@@ -23,14 +23,21 @@ Scan                           A complete radar volume
         ├── differential_reflectivity()
         ├── differential_phase()
         ├── correlation_coefficient()
-        └── clutter_filter_power()
+        ├── clutter_filter_power()
+        └── moment(Product)    → Option<&MomentData>
 ```
 
-Moment values are accessed through the `MomentData` iterator, which yields `MomentValue` variants:
+Every moment, including clutter filter power, is a `MomentData` that knows its `Product`.
+`Radial::moment(product)` is the uniform accessor; the named getters are shorthands for it.
+`MomentData` exposes the raw encoding (`scale()`, `offset()`, `data_word_size()`,
+`raw_values()`, `raw_gate_values()`) and decodes gates through `iter()`/`values()`, which
+yield `MomentValue` variants:
 
 - `MomentValue::Value(f32)` — a valid measurement
 - `MomentValue::BelowThreshold` — signal below the signal-to-noise threshold
 - `MomentValue::RangeFolded` — ambiguous range due to Doppler aliasing
+- `MomentValue::CfpStatus(CfpStatus)` — a clutter filter power status code (raw values 0–7;
+  only produced for `Product::ClutterFilterPower`)
 
 ## Field Types
 

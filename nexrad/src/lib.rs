@@ -15,8 +15,6 @@
 //! Load radar data with a single function call:
 //!
 //! ```ignore
-//! use nexrad::model::data::DataMoment; // provides gate_count()
-//!
 //! // Load from a local file
 //! let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
 //! println!("{}, {} sweeps",

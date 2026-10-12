@@ -16,20 +16,21 @@
 //! # Example
 //!
 //! ```ignore
-//! use nexrad_model::data::{Scan, Sweep, MomentValue};
+//! use nexrad_model::data::{MomentValue, Product, Scan};
 //!
 //! fn process_scan(scan: &Scan) {
 //!     println!("{}", scan.coverage_pattern_number());
 //!
 //!     for sweep in scan.sweeps() {
 //!         for radial in sweep.radials() {
-//!             if let Some(reflectivity) = radial.reflectivity() {
-//!                 for value in reflectivity.values() {
+//!             if let Some(reflectivity) = radial.moment(Product::Reflectivity) {
+//!                 for value in reflectivity.iter() {
 //!                     match value {
 //!                         MomentValue::Value(dbz) => println!("dBZ: {}", dbz),
-//!                         MomentValue::BelowThreshold => {},
-//!                         MomentValue::RangeFolded => {},
-//!                         _ => {},
+//!                         MomentValue::BelowThreshold => {}
+//!                         MomentValue::RangeFolded => {}
+//!                         // Only produced for Product::ClutterFilterPower
+//!                         MomentValue::CfpStatus(_) => {}
 //!                     }
 //!                 }
 //!             }

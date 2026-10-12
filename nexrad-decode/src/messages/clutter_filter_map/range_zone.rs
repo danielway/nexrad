@@ -22,14 +22,15 @@ impl<'a> RangeZone<'a> {
         }
     }
 
-    /// Operation code for the range zone.
-    pub fn raw_op_code(&self) -> u16 {
+    /// Operation code for the range zone (raw value). See [`op_code()`](Self::op_code) for the
+    /// decoded value.
+    pub fn op_code_raw(&self) -> u16 {
         self.inner.op_code.get()
     }
 
     /// Stop range per zone in km. There are 20 possible zones and not all need to be defined. The
     /// last zone must have an end range of 511km.
-    pub fn end_range(&self) -> u16 {
+    pub fn end_range_km(&self) -> u16 {
         self.inner.end_range.get()
     }
 
@@ -46,7 +47,7 @@ impl<'a> RangeZone<'a> {
     /// Stop range per zone. There are 20 possible zones and not all need to be defined. The last
     /// zone must have an end range of 511km.
     #[cfg(feature = "uom")]
-    pub fn end_range_uom(&self) -> Length {
+    pub fn end_range(&self) -> Length {
         Length::new::<kilometer>(self.inner.end_range.get() as f64)
     }
 

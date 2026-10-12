@@ -64,12 +64,12 @@ impl<'a> Message<'a> {
     }
 
     /// The size of the compressed log data in bytes.
-    pub fn compressed_size(&self) -> u32 {
+    pub fn compressed_size_bytes(&self) -> u32 {
         self.header.compressed_size.get()
     }
 
     /// The size of the log data when decompressed in bytes.
-    pub fn decompressed_size(&self) -> u32 {
+    pub fn decompressed_size_bytes(&self) -> u32 {
         self.header.decompressed_size.get()
     }
 

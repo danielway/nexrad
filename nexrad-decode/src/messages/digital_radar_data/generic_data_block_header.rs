@@ -51,12 +51,14 @@ impl<'a> GenericDataBlockHeader<'a> {
     }
 
     /// Threshold parameter specifying the minimum difference in echo power between two resolution
-    /// gates in dB for them to not be labeled as "overlayed" (raw scaled value).
+    /// gates for them to not be labeled as "overlayed", in tenths of a dB (raw scaled value). See
+    /// [`tover_db()`](Self::tover_db) for the decoded value.
     pub fn tover_raw(&self) -> u16 {
         self.inner.tover.get()
     }
 
-    /// Signal-to-noise ratio threshold for valid data from -12 to 20 dB (raw scaled value).
+    /// Signal-to-noise ratio threshold for valid data, in eighths of a dB (raw scaled value). See
+    /// [`snr_threshold_db()`](Self::snr_threshold_db) for the decoded value.
     pub fn snr_threshold_raw(&self) -> i16 {
         self.inner.snr_threshold.get()
     }
@@ -79,6 +81,17 @@ impl<'a> GenericDataBlockHeader<'a> {
     /// Offset value for converting data moments to floating-point representation.
     pub fn offset(&self) -> f32 {
         self.inner.offset.get()
+    }
+
+    /// Threshold parameter specifying the minimum difference in echo power between two resolution
+    /// gates for them to not be labeled as "overlayed", in dB.
+    pub fn tover_db(&self) -> f32 {
+        self.inner.tover.get() as f32 * 0.1
+    }
+
+    /// Signal-to-noise ratio threshold for valid data from -12 to 20 dB, in dB.
+    pub fn snr_threshold_db(&self) -> f32 {
+        self.inner.snr_threshold.get() as f32 * 0.125
     }
 
     /// Range to center of first range gate in kilometers.
@@ -123,12 +136,15 @@ impl<'a> GenericDataBlockHeader<'a> {
         }
     }
 
-    /// Size of the data moment block in bytes.
+    /// Size of the data moment block, in bytes (gate count times word size in bits, divided by
+    /// 8).
+    pub fn moment_size_bytes(&self) -> u32 {
+        self.inner.number_of_data_moment_gates.get() as u32 * self.inner.data_word_size as u32 / 8
+    }
+
+    /// Size of the data moment block.
     #[cfg(feature = "uom")]
     pub fn moment_size(&self) -> Information {
-        Information::new::<byte>(
-            self.inner.number_of_data_moment_gates.get() as f64 * self.inner.data_word_size as f64
-                / 8.0,
-        )
+        Information::new::<byte>(self.moment_size_bytes() as f64)
     }
 }

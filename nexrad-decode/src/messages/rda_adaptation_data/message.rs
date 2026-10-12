@@ -1132,7 +1132,7 @@ impl<'a> Message<'a> {
     }
 
     /// Returns the raw data bytes after the 44-byte header.
-    pub fn raw_data(&self) -> &[u8] {
+    pub fn data_raw(&self) -> &[u8] {
         &self.data
     }
 

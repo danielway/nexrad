@@ -43,15 +43,16 @@ pub fn parse_rda_log_data(data: &[u8]) -> String {
 
     output.push_str(&format!(
         "Compressed Size: {} bytes\n",
-        msg.compressed_size()
+        msg.compressed_size_bytes()
     ));
     output.push_str(&format!(
         "Decompressed Size: {} bytes\n",
-        msg.decompressed_size()
+        msg.decompressed_size_bytes()
     ));
 
-    if msg.decompressed_size() > 0 {
-        let ratio = msg.compressed_size() as f64 / msg.decompressed_size() as f64 * 100.0;
+    if msg.decompressed_size_bytes() > 0 {
+        let ratio =
+            msg.compressed_size_bytes() as f64 / msg.decompressed_size_bytes() as f64 * 100.0;
         output.push_str(&format!("Compression Ratio: {:.1}%\n", ratio));
     }
 

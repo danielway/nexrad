@@ -306,15 +306,14 @@ impl<'a> Message<'a> {
         header: &Header<'_>,
         moments: Vec<nexrad_model::data::MomentData>,
     ) -> crate::result::Result<nexrad_model::data::Radial> {
-        use super::RadialStatus;
         use crate::result::Error;
-        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
+        use nexrad_model::data::Radial;
 
         let mut builder = Radial::builder(
             header.azimuth_number(),
-            header.azimuth_angle_raw(),
+            header.azimuth_angle_degrees(),
             header.elevation_number(),
-            header.elevation_angle_raw(),
+            header.elevation_angle_degrees(),
         )
         .collection_timestamp(
             header
@@ -322,16 +321,8 @@ impl<'a> Message<'a> {
                 .ok_or(Error::MessageMissingDate)?
                 .timestamp_millis(),
         )
-        .azimuth_spacing_degrees(header.azimuth_resolution_spacing_raw() as f32 * 0.5)
-        .radial_status(match header.radial_status() {
-            RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
-            RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
-            RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
-            RadialStatus::VolumeScanStart => ModelRadialStatus::ScanStart,
-            RadialStatus::VolumeScanEnd => ModelRadialStatus::ScanEnd,
-            RadialStatus::ElevationStartVcpFinal => ModelRadialStatus::ElevationStartVcpFinal,
-            RadialStatus::Unknown(v) => ModelRadialStatus::Unknown(v),
-        });
+        .azimuth_spacing_degrees(header.azimuth_resolution_spacing_degrees())
+        .radial_status(header.radial_status().into());
 
         for moment in moments {
             builder = builder.moment(moment);
@@ -351,11 +342,11 @@ impl Message<'_> {
         Some(
             nexrad_model::meta::Site::builder(
                 *self.header.radar_identifier_raw(),
-                volume.latitude_raw() as f64,
-                volume.longitude_raw() as f64,
+                volume.latitude_degrees() as f64,
+                volume.longitude_degrees() as f64,
             )
-            .height_meters(volume.site_height_raw())
-            .tower_height_meters(volume.tower_height_raw())
+            .height_meters(volume.site_height_meters())
+            .tower_height_meters(volume.tower_height_meters())
             .build(),
         )
     }

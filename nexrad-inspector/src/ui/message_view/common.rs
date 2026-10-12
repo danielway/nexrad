@@ -10,7 +10,7 @@ pub fn parse_common_header_only(header: &MessageHeader<'_>) -> String {
         .map(|dt| dt.format("%Y-%m-%d %H:%M:%S UTC").to_string())
         .unwrap_or_else(|| "Unknown".to_string());
 
-    let channel = header.rda_redundant_channel();
+    let channel = header.redundant_channel();
 
     format!(
         "=== Common Message Header ===\n\n\

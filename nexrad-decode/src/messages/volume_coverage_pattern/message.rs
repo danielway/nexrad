@@ -64,11 +64,11 @@ impl<'a> Message<'a> {
             .iter()
             .map(|elev| {
                 ElevationCut::builder(
-                    elev.elevation_angle(),
+                    elev.elevation_angle_degrees(),
                     elev.waveform_type().into(),
                     elev.channel_configuration().into(),
                 )
-                .azimuth_rate_degrees_per_second(elev.azimuth_rate())
+                .azimuth_rate_degrees_per_second(elev.azimuth_rate_degrees_per_second())
                 .super_resolution_half_degree_azimuth(elev.super_resolution_half_degree_azimuth())
                 .super_resolution_quarter_km_reflectivity(
                     elev.super_resolution_quarter_km_reflectivity(),
@@ -77,12 +77,14 @@ impl<'a> Message<'a> {
                 .super_resolution_dual_pol_to_300km(elev.super_resolution_dual_pol_to_300km())
                 .surveillance_prf_number(elev.surveillance_prf_number())
                 .surveillance_prf_pulse_count(elev.surveillance_prf_pulse_count_radial())
-                .reflectivity_threshold_db(elev.reflectivity_threshold())
-                .velocity_threshold_db(elev.velocity_threshold())
-                .spectrum_width_threshold_db(elev.spectrum_width_threshold())
-                .differential_reflectivity_threshold_db(elev.differential_reflectivity_threshold())
-                .differential_phase_threshold_db(elev.differential_phase_threshold())
-                .correlation_coefficient_threshold_db(elev.correlation_coefficient_threshold())
+                .reflectivity_threshold_db(elev.reflectivity_threshold_db())
+                .velocity_threshold_db(elev.velocity_threshold_db())
+                .spectrum_width_threshold_db(elev.spectrum_width_threshold_db())
+                .differential_reflectivity_threshold_db(
+                    elev.differential_reflectivity_threshold_db(),
+                )
+                .differential_phase_threshold_db(elev.differential_phase_threshold_db())
+                .correlation_coefficient_threshold_db(elev.correlation_coefficient_threshold_db())
                 .is_sails_cut(elev.is_sails_cut())
                 .sails_sequence_number(elev.sails_sequence_number())
                 .is_mrle_cut(elev.is_mrle_cut())
@@ -95,7 +97,7 @@ impl<'a> Message<'a> {
 
         VolumeCoveragePattern::builder(VcpNumber::from_number(header.pattern_number()))
             .version(header.version())
-            .doppler_velocity_resolution(header.doppler_velocity_resolution())
+            .doppler_velocity_resolution(header.doppler_velocity_resolution_mps())
             .pulse_width(header.pulse_width().into())
             .sails_enabled(header.is_sails_vcp())
             .sails_cuts(header.number_of_sails_cuts())

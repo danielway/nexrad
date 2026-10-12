@@ -24,7 +24,7 @@ pub fn parse_loopback_test(data: &[u8]) -> String {
     output.push_str("=== Loopback Test ===\n\n");
     output.push_str(&format!(
         "Message Size: {} half-words\n",
-        msg.message_size()
+        msg.message_size_halfwords()
     ));
 
     let pattern = msg.bit_pattern();

@@ -182,8 +182,8 @@
 //!         MessageContents::DigitalRadarData(m) => {
 //!             let header = m.header();
 //!             println!("Site: {}", header.radar_identifier());
-//!             println!("Azimuth: {} deg", header.azimuth_angle_raw());
-//!             println!("Elevation: {} deg", header.elevation_angle_raw());
+//!             println!("Azimuth: {} deg", header.azimuth_angle_degrees());
+//!             println!("Elevation: {} deg", header.elevation_angle_degrees());
 //!         }
 //!         MessageContents::VolumeCoveragePattern(v) => {
 //!             println!("VCP: {}", v.header().pattern_number());

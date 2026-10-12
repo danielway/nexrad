@@ -16,3 +16,35 @@ pub enum RadialStatus {
     /// An unrecognized radial status value.
     Unknown(u8),
 }
+
+impl RadialStatus {
+    /// Decodes a radial status code as it appears on the wire.
+    pub(crate) fn from_raw(value: u8) -> Self {
+        match value {
+            0 => RadialStatus::ElevationStart,
+            1 => RadialStatus::IntermediateRadialData,
+            2 => RadialStatus::ElevationEnd,
+            3 => RadialStatus::VolumeScanStart,
+            4 => RadialStatus::VolumeScanEnd,
+            5 => RadialStatus::ElevationStartVcpFinal,
+            other => RadialStatus::Unknown(other),
+        }
+    }
+}
+
+#[cfg(feature = "model")]
+impl From<RadialStatus> for nexrad_model::data::RadialStatus {
+    fn from(status: RadialStatus) -> Self {
+        use nexrad_model::data::RadialStatus as ModelRadialStatus;
+
+        match status {
+            RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
+            RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
+            RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
+            RadialStatus::VolumeScanStart => ModelRadialStatus::ScanStart,
+            RadialStatus::VolumeScanEnd => ModelRadialStatus::ScanEnd,
+            RadialStatus::ElevationStartVcpFinal => ModelRadialStatus::ElevationStartVcpFinal,
+            RadialStatus::Unknown(v) => ModelRadialStatus::Unknown(v),
+        }
+    }
+}

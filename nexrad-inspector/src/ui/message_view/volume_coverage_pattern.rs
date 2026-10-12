@@ -44,7 +44,7 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
     ));
 
     // Doppler velocity resolution
-    let vel = header.doppler_velocity_resolution();
+    let vel = header.doppler_velocity_resolution_mps();
     if vel > 0.0 {
         output.push_str(&format!("Doppler Velocity Resolution: {:.2} m/s\n", vel));
     } else {
@@ -57,7 +57,7 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
     output.push_str(&format!("Pulse Width: {:?}\n", header.pulse_width()));
     output.push_str(&format!(
         "Message Size: {} half-words\n",
-        header.message_size()
+        header.message_size_halfwords()
     ));
 
     // VCP Sequencing
@@ -123,7 +123,7 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
         output.push_str(&format!(
             "\n[Cut {}] {:.2}\u{00b0}\n",
             i + 1,
-            elev.elevation_angle()
+            elev.elevation_angle_degrees()
         ));
         output.push_str(&format!(
             "  Channel Config: {:?}\n",
@@ -132,7 +132,7 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
         output.push_str(&format!("  Waveform: {:?}\n", elev.waveform_type()));
         output.push_str(&format!(
             "  Azimuth Rate: {:.2}\u{00b0}/s\n",
-            elev.azimuth_rate()
+            elev.azimuth_rate_degrees_per_second()
         ));
 
         // Super Resolution
@@ -162,21 +162,21 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
         // Thresholds
         output.push_str(&format!(
             "  Thresholds: REF={:.1} VEL={:.1} SW={:.1}\n",
-            elev.reflectivity_threshold(),
-            elev.velocity_threshold(),
-            elev.spectrum_width_threshold()
+            elev.reflectivity_threshold_db(),
+            elev.velocity_threshold_db(),
+            elev.spectrum_width_threshold_db()
         ));
         output.push_str(&format!(
             "              ZDR={:.1} PHI={:.1} RHO={:.1}\n",
-            elev.differential_reflectivity_threshold(),
-            elev.differential_phase_threshold(),
-            elev.correlation_coefficient_threshold()
+            elev.differential_reflectivity_threshold_db(),
+            elev.differential_phase_threshold_db(),
+            elev.correlation_coefficient_threshold_db()
         ));
 
         // Sector edges
-        let s1 = elev.sector_1_edge_angle();
-        let s2 = elev.sector_2_edge_angle();
-        let s3 = elev.sector_3_edge_angle();
+        let s1 = elev.sector_1_edge_angle_degrees();
+        let s2 = elev.sector_2_edge_angle_degrees();
+        let s3 = elev.sector_3_edge_angle_degrees();
         if s1 != 0.0 || s2 != 0.0 || s3 != 0.0 {
             output.push_str(&format!(
                 "  Sector Edges: S1={:.1}\u{00b0} S2={:.1}\u{00b0} S3={:.1}\u{00b0}\n",
@@ -185,7 +185,7 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
         }
 
         // EBC angle
-        let ebc = elev.ebc_angle();
+        let ebc = elev.ebc_angle_degrees();
         if ebc != 0.0 {
             output.push_str(&format!("  EBC Angle: {:.1}\u{00b0}\n", ebc));
         }

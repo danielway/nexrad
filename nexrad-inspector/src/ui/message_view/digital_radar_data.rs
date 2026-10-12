@@ -40,17 +40,17 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
     output.push_str(&format!(
         "Azimuth: #{} at {:.2}\u{00b0}\n",
         header.azimuth_number(),
-        header.azimuth_angle_raw()
+        header.azimuth_angle_degrees()
     ));
     output.push_str(&format!(
         "Elevation: #{} at {:.2}\u{00b0}\n",
         header.elevation_number(),
-        header.elevation_angle_raw()
+        header.elevation_angle_degrees()
     ));
     output.push_str(&format!("Radial Status: {:?}\n", header.radial_status()));
     output.push_str(&format!(
         "Radial Length: {} bytes\n",
-        header.radial_length_raw()
+        header.radial_length_bytes()
     ));
     output.push_str(&format!(
         "Compression: {:?}\n",
@@ -59,11 +59,7 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
     output.push_str(&format!(
         "Azimuth Resolution: {} ({}\u{00b0})\n",
         header.azimuth_resolution_spacing_raw(),
-        if header.azimuth_resolution_spacing_raw() == 1 {
-            0.5
-        } else {
-            1.0
-        }
+        header.azimuth_resolution_spacing_degrees()
     ));
     output.push_str(&format!(
         "Data Block Count: {}\n",
@@ -75,31 +71,31 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         output.push_str("\n--- Volume Data Block ---\n");
         output.push_str(&format!(
             "Location: {:.4}\u{00b0}, {:.4}\u{00b0}\n",
-            vol.latitude_raw(),
-            vol.longitude_raw()
+            vol.latitude_degrees(),
+            vol.longitude_degrees()
         ));
         output.push_str(&format!(
             "Site Height: {} m (tower: {} m)\n",
-            vol.site_height_raw(),
-            vol.tower_height_raw()
+            vol.site_height_meters(),
+            vol.tower_height_meters()
         ));
         output.push_str(&format!("VCP: {}\n", vol.volume_coverage_pattern()));
         output.push_str(&format!(
             "Calibration Constant: {:.2} dB\n",
-            vol.calibration_constant()
+            vol.calibration_constant_db()
         ));
         output.push_str(&format!(
             "TX Power (H/V): {:.1}/{:.1} kW\n",
-            vol.horizontal_shv_tx_power_raw(),
-            vol.vertical_shv_tx_power_raw()
+            vol.horizontal_shv_tx_power_kw(),
+            vol.vertical_shv_tx_power_kw()
         ));
         output.push_str(&format!(
             "System ZDR: {:.2} dB\n",
-            vol.system_differential_reflectivity()
+            vol.system_differential_reflectivity_db()
         ));
         output.push_str(&format!(
             "Initial DP: {:.2}\u{00b0}\n",
-            vol.initial_system_differential_phase_raw()
+            vol.initial_system_differential_phase_degrees()
         ));
         output.push_str(&format!(
             "Processing Status: {:?}\n",
@@ -117,24 +113,24 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         output.push_str("\n--- Radial Data Block ---\n");
         output.push_str(&format!(
             "Unambiguous Range: {:.1} km\n",
-            rad.unambiguous_range_raw() as f32 * 0.1
+            rad.unambiguous_range_km()
         ));
         output.push_str(&format!(
             "Nyquist Velocity: {:.2} m/s\n",
-            rad.nyquist_velocity_raw() as f32 * 0.01
+            rad.nyquist_velocity_mps()
         ));
         output.push_str(&format!(
             "Noise Level (H): {:.2} dBm\n",
-            rad.horizontal_channel_noise_level()
+            rad.horizontal_channel_noise_level_dbm()
         ));
         output.push_str(&format!(
             "Noise Level (V): {:.2} dBm\n",
-            rad.vertical_channel_noise_level()
+            rad.vertical_channel_noise_level_dbm()
         ));
-        if let Some(cal_h) = rad.horizontal_channel_calibration_constant() {
+        if let Some(cal_h) = rad.horizontal_channel_calibration_constant_db() {
             output.push_str(&format!("Calibration (H): {:.2} dBZ\n", cal_h));
         }
-        if let Some(cal_v) = rad.vertical_channel_calibration_constant() {
+        if let Some(cal_v) = rad.vertical_channel_calibration_constant_db() {
             output.push_str(&format!("Calibration (V): {:.2} dBZ\n", cal_v));
         }
     }
@@ -144,11 +140,11 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         output.push_str("\n--- Elevation Data Block ---\n");
         output.push_str(&format!(
             "Atmospheric Attenuation: {:.4} dB/km\n",
-            elv.atmos()
+            elv.atmos_db_per_km()
         ));
         output.push_str(&format!(
             "Calibration Constant: {:.2} dB\n",
-            elv.calibration_constant()
+            elv.calibration_constant_db()
         ));
     }
 
@@ -351,15 +347,15 @@ fn render_block_header(
     ));
     output.push_str(&format!(
         "First Gate: {:.3} km\n",
-        header.data_moment_range_raw() as f32 * 0.001
+        header.data_moment_range_km()
     ));
     output.push_str(&format!(
         "Gate Interval: {:.3} km\n",
-        header.data_moment_range_sample_interval_raw() as f32 * 0.001
+        header.data_moment_range_sample_interval_km()
     ));
     output.push_str(&format!(
         "SNR Threshold: {:.3} dB\n",
-        header.snr_threshold_raw()
+        header.snr_threshold_db()
     ));
     output.push_str(&format!(
         "Scale/Offset: {:.2}/{:.2}\n",
@@ -382,8 +378,8 @@ fn render_ascii_rows(
 ) {
     for (row_idx, chunk) in ascii.as_bytes().chunks(gates_per_row).enumerate() {
         let start_gate = row_idx * gates_per_row;
-        let start_range = header.data_moment_range_raw() as f32 * 0.001
-            + start_gate as f32 * header.data_moment_range_sample_interval_raw() as f32 * 0.001;
+        let start_range = header.data_moment_range_km()
+            + start_gate as f64 * header.data_moment_range_sample_interval_km();
         output.push_str(&format!(
             "{:5.1}km |{}|\n",
             start_range,

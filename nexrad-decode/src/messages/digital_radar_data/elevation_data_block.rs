@@ -27,19 +27,20 @@ impl<'a> ElevationDataBlock<'a> {
         }
     }
 
-    /// Size of data block in bytes (raw value).
-    pub fn lrtup_raw(&self) -> u16 {
+    /// Size of data block, in bytes.
+    pub fn lrtup_bytes(&self) -> u16 {
         self.inner.lrtup.get()
     }
 
-    /// Atmospheric attenuation factor in dB/km (raw scaled value).
+    /// Atmospheric attenuation factor in thousandths of a dB/km (raw scaled value). See
+    /// [`atmos_db_per_km()`](Self::atmos_db_per_km) for the decoded value.
     pub fn atmos_raw(&self) -> i16 {
         self.inner.atmos.get()
     }
 
     /// Scaling constant used by the signal processor for this elevation to calculate reflectivity
     /// in dB.
-    pub fn calibration_constant(&self) -> f32 {
+    pub fn calibration_constant_db(&self) -> f32 {
         self.inner.calibration_constant.get()
     }
 
@@ -49,8 +50,8 @@ impl<'a> ElevationDataBlock<'a> {
         Information::new::<byte>(self.inner.lrtup.get() as f64)
     }
 
-    /// Atmospheric attenuation factor in dB/km.
-    pub fn atmos(&self) -> f32 {
+    /// Atmospheric attenuation factor, in dB/km.
+    pub fn atmos_db_per_km(&self) -> f32 {
         self.inner.atmos.get() as f32 / 1000.0
     }
 }

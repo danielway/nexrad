@@ -1096,14 +1096,14 @@ impl App {
                                 }
 
                                 // Track azimuth range
-                                let az = digital_radar_data.header().azimuth_angle_raw();
+                                let az = digital_radar_data.header().azimuth_angle_degrees();
                                 min_azimuth = min_azimuth.min(az);
                                 max_azimuth = max_azimuth.max(az);
 
                                 // Track elevation
                                 if elevation.is_none() {
                                     elevation =
-                                        Some(digital_radar_data.header().elevation_angle_raw());
+                                        Some(digital_radar_data.header().elevation_angle_degrees());
                                 }
                             }
                         }

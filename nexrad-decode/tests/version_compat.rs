@@ -49,7 +49,7 @@ fn analyze_volume(data: &[u8]) -> VolumeAnalysis {
                 MessageContents::RdaStatusData(status) => {
                     if build_number.is_none() {
                         build_number = Some(status.build_number());
-                        raw_build_value = Some(status.raw_rda_build_number());
+                        raw_build_value = Some(status.build_number_raw());
                     }
                 }
                 MessageContents::DigitalRadarData(radar_data) => {
@@ -830,7 +830,7 @@ fn analyze_volume_first_vol_block(data: &[u8]) -> VolBlockAnalysis {
                     let inner = vol_block.inner();
                     return VolBlockAnalysis {
                         is_legacy: inner.is_legacy(),
-                        lrtup: inner.lrtup_raw(),
+                        lrtup: inner.lrtup_bytes(),
                         zdr_bias: inner.zdr_bias_estimate_weighted_mean(),
                     };
                 }

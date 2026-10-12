@@ -20,7 +20,7 @@ for message in &messages {
     match message.contents() {
         MessageContents::DigitalRadarData(data) => {
             println!("Azimuth: {:.1}°, Elevation: {:.1}°",
-                data.header().azimuth_angle_raw(), data.header().elevation_angle_raw());
+                data.header().azimuth_angle_degrees(), data.header().elevation_angle_degrees());
         }
         MessageContents::VolumeCoveragePattern(vcp) => {
             println!("VCP: {}", vcp.header().pattern_number());

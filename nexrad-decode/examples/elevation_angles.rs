@@ -71,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 let elevation_num = header.elevation_number();
                 let azimuth_num = header.azimuth_number();
-                let elevation_angle = header.elevation_angle_raw();
+                let elevation_angle = header.elevation_angle_degrees();
 
                 // Update max values for dimensions
                 if elevation_num > max_elevation_num {

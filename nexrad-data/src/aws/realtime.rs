@@ -26,6 +26,21 @@
 //! for a session, a different routine should be used to poll new data for that volume and advance
 //! to the next volume when the active one is filled.
 //!
+//! # Consuming real-time data
+//!
+//! - [chunk_stream()] returns a runtime-agnostic [`Stream`](futures_util::stream::Stream) of
+//!   [DownloadedChunk]s configured by a [PollConfig]; it waits between polls using a
+//!   caller-supplied sleep function.
+//! - [ChunkIterator] is a pull-based alternative for callers that schedule polling themselves,
+//!   using [ChunkIterator::next_expected_time()] or [ChunkIterator::time_until_next()].
+//! - [list_chunks_in_volume()] and [download_chunk()] are the building blocks for custom polling.
+//!
+//! Both [chunk_stream()] and [ChunkIterator] estimate when the next chunk will be uploaded from
+//! the volume coverage pattern and observed upload timings. That model is an internal detail and
+//! may be tuned in any release; only its results (such as
+//! [ChunkIterator::next_expected_time()] and [ChunkIterator::projected_volume_end_time()]) are
+//! part of the public API.
+//!
 
 mod volume_index;
 pub use volume_index::VolumeIndex;

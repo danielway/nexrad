@@ -34,7 +34,8 @@
 //! The `aws` feature (enabled by default) provides access to NOAA's NEXRAD data on AWS:
 //!
 //! - **Archive data**: Historical volumes from the NEXRAD Level II archive
-//! - **Real-time data**: Live radar data with minimal latency
+//! - **Real-time data**: Live radar data with minimal latency, via `aws::realtime::chunk_stream`
+//!   (a stream) or `aws::realtime::ChunkIterator` (pull-based)
 //!
 //! ```ignore
 //! use nexrad_data::aws::archive;

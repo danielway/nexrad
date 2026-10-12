@@ -37,6 +37,10 @@ pub enum Error {
     #[error("volume missing coverage pattern (message type 5)")]
     MissingCoveragePattern,
     /// LDM record was truncated and contains fewer bytes than expected.
+    ///
+    /// Byte counts are relative to the start of the record region (the bytes following the
+    /// 24-byte Archive II volume header). If the volume data is shorter than that header, the
+    /// counts are the header size and the volume's length instead.
     #[error("truncated record: expected {expected} bytes, got {actual}")]
     TruncatedRecord {
         /// Expected number of bytes.
@@ -44,12 +48,13 @@ pub enum Error {
         /// Actual number of bytes present.
         actual: usize,
     },
-    /// LDM record size is invalid at the given file offset.
+    /// LDM record size is invalid at the given offset.
     #[error("invalid record size {size} at offset {offset}")]
     InvalidRecordSize {
         /// The invalid size value.
         size: usize,
-        /// File offset where the invalid size was found.
+        /// Offset where the invalid size was found, relative to the start of the record region
+        /// (the bytes following the 24-byte Archive II volume header), not the start of the file.
         offset: usize,
     },
 }

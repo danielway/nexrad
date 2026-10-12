@@ -1,4 +1,4 @@
-use crate::volume::{split_compressed_records, Header, Record};
+use crate::volume::{split_records, Header, Record};
 use std::fmt::Debug;
 use zerocopy::Ref;
 
@@ -70,12 +70,24 @@ impl File {
     /// The file's LDM records.
     ///
     /// Returns an error if the file is gzip-compressed (call [`decompress`](Self::decompress)
-    /// first) or if the record data is truncated or malformed.
+    /// first), if the data is shorter than the volume header, or if the record data is truncated
+    /// or malformed.
     pub fn records(&self) -> crate::result::Result<Vec<Record<'_>>> {
+        use crate::result::Error;
+
         if self.compressed() {
-            return Err(crate::result::Error::CompressedFile);
+            return Err(Error::CompressedFile);
         }
-        split_compressed_records(&self.0[size_of::<Header>()..])
+
+        let record_data = self
+            .0
+            .get(size_of::<Header>()..)
+            .ok_or(Error::TruncatedRecord {
+                expected: size_of::<Header>(),
+                actual: self.0.len(),
+            })?;
+
+        split_records(record_data)
     }
 
     /// Decodes this volume file into a common model scan containing sweeps and radials with moment

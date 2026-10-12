@@ -2,13 +2,58 @@
 //!
 //! These tests verify that record splitting and decompression functions
 //! gracefully handle invalid, truncated, and corrupted input data.
+//!
+//! Record splitting is exercised through `volume::File::records`, with the malformed record bytes
+//! placed after a synthetic 24-byte Archive II volume header. Offsets and byte counts reported by
+//! record errors are relative to the start of the record region, i.e. after that header.
 
 use nexrad_data::result::Error;
-use nexrad_data::volume::{split_compressed_records, Record};
+use nexrad_data::volume::{File, Record};
+
+/// Size of the Archive II volume header that precedes the record region.
+const HEADER_SIZE: usize = 24;
+
+/// Builds a volume file with a synthetic Archive II header followed by `record_data`.
+fn volume_file(record_data: &[u8]) -> File {
+    let mut data = Vec::with_capacity(HEADER_SIZE + record_data.len());
+    data.extend_from_slice(b"AR2V0006."); // Tape filename
+    data.extend_from_slice(b"001"); // Extension number
+    data.extend_from_slice(&19_000u32.to_be_bytes()); // Modified Julian date
+    data.extend_from_slice(&0u32.to_be_bytes()); // Milliseconds past midnight
+    data.extend_from_slice(b"KTLX"); // ICAO
+    assert_eq!(data.len(), HEADER_SIZE);
+    data.extend_from_slice(record_data);
+    File::new(data)
+}
+
+#[test]
+fn test_file_shorter_than_header() {
+    for length in [0, 1, 10, HEADER_SIZE - 1] {
+        let file = File::new(vec![b'A'; length]);
+        assert!(file.header().is_none());
+        match file.records().unwrap_err() {
+            Error::TruncatedRecord { expected, actual } => {
+                assert_eq!(expected, HEADER_SIZE);
+                assert_eq!(actual, length);
+            }
+            other => panic!("Expected TruncatedRecord error, got: {:?}", other),
+        }
+    }
+}
+
+#[test]
+fn test_synthetic_header_parses() {
+    let file = volume_file(&[]);
+    let header = file.header().expect("synthetic header should parse");
+    assert_eq!(header.tape_filename(), Some("AR2V0006."));
+    assert_eq!(header.extension_number(), Some("001"));
+    assert_eq!(header.icao_of_radar(), Some("KTLX"));
+}
 
 #[test]
 fn test_split_records_empty() {
-    let result = split_compressed_records(&[]);
+    let file = volume_file(&[]);
+    let result = file.records();
     assert!(result.is_ok());
     assert!(result.unwrap().is_empty());
 }
@@ -17,7 +62,8 @@ fn test_split_records_empty() {
 fn test_split_records_truncated_size_field() {
     // Less than 4 bytes available for size field
     let data = vec![0u8, 0u8];
-    let result = split_compressed_records(&data);
+    let file = volume_file(&data);
+    let result = file.records();
     assert!(result.is_err());
     match result.unwrap_err() {
         Error::TruncatedRecord { expected, actual } => {
@@ -32,7 +78,8 @@ fn test_split_records_truncated_size_field() {
 fn test_split_records_three_bytes() {
     // Exactly 3 bytes - still not enough for size field
     let data = vec![0u8; 3];
-    let result = split_compressed_records(&data);
+    let file = volume_file(&data);
+    let result = file.records();
     assert!(result.is_err());
     match result.unwrap_err() {
         Error::TruncatedRecord { .. } => {}
@@ -45,7 +92,8 @@ fn test_split_records_size_exceeds_data() {
     // Size field claims 1000 bytes, only 10 available
     let mut data = vec![0u8, 0u8, 0x03, 0xe8]; // 1000 in big-endian
     data.extend_from_slice(&[0u8; 10]);
-    let result = split_compressed_records(&data);
+    let file = volume_file(&data);
+    let result = file.records();
     assert!(result.is_err());
     match result.unwrap_err() {
         Error::TruncatedRecord { expected, actual } => {
@@ -61,7 +109,8 @@ fn test_split_records_zero_size() {
     // (the first 12 bytes of CTM frames are the rpg_unknown field, which is zeros).
     // This returns Ok with one record containing the full data.
     let data = vec![0u8, 0u8, 0u8, 0u8, 1u8, 2u8, 3u8, 4u8];
-    let result = split_compressed_records(&data);
+    let file = volume_file(&data);
+    let result = file.records();
     assert!(result.is_ok());
     let records = result.unwrap();
     assert_eq!(records.len(), 1);
@@ -75,7 +124,8 @@ fn test_split_records_ldm_zero_size() {
     let mut data = vec![0u8, 0u8, 0u8, 4u8]; // First record: size=4
     data.extend_from_slice(&[1u8; 4]); // First record data
     data.extend_from_slice(&[0u8, 0u8, 0u8, 0u8]); // Second record: size=0 (invalid)
-    let result = split_compressed_records(&data);
+    let file = volume_file(&data);
+    let result = file.records();
     assert!(result.is_err());
     match result.unwrap_err() {
         Error::InvalidRecordSize { size, offset } => {
@@ -90,7 +140,8 @@ fn test_split_records_ldm_zero_size() {
 fn test_split_records_negative_size() {
     // Size field is negative (high bit set) - should work due to unsigned_abs
     let data = vec![0xFF, 0xFF, 0xFF, 0xFF]; // -1 in i32
-    let result = split_compressed_records(&data);
+    let file = volume_file(&data);
+    let result = file.records();
     // This will be interpreted as a very large positive number, causing truncation error
     assert!(result.is_err());
 }
@@ -198,7 +249,8 @@ fn test_split_multiple_records_second_truncated() {
     data.extend_from_slice(&[0u8, 0u8, 0u8, 100u8]);
     data.extend_from_slice(&[2u8; 5]); // Only 5 bytes instead of 100
 
-    let result = split_compressed_records(&data);
+    let file = volume_file(&data);
+    let result = file.records();
     assert!(result.is_err());
 }
 
@@ -213,7 +265,8 @@ fn test_split_multiple_valid_records() {
     data.extend_from_slice(&[0u8, 0u8, 0u8, 4u8]);
     data.extend_from_slice(&[2u8; 4]);
 
-    let result = split_compressed_records(&data);
+    let file = volume_file(&data);
+    let result = file.records();
     assert!(result.is_ok());
     let records = result.unwrap();
     assert_eq!(records.len(), 2);

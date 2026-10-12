@@ -1,4 +1,4 @@
-use crate::BinaryData;
+use crate::binary_data::BinaryData;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

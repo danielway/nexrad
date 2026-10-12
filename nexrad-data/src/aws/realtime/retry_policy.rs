@@ -162,12 +162,6 @@ impl RetryState {
         self.attempt += 1;
         Some(delay)
     }
-
-    /// Resets the retry state to attempt 0.
-    #[cfg_attr(not(test), allow(dead_code))] // Only used by the unit tests.
-    pub(crate) fn reset(&mut self) {
-        self.attempt = 0;
-    }
 }
 
 #[cfg(test)]
@@ -270,19 +264,5 @@ mod tests {
         // Third delay would be 10s but capped at 5s
         let delay = state.next_delay().unwrap();
         assert_eq!(delay, Duration::from_secs(5));
-    }
-
-    #[test]
-    fn test_retry_state_reset() {
-        let policy = RetryPolicy::default_download().with_max_attempts(2);
-        let mut state = RetryState::new(policy);
-
-        let _ = state.next_delay();
-        let _ = state.next_delay();
-        assert!(!state.should_retry());
-
-        state.reset();
-        assert_eq!(state.attempt(), 0);
-        assert!(state.should_retry());
     }
 }

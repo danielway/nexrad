@@ -101,21 +101,4 @@ impl ChunkTimingStats {
             Some(total_attempts as f64 / timings.len() as f64)
         })
     }
-
-    /// Get all chunk statistics for display purposes
-    #[cfg_attr(not(test), allow(dead_code))] // Only used by the unit tests.
-    pub(crate) fn get_statistics(
-        &self,
-    ) -> Vec<(ChunkCharacteristics, Option<Duration>, Option<f64>)> {
-        self.timings
-            .keys()
-            .map(|characteristics| {
-                (
-                    *characteristics,
-                    self.get_average_timing(characteristics),
-                    self.get_average_attempts(characteristics),
-                )
-            })
-            .collect()
-    }
 }

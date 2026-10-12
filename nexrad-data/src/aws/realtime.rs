@@ -80,7 +80,7 @@ mod elevation_chunk_mapper;
 pub(crate) use elevation_chunk_mapper::{ChunkMetadata, ElevationChunkMapper};
 
 mod scan_timing_projection;
-pub(crate) use scan_timing_projection::project_scan_timing;
+pub(crate) use scan_timing_projection::project_volume_end_time;
 
 mod retry_policy;
 pub use retry_policy::RetryPolicy;

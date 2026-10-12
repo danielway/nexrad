@@ -158,7 +158,6 @@ fn test_chunk_metadata_sequence_1_is_start() {
     let meta = mapper.get_chunk_metadata(1).expect("sequence 1 metadata");
     assert!(meta.is_start_chunk());
     assert_eq!(meta.elevation_number(), None);
-    assert_eq!(meta.sequence(), 1);
 }
 
 #[test]
@@ -169,9 +168,7 @@ fn test_chunk_metadata_first_elevation() {
     let meta = mapper.get_chunk_metadata(2).expect("sequence 2 metadata");
     assert!(!meta.is_start_chunk());
     assert_eq!(meta.elevation_number(), Some(1));
-    assert_eq!(meta.chunk_index_in_sweep(), 0);
     assert!(meta.is_first_in_sweep());
-    assert!(!meta.is_last_in_sweep());
     assert!(meta.azimuth_rate_dps() > 0.0);
 
     // First elevation of VCP 212 is super-res (0.5 deg azimuth), so 6 chunks
@@ -188,43 +185,21 @@ fn test_chunk_metadata_sweep_boundaries() {
     let vcp = get_test_vcp();
     let mapper = ElevationChunkMapper::new(&vcp);
 
-    let all = mapper.all_chunk_metadata();
-
-    // Skip Start chunk (index 0)
+    // Skip the Start chunk (sequence 1); each change of elevation must start a new sweep and no
+    // other chunk may.
     let mut current_elev = None;
-    for meta in &all[1..] {
-        if meta.elevation_number() != current_elev {
-            // New sweep started
-            assert!(
-                meta.is_first_in_sweep(),
-                "Chunk seq {} should be first in sweep for elev {:?}",
-                meta.sequence(),
-                meta.elevation_number()
-            );
-            current_elev = meta.elevation_number();
-        }
-
-        if meta.chunk_index_in_sweep() == meta.chunks_in_sweep() - 1 {
-            assert!(
-                meta.is_last_in_sweep(),
-                "Chunk seq {} should be last in sweep",
-                meta.sequence()
-            );
-        }
+    for seq in 2..=mapper.final_sequence() {
+        let meta = mapper.get_chunk_metadata(seq).expect("metadata in range");
+        let new_sweep = meta.elevation_number() != current_elev;
+        assert_eq!(
+            meta.is_first_in_sweep(),
+            new_sweep,
+            "Chunk seq {} first-in-sweep mismatch for elev {:?}",
+            seq,
+            meta.elevation_number()
+        );
+        current_elev = meta.elevation_number();
     }
-}
-
-#[test]
-fn test_chunk_metadata_total_matches_final_sequence() {
-    let vcp = get_test_vcp();
-    let mapper = ElevationChunkMapper::new(&vcp);
-
-    // total_chunks includes the Start chunk
-    assert_eq!(mapper.total_chunks(), mapper.final_sequence());
-
-    // Last metadata entry should have sequence == final_sequence
-    let all = mapper.all_chunk_metadata();
-    assert_eq!(all.last().unwrap().sequence(), mapper.final_sequence());
 }
 
 #[test]
@@ -233,6 +208,7 @@ fn test_chunk_metadata_out_of_range() {
     let mapper = ElevationChunkMapper::new(&vcp);
 
     assert!(mapper.get_chunk_metadata(0).is_none());
+    assert!(mapper.get_chunk_metadata(mapper.final_sequence()).is_some());
     assert!(mapper
         .get_chunk_metadata(mapper.final_sequence() + 1)
         .is_none());
@@ -248,7 +224,8 @@ fn test_chunk_metadata_azimuth_rates_match_vcp() {
         let elev_num = elev_idx + 1;
         let expected_rate = elev_data.azimuth_rate();
 
-        for meta in mapper.all_chunk_metadata() {
+        for seq in 1..=mapper.final_sequence() {
+            let meta = mapper.get_chunk_metadata(seq).expect("metadata in range");
             if meta.elevation_number() == Some(elev_num) {
                 assert!(
                     (meta.azimuth_rate_dps() - expected_rate).abs() < 0.001,
@@ -317,10 +294,15 @@ fn test_chunk_characteristics_hash() {
 #[test]
 fn test_chunk_timing_stats_new() {
     let stats = ChunkTimingStats::new();
+    let characteristics = ChunkCharacteristics {
+        chunk_type: ChunkType::Intermediate,
+        waveform_type: WaveformType::ContiguousSurveillance,
+        channel_configuration: ChannelConfiguration::ConstantPhase,
+    };
 
-    // New stats should be empty
-    let all_stats = stats.get_statistics();
-    assert_eq!(all_stats.len(), 0, "New stats should be empty");
+    // New stats should have no samples
+    assert_eq!(stats.get_average_timing(&characteristics), None);
+    assert_eq!(stats.get_average_attempts(&characteristics), None);
 }
 
 #[test]
@@ -337,15 +319,11 @@ fn test_chunk_timing_stats_add_and_retrieve() {
     let duration = Duration::seconds(5);
     stats.add_timing(characteristics, duration, 1);
 
-    // Should be able to retrieve it via get_statistics
-    let all_stats = stats.get_statistics();
-    assert_eq!(all_stats.len(), 1);
-
-    // Verify the returned stats
-    let (char, avg_timing, avg_attempts) = &all_stats[0];
-    assert_eq!(char, &characteristics);
-    assert_eq!(*avg_timing, Some(Duration::seconds(5)));
-    assert_eq!(*avg_attempts, Some(1.0));
+    assert_eq!(
+        stats.get_average_timing(&characteristics),
+        Some(Duration::seconds(5))
+    );
+    assert_eq!(stats.get_average_attempts(&characteristics), Some(1.0));
 }
 
 #[test]
@@ -363,16 +341,13 @@ fn test_chunk_timing_stats_average() {
     stats.add_timing(characteristics, Duration::seconds(6), 1);
     stats.add_timing(characteristics, Duration::seconds(5), 1);
 
-    // Get statistics
-    let all_stats = stats.get_statistics();
-    assert_eq!(all_stats.len(), 1);
-
-    let (_char, avg_timing, avg_attempts) = &all_stats[0];
-
     // Average should be 5 seconds
-    assert_eq!(*avg_timing, Some(Duration::seconds(5)));
+    assert_eq!(
+        stats.get_average_timing(&characteristics),
+        Some(Duration::seconds(5))
+    );
     // Average attempts should be 1.0
-    assert_eq!(*avg_attempts, Some(1.0));
+    assert_eq!(stats.get_average_attempts(&characteristics), Some(1.0));
 }
 
 #[test]
@@ -395,27 +370,13 @@ fn test_chunk_timing_stats_different_characteristics() {
     stats.add_timing(char2, Duration::seconds(10), 2);
 
     // Should track them separately
-    let all_stats = stats.get_statistics();
-    assert_eq!(all_stats.len(), 2);
-
-    // Find stats for each characteristic
-    let mut found_char1 = false;
-    let mut found_char2 = false;
-
-    for (char, avg_timing, _avg_attempts) in all_stats {
-        if char == char1 {
-            assert_eq!(avg_timing, Some(Duration::seconds(5)));
-            found_char1 = true;
-        } else if char == char2 {
-            assert_eq!(avg_timing, Some(Duration::seconds(10)));
-            found_char2 = true;
-        }
-    }
-
-    assert!(
-        found_char1 && found_char2,
-        "Should find both characteristics"
+    assert_eq!(stats.get_average_timing(&char1), Some(Duration::seconds(5)));
+    assert_eq!(stats.get_average_attempts(&char1), Some(1.0));
+    assert_eq!(
+        stats.get_average_timing(&char2),
+        Some(Duration::seconds(10))
     );
+    assert_eq!(stats.get_average_attempts(&char2), Some(2.0));
 }
 
 #[test]
@@ -433,16 +394,12 @@ fn test_chunk_timing_stats_rolling_window() {
         stats.add_timing(characteristics, Duration::seconds(i), 1);
     }
 
-    // Should only keep the last 10 samples
-    let all_stats = stats.get_statistics();
-    assert_eq!(all_stats.len(), 1);
-
-    let (_char, avg_timing, _avg_attempts) = &all_stats[0];
-    assert!(avg_timing.is_some());
-
-    // Average of last 10 samples (6-15) is 10.5 seconds
+    // Should only keep the last 10 samples. Average of last 10 samples (6-15) is 10.5 seconds:
     // (6 + 7 + 8 + 9 + 10 + 11 + 12 + 13 + 14 + 15) / 10 = 105 / 10 = 10.5
-    assert_eq!(*avg_timing, Some(Duration::milliseconds(10500)));
+    assert_eq!(
+        stats.get_average_timing(&characteristics),
+        Some(Duration::milliseconds(10500))
+    );
 }
 
 #[test]
@@ -461,9 +418,7 @@ fn test_chunk_timing_stats_attempts_tracking() {
     stats.add_timing(characteristics, Duration::seconds(5), 3);
 
     // Average attempts should be 2.0
-    let all_stats = stats.get_statistics();
-    let (_char, _avg_timing, avg_attempts) = &all_stats[0];
-    assert_eq!(*avg_attempts, Some(2.0));
+    assert_eq!(stats.get_average_attempts(&characteristics), Some(2.0));
 }
 
 #[test]
@@ -479,11 +434,10 @@ fn test_chunk_timing_stats_clone() {
     stats.add_timing(characteristics, Duration::seconds(5), 1);
 
     let cloned = stats.clone();
-    let cloned_stats = cloned.get_statistics();
-
-    assert_eq!(cloned_stats.len(), 1);
-    let (_char, avg_timing, _avg_attempts) = &cloned_stats[0];
-    assert_eq!(*avg_timing, Some(Duration::seconds(5)));
+    assert_eq!(
+        cloned.get_average_timing(&characteristics),
+        Some(Duration::seconds(5))
+    );
 }
 
 // === Timing estimation tests ===
@@ -671,122 +625,52 @@ fn test_chunk_timing_model_inter_volume_gap() {
     assert!((ChunkTimingModel::inter_volume_gap_secs() - 8.5).abs() < 0.001);
 }
 
-// === ScanTimingProjection tests ===
+// === Volume end time projection tests ===
 
-#[test]
-fn test_scan_timing_projection_basic() {
-    use super::project_scan_timing;
+fn anchor_chunk(sequence: usize, chunk_type: ChunkType) -> ChunkIdentifier {
     use chrono::{TimeZone, Utc};
 
-    let vcp = get_test_vcp();
-    let mapper = ElevationChunkMapper::new(&vcp);
-
-    let anchor_time = Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap();
-    let anchor_chunk = ChunkIdentifier::new(
-        "KDMX".to_string(),
+    ChunkIdentifier::new(
+        "KDMX",
         VolumeIndex::new(1),
         NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
-        5,
-        ChunkType::Intermediate,
-        Some(anchor_time),
-    );
-
-    let projection = project_scan_timing(&anchor_chunk, &vcp, &mapper, None);
-    assert!(projection.is_some(), "Projection should succeed");
-
-    let proj = projection.unwrap();
-    assert_eq!(proj.anchor_sequence(), 5);
-    assert!(!proj.chunks().is_empty());
-
-    // All projected chunks should have monotonically increasing times
-    let mut prev_time = anchor_time;
-    for chunk in proj.chunks() {
-        assert!(
-            chunk.projected_time() > prev_time,
-            "Chunk {} projected time should be after previous",
-            chunk.sequence()
-        );
-        prev_time = chunk.projected_time();
-    }
-
-    // Volume end should be the last projected chunk's time
-    assert_eq!(
-        proj.volume_end_time(),
-        proj.chunks().last().unwrap().projected_time()
-    );
-
-    // Remaining duration should be positive
-    assert!(
-        proj.remaining_duration().num_seconds() > 0,
-        "Remaining duration should be positive"
-    );
+        sequence,
+        chunk_type,
+        Some(Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap()),
+    )
 }
 
 #[test]
-fn test_scan_timing_projection_sweep_boundaries() {
-    use super::project_scan_timing;
-    use chrono::{TimeZone, Utc};
+fn test_project_volume_end_time_after_anchor() {
+    use super::project_volume_end_time;
 
     let vcp = get_test_vcp();
     let mapper = ElevationChunkMapper::new(&vcp);
 
-    let anchor_time = Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap();
-    let anchor_chunk = ChunkIdentifier::new(
-        "KDMX".to_string(),
-        VolumeIndex::new(1),
-        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
-        1,
-        ChunkType::Start,
-        Some(anchor_time),
-    );
-
-    let projection = project_scan_timing(&anchor_chunk, &vcp, &mapper, None);
-    assert!(projection.is_some());
-
-    let proj = projection.unwrap();
-
-    // Count sweep transitions
-    let sweep_starts: Vec<_> = proj
-        .chunks()
-        .iter()
-        .filter(|c| c.starts_new_sweep())
-        .collect();
+    let anchor = anchor_chunk(5, ChunkType::Intermediate);
+    let end_time =
+        project_volume_end_time(&anchor, &vcp, &mapper, None).expect("projection should succeed");
     assert!(
-        !sweep_starts.is_empty(),
-        "Should have at least one sweep start"
+        end_time > anchor.upload_date_time().unwrap(),
+        "Volume end time should be after the anchor"
     );
 
-    // Number of sweep starts should equal number of elevations in VCP
-    assert_eq!(
-        sweep_starts.len(),
-        vcp.elevations().len(),
-        "Sweep starts should match VCP elevation count"
-    );
+    // Projecting from earlier in the volume (same anchor time) reaches the end later
+    let from_start = anchor_chunk(1, ChunkType::Start);
+    let end_from_start = project_volume_end_time(&from_start, &vcp, &mapper, None).unwrap();
+    assert!(end_from_start > end_time);
 }
 
 #[test]
-fn test_scan_timing_projection_total_duration() {
-    use super::project_scan_timing;
-    use chrono::{TimeZone, Utc};
+fn test_project_volume_end_time_total_duration() {
+    use super::project_volume_end_time;
 
     let vcp = get_test_vcp();
     let mapper = ElevationChunkMapper::new(&vcp);
 
-    let anchor_time = Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap();
-    let anchor_chunk = ChunkIdentifier::new(
-        "KDMX".to_string(),
-        VolumeIndex::new(1),
-        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
-        1,
-        ChunkType::Start,
-        Some(anchor_time),
-    );
-
-    let projection = project_scan_timing(&anchor_chunk, &vcp, &mapper, None);
-    assert!(projection.is_some());
-
-    let proj = projection.unwrap();
-    let duration_secs = proj.remaining_duration().num_seconds();
+    let anchor = anchor_chunk(1, ChunkType::Start);
+    let end_time = project_volume_end_time(&anchor, &vcp, &mapper, None).unwrap();
+    let duration_secs = (end_time - anchor.upload_date_time().unwrap()).num_seconds();
 
     // VCP 212 with SAILS typically takes 200-400 seconds
     assert!(
@@ -797,26 +681,15 @@ fn test_scan_timing_projection_total_duration() {
 }
 
 #[test]
-fn test_scan_timing_projection_at_final_sequence() {
-    use super::project_scan_timing;
-    use chrono::{TimeZone, Utc};
+fn test_project_volume_end_time_at_final_sequence() {
+    use super::project_volume_end_time;
 
     let vcp = get_test_vcp();
     let mapper = ElevationChunkMapper::new(&vcp);
 
-    let anchor_time = Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap();
-    let anchor_chunk = ChunkIdentifier::new(
-        "KDMX".to_string(),
-        VolumeIndex::new(1),
-        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
-        mapper.final_sequence(),
-        ChunkType::End,
-        Some(anchor_time),
-    );
-
     // At the final sequence, there's nothing to project
-    let projection = project_scan_timing(&anchor_chunk, &vcp, &mapper, None);
-    assert!(projection.is_none());
+    let anchor = anchor_chunk(mapper.final_sequence(), ChunkType::End);
+    assert!(project_volume_end_time(&anchor, &vcp, &mapper, None).is_none());
 }
 
 // === ChunkIdentifier::next_chunk tests ===

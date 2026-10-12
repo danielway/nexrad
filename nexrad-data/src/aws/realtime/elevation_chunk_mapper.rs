@@ -7,18 +7,12 @@ use nexrad_decode::messages::volume_coverage_pattern;
 /// Subsequent sequences contain radar data, grouped by elevation sweep.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct ChunkMetadata {
-    /// Sequence number of this chunk (1-based).
-    sequence: usize,
     /// The 1-based elevation number this chunk belongs to, or None for the Start chunk.
     elevation_number: Option<usize>,
-    /// The chunk's 0-based index within its sweep (e.g., 0..5 for super-res, 0..2 for standard).
-    chunk_index_in_sweep: usize,
     /// Total number of chunks in this sweep (3 for standard, 6 for super-resolution).
     chunks_in_sweep: usize,
     /// Whether this is the first chunk in a sweep (inter-sweep gap applies before this chunk).
     is_first_in_sweep: bool,
-    /// Whether this is the last chunk in a sweep.
-    is_last_in_sweep: bool,
     /// Azimuth rotation rate for this elevation in degrees/second (from VCP).
     azimuth_rate_dps: f64,
     /// Elevation angle in degrees (from VCP).
@@ -28,21 +22,9 @@ pub(crate) struct ChunkMetadata {
 }
 
 impl ChunkMetadata {
-    /// The sequence number of this chunk (1-based).
-    #[cfg_attr(not(test), allow(dead_code))] // Only used by the unit tests.
-    pub(crate) fn sequence(&self) -> usize {
-        self.sequence
-    }
-
     /// The 1-based elevation number this chunk belongs to, or None for the Start chunk.
     pub(crate) fn elevation_number(&self) -> Option<usize> {
         self.elevation_number
-    }
-
-    /// The chunk's 0-based index within its sweep.
-    #[cfg_attr(not(test), allow(dead_code))] // Only used by the unit tests.
-    pub(crate) fn chunk_index_in_sweep(&self) -> usize {
-        self.chunk_index_in_sweep
     }
 
     /// Total number of chunks in this sweep (3 for standard, 6 for super-resolution).
@@ -53,12 +35,6 @@ impl ChunkMetadata {
     /// Whether this is the first chunk in a sweep.
     pub(crate) fn is_first_in_sweep(&self) -> bool {
         self.is_first_in_sweep
-    }
-
-    /// Whether this is the last chunk in a sweep.
-    #[cfg_attr(not(test), allow(dead_code))] // Only used by the unit tests.
-    pub(crate) fn is_last_in_sweep(&self) -> bool {
-        self.is_last_in_sweep
     }
 
     /// Azimuth rotation rate for this elevation in degrees/second.
@@ -94,12 +70,9 @@ impl ElevationChunkMapper {
 
         // Sequence 1 is the Start chunk (metadata-only)
         chunk_metadata.push(ChunkMetadata {
-            sequence: 1,
             elevation_number: None,
-            chunk_index_in_sweep: 0,
             chunks_in_sweep: 1,
             is_first_in_sweep: false,
-            is_last_in_sweep: false,
             azimuth_rate_dps: 0.0,
             elevation_angle_deg: 0.0,
             is_start_chunk: true,
@@ -121,14 +94,10 @@ impl ElevationChunkMapper {
             let elevation_angle = elevation.elevation_angle();
 
             for chunk_idx in 0..elevation_chunk_count {
-                let seq = total_chunk_count + chunk_idx;
                 chunk_metadata.push(ChunkMetadata {
-                    sequence: seq,
                     elevation_number: Some(elev_idx + 1),
-                    chunk_index_in_sweep: chunk_idx,
                     chunks_in_sweep: elevation_chunk_count,
                     is_first_in_sweep: chunk_idx == 0,
-                    is_last_in_sweep: chunk_idx == elevation_chunk_count - 1,
                     azimuth_rate_dps: azimuth_rate,
                     elevation_angle_deg: elevation_angle,
                     is_start_chunk: false,
@@ -174,17 +143,5 @@ impl ElevationChunkMapper {
             return None;
         }
         Some(&self.chunk_metadata[sequence - 1])
-    }
-
-    /// Get metadata for all chunks in the volume (including the Start chunk at index 0).
-    #[cfg_attr(not(test), allow(dead_code))] // Only used by the unit tests.
-    pub(crate) fn all_chunk_metadata(&self) -> &[ChunkMetadata] {
-        &self.chunk_metadata
-    }
-
-    /// Total number of chunks in the volume (including the Start chunk).
-    #[cfg_attr(not(test), allow(dead_code))] // Only used by the unit tests.
-    pub(crate) fn total_chunks(&self) -> usize {
-        self.chunk_metadata.len()
     }
 }

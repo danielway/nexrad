@@ -4,11 +4,10 @@
 //! timing externally, making it suitable for environments without tokio or
 //! where manual timing control is preferred.
 
-use crate::aws::realtime::scan_timing_projection::ScanTimingProjection;
 use crate::aws::realtime::{
     download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
-    project_scan_timing, Chunk, ChunkIdentifier, ChunkTimingStats, ChunkType, ElevationChunkMapper,
-    NextChunk, PollConfig, RetryState, VolumeIndex,
+    project_volume_end_time, Chunk, ChunkIdentifier, ChunkTimingStats, ChunkType,
+    ElevationChunkMapper, NextChunk, PollConfig, RetryState, VolumeIndex,
 };
 use crate::result::{aws::AwsError, Error, Result};
 use chrono::{DateTime, Duration, Utc};
@@ -501,11 +500,12 @@ impl ChunkIterator {
         self.bytes_downloaded
     }
 
-    /// Projects timing for all remaining chunks in the current volume scan.
+    /// Returns the projected time at which the current volume's final chunk becomes available for
+    /// download from the real-time S3 bucket.
     ///
-    /// Returns `None` if the VCP or elevation mapper is not yet available, or if
-    /// there are no remaining chunks to project.
-    fn project_remaining_scan(&self) -> Option<ScanTimingProjection> {
+    /// Returns `None` if a projection cannot be made, for example before the VCP is known or when
+    /// the current chunk is already the volume's final chunk.
+    pub fn projected_volume_end_time(&self) -> Option<DateTime<Utc>> {
         let chunk_id = match &self.state {
             IteratorState::Ready(id) => id,
             IteratorState::NeedVolumeStart(_) => return None,
@@ -514,16 +514,7 @@ impl ChunkIterator {
         let vcp = self.vcp.as_ref()?;
         let mapper = self.elevation_mapper.as_ref()?;
 
-        project_scan_timing(chunk_id, vcp, mapper, Some(&self.timing_stats))
-    }
-
-    /// Returns the projected time at which the current volume's final chunk becomes available for
-    /// download from the real-time S3 bucket.
-    ///
-    /// Returns `None` if a projection cannot be made, for example before the VCP is known or when
-    /// the current chunk is already the volume's final chunk.
-    pub fn projected_volume_end_time(&self) -> Option<DateTime<Utc>> {
-        self.project_remaining_scan().map(|p| p.volume_end_time())
+        project_volume_end_time(chunk_id, vcp, mapper, Some(&self.timing_stats))
     }
 }
 

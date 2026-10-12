@@ -1,92 +1,11 @@
 use crate::binary_data::BinaryData;
+use crate::data::Product;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "uom")]
 use uom::si::{f64::Length, length::kilometer};
-
-/// Common interface for types that provide gate-level moment data.
-///
-/// Both [`MomentData`] and [`CfpMomentData`] implement this trait, providing
-/// access to shared gate metadata, scale/offset encoding parameters, and raw
-/// gate values. Only the decoded value semantics differ between them.
-pub trait DataMoment {
-    /// The number of gates in this data moment.
-    fn gate_count(&self) -> u16;
-
-    /// The range to the center of the first gate in kilometers.
-    fn first_gate_range_km(&self) -> f64;
-
-    /// The range to the center of the first gate.
-    #[cfg(feature = "uom")]
-    fn first_gate_range(&self) -> Length;
-
-    /// The range between the centers of consecutive gates in kilometers.
-    fn gate_interval_km(&self) -> f64;
-
-    /// Number of bits per gate (8 or 16).
-    fn data_word_size(&self) -> u8;
-
-    /// The range between the centers of consecutive gates.
-    #[cfg(feature = "uom")]
-    fn gate_interval(&self) -> Length;
-
-    /// The scale factor used to decode raw gate values into floating-point values.
-    /// A value of `0.0` means raw values are used directly without scaling.
-    fn scale(&self) -> f32;
-
-    /// The offset used to decode raw gate values into floating-point values.
-    /// The decoded value is `(raw - offset) / scale`.
-    fn offset(&self) -> f32;
-
-    /// The raw encoded gate values as bytes. For 8-bit moments, each byte is one gate.
-    /// For 16-bit moments, each pair of bytes is a big-endian `u16` gate value.
-    fn raw_values(&self) -> &[u8];
-
-    /// Iterator over raw gate values as `u16`, handling both 8-bit and 16-bit word sizes.
-    fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_;
-}
-
-/// Implements [`DataMoment`] for a wrapper type that stores a `MomentDataBlock` as `self.inner`.
-macro_rules! impl_data_moment {
-    ($ty:ty) => {
-        impl DataMoment for $ty {
-            fn gate_count(&self) -> u16 {
-                self.inner.gate_count()
-            }
-            fn first_gate_range_km(&self) -> f64 {
-                self.inner.first_gate_range_km()
-            }
-            #[cfg(feature = "uom")]
-            fn first_gate_range(&self) -> Length {
-                self.inner.first_gate_range()
-            }
-            fn gate_interval_km(&self) -> f64 {
-                self.inner.gate_interval_km()
-            }
-            fn data_word_size(&self) -> u8 {
-                self.inner.data_word_size()
-            }
-            #[cfg(feature = "uom")]
-            fn gate_interval(&self) -> Length {
-                self.inner.gate_interval()
-            }
-            fn scale(&self) -> f32 {
-                self.inner.scale()
-            }
-            fn offset(&self) -> f32 {
-                self.inner.offset()
-            }
-            fn raw_values(&self) -> &[u8] {
-                self.inner.raw_values()
-            }
-            fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
-                self.inner.raw_gate_values()
-            }
-        }
-    };
-}
 
 /// CFP status codes for clutter filter power moments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -103,14 +22,24 @@ pub enum CfpStatus {
     Reserved(u8),
 }
 
-/// Encoded moment data from a radial containing gate metadata and raw values.
+/// Moment data from a radial for a particular product where each value corresponds to a gate.
 ///
-/// This is an internal type providing gate metadata accessors (count, range, interval) shared
-/// by both [`MomentData`] and [`CfpMomentData`]. Use those public wrapper types for decoded
-/// gate values and access to gate metadata via the [`DataMoment`] trait.
+/// Each instance knows which [`Product`] it holds, which determines how raw gate values are
+/// decoded by [`iter`](Self::iter) and [`values`](Self::values):
+///
+/// - For [`Product::ClutterFilterPower`], raw values 0–7 are CFP status codes and decode to
+///   [`MomentValue::CfpStatus`]; larger values decode to [`MomentValue::Value`].
+/// - For every other product, raw value 0 decodes to [`MomentValue::BelowThreshold`], raw value
+///   1 decodes to [`MomentValue::RangeFolded`], and larger values decode to
+///   [`MomentValue::Value`].
+///
+/// A scale of `0.0` means numeric raw values are used directly; otherwise they are decoded as
+/// `(raw - offset) / scale`. The raw encoding parameters and bytes are also exposed for
+/// consumers that decode gate values themselves.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub(crate) struct MomentDataBlock {
+pub struct MomentData {
+    product: Product,
     gate_count: u16,
     first_gate_range: u16,
     gate_interval: u16,
@@ -121,9 +50,14 @@ pub(crate) struct MomentDataBlock {
     values: BinaryData<Vec<u8>>,
 }
 
-impl MomentDataBlock {
-    /// Create new moment data block from fixed-point encoding.
-    pub(crate) fn from_fixed_point(
+impl MomentData {
+    /// Create new moment data for a product from fixed-point encoding.
+    ///
+    /// `first_gate_range` and `gate_interval` are in meters. `data_word_size` is the number of
+    /// bits per gate (8 or 16); 16-bit gate values are stored big-endian in `values`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_fixed_point(
+        product: Product,
         gate_count: u16,
         first_gate_range: u16,
         gate_interval: u16,
@@ -139,6 +73,7 @@ impl MomentDataBlock {
         );
 
         Self {
+            product,
             gate_count,
             first_gate_range,
             gate_interval,
@@ -149,58 +84,63 @@ impl MomentDataBlock {
         }
     }
 
+    /// The product this moment data holds.
+    pub fn product(&self) -> Product {
+        self.product
+    }
+
     /// The number of gates in this data moment.
-    fn gate_count(&self) -> u16 {
+    pub fn gate_count(&self) -> u16 {
         self.gate_count
     }
 
     /// The range to the center of the first gate in kilometers.
-    fn first_gate_range_km(&self) -> f64 {
+    pub fn first_gate_range_km(&self) -> f64 {
         self.first_gate_range as f64 * 0.001
     }
 
     /// The range to the center of the first gate.
     #[cfg(feature = "uom")]
-    fn first_gate_range(&self) -> Length {
+    pub fn first_gate_range(&self) -> Length {
         Length::new::<kilometer>(self.first_gate_range as f64 * 0.001)
     }
 
     /// The range between the centers of consecutive gates in kilometers.
-    fn gate_interval_km(&self) -> f64 {
+    pub fn gate_interval_km(&self) -> f64 {
         self.gate_interval as f64 * 0.001
-    }
-
-    /// Number of bits per gate (8 or 16).
-    fn data_word_size(&self) -> u8 {
-        self.data_word_size
     }
 
     /// The range between the centers of consecutive gates.
     #[cfg(feature = "uom")]
-    fn gate_interval(&self) -> Length {
+    pub fn gate_interval(&self) -> Length {
         Length::new::<kilometer>(self.gate_interval as f64 * 0.001)
+    }
+
+    /// Number of bits per gate (8 or 16).
+    pub fn data_word_size(&self) -> u8 {
+        self.data_word_size
     }
 
     /// The scale factor used to decode raw gate values into floating-point values.
     /// A value of `0.0` means raw values are used directly without scaling.
-    fn scale(&self) -> f32 {
+    pub fn scale(&self) -> f32 {
         self.scale
     }
 
     /// The offset used to decode raw gate values into floating-point values.
     /// The decoded value is `(raw - offset) / scale`.
-    fn offset(&self) -> f32 {
+    pub fn offset(&self) -> f32 {
         self.offset
     }
 
     /// The raw encoded gate values as bytes. For 8-bit moments, each byte is one gate.
     /// For 16-bit moments, each pair of bytes is a big-endian `u16` gate value.
-    fn raw_values(&self) -> &[u8] {
+    pub fn raw_values(&self) -> &[u8] {
         &self.values
     }
 
     /// Iterator over raw gate values as `u16`, handling both 8-bit and 16-bit word sizes.
-    fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
+    pub fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
         let is_16bit = self.data_word_size == 16;
         let step = if is_16bit { 2 } else { 1 };
         self.values.chunks_exact(step).map(move |chunk| {
@@ -211,63 +151,41 @@ impl MomentDataBlock {
             }
         })
     }
-}
-
-/// Moment data from a radial for a particular product where each value corresponds to a gate.
-///
-/// Gate metadata (count, range, interval) is available through the [`DataMoment`] trait —
-/// see [`gate_count`](DataMoment::gate_count), [`first_gate_range_km`](DataMoment::first_gate_range_km),
-/// and [`gate_interval_km`](DataMoment::gate_interval_km).
-/// Use [`values`](MomentData::values) to decode gates with standard moment semantics
-/// (below threshold, range folded, or numeric value).
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(transparent))]
-pub struct MomentData {
-    inner: MomentDataBlock,
-}
-
-impl MomentData {
-    /// Create new moment data from fixed-point encoding.
-    pub fn from_fixed_point(
-        gate_count: u16,
-        first_gate_range: u16,
-        gate_interval: u16,
-        data_word_size: u8,
-        scale: f32,
-        offset: f32,
-        values: Vec<u8>,
-    ) -> Self {
-        Self {
-            inner: MomentDataBlock::from_fixed_point(
-                gate_count,
-                first_gate_range,
-                gate_interval,
-                data_word_size,
-                scale,
-                offset,
-                values,
-            ),
-        }
-    }
 
     /// Iterator over decoded gate values without allocating.
+    ///
+    /// See the [type-level documentation](Self) for how raw values are decoded per product.
     pub fn iter(&self) -> impl Iterator<Item = MomentValue> + '_ {
-        let scale = self.inner.scale;
-        let offset = self.inner.offset;
+        let scale = self.scale;
+        let offset = self.offset;
+        let is_cfp = self.product == Product::ClutterFilterPower;
 
-        self.inner.raw_gate_values().map(move |raw_value| {
+        self.raw_gate_values().map(move |raw_value| {
+            if is_cfp {
+                match raw_value {
+                    0 => return MomentValue::CfpStatus(CfpStatus::FilterNotApplied),
+                    1 => return MomentValue::CfpStatus(CfpStatus::PointClutterFilterApplied),
+                    2 => return MomentValue::CfpStatus(CfpStatus::DualPolOnlyFilterApplied),
+                    3..=7 => return MomentValue::CfpStatus(CfpStatus::Reserved(raw_value as u8)),
+                    _ => {}
+                }
+            }
+
             // scale == 0.0 is an exact comparison; the value comes from a binary format
             // where IEEE 754 zero is stored literally.
             if scale == 0.0 {
                 return MomentValue::Value(raw_value as f32);
             }
 
-            match raw_value {
-                0 => MomentValue::BelowThreshold,
-                1 => MomentValue::RangeFolded,
-                _ => MomentValue::Value((raw_value as f32 - offset) / scale),
+            if !is_cfp {
+                match raw_value {
+                    0 => return MomentValue::BelowThreshold,
+                    1 => return MomentValue::RangeFolded,
+                    _ => {}
+                }
             }
+
+            MomentValue::Value((raw_value as f32 - offset) / scale)
         })
     }
 
@@ -278,10 +196,9 @@ impl MomentData {
     }
 }
 
-impl_data_moment!(MomentData);
-
-/// The data moment value for a product in a radial's gate. The value may be a floating-point number
-/// or a special case such as "below threshold" or "range folded".
+/// The data moment value for a product in a radial's gate. The value may be a floating-point
+/// number or a special case such as "below threshold", "range folded", or a clutter filter
+/// power status code.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum MomentValue {
@@ -291,6 +208,9 @@ pub enum MomentValue {
     BelowThreshold,
     /// The value for this gate exceeded the maximum unambiguous range.
     RangeFolded,
+    /// A clutter filter power status code. Only produced for
+    /// [`Product::ClutterFilterPower`] moments, for raw values 0–7.
+    CfpStatus(CfpStatus),
 }
 
 /// The validity status of a gate value in a field.
@@ -312,92 +232,14 @@ pub enum GateStatus {
 }
 
 impl From<&MomentValue> for GateStatus {
+    /// Maps a decoded moment value to its gate status. Clutter filter power status codes carry
+    /// no measurement and map to [`GateStatus::NoData`].
     fn from(value: &MomentValue) -> Self {
         match value {
             MomentValue::Value(_) => GateStatus::Valid,
             MomentValue::BelowThreshold => GateStatus::BelowThreshold,
             MomentValue::RangeFolded => GateStatus::RangeFolded,
+            MomentValue::CfpStatus(_) => GateStatus::NoData,
         }
     }
 }
-
-/// A decoded CFP gate value. Raw values 0–7 are status codes; values 8+ are numeric.
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum CfpMomentValue {
-    /// A CFP status code (raw values 0–7).
-    Status(CfpStatus),
-    /// A decoded floating-point CFP value (raw values 8+).
-    Value(f32),
-}
-
-/// Clutter filter power (CFP) moment data.
-///
-/// Gate metadata (count, range, interval) is available through the [`DataMoment`] trait —
-/// see [`gate_count`](DataMoment::gate_count), [`first_gate_range_km`](DataMoment::first_gate_range_km),
-/// and [`gate_interval_km`](DataMoment::gate_interval_km).
-/// Use [`values`](CfpMomentData::values) to decode gates with CFP-specific semantics.
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(transparent))]
-pub struct CfpMomentData {
-    inner: MomentDataBlock,
-}
-
-impl CfpMomentData {
-    /// Create new CFP moment data from fixed-point encoding.
-    pub fn from_fixed_point(
-        gate_count: u16,
-        first_gate_range: u16,
-        gate_interval: u16,
-        data_word_size: u8,
-        scale: f32,
-        offset: f32,
-        values: Vec<u8>,
-    ) -> Self {
-        Self {
-            inner: MomentDataBlock::from_fixed_point(
-                gate_count,
-                first_gate_range,
-                gate_interval,
-                data_word_size,
-                scale,
-                offset,
-                values,
-            ),
-        }
-    }
-
-    /// Iterator over decoded CFP gate values without allocating.
-    ///
-    /// Raw values 0–7 are decoded as CFP status codes. Values 8+ are decoded as
-    /// floating-point values using the moment's scale and offset.
-    pub fn iter(&self) -> impl Iterator<Item = CfpMomentValue> + '_ {
-        let scale = self.inner.scale;
-        let offset = self.inner.offset;
-
-        self.inner
-            .raw_gate_values()
-            .map(move |raw_value| match raw_value {
-                0 => CfpMomentValue::Status(CfpStatus::FilterNotApplied),
-                1 => CfpMomentValue::Status(CfpStatus::PointClutterFilterApplied),
-                2 => CfpMomentValue::Status(CfpStatus::DualPolOnlyFilterApplied),
-                3..=7 => CfpMomentValue::Status(CfpStatus::Reserved(raw_value as u8)),
-                _ => {
-                    if scale == 0.0 {
-                        CfpMomentValue::Value(raw_value as f32)
-                    } else {
-                        CfpMomentValue::Value((raw_value as f32 - offset) / scale)
-                    }
-                }
-            })
-    }
-
-    /// Decoded CFP gate values collected into a `Vec`. Prefer [`iter`](Self::iter) when
-    /// processing values sequentially to avoid allocation.
-    pub fn values(&self) -> Vec<CfpMomentValue> {
-        self.iter().collect()
-    }
-}
-
-impl_data_moment!(CfpMomentData);

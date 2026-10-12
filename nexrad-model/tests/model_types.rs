@@ -1,8 +1,8 @@
 //! Unit tests for nexrad-model types.
 
 use nexrad_model::data::{
-    CfpMomentData, CfpMomentValue, CfpStatus, DataMoment, MomentData, MomentValue, PulseWidth,
-    Scan, Sweep, VcpNumber, VolumeCoveragePattern,
+    CfpStatus, GateStatus, MomentData, MomentValue, Product, PulseWidth, Scan, Sweep, VcpNumber,
+    VolumeCoveragePattern,
 };
 use nexrad_model::meta::Site;
 
@@ -133,9 +133,19 @@ fn test_sweep_merge_different_elevation() {
 #[test]
 fn test_moment_data_creation() {
     let values = vec![0, 1, 50, 100, 150, 200, 255];
-    let moment = MomentData::from_fixed_point(7, 500, 250, 8, 2.0, 33.0, values);
+    let moment =
+        MomentData::from_fixed_point(Product::Reflectivity, 7, 500, 250, 8, 2.0, 33.0, values);
 
+    assert_eq!(moment.product(), Product::Reflectivity);
     assert_eq!(moment.gate_count(), 7);
+    assert_eq!(moment.data_word_size(), 8);
+    assert_eq!(moment.scale(), 2.0);
+    assert_eq!(moment.offset(), 33.0);
+    assert_eq!(moment.raw_values(), &[0, 1, 50, 100, 150, 200, 255]);
+    assert_eq!(
+        moment.raw_gate_values().collect::<Vec<_>>(),
+        vec![0, 1, 50, 100, 150, 200, 255]
+    );
     assert!((moment.first_gate_range_km() - 0.5).abs() < 0.001);
     assert!((moment.gate_interval_km() - 0.25).abs() < 0.001);
 }
@@ -150,7 +160,8 @@ fn test_moment_data_values_with_scale() {
     // raw=100 -> (100 - 33) / 2 = 33.5
 
     let values = vec![0, 1, 50, 100];
-    let moment = MomentData::from_fixed_point(4, 500, 250, 8, 2.0, 33.0, values);
+    let moment =
+        MomentData::from_fixed_point(Product::Reflectivity, 4, 500, 250, 8, 2.0, 33.0, values);
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 4);
@@ -175,7 +186,8 @@ fn test_moment_data_values_with_scale() {
 fn test_moment_data_values_without_scale() {
     // When scale=0.0, raw values are passed through directly
     let values = vec![0, 1, 50, 100];
-    let moment = MomentData::from_fixed_point(4, 500, 250, 8, 0.0, 0.0, values);
+    let moment =
+        MomentData::from_fixed_point(Product::Reflectivity, 4, 500, 250, 8, 0.0, 0.0, values);
 
     let decoded_values = moment.values();
 
@@ -196,7 +208,8 @@ fn test_moment_data_values_16bit_with_scale() {
     // Two 16-bit big-endian values: 20 and 30
     // With scale=2.0, offset=10.0 => 5.0 and 10.0
     let values = vec![0x00, 0x14, 0x00, 0x1E];
-    let moment = MomentData::from_fixed_point(2, 500, 250, 16, 2.0, 10.0, values);
+    let moment =
+        MomentData::from_fixed_point(Product::Reflectivity, 2, 500, 250, 16, 2.0, 10.0, values);
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 2);
@@ -218,7 +231,8 @@ fn test_moment_data_values_16bit_with_scale() {
 fn test_moment_data_values_16bit_special_values() {
     // 16-bit raw values 0 and 1 should map to special cases when scale != 0.
     let values = vec![0x00, 0x00, 0x00, 0x01];
-    let moment = MomentData::from_fixed_point(2, 500, 250, 16, 2.0, 0.0, values);
+    let moment =
+        MomentData::from_fixed_point(Product::Reflectivity, 2, 500, 250, 16, 2.0, 0.0, values);
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 2);
@@ -229,25 +243,91 @@ fn test_moment_data_values_16bit_special_values() {
 #[test]
 fn test_cfp_moment_values_status_and_data() {
     let values = vec![0, 1, 2, 3, 7, 8, 10];
-    let moment = CfpMomentData::from_fixed_point(7, 500, 250, 8, 1.0, 0.0, values);
+    let moment = MomentData::from_fixed_point(
+        Product::ClutterFilterPower,
+        7,
+        500,
+        250,
+        8,
+        1.0,
+        0.0,
+        values,
+    );
 
     let decoded = moment.values();
     assert_eq!(
         decoded[0],
-        CfpMomentValue::Status(CfpStatus::FilterNotApplied)
+        MomentValue::CfpStatus(CfpStatus::FilterNotApplied)
     );
     assert_eq!(
         decoded[1],
-        CfpMomentValue::Status(CfpStatus::PointClutterFilterApplied)
+        MomentValue::CfpStatus(CfpStatus::PointClutterFilterApplied)
     );
     assert_eq!(
         decoded[2],
-        CfpMomentValue::Status(CfpStatus::DualPolOnlyFilterApplied)
+        MomentValue::CfpStatus(CfpStatus::DualPolOnlyFilterApplied)
     );
-    assert_eq!(decoded[3], CfpMomentValue::Status(CfpStatus::Reserved(3)));
-    assert_eq!(decoded[4], CfpMomentValue::Status(CfpStatus::Reserved(7)));
-    assert_eq!(decoded[5], CfpMomentValue::Value(8.0));
-    assert_eq!(decoded[6], CfpMomentValue::Value(10.0));
+    assert_eq!(decoded[3], MomentValue::CfpStatus(CfpStatus::Reserved(3)));
+    assert_eq!(decoded[4], MomentValue::CfpStatus(CfpStatus::Reserved(7)));
+    assert_eq!(decoded[5], MomentValue::Value(8.0));
+    assert_eq!(decoded[6], MomentValue::Value(10.0));
+}
+
+#[test]
+fn test_cfp_moment_values_without_scale() {
+    // Status codes take precedence over the unscaled passthrough.
+    let values = vec![0, 7, 8, 42];
+    let moment = MomentData::from_fixed_point(
+        Product::ClutterFilterPower,
+        4,
+        500,
+        250,
+        8,
+        0.0,
+        0.0,
+        values,
+    );
+
+    let decoded = moment.values();
+    assert_eq!(
+        decoded[0],
+        MomentValue::CfpStatus(CfpStatus::FilterNotApplied)
+    );
+    assert_eq!(decoded[1], MomentValue::CfpStatus(CfpStatus::Reserved(7)));
+    assert_eq!(decoded[2], MomentValue::Value(8.0));
+    assert_eq!(decoded[3], MomentValue::Value(42.0));
+}
+
+#[test]
+fn test_non_cfp_moment_values_have_no_status_codes() {
+    // Raw values 2-7 are ordinary values for every product other than CFP.
+    let values = vec![2, 7];
+    let moment = MomentData::from_fixed_point(Product::Velocity, 2, 500, 250, 8, 1.0, 0.0, values);
+
+    assert_eq!(
+        moment.values(),
+        vec![MomentValue::Value(2.0), MomentValue::Value(7.0)]
+    );
+}
+
+#[test]
+fn test_gate_status_from_moment_value() {
+    assert_eq!(
+        GateStatus::from(&MomentValue::Value(1.0)),
+        GateStatus::Valid
+    );
+    assert_eq!(
+        GateStatus::from(&MomentValue::BelowThreshold),
+        GateStatus::BelowThreshold
+    );
+    assert_eq!(
+        GateStatus::from(&MomentValue::RangeFolded),
+        GateStatus::RangeFolded
+    );
+    assert_eq!(
+        GateStatus::from(&MomentValue::CfpStatus(CfpStatus::FilterNotApplied)),
+        GateStatus::NoData
+    );
 }
 
 #[test]
@@ -261,17 +341,19 @@ fn test_moment_value_equality() {
 }
 
 #[test]
-fn test_cfp_moment_value_equality() {
+fn test_cfp_status_moment_value_equality() {
     assert_eq!(
-        CfpMomentValue::Status(CfpStatus::FilterNotApplied),
-        CfpMomentValue::Status(CfpStatus::FilterNotApplied)
+        MomentValue::CfpStatus(CfpStatus::FilterNotApplied),
+        MomentValue::CfpStatus(CfpStatus::FilterNotApplied)
     );
     assert_ne!(
-        CfpMomentValue::Status(CfpStatus::FilterNotApplied),
-        CfpMomentValue::Status(CfpStatus::PointClutterFilterApplied)
+        MomentValue::CfpStatus(CfpStatus::FilterNotApplied),
+        MomentValue::CfpStatus(CfpStatus::PointClutterFilterApplied)
     );
-    assert_eq!(CfpMomentValue::Value(10.0), CfpMomentValue::Value(10.0));
-    assert_ne!(CfpMomentValue::Value(10.0), CfpMomentValue::Value(20.0));
+    assert_ne!(
+        MomentValue::CfpStatus(CfpStatus::FilterNotApplied),
+        MomentValue::BelowThreshold
+    );
 }
 
 #[test]
@@ -286,8 +368,8 @@ fn test_moment_value_debug() {
     let debug = format!("{:?}", MomentValue::RangeFolded);
     assert!(debug.contains("RangeFolded"));
 
-    let debug = format!("{:?}", CfpMomentValue::Status(CfpStatus::Reserved(7)));
-    assert!(debug.contains("Status"));
+    let debug = format!("{:?}", MomentValue::CfpStatus(CfpStatus::Reserved(7)));
+    assert!(debug.contains("CfpStatus"));
     assert!(debug.contains("Reserved"));
 }
 
@@ -311,25 +393,85 @@ fn test_radial_builder_defaults() {
     assert!(radial.differential_phase().is_none());
     assert!(radial.correlation_coefficient().is_none());
     assert!(radial.clutter_filter_power().is_none());
+    assert!(radial.moment(Product::Reflectivity).is_none());
+    assert!(radial.moment(Product::ClutterFilterPower).is_none());
 }
 
 #[test]
 fn test_radial_builder_setters() {
     use nexrad_model::data::{Radial, RadialStatus};
 
-    let moment = MomentData::from_fixed_point(3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120]);
+    let moment = MomentData::from_fixed_point(
+        Product::Reflectivity,
+        3,
+        2000,
+        250,
+        8,
+        2.0,
+        66.0,
+        vec![100, 110, 120],
+    );
     let radial = Radial::builder(1, 0.25, 1, 0.5)
         .collection_timestamp(1_700_000_000_000)
         .azimuth_spacing_degrees(0.5)
         .radial_status(RadialStatus::ScanStart)
-        .reflectivity(moment.clone())
+        .moment(moment.clone())
         .build();
 
     assert_eq!(radial.collection_timestamp(), 1_700_000_000_000);
     assert_eq!(radial.azimuth_spacing_degrees(), 0.5);
     assert_eq!(radial.radial_status(), RadialStatus::ScanStart);
     assert_eq!(radial.reflectivity(), Some(&moment));
+    assert_eq!(radial.moment(Product::Reflectivity), Some(&moment));
     assert!(radial.velocity().is_none());
+}
+
+#[test]
+fn test_radial_builder_moment_stores_by_product() {
+    use nexrad_model::data::Radial;
+
+    let products = [
+        Product::Reflectivity,
+        Product::Velocity,
+        Product::SpectrumWidth,
+        Product::DifferentialReflectivity,
+        Product::DifferentialPhase,
+        Product::CorrelationCoefficient,
+        Product::ClutterFilterPower,
+    ];
+
+    let mut builder = Radial::builder(1, 0.25, 1, 0.5);
+    for (i, product) in products.iter().enumerate() {
+        builder = builder.moment(MomentData::from_fixed_point(
+            *product,
+            1,
+            2000,
+            250,
+            8,
+            2.0,
+            66.0,
+            vec![100 + i as u8],
+        ));
+    }
+    let radial = builder.build();
+
+    for product in products {
+        let moment = radial.moment(product).expect("moment is set");
+        assert_eq!(moment.product(), product);
+    }
+    assert_eq!(radial.reflectivity().unwrap().raw_values(), &[100]);
+    assert_eq!(radial.velocity().unwrap().raw_values(), &[101]);
+    assert_eq!(radial.spectrum_width().unwrap().raw_values(), &[102]);
+    assert_eq!(
+        radial.differential_reflectivity().unwrap().raw_values(),
+        &[103]
+    );
+    assert_eq!(radial.differential_phase().unwrap().raw_values(), &[104]);
+    assert_eq!(
+        radial.correlation_coefficient().unwrap().raw_values(),
+        &[105]
+    );
+    assert_eq!(radial.clutter_filter_power().unwrap().raw_values(), &[106]);
 }
 
 #[test]
@@ -457,4 +599,52 @@ fn test_sweep_field_builder_rejects_invalid_geometry() {
 
     // The defaults alone do not describe a valid geometry.
     assert!(SweepField::builder("Test", "dBZ").build().is_err());
+}
+
+#[test]
+fn test_sweep_field_product() {
+    use nexrad_model::data::{Radial, SweepField};
+
+    // CFP raw values 0-7 are status codes and become NoData gates in the field.
+    let cfp = MomentData::from_fixed_point(
+        Product::ClutterFilterPower,
+        3,
+        2000,
+        250,
+        8,
+        1.0,
+        0.0,
+        vec![1, 8, 12],
+    );
+    let radials = vec![Radial::builder(0, 0.0, 1, 0.5).moment(cfp).build()];
+
+    let field = SweepField::from_radials(&radials, Product::ClutterFilterPower).expect("cfp data");
+    assert_eq!(field.product(), Some(Product::ClutterFilterPower));
+    assert_eq!(field.get(0, 0), (0.0, GateStatus::NoData));
+    assert_eq!(field.get(0, 1), (8.0, GateStatus::Valid));
+    assert_eq!(field.get(0, 2), (12.0, GateStatus::Valid));
+    assert!(SweepField::from_radials(&radials, Product::Reflectivity).is_none());
+
+    let owned = SweepField::from_radials_owned(radials, Product::ClutterFilterPower).unwrap();
+    assert_eq!(owned, field);
+
+    let like = field.new_like("Derived", "dB");
+    assert_eq!(like.product(), Some(Product::ClutterFilterPower));
+
+    let built = SweepField::builder("Reflectivity", "dBZ")
+        .azimuths(vec![0.0])
+        .gate_count(1)
+        .gate_interval_km(0.25)
+        .build()
+        .unwrap();
+    assert_eq!(built.product(), None);
+
+    let built = SweepField::builder("Reflectivity", "dBZ")
+        .product(Product::Reflectivity)
+        .azimuths(vec![0.0])
+        .gate_count(1)
+        .gate_interval_km(0.25)
+        .build()
+        .unwrap();
+    assert_eq!(built.product(), Some(Product::Reflectivity));
 }

@@ -1,4 +1,4 @@
-use crate::data::{CfpMomentValue, DataMoment, GateStatus, MomentValue, Product, Radial};
+use crate::data::{GateStatus, MomentValue, Product, Radial};
 use crate::geo::{GeoExtent, GeoPoint};
 use crate::result::{Error, Result};
 
@@ -30,6 +30,8 @@ pub struct SweepField {
     label: String,
     /// Physical unit string (e.g., "dBZ", "m/s").
     unit: String,
+    /// The radar product this field holds, if it corresponds to one.
+    product: Option<Product>,
     /// Elevation angle in degrees.
     elevation_degrees: f32,
     /// Azimuth angle in degrees for each radial row, sorted ascending.
@@ -102,6 +104,7 @@ impl SweepField {
         Some(Self {
             label: product.label().to_string(),
             unit: product.unit().to_string(),
+            product: Some(product),
             elevation_degrees,
             azimuths,
             azimuth_spacing_degrees,
@@ -181,6 +184,7 @@ impl SweepField {
         Some(Self {
             label: product.label().to_string(),
             unit: product.unit().to_string(),
+            product: Some(product),
             elevation_degrees,
             azimuths,
             azimuth_spacing_degrees,
@@ -200,6 +204,7 @@ impl SweepField {
         SweepFieldBuilder {
             label: label.into(),
             unit: unit.into(),
+            product: None,
             elevation_degrees: 0.0,
             azimuths: Vec::new(),
             azimuth_spacing_degrees: 1.0,
@@ -209,7 +214,8 @@ impl SweepField {
         }
     }
 
-    /// Create a new field with the same geometry as this one but empty data.
+    /// Create a new field with the same geometry and [`product`](Self::product) as this one
+    /// but empty data.
     ///
     /// All values are initialized to `0.0` with [`GateStatus::NoData`].
     pub fn new_like(&self, label: impl Into<String>, unit: impl Into<String>) -> Self {
@@ -217,6 +223,7 @@ impl SweepField {
         Self {
             label: label.into(),
             unit: unit.into(),
+            product: self.product,
             elevation_degrees: self.elevation_degrees,
             azimuths: self.azimuths.clone(),
             azimuth_spacing_degrees: self.azimuth_spacing_degrees,
@@ -238,6 +245,15 @@ impl SweepField {
     /// Physical unit string.
     pub fn unit(&self) -> &str {
         &self.unit
+    }
+
+    /// The radar product this field holds, if any.
+    ///
+    /// Set by [`from_radials`](Self::from_radials) and
+    /// [`from_radials_owned`](Self::from_radials_owned), copied by [`new_like`](Self::new_like),
+    /// and optionally set on fields built with [`builder`](Self::builder).
+    pub fn product(&self) -> Option<Product> {
+        self.product
     }
 
     /// Elevation angle in degrees.
@@ -419,28 +435,20 @@ impl SweepField {
 
     /// Extract gate parameters from the first radial that has data for this product.
     fn extract_gate_params(radials: &[Radial], product: Product) -> Option<(f64, f64, usize)> {
-        for radial in radials {
-            if let Some(moment) = product.moment_data(radial) {
-                return Some((
+        radials.iter().find_map(|radial| {
+            radial.moment(product).map(|moment| {
+                (
                     moment.first_gate_range_km(),
                     moment.gate_interval_km(),
                     moment.gate_count() as usize,
-                ));
-            }
-            if let Some(cfp) = product.cfp_moment_data(radial) {
-                return Some((
-                    cfp.first_gate_range_km(),
-                    cfp.gate_interval_km(),
-                    cfp.gate_count() as usize,
-                ));
-            }
-        }
-        None
+                )
+            })
+        })
     }
 
     /// Check whether a radial has data for the given product.
     fn radial_has_product(radial: &Radial, product: Product) -> bool {
-        product.moment_data(radial).is_some() || product.cfp_moment_data(radial).is_some()
+        radial.moment(product).is_some()
     }
 
     /// Decode moment data from a radial directly into pre-allocated output slices.
@@ -453,40 +461,27 @@ impl SweepField {
         values: &mut [f32],
         status: &mut [GateStatus],
     ) {
-        if let Some(moment) = product.moment_data(radial) {
-            for (i, mv) in moment.iter().enumerate() {
-                if i >= values.len() {
-                    break;
-                }
-                match mv {
-                    MomentValue::Value(v) => {
-                        values[i] = v;
-                        status[i] = GateStatus::Valid;
-                    }
-                    MomentValue::BelowThreshold => {
-                        status[i] = GateStatus::BelowThreshold;
-                    }
-                    MomentValue::RangeFolded => {
-                        status[i] = GateStatus::RangeFolded;
-                    }
-                }
-            }
+        let Some(moment) = radial.moment(product) else {
             return;
-        }
+        };
 
-        if let Some(cfp) = product.cfp_moment_data(radial) {
-            for (i, cv) in cfp.iter().enumerate() {
-                if i >= values.len() {
-                    break;
+        for (i, mv) in moment.iter().enumerate() {
+            if i >= values.len() {
+                break;
+            }
+            match mv {
+                MomentValue::Value(v) => {
+                    values[i] = v;
+                    status[i] = GateStatus::Valid;
                 }
-                match cv {
-                    CfpMomentValue::Value(v) => {
-                        values[i] = v;
-                        status[i] = GateStatus::Valid;
-                    }
-                    CfpMomentValue::Status(_) => {
-                        // values[i] stays 0.0, status stays NoData (initial values)
-                    }
+                MomentValue::BelowThreshold => {
+                    status[i] = GateStatus::BelowThreshold;
+                }
+                MomentValue::RangeFolded => {
+                    status[i] = GateStatus::RangeFolded;
+                }
+                MomentValue::CfpStatus(_) => {
+                    // values[i] stays 0.0, status stays NoData (initial values)
                 }
             }
         }
@@ -495,8 +490,9 @@ impl SweepField {
 
 /// Builder for an empty [`SweepField`], created with [`SweepField::builder`].
 ///
-/// The label and unit are required. The geometry defaults to:
+/// The label and unit are required. The product and geometry default to:
 ///
+/// - `product`: `None`
 /// - `elevation_degrees`: `0.0`
 /// - `azimuths`: empty
 /// - `azimuth_spacing_degrees`: `1.0`
@@ -529,6 +525,7 @@ impl SweepField {
 pub struct SweepFieldBuilder {
     label: String,
     unit: String,
+    product: Option<Product>,
     elevation_degrees: f32,
     azimuths: Vec<f32>,
     azimuth_spacing_degrees: f32,
@@ -538,6 +535,12 @@ pub struct SweepFieldBuilder {
 }
 
 impl SweepFieldBuilder {
+    /// Set the radar product this field holds. Defaults to `None`.
+    pub fn product(mut self, product: Product) -> Self {
+        self.product = Some(product);
+        self
+    }
+
     /// Set the elevation angle in degrees. Defaults to `0.0`.
     pub fn elevation_degrees(mut self, elevation_degrees: f32) -> Self {
         self.elevation_degrees = elevation_degrees;
@@ -605,6 +608,7 @@ impl SweepFieldBuilder {
         Ok(SweepField {
             label: self.label,
             unit: self.unit,
+            product: self.product,
             elevation_degrees: self.elevation_degrees,
             azimuths: self.azimuths,
             azimuth_spacing_degrees: self.azimuth_spacing_degrees,

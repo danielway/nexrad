@@ -245,7 +245,7 @@ impl<'a> Message<'a> {
     #[cfg(feature = "model")]
     pub fn into_radial(self) -> Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{MomentData, Radial, RadialStatus};
+        use nexrad_model::data::{MomentData, Product, Radial, RadialStatus};
 
         // Extract header values before moving gate data out of self.
         let num_surv_gates = self.num_surveillance_gates();
@@ -274,6 +274,7 @@ impl<'a> Message<'a> {
 
         let reflectivity = self.reflectivity_gates.map(|gates| {
             MomentData::from_fixed_point(
+                Product::Reflectivity,
                 num_surv_gates,
                 surv_first_range,
                 surv_interval,
@@ -287,6 +288,7 @@ impl<'a> Message<'a> {
         let velocity = self.velocity_gates.map(|gates| {
             let scale = if vel_resolution > 0.9 { 1.0 } else { 2.0 };
             MomentData::from_fixed_point(
+                Product::Velocity,
                 num_dopp_gates,
                 dopp_first_range,
                 dopp_interval,
@@ -299,6 +301,7 @@ impl<'a> Message<'a> {
 
         let spectrum_width = self.spectrum_width_gates.map(|gates| {
             MomentData::from_fixed_point(
+                Product::SpectrumWidth,
                 num_dopp_gates,
                 dopp_first_range,
                 dopp_interval,
@@ -318,14 +321,11 @@ impl<'a> Message<'a> {
         .collection_timestamp(timestamp)
         .azimuth_spacing_degrees(1.0)
         .radial_status(radial_status);
-        if let Some(reflectivity) = reflectivity {
-            builder = builder.reflectivity(reflectivity);
-        }
-        if let Some(velocity) = velocity {
-            builder = builder.velocity(velocity);
-        }
-        if let Some(spectrum_width) = spectrum_width {
-            builder = builder.spectrum_width(spectrum_width);
+        for moment in [reflectivity, velocity, spectrum_width]
+            .into_iter()
+            .flatten()
+        {
+            builder = builder.moment(moment);
         }
 
         Ok(builder.build())
@@ -339,10 +339,11 @@ impl<'a> Message<'a> {
         spectrum_width_gates: Option<Vec<u8>>,
     ) -> Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{MomentData, Radial, RadialStatus};
+        use nexrad_model::data::{MomentData, Product, Radial, RadialStatus};
 
         let reflectivity = reflectivity_gates.map(|gates| {
             MomentData::from_fixed_point(
+                Product::Reflectivity,
                 msg.num_surveillance_gates(),
                 msg.surveillance_first_gate_range().unsigned_abs(),
                 msg.surveillance_gate_interval(),
@@ -360,6 +361,7 @@ impl<'a> Message<'a> {
                 (2.0, 129.0)
             };
             MomentData::from_fixed_point(
+                Product::Velocity,
                 msg.num_doppler_gates(),
                 msg.doppler_first_gate_range().unsigned_abs(),
                 msg.doppler_gate_interval(),
@@ -372,6 +374,7 @@ impl<'a> Message<'a> {
 
         let spectrum_width = spectrum_width_gates.map(|gates| {
             MomentData::from_fixed_point(
+                Product::SpectrumWidth,
                 msg.num_doppler_gates(),
                 msg.doppler_first_gate_range().unsigned_abs(),
                 msg.doppler_gate_interval(),
@@ -405,14 +408,11 @@ impl<'a> Message<'a> {
         .collection_timestamp(timestamp)
         .azimuth_spacing_degrees(1.0)
         .radial_status(radial_status);
-        if let Some(reflectivity) = reflectivity {
-            builder = builder.reflectivity(reflectivity);
-        }
-        if let Some(velocity) = velocity {
-            builder = builder.velocity(velocity);
-        }
-        if let Some(spectrum_width) = spectrum_width {
-            builder = builder.spectrum_width(spectrum_width);
+        for moment in [reflectivity, velocity, spectrum_width]
+            .into_iter()
+            .flatten()
+        {
+            builder = builder.moment(moment);
         }
 
         Ok(builder.build())

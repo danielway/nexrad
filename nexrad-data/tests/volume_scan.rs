@@ -1,7 +1,7 @@
 #![cfg(feature = "model")]
 
 use nexrad_data::volume;
-use nexrad_model::data::{DataMoment, RadialStatus};
+use nexrad_model::data::RadialStatus;
 
 const TEST_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
 
@@ -291,6 +291,9 @@ fn test_scan_moment_values() {
                 has_below_threshold = true;
             }
             MomentValue::RangeFolded => {}
+            MomentValue::CfpStatus(status) => {
+                panic!("Reflectivity should not decode CFP status codes: {status:?}")
+            }
         }
     }
 

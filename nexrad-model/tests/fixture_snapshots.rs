@@ -7,7 +7,7 @@
 
 use insta::assert_yaml_snapshot;
 use nexrad_data::volume;
-use nexrad_model::data::{DataMoment, Scan};
+use nexrad_model::data::Scan;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
@@ -139,8 +139,10 @@ struct MomentBlockStats {
     data_sha256: String,
 }
 
+/// Hashes decoded gate values. CFP status codes hash to the same bytes they did when CFP
+/// moments had their own value type, so the recorded snapshots stay comparable.
 fn hash_moment_values(values: &[nexrad_model::data::MomentValue]) -> String {
-    use nexrad_model::data::MomentValue;
+    use nexrad_model::data::{CfpStatus, MomentValue};
 
     let mut hasher = Sha256::new();
     for v in values {
@@ -154,30 +156,16 @@ fn hash_moment_values(values: &[nexrad_model::data::MomentValue]) -> String {
             MomentValue::RangeFolded => {
                 hasher.update([1u8]);
             }
-        }
-    }
-    hex::encode(hasher.finalize())
-}
-
-fn hash_cfp_moment_values(values: &[nexrad_model::data::CfpMomentValue]) -> String {
-    use nexrad_model::data::{CfpMomentValue, CfpStatus};
-
-    let mut hasher = Sha256::new();
-    for v in values {
-        match v {
-            CfpMomentValue::Value(f) => {
-                hasher.update(f.to_le_bytes());
-            }
-            CfpMomentValue::Status(CfpStatus::FilterNotApplied) => {
+            MomentValue::CfpStatus(CfpStatus::FilterNotApplied) => {
                 hasher.update([0u8]);
             }
-            CfpMomentValue::Status(CfpStatus::PointClutterFilterApplied) => {
+            MomentValue::CfpStatus(CfpStatus::PointClutterFilterApplied) => {
                 hasher.update([1u8]);
             }
-            CfpMomentValue::Status(CfpStatus::DualPolOnlyFilterApplied) => {
+            MomentValue::CfpStatus(CfpStatus::DualPolOnlyFilterApplied) => {
                 hasher.update([2u8]);
             }
-            CfpMomentValue::Status(CfpStatus::Reserved(code)) => {
+            MomentValue::CfpStatus(CfpStatus::Reserved(code)) => {
                 hasher.update([3u8, *code]);
             }
         }
@@ -238,7 +226,7 @@ fn create_moment_stats(
             gate_count: m.gate_count(),
             first_gate_range_km: m.first_gate_range_km(),
             gate_interval_km: m.gate_interval_km(),
-            data_sha256: hash_cfp_moment_values(&m.values()),
+            data_sha256: hash_moment_values(&m.values()),
         }),
     }
 }

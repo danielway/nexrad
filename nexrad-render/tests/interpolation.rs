@@ -19,6 +19,7 @@ fn create_test_radial(azimuth_degrees: f32, raw_value: u8) -> Radial {
 
     let values = vec![raw_value; gate_count as usize];
     let moment_data = MomentData::from_fixed_point(
+        Product::Reflectivity,
         gate_count,
         first_gate_range_m,
         gate_interval_m,
@@ -29,7 +30,7 @@ fn create_test_radial(azimuth_degrees: f32, raw_value: u8) -> Radial {
     );
 
     Radial::builder(0, azimuth_degrees, 1, 0.5)
-        .reflectivity(moment_data)
+        .moment(moment_data)
         .build()
 }
 

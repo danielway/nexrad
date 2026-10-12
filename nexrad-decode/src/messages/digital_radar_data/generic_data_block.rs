@@ -47,68 +47,78 @@ impl<'a> GenericDataBlock<'a> {
 
     /// Raw gate values for this moment/radial ordered in ascending distance from the radar. These
     /// values are stored in a fixed-point representation using the header's offset and scale fields.
-    /// Use `nexrad_model::data::MomentData` or `nexrad_model::data::CfpMomentData` to decode.
+    /// With the `model` feature, use `DataBlock::moment_data` on the enclosing block to decode them.
     pub fn encoded_values(&self) -> &[u8] {
         &self.encoded_data
     }
+}
+
+#[cfg(feature = "model")]
+impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
+    /// The model product for this block, derived from its data block name.
+    fn product(&self) -> Result<nexrad_model::data::Product> {
+        use nexrad_model::data::Product;
+
+        Ok(match self.id().data_name_raw() {
+            b"REF" => Product::Reflectivity,
+            b"VEL" => Product::Velocity,
+            b"SW " => Product::SpectrumWidth,
+            b"ZDR" => Product::DifferentialReflectivity,
+            b"PHI" => Product::DifferentialPhase,
+            b"RHO" => Product::CorrelationCoefficient,
+            b"CFP" => Product::ClutterFilterPower,
+            _ => {
+                return Err(crate::result::Error::UnknownDataBlockType {
+                    block_type: self.id().data_block_name_str().into_owned(),
+                })
+            }
+        })
+    }
 
     /// Create a [`MomentData`](nexrad_model::data::MomentData) from this generic data block,
-    /// cloning the underlying encoded data.
-    #[cfg(feature = "model")]
-    pub fn moment_data(&self) -> nexrad_model::data::MomentData {
-        nexrad_model::data::MomentData::from_fixed_point(
-            self.header.number_of_data_moment_gates(),
-            self.header.data_moment_range_raw(),
-            self.header.data_moment_range_sample_interval_raw(),
-            self.header.data_word_size_raw(),
-            self.header.scale(),
-            self.header.offset(),
-            self.encoded_data.to_vec(),
-        )
+    /// cloning the underlying encoded data. The moment's product is derived from the block's
+    /// data name.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownDataBlockType`](crate::result::Error::UnknownDataBlockType) if the
+    /// block's data name is not one of the known moment names (`REF`, `VEL`, `SW `, `ZDR`,
+    /// `PHI`, `RHO`, `CFP`).
+    pub fn moment_data(&self) -> Result<nexrad_model::data::MomentData> {
+        let header = self.header();
+        Ok(nexrad_model::data::MomentData::from_fixed_point(
+            self.product()?,
+            header.number_of_data_moment_gates(),
+            header.data_moment_range_raw(),
+            header.data_moment_range_sample_interval_raw(),
+            header.data_word_size_raw(),
+            header.scale(),
+            header.offset(),
+            self.encoded_values().to_vec(),
+        ))
     }
 
     /// Convert this generic data block into a [`MomentData`](nexrad_model::data::MomentData),
-    /// consuming the encoded data without copying.
-    #[cfg(feature = "model")]
-    pub fn into_moment_data(self) -> nexrad_model::data::MomentData {
-        nexrad_model::data::MomentData::from_fixed_point(
-            self.header.number_of_data_moment_gates(),
-            self.header.data_moment_range_raw(),
-            self.header.data_moment_range_sample_interval_raw(),
-            self.header.data_word_size_raw(),
-            self.header.scale(),
-            self.header.offset(),
-            self.encoded_data.into_inner().into_owned(),
-        )
-    }
-
-    /// Create a [`CfpMomentData`](nexrad_model::data::CfpMomentData) from this generic data
-    /// block, cloning the underlying encoded data.
-    #[cfg(feature = "model")]
-    pub fn cfp_moment_data(&self) -> nexrad_model::data::CfpMomentData {
-        nexrad_model::data::CfpMomentData::from_fixed_point(
-            self.header.number_of_data_moment_gates(),
-            self.header.data_moment_range_raw(),
-            self.header.data_moment_range_sample_interval_raw(),
-            self.header.data_word_size_raw(),
-            self.header.scale(),
-            self.header.offset(),
-            self.encoded_data.to_vec(),
-        )
-    }
-
-    /// Convert this generic data block into a [`CfpMomentData`](nexrad_model::data::CfpMomentData),
-    /// consuming the encoded data without copying.
-    #[cfg(feature = "model")]
-    pub fn into_cfp_moment_data(self) -> nexrad_model::data::CfpMomentData {
-        nexrad_model::data::CfpMomentData::from_fixed_point(
-            self.header.number_of_data_moment_gates(),
-            self.header.data_moment_range_raw(),
-            self.header.data_moment_range_sample_interval_raw(),
-            self.header.data_word_size_raw(),
-            self.header.scale(),
-            self.header.offset(),
-            self.encoded_data.into_inner().into_owned(),
-        )
+    /// consuming the encoded data without copying. The moment's product is derived from the
+    /// block's data name.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownDataBlockType`](crate::result::Error::UnknownDataBlockType) if the
+    /// block's data name is not one of the known moment names (`REF`, `VEL`, `SW `, `ZDR`,
+    /// `PHI`, `RHO`, `CFP`).
+    pub fn into_moment_data(self) -> Result<nexrad_model::data::MomentData> {
+        let product = self.product()?;
+        let block = self.into_inner();
+        Ok(nexrad_model::data::MomentData::from_fixed_point(
+            product,
+            block.header.number_of_data_moment_gates(),
+            block.header.data_moment_range_raw(),
+            block.header.data_moment_range_sample_interval_raw(),
+            block.header.data_word_size_raw(),
+            block.header.scale(),
+            block.header.offset(),
+            block.encoded_data.into_inner().into_owned(),
+        ))
     }
 }

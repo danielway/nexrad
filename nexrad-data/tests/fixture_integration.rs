@@ -11,7 +11,6 @@
 use chrono::Datelike;
 use nexrad_data::volume;
 use nexrad_decode::messages::{decode_messages, MessageContents};
-use nexrad_model::data::DataMoment;
 
 // =============================================================================
 // FIXTURE LOADING

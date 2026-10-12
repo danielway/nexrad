@@ -52,8 +52,7 @@
 pub use image::RgbaImage;
 pub use nexrad_model::data::Product;
 use nexrad_model::data::{
-    CartesianField, CfpMomentValue, DataMoment, GateStatus, MomentValue, Radial, SweepField,
-    VerticalField,
+    CartesianField, GateStatus, MomentValue, Radial, SweepField, VerticalField,
 };
 use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
 
@@ -1029,48 +1028,26 @@ struct GateParams {
 
 /// Retrieve gate metadata from a radial for the given product.
 fn get_gate_params(product: Product, radial: &Radial) -> Option<GateParams> {
-    fn extract(m: &impl DataMoment) -> GateParams {
-        GateParams {
-            first_gate_km: m.first_gate_range_km(),
-            gate_interval_km: m.gate_interval_km(),
-            gate_count: m.gate_count() as usize,
-        }
-    }
-    if let Some(moment) = product.moment_data(radial) {
-        return Some(extract(moment));
-    }
-    if let Some(cfp) = product.cfp_moment_data(radial) {
-        return Some(extract(cfp));
-    }
-    None
+    radial.moment(product).map(|moment| GateParams {
+        first_gate_km: moment.first_gate_range_km(),
+        gate_interval_km: moment.gate_interval_km(),
+        gate_count: moment.gate_count() as usize,
+    })
 }
 
 /// Extract decoded float values from a radial for the given product.
 ///
 /// Returns `None` for below-threshold, range-folded, and CFP status gates.
 fn get_radial_float_values(product: Product, radial: &Radial) -> Option<Vec<Option<f32>>> {
-    if let Some(moment) = product.moment_data(radial) {
-        return Some(
-            moment
-                .iter()
-                .map(|v| match v {
-                    MomentValue::Value(f) => Some(f),
-                    _ => None,
-                })
-                .collect(),
-        );
-    }
-
-    if let Some(cfp) = product.cfp_moment_data(radial) {
-        return Some(
-            cfp.iter()
-                .map(|v| match v {
-                    CfpMomentValue::Value(f) => Some(f),
-                    CfpMomentValue::Status(_) => None,
-                })
-                .collect(),
-        );
-    }
-
-    None
+    radial.moment(product).map(|moment| {
+        moment
+            .iter()
+            .map(|v| match v {
+                MomentValue::Value(f) => Some(f),
+                MomentValue::BelowThreshold
+                | MomentValue::RangeFolded
+                | MomentValue::CfpStatus(_) => None,
+            })
+            .collect()
+    })
 }

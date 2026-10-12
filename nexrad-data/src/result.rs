@@ -18,7 +18,7 @@ pub enum Error {
     /// An AWS-related error occurred (requires `aws` feature).
     #[cfg(feature = "aws")]
     #[error(transparent)]
-    Aws(#[from] aws::AwsError),
+    Aws(#[from] AwsError),
     /// An error occurred during message decoding.
     #[error("error decoding NEXRAD data")]
     Decode(#[from] nexrad_decode::result::Error),
@@ -36,9 +36,6 @@ pub enum Error {
     /// Volume file is missing the required VCP (message type 5).
     #[error("volume missing coverage pattern (message type 5)")]
     MissingCoveragePattern,
-    /// BZIP2 decompression of an LDM record failed.
-    #[error("ldm record decompression error")]
-    Decompression(#[from] bzip2::Error),
     /// LDM record was truncated and contains fewer bytes than expected.
     #[error("truncated record: expected {expected} bytes, got {actual}")]
     TruncatedRecord {
@@ -57,65 +54,119 @@ pub enum Error {
     },
 }
 
-/// AWS-related error types (requires `aws` feature).
+/// Errors that can occur during AWS S3 operations (requires `aws` feature).
 #[cfg(feature = "aws")]
-pub mod aws {
-    use thiserror::Error as ThisError;
+#[derive(ThisError, Debug)]
+#[non_exhaustive]
+pub enum AwsError {
+    /// S3 list objects response was unexpectedly truncated.
+    #[error("unexpected truncated S3 list objects response")]
+    TruncatedListObjectsResponse,
+    /// Failed to parse date/time from an archive file identifier.
+    #[error("error decoding date/time")]
+    DateTime(String),
+    /// The radar site identifier is not recognized.
+    #[error("invalid radar site identifier")]
+    InvalidSiteIdentifier(String),
+    /// Real-time chunk data is in an unrecognized format.
+    #[error("chunk data in unrecognized format")]
+    UnrecognizedChunkFormat,
+    /// Could not parse date/time from chunk filename.
+    #[error("unrecognized chunk date time")]
+    UnrecognizedChunkDateTime(String),
+    /// Could not parse sequence number from chunk filename.
+    #[error("unrecognized chunk sequence")]
+    UnrecognizedChunkSequence(String),
+    /// Chunk type character is not recognized.
+    #[error("unrecognized chunk type")]
+    UnrecognizedChunkType(Option<char>),
+    /// S3 list objects request failed.
+    #[error("error listing AWS S3 objects")]
+    S3ListObjects(#[source] Box<dyn std::error::Error + Send + Sync + 'static>),
+    /// S3 get object request failed to send.
+    #[error("error requesting AWS S3 object")]
+    S3GetObjectRequest(#[source] Box<dyn std::error::Error + Send + Sync + 'static>),
+    /// S3 get object returned an error response.
+    #[error("error getting AWS S3 object")]
+    S3GetObject(Option<String>),
+    /// Requested S3 object was not found (404).
+    #[error("AWS S3 object not found")]
+    S3ObjectNotFound,
+    /// Error while streaming/downloading S3 object content.
+    #[error("error streaming/downloading AWS S3 object")]
+    S3Streaming(#[source] Box<dyn std::error::Error + Send + Sync + 'static>),
+    /// Could not find the latest volume for the requested site/date.
+    #[error("failed to locate latest volume")]
+    LatestVolumeNotFound,
+    /// An expected chunk was not found during real-time polling.
+    #[error("a chunk was not found as expected")]
+    ExpectedChunkNotFound,
+    /// Could not determine the next chunk to poll.
+    #[error("failed to determine next chunk")]
+    FailedToDetermineNextChunk,
+    /// Failed to decode XML response from S3 list objects.
+    #[error("error decoding S3 list objects response")]
+    S3ListObjectsDecoding,
+}
 
-    /// Errors that can occur during AWS S3 operations.
-    #[derive(ThisError, Debug)]
-    #[non_exhaustive]
-    pub enum AwsError {
-        /// S3 list objects response was unexpectedly truncated.
-        #[error("unexpected truncated S3 list objects response")]
-        TruncatedListObjectsResponse,
-        /// Failed to parse date/time from filename or metadata.
-        #[error("error decoding date/time")]
-        DateTime(String),
-        /// The radar site identifier is not recognized.
-        #[error("invalid radar site identifier")]
-        InvalidSiteIdentifier(String),
-        /// Real-time chunk data is in an unrecognized format.
-        #[error("chunk data in unrecognized format")]
-        UnrecognizedChunkFormat,
-        /// Could not parse date/time from chunk filename.
-        #[error("unrecognized chunk date time")]
-        UnrecognizedChunkDateTime(String),
-        /// Could not parse sequence number from chunk filename.
-        #[error("unrecognized chunk sequence")]
-        UnrecognizedChunkSequence(String),
-        /// Chunk type character is not recognized.
-        #[error("unrecognized chunk type")]
-        UnrecognizedChunkType(Option<char>),
-        /// S3 list objects request failed.
-        #[error("error listing AWS S3 objects")]
-        S3ListObjects(reqwest::Error),
-        /// S3 get object request failed to send.
-        #[error("error requesting AWS S3 object")]
-        S3GetObjectRequest(reqwest::Error),
-        /// S3 get object returned an error response.
-        #[error("error getting AWS S3 object")]
-        S3GetObject(Option<String>),
-        /// Requested S3 object was not found (404).
-        #[error("AWS S3 object not found")]
-        S3ObjectNotFound,
-        /// Error while streaming/downloading S3 object content.
-        #[error("error streaming/downloading AWS S3 object")]
-        S3Streaming(reqwest::Error),
-        /// Could not find the latest volume for the requested site/date.
-        #[error("failed to locate latest volume")]
-        LatestVolumeNotFound,
-        /// An expected chunk was not found during real-time polling.
-        #[error("a chunk was not found as expected")]
-        ExpectedChunkNotFound,
-        /// Error in async channel communication during polling.
-        #[error("error sending chunk to receiver")]
-        PollingAsync,
-        /// Could not determine the next chunk to poll.
-        #[error("failed to determine next chunk")]
-        FailedToDetermineNextChunk,
-        /// Failed to decode XML response from S3 list objects.
-        #[error("error decoding S3 list objects response")]
-        S3ListObjectsDecoding,
+#[cfg(feature = "aws")]
+impl AwsError {
+    /// Whether this error is a transport-level failure where retrying the same request later can
+    /// succeed.
+    ///
+    /// Returns `true` for [`S3GetObjectRequest`](Self::S3GetObjectRequest),
+    /// [`S3GetObject`](Self::S3GetObject), [`S3Streaming`](Self::S3Streaming),
+    /// [`S3ListObjects`](Self::S3ListObjects) and
+    /// [`TruncatedListObjectsResponse`](Self::TruncatedListObjectsResponse).
+    ///
+    /// [`S3ObjectNotFound`](Self::S3ObjectNotFound) is deliberately not transient: an archive 404
+    /// is terminal, and real-time polling handles not-yet-published chunks itself.
+    pub fn is_transient(&self) -> bool {
+        matches!(
+            self,
+            Self::S3GetObjectRequest(_)
+                | Self::S3GetObject(_)
+                | Self::S3Streaming(_)
+                | Self::S3ListObjects(_)
+                | Self::TruncatedListObjectsResponse
+        )
+    }
+}
+
+#[cfg(all(test, feature = "aws"))]
+mod tests {
+    use super::*;
+
+    fn boxed() -> Box<dyn std::error::Error + Send + Sync + 'static> {
+        Box::new(std::io::Error::other("transport"))
+    }
+
+    #[test]
+    fn transient_aws_errors() {
+        assert!(AwsError::S3GetObjectRequest(boxed()).is_transient());
+        assert!(AwsError::S3GetObject(None).is_transient());
+        assert!(AwsError::S3Streaming(boxed()).is_transient());
+        assert!(AwsError::S3ListObjects(boxed()).is_transient());
+        assert!(AwsError::TruncatedListObjectsResponse.is_transient());
+    }
+
+    #[test]
+    fn terminal_aws_errors() {
+        assert!(!AwsError::S3ObjectNotFound.is_transient());
+        assert!(!AwsError::S3ListObjectsDecoding.is_transient());
+        assert!(!AwsError::LatestVolumeNotFound.is_transient());
+        assert!(!AwsError::ExpectedChunkNotFound.is_transient());
+        assert!(!AwsError::FailedToDetermineNextChunk.is_transient());
+        assert!(!AwsError::UnrecognizedChunkFormat.is_transient());
+        assert!(!AwsError::UnrecognizedChunkType(None).is_transient());
+        assert!(!AwsError::DateTime(String::new()).is_transient());
+    }
+
+    #[test]
+    fn boxed_payload_is_error_source() {
+        use std::error::Error as _;
+        let error = AwsError::S3Streaming(boxed());
+        let source = error.source().map(|source| source.to_string());
+        assert_eq!(source.as_deref(), Some("transport"));
     }
 }

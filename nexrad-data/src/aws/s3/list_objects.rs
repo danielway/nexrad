@@ -2,8 +2,8 @@ use crate::aws::client::client;
 use crate::aws::s3::bucket_list_result::BucketListResult;
 use crate::aws::s3::bucket_object::BucketObject;
 use crate::aws::s3::bucket_object_field::BucketObjectField;
-use crate::result::aws::AwsError;
-use crate::result::aws::AwsError::S3ListObjects;
+use crate::result::AwsError;
+use crate::result::AwsError::S3ListObjects;
 use chrono::{DateTime, Utc};
 use log::{debug, trace, warn};
 use xml::reader::XmlEvent;
@@ -39,12 +39,15 @@ async fn list_objects_page(
         .get(url)
         .send()
         .await
-        .map_err(S3ListObjects)?
+        .map_err(|e| S3ListObjects(Box::new(e)))?
         .error_for_status()
-        .map_err(S3ListObjects)?;
+        .map_err(|e| S3ListObjects(Box::new(e)))?;
     trace!("  List objects response status: {}", response.status());
 
-    let body = response.text().await.map_err(S3ListObjects)?;
+    let body = response
+        .text()
+        .await
+        .map_err(|e| S3ListObjects(Box::new(e)))?;
     trace!("  List objects response body length: {}", body.len());
 
     let parser = EventReader::new(body.as_bytes());

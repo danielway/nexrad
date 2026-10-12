@@ -1,4 +1,4 @@
-use crate::result::{aws::AwsError, Error, Result};
+use crate::result::{AwsError, Error, Result};
 
 /// The position of this chunk within the volume.
 ///

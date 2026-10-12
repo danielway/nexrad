@@ -168,7 +168,7 @@ Public enums that are expected to gain variants during 1.x are marked `#[non_exh
 
 Non-exhaustive (new failure modes, ICD message types, products, and scan strategies are added over time):
 
-- Every crate's `Error` enum (`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`, `nexrad`) and `nexrad_data::result::aws::AwsError`
+- Every crate's `Error` enum (`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`, `nexrad`) and `nexrad_data::result::AwsError`
 - `nexrad_decode`: `MessageContents`, `MessageType`, `RedundantChannel`, `DataBlockName`
 - `nexrad_model`: `Product`, `VcpNumber`
 

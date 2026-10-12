@@ -1,7 +1,7 @@
 use crate::aws::archive::identifier::Identifier;
 use crate::aws::archive::ARCHIVE_BUCKET;
 use crate::aws::s3::download_object;
-use crate::result::aws::AwsError::{DateTime, InvalidSiteIdentifier};
+use crate::result::AwsError::{DateTime, InvalidSiteIdentifier};
 use crate::volume::File;
 
 /// Download a data file specified by its metadata. Returns the downloaded file's encoded contents

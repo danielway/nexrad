@@ -309,22 +309,26 @@ impl<'a> Message<'a> {
             )
         });
 
-        Ok(Radial::new(
-            timestamp,
+        let mut builder = Radial::builder(
             azimuth_number,
             azimuth_angle,
-            1.0,
-            radial_status,
             elevation_number,
             elevation_angle,
-            reflectivity,
-            velocity,
-            spectrum_width,
-            None,
-            None,
-            None,
-            None,
-        ))
+        )
+        .collection_timestamp(timestamp)
+        .azimuth_spacing_degrees(1.0)
+        .radial_status(radial_status);
+        if let Some(reflectivity) = reflectivity {
+            builder = builder.reflectivity(reflectivity);
+        }
+        if let Some(velocity) = velocity {
+            builder = builder.velocity(velocity);
+        }
+        if let Some(spectrum_width) = spectrum_width {
+            builder = builder.spectrum_width(spectrum_width);
+        }
+
+        Ok(builder.build())
     }
 
     #[cfg(feature = "model")]
@@ -392,22 +396,26 @@ impl<'a> Message<'a> {
             .ok_or(Error::MessageMissingDate)?
             .timestamp_millis();
 
-        Ok(Radial::new(
-            timestamp,
+        let mut builder = Radial::builder(
             msg.azimuth_number(),
             msg.azimuth_angle(),
-            1.0,
-            radial_status,
             msg.elevation_number() as u8,
             msg.elevation_angle(),
-            reflectivity,
-            velocity,
-            spectrum_width,
-            None,
-            None,
-            None,
-            None,
-        ))
+        )
+        .collection_timestamp(timestamp)
+        .azimuth_spacing_degrees(1.0)
+        .radial_status(radial_status);
+        if let Some(reflectivity) = reflectivity {
+            builder = builder.reflectivity(reflectivity);
+        }
+        if let Some(velocity) = velocity {
+            builder = builder.velocity(velocity);
+        }
+        if let Some(spectrum_width) = spectrum_width {
+            builder = builder.spectrum_width(spectrum_width);
+        }
+
+        Ok(builder.build())
     }
 
     /// Convert this message to an owned version with `'static` lifetime.

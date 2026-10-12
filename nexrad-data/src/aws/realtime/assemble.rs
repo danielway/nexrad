@@ -160,61 +160,62 @@ pub fn assemble_volume<'a>(
                 vcp::WaveformType::Unknown => WaveformType::Unknown,
             };
 
-            ElevationCut::new(
-                elev.elevation_angle(),
-                channel_config,
-                waveform,
-                elev.azimuth_rate(),
-                elev.super_resolution_half_degree_azimuth(),
-                elev.super_resolution_quarter_km_reflectivity(),
-                elev.super_resolution_doppler_to_300km(),
-                elev.super_resolution_dual_pol_to_300km(),
-                elev.surveillance_prf_number(),
-                elev.surveillance_prf_pulse_count_radial(),
-                elev.reflectivity_threshold(),
-                elev.velocity_threshold(),
-                elev.spectrum_width_threshold(),
-                elev.differential_reflectivity_threshold(),
-                elev.differential_phase_threshold(),
-                elev.correlation_coefficient_threshold(),
-                elev.is_sails_cut(),
-                elev.sails_sequence_number(),
-                elev.is_mrle_cut(),
-                elev.mrle_sequence_number(),
-                elev.is_mpda_cut(),
-                elev.is_base_tilt_cut(),
-            )
+            ElevationCut::builder(elev.elevation_angle(), waveform, channel_config)
+                .azimuth_rate_degrees_per_second(elev.azimuth_rate())
+                .super_resolution_half_degree_azimuth(elev.super_resolution_half_degree_azimuth())
+                .super_resolution_quarter_km_reflectivity(
+                    elev.super_resolution_quarter_km_reflectivity(),
+                )
+                .super_resolution_doppler_to_300km(elev.super_resolution_doppler_to_300km())
+                .super_resolution_dual_pol_to_300km(elev.super_resolution_dual_pol_to_300km())
+                .surveillance_prf_number(elev.surveillance_prf_number())
+                .surveillance_prf_pulse_count(elev.surveillance_prf_pulse_count_radial())
+                .reflectivity_threshold_db(elev.reflectivity_threshold())
+                .velocity_threshold_db(elev.velocity_threshold())
+                .spectrum_width_threshold_db(elev.spectrum_width_threshold())
+                .differential_reflectivity_threshold_db(elev.differential_reflectivity_threshold())
+                .differential_phase_threshold_db(elev.differential_phase_threshold())
+                .correlation_coefficient_threshold_db(elev.correlation_coefficient_threshold())
+                .is_sails_cut(elev.is_sails_cut())
+                .sails_sequence_number(elev.sails_sequence_number())
+                .is_mrle_cut(elev.is_mrle_cut())
+                .mrle_sequence_number(elev.mrle_sequence_number())
+                .is_mpda_cut(elev.is_mpda_cut())
+                .is_base_tilt_cut(elev.is_base_tilt_cut())
+                .build()
         })
         .collect();
 
-    let coverage_pattern = VolumeCoveragePattern::new(
-        header.pattern_number(),
-        header.version(),
-        header.doppler_velocity_resolution(),
-        pulse_width,
-        header.is_sails_vcp(),
-        header.number_of_sails_cuts(),
-        header.is_mrle_vcp(),
-        header.number_of_mrle_cuts(),
-        header.is_mpda_vcp(),
-        header.is_base_tilt_vcp(),
-        header.number_of_base_tilts(),
-        header.vcp_sequencing_sequence_active(),
-        header.vcp_sequencing_truncated(),
-        elevation_cuts,
-    );
+    let coverage_pattern = VolumeCoveragePattern::builder(
+        nexrad_model::data::VcpNumber::from_number(header.pattern_number()),
+    )
+    .version(header.version())
+    .doppler_velocity_resolution(header.doppler_velocity_resolution())
+    .pulse_width(pulse_width)
+    .sails_enabled(header.is_sails_vcp())
+    .sails_cuts(header.number_of_sails_cuts())
+    .mrle_enabled(header.is_mrle_vcp())
+    .mrle_cuts(header.number_of_mrle_cuts())
+    .mpda_enabled(header.is_mpda_vcp())
+    .base_tilt_enabled(header.is_base_tilt_vcp())
+    .base_tilt_count(header.number_of_base_tilts())
+    .sequence_active(header.vcp_sequencing_sequence_active())
+    .truncated(header.vcp_sequencing_truncated())
+    .elevation_cuts(elevation_cuts)
+    .build();
 
     let sweeps = Sweep::from_radials(all_radials);
 
     // Build site metadata if available
     let site = site_location.map(|(lat, lon, height, tower)| {
-        nexrad_model::meta::Site::new(
+        nexrad_model::meta::Site::builder(
             site_identifier.unwrap_or([0u8; 4]),
             lat as f64,
             lon as f64,
-            height,
-            tower,
         )
+        .height_meters(height)
+        .tower_height_meters(tower)
+        .build()
     });
 
     match site {

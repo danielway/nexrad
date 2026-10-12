@@ -107,31 +107,21 @@ impl ScanDerivedProduct for CompositeReflectivity {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nexrad_model::data::{PulseWidth, Scan, SweepField, VolumeCoveragePattern};
+    use nexrad_model::data::{Scan, SweepField, VcpNumber, VolumeCoveragePattern};
     use nexrad_model::geo::RadarCoordinateSystem;
     use nexrad_model::meta::Site;
 
     fn test_site() -> Site {
-        Site::new(*b"KTLX", 35.3331, -97.2778, 370, 10)
+        Site::builder(*b"KTLX", 35.3331, -97.2778)
+            .height_meters(370)
+            .tower_height_meters(10)
+            .build()
     }
 
     fn test_scan() -> Scan {
-        let vcp = VolumeCoveragePattern::new(
-            215,
-            1,
-            0.5,
-            PulseWidth::Short,
-            false,
-            0,
-            false,
-            0,
-            false,
-            false,
-            0,
-            false,
-            false,
-            vec![],
-        );
+        let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(215))
+            .version(1)
+            .build();
         Scan::new(vcp, vec![])
     }
 
@@ -142,16 +132,14 @@ mod tests {
         }
 
         let gate_count = 100;
-        let mut field = SweepField::new_empty(
-            "Reflectivity",
-            "dBZ",
-            elevation,
-            azimuths,
-            1.0,
-            2.0,
-            0.25,
-            gate_count,
-        );
+        let mut field = SweepField::builder("Reflectivity", "dBZ")
+            .elevation_degrees(elevation)
+            .azimuths(azimuths)
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(gate_count)
+            .build()
+            .expect("valid geometry");
 
         for az in 0..360 {
             for gate in 0..gate_count {

@@ -3,7 +3,7 @@
 //! When rendering a subset of radials that doesn't cover the full 360° azimuth,
 //! pixels in uncovered azimuth sectors should remain the background color.
 
-use nexrad_model::data::{MomentData, Product, Radial, RadialStatus};
+use nexrad_model::data::{MomentData, Product, Radial};
 use nexrad_render::{render_radials, RenderOptions};
 
 /// Creates a test radial at the given azimuth angle with uniform reflectivity data.
@@ -27,22 +27,9 @@ fn create_test_radial(azimuth_degrees: f32, reflectivity_value: u8) -> Radial {
         values,
     );
 
-    Radial::new(
-        0,               // collection_timestamp
-        0,               // azimuth_number
-        azimuth_degrees, // azimuth_angle_degrees
-        1.0,             // azimuth_spacing_degrees
-        RadialStatus::IntermediateRadialData,
-        1,                 // elevation_number
-        0.5,               // elevation_angle_degrees
-        Some(moment_data), // reflectivity
-        None,              // velocity
-        None,              // spectrum_width
-        None,              // differential_reflectivity
-        None,              // differential_phase
-        None,              // correlation_coefficient
-        None,              // clutter_filter_power
-    )
+    Radial::builder(0, azimuth_degrees, 1, 0.5)
+        .reflectivity(moment_data)
+        .build()
 }
 
 /// Creates radials covering a specific azimuth range.

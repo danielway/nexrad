@@ -174,16 +174,14 @@ mod tests {
         }
 
         let gate_count = 100;
-        let mut field = SweepField::new_empty(
-            "Reflectivity",
-            "dBZ",
-            elevation,
-            azimuths,
-            1.0,
-            2.0,
-            0.25,
-            gate_count,
-        );
+        let mut field = SweepField::builder("Reflectivity", "dBZ")
+            .elevation_degrees(elevation)
+            .azimuths(azimuths)
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(gate_count)
+            .build()
+            .expect("valid geometry");
 
         for az in 0..360 {
             for gate in 0..gate_count {

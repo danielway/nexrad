@@ -174,7 +174,7 @@ Non-exhaustive (new failure modes, ICD message types, products, and scan strateg
 
 Exhaustive by design (variants are fixed by the NOAA ICD or by the crate's own format, and several are matched per gate or per radial in hot loops where an exhaustive match is clearer and lets callers rely on the compiler):
 
-- `nexrad_model`: `MomentValue`, `CfpMomentValue`, `CfpStatus`, `GateStatus`, `RadialStatus`, `PulseWidth`, `WaveformType`, `ChannelConfiguration`
+- `nexrad_model`: `MomentValue`, `CfpStatus`, `GateStatus`, `RadialStatus`, `PulseWidth`, `WaveformType`, `ChannelConfiguration`
 - `nexrad_decode`: `MessageHeaders`, `RadialStatus`, `PulseWidth`, `WaveformType`, `ChannelConfiguration`, `PatternType`, and the small status enums in the message modules
 - `nexrad_data`: `ChunkType`, `Chunk`
 - `nexrad_render`: `Interpolation`, `ColorScale`

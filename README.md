@@ -92,8 +92,6 @@ nexrad = { version = "1.0", features = ["full"] }
 ### Quick Example: Load and Inspect a Scan
 
 ```rust,no_run
-use nexrad::model::data::DataMoment;
-
 fn main() -> nexrad::Result<()> {
     // Load from a local Archive II file
     let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;

@@ -1,4 +1,4 @@
-use crate::data::{CfpMomentData, MomentData};
+use crate::data::{MomentData, Product};
 
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
@@ -33,7 +33,7 @@ pub struct Radial {
     differential_reflectivity: Option<MomentData>,
     differential_phase: Option<MomentData>,
     correlation_coefficient: Option<MomentData>,
-    clutter_filter_power: Option<CfpMomentData>,
+    clutter_filter_power: Option<MomentData>,
 }
 
 impl Radial {
@@ -158,8 +158,24 @@ impl Radial {
 
     /// Clutter filter power (CFP) data for this radial if available.
     /// CFP represents the difference between clutter-filtered and unfiltered reflectivity.
-    pub fn clutter_filter_power(&self) -> Option<&CfpMomentData> {
+    pub fn clutter_filter_power(&self) -> Option<&MomentData> {
         self.clutter_filter_power.as_ref()
+    }
+
+    /// Moment data for the given product in this radial, if available.
+    ///
+    /// This is the uniform accessor for all products; the named getters such as
+    /// [`reflectivity`](Self::reflectivity) are equivalent shorthands.
+    pub fn moment(&self, product: Product) -> Option<&MomentData> {
+        match product {
+            Product::Reflectivity => self.reflectivity(),
+            Product::Velocity => self.velocity(),
+            Product::SpectrumWidth => self.spectrum_width(),
+            Product::DifferentialReflectivity => self.differential_reflectivity(),
+            Product::DifferentialPhase => self.differential_phase(),
+            Product::CorrelationCoefficient => self.correlation_coefficient(),
+            Product::ClutterFilterPower => self.clutter_filter_power(),
+        }
     }
 }
 
@@ -171,9 +187,7 @@ impl Radial {
 /// - `collection_timestamp`: `0`
 /// - `azimuth_spacing_degrees`: `1.0`
 /// - `radial_status`: [`RadialStatus::IntermediateRadialData`]
-/// - all moment data (`reflectivity`, `velocity`, `spectrum_width`,
-///   `differential_reflectivity`, `differential_phase`, `correlation_coefficient`,
-///   `clutter_filter_power`): `None`
+/// - moment data for every product: `None` (set with [`moment`](Self::moment))
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct RadialBuilder {
@@ -200,46 +214,20 @@ impl RadialBuilder {
         self
     }
 
-    /// Set the reflectivity data for this radial. Defaults to `None` (no reflectivity data).
-    pub fn reflectivity(mut self, reflectivity: MomentData) -> Self {
-        self.radial.reflectivity = Some(reflectivity);
-        self
-    }
-
-    /// Set the velocity data for this radial. Defaults to `None` (no velocity data).
-    pub fn velocity(mut self, velocity: MomentData) -> Self {
-        self.radial.velocity = Some(velocity);
-        self
-    }
-
-    /// Set the spectrum width data for this radial. Defaults to `None` (no spectrum width data).
-    pub fn spectrum_width(mut self, spectrum_width: MomentData) -> Self {
-        self.radial.spectrum_width = Some(spectrum_width);
-        self
-    }
-
-    /// Set the differential reflectivity data for this radial. Defaults to `None` (no differential reflectivity data).
-    pub fn differential_reflectivity(mut self, differential_reflectivity: MomentData) -> Self {
-        self.radial.differential_reflectivity = Some(differential_reflectivity);
-        self
-    }
-
-    /// Set the differential phase data for this radial. Defaults to `None` (no differential phase data).
-    pub fn differential_phase(mut self, differential_phase: MomentData) -> Self {
-        self.radial.differential_phase = Some(differential_phase);
-        self
-    }
-
-    /// Set the correlation coefficient data for this radial. Defaults to `None` (no correlation coefficient data).
-    pub fn correlation_coefficient(mut self, correlation_coefficient: MomentData) -> Self {
-        self.radial.correlation_coefficient = Some(correlation_coefficient);
-        self
-    }
-
-    /// Set the clutter filter power (CFP) data for this radial. Defaults to `None` (no CFP
-    /// data).
-    pub fn clutter_filter_power(mut self, clutter_filter_power: CfpMomentData) -> Self {
-        self.radial.clutter_filter_power = Some(clutter_filter_power);
+    /// Set the moment data for this radial, stored by its [`MomentData::product`]. Setting
+    /// moment data for a product that is already set replaces it. Every moment defaults to
+    /// `None` (no data for that product).
+    pub fn moment(mut self, data: MomentData) -> Self {
+        let slot = match data.product() {
+            Product::Reflectivity => &mut self.radial.reflectivity,
+            Product::Velocity => &mut self.radial.velocity,
+            Product::SpectrumWidth => &mut self.radial.spectrum_width,
+            Product::DifferentialReflectivity => &mut self.radial.differential_reflectivity,
+            Product::DifferentialPhase => &mut self.radial.differential_phase,
+            Product::CorrelationCoefficient => &mut self.radial.correlation_coefficient,
+            Product::ClutterFilterPower => &mut self.radial.clutter_filter_power,
+        };
+        *slot = Some(data);
         self
     }
 

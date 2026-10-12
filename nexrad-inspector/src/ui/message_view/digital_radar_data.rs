@@ -1,7 +1,7 @@
 //! Digital Radar Data (Type 31) message parsing and display.
 
 use nexrad_decode::messages::{decode_messages, digital_radar_data, MessageContents};
-use nexrad_model::data::{CfpMomentValue, CfpStatus, MomentValue};
+use nexrad_model::data::{CfpStatus, MomentValue};
 
 /// Parses and displays a Digital Radar Data (Type 31) message with full details.
 pub fn parse_digital_radar_data(data: &[u8]) -> String {
@@ -180,15 +180,17 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
 
     for (id, name, block_opt) in moment_blocks {
         if let Some(block) = block_opt {
-            let decoded = block.moment_data().values();
-            render_moment_block(&mut output, id, name, block.header(), &decoded);
+            if let Ok(moment) = block.moment_data() {
+                render_moment_block(&mut output, id, name, block.header(), &moment.values());
+            }
         }
     }
 
-    // CFP has its own value type with built-in CFP-aware decoding
+    // CFP decodes raw values 0-7 as status codes rather than threshold/folded markers
     if let Some(block) = msg.clutter_filter_power_data_block() {
-        let decoded = block.cfp_moment_data().values();
-        render_cfp_block(&mut output, block.header(), &decoded);
+        if let Ok(moment) = block.moment_data() {
+            render_cfp_block(&mut output, block.header(), &moment.values());
+        }
     }
 
     output
@@ -247,6 +249,8 @@ fn render_moment_block(
                 }
                 MomentValue::BelowThreshold => below_count += 1,
                 MomentValue::RangeFolded => folded_count += 1,
+                // Only produced for clutter filter power, which is rendered separately
+                MomentValue::CfpStatus(_) => {}
             }
         }
 
@@ -268,7 +272,7 @@ fn render_moment_block(
 fn render_cfp_block(
     output: &mut String,
     header: &digital_radar_data::GenericDataBlockHeader,
-    decoded: &[CfpMomentValue],
+    decoded: &[MomentValue],
 ) {
     render_block_header(output, "CFP", "Clutter Filter Power", header);
 
@@ -278,7 +282,7 @@ fn render_cfp_block(
         output.push_str(&format!("\nData ({} gates):\n", gate_count));
 
         let gates_per_row = 80;
-        let ascii = cfp_values_to_ascii(decoded);
+        let ascii = scaled_values_to_ascii(decoded, "CFP");
 
         render_ascii_rows(output, header, &ascii, gates_per_row);
 
@@ -296,18 +300,20 @@ fn render_cfp_block(
 
         for val in decoded {
             match val {
-                CfpMomentValue::Value(v) => {
+                MomentValue::Value(v) => {
                     value_count += 1;
                     sum += *v as f64;
                     min_val = min_val.min(*v);
                     max_val = max_val.max(*v);
                 }
-                CfpMomentValue::Status(status) => {
+                MomentValue::CfpStatus(status) => {
                     status_count += 1;
                     if matches!(status, CfpStatus::Reserved(_)) {
                         reserved_count += 1;
                     }
                 }
+                // Not produced for clutter filter power
+                MomentValue::BelowThreshold | MomentValue::RangeFolded => {}
             }
         }
 
@@ -400,6 +406,7 @@ fn scaled_values_to_ascii(values: &[MomentValue], product: &str) -> String {
         "ZDR" => (-8.0, 8.0),   // dB range for differential reflectivity
         "PHI" => (0.0, 360.0),  // degrees for differential phase
         "RHO" => (0.0, 1.05),   // unitless correlation coefficient
+        "CFP" => (-20.0, 20.0), // dB for clutter filter power
         _ => (-30.0, 75.0),     // default
     };
 
@@ -414,24 +421,7 @@ fn scaled_values_to_ascii(values: &[MomentValue], product: &str) -> String {
             }
             MomentValue::BelowThreshold => ' ',
             MomentValue::RangeFolded => '~',
-        })
-        .collect()
-}
-
-/// Converts a slice of CfpMomentValue to a visual ASCII string representation.
-fn cfp_values_to_ascii(values: &[CfpMomentValue]) -> String {
-    const CHARS: &[char] = &[' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
-    let (min_val, max_val): (f32, f32) = (-20.0, 20.0);
-
-    values
-        .iter()
-        .map(|v| match v {
-            CfpMomentValue::Value(val) => {
-                let normalized = ((val - min_val) / (max_val - min_val)).clamp(0.0, 1.0);
-                let index = (normalized * (CHARS.len() - 1) as f32) as usize;
-                CHARS[index]
-            }
-            CfpMomentValue::Status(_) => '!',
+            MomentValue::CfpStatus(_) => '!',
         })
         .collect()
 }

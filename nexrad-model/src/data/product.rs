@@ -1,5 +1,3 @@
-use crate::data::{CfpMomentData, MomentData, Radial};
-
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -30,31 +28,6 @@ pub enum Product {
 }
 
 impl Product {
-    /// Returns the moment data for this product from a radial, if present.
-    ///
-    /// For all products except [`Product::ClutterFilterPower`], this returns the standard
-    /// [`MomentData`]. For CFP, use [`cfp_moment_data`](Self::cfp_moment_data) instead.
-    pub fn moment_data<'a>(&self, radial: &'a Radial) -> Option<&'a MomentData> {
-        match self {
-            Product::Reflectivity => radial.reflectivity(),
-            Product::Velocity => radial.velocity(),
-            Product::SpectrumWidth => radial.spectrum_width(),
-            Product::DifferentialReflectivity => radial.differential_reflectivity(),
-            Product::DifferentialPhase => radial.differential_phase(),
-            Product::CorrelationCoefficient => radial.correlation_coefficient(),
-            Product::ClutterFilterPower => None,
-        }
-    }
-
-    /// Returns the CFP moment data from a radial, if this product is
-    /// [`Product::ClutterFilterPower`] and the data is present.
-    pub fn cfp_moment_data<'a>(&self, radial: &'a Radial) -> Option<&'a CfpMomentData> {
-        match self {
-            Product::ClutterFilterPower => radial.clutter_filter_power(),
-            _ => None,
-        }
-    }
-
     /// Returns the typical value range `(min, max)` for this product.
     ///
     /// These ranges cover the expected data values for each product type and are

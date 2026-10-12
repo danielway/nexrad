@@ -264,64 +264,47 @@ impl<'a> Message<'a> {
     /// longer needed.
     #[cfg(feature = "model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
-        Self::build_radial(
-            &self.header,
-            self.reflectivity_data_block
-                .as_ref()
-                .map(|block| block.inner().moment_data()),
-            self.velocity_data_block
-                .as_ref()
-                .map(|block| block.inner().moment_data()),
-            self.spectrum_width_data_block
-                .as_ref()
-                .map(|block| block.inner().moment_data()),
-            self.differential_reflectivity_data_block
-                .as_ref()
-                .map(|block| block.inner().moment_data()),
-            self.differential_phase_data_block
-                .as_ref()
-                .map(|block| block.inner().moment_data()),
-            self.correlation_coefficient_data_block
-                .as_ref()
-                .map(|block| block.inner().moment_data()),
-            self.clutter_filter_power_data_block
-                .as_ref()
-                .map(|block| block.inner().cfp_moment_data()),
-        )
+        let moments = [
+            &self.reflectivity_data_block,
+            &self.velocity_data_block,
+            &self.spectrum_width_data_block,
+            &self.differential_reflectivity_data_block,
+            &self.differential_phase_data_block,
+            &self.correlation_coefficient_data_block,
+            &self.clutter_filter_power_data_block,
+        ]
+        .into_iter()
+        .flatten()
+        .map(DataBlock::moment_data)
+        .collect::<crate::result::Result<Vec<_>>>()?;
+
+        Self::build_radial(&self.header, moments)
     }
 
     /// Convert this digital radar data message into a common model radial, minimizing data copy.
     #[cfg(feature = "model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
-        Self::build_radial(
-            &self.header,
-            self.reflectivity_data_block
-                .map(|block| block.into_inner().into_moment_data()),
-            self.velocity_data_block
-                .map(|block| block.into_inner().into_moment_data()),
-            self.spectrum_width_data_block
-                .map(|block| block.into_inner().into_moment_data()),
-            self.differential_reflectivity_data_block
-                .map(|block| block.into_inner().into_moment_data()),
-            self.differential_phase_data_block
-                .map(|block| block.into_inner().into_moment_data()),
-            self.correlation_coefficient_data_block
-                .map(|block| block.into_inner().into_moment_data()),
-            self.clutter_filter_power_data_block
-                .map(|block| block.into_inner().into_cfp_moment_data()),
-        )
+        let moments = [
+            self.reflectivity_data_block,
+            self.velocity_data_block,
+            self.spectrum_width_data_block,
+            self.differential_reflectivity_data_block,
+            self.differential_phase_data_block,
+            self.correlation_coefficient_data_block,
+            self.clutter_filter_power_data_block,
+        ]
+        .into_iter()
+        .flatten()
+        .map(DataBlock::into_moment_data)
+        .collect::<crate::result::Result<Vec<_>>>()?;
+
+        Self::build_radial(&self.header, moments)
     }
 
     #[cfg(feature = "model")]
     fn build_radial(
         header: &Header<'_>,
-        reflectivity: Option<nexrad_model::data::MomentData>,
-        velocity: Option<nexrad_model::data::MomentData>,
-        spectrum_width: Option<nexrad_model::data::MomentData>,
-        differential_reflectivity: Option<nexrad_model::data::MomentData>,
-        differential_phase: Option<nexrad_model::data::MomentData>,
-        correlation_coefficient: Option<nexrad_model::data::MomentData>,
-        clutter_filter_power: Option<nexrad_model::data::CfpMomentData>,
+        moments: Vec<nexrad_model::data::MomentData>,
     ) -> crate::result::Result<nexrad_model::data::Radial> {
         use super::RadialStatus;
         use crate::result::Error;
@@ -350,26 +333,8 @@ impl<'a> Message<'a> {
             RadialStatus::Unknown(v) => ModelRadialStatus::Unknown(v),
         });
 
-        if let Some(reflectivity) = reflectivity {
-            builder = builder.reflectivity(reflectivity);
-        }
-        if let Some(velocity) = velocity {
-            builder = builder.velocity(velocity);
-        }
-        if let Some(spectrum_width) = spectrum_width {
-            builder = builder.spectrum_width(spectrum_width);
-        }
-        if let Some(differential_reflectivity) = differential_reflectivity {
-            builder = builder.differential_reflectivity(differential_reflectivity);
-        }
-        if let Some(differential_phase) = differential_phase {
-            builder = builder.differential_phase(differential_phase);
-        }
-        if let Some(correlation_coefficient) = correlation_coefficient {
-            builder = builder.correlation_coefficient(correlation_coefficient);
-        }
-        if let Some(clutter_filter_power) = clutter_filter_power {
-            builder = builder.clutter_filter_power(clutter_filter_power);
+        for moment in moments {
+            builder = builder.moment(moment);
         }
 
         Ok(builder.build())

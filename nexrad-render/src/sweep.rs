@@ -1,7 +1,7 @@
 //! Rendering of polar sweep data.
 
 use crate::{
-    ColorLookupTable, ColorScale, Error, Interpolation, RenderMetadata, RenderOptions,
+    ColorLookupTable, ColorScale, Error, Interpolation, Projection, RenderMetadata, RenderOptions,
     RenderResult, Result, RgbaImage,
 };
 use nexrad_model::data::{GateStatus, SweepField};
@@ -135,16 +135,19 @@ pub fn render_sweep(
             .map(|cs| cs.sweep_extent(radar_range_km))
     });
 
-    let metadata = RenderMetadata {
-        width: width as u32,
-        height: height as u32,
+    let projection = Projection::Polar {
         center_pixel: (center_x, center_y),
         pixels_per_km: scale_factor,
         max_range_km: radar_range_km,
-        elevation_degrees: Some(field.elevation_degrees() as f64),
-        geo_extent,
-        coord_system: options.coord_system.clone(),
+        elevation_degrees: f64::from(field.elevation_degrees()),
     };
+    let metadata = RenderMetadata::new(
+        width as u32,
+        height as u32,
+        projection,
+        geo_extent,
+        options.coord_system.clone(),
+    );
 
     Ok(RenderResult::new(image, metadata))
 }

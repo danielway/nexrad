@@ -1,7 +1,7 @@
 //! Rendering of gridded (Cartesian and vertical cross-section) data.
 
 use crate::{
-    ColorLookupTable, ColorScale, Error, Interpolation, RenderMetadata, RenderOptions,
+    ColorLookupTable, ColorScale, Error, Interpolation, Projection, RenderMetadata, RenderOptions,
     RenderResult, Result, RgbaImage,
 };
 use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
@@ -101,16 +101,14 @@ pub fn render_cartesian(
     let image =
         RgbaImage::from_raw(width as u32, height as u32, buffer).ok_or(Error::InvalidDimensions)?;
 
-    let metadata = RenderMetadata {
-        width: width as u32,
-        height: height as u32,
-        center_pixel: (width as f64 / 2.0, height as f64 / 2.0),
-        pixels_per_km: 0.0, // Not applicable for Cartesian fields
-        max_range_km: 0.0,
-        elevation_degrees: None,
-        geo_extent: Some(*field.extent()),
-        coord_system: options.coord_system.clone(),
-    };
+    let extent = *field.extent();
+    let metadata = RenderMetadata::new(
+        width as u32,
+        height as u32,
+        Projection::Geographic { extent },
+        Some(extent),
+        options.coord_system.clone(),
+    );
 
     Ok(RenderResult::new(image, metadata))
 }
@@ -210,19 +208,17 @@ pub fn render_vertical(
     let image =
         RgbaImage::from_raw(width as u32, height as u32, buffer).ok_or(Error::InvalidDimensions)?;
 
-    let (d_min, d_max) = field.distance_range_km();
-    let max_range = d_max - d_min;
-
-    let metadata = RenderMetadata {
-        width: width as u32,
-        height: height as u32,
-        center_pixel: (0.0, height as f64 / 2.0), // Left edge is range 0
-        pixels_per_km: width as f64 / max_range,
-        max_range_km: max_range,
-        elevation_degrees: None,
-        geo_extent: None,
-        coord_system: options.coord_system.clone(),
+    let projection = Projection::Vertical {
+        distance_range_km: field.distance_range_km(),
+        altitude_range_m: field.altitude_range_meters(),
     };
+    let metadata = RenderMetadata::new(
+        width as u32,
+        height as u32,
+        projection,
+        None,
+        options.coord_system.clone(),
+    );
 
     Ok(RenderResult::new(image, metadata))
 }

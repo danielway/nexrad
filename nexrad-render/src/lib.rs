@@ -62,7 +62,7 @@ mod options;
 pub use options::{Interpolation, RenderOptions};
 
 mod render_result;
-pub use render_result::{PointQuery, RenderMetadata, RenderResult};
+pub use render_result::{PointQuery, Projection, RenderMetadata, RenderResult};
 
 pub mod result;
 pub use result::{Error, Result};

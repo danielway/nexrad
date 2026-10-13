@@ -93,8 +93,10 @@ fn main() -> nexrad::Result<()> {
     let meta = result.metadata();
     println!("\nRender metadata:");
     println!("  Image size: {}x{}", meta.width(), meta.height());
-    println!("  Pixels per km: {:.2}", meta.pixels_per_km());
-    println!("  Max range: {:.1} km", meta.max_range_km());
+    if let (Some(pixels_per_km), Some(max_range_km)) = (meta.pixels_per_km(), meta.max_range_km()) {
+        println!("  Pixels per km: {:.2}", pixels_per_km);
+        println!("  Max range: {:.1} km", max_range_km);
+    }
     if let Some(extent) = meta.geo_extent() {
         println!(
             "  Geo extent: ({:.4}, {:.4}) to ({:.4}, {:.4})",

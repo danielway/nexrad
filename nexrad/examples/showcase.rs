@@ -30,7 +30,7 @@ use nexrad::process::filter::{
 };
 use nexrad::process::{ScanDerivedProduct, SweepPipeline, SweepProcessor};
 use nexrad::render::{
-    default_scale, render_cartesian, render_sweep, render_vertical, RenderOptions,
+    default_scale, render_cartesian, render_sweep, render_vertical, Projection, RenderOptions,
 };
 
 /// Full 23-sweep scan downloaded from AWS via `download_scan` example.
@@ -555,13 +555,20 @@ fn main() -> nexrad::Result<()> {
 
     let meta = result.metadata();
     println!("  Image: {}x{}", meta.width(), meta.height());
-    println!(
-        "  Center pixel: ({:.1}, {:.1})",
-        meta.center_pixel().0,
-        meta.center_pixel().1
-    );
-    println!("  Pixels per km: {:.2}", meta.pixels_per_km());
-    println!("  Max range: {:.1} km", meta.max_range_km());
+    if let Projection::Polar {
+        center_pixel,
+        pixels_per_km,
+        max_range_km,
+        ..
+    } = meta.projection()
+    {
+        println!(
+            "  Center pixel: ({:.1}, {:.1})",
+            center_pixel.0, center_pixel.1
+        );
+        println!("  Pixels per km: {:.2}", pixels_per_km);
+        println!("  Max range: {:.1} km", max_range_km);
+    }
 
     if let Some(extent) = meta.geo_extent() {
         println!(

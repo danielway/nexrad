@@ -331,6 +331,7 @@ pub mod nexrad_data::volume
 pub struct nexrad_data::volume::File(_)
 impl nexrad_data::volume::File
 pub fn nexrad_data::volume::File::compressed(&self) -> bool
+pub fn nexrad_data::volume::File::coverage_pattern_message(&self) -> nexrad_data::result::Result<nexrad_decode::messages::volume_coverage_pattern::message::Message<'static>>
 pub fn nexrad_data::volume::File::data(&self) -> &[u8]
 pub fn nexrad_data::volume::File::decompress(self) -> nexrad_data::result::Result<nexrad_data::volume::File>
 pub fn nexrad_data::volume::File::header(&self) -> core::option::Option<nexrad_data::volume::Header>

@@ -87,6 +87,7 @@ pub use retry_policy::RetryPolicy;
 pub(crate) use retry_policy::RetryState;
 
 mod chunk_iterator;
+pub(crate) use chunk_iterator::next_volume_start;
 pub use chunk_iterator::{ChunkIterator, ChunkIteratorInit, DownloadedChunk};
 
 mod poll_config;

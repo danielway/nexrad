@@ -5,8 +5,9 @@
 
 use crate::aws::realtime::{
     download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
-    Chunk, ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, DownloadedChunk,
-    ElevationChunkMapper, NextChunk, PollConfig, RetryPolicy, RetryState, VolumeIndex,
+    next_volume_start, Chunk, ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats,
+    DownloadedChunk, ElevationChunkMapper, NextChunk, PollConfig, RetryPolicy, RetryState,
+    VolumeIndex,
 };
 use crate::result::Error;
 use crate::result::{AwsError, Result};
@@ -40,6 +41,12 @@ struct ChunkStreamState {
 /// `gloo-timers` provides an equivalent sleep future.
 ///
 /// The returned stream is `Send` whenever `S` and `F` are `Send`.
+///
+/// Within a volume, chunks are yielded in sequence order. When a volume ends, the stream waits for
+/// the next volume and always yields its Start chunk (sequence 1, carrying the volume header and
+/// VCP) first, then continues from sequence 2, even if later chunks were already published while
+/// it waited. The stream's VCP and elevation mapping are refreshed from each Start chunk, so every
+/// volume can be passed to `assemble_volume` and a VCP change at rollover is picked up.
 ///
 /// # Example
 ///
@@ -110,7 +117,10 @@ async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
     // Get VCP from start chunk
     let latest_metadata_id = latest_chunk_id.with_sequence(1, ChunkType::Start);
     let latest_metadata = download_chunk(config.site(), &latest_metadata_id).await?;
-    let vcp = get_latest_vcp(&latest_metadata.chunk)?;
+    let vcp = match &latest_metadata.chunk {
+        Chunk::Start(file) => file.coverage_pattern_message()?,
+        Chunk::IntermediateOrEnd(_) => return Err(Error::MissingCoveragePattern),
+    };
     let elevation_mapper = ElevationChunkMapper::new(&vcp);
 
     debug!(
@@ -169,8 +179,9 @@ where
     {
         NextChunk::Sequence(next_id) => next_id,
         NextChunk::Volume(next_volume) => {
+            let current_chunk = &state.current_chunk;
             let (_, chunk_id) = try_resiliently_with_policy(
-                || get_latest_chunk_or_error(&state.site, next_volume),
+                || get_volume_start_or_error(&state.site, next_volume, current_chunk),
                 &state.discovery_policy,
                 sleep,
             )
@@ -211,13 +222,18 @@ where
 
     // Update VCP if this is a start chunk
     if chunk_id.chunk_type() == ChunkType::Start {
-        if let Ok(vcp) = get_latest_vcp(&chunk) {
-            debug!(
-                "Updated VCP to {} from start chunk",
-                vcp.header().pattern_number()
-            );
-            state.elevation_mapper = ElevationChunkMapper::new(&vcp);
-            state.vcp = vcp;
+        if let Chunk::Start(file) = &chunk {
+            match file.coverage_pattern_message() {
+                Ok(vcp) => {
+                    debug!(
+                        "Updated VCP to {} from start chunk",
+                        vcp.header().pattern_number()
+                    );
+                    state.elevation_mapper = ElevationChunkMapper::new(&vcp);
+                    state.vcp = vcp;
+                }
+                Err(e) => debug!("Failed to decode VCP from start chunk: {:?}", e),
+            }
         }
     }
 
@@ -256,40 +272,21 @@ fn update_timing_stats(
     }
 }
 
-/// Queries for the latest chunk in the specified volume. If no chunk is found, an error is returned.
-async fn get_latest_chunk_or_error(site: &str, volume: VolumeIndex) -> Result<ChunkIdentifier> {
+/// Identifies the Start chunk of the specified volume once it holds a scan newer than `current`.
+/// If the volume has no newer scan yet, an error is returned so the caller retries.
+async fn get_volume_start_or_error(
+    site: &str,
+    volume: VolumeIndex,
+    current: &ChunkIdentifier,
+) -> Result<ChunkIdentifier> {
     let chunks = list_chunks_in_volume(site, volume, 100).await?;
-    chunks
-        .last()
-        .cloned()
-        .ok_or(Error::Aws(AwsError::ExpectedChunkNotFound))
+    next_volume_start(Some(current), &chunks).ok_or(Error::Aws(AwsError::ExpectedChunkNotFound))
 }
 
 /// Queries for the latest chunk in the specified volume.
 async fn get_latest_chunk(site: &str, volume: VolumeIndex) -> Result<Option<ChunkIdentifier>> {
     let chunks = list_chunks_in_volume(site, volume, 100).await?;
     Ok(chunks.last().cloned())
-}
-
-/// Gets the volume coverage pattern from the latest metadata chunk.
-fn get_latest_vcp(latest_metadata: &Chunk) -> Result<volume_coverage_pattern::Message<'static>> {
-    if let Chunk::Start(file) = latest_metadata {
-        for mut record in file.records()? {
-            if record.compressed() {
-                record = record.decompress()?;
-            }
-
-            for message in record.messages()? {
-                if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) =
-                    message.contents()
-                {
-                    return Ok(vcp.clone().into_owned());
-                }
-            }
-        }
-    }
-
-    Err(Error::MissingCoveragePattern)
 }
 
 /// Attempts an action with retries using the provided retry policy.

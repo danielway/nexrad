@@ -20,6 +20,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `get_latest_volume_from_hint(site, hint)`, `ChunkIterator::config()`, and getters on `RetryPolicy`
   (`max_attempts()`, `initial_delay()`, `backoff_multiplier()`, `max_delay()`) and `PollConfig` (`site()`,
   `download_policy()`, `discovery_policy()`). (#167)
+- `volume::File::coverage_pattern_message()`, which decodes the file's volume coverage pattern (message type 5) as an
+  owned `nexrad_decode` message and returns `Error::MissingCoveragePattern` when the file has none. Use it on a
+  real-time `Chunk::Start`'s file to read the volume's VCP. (#183)
 
 ### Changed
 
@@ -70,6 +73,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `aws::realtime::list_chunks_in_volume` reads every listing page and returns only the chunks of the newest scan in a
   reused volume directory, sorted by sequence; `max_keys` limits the returned chunks rather than the S3 request.
   `ChunkIterator` waits instead of moving into a next volume that still holds an older scan. (#149)
+- `aws::realtime::ChunkIterator` and `chunk_stream` consume each new volume from its Start chunk: at rollover they
+  yield sequence 1 (the volume header and VCP) and then every later chunk in sequence order, instead of jumping to the
+  newest chunk already published in the next volume. Every volume's chunks can now be passed to `assemble_volume`, and
+  the VCP and chunk timing are refreshed when a new volume changes VCP. (#183)
 - Volume assembly is delegated to `nexrad-decode`'s `ScanBuilder` (#169):
   - `volume::File::scan` includes legacy (type 1) radials, consistent with `Record::radials()`;
     `assemble_volume` accepts type 1 messages too.

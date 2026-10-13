@@ -450,6 +450,13 @@ are exposed through `ChunkIterator`:
   newest scan in a reused volume directory, sorted by sequence; `max_keys` now caps the returned chunks, not the S3
   request. `get_latest_volume` no longer returns an older volume when the newest one sits just after the wrap-around,
   and `ChunkIterator` waits instead of replaying an older scan left in the next volume directory.
+- **Real-time volume rollover yields the Start chunk** (#183). When `ChunkIterator::try_next` or `chunk_stream`
+  moves to a new volume, it now yields that volume's Start chunk (sequence 1, the volume header and VCP) and then every
+  later chunk in sequence order. Previously it jumped to the newest chunk already published in the new volume, skipping
+  the Start chunk and the chunks before the newest. Consumers feeding `assemble_volume` now receive every volume's Start
+  chunk, so they no longer hit `Error::MissingCoveragePattern` after the first volume; consumers that skipped ahead
+  should expect the extra chunks. To read a Start chunk's VCP yourself, use the new
+  `volume::File::coverage_pattern_message()` on the `Chunk::Start` file.
 
 ### nexrad-process from 1.0.0-rc.1
 
@@ -1314,6 +1321,8 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `aws::realtime::RetryPolicy::with_initial_delay(chrono::Duration)`, `with_max_delay(chrono::Duration)` | Take `std::time::Duration` |
 | `aws::realtime::{ChunkTimingModel, ChunkTimingStats, ChunkCharacteristics, ElevationChunkMapper, ChunkMetadata, ChunkProjection, ScanTimingProjection, RetryState}` | Removed |
 | `aws::realtime::{estimate_chunk_availability_time, estimate_chunk_processing_time, project_scan_timing, project_full_scan_timing}` | Removed |
+| (new) | `volume::File::coverage_pattern_message() -> Result<volume_coverage_pattern::Message<'static>>` |
+| `aws::realtime::ChunkIterator::try_next()`, `chunk_stream(..)` at volume rollover: newest chunk of the next volume | The next volume's Start chunk, then each later chunk in sequence order |
 
 </details>
 

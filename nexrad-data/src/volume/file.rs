@@ -84,6 +84,38 @@ impl File {
         split_records(record_data)
     }
 
+    /// Decodes this file's volume coverage pattern (message type 5).
+    ///
+    /// Searches the file's LDM records in order, decompressing each compressed record, and returns
+    /// the first volume coverage pattern message found as an owned message. For a real-time Start
+    /// chunk, this is the message that describes the volume's elevation cuts.
+    ///
+    /// Returns [`Error::MissingCoveragePattern`](crate::result::Error::MissingCoveragePattern) if
+    /// no record carries one, and propagates record splitting, decompression, and decoding errors
+    /// otherwise (including [`Error::CompressedFile`](crate::result::Error::CompressedFile) for a
+    /// gzip-compressed file; call [`decompress`](Self::decompress) first).
+    pub fn coverage_pattern_message(
+        &self,
+    ) -> crate::result::Result<nexrad_decode::messages::volume_coverage_pattern::Message<'static>>
+    {
+        use crate::result::Error;
+        use nexrad_decode::messages::MessageContents;
+
+        for mut record in self.records()? {
+            if record.compressed() {
+                record = record.decompress()?;
+            }
+
+            for message in record.messages()? {
+                if let MessageContents::VolumeCoveragePattern(vcp) = message.contents() {
+                    return Ok(vcp.clone().into_owned());
+                }
+            }
+        }
+
+        Err(Error::MissingCoveragePattern)
+    }
+
     /// Decodes this volume file into a common model scan containing sweeps and radials with moment
     /// data.
     ///

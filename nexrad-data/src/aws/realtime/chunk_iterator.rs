@@ -80,6 +80,13 @@ enum IteratorState {
 /// environments without tokio or where caller-controlled scheduling is preferred.
 /// Instead of blocking, callers can use [`next_expected_time`](Self::next_expected_time)
 /// to determine when to call [`try_next`](Self::try_next).
+///
+/// Within a volume, [`try_next`](Self::try_next) returns chunks in sequence order. When a volume
+/// ends, it waits for the next volume and always returns its Start chunk (sequence 1, carrying the
+/// volume header and VCP) first, then continues from sequence 2, even if later chunks were already
+/// published while it waited. The [VCP](Self::vcp) and elevation mapping are refreshed from each
+/// Start chunk, so every volume can be passed to `assemble_volume` and a VCP change at rollover is
+/// picked up.
 #[derive(Debug)]
 pub struct ChunkIterator {
     config: PollConfig,
@@ -169,20 +176,22 @@ impl ChunkIterator {
         &mut self,
         volume: VolumeIndex,
     ) -> Result<(DownloadedChunk, Option<DownloadedChunk>)> {
-        // Fetch the latest chunk in the volume
-        let latest_chunk = self
-            .fetch_latest_chunk_in_volume(volume)
-            .await?
+        // Join the volume at its latest chunk
+        let chunks = list_chunks_in_volume(self.config.site(), volume, usize::MAX).await?;
+        self.requests_made += 1;
+
+        let latest_id = chunks
+            .last()
             .ok_or(Error::Aws(AwsError::ExpectedChunkNotFound))?;
+        let latest_chunk = download_chunk(self.config.site(), latest_id).await?;
+        self.requests_made += 1;
+        self.bytes_downloaded += latest_chunk.chunk.data().len() as u64;
 
         let mut start_chunk = None;
 
         // If the latest chunk is a Start chunk, extract VCP from it
         if latest_chunk.identifier.chunk_type() == ChunkType::Start {
-            if let Ok(vcp) = Self::extract_vcp(&latest_chunk.chunk) {
-                self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
-                self.vcp = Some(vcp);
-            }
+            self.refresh_vcp(&latest_chunk.chunk);
         } else {
             // Joined mid-volume: fetch the Start chunk for VCP
             let start_id = latest_chunk.identifier.with_sequence(1, ChunkType::Start);
@@ -191,10 +200,7 @@ impl ChunkIterator {
                 self.requests_made += 1;
                 self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
-                if let Ok(vcp) = Self::extract_vcp(&downloaded.chunk) {
-                    self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
-                    self.vcp = Some(vcp);
-                }
+                self.refresh_vcp(&downloaded.chunk);
 
                 start_chunk = Some(downloaded);
             }
@@ -266,7 +272,12 @@ impl ChunkIterator {
         }
     }
 
-    /// Attempts to fetch the start chunk of a new volume.
+    /// Attempts to fetch the Start chunk of a new volume.
+    ///
+    /// A new volume is always consumed from its Start chunk, even if later chunks were published
+    /// while waiting, so that the volume header and VCP are yielded and the elevation mapper is
+    /// refreshed for the new volume. Subsequent [`try_next`](Self::try_next) calls continue from
+    /// sequence 2 in order.
     async fn try_fetch_volume_start(
         &mut self,
         volume: VolumeIndex,
@@ -274,32 +285,10 @@ impl ChunkIterator {
         let mut retry_state = RetryState::new(self.config.discovery_policy().clone());
 
         while retry_state.should_retry() {
-            match self.fetch_latest_chunk_in_volume(volume).await {
+            match self.fetch_volume_start(volume).await {
                 Ok(Some(downloaded)) => {
-                    // Update VCP and elevation mapper from start chunk
-                    if downloaded.identifier.chunk_type() == ChunkType::Start {
-                        if let Ok(vcp) = Self::extract_vcp(&downloaded.chunk) {
-                            self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
-                            self.vcp = Some(vcp);
-                        }
-                    }
-
-                    // If we joined mid-volume (not a start chunk), fetch the start chunk
-                    // to get the VCP needed for elevation mapping
-                    if downloaded.identifier.chunk_type() != ChunkType::Start
-                        && self.elevation_mapper.is_none()
-                    {
-                        let start_id = downloaded.identifier.with_sequence(1, ChunkType::Start);
-                        if let Ok(start) = download_chunk(self.config.site(), &start_id).await {
-                            self.requests_made += 1;
-                            self.bytes_downloaded += start.chunk.data().len() as u64;
-
-                            if let Ok(vcp) = Self::extract_vcp(&start.chunk) {
-                                self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
-                                self.vcp = Some(vcp);
-                            }
-                        }
-                    }
+                    // Update VCP and elevation mapper from the new volume's Start chunk
+                    self.refresh_vcp(&downloaded.chunk);
 
                     // Update timing stats if we have previous chunk time
                     if let (Some(upload_time), Some(prev_time)) = (
@@ -320,7 +309,7 @@ impl ChunkIterator {
                     return Ok(Some(downloaded));
                 }
                 Ok(None) => {
-                    // Volume has no chunks yet, will retry
+                    // The new volume or its Start chunk is not available yet, will retry
                 }
                 Err(e) => {
                     debug!("Error fetching volume start: {:?}", e);
@@ -338,30 +327,32 @@ impl ChunkIterator {
         Err(Error::Aws(AwsError::ExpectedChunkNotFound))
     }
 
-    /// Fetches the latest chunk in a volume.
-    async fn fetch_latest_chunk_in_volume(
-        &mut self,
-        volume: VolumeIndex,
-    ) -> Result<Option<DownloadedChunk>> {
+    /// Lists a volume and downloads its Start chunk if the volume holds a scan newer than the
+    /// current one.
+    ///
+    /// Returns `Ok(None)` if the volume has no newer scan yet or its Start chunk is not yet
+    /// available.
+    async fn fetch_volume_start(&mut self, volume: VolumeIndex) -> Result<Option<DownloadedChunk>> {
         let chunks = list_chunks_in_volume(self.config.site(), volume, usize::MAX).await?;
         self.requests_made += 1;
 
-        let latest = match chunks.last() {
+        let start_id = match next_volume_start(self.current(), &chunks) {
             Some(id) => id,
             None => return Ok(None),
         };
 
-        // A reused next volume can still contain only its previous rotation.
-        // Keep polling until a scan newer than our current one arrives.
-        if !advances_volume(self.current(), latest) {
-            return Ok(None);
-        }
-
-        let downloaded = download_chunk(self.config.site(), latest).await?;
         self.requests_made += 1;
-        self.bytes_downloaded += downloaded.chunk.data().len() as u64;
-
-        Ok(Some(downloaded))
+        match download_chunk(self.config.site(), &start_id).await {
+            Ok(downloaded) => {
+                self.bytes_downloaded += downloaded.chunk.data().len() as u64;
+                Ok(Some(downloaded))
+            }
+            Err(Error::Aws(AwsError::S3ObjectNotFound)) => {
+                debug!("Start chunk {} not yet available", start_id.name());
+                Ok(None)
+            }
+            Err(e) => Err(e),
+        }
     }
 
     /// Attempts to fetch a specific chunk.
@@ -383,10 +374,7 @@ impl ChunkIterator {
 
                 // Update VCP if this is a start chunk
                 if identifier.chunk_type() == ChunkType::Start {
-                    if let Ok(vcp) = Self::extract_vcp(&downloaded.chunk) {
-                        self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
-                        self.vcp = Some(vcp);
-                    }
+                    self.refresh_vcp(&downloaded.chunk);
                 }
 
                 // Update timing stats
@@ -414,25 +402,20 @@ impl ChunkIterator {
         }
     }
 
-    /// Extracts VCP from a start chunk.
-    fn extract_vcp(chunk: &Chunk) -> Result<volume_coverage_pattern::Message<'static>> {
-        if let Chunk::Start(file) = chunk {
-            for mut record in file.records()? {
-                if record.compressed() {
-                    record = record.decompress()?;
-                }
+    /// Replaces the VCP and elevation mapper with those carried by a Start chunk. Leaves them
+    /// unchanged if the chunk carries no decodable VCP.
+    fn refresh_vcp(&mut self, chunk: &Chunk) {
+        let Chunk::Start(file) = chunk else {
+            return;
+        };
 
-                for message in record.messages()? {
-                    if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) =
-                        message.contents()
-                    {
-                        return Ok(vcp.clone().into_owned());
-                    }
-                }
+        match file.coverage_pattern_message() {
+            Ok(vcp) => {
+                self.elevation_mapper = Some(ElevationChunkMapper::new(&vcp));
+                self.vcp = Some(vcp);
             }
+            Err(e) => debug!("Failed to decode VCP from start chunk: {:?}", e),
         }
-
-        Err(Error::MissingCoveragePattern)
     }
 
     /// Updates timing statistics for a chunk.
@@ -520,6 +503,22 @@ impl ChunkIterator {
 
 fn advances_volume(current: Option<&ChunkIdentifier>, candidate: &ChunkIdentifier) -> bool {
     current.is_none_or(|current| candidate.date_time_prefix() > current.date_time_prefix())
+}
+
+/// Identifies the Start chunk to fetch when rolling over into a new volume.
+///
+/// `listed` is the next volume's listing from [`list_chunks_in_volume`], which holds only the
+/// volume's newest scan in sequence order. Returns `None` while the listing is empty or holds a
+/// scan no newer than `current`: volume numbers are reused after 999, so the next volume can still
+/// contain its previous rotation. Otherwise returns the sequence 1 Start chunk of the listed scan,
+/// regardless of how many later chunks are already listed, so the volume is consumed in order
+/// from its header and VCP.
+pub(crate) fn next_volume_start(
+    current: Option<&ChunkIdentifier>,
+    listed: &[ChunkIdentifier],
+) -> Option<ChunkIdentifier> {
+    let newest = listed.last()?;
+    advances_volume(current, newest).then(|| newest.with_sequence(1, ChunkType::Start))
 }
 
 #[cfg(test)]

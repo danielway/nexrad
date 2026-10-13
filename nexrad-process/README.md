@@ -8,12 +8,11 @@ Processing algorithms for NEXRAD weather radar data.
 
 ## Processing Traits
 
-Three traits cover different processing scopes:
+Two traits cover different processing scopes:
 
 | Trait | Scope | Input → Output |
 |-------|-------|---------------|
 | `SweepProcessor` | Single sweep | `SweepField → SweepField` |
-| `ScanProcessor` | Multiple sweeps | `[SweepField] → [SweepField]` |
 | `ScanDerivedProduct` | Full scan | `[SweepField] → CartesianField` |
 
 ## Filters

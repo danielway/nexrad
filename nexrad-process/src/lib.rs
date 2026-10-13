@@ -7,13 +7,11 @@
 //!
 //! # Architecture
 //!
-//! Three processing traits cover different scopes:
+//! Two processing traits cover different scopes:
 //!
 //! - [`SweepProcessor`] — single-sweep algorithms (filtering, smoothing)
-//! - [`ScanProcessor`] — multi-elevation algorithms such as velocity dealiasing (an
-//!   extension point; no built-in implementations)
-//! - [`ScanDerivedProduct`] — produces a [`CartesianField`] from a full scan
-//!   (e.g. [`derived::CompositeReflectivity`])
+//! - [`ScanDerivedProduct`] — produces a [`CartesianField`] from the sweeps of a full
+//!   scan (e.g. [`derived::CompositeReflectivity`])
 //!
 //! # Example
 //!
@@ -48,7 +46,7 @@ pub mod result;
 pub use pipeline::SweepPipeline;
 pub use result::{Error, Result};
 
-use nexrad_model::data::{CartesianField, Scan, SweepField};
+use nexrad_model::data::{CartesianField, SweepField};
 use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
 
 /// Transforms one [`SweepField`] into another.
@@ -63,25 +61,7 @@ pub trait SweepProcessor {
     fn process(&self, input: &SweepField) -> Result<SweepField>;
 }
 
-/// Processes fields with full scan context (multiple elevations).
-///
-/// This trait is for algorithms that need to consider data across elevations,
-/// such as velocity dealiasing.
-///
-/// No built-in implementations are provided. This trait is an extension point
-/// for downstream crates to implement scan-level processing algorithms.
-pub trait ScanProcessor {
-    /// A human-readable name for this processor.
-    fn name(&self) -> &str;
-
-    /// Process sweep fields using the full scan context.
-    ///
-    /// Takes the scan metadata and all sweep fields for the relevant product,
-    /// returning a new set of processed fields (one per input field).
-    fn process_scan(&self, scan: &Scan, fields: &[SweepField]) -> Result<Vec<SweepField>>;
-}
-
-/// Produces a [`CartesianField`] from a full scan.
+/// Produces a [`CartesianField`] from the sweeps of a full scan.
 ///
 /// This trait is for derived products that combine data from multiple elevations
 /// into a single geographic surface, such as composite reflectivity, echo tops,
@@ -90,18 +70,16 @@ pub trait ScanDerivedProduct {
     /// A human-readable name for this product.
     fn name(&self) -> &str;
 
-    /// Compute the derived product from the scan.
+    /// Compute the derived product from the sweep fields of a scan.
     ///
     /// # Parameters
     ///
-    /// - `scan` — Scan metadata (site info, VCP, etc.)
     /// - `fields` — Sweep fields for the relevant product, one per elevation
     /// - `coord_system` — Radar coordinate system for geographic projection
     /// - `output_extent` — Geographic extent of the output grid
     /// - `output_resolution` — (width, height) of the output grid in cells
     fn compute(
         &self,
-        scan: &Scan,
         fields: &[SweepField],
         coord_system: &RadarCoordinateSystem,
         output_extent: &GeoExtent,

@@ -403,13 +403,8 @@ fn main() -> nexrad::Result<()> {
         let cref = CompositeReflectivity;
 
         // Full-range composite at native resolution
-        let composite = cref.compute(
-            &scan,
-            &ref_fields,
-            &coord_sys,
-            &extent,
-            (native_size, native_size),
-        )?;
+        let composite =
+            cref.compute(&ref_fields, &coord_sys, &extent, (native_size, native_size))?;
 
         let result = render_cartesian(
             &composite,
@@ -433,7 +428,6 @@ fn main() -> nexrad::Result<()> {
         // Zoomed composite (half range for more detail)
         let zoom_extent = coord_sys.sweep_extent(max_range / 2.0);
         let composite_zoom = cref.compute(
-            &scan,
             &ref_fields,
             &coord_sys,
             &zoom_extent,

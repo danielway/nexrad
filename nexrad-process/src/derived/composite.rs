@@ -1,6 +1,6 @@
 use crate::result::{Error, Result};
 use crate::ScanDerivedProduct;
-use nexrad_model::data::{CartesianField, GateStatus, Scan, SweepField};
+use nexrad_model::data::{CartesianField, GateStatus, SweepField};
 use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 
 /// Composite reflectivity (CREF) — the maximum reflectivity at each geographic
@@ -24,8 +24,9 @@ use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 /// use nexrad_process::ScanDerivedProduct;
 ///
 /// let cref = CompositeReflectivity;
-/// let field = cref.compute(&scan, &ref_fields, &coord_sys, &extent, (800, 800))?;
+/// let field = cref.compute(&ref_fields, &coord_sys, &extent, (800, 800))?;
 /// ```
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct CompositeReflectivity;
 
 impl ScanDerivedProduct for CompositeReflectivity {
@@ -35,7 +36,6 @@ impl ScanDerivedProduct for CompositeReflectivity {
 
     fn compute(
         &self,
-        _scan: &Scan,
         fields: &[SweepField],
         coord_system: &RadarCoordinateSystem,
         output_extent: &GeoExtent,
@@ -107,7 +107,7 @@ impl ScanDerivedProduct for CompositeReflectivity {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nexrad_model::data::{Scan, SweepField, VcpNumber, VolumeCoveragePattern};
+    use nexrad_model::data::SweepField;
     use nexrad_model::geo::RadarCoordinateSystem;
     use nexrad_model::meta::Site;
 
@@ -116,13 +116,6 @@ mod tests {
             .height_meters(370)
             .tower_height_meters(10)
             .build()
-    }
-
-    fn test_scan() -> Scan {
-        let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(215))
-            .version(1)
-            .build();
-        Scan::new(vcp, vec![])
     }
 
     fn make_uniform_field(elevation: f32, value: f32) -> SweepField {
@@ -154,12 +147,11 @@ mod tests {
     fn test_cref_single_tilt() {
         let coord_sys = RadarCoordinateSystem::new(&test_site());
         let extent = coord_sys.sweep_extent(25.0);
-        let scan = test_scan();
 
         let fields = vec![make_uniform_field(0.5, 30.0)];
 
         let result = CompositeReflectivity
-            .compute(&scan, &fields, &coord_sys, &extent, (10, 10))
+            .compute(&fields, &coord_sys, &extent, (10, 10))
             .unwrap();
 
         // Center pixel should have data
@@ -172,7 +164,6 @@ mod tests {
     fn test_cref_takes_max() {
         let coord_sys = RadarCoordinateSystem::new(&test_site());
         let extent = coord_sys.sweep_extent(25.0);
-        let scan = test_scan();
 
         let fields = vec![
             make_uniform_field(0.5, 20.0),
@@ -181,7 +172,7 @@ mod tests {
         ];
 
         let result = CompositeReflectivity
-            .compute(&scan, &fields, &coord_sys, &extent, (10, 10))
+            .compute(&fields, &coord_sys, &extent, (10, 10))
             .unwrap();
 
         // Center pixel should have the max value (40.0)
@@ -194,9 +185,8 @@ mod tests {
     fn test_cref_empty_fields_error() {
         let coord_sys = RadarCoordinateSystem::new(&test_site());
         let extent = coord_sys.sweep_extent(25.0);
-        let scan = test_scan();
 
-        let result = CompositeReflectivity.compute(&scan, &[], &coord_sys, &extent, (10, 10));
+        let result = CompositeReflectivity.compute(&[], &coord_sys, &extent, (10, 10));
         assert!(result.is_err());
     }
 }

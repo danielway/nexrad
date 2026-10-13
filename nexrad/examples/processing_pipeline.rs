@@ -18,7 +18,7 @@ use nexrad::process::derived::CompositeReflectivity;
 use nexrad::process::filter::ThresholdFilter;
 use nexrad::process::ScanDerivedProduct;
 use nexrad::process::SweepPipeline;
-use nexrad::render::{default_color_scale, render_sweep, ColorScale, RenderOptions};
+use nexrad::render::{default_scale, render_sweep, ColorScale, RenderOptions};
 use std::env;
 
 fn main() -> nexrad::Result<()> {
@@ -48,7 +48,7 @@ fn main() -> nexrad::Result<()> {
         field.gate_count(),
     );
 
-    let color_scale: ColorScale = default_color_scale(Product::Reflectivity);
+    let color_scale: ColorScale = default_scale(Product::Reflectivity);
 
     // --- Render original (unprocessed) ---
     let options = RenderOptions::native_for(&field);
@@ -93,8 +93,10 @@ fn main() -> nexrad::Result<()> {
     let meta = result.metadata();
     println!("\nRender metadata:");
     println!("  Image size: {}x{}", meta.width(), meta.height());
-    println!("  Pixels per km: {:.2}", meta.pixels_per_km());
-    println!("  Max range: {:.1} km", meta.max_range_km());
+    if let (Some(pixels_per_km), Some(max_range_km)) = (meta.pixels_per_km(), meta.max_range_km()) {
+        println!("  Pixels per km: {:.2}", pixels_per_km);
+        println!("  Max range: {:.1} km", max_range_km);
+    }
     if let Some(extent) = meta.geo_extent() {
         println!(
             "  Geo extent: ({:.4}, {:.4}) to ({:.4}, {:.4})",

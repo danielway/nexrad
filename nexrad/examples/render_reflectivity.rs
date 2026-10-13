@@ -10,7 +10,7 @@
 //! ```
 
 use nexrad::model::data::Product;
-use nexrad::render::{nws_reflectivity_scale, render_radials, RenderOptions};
+use nexrad::render::{default_scale, render_sweep, RenderOptions};
 use std::env;
 
 fn main() -> nexrad::Result<()> {
@@ -38,7 +38,7 @@ fn main() -> nexrad::Result<()> {
     let sweep = scan
         .sweeps()
         .first()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No sweeps in scan"))?;
+        .ok_or_else(|| std::io::Error::other("No sweeps in scan"))?;
 
     println!(
         "Rendering sweep {} with {} radials...",
@@ -46,22 +46,18 @@ fn main() -> nexrad::Result<()> {
         sweep.radials().len()
     );
 
+    // Extract the reflectivity field from the sweep
+    let field = sweep
+        .field(Product::Reflectivity)
+        .ok_or_else(|| std::io::Error::other("Sweep has no reflectivity data"))?;
+
     // Set up rendering options and color scale
     let options = RenderOptions::new(1024, 1024);
-    let color_scale = nws_reflectivity_scale();
+    let color_scale = default_scale(Product::Reflectivity);
 
-    // Render the image
-    let image = render_radials(
-        sweep.radials(),
-        Product::Reflectivity,
-        &color_scale,
-        &options,
-    )?;
-
-    // Save to file
-    image
-        .save(output_path)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+    // Render the image and save it to file
+    let result = render_sweep(&field, &color_scale, &options)?;
+    result.save(output_path)?;
 
     println!("Saved reflectivity image to: {}", output_path);
 

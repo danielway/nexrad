@@ -35,8 +35,8 @@ const EFFECTIVE_EARTH_RADIUS_KM: f64 = 6371.0 * 4.0 / 3.0;
 /// let vertical_field = vcs.compute(&ref_fields)?;
 ///
 /// // Render with nexrad-render
-/// use nexrad_render::{render_vertical, default_color_scale, RenderOptions};
-/// let scale = default_color_scale(Product::Reflectivity);
+/// use nexrad_render::{render_vertical, default_scale, RenderOptions};
+/// let scale = default_scale(Product::Reflectivity);
 /// let result = render_vertical(&vertical_field, &scale, &RenderOptions::new(1200, 600))?;
 /// result.save("vertical_cross_section.png")?;
 /// ```

@@ -30,7 +30,7 @@ use nexrad::process::filter::{
 };
 use nexrad::process::{ScanDerivedProduct, SweepPipeline, SweepProcessor};
 use nexrad::render::{
-    default_color_scale, render_cartesian, render_sweep, render_vertical, RenderOptions,
+    default_scale, render_cartesian, render_sweep, render_vertical, Projection, RenderOptions,
 };
 
 /// Full 23-sweep scan downloaded from AWS via `download_scan` example.
@@ -119,10 +119,10 @@ fn main() -> nexrad::Result<()> {
     );
 
     // Use native resolution for key renders, a moderate size for processing comparisons
-    let compare_size: usize = 1600;
+    let compare_size: u32 = 1600;
     let compare_options = RenderOptions::new(compare_size, compare_size);
 
-    let ref_scale = default_color_scale(Product::Reflectivity);
+    let ref_scale = default_scale(Product::Reflectivity);
 
     // ========================================================================
     // Section 1: All Radar Products at Native Resolution
@@ -145,7 +145,7 @@ fn main() -> nexrad::Result<()> {
             Some((sweep_idx, f)) => {
                 let opts = RenderOptions::native_for(&f);
                 let field_native = f.gate_count() * 2;
-                let scale = default_color_scale(*product);
+                let scale = default_scale(*product);
                 let result = render_sweep(&f, &scale, &opts)?;
                 let path = format!("{}/01_product_{}.png", OUTPUT_DIR, slug(product.label()));
                 result.save(&path)?;
@@ -369,7 +369,7 @@ fn main() -> nexrad::Result<()> {
     if let Some((_, vf)) = scan.first_field(Product::Velocity) {
         let vel_native_options = RenderOptions::native_for(&vf);
         let vel_native = vf.gate_count() * 2;
-        let vel_scale = default_color_scale(Product::Velocity);
+        let vel_scale = default_scale(Product::Velocity);
 
         // 5a. Raw velocity at native resolution
         {
@@ -447,11 +447,7 @@ fn main() -> nexrad::Result<()> {
             (native_size, native_size),
         )?;
 
-        let result = render_cartesian(
-            &composite,
-            &ref_scale,
-            &RenderOptions::new(native_size, native_size),
-        )?;
+        let result = render_cartesian(&composite, &ref_scale, &native_options)?;
 
         let path = format!("{}/06a_composite_reflectivity.png", OUTPUT_DIR);
         result.save(&path)?;
@@ -476,11 +472,7 @@ fn main() -> nexrad::Result<()> {
             (native_size, native_size),
         )?;
 
-        let result = render_cartesian(
-            &composite_zoom,
-            &ref_scale,
-            &RenderOptions::new(native_size, native_size),
-        )?;
+        let result = render_cartesian(&composite_zoom, &ref_scale, &native_options)?;
         let path = format!("{}/06b_composite_zoomed.png", OUTPUT_DIR);
         result.save(&path)?;
         println!(
@@ -555,13 +547,20 @@ fn main() -> nexrad::Result<()> {
 
     let meta = result.metadata();
     println!("  Image: {}x{}", meta.width(), meta.height());
-    println!(
-        "  Center pixel: ({:.1}, {:.1})",
-        meta.center_pixel().0,
-        meta.center_pixel().1
-    );
-    println!("  Pixels per km: {:.2}", meta.pixels_per_km());
-    println!("  Max range: {:.1} km", meta.max_range_km());
+    if let Projection::Polar {
+        center_pixel,
+        pixels_per_km,
+        max_range_km,
+        ..
+    } = meta.projection()
+    {
+        println!(
+            "  Center pixel: ({:.1}, {:.1})",
+            center_pixel.0, center_pixel.1
+        );
+        println!("  Pixels per km: {:.2}", pixels_per_km);
+        println!("  Max range: {:.1} km", max_range_km);
+    }
 
     if let Some(extent) = meta.geo_extent() {
         println!(
@@ -633,7 +632,7 @@ fn main() -> nexrad::Result<()> {
 
     let count = std::fs::read_dir(OUTPUT_DIR)?
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "png"))
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "png"))
         .count();
 
     println!("Generated {} images in {}/", count, OUTPUT_DIR);

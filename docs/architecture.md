@@ -158,8 +158,6 @@ Three rendering entry points match the three field types:
 | `render_cartesian` | `CartesianField` | `RenderResult` |
 | `render_vertical` | `VerticalField` | `RenderResult` |
 
-The legacy `render_radials` function operates directly on `&[Radial]` and returns a plain `RgbaImage` without metadata.
-
 `RenderResult` bundles the image with `RenderMetadata`, enabling pixel-to-geographic coordinate conversion and data value queries — useful for interactive applications and map overlays.
 
 ## Enum Stability
@@ -171,6 +169,7 @@ Non-exhaustive (new failure modes, ICD message types, products, and scan strateg
 - Every crate's `Error` enum (`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`, `nexrad`) and `nexrad_data::result::AwsError`
 - `nexrad_decode`: `MessageContents`, `MessageType`, `RedundantChannel`, `DataBlockName`
 - `nexrad_model`: `Product`, `VcpNumber`
+- `nexrad_render`: `Projection`
 
 Exhaustive by design (variants are fixed by the NOAA ICD or by the crate's own format, and several are matched per gate or per radial in hot loops where an exhaustive match is clearer and lets callers rely on the compiler):
 

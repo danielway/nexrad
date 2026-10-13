@@ -206,22 +206,17 @@
 //!
 //! ```ignore
 //! use nexrad::model::data::Product;
-//! use nexrad::render::{render_radials, nws_reflectivity_scale, RenderOptions};
+//! use nexrad::render::{default_scale, render_sweep, RenderOptions};
 //!
 //! let scan = nexrad::load_file("volume.ar2v")?;
 //! let sweep = scan.sweeps().first().unwrap();
+//! let field = sweep.field(Product::Reflectivity).unwrap();
 //!
 //! let options = RenderOptions::new(1024, 1024);
-//! let color_scale = nws_reflectivity_scale();
+//! let color_scale = default_scale(Product::Reflectivity);
 //!
-//! let image = render_radials(
-//!     sweep.radials(),
-//!     Product::Reflectivity,
-//!     &color_scale,
-//!     &options,
-//! )?;
-//!
-//! image.save("output.png").unwrap();
+//! let result = render_sweep(&field, &color_scale, &options)?;
+//! result.save("output.png")?;
 //! # Ok::<(), nexrad::Error>(())
 //! ```
 

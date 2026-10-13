@@ -5,6 +5,8 @@
 //! specific colors based on threshold levels. For rendering, the scale is
 //! converted to a [`ColorLookupTable`] which provides O(1) color lookups.
 
+use crate::Product;
+
 /// An RGBA color with components in the range 0.0 to 1.0.
 ///
 /// This type is used for defining color scales. Colors are converted to
@@ -272,16 +274,16 @@ impl From<ContinuousColorScale> for ColorScale {
 /// A pre-computed lookup table for O(1) color lookups.
 ///
 /// This table maps a range of values to RGBA colors using a fixed-size array.
-/// It is created from a [`DiscreteColorScale`] and provides fast color lookups
-/// during rendering.
+/// It is created from a [`ColorScale`] and provides fast color lookups during
+/// rendering.
 ///
 /// # Example
 ///
 /// ```
-/// use nexrad_render::{ColorLookupTable, nws_reflectivity_scale};
+/// use nexrad_render::{default_scale, ColorLookupTable, Product};
 ///
-/// let scale = nws_reflectivity_scale();
-/// let lut = ColorLookupTable::from_scale(&scale, -32.0, 95.0, 256);
+/// let scale = default_scale(Product::Reflectivity);
+/// let lut = ColorLookupTable::new(&scale, -32.0, 95.0, 256);
 ///
 /// // O(1) lookup returning [R, G, B, A] bytes
 /// let color = lut.color(45.0);
@@ -297,47 +299,20 @@ pub struct ColorLookupTable {
 }
 
 impl ColorLookupTable {
-    /// Creates a lookup table from a discrete color scale.
+    /// Creates a lookup table by sampling a color scale.
     ///
     /// # Arguments
     ///
-    /// * `scale` - The color scale to sample from
+    /// * `scale` - The color scale to sample from (discrete or continuous)
     /// * `min_value` - The minimum value to map
     /// * `max_value` - The maximum value to map
-    /// * `size` - The number of entries in the lookup table (256 recommended)
+    /// * `size` - The number of entries in the lookup table (256 recommended);
+    ///   values below 2 are raised to 2 so the table always spans both ends of
+    ///   the range
     ///
     /// Values outside the min/max range will be clamped to the nearest entry.
-    pub fn from_scale(
-        scale: &DiscreteColorScale,
-        min_value: f32,
-        max_value: f32,
-        size: usize,
-    ) -> Self {
-        let range = max_value - min_value;
-        let mut table = Vec::with_capacity(size);
-
-        for i in 0..size {
-            let value = min_value + (i as f32 / (size - 1) as f32) * range;
-            let color = scale.color(value);
-            table.push(color.to_rgba8());
-        }
-
-        Self {
-            table,
-            min_value,
-            range,
-        }
-    }
-
-    /// Creates a lookup table from any [`ColorScale`] (discrete or continuous).
-    ///
-    /// This is the preferred way to create a LUT for the new rendering entry points.
-    pub fn from_color_scale(
-        scale: &ColorScale,
-        min_value: f32,
-        max_value: f32,
-        size: usize,
-    ) -> Self {
+    pub fn new(scale: &ColorScale, min_value: f32, max_value: f32, size: usize) -> Self {
+        let size = size.max(2);
         let range = max_value - min_value;
         let mut table = Vec::with_capacity(size);
 
@@ -578,5 +553,59 @@ pub fn clutter_filter_power_scale() -> DiscreteColorScale {
         ColorScaleLevel::new(5.0, Color::rgb(1.0000, 0.7529, 0.7961)),
         ColorScaleLevel::new(10.0, Color::rgb(1.0000, 0.4118, 0.4118)),
         ColorScaleLevel::new(20.0, Color::rgb(0.8039, 0.0000, 0.0000)),
+    ])
+}
+
+/// Returns the default color scale for a given product.
+///
+/// This function selects an appropriate color scale based on the product type,
+/// using standard meteorological conventions.
+///
+/// | Product | Scale |
+/// |---------|-------|
+/// | Reflectivity | NWS Reflectivity (dBZ) |
+/// | Velocity | Divergent Green-Red (-64 to +64 m/s) |
+/// | SpectrumWidth | Sequential (0 to 30 m/s) |
+/// | DifferentialReflectivity | Divergent (-2 to +6 dB) |
+/// | DifferentialPhase | Sequential (0 to 360 deg) |
+/// | CorrelationCoefficient | Sequential (0 to 1) |
+/// | ClutterFilterPower | Divergent (-20 to +20 dB) |
+/// | Any other product | Grayscale fallback over [`Product::value_range`] |
+///
+/// Products added to [`Product`] in future releases that do not yet have a
+/// dedicated scale fall back to a neutral two-level grayscale scale.
+///
+/// # Example
+///
+/// ```
+/// use nexrad_render::{default_scale, Product};
+///
+/// let scale = default_scale(Product::Reflectivity);
+/// // Pass to render_sweep, render_cartesian or render_vertical,
+/// // or build a ColorLookupTable from it.
+/// ```
+pub fn default_scale(product: Product) -> ColorScale {
+    match product {
+        Product::Reflectivity => nws_reflectivity_scale(),
+        Product::Velocity => velocity_scale(),
+        Product::SpectrumWidth => spectrum_width_scale(),
+        Product::DifferentialReflectivity => differential_reflectivity_scale(),
+        Product::DifferentialPhase => differential_phase_scale(),
+        Product::CorrelationCoefficient => correlation_coefficient_scale(),
+        Product::ClutterFilterPower => clutter_filter_power_scale(),
+        _ => fallback_scale(product),
+    }
+    .into()
+}
+
+/// Neutral fallback scale for products without a dedicated color scale.
+///
+/// Splits the product's [`Product::value_range`] at its midpoint into two gray
+/// levels, so data remains visible without implying any meteorological meaning.
+fn fallback_scale(product: Product) -> DiscreteColorScale {
+    let (min, max) = product.value_range();
+    DiscreteColorScale::new(vec![
+        ColorScaleLevel::new(min, Color::rgb(0.4, 0.4, 0.4)),
+        ColorScaleLevel::new((min + max) / 2.0, Color::rgb(0.8, 0.8, 0.8)),
     ])
 }

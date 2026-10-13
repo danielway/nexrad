@@ -196,7 +196,7 @@ fn test_error_debug_format() {
 #[test]
 fn test_render_error_conversion() {
     // Create a render error
-    let render_err = nexrad_render::result::Error::ProductNotFound;
+    let render_err = nexrad_render::result::Error::InvalidDimensions;
 
     // Convert to unified error
     let unified_err: nexrad::Error = render_err.into();
@@ -252,7 +252,7 @@ fn test_all_features_including_render_and_process() {
     let data_err = nexrad_data::result::Error::CompressedData;
     let _: nexrad::Error = data_err.into();
 
-    let render_err = nexrad_render::result::Error::ProductNotFound;
+    let render_err = nexrad_render::result::Error::InvalidDimensions;
     let _: nexrad::Error = render_err.into();
 
     let process_err = nexrad_process::result::Error::MissingData("test".to_string());

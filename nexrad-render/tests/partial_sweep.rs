@@ -3,8 +3,8 @@
 //! When rendering a subset of radials that doesn't cover the full 360° azimuth,
 //! pixels in uncovered azimuth sectors should remain the background color.
 
-use nexrad_model::data::{MomentData, Product, Radial};
-use nexrad_render::{render_radials, RenderOptions};
+use nexrad_model::data::{MomentData, Product, Radial, SweepField};
+use nexrad_render::{nws_reflectivity_scale, render_sweep, ColorScale, RenderOptions};
 
 /// Creates a test radial at the given azimuth angle with uniform reflectivity data.
 fn create_test_radial(azimuth_degrees: f32, reflectivity_value: u8) -> Radial {
@@ -49,6 +49,15 @@ fn create_partial_sweep(
     radials
 }
 
+/// Renders reflectivity from the given radials through `SweepField` and `render_sweep`.
+fn render(radials: &[Radial], options: &RenderOptions) -> nexrad_render::RgbaImage {
+    let field = SweepField::from_radials(radials, Product::Reflectivity).expect("field is created");
+    let scale = ColorScale::from(nws_reflectivity_scale());
+    render_sweep(&field, &scale, options)
+        .expect("renders successfully")
+        .into_image()
+}
+
 /// Get the pixel color at a specific (x, y) coordinate from the image.
 fn get_pixel(image: &nexrad_render::RgbaImage, x: u32, y: u32) -> [u8; 4] {
     let pixel = image.get_pixel(x, y);
@@ -73,13 +82,7 @@ fn test_partial_sweep_leaves_gaps_as_background() {
     let background = [0, 0, 0, 255]; // Black background
     let options = RenderOptions::new(200, 200).with_background(background);
 
-    let image = render_radials(
-        &radials,
-        Product::Reflectivity,
-        &nexrad_render::nws_reflectivity_scale(),
-        &options,
-    )
-    .unwrap();
+    let image = render(&radials, &options);
 
     // Sample a pixel in the covered region (azimuth ~45°, which is northeast)
     // At 45°: dx = positive, dy = negative (upper right quadrant)
@@ -88,7 +91,7 @@ fn test_partial_sweep_leaves_gaps_as_background() {
     let covered_pixel = get_pixel(&image, 130, 70);
     let covered_azimuth = pixel_to_azimuth(130, 70, 200, 200);
     assert!(
-        covered_azimuth >= 0.0 && covered_azimuth <= 90.0,
+        (0.0..=90.0).contains(&covered_azimuth),
         "Test setup error: covered pixel azimuth {} should be in [0, 90]",
         covered_azimuth
     );
@@ -105,14 +108,13 @@ fn test_partial_sweep_leaves_gaps_as_background() {
     let uncovered_pixel = get_pixel(&image, 100, 130);
     let uncovered_azimuth = pixel_to_azimuth(100, 130, 200, 200);
     assert!(
-        uncovered_azimuth >= 135.0 && uncovered_azimuth <= 225.0,
+        (135.0..=225.0).contains(&uncovered_azimuth),
         "Test setup error: uncovered pixel azimuth {} should be around 180°",
         uncovered_azimuth
     );
 
-    // BUG: Currently this assertion FAILS because the renderer stretches
-    // the available radials to fill the entire 360° sweep.
-    // After the fix, pixels in uncovered azimuths should remain background.
+    // Pixels in uncovered azimuths must remain background rather than being
+    // filled by stretching the available radials across the full sweep.
     assert_eq!(
         uncovered_pixel, background,
         "Pixel at azimuth {:.1}° should be background since no radials cover 90°-360°. \
@@ -130,13 +132,7 @@ fn test_full_sweep_covers_all_azimuths() {
     let background = [0, 0, 0, 255];
     let options = RenderOptions::new(200, 200).with_background(background);
 
-    let image = render_radials(
-        &radials,
-        Product::Reflectivity,
-        &nexrad_render::nws_reflectivity_scale(),
-        &options,
-    )
-    .unwrap();
+    let image = render(&radials, &options);
 
     // Sample pixels at various azimuths - all should have data
     let test_points = [
@@ -165,13 +161,7 @@ fn test_partial_sweep_gap_detection_multiple_sectors() {
     let background = [128, 128, 128, 255]; // Gray background for visibility
     let options = RenderOptions::new(200, 200).with_background(background);
 
-    let image = render_radials(
-        &radials,
-        Product::Reflectivity,
-        &nexrad_render::nws_reflectivity_scale(),
-        &options,
-    )
-    .unwrap();
+    let image = render(&radials, &options);
 
     // Pixel in covered region (~90° east)
     let covered_pixel = get_pixel(&image, 130, 100);

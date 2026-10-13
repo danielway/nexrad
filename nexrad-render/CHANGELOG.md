@@ -74,4 +74,4 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   and 1. (#174)
 - `RenderResult::query_pixel`, `query_polar` and `query_geo` on a sector or partial sweep return `None` beyond the
   covered azimuths instead of the value at the far end across north, through the `SweepField::value_at_polar` fix.
-  (#PRNUM)
+  (#185)

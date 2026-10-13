@@ -22,7 +22,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Debug`, `Clone`, `Copy`, `Default` and `PartialEq` for `CompositeReflectivity`; and `Debug` for `SweepPipeline`.
   (#175)
 - `Error::Model(nexrad_model::Error)`, returned when a model constructor rejects an output, such as a
-  `CompositeReflectivity::compute` extent outside valid latitudes and longitudes. (#PRNUM)
+  `CompositeReflectivity::compute` extent outside valid latitudes and longitudes. (#185)
 
 ### Changed
 
@@ -51,4 +51,4 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 ### Fixed
 
 - `CompositeReflectivity` and `VerticalCrossSection` no longer sample a sector or partial sweep at the far end of its
-  azimuths across north, through the `SweepField::value_at_polar` fix. (#PRNUM)
+  azimuths across north, through the `SweepField::value_at_polar` fix. (#185)

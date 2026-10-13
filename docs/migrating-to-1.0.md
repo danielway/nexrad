@@ -144,7 +144,7 @@ No feature changes. `serde`, `chrono` and `uom` are still opt-in.
 #### Error handling
 
 - `nexrad_model::Error` is `#[non_exhaustive]`: add a wildcard arm.
-- Its variants carry structured data (#PRNUM). `ElevationMismatch` is a struct variant: match it as
+- Its variants carry structured data (#185). `ElevationMismatch` is a struct variant: match it as
   `Error::ElevationMismatch { expected, actual }` or `Error::ElevationMismatch { .. }`. New variants, each naming the
   offending argument in a `parameter: &'static str` field:
   - `InvalidGeometry { parameter, reason }`, from `SweepFieldBuilder::build`, `RadialBuilder::build`,
@@ -201,10 +201,10 @@ let Some(row) = field.radial_values(azimuth_idx) else { return Ok(()) };
 
 | 1.0.0-rc.2 item | 1.0 replacement | Notes / PR |
 |---|---|---|
-| `Radial::new(..)` (14 arguments) | `Radial::builder(azimuth_number, azimuth_angle_degrees, elevation_number, elevation_angle_degrees)` with `.collection_timestamp_millis`, `.azimuth_spacing_degrees`, `.radial_status`, `.moment(data)`, then `.build()?` | Defaults: timestamp `0`, spacing `1.0`, status `IntermediateRadialData`. `build()` returns `Result`. #165, #170, #PRNUM |
+| `Radial::new(..)` (14 arguments) | `Radial::builder(azimuth_number, azimuth_angle_degrees, elevation_number, elevation_angle_degrees)` with `.collection_timestamp_millis`, `.azimuth_spacing_degrees`, `.radial_status`, `.moment(data)`, then `.build()?` | Defaults: timestamp `0`, spacing `1.0`, status `IntermediateRadialData`. `build()` returns `Result`. #165, #170, #185 |
 | `ElevationCut::new(..)` (22 arguments) | `ElevationCut::builder(elevation_angle_degrees, waveform_type, channel_configuration)` | **Argument order changed**: waveform now comes before channel configuration. #165 |
 | `VolumeCoveragePattern::new(pattern_number: u16, ..)` | `VolumeCoveragePattern::builder(VcpNumber::from_number(n))` | #165 |
-| `Site::new(id, lat, lon, height, tower_height)` | `Site::builder(id, lat, lon).site_elevation_meters(..).feedhorn_height_meters(..).build()?` | Latitude and longitude are `f64`; `build()` returns `Result`. #164, #165, #182, #PRNUM |
+| `Site::new(id, lat, lon, height, tower_height)` | `Site::builder(id, lat, lon).site_elevation_meters(..).feedhorn_height_meters(..).build()?` | Latitude and longitude are `f64`; `build()` returns `Result`. #164, #165, #182, #185 |
 | `SweepField::new_empty(label, unit, ..)` | `SweepField::builder(label, unit)` with setters, `.build()?` | `build()` returns `Result` and validates the geometry. #165 |
 | `VCPNumber` | `VcpNumber` | #160 |
 | `CFPStatus` | `CfpStatus` | #160 |
@@ -214,15 +214,15 @@ let Some(row) = field.radial_values(azimuth_idx) else { return Ok(()) };
 | `DataMoment` trait | Inherent methods on `MomentData`, same names and signatures | Remove `use ...::DataMoment`. #170 |
 | `CFPMomentData` | `MomentData` with `Product::ClutterFilterPower` | `Radial::clutter_filter_power()` returns `Option<&MomentData>`. #170 |
 | `CFPMomentValue::Status(s)` / `::Value(v)` | `MomentValue::CfpStatus(s)` / `MomentValue::Value(v)` | #170 |
-| `MomentData::from_fixed_point(gate_count: u16, ..) -> MomentData` | `MomentData::from_fixed_point(product, gate_count: usize, ..)?` | New first parameter (#170); returns `Result` and `gate_count` is `usize` (#PRNUM). |
-| `MomentData::gate_count() -> u16` | `MomentData::gate_count() -> usize` | #PRNUM |
-| `Sweep::new(elevation_number, radials) -> Sweep` | `Sweep::new(elevation_number, radials)?` | Fails if a radial has another elevation number. #PRNUM |
-| `SweepField::get(az, gate) -> (f32, GateStatus)` | `SweepField::get(az, gate) -> Option<(f32, GateStatus)>` | Same for `CartesianField::get` and `VerticalField::get`. #PRNUM |
-| `SweepField::set(az, gate, value, status)` | `SweepField::set(az, gate, value, status)?` | Returns `Result<()>`; same for `CartesianField::set` and `VerticalField::set`. #PRNUM |
-| `SweepField::{radial_values, radial_values_mut, radial_statuses}(az) -> &[_]` | `-> Option<&[_]>` / `Option<&mut [_]>` | #PRNUM |
-| `CartesianField::new(..) -> CartesianField`, `VerticalField::new(..) -> VerticalField` | `-> Result<Self>` | #PRNUM |
-| `Site::identifier() -> &[u8; 4]`, `Site::identifier_string() -> String` | `Site::identifier() -> &str` | #PRNUM |
-| `registry::SiteEntry::to_site() -> Site` | `to_site() -> Result<Site>` | Every registry entry is valid. #PRNUM |
+| `MomentData::from_fixed_point(gate_count: u16, ..) -> MomentData` | `MomentData::from_fixed_point(product, gate_count: usize, ..)?` | New first parameter (#170); returns `Result` and `gate_count` is `usize` (#185). |
+| `MomentData::gate_count() -> u16` | `MomentData::gate_count() -> usize` | #185 |
+| `Sweep::new(elevation_number, radials) -> Sweep` | `Sweep::new(elevation_number, radials)?` | Fails if a radial has another elevation number. #185 |
+| `SweepField::get(az, gate) -> (f32, GateStatus)` | `SweepField::get(az, gate) -> Option<(f32, GateStatus)>` | Same for `CartesianField::get` and `VerticalField::get`. #185 |
+| `SweepField::set(az, gate, value, status)` | `SweepField::set(az, gate, value, status)?` | Returns `Result<()>`; same for `CartesianField::set` and `VerticalField::set`. #185 |
+| `SweepField::{radial_values, radial_values_mut, radial_statuses}(az) -> &[_]` | `-> Option<&[_]>` / `Option<&mut [_]>` | #185 |
+| `CartesianField::new(..) -> CartesianField`, `VerticalField::new(..) -> VerticalField` | `-> Result<Self>` | #185 |
+| `Site::identifier() -> &[u8; 4]`, `Site::identifier_string() -> String` | `Site::identifier() -> &str` | #185 |
+| `registry::SiteEntry::to_site() -> Site` | `to_site() -> Result<Site>` | Every registry entry is valid. #185 |
 | `Product::moment_data(&radial)` / `Product::cfp_moment_data(&radial)` | `radial.moment(product)` | #170 |
 | `BinaryData` | Not public | It appeared in no public signature. #162 |
 | (facade) `nexrad::extract_field(sweep, p)` and friends | `sweep.field(p)`, `scan.fields(p)`, `scan.first_field(p)`, `scan.coordinate_system()` | New model methods. #172 |
@@ -232,7 +232,7 @@ let Some(row) = field.radial_values(azimuth_idx) else { return Ok(()) };
 | `Radial::collection_timestamp()` | `Radial::collection_timestamp_millis()` | Milliseconds since the Unix epoch, UTC. #182 |
 | `SweepField::elevation_degrees()` | `SweepField::elevation_angle_degrees()` | #182 |
 | `SweepField::azimuths()` | `SweepField::azimuth_angles_degrees()` | #182 |
-| `SweepField::radial_status_mut(usize)` | `SweepField::radial_statuses_mut(usize)` | Returns `Option<&mut [GateStatus]>`. #182, #PRNUM |
+| `SweepField::radial_status_mut(usize)` | `SweepField::radial_statuses_mut(usize)` | Returns `Option<&mut [GateStatus]>`. #182, #185 |
 | `VolumeCoveragePattern::doppler_velocity_resolution()` | `VolumeCoveragePattern::doppler_velocity_resolution_mps()` | #182 |
 | `VolumeCoveragePattern::{sails_cuts, mrle_cuts}()` | `VolumeCoveragePattern::{sails_cut_count, mrle_cut_count}()` | #182 |
 | `geo::PolarPoint::{azimuth_degrees, elevation_degrees}` | `geo::PolarPoint::{azimuth_angle_degrees, elevation_angle_degrees}` | #182 |
@@ -251,7 +251,7 @@ let Some(row) = field.radial_values(azimuth_idx) else { return Ok(()) };
   did in 1.0.0-rc.2, so it compares directly against `Sweep::elevation_angle_degrees()`.
 - **`MomentValue` gained `CfpStatus(CfpStatus)`** and is still exhaustive, so an exhaustive `match` needs a new arm. It
   is only produced for `Product::ClutterFilterPower`, and `GateStatus::from(&MomentValue::CfpStatus(_))` is `NoData`.
-- **Constructors validate** (#PRNUM). `new_empty` accepted any geometry; `SweepFieldBuilder::build` returns
+- **Constructors validate** (#185). `new_empty` accepted any geometry; `SweepFieldBuilder::build` returns
   `Err(Error::InvalidGeometry { parameter, .. })` unless the azimuths are non-empty, finite, in `0.0..360.0` and
   strictly ascending, `gate_count` is non-zero, `gate_interval_km` and `azimuth_spacing_degrees` are finite and positive,
   `first_gate_range_km` is finite and not negative, and the elevation angle is finite. `CartesianField::new` and
@@ -260,17 +260,17 @@ let Some(row) = field.radial_values(azimuth_idx) else { return Ok(()) };
   `MomentData::from_fixed_point` requires a word size of 8 or 16, exactly `gate_count` gates of data, and a finite scale
   and offset. `RadialBuilder::build` requires a finite azimuth in `0.0..360.0`, a finite elevation and a positive
   azimuth spacing. `SiteBuilder::build` requires four ASCII alphanumeric identifier bytes and an in-range location.
-- **Indexing is checked** (#PRNUM). `get` checks the row and column against their own dimensions, so `get(0, width + 3)`
+- **Indexing is checked** (#185). `get` checks the row and column against their own dimensions, so `get(0, width + 3)`
   returns `None` instead of silently reading the next row; `set` and the row accessors report out-of-range indices
   instead of panicking.
-- **Unscaled moments decode their sentinels** (#PRNUM). For every product except clutter filter power, raw 0 and 1 decode
+- **Unscaled moments decode their sentinels** (#185). For every product except clutter filter power, raw 0 and 1 decode
   to `BelowThreshold` and `RangeFolded` even when `scale` is `0.0`; they used to decode as `Value(0.0)` and
   `Value(1.0)`.
-- **`SweepField::from_radials` geometry** (#PRNUM). The elevation angle is the median over the radials carrying the
+- **`SweepField::from_radials` geometry** (#185). The elevation angle is the median over the radials carrying the
   product (consistent with `Sweep::elevation_angle_degrees`) and the azimuth spacing comes from the first of them,
   rather than both coming from the first radial in the sweep. Radials whose first gate range or gate interval differ
   from the first product-bearing radial are skipped instead of being mis-registered.
-- **`SweepField::value_at_polar` respects sector coverage** (#PRNUM). The azimuth is normalized into `0.0..360.0`, the
+- **`SweepField::value_at_polar` respects sector coverage** (#185). The azimuth is normalized into `0.0..360.0`, the
   lookup wraps across north only when the field covers the full circle, and for a sector or partial sweep azimuths
   more than half the azimuth spacing outside the covered sector return `None` instead of the far end's value.
 - **`SweepField::product()`** records which product a field holds (`Some` for fields built from radials, copied by
@@ -305,7 +305,7 @@ nexrad-decode = { version = "1.0", default-features = false, features = ["model"
 - New variant `Error::MissingCoveragePattern`, returned by `ScanBuilder::build` when no type 5 message was seen (#169).
 - New variant `Error::Model(nexrad_model::Error)` (feature `model`), returned when decoded values fail a model
   constructor's validation: moment data whose gate count does not match its encoded data, a radial with an out-of-range
-  azimuth, or a site with an invalid identifier or location (#PRNUM).
+  azimuth, or a site with an invalid identifier or location (#185).
 
 #### Removed and renamed items
 
@@ -344,7 +344,7 @@ The renames you are most likely to hit:
 | `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, ..}` | `messages::VcpNumber::{Vcp12, Vcp31, Vcp32, ..}` | #160, #163 |
 | `GenericDataBlock::moment_data()` / `into_moment_data()` | Call them on the `DataBlock` wrapper: `m.reflectivity_data_block().map(\|b\| b.moment_data())`; they return `Result<MomentData>` | #170 |
 | `GenericDataBlock::cfp_moment_data()` / `into_cfp_moment_data()` | `moment_data()` / `into_moment_data()` on the CFP block's `DataBlock` | #170 |
-| `digital_radar_data::Message::site() -> Option<Site>` | `site()? -> Option<Site>` (returns `Result<Option<Site>>`) | #PRNUM |
+| `digital_radar_data::Message::site() -> Option<Site>` | `site()? -> Option<Site>` (returns `Result<Option<Site>>`) | #185 |
 | `rda_status_data::RDAStatus`, `RDABuildNumber`, `RMSControlStatus` | `RdaStatus`, `RdaBuildNumber`, `RmsControlStatus` | #160 |
 | `rda_status_data::Message::raw_<stem>()` | `<stem>_raw()` (`raw_rda_build_number()` → `build_number_raw()`) | #173 |
 | `rda_status_data::Message::volume_coverage_pattern() -> Option<VolumeCoveragePatternNumber>` | `-> Option<VcpSelection>`; `number()` is a `VcpNumber`, `source()` replaces `local()`/`remote()` | #163 |
@@ -524,7 +524,7 @@ are exposed through `ChunkIterator`:
 `nexrad_process::Error` is `#[non_exhaustive]`. Invalid parameters are now reported by the constructors, so
 `Error::InvalidParameter` comes from `new` rather than from `process`. The new `Error::Model(nexrad_model::Error)`
 reports an output the model rejects, such as a `CompositeReflectivity::compute` extent outside valid latitudes and
-longitudes (#PRNUM).
+longitudes (#185).
 
 #### Removed and renamed items
 
@@ -625,7 +625,7 @@ let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options
   range.
 - `nexrad_render::image` re-exports the `image` crate, so you can name `image::ImageError` without your own dependency.
 - **Queries on a sector sweep** (`RenderResult::query_pixel`, `query_polar`, `query_geo`) return `None` beyond the
-  covered azimuths instead of the far end's value across north (#PRNUM). `Error::EmptyField` is no longer reachable for
+  covered azimuths instead of the far end's value across north (#185). `Error::EmptyField` is no longer reachable for
   Cartesian or vertical fields built with `new`, which rejects zero dimensions.
 
 ### nexrad from 1.0.0-rc.4

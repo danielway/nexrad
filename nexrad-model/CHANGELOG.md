@@ -27,10 +27,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Sweep::field(product)`, `Scan::fields(product)`, `Scan::first_field(product)` and `Scan::coordinate_system()`,
   which replace the facade's `extract_field`, `extract_fields`, `extract_first_field` and `coordinate_system`. (#172)
 - `MomentData::first_gate_range_meters()` and `gate_interval_meters()`, returning the `u16` meters that
-  `from_fixed_point` takes. (#PRNUM)
+  `from_fixed_point` takes. (#185)
 - Structured `Error` variants: `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, expected,
   actual }`, `InvalidSite { parameter, reason }` and `IndexOutOfBounds { row, column, rows, columns }`. `Error`
-  implements `Clone` and `PartialEq`. (#PRNUM)
+  implements `Clone` and `PartialEq`. (#185)
 
 ### Changed
 
@@ -104,13 +104,13 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Debug` output changed: renamed types and variants print their new names (#160); binary blobs print
   `fnv1a: 0x<16 hex digits>` instead of `sha256: "<hex>"` (#162); `Radial`/`MomentData` no longer nest an
   `inner: MomentDataBlock { .. }` and show a `product` field (#170).
-- Field indexing is checked; no public model API panics on an out-of-range index (#PRNUM):
+- Field indexing is checked; no public model API panics on an out-of-range index (#185):
   - `SweepField::get`, `CartesianField::get` and `VerticalField::get` return `Option<(f32, GateStatus)>`, checking the
     row and column against their own dimensions (`get(0, width + 3)` used to read row 1 silently).
   - `SweepField::set`, `CartesianField::set` and `VerticalField::set` return `Result<()>`, failing with
     `Error::IndexOutOfBounds`.
   - `SweepField::radial_values`, `radial_values_mut`, `radial_statuses` and `radial_statuses_mut` return `Option`.
-- Constructors with invariants return `Result` (#PRNUM):
+- Constructors with invariants return `Result` (#185):
   - `CartesianField::new` requires non-zero dimensions whose product fits in `usize`, and a finite extent with
     `min < max` within `-90..=90` latitude and `-180..=180` longitude.
   - `VerticalField::new` requires non-zero dimensions and finite ranges with `min < max`.
@@ -127,9 +127,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `SweepFieldBuilder::build` returns `Error::InvalidGeometry` (which replaces `InvalidSweepGeometry(String)`) unless
   the azimuths are non-empty, finite, in `0.0..360.0` and strictly ascending, the gate count is non-zero, the gate
   interval and azimuth spacing are finite and positive, the first gate range is finite and not negative, and the
-  elevation angle is finite. (#PRNUM)
-- `Site::identifier()` returns `&str` (it returned `&[u8; 4]`). (#PRNUM)
-- `Error::ElevationMismatch` is a struct variant carrying the `expected` and `actual` elevation numbers. (#PRNUM)
+  elevation angle is finite. (#185)
+- `Site::identifier()` returns `&str` (it returned `&[u8; 4]`). (#185)
+- `Error::ElevationMismatch` is a struct variant carrying the `expected` and `actual` elevation numbers. (#185)
 
 ### Removed
 
@@ -139,16 +139,16 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Product::ClutterFilterPower` and `MomentValue::CfpStatus`. (#170)
 - The `DataMoment` trait; its methods are inherent on `MomentData`. (#170)
 - `Product::moment_data(&Radial)` and `Product::cfp_moment_data(&Radial)`; use `radial.moment(product)`. (#170)
-- `Site::identifier_string()`; `Site::identifier()` returns `&str`. (#PRNUM)
+- `Site::identifier_string()`; `Site::identifier()` returns `&str`. (#185)
 
 ### Fixed
 
 - `MomentData::iter`/`values` decode raw 0 and 1 as `BelowThreshold` and `RangeFolded` for every product other than
   clutter filter power, as documented, also when `scale` is `0.0`; they decoded as `Value(0.0)` and `Value(1.0)`.
-  (#PRNUM)
+  (#185)
 - `SweepField::from_radials`/`from_radials_owned` take the elevation angle (the median) and azimuth spacing from the
   radials carrying the product instead of the first radial, and skip radials whose first gate range or gate interval
-  differ from the first such radial, which were mis-registered. (#PRNUM)
+  differ from the first such radial, which were mis-registered. (#185)
 - `SweepField::value_at_polar` normalizes the azimuth into `0.0..360.0` and only wraps across north when the field
   covers the full circle; for a sector or partial sweep it returns `None` for azimuths more than half the azimuth
-  spacing outside the covered sector instead of matching the far end. (#PRNUM)
+  spacing outside the covered sector instead of matching the far end. (#185)

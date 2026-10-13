@@ -23,7 +23,7 @@
 //!
 //! let field = SweepField::from_radials(sweep.radials(), Product::Reflectivity).unwrap();
 //! let filtered = SweepPipeline::new()
-//!     .then(ThresholdFilter { min: Some(5.0), max: None })
+//!     .then(ThresholdFilter::new(Some(5.0), None)?)
 //!     .execute(&field)?;
 //! ```
 

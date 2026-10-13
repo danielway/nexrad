@@ -14,8 +14,8 @@ use nexrad_model::data::SweepField;
 /// use nexrad_process::{SweepPipeline, filter::ThresholdFilter};
 ///
 /// let pipeline = SweepPipeline::new()
-///     .then(ThresholdFilter { min: Some(5.0), max: None })
-///     .then(ThresholdFilter { min: None, max: Some(75.0) });
+///     .then(ThresholdFilter::new(Some(5.0), None)?)
+///     .then(ThresholdFilter::new(None, Some(75.0))?);
 ///
 /// let output = pipeline.execute(&input_field)?;
 /// ```

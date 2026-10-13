@@ -214,10 +214,7 @@ fn main() -> nexrad::Result<()> {
 
     // 3b. Threshold filter - remove weak echoes below 10 dBZ
     {
-        let filter = ThresholdFilter {
-            min: Some(10.0),
-            max: None,
-        };
+        let filter = ThresholdFilter::new(Some(10.0), None)?;
         let filtered = filter.process(&ref_field)?;
         let result = render_sweep(&filtered, &ref_scale, &compare_options)?;
         let path = format!("{}/03b_threshold_10dbz.png", OUTPUT_DIR);
@@ -227,10 +224,7 @@ fn main() -> nexrad::Result<()> {
 
     // 3c. Threshold filter - isolate strong echoes (>35 dBZ)
     {
-        let filter = ThresholdFilter {
-            min: Some(35.0),
-            max: None,
-        };
+        let filter = ThresholdFilter::new(Some(35.0), None)?;
         let filtered = filter.process(&ref_field)?;
         let result = render_sweep(&filtered, &ref_scale, &compare_options)?;
         let path = format!("{}/03c_threshold_35dbz.png", OUTPUT_DIR);
@@ -240,10 +234,7 @@ fn main() -> nexrad::Result<()> {
 
     // 3d. Gaussian smoothing - light
     {
-        let smoother = GaussianSmooth {
-            sigma_azimuth: 1.5,
-            sigma_range: 1.5,
-        };
+        let smoother = GaussianSmooth::new(1.5, 1.5)?;
         let smoothed = smoother.process(&ref_field)?;
         let result = render_sweep(&smoothed, &ref_scale, &compare_options)?;
         let path = format!("{}/03d_gaussian_light.png", OUTPUT_DIR);
@@ -253,10 +244,7 @@ fn main() -> nexrad::Result<()> {
 
     // 3e. Gaussian smoothing - heavy
     {
-        let smoother = GaussianSmooth {
-            sigma_azimuth: 4.0,
-            sigma_range: 4.0,
-        };
+        let smoother = GaussianSmooth::new(4.0, 4.0)?;
         let smoothed = smoother.process(&ref_field)?;
         let result = render_sweep(&smoothed, &ref_scale, &compare_options)?;
         let path = format!("{}/03e_gaussian_heavy.png", OUTPUT_DIR);
@@ -266,10 +254,7 @@ fn main() -> nexrad::Result<()> {
 
     // 3f. Median filter - 3x3 (spike removal)
     {
-        let filter = MedianFilter {
-            azimuth_kernel: 3,
-            range_kernel: 3,
-        };
+        let filter = MedianFilter::new(3, 3)?;
         let filtered = filter.process(&ref_field)?;
         let result = render_sweep(&filtered, &ref_scale, &compare_options)?;
         let path = format!("{}/03f_median_3x3.png", OUTPUT_DIR);
@@ -279,10 +264,7 @@ fn main() -> nexrad::Result<()> {
 
     // 3g. Median filter - 7x7 (aggressive smoothing)
     {
-        let filter = MedianFilter {
-            azimuth_kernel: 7,
-            range_kernel: 7,
-        };
+        let filter = MedianFilter::new(7, 7)?;
         let filtered = filter.process(&ref_field)?;
         let result = render_sweep(&filtered, &ref_scale, &compare_options)?;
         let path = format!("{}/03g_median_7x7.png", OUTPUT_DIR);
@@ -318,18 +300,9 @@ fn main() -> nexrad::Result<()> {
     // 4a. Clean + smooth pipeline: threshold -> median -> gaussian
     {
         let pipeline = SweepPipeline::new()
-            .then(ThresholdFilter {
-                min: Some(5.0),
-                max: None,
-            })
-            .then(MedianFilter {
-                azimuth_kernel: 3,
-                range_kernel: 3,
-            })
-            .then(GaussianSmooth {
-                sigma_azimuth: 1.5,
-                sigma_range: 1.5,
-            });
+            .then(ThresholdFilter::new(Some(5.0), None)?)
+            .then(MedianFilter::new(3, 3)?)
+            .then(GaussianSmooth::new(1.5, 1.5)?);
 
         let processed = pipeline.execute(&ref_field)?;
         let result = render_sweep(&processed, &ref_scale, &compare_options)?;
@@ -344,14 +317,8 @@ fn main() -> nexrad::Result<()> {
     // 4b. Analysis pipeline: threshold -> heavy median for structure identification
     {
         let pipeline = SweepPipeline::new()
-            .then(ThresholdFilter {
-                min: Some(20.0),
-                max: None,
-            })
-            .then(MedianFilter {
-                azimuth_kernel: 5,
-                range_kernel: 5,
-            });
+            .then(ThresholdFilter::new(Some(20.0), None)?)
+            .then(MedianFilter::new(5, 5)?);
 
         let processed = pipeline.execute(&ref_field)?;
         let result = render_sweep(&processed, &ref_scale, &compare_options)?;
@@ -401,10 +368,7 @@ fn main() -> nexrad::Result<()> {
         {
             let pipeline = SweepPipeline::new()
                 .then(StormRelativeVelocity::new(240.0, 20.0)?)
-                .then(GaussianSmooth {
-                    sigma_azimuth: 1.5,
-                    sigma_range: 1.5,
-                });
+                .then(GaussianSmooth::new(1.5, 1.5)?);
 
             let processed = pipeline.execute(&vf)?;
             let result = render_sweep(&processed, &vel_scale, &compare_options)?;

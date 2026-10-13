@@ -137,8 +137,8 @@ Processing algorithms are modeled as traits with three scopes:
 
 ```rust
 let filtered = SweepPipeline::new()
-    .then(ThresholdFilter { min: Some(5.0), max: None })
-    .then(GaussianSmooth { sigma_azimuth: 1.0, sigma_range: 1.0 })
+    .then(ThresholdFilter::new(Some(5.0), None)?)
+    .then(GaussianSmooth::new(1.0, 1.0)?)
     .execute(&field)?;
 ```
 

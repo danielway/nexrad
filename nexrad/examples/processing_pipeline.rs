@@ -57,10 +57,7 @@ fn main() -> nexrad::Result<()> {
     println!("Saved pipeline_original.png");
 
     // --- Apply a processing pipeline ---
-    let pipeline = SweepPipeline::new().then(ThresholdFilter {
-        min: Some(5.0),
-        max: Some(75.0),
-    });
+    let pipeline = SweepPipeline::new().then(ThresholdFilter::new(Some(5.0), Some(75.0))?);
 
     let filtered = pipeline.execute(&field)?;
 

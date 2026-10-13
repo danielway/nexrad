@@ -85,7 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Volume header: {:?}", header.icao_of_radar());
 
     // Get header bytes from the (possibly decompressed) volume data
-    let header_bytes = &volume.data()[..size_of::<Header>()];
+    let header_bytes = &volume.data()[..Header::SIZE];
 
     // Process records
     let records = volume.records()?;

@@ -333,7 +333,7 @@ impl nexrad_data::volume::File
 pub fn nexrad_data::volume::File::compressed(&self) -> bool
 pub fn nexrad_data::volume::File::data(&self) -> &[u8]
 pub fn nexrad_data::volume::File::decompress(self) -> nexrad_data::result::Result<nexrad_data::volume::File>
-pub fn nexrad_data::volume::File::header(&self) -> core::option::Option<&nexrad_data::volume::Header>
+pub fn nexrad_data::volume::File::header(&self) -> core::option::Option<nexrad_data::volume::Header>
 pub fn nexrad_data::volume::File::new(alloc::vec::Vec<u8>) -> Self
 pub fn nexrad_data::volume::File::records(&self) -> nexrad_data::result::Result<alloc::vec::Vec<nexrad_data::volume::Record<'_>>>
 pub fn nexrad_data::volume::File::scan(&self) -> nexrad_data::result::Result<nexrad_model::data::scan::Scan>
@@ -354,8 +354,9 @@ impl core::marker::Unpin for nexrad_data::volume::File
 impl core::marker::UnsafeUnpin for nexrad_data::volume::File
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_data::volume::File
 impl core::panic::unwind_safe::UnwindSafe for nexrad_data::volume::File
-#[repr(C)] pub struct nexrad_data::volume::Header
+pub struct nexrad_data::volume::Header
 impl nexrad_data::volume::Header
+pub const nexrad_data::volume::Header::SIZE: usize
 pub fn nexrad_data::volume::Header::date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
 pub fn nexrad_data::volume::Header::extension_number(&self) -> core::option::Option<&str>
 pub fn nexrad_data::volume::Header::icao_of_radar(&self) -> core::option::Option<&str>
@@ -371,12 +372,6 @@ impl core::hash::Hash for nexrad_data::volume::Header
 pub fn nexrad_data::volume::Header::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for nexrad_data::volume::Header
 impl core::marker::StructuralPartialEq for nexrad_data::volume::Header
-impl zerocopy::FromBytes for nexrad_data::volume::Header where [u8; 9]: zerocopy::FromBytes, [u8; 3]: zerocopy::FromBytes, zerocopy::byteorder::big_endian::U32: zerocopy::FromBytes, [u8; 4]: zerocopy::FromBytes
-impl zerocopy::FromZeros for nexrad_data::volume::Header where [u8; 9]: zerocopy::FromZeros, [u8; 3]: zerocopy::FromZeros, zerocopy::byteorder::big_endian::U32: zerocopy::FromZeros, [u8; 4]: zerocopy::FromZeros
-impl zerocopy::Immutable for nexrad_data::volume::Header where [u8; 9]: zerocopy::Immutable, [u8; 3]: zerocopy::Immutable, zerocopy::byteorder::big_endian::U32: zerocopy::Immutable, [u8; 4]: zerocopy::Immutable
-impl zerocopy::KnownLayout for nexrad_data::volume::Header where [u8; 4]: zerocopy::KnownLayout
-pub type nexrad_data::volume::Header::PointerMetadata = <[u8; 4] as zerocopy::KnownLayout>::PointerMetadata
-impl zerocopy::TryFromBytes for nexrad_data::volume::Header where [u8; 9]: zerocopy::TryFromBytes, [u8; 3]: zerocopy::TryFromBytes, zerocopy::byteorder::big_endian::U32: zerocopy::TryFromBytes, [u8; 4]: zerocopy::TryFromBytes
 impl core::marker::Freeze for nexrad_data::volume::Header
 impl core::marker::Send for nexrad_data::volume::Header
 impl core::marker::Sync for nexrad_data::volume::Header

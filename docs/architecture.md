@@ -346,6 +346,9 @@ Its public surface is:
   (both returning `LatestVolumeResult`)
 - Assembly: `assemble_volume` (feature `model`), which feeds chunk messages to `nexrad-decode`'s `ScanBuilder`
 
+Both `ChunkIterator` and `chunk_stream` always consume a new volume from its Start chunk (sequence 1, carrying the
+volume header and VCP) and then in sequence order, even when later chunks were published while they waited.
+
 The chunk timing model, the elevation-to-chunk mapper, retry state and scan timing projection are crate-private. Their
 results are exposed only through the `ChunkIterator` estimates above, so the timing heuristics can be refined in any
 release.

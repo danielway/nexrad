@@ -5,7 +5,7 @@
 
 use crate::aws::realtime::{
     download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
-    next_volume_start, Chunk, ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats,
+    next_volume_start, Chunk, ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats, ChunkType,
     DownloadedChunk, ElevationChunkMapper, NextChunk, PollConfig, RetryPolicy, RetryState,
     VolumeIndex,
 };
@@ -27,6 +27,19 @@ struct ChunkStreamState {
     previous_chunk_time: Option<chrono::DateTime<Utc>>,
     download_policy: RetryPolicy,
     discovery_policy: RetryPolicy,
+}
+
+impl ChunkStreamState {
+    /// Returns the estimated time at which the chunk following the current chunk becomes
+    /// available for download.
+    fn next_chunk_estimate(&self) -> Option<chrono::DateTime<Utc>> {
+        estimate_chunk_availability_time(
+            &self.current_chunk,
+            &self.vcp,
+            &self.elevation_mapper,
+            Some(&self.timing_stats),
+        )
+    }
 }
 
 /// Returns a stream of downloaded chunks for the specified configuration.
@@ -99,8 +112,6 @@ fn to_std_duration(duration: Duration) -> std::time::Duration {
 }
 
 async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
-    use crate::aws::realtime::ChunkType;
-
     let latest_volume = get_latest_volume(config.site())
         .await?
         .volume
@@ -152,17 +163,8 @@ where
     S: Fn(std::time::Duration) -> F,
     F: Future<Output = ()>,
 {
-    use crate::aws::realtime::ChunkType;
-
     // Estimate when the next chunk will be available
-    let next_chunk_estimate = estimate_chunk_availability_time(
-        &state.current_chunk,
-        &state.vcp,
-        &state.elevation_mapper,
-        Some(&state.timing_stats),
-    );
-
-    if let Some(estimate) = next_chunk_estimate {
+    if let Some(estimate) = state.next_chunk_estimate() {
         let now = Utc::now();
         if estimate > now {
             let wait_duration = to_std_duration(estimate - now);
@@ -205,24 +207,45 @@ where
         ..
     } = result.ok_or(AwsError::ExpectedChunkNotFound)?;
 
-    // Update timing statistics
+    record_arrival(state, &chunk_id, &chunk, attempts);
+
+    Ok(DownloadedChunk::new(chunk_id, chunk, attempts))
+}
+
+/// Makes `chunk_id` the stream's current chunk. The interval since the previous chunk's upload is
+/// added to the timing statistics under the arriving chunk's characteristics, the key under which
+/// the next-chunk estimate looks it up to predict this chunk from its predecessor. A Start chunk
+/// also refreshes the VCP and elevation mapping.
+fn record_arrival(
+    state: &mut ChunkStreamState,
+    chunk_id: &ChunkIdentifier,
+    chunk: &Chunk,
+    attempts: usize,
+) {
     if let (Some(upload_time), Some(prev_time)) =
         (chunk_id.upload_date_time(), state.previous_chunk_time)
     {
-        let duration = upload_time - prev_time;
-        update_timing_stats(
-            &mut state.timing_stats,
-            &state.current_chunk,
+        if let Some(characteristics) = ChunkCharacteristics::for_chunk(
+            chunk_id.sequence(),
+            chunk_id.chunk_type(),
             &state.vcp,
             &state.elevation_mapper,
-            duration,
-            attempts,
-        );
+        ) {
+            let duration = upload_time - prev_time;
+            state
+                .timing_stats
+                .add_timing(characteristics, duration, attempts);
+            debug!(
+                "Updated timing statistics for {:?}: {}s",
+                characteristics,
+                duration.num_milliseconds() as f64 / 1000.0,
+            );
+        }
     }
 
     // Update VCP if this is a start chunk
     if chunk_id.chunk_type() == ChunkType::Start {
-        if let Chunk::Start(file) = &chunk {
+        if let Chunk::Start(file) = chunk {
             match file.coverage_pattern_message() {
                 Ok(vcp) => {
                     debug!(
@@ -240,36 +263,6 @@ where
     // Update state for next iteration
     state.previous_chunk_time = chunk_id.upload_date_time();
     state.current_chunk = chunk_id.clone();
-
-    Ok(DownloadedChunk::new(chunk_id, chunk, attempts))
-}
-
-/// Helper function to update timing statistics for a downloaded chunk
-fn update_timing_stats(
-    timing_stats: &mut ChunkTimingStats,
-    chunk_id: &ChunkIdentifier,
-    vcp: &volume_coverage_pattern::Message,
-    elevation_chunk_mapper: &ElevationChunkMapper,
-    duration: Duration,
-    attempts: usize,
-) {
-    if let Some(elevation) = elevation_chunk_mapper
-        .get_sequence_elevation_number(chunk_id.sequence())
-        .and_then(|elevation_number| vcp.elevations().get(elevation_number - 1))
-    {
-        let characteristics = ChunkCharacteristics {
-            chunk_type: chunk_id.chunk_type(),
-            waveform_type: elevation.waveform_type(),
-            channel_configuration: elevation.channel_configuration(),
-        };
-
-        timing_stats.add_timing(characteristics, duration, attempts);
-        debug!(
-            "Updated timing statistics for {:?}: {}s",
-            &characteristics as &dyn std::fmt::Debug,
-            &(duration.num_milliseconds() as f64 / 1000.0) as &dyn std::fmt::Display,
-        );
-    }
 }
 
 /// Identifies the Start chunk of the specified volume once it holds a scan newer than `current`.
@@ -318,6 +311,63 @@ mod tests {
     use super::*;
 
     fn assert_send<T: Send>(_: &T) {}
+
+    #[test]
+    fn interval_recorded_on_arrival_predicts_that_chunk() {
+        use crate::aws::realtime::tests::get_test_vcp;
+        use chrono::{NaiveDateTime, TimeZone};
+
+        let vcp = get_test_vcp();
+        let elevation_mapper = ElevationChunkMapper::new(&vcp);
+
+        // The first chunk of the second sweep arrives 7 seconds after the last chunk of the first
+        let arriving_sequence = (3..=elevation_mapper.final_sequence())
+            .find(|&sequence| {
+                elevation_mapper
+                    .get_chunk_metadata(sequence)
+                    .unwrap()
+                    .is_first_in_sweep()
+            })
+            .unwrap();
+        let upload = Utc.with_ymd_and_hms(2022, 3, 5, 23, 30, 0).unwrap();
+        let chunk_at = |sequence, upload| {
+            ChunkIdentifier::new(
+                "KDMX",
+                VolumeIndex::new(1),
+                NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+                sequence,
+                ChunkType::Intermediate,
+                Some(upload),
+            )
+        };
+        let previous = chunk_at(arriving_sequence - 1, upload);
+        let arriving = chunk_at(arriving_sequence, upload + Duration::seconds(7));
+
+        let mut state = ChunkStreamState {
+            site: "KDMX".to_string(),
+            current_chunk: previous.clone(),
+            elevation_mapper,
+            vcp,
+            timing_stats: ChunkTimingStats::new(),
+            previous_chunk_time: previous.upload_date_time(),
+            download_policy: RetryPolicy::default_download(),
+            discovery_policy: RetryPolicy::default_discovery(),
+        };
+        let physics_estimate = state.next_chunk_estimate().unwrap();
+        assert_ne!(physics_estimate, upload + Duration::seconds(7));
+
+        let chunk = Chunk::IntermediateOrEnd(crate::volume::Record::new(vec![0; 8]));
+        record_arrival(&mut state, &arriving, &chunk, 1);
+        assert_eq!(state.current_chunk, arriving);
+        assert_eq!(state.previous_chunk_time, arriving.upload_date_time());
+
+        // Predicting the arriving chunk from its predecessor reads the recorded interval
+        state.current_chunk = previous;
+        assert_eq!(
+            state.next_chunk_estimate(),
+            Some(upload + Duration::seconds(7))
+        );
+    }
 
     #[test]
     fn chunk_stream_is_send_with_tokio_sleep() {

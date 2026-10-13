@@ -6,11 +6,11 @@
 
 use crate::aws::realtime::{
     download_chunk, estimate_chunk_availability_time, get_latest_volume, list_chunks_in_volume,
-    project_volume_end_time, Chunk, ChunkIdentifier, ChunkTimingStats, ChunkType,
-    ElevationChunkMapper, NextChunk, PollConfig, RetryState, VolumeIndex,
+    project_volume_end_time, Chunk, ChunkCharacteristics, ChunkIdentifier, ChunkTimingStats,
+    ChunkType, ElevationChunkMapper, NextChunk, PollConfig, RetryState, VolumeIndex,
 };
 use crate::result::{AwsError, Error, Result};
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use log::debug;
 use nexrad_decode::messages::volume_coverage_pattern;
 
@@ -290,21 +290,7 @@ impl ChunkIterator {
                     // Update VCP and elevation mapper from the new volume's Start chunk
                     self.refresh_vcp(&downloaded.chunk);
 
-                    // Update timing stats if we have previous chunk time
-                    if let (Some(upload_time), Some(prev_time)) = (
-                        downloaded.identifier.upload_date_time(),
-                        self.last_chunk_time,
-                    ) {
-                        let duration = upload_time - prev_time;
-                        self.update_timing_stats(
-                            &downloaded.identifier,
-                            duration,
-                            downloaded.attempts,
-                        );
-                    }
-
-                    self.last_chunk_time = downloaded.identifier.upload_date_time();
-                    self.state = IteratorState::Ready(downloaded.identifier.clone());
+                    self.record_arrival(&downloaded.identifier, downloaded.attempts);
 
                     return Ok(Some(downloaded));
                 }
@@ -377,16 +363,7 @@ impl ChunkIterator {
                     self.refresh_vcp(&downloaded.chunk);
                 }
 
-                // Update timing stats
-                if let (Some(upload_time), Some(prev_time)) =
-                    (identifier.upload_date_time(), self.last_chunk_time)
-                {
-                    let duration = upload_time - prev_time;
-                    self.update_timing_stats(identifier, duration, 1);
-                }
-
-                self.last_chunk_time = identifier.upload_date_time();
-                self.state = IteratorState::Ready(identifier.clone());
+                self.record_arrival(identifier, 1);
 
                 Ok(Some(downloaded))
             }
@@ -418,30 +395,30 @@ impl ChunkIterator {
         }
     }
 
-    /// Updates timing statistics for a chunk.
-    fn update_timing_stats(
-        &mut self,
-        chunk_id: &ChunkIdentifier,
-        duration: Duration,
-        attempts: usize,
-    ) {
-        if let (Some(vcp), Some(mapper)) = (&self.vcp, &self.elevation_mapper) {
-            if let Some(elevation) = mapper
-                .get_sequence_elevation_number(chunk_id.sequence())
-                .and_then(|n| vcp.elevations().get(n - 1))
-            {
-                use crate::aws::realtime::ChunkCharacteristics;
-
-                let characteristics = ChunkCharacteristics {
-                    chunk_type: chunk_id.chunk_type(),
-                    waveform_type: elevation.waveform_type(),
-                    channel_configuration: elevation.channel_configuration(),
-                };
-
+    /// Makes `identifier` the current chunk. The interval since the previous chunk's upload is
+    /// added to the timing statistics under the arriving chunk's characteristics, the key under
+    /// which [`next_expected_time`](Self::next_expected_time) looks it up to predict this chunk
+    /// from its predecessor.
+    fn record_arrival(&mut self, identifier: &ChunkIdentifier, attempts: usize) {
+        if let (Some(upload_time), Some(prev_time), Some(vcp), Some(mapper)) = (
+            identifier.upload_date_time(),
+            self.last_chunk_time,
+            &self.vcp,
+            &self.elevation_mapper,
+        ) {
+            if let Some(characteristics) = ChunkCharacteristics::for_chunk(
+                identifier.sequence(),
+                identifier.chunk_type(),
+                vcp,
+                mapper,
+            ) {
                 self.timing_stats
-                    .add_timing(characteristics, duration, attempts);
+                    .add_timing(characteristics, upload_time - prev_time, attempts);
             }
         }
+
+        self.last_chunk_time = identifier.upload_date_time();
+        self.state = IteratorState::Ready(identifier.clone());
     }
 
     /// Returns the current chunk identifier, if available.
@@ -551,5 +528,60 @@ mod generation_regression_tests {
         let current = id(999, "20260912-140000");
         assert!(advances_volume(Some(&current), &id(1, "20260912-140452")));
         assert!(advances_volume(None, &current));
+    }
+}
+
+#[cfg(test)]
+mod timing_tests {
+    use super::*;
+    use crate::aws::realtime::tests::get_test_vcp;
+    use chrono::{Duration, NaiveDateTime, TimeZone};
+
+    fn chunk_at(sequence: usize, upload: DateTime<Utc>) -> ChunkIdentifier {
+        ChunkIdentifier::new(
+            "KDMX",
+            VolumeIndex::new(1),
+            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+            sequence,
+            ChunkType::Intermediate,
+            Some(upload),
+        )
+    }
+
+    #[test]
+    fn interval_recorded_on_arrival_predicts_that_chunk() {
+        let vcp = get_test_vcp();
+        let mapper = ElevationChunkMapper::new(&vcp);
+
+        // The first chunk of the second sweep arrives 7 seconds after the last chunk of the first
+        let arriving_sequence = (3..=mapper.final_sequence())
+            .find(|&sequence| {
+                mapper
+                    .get_chunk_metadata(sequence)
+                    .unwrap()
+                    .is_first_in_sweep()
+            })
+            .unwrap();
+        let upload = Utc.with_ymd_and_hms(2022, 3, 5, 23, 30, 0).unwrap();
+        let previous = chunk_at(arriving_sequence - 1, upload);
+        let arriving = chunk_at(arriving_sequence, upload + Duration::seconds(7));
+
+        let mut iterator = ChunkIterator::from_chunk(PollConfig::new("KDMX"), previous.clone());
+        iterator.vcp = Some(vcp);
+        iterator.elevation_mapper = Some(mapper);
+        iterator.last_chunk_time = previous.upload_date_time();
+
+        let physics_estimate = iterator.next_expected_time().unwrap();
+        assert_ne!(physics_estimate, upload + Duration::seconds(7));
+
+        iterator.record_arrival(&arriving, 1);
+        assert_eq!(iterator.current(), Some(&arriving));
+
+        // Predicting the arriving chunk from its predecessor reads the recorded interval
+        iterator.state = IteratorState::Ready(previous);
+        assert_eq!(
+            iterator.next_expected_time(),
+            Some(upload + Duration::seconds(7))
+        );
     }
 }

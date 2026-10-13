@@ -26,6 +26,12 @@ const INTER_SWEEP_ELEVATION_RATE_SECS_PER_DEG: f64 = 0.08;
 /// Derived from analysis: mean ~8.5s, range 7-10s.
 const INTER_VOLUME_GAP_SECS: f64 = 8.5;
 
+/// Gap in seconds between a volume's Start chunk and its first radial chunk (sequence 2).
+///
+/// The Start chunk carries only metadata and is uploaded as the volume's first sweep begins, so
+/// the first radial chunk follows it closely.
+const START_TO_FIRST_INTERMEDIATE_GAP_SECS: f64 = 1.5;
+
 /// Physics-based timing model for predicting chunk and sweep timing from VCP parameters.
 ///
 /// All predictions are derived from analysis of 59 archive volumes across 12 NEXRAD sites,
@@ -75,6 +81,12 @@ impl ChunkTimingModel {
     /// Predicted inter-volume gap in seconds (constant 8.5s).
     pub(crate) fn inter_volume_gap_secs() -> f64 {
         INTER_VOLUME_GAP_SECS
+    }
+
+    /// Predicted gap in seconds between a volume's Start chunk and its first radial chunk
+    /// (constant 1.5s).
+    pub(crate) fn start_to_first_intermediate_gap_secs() -> f64 {
+        START_TO_FIRST_INTERMEDIATE_GAP_SECS
     }
 
     /// Estimate the time interval in seconds between two consecutive chunks.

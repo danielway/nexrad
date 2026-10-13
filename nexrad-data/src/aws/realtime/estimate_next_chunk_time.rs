@@ -1,6 +1,6 @@
 use crate::aws::realtime::{
     ChunkCharacteristics, ChunkIdentifier, ChunkTimingModel, ChunkTimingStats, ChunkType,
-    ElevationChunkMapper,
+    ElevationChunkMapper, NextChunk,
 };
 use chrono::Duration as ChronoDuration;
 use chrono::{DateTime, Utc};
@@ -30,71 +30,72 @@ pub(crate) fn estimate_chunk_availability_time(
     Some(availability_time)
 }
 
-/// Attempts to estimate the time the given chunk will take to become available in the real-time S3
-/// bucket following the previous chunk. Requires an [ElevationChunkMapper] to describe the
+/// Attempts to estimate the time the chunk following `chunk` will take to become available in the
+/// real-time S3 bucket after `chunk`. Requires an [ElevationChunkMapper] to describe the
 /// relationship between chunk sequence and VCP elevations. A None result indicates that an estimate
 /// cannot be made.
+///
+/// The Start chunk is followed by the volume's first radial chunk after a constant short gap.
+/// Otherwise, historical timing is looked up under the characteristics of the chunk being
+/// predicted (sequence + 1), the same key under which the interval into that chunk is recorded on
+/// its arrival; without history, the physics-based [ChunkTimingModel] is used.
 pub(crate) fn estimate_chunk_processing_time(
     chunk: &ChunkIdentifier,
     vcp: &volume_coverage_pattern::Message,
     elevation_chunk_mapper: &ElevationChunkMapper,
     timing_stats: Option<&ChunkTimingStats>,
 ) -> Option<ChronoDuration> {
-    // Start chunks: use the inter-volume gap model
+    // Start chunk: the first radial chunk follows shortly after
     if chunk.chunk_type() == ChunkType::Start {
-        let gap_ms = (ChunkTimingModel::inter_volume_gap_secs() * 1000.0) as i64;
+        let gap_ms = (ChunkTimingModel::start_to_first_intermediate_gap_secs() * 1000.0) as i64;
         return Some(ChronoDuration::milliseconds(gap_ms));
     }
 
-    // Try to use the physics-based model via chunk metadata
-    if let Some(next_metadata) = elevation_chunk_mapper.get_chunk_metadata(chunk.sequence() + 1) {
-        let current_metadata = elevation_chunk_mapper.get_chunk_metadata(chunk.sequence());
+    // Try historical timing, then the physics-based model, via the next chunk's metadata
+    if let Some(NextChunk::Sequence(next)) = chunk.next_chunk(elevation_chunk_mapper) {
+        if let Some(next_metadata) = elevation_chunk_mapper.get_chunk_metadata(next.sequence()) {
+            // Historical timing is keyed by the chunk being predicted
+            if let Some(characteristics) = ChunkCharacteristics::for_chunk(
+                next.sequence(),
+                next.chunk_type(),
+                vcp,
+                elevation_chunk_mapper,
+            ) {
+                let average_timing =
+                    timing_stats.and_then(|stats| stats.get_average_timing(&characteristics));
+                let average_attempts =
+                    timing_stats.and_then(|stats| stats.get_average_attempts(&characteristics));
 
-        // Check for historical timing data first
-        if let Some(elevation) = elevation_chunk_mapper
-            .get_sequence_elevation_number(chunk.sequence())
-            .and_then(|elevation_number| vcp.elevations().get(elevation_number - 1))
-        {
-            let characteristics = ChunkCharacteristics {
-                chunk_type: chunk.chunk_type(),
-                waveform_type: elevation.waveform_type(),
-                channel_configuration: elevation.channel_configuration(),
-            };
+                if let (Some(avg_timing), Some(avg_attempts)) = (average_timing, average_attempts) {
+                    let mut wait_time = avg_timing;
+                    wait_time += chrono::Duration::seconds(avg_attempts as i64 - 1);
 
-            let average_timing =
-                timing_stats.and_then(|stats| stats.get_average_timing(&characteristics));
-            let average_attempts =
-                timing_stats.and_then(|stats| stats.get_average_attempts(&characteristics));
+                    debug!(
+                        "Using historical average timing of {}ms and {} attempts for {}ms",
+                        avg_timing.num_milliseconds(),
+                        avg_attempts,
+                        wait_time.num_milliseconds()
+                    );
 
-            if let (Some(avg_timing), Some(avg_attempts)) = (average_timing, average_attempts) {
-                let mut wait_time = avg_timing;
-                wait_time += chrono::Duration::seconds(avg_attempts as i64 - 1);
+                    return Some(wait_time);
+                }
+            }
+
+            // Fall back to physics-based model
+            if let Some(current) = elevation_chunk_mapper.get_chunk_metadata(chunk.sequence()) {
+                let interval_secs =
+                    ChunkTimingModel::estimate_chunk_interval_secs(current, next_metadata);
+                let interval_ms = (interval_secs * 1000.0) as i64;
 
                 debug!(
-                    "Using historical average timing of {}ms and {} attempts for {}ms",
-                    avg_timing.num_milliseconds(),
-                    avg_attempts,
-                    wait_time.num_milliseconds()
+                    "Using physics model: interval={}ms (az_rate={:.1} dps, first_in_sweep={})",
+                    interval_ms,
+                    next_metadata.azimuth_rate_dps(),
+                    next_metadata.is_first_in_sweep()
                 );
 
-                return Some(wait_time);
+                return Some(ChronoDuration::milliseconds(interval_ms));
             }
-        }
-
-        // Fall back to physics-based model
-        if let Some(current) = current_metadata {
-            let interval_secs =
-                ChunkTimingModel::estimate_chunk_interval_secs(current, next_metadata);
-            let interval_ms = (interval_secs * 1000.0) as i64;
-
-            debug!(
-                "Using physics model: interval={}ms (az_rate={:.1} dps, first_in_sweep={})",
-                interval_ms,
-                next_metadata.azimuth_rate_dps(),
-                next_metadata.is_first_in_sweep()
-            );
-
-            return Some(ChronoDuration::milliseconds(interval_ms));
         }
     }
 

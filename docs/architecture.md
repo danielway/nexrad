@@ -58,7 +58,7 @@ The `nexrad` crate re-exports all sub-crates and provides top-level convenience 
 ```rust
 // Through the facade (ergonomic)
 let scan = nexrad::load_file("volume.ar2v")?;
-let field = nexrad::extract_field(sweep, Product::Reflectivity);
+let field = sweep.field(Product::Reflectivity);
 
 // Through sub-crates directly (fine-grained)
 let file = nexrad_data::volume::File::new(bytes).decompress()?;

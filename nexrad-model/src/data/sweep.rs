@@ -1,4 +1,4 @@
-use crate::data::Radial;
+use crate::data::{Product, Radial, SweepField};
 use crate::result::{Error, Result};
 use std::fmt::Display;
 
@@ -111,6 +111,30 @@ impl Sweep {
     /// The radials comprising this sweep.
     pub fn radials(&self) -> &[Radial] {
         &self.radials
+    }
+
+    /// Extract this sweep's data for `product` as a [`SweepField`].
+    ///
+    /// Returns `None` if no radial in the sweep carries data for `product`. This is
+    /// equivalent to [`SweepField::from_radials`] over [`radials`](Self::radials).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nexrad_model::data::{MomentData, Product, Radial, Sweep};
+    ///
+    /// let reflectivity = MomentData::from_fixed_point(
+    ///     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
+    /// );
+    /// let radial = Radial::builder(0, 0.0, 1, 0.5).moment(reflectivity).build();
+    /// let sweep = Sweep::new(1, vec![radial]);
+    ///
+    /// let field = sweep.field(Product::Reflectivity).unwrap();
+    /// assert_eq!(field.gate_count(), 3);
+    /// assert!(sweep.field(Product::Velocity).is_none());
+    /// ```
+    pub fn field(&self, product: Product) -> Option<SweepField> {
+        SweepField::from_radials(self.radials(), product)
     }
 
     /// The time range of this sweep as `(earliest, latest)` collection times.

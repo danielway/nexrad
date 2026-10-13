@@ -1,4 +1,5 @@
-use crate::data::{Sweep, VcpNumber, VolumeCoveragePattern};
+use crate::data::{Product, Sweep, SweepField, VcpNumber, VolumeCoveragePattern};
+use crate::geo::RadarCoordinateSystem;
 use crate::meta::Site;
 use std::fmt::Display;
 
@@ -63,6 +64,95 @@ impl Scan {
     /// The elevation sweeps comprising this scan.
     pub fn sweeps(&self) -> &[Sweep] {
         &self.sweeps
+    }
+
+    /// Extract a [`SweepField`] for `product` from every sweep that carries it.
+    ///
+    /// Sweeps without data for `product` are skipped, so the result may be shorter than
+    /// [`sweeps`](Self::sweeps); the remaining fields are in scan order. See
+    /// [`Sweep::field`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nexrad_model::data::{MomentData, Product, Radial, Scan, Sweep, VcpNumber,
+    ///     VolumeCoveragePattern};
+    ///
+    /// let velocity = MomentData::from_fixed_point(
+    ///     Product::Velocity, 2, 2000, 250, 8, 2.0, 129.0, vec![100, 140],
+    /// );
+    /// let with_velocity = Radial::builder(0, 0.0, 2, 0.9).moment(velocity).build();
+    /// let without_velocity = Radial::builder(0, 0.0, 1, 0.5).build();
+    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+    /// let scan = Scan::new(
+    ///     vcp,
+    ///     vec![Sweep::new(1, vec![without_velocity]), Sweep::new(2, vec![with_velocity])],
+    /// );
+    ///
+    /// let fields = scan.fields(Product::Velocity);
+    /// assert_eq!(fields.len(), 1);
+    /// ```
+    pub fn fields(&self, product: Product) -> Vec<SweepField> {
+        self.sweeps
+            .iter()
+            .filter_map(|sweep| sweep.field(product))
+            .collect()
+    }
+
+    /// Extract a [`SweepField`] for `product` from the first sweep that carries it.
+    ///
+    /// Returns the index of that sweep within [`sweeps`](Self::sweeps) alongside the field,
+    /// or `None` if no sweep has data for `product`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nexrad_model::data::{MomentData, Product, Radial, Scan, Sweep, VcpNumber,
+    ///     VolumeCoveragePattern};
+    ///
+    /// let velocity = MomentData::from_fixed_point(
+    ///     Product::Velocity, 2, 2000, 250, 8, 2.0, 129.0, vec![100, 140],
+    /// );
+    /// let with_velocity = Radial::builder(0, 0.0, 2, 0.9).moment(velocity).build();
+    /// let without_velocity = Radial::builder(0, 0.0, 1, 0.5).build();
+    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+    /// let scan = Scan::new(
+    ///     vcp,
+    ///     vec![Sweep::new(1, vec![without_velocity]), Sweep::new(2, vec![with_velocity])],
+    /// );
+    ///
+    /// let (index, field) = scan.first_field(Product::Velocity).unwrap();
+    /// assert_eq!(index, 1);
+    /// assert_eq!(field.gate_count(), 2);
+    /// ```
+    pub fn first_field(&self, product: Product) -> Option<(usize, SweepField)> {
+        self.sweeps
+            .iter()
+            .enumerate()
+            .find_map(|(index, sweep)| sweep.field(product).map(|field| (index, field)))
+    }
+
+    /// A [`RadarCoordinateSystem`] centered on this scan's radar site.
+    ///
+    /// Returns `None` if the scan has no [`site`](Self::site) metadata.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nexrad_model::data::{Scan, VcpNumber, VolumeCoveragePattern};
+    /// use nexrad_model::meta::Site;
+    ///
+    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+    /// let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build();
+    ///
+    /// let scan = Scan::with_site(site, vcp.clone(), vec![]);
+    /// let coords = scan.coordinate_system().unwrap();
+    /// assert_eq!(coords.latitude(), 35.3331);
+    ///
+    /// assert!(Scan::new(vcp, vec![]).coordinate_system().is_none());
+    /// ```
+    pub fn coordinate_system(&self) -> Option<RadarCoordinateSystem> {
+        self.site().map(RadarCoordinateSystem::new)
     }
 
     /// All sweeps at the given elevation angle in degrees, in scan order.

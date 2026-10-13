@@ -86,7 +86,9 @@ fn main() -> nexrad::Result<()> {
     }
 
     // Build coordinate system for geographic operations
-    let coord_sys = nexrad::coordinate_system_required(&scan)?;
+    let coord_sys = scan
+        .coordinate_system()
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No site metadata"))?;
 
     // Create output directory
     std::fs::create_dir_all(OUTPUT_DIR)?;
@@ -95,7 +97,8 @@ fn main() -> nexrad::Result<()> {
     // Compute native resolution from the data itself
     // ========================================================================
     let sweep_0 = &scan.sweeps()[0];
-    let ref_field = nexrad::extract_field(sweep_0, Product::Reflectivity)
+    let ref_field = sweep_0
+        .field(Product::Reflectivity)
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No reflectivity"))?;
 
     // Native resolution: 2 * gate_count ensures ~1 pixel per gate at the outer edge.
@@ -138,7 +141,7 @@ fn main() -> nexrad::Result<()> {
 
     // For products not on sweep 0, find the first sweep that has them
     for product in &products {
-        match nexrad::extract_first_field(&scan, *product) {
+        match scan.first_field(*product) {
             Some((sweep_idx, f)) => {
                 let opts = RenderOptions::native_for(&f);
                 let field_native = f.gate_count() * 2;
@@ -181,7 +184,7 @@ fn main() -> nexrad::Result<()> {
     // Deduplicate elevations — only render the first (REF-only) sweep per angle
     let mut seen_elevations = std::collections::HashSet::new();
     for (i, sweep) in scan.sweeps().iter().enumerate() {
-        if let Some(field) = nexrad::extract_field(sweep, Product::Reflectivity) {
+        if let Some(field) = sweep.field(Product::Reflectivity) {
             // Round to 1 decimal to group identical angles
             let angle_key = (field.elevation_degrees() * 10.0).round() as i32;
             if !seen_elevations.insert(angle_key) {
@@ -289,7 +292,7 @@ fn main() -> nexrad::Result<()> {
 
     // 3h. Correlation coefficient-based noise removal
     {
-        let cc_field = nexrad::extract_field(sweep_0, Product::CorrelationCoefficient);
+        let cc_field = sweep_0.field(Product::CorrelationCoefficient);
         match cc_field {
             Some(cc) => {
                 // The CC filter now handles geometry mismatches (e.g., REF at 460 km
@@ -363,7 +366,7 @@ fn main() -> nexrad::Result<()> {
     println!("\n=== Section 5: Storm-Relative Velocity ===");
 
     // Find the first sweep with velocity data
-    if let Some((_, vf)) = nexrad::extract_first_field(&scan, Product::Velocity) {
+    if let Some((_, vf)) = scan.first_field(Product::Velocity) {
         let vel_native_options = RenderOptions::native_for(&vf);
         let vel_native = vf.gate_count() * 2;
         let vel_scale = default_color_scale(Product::Velocity);
@@ -418,7 +421,7 @@ fn main() -> nexrad::Result<()> {
     // ========================================================================
     println!("\n=== Section 6: Composite Reflectivity ===");
 
-    let ref_fields = nexrad::extract_fields(&scan, Product::Reflectivity);
+    let ref_fields = scan.fields(Product::Reflectivity);
     println!(
         "  Extracted {} reflectivity fields across elevations",
         ref_fields.len()
@@ -638,7 +641,7 @@ fn main() -> nexrad::Result<()> {
     println!(
         "  - 01_* : All 7 radar products at native resolution ({}px for REF, {}px for dual-pol)",
         native_size,
-        nexrad::extract_first_field(&scan, Product::Velocity)
+        scan.first_field(Product::Velocity)
             .map(|(_, f)| f.gate_count() * 2)
             .unwrap_or(0)
     );

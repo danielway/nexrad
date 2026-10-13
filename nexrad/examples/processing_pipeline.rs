@@ -37,7 +37,8 @@ fn main() -> nexrad::Result<()> {
     );
 
     // --- Extract a SweepField ---
-    let (sweep_idx, field) = nexrad::extract_first_field(&scan, Product::Reflectivity)
+    let (sweep_idx, field) = scan
+        .first_field(Product::Reflectivity)
         .expect("scan should contain reflectivity data");
     println!(
         "Extracted reflectivity from sweep {} ({:.1}° elevation, {} azimuths × {} gates)",
@@ -68,13 +69,15 @@ fn main() -> nexrad::Result<()> {
     println!("Saved pipeline_filtered.png (threshold 5-75 dBZ)");
 
     // --- Compute composite reflectivity ---
-    let ref_fields = nexrad::extract_fields(&scan, Product::Reflectivity);
+    let ref_fields = scan.fields(Product::Reflectivity);
     println!(
         "Extracted {} elevation tilts for composite",
         ref_fields.len()
     );
 
-    let coord_sys = nexrad::coordinate_system_required(&scan)?;
+    let coord_sys = scan
+        .coordinate_system()
+        .expect("scan should contain site metadata");
     let extent = coord_sys.sweep_extent(ref_fields[0].max_range_km());
 
     let composite =

@@ -5,6 +5,8 @@
 //! specific colors based on threshold levels. For rendering, the scale is
 //! converted to a [`ColorLookupTable`] which provides O(1) color lookups.
 
+use crate::Product;
+
 /// An RGBA color with components in the range 0.0 to 1.0.
 ///
 /// This type is used for defining color scales. Colors are converted to
@@ -579,4 +581,64 @@ pub fn clutter_filter_power_scale() -> DiscreteColorScale {
         ColorScaleLevel::new(10.0, Color::rgb(1.0000, 0.4118, 0.4118)),
         ColorScaleLevel::new(20.0, Color::rgb(0.8039, 0.0000, 0.0000)),
     ])
+}
+
+/// Returns the default color scale for a given product.
+///
+/// This function selects an appropriate color scale based on the product type,
+/// using standard meteorological conventions.
+///
+/// | Product | Scale |
+/// |---------|-------|
+/// | Reflectivity | NWS Reflectivity (dBZ) |
+/// | Velocity | Divergent Green-Red (-64 to +64 m/s) |
+/// | SpectrumWidth | Sequential (0 to 30 m/s) |
+/// | DifferentialReflectivity | Divergent (-2 to +6 dB) |
+/// | DifferentialPhase | Sequential (0 to 360 deg) |
+/// | CorrelationCoefficient | Sequential (0 to 1) |
+/// | ClutterFilterPower | Divergent (-20 to +20 dB) |
+/// | Any other product | Grayscale fallback over [`Product::value_range`] |
+///
+/// Products added to [`Product`] in future releases that do not yet have a
+/// dedicated scale fall back to a neutral two-level grayscale scale.
+///
+/// # Example
+///
+/// ```
+/// use nexrad_render::{default_scale, Product};
+///
+/// let scale = default_scale(Product::Reflectivity);
+/// // Use with render_radials or build a ColorLookupTable
+/// ```
+pub fn default_scale(product: Product) -> DiscreteColorScale {
+    match product {
+        Product::Reflectivity => nws_reflectivity_scale(),
+        Product::Velocity => velocity_scale(),
+        Product::SpectrumWidth => spectrum_width_scale(),
+        Product::DifferentialReflectivity => differential_reflectivity_scale(),
+        Product::DifferentialPhase => differential_phase_scale(),
+        Product::CorrelationCoefficient => correlation_coefficient_scale(),
+        Product::ClutterFilterPower => clutter_filter_power_scale(),
+        _ => fallback_scale(product),
+    }
+}
+
+/// Neutral fallback scale for products without a dedicated color scale.
+///
+/// Splits the product's [`Product::value_range`] at its midpoint into two gray
+/// levels, so data remains visible without implying any meteorological meaning.
+fn fallback_scale(product: Product) -> DiscreteColorScale {
+    let (min, max) = product.value_range();
+    DiscreteColorScale::new(vec![
+        ColorScaleLevel::new(min, Color::rgb(0.4, 0.4, 0.4)),
+        ColorScaleLevel::new((min + max) / 2.0, Color::rgb(0.8, 0.8, 0.8)),
+    ])
+}
+
+/// Returns the default color scale for a product, wrapped in a [`ColorScale`] enum.
+///
+/// This is a convenience wrapper around [`default_scale`] that returns the
+/// [`ColorScale`] enum directly, avoiding the need to call `.into()` at each call site.
+pub fn default_color_scale(product: Product) -> ColorScale {
+    default_scale(product).into()
 }

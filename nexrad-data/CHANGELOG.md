@@ -60,6 +60,9 @@ Changes since `1.0.0-rc.7`, the last published release. Together they make up th
   `Option<String>`. (#171)
 - `aws::archive::list_files(site, date: NaiveDate)` takes the date by value, and
   `aws::archive::download_file(identifier: &Identifier)` takes the identifier by reference. (#171)
+- `aws::realtime::list_chunks_in_volume` reads every listing page and returns only the chunks of the newest scan in a
+  reused volume directory, sorted by sequence; `max_keys` limits the returned chunks rather than the S3 request.
+  `ChunkIterator` waits instead of moving into a next volume that still holds an older scan. (#149)
 - Volume assembly is delegated to `nexrad-decode`'s `ScanBuilder` (#169):
   - `volume::File::scan` includes legacy (type 1) radials, consistent with `Record::radials()`;
     `assemble_volume` accepts type 1 messages too.
@@ -84,5 +87,7 @@ Changes since `1.0.0-rc.7`, the last published release. Together they make up th
 
 ### Fixed
 
+- `aws::realtime::get_latest_volume` no longer returns an older volume when the bucket's volume numbers wrap around.
+  (#149, #154)
 - `volume::File::records()` returns `Error::TruncatedRecord` instead of panicking when the data is shorter than the
   24-byte volume header. (#171)

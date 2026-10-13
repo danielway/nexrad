@@ -57,6 +57,8 @@ Changes since `1.0.0-rc.3`, the last published release. Together they make up th
     `ContiguousSurveillance`, `ContiguousDopplerWithAmbiguityResolution`,
     `ContiguousDopplerWithoutAmbiguityResolution`, `Batch`, `StaggeredPulsePair`.
 - `digital_radar_data::VolumeDataBlock::volume_coverage_pattern()` returns `VcpNumber`. (#163)
+- VCP 32 decodes as `VcpNumber::Vcp32`; the old `digital_radar_data::VolumeCoveragePattern` had no variant for it and
+  returned `Unknown(32)`. (#163)
 - `rda_status_data::Message::volume_coverage_pattern()` returns `Option<VcpSelection>`: `number()` returns `VcpNumber`
   instead of `i16`, and `source()` replaces `local()`/`remote()`. (#163)
 - `MessageHeader` is now `MessageHeader<'a>` with private fields read through accessors: `segment_size` →
@@ -110,7 +112,8 @@ Changes since `1.0.0-rc.3`, the last published release. Together they make up th
 
 - `digital_radar_data::VolumeCoveragePattern`; use `messages::VcpNumber`. (#163)
 - `rda_status_data::VolumeCoveragePatternNumber`; use `rda_status_data::VcpSelection` and `VcpSource`. (#163)
-- `digital_radar_data::DataMomentPointer` and `DataMomentPointerType`, which nothing used. (#166)
+- `digital_radar_data::DataMomentPointer`, `DataMomentPointerType` and `DataMomentGenericPointerType`, which nothing
+  used. (#166)
 - Module `summarize` and all of its items (`messages`, `MessageSummary`, `MessageGroupSummary`, `VcpInfo`,
   `VcpElevationInfo`, `extract_vcp_info`, `RdaStatusInfo`, `extract_rda_status_info`). Iterate the decoded messages
   and match on `message.contents()` instead; `nexrad-data/examples/realtime.rs` has a minimal example. (#168)
@@ -124,6 +127,9 @@ Changes since `1.0.0-rc.3`, the last published release. Together they make up th
 
 ### Fixed
 
+- Angles with the sign bit set decode as negative: `volume_coverage_pattern::ElevationDataBlock` elevation, sector edge
+  and EBC angles for negative elevation cuts were returned as their 360-degree-wrapped value (for example 359.8 instead
+  of -0.2). (#146)
 - `DataBlockId::data_block_name()` returns `DataBlockName::SpectrumWidth` for the `"SW "` block instead of
   `Unknown(*b"SW ")`. (#173)
 - With `uom`, `RadialDataBlock::unambiguous_range()` applies the ICD 0.1 km scale; it was 10× too large. (#173)

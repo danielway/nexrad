@@ -1,4 +1,4 @@
-use crate::result::aws::AwsError::UnrecognizedChunkFormat;
+use crate::result::AwsError::UnrecognizedChunkFormat;
 use crate::result::Error::Aws;
 use crate::volume;
 

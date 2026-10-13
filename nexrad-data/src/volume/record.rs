@@ -49,7 +49,7 @@ impl<'a> Record<'a> {
     }
 
     /// Decompresses this LDM record's data.
-    pub fn decompress<'b>(&self) -> crate::result::Result<Record<'b>> {
+    pub fn decompress(&self) -> crate::result::Result<Record<'static>> {
         use crate::result::Error;
         use bzip2::read::BzDecoder;
         use std::io::Read;
@@ -136,7 +136,7 @@ impl Debug for Record<'_> {
 ///
 /// The format is auto-detected by checking whether the first 4 bytes form a valid
 /// (non-zero) record size.
-pub fn split_compressed_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
+pub(crate) fn split_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
     if data.len() < 4 {
         // Not enough data for either format detection or a valid record.
         // Delegate to split_ldm_records which returns Ok(empty) for truly empty

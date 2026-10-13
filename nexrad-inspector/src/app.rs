@@ -436,7 +436,7 @@ impl App {
         self.loading_message = format!("Listing files for {} on {}...", site, date);
 
         let handle =
-            tokio::spawn(async move { nexrad_data::aws::archive::list_files(&site, &date).await });
+            tokio::spawn(async move { nexrad_data::aws::archive::list_files(&site, date).await });
 
         self.pending_operation = Some(PendingOperation::ListFiles(handle));
     }
@@ -467,7 +467,7 @@ impl App {
 
         let filename = identifier.name().to_string();
         let handle = tokio::spawn(async move {
-            let result = nexrad_data::aws::archive::download_file(identifier).await;
+            let result = nexrad_data::aws::archive::download_file(&identifier).await;
 
             // Save to ./downloads if successful
             if let Ok(ref volume_file) = result {

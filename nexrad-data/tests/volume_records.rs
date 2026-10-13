@@ -41,10 +41,10 @@ fn test_volume_header_decoding() {
         .unwrap()
         .with_timezone(&chrono::Utc);
 
-    assert_eq!(header.tape_filename(), Some("AR2V0006.".to_string()));
-    assert_eq!(header.extension_number(), Some("879".to_string()));
+    assert_eq!(header.tape_filename(), Some("AR2V0006."));
+    assert_eq!(header.extension_number(), Some("879"));
     assert_eq!(header.date_time(), Some(expected_volume_datetime));
-    assert_eq!(header.icao_of_radar(), Some("KDMX".to_string()));
+    assert_eq!(header.icao_of_radar(), Some("KDMX"));
 }
 
 #[test]

@@ -83,7 +83,7 @@ async fn list_recent_volume_files(site: &str) -> Vec<Identifier> {
     for days_ago in 0..3i64 {
         let date = today - Duration::days(days_ago);
 
-        match list_files(site, &date).await {
+        match list_files(site, date).await {
             Ok(files) => {
                 // list_files returns keys in lexicographic (chronological) order,
                 // so the newest volume for the day is last. Reverse to newest-first
@@ -262,7 +262,7 @@ async fn run_site_test(site: &str) {
         attempts += 1;
         let file_name = identifier.name().to_string();
 
-        let file = match download_file(identifier.clone()).await {
+        let file = match download_file(identifier).await {
             Ok(file) => file,
             Err(e) => {
                 eprintln!(

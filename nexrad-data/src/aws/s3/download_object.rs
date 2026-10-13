@@ -1,8 +1,8 @@
 use crate::aws::client::client;
 use crate::aws::s3::bucket_object::BucketObject;
 use crate::aws::s3::downloaded_bucket_object::DownloadedBucketObject;
-use crate::result::aws::AwsError;
-use crate::result::aws::AwsError::{S3GetObject, S3GetObjectRequest, S3Streaming};
+use crate::result::AwsError;
+use crate::result::AwsError::{S3GetObject, S3GetObjectRequest, S3Streaming};
 use crate::result::Error;
 use chrono::{DateTime, Utc};
 use log::{debug, trace};
@@ -21,7 +21,7 @@ pub async fn download_object(
         .get(&path)
         .send()
         .await
-        .map_err(S3GetObjectRequest)?;
+        .map_err(|e| S3GetObjectRequest(Box::new(e)))?;
     trace!(
         "  Object \"{}\" download response status: {}",
         key,
@@ -34,7 +34,11 @@ pub async fn download_object(
             let last_modified = get_last_modified_header(response.headers());
             trace!("  Object \"{key}\" last modified: {last_modified:?}");
 
-            let data = response.bytes().await.map_err(S3Streaming)?.to_vec();
+            let data = response
+                .bytes()
+                .await
+                .map_err(|e| S3Streaming(Box::new(e)))?
+                .to_vec();
             trace!("  Object \"{}\" data length: {}", key, data.len());
 
             Ok(DownloadedBucketObject {

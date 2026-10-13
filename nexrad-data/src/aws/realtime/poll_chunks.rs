@@ -9,7 +9,7 @@ use crate::aws::realtime::{
     ElevationChunkMapper, NextChunk, PollConfig, RetryPolicy, RetryState, VolumeIndex,
 };
 use crate::result::Error;
-use crate::result::{aws::AwsError, Result};
+use crate::result::{AwsError, Result};
 use chrono::{Duration, Utc};
 use futures_util::stream::Stream;
 use log::debug;

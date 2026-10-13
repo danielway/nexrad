@@ -9,7 +9,7 @@ use crate::aws::realtime::{
     project_volume_end_time, Chunk, ChunkIdentifier, ChunkTimingStats, ChunkType,
     ElevationChunkMapper, NextChunk, PollConfig, RetryState, VolumeIndex,
 };
-use crate::result::{aws::AwsError, Error, Result};
+use crate::result::{AwsError, Error, Result};
 use chrono::{DateTime, Duration, Utc};
 use log::debug;
 use nexrad_decode::messages::volume_coverage_pattern;

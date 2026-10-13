@@ -1,6 +1,6 @@
 use crate::{
     aws::realtime::{ChunkType, ElevationChunkMapper, VolumeIndex},
-    result::{aws::AwsError, Error, Result},
+    result::{AwsError, Error, Result},
 };
 use chrono::{DateTime, NaiveDateTime, Utc};
 
@@ -178,7 +178,7 @@ pub(crate) enum NextChunk {
     /// The next chunk is expected to be located in the same volume at this sequence. Once the next
     /// chunk's identifier is determined, it can be downloaded using the
     /// [crate::aws::realtime::download_chunk()] function. You may need to poll by checking if that
-    /// function returns [crate::result::aws::AwsError::S3ObjectNotFound].
+    /// function returns [crate::result::AwsError::S3ObjectNotFound].
     Sequence(ChunkIdentifier),
 
     /// The chunk is expected to be located in the next volume. The next volume's chunks can be

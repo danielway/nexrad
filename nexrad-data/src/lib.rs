@@ -43,10 +43,10 @@
 //!
 //! // List available files for a date and site
 //! let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
-//! let files = archive::list_files("KTLX", &date).await?;
+//! let files = archive::list_files("KTLX", date).await?;
 //!
 //! // Download a specific file
-//! let file = archive::download_file(files[0].clone()).await?;
+//! let file = archive::download_file(&files[0]).await?;
 //! ```
 //!
 //! # Features
@@ -100,4 +100,4 @@ pub mod result;
 pub use result::{Error, Result};
 
 #[cfg(feature = "aws")]
-pub use result::aws::AwsError;
+pub use result::AwsError;

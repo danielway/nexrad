@@ -71,7 +71,7 @@ nexrad = "1.0"
 ```
 
 This enables the default `full` feature, which includes every feature: local file processing, AWS downloads, real-time
-polling, processing, and rendering.
+streaming, processing, and rendering.
 
 **Common configurations:**
 
@@ -121,7 +121,7 @@ fn main() -> nexrad::Result<()> {
 With the `aws` feature enabled, download radar data directly from the NEXRAD archive:
 
 ```rust,ignore
-use chrono::NaiveDate;
+use nexrad::chrono::NaiveDate;
 
 #[tokio::main]
 async fn main() -> nexrad::Result<()> {
@@ -209,6 +209,12 @@ cargo run -p nexrad --example download_latest --features aws -- KTLX 2023-05-20
 
 # Render reflectivity image
 cargo run -p nexrad --example render_reflectivity --features render -- path/to/volume.ar2v output.png
+
+# Filter a sweep, compute composite reflectivity, and render both
+cargo run -p nexrad --example processing_pipeline -- path/to/volume.ar2v
+
+# Render every product and processing step for a full scan into renders/
+cargo run -p nexrad --example showcase --release
 ```
 
 ### Lower-Level APIs
@@ -218,8 +224,18 @@ For advanced use cases, you can use the sub-crates directly:
 - **`nexrad-decode`** - Parse individual NEXRAD messages from byte slices
 - **`nexrad-data`** - Handle Archive II file decompression and AWS S3 access
 - **`nexrad-model`** - Work directly with domain types
+- **`nexrad-process`** - Filter sweeps and compute derived products
+- **`nexrad-render`** - Render fields to images
 
-See each crate's documentation for detailed API information.
+See each crate's documentation for detailed API information, and [docs/architecture.md](docs/architecture.md) for how
+the crates fit together and the API stability rules they follow.
+
+### Changelogs
+
+Each library crate records its changes in its own CHANGELOG:
+[`nexrad`](nexrad/CHANGELOG.md), [`nexrad-model`](nexrad-model/CHANGELOG.md),
+[`nexrad-decode`](nexrad-decode/CHANGELOG.md), [`nexrad-data`](nexrad-data/CHANGELOG.md),
+[`nexrad-process`](nexrad-process/CHANGELOG.md) and [`nexrad-render`](nexrad-render/CHANGELOG.md).
 
 ## Maintaining the Radar Site Registry
 

@@ -4,7 +4,7 @@
 [![Docs.rs](https://docs.rs/nexrad-data/badge.svg)](https://docs.rs/nexrad-data)
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
 
-Provides structure definitions and decoding functions for NEXRAD Archive II volume files, along with functions for 
+Provides structure definitions and decoding functions for NEXRAD Archive II volume files, along with functions for
 downloading both archival and real-time data from open cloud providers like AWS OpenData.
 
 ## Volume Definitions
@@ -13,6 +13,18 @@ The `nexrad_data::volume` module provides model definitions for the NEXRAD Archi
 the Radar Operations Center's ICD 2620010J for the Archive II/User (Build 23.0, June 25, 2024). A `volume::File`
 can be constructed with archive or real-time data. It can decode the archive volume header and provide access to LDM
 `volume::Record`s which can be decompressed and decoded into a series of messages.
+
+With the `model` feature, `volume::File::scan` decompresses and decodes every record and assembles the result into a
+`nexrad_model::data::Scan`. The conversion itself is done by `nexrad-decode`'s `ScanBuilder`; this crate only handles
+I/O and decompression.
+
+```rust,ignore
+use nexrad_data::volume::File;
+
+let file = File::new(std::fs::read("KTLX20130520_201643_V06.ar2v")?);
+let scan = file.scan()?;
+println!("{} sweeps", scan.sweeps().len());
+```
 
 ## AWS Open Data
 
@@ -38,7 +50,14 @@ when starting from a previously seen volume. The `realtime::chunk_stream` functi
 continuously yields chunks as they become available; it is runtime-agnostic and takes a caller-supplied sleep function
 (with tokio, `chunk_stream(config, |d| tokio::time::sleep(d))`). For caller-controlled scheduling,
 `realtime::ChunkIterator` provides a pull-based interface with manual timing control: its `next_expected_time` and
-`time_until_next` methods estimate when the next chunk becomes available for download from S3.
+`time_until_next` methods estimate when the next chunk becomes available for download from S3. With the `model`
+feature, `realtime::assemble_volume` turns a volume's chunks into a `Scan`.
+
+## Errors
+
+`Error` and `Result` are re-exported at the crate root, as is `AwsError` with the `aws` feature. Both enums are
+`#[non_exhaustive]`. HTTP failures are boxed inside `AwsError` rather than exposing the HTTP client's error type, and
+`AwsError::is_transient()` reports whether a failed request is worth retrying.
 
 ## Features
 
@@ -52,3 +71,11 @@ groupings of dependencies/behavior:
 - `model` (default) - Provides mappings to a common radar data model, particularly for mapping `volume::File` into a
   `Scan`.
 - `parallel` - Parallelize LDM record decompression and decoding using Rayon.
+
+## Minimum Supported Rust Version
+
+Rust 1.88. The MSRV is only raised in minor releases, never in patch releases.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the changes in each release, including the breaking changes in 1.0.0.

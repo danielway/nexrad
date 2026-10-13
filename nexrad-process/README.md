@@ -34,12 +34,24 @@ Built-in `SweepProcessor` implementations:
 | `StormRelativeVelocity` | `SweepProcessor` | `SweepField` — velocity with storm motion removed |
 | `VerticalCrossSection` | (standalone) | `VerticalField` — RHI-style range-height display |
 
+## Storm Cell Detection
+
+`detection::StormCellDetector` finds contiguous regions of reflectivity above a threshold in a `SweepField` and reports
+each as a `StormCell` with its centroid, bounds, area and reflectivity statistics.
+
+## Constructing Processors
+
+Every processor with parameters is built with a validating `new` that returns `Err(Error::InvalidParameter)` for
+invalid input (a NaN bound, an even kernel size, a non-positive sigma, ...), so invalid configuration is reported at
+construction rather than by `process`. Parameters are read back with getters such as `ThresholdFilter::min()`.
+
 ## Pipeline
 
 Processors can be composed into a `SweepPipeline`:
 
 ```rust,ignore
-use nexrad_process::{SweepPipeline, filter::ThresholdFilter, filter::GaussianSmooth};
+use nexrad_process::filter::{GaussianSmooth, ThresholdFilter};
+use nexrad_process::SweepPipeline;
 
 let filtered = SweepPipeline::new()
     .then(ThresholdFilter::new(Some(5.0), None)?)
@@ -48,6 +60,14 @@ let filtered = SweepPipeline::new()
 ```
 
 The pipeline itself implements `SweepProcessor`, so pipelines can be nested.
+
+## Minimum Supported Rust Version
+
+Rust 1.88. The MSRV is only raised in minor releases, never in patch releases.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the changes in each release, including the breaking changes in 1.0.0.
 
 ## Crate Boundaries
 

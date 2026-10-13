@@ -116,3 +116,12 @@ nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
 
 The `parallel` feature requires a native thread pool (rayon) and is not WASM-compatible. Real-time
 streaming is part of `aws` and is runtime-agnostic, so it works on WASM with any sleep future.
+
+## Minimum Supported Rust Version
+
+Rust 1.88. The MSRV is only raised in minor releases, never in patch releases.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the changes in each release, including the breaking changes in 1.0.0. Each
+re-exported crate has its own CHANGELOG.

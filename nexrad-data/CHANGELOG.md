@@ -1,0 +1,88 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+Changes since `1.0.0-rc.7`, the last published release. Together they make up the 1.0.0 release.
+
+### Added
+
+- `Error` and `Result` are re-exported at the crate root (`nexrad_data::Error`), and `AwsError` with the `aws`
+  feature (`nexrad_data::AwsError`); `nexrad_data::result` remains the defining module. (#158)
+- `AwsError::is_transient()`, which reports whether a failure is worth retrying. (#171)
+- In `aws::realtime`: `DownloadedChunk::new(identifier, chunk, attempts)`, `ChunkIdentifier::with_sequence`,
+  `get_latest_volume_from_hint(site, hint)`, `ChunkIterator::config()`, and getters on `RetryPolicy`
+  (`max_attempts()`, `initial_delay()`, `backoff_multiplier()`, `max_delay()`) and `PollConfig` (`site()`,
+  `download_policy()`, `discovery_policy()`). (#167)
+
+### Changed
+
+- The minimum supported Rust version is now 1.88 (it was declared as 1.75, which was already incorrect). (#157)
+- `Error` and `AwsError` are `#[non_exhaustive]`; matches on them outside this crate need a wildcard arm. (#155)
+- Features (#156, #161):
+  - The `nexrad-model` feature is renamed to `model`.
+  - The `aws-polling` feature is removed; real-time streaming is part of `aws`.
+  - Optional dependencies use `dep:` syntax, so `futures`, `nexrad-model`, `once_cell`, `rayon`, `reqwest`, `tokio`
+    and `xml` are no longer features. Use `aws`, `model` or `parallel`.
+  - `nexrad-decode`'s default features are no longer enabled through this crate, so its `uom` feature is no longer
+    turned on transitively.
+- Acronyms in names follow UpperCamelCase: `AWSError` → `AwsError`, `Error::AWS` → `Error::Aws`. (#160)
+- `AwsError` moved from `nexrad_data::result::aws::AwsError` to `nexrad_data::result::AwsError` (the `result::aws`
+  module is removed); `nexrad_data::AwsError` also works. (#171)
+- `AwsError::S3ListObjects`, `S3GetObjectRequest` and `S3Streaming` hold a
+  `Box<dyn std::error::Error + Send + Sync + 'static>` instead of a `reqwest::Error`; `source()` returns it. (#171)
+- `aws::realtime::chunk_stream(config, sleep)` takes a caller-supplied sleep function as its second argument (with
+  tokio, `|d| tokio::time::sleep(d)`) and no longer depends on tokio, so it builds for WASM. (#161)
+- `aws::realtime::Chunk<'a>` → `Chunk`; its `IntermediateOrEnd` variant holds a `volume::Record<'static>`.
+  `DownloadedChunk::chunk` and `assemble_volume(chunks: impl IntoIterator<Item = Chunk>)` follow. (#167)
+- `aws::realtime::download_chunk(site, &id)` returns `Result<DownloadedChunk>` instead of
+  `Result<(ChunkIdentifier, Chunk)>`; read `d.identifier` and `d.chunk`. (#167)
+- `aws::realtime::ChunkIterator::start_with_policies(site, download, discovery)` → `start_with(config: PollConfig)`,
+  and `from_chunk(site, chunk_id, download, discovery)` → `from_chunk(config, chunk_id)`. Build the config with
+  `PollConfig::new(site).with_download_policy(..).with_discovery_policy(..)`. (#167)
+- `aws::realtime::ChunkIterator::download_policy()` / `discovery_policy()` → `config().download_policy()` /
+  `config().discovery_policy()`, and `project_remaining_scan()` → `projected_volume_end_time()`. (#167)
+- `aws::realtime::RetryPolicy` and `PollConfig` fields are private; use the getters and the existing `with_*` setters
+  and constructors. (#167)
+- `aws::realtime::RetryPolicy` delays (`with_initial_delay`, `with_max_delay`, `initial_delay()`, `max_delay()`) and
+  `ChunkIterator::time_until_next()` use `std::time::Duration` instead of `chrono::Duration`. (#167)
+- `aws::realtime::DownloadedChunk`, `ChunkIteratorInit` and `LatestVolumeResult` are `#[non_exhaustive]`; their
+  fields stay readable, but struct literals and exhaustive patterns outside the crate no longer compile. (#167)
+- `aws::realtime::ChunkIdentifier::new` and `from_name` take `impl Into<String>` for `site` (and `name`); pass
+  `"KDMX"` rather than `"KDMX".into()`. (#167)
+- `aws::realtime::VolumeIndex::new` documents the valid range `1..=999` and its debug assertion rejects `0`. (#167)
+- `volume::Record::decompress(&self)` returns `Result<Record<'static>>`. (#171)
+- `volume::Header::tape_filename()`, `extension_number()` and `icao_of_radar()` return `Option<&str>` instead of
+  `Option<String>`. (#171)
+- `aws::archive::list_files(site, date: NaiveDate)` takes the date by value, and
+  `aws::archive::download_file(identifier: &Identifier)` takes the identifier by reference. (#171)
+- Volume assembly is delegated to `nexrad-decode`'s `ScanBuilder` (#169):
+  - `volume::File::scan` includes legacy (type 1) radials, consistent with `Record::radials()`;
+    `assemble_volume` accepts type 1 messages too.
+  - The scan's `Site::identifier` comes from the radar identifier in the type 31 message header instead of the
+    Archive II volume header ICAO.
+
+### Removed
+
+- From `aws::realtime`, the timing internals: `ChunkTimingModel`, `ChunkTimingStats`, `ChunkCharacteristics`,
+  `ElevationChunkMapper`, `ChunkMetadata`, `estimate_chunk_availability_time` (use
+  `ChunkIterator::next_expected_time()` / `time_until_next()`), `estimate_chunk_processing_time`,
+  `project_scan_timing`, `project_full_scan_timing`, `ScanTimingProjection` and `ChunkProjection` (use
+  `ChunkIterator::projected_volume_end_time()`). (#167)
+- From `aws::realtime`, `RetryState` (configure retries with `RetryPolicy`), `NextChunk` and
+  `ChunkIdentifier::next_chunk` (`ChunkIterator` and `chunk_stream` handle sequencing). (#167)
+- `ChunkIterator::timing_stats()`, `timing_stats_mut()`, `elevation_mapper()`, `chunk_metadata()` and
+  `all_chunk_metadata()`, which exposed the internals above. (#167)
+- `AwsError::PollingAsync`, which was never constructed. (#171)
+- `Error::Decompression(bzip2::Error)` and its `From<bzip2::Error>` impl, which were never constructed; bzip2 failures
+  surface as `Error::Io`. (#171)
+- `volume::split_compressed_records`; use `volume::File::new(bytes).records()`. (#171)
+
+### Fixed
+
+- `volume::File::records()` returns `Error::TruncatedRecord` instead of panicking when the data is shorter than the
+  24-byte volume header. (#171)

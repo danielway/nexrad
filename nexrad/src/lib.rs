@@ -136,7 +136,7 @@
 //!
 //! - **`nexrad-decode`**: Binary protocol parsing
 //!   - ✓ Parsing NEXRAD Level II message format (NOAA ICD 2620002AA)
-//!   - ✓ Conversion to model types (when feature enabled)
+//!   - ✓ All conversion to model types, including `ScanBuilder` (`model` feature)
 //!   - ✗ No I/O operations (operates on byte slices)
 //!   - ✗ No file or network access
 //!   - ✗ No rendering or visualization
@@ -145,10 +145,16 @@
 //!   - ✓ Archive II file handling (including limited volume header decoding)
 //!   - ✓ AWS S3 integration (when `aws` feature enabled)
 //!   - ✓ Decompression and format handling
-//!   - ✓ Uses `nexrad-decode` for message parsing
-//!   - ✓ Uses `nexrad-model` for high-level types
+//!   - ✓ Uses `nexrad-decode` for message parsing and for conversion to `nexrad-model` types
+//!   - ✗ No protocol-to-model mapping of its own
 //!   - ✗ No rendering or visualization
 //!   - ✗ No CLI or user interaction
+//!
+//! - **`nexrad-process`**: Processing algorithms
+//!   - ✓ Filters, smoothing and derived products over `nexrad-model` fields
+//!   - ✓ Storm cell detection
+//!   - ✗ No I/O operations
+//!   - ✗ No rendering or visualization
 //!
 //! - **`nexrad-render`**: Visualization and image rendering
 //!   - ✓ Render radar data to in-memory images

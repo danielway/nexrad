@@ -53,7 +53,8 @@
 //!
 //! - `aws` (default) - Enable AWS S3 data access, including `aws::realtime::chunk_stream` for polling
 //!   real-time data (requires an async runtime; WASM-compatible)
-//! - `model` (default) - Enable conversion to high-level `Scan` model
+//! - `model` (default) - Enable conversion to the high-level `Scan` model (`volume::File::scan`,
+//!   `aws::realtime::assemble_volume`)
 //! - `parallel` - Parallelize LDM record decompression and decoding using Rayon
 //!
 //! # Crate Boundaries
@@ -67,12 +68,14 @@
 //! - ✓ Handle file I/O operations
 //! - ✓ Decompress bzip2-compressed LDM records
 //! - ✓ AWS S3 integration for archive and real-time data (when `aws` feature enabled)
-//! - ✓ Use `nexrad-decode` for message parsing
-//! - ✓ Use `nexrad-model` for high-level type conversion (when feature enabled)
+//! - ✓ Use `nexrad-decode` for message parsing and, with the `model` feature, for conversion to
+//!   `nexrad-model` types (`volume::File::scan` and `aws::realtime::assemble_volume` hand decoded
+//!   messages to `nexrad_decode::model::ScanBuilder`)
 //! - ✓ Orchestrate the data pipeline from raw bytes to structured models
 //!
 //! ## Constraints
 //!
+//! - ✗ **No protocol-to-model mapping** (that lives in `nexrad-decode`)
 //! - ✗ **No rendering or visualization**
 //! - ✗ **No CLI or user interaction**
 //!

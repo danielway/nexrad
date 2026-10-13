@@ -1,0 +1,315 @@
+pub mod nexrad_process
+pub mod nexrad_process::derived
+pub struct nexrad_process::derived::CompositeReflectivity
+impl core::clone::Clone for nexrad_process::derived::CompositeReflectivity
+pub fn nexrad_process::derived::CompositeReflectivity::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_process::derived::CompositeReflectivity
+pub fn nexrad_process::derived::CompositeReflectivity::eq(&self, &Self) -> bool
+impl core::default::Default for nexrad_process::derived::CompositeReflectivity
+pub fn nexrad_process::derived::CompositeReflectivity::default() -> Self
+impl core::fmt::Debug for nexrad_process::derived::CompositeReflectivity
+pub fn nexrad_process::derived::CompositeReflectivity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for nexrad_process::derived::CompositeReflectivity
+impl core::marker::StructuralPartialEq for nexrad_process::derived::CompositeReflectivity
+impl nexrad_process::ScanDerivedProduct for nexrad_process::derived::CompositeReflectivity
+pub fn nexrad_process::derived::CompositeReflectivity::compute(&self, &[nexrad_model::data::field::SweepField], &nexrad_model::geo::RadarCoordinateSystem, &nexrad_model::geo::GeoExtent, (usize, usize)) -> nexrad_process::result::Result<nexrad_model::data::field::CartesianField>
+pub fn nexrad_process::derived::CompositeReflectivity::name(&self) -> &str
+impl core::marker::Freeze for nexrad_process::derived::CompositeReflectivity
+impl core::marker::Send for nexrad_process::derived::CompositeReflectivity
+impl core::marker::Sync for nexrad_process::derived::CompositeReflectivity
+impl core::marker::Unpin for nexrad_process::derived::CompositeReflectivity
+impl core::marker::UnsafeUnpin for nexrad_process::derived::CompositeReflectivity
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::derived::CompositeReflectivity
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::derived::CompositeReflectivity
+pub struct nexrad_process::derived::StormRelativeVelocity
+impl nexrad_process::derived::StormRelativeVelocity
+pub fn nexrad_process::derived::StormRelativeVelocity::new(f32, f32) -> nexrad_process::result::Result<Self>
+impl core::clone::Clone for nexrad_process::derived::StormRelativeVelocity
+pub fn nexrad_process::derived::StormRelativeVelocity::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_process::derived::StormRelativeVelocity
+pub fn nexrad_process::derived::StormRelativeVelocity::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_process::derived::StormRelativeVelocity
+pub fn nexrad_process::derived::StormRelativeVelocity::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_process::derived::StormRelativeVelocity
+impl nexrad_process::SweepProcessor for nexrad_process::derived::StormRelativeVelocity
+pub fn nexrad_process::derived::StormRelativeVelocity::name(&self) -> &str
+pub fn nexrad_process::derived::StormRelativeVelocity::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl core::marker::Freeze for nexrad_process::derived::StormRelativeVelocity
+impl core::marker::Send for nexrad_process::derived::StormRelativeVelocity
+impl core::marker::Sync for nexrad_process::derived::StormRelativeVelocity
+impl core::marker::Unpin for nexrad_process::derived::StormRelativeVelocity
+impl core::marker::UnsafeUnpin for nexrad_process::derived::StormRelativeVelocity
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::derived::StormRelativeVelocity
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::derived::StormRelativeVelocity
+pub struct nexrad_process::derived::VerticalCrossSection
+impl nexrad_process::derived::VerticalCrossSection
+pub fn nexrad_process::derived::VerticalCrossSection::compute(&self, &[nexrad_model::data::field::SweepField]) -> nexrad_process::result::Result<nexrad_model::data::field::VerticalField>
+pub fn nexrad_process::derived::VerticalCrossSection::new(f64, f64, f64, usize, usize) -> nexrad_process::result::Result<Self>
+impl core::clone::Clone for nexrad_process::derived::VerticalCrossSection
+pub fn nexrad_process::derived::VerticalCrossSection::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_process::derived::VerticalCrossSection
+pub fn nexrad_process::derived::VerticalCrossSection::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_process::derived::VerticalCrossSection
+pub fn nexrad_process::derived::VerticalCrossSection::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_process::derived::VerticalCrossSection
+impl core::marker::Freeze for nexrad_process::derived::VerticalCrossSection
+impl core::marker::Send for nexrad_process::derived::VerticalCrossSection
+impl core::marker::Sync for nexrad_process::derived::VerticalCrossSection
+impl core::marker::Unpin for nexrad_process::derived::VerticalCrossSection
+impl core::marker::UnsafeUnpin for nexrad_process::derived::VerticalCrossSection
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::derived::VerticalCrossSection
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::derived::VerticalCrossSection
+pub mod nexrad_process::detection
+pub struct nexrad_process::detection::StormCell
+impl nexrad_process::detection::StormCell
+pub fn nexrad_process::detection::StormCell::area_km2(&self) -> f64
+pub fn nexrad_process::detection::StormCell::bounds(&self) -> &nexrad_process::detection::StormCellBounds
+pub fn nexrad_process::detection::StormCell::centroid(&self) -> nexrad_model::geo::GeoPoint
+pub fn nexrad_process::detection::StormCell::elevation_degrees(&self) -> f32
+pub fn nexrad_process::detection::StormCell::gate_count(&self) -> usize
+pub fn nexrad_process::detection::StormCell::id(&self) -> u32
+pub fn nexrad_process::detection::StormCell::max_reflectivity_azimuth_degrees(&self) -> f32
+pub fn nexrad_process::detection::StormCell::max_reflectivity_dbz(&self) -> f32
+pub fn nexrad_process::detection::StormCell::max_reflectivity_range_km(&self) -> f64
+pub fn nexrad_process::detection::StormCell::mean_reflectivity_dbz(&self) -> f32
+impl core::clone::Clone for nexrad_process::detection::StormCell
+pub fn nexrad_process::detection::StormCell::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_process::detection::StormCell
+pub fn nexrad_process::detection::StormCell::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_process::detection::StormCell
+pub fn nexrad_process::detection::StormCell::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_process::detection::StormCell
+impl core::marker::Freeze for nexrad_process::detection::StormCell
+impl core::marker::Send for nexrad_process::detection::StormCell
+impl core::marker::Sync for nexrad_process::detection::StormCell
+impl core::marker::Unpin for nexrad_process::detection::StormCell
+impl core::marker::UnsafeUnpin for nexrad_process::detection::StormCell
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::detection::StormCell
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::detection::StormCell
+pub struct nexrad_process::detection::StormCellBounds
+impl nexrad_process::detection::StormCellBounds
+pub fn nexrad_process::detection::StormCellBounds::max_latitude(&self) -> f64
+pub fn nexrad_process::detection::StormCellBounds::max_longitude(&self) -> f64
+pub fn nexrad_process::detection::StormCellBounds::min_latitude(&self) -> f64
+pub fn nexrad_process::detection::StormCellBounds::min_longitude(&self) -> f64
+impl core::clone::Clone for nexrad_process::detection::StormCellBounds
+pub fn nexrad_process::detection::StormCellBounds::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_process::detection::StormCellBounds
+pub fn nexrad_process::detection::StormCellBounds::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_process::detection::StormCellBounds
+pub fn nexrad_process::detection::StormCellBounds::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for nexrad_process::detection::StormCellBounds
+impl core::marker::StructuralPartialEq for nexrad_process::detection::StormCellBounds
+impl core::marker::Freeze for nexrad_process::detection::StormCellBounds
+impl core::marker::Send for nexrad_process::detection::StormCellBounds
+impl core::marker::Sync for nexrad_process::detection::StormCellBounds
+impl core::marker::Unpin for nexrad_process::detection::StormCellBounds
+impl core::marker::UnsafeUnpin for nexrad_process::detection::StormCellBounds
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::detection::StormCellBounds
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::detection::StormCellBounds
+pub struct nexrad_process::detection::StormCellDetector
+impl nexrad_process::detection::StormCellDetector
+pub fn nexrad_process::detection::StormCellDetector::detect(&self, &nexrad_model::data::field::SweepField, &nexrad_model::geo::RadarCoordinateSystem) -> nexrad_process::result::Result<alloc::vec::Vec<nexrad_process::detection::StormCell>>
+pub fn nexrad_process::detection::StormCellDetector::new(f32, usize) -> nexrad_process::result::Result<Self>
+impl core::clone::Clone for nexrad_process::detection::StormCellDetector
+pub fn nexrad_process::detection::StormCellDetector::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_process::detection::StormCellDetector
+pub fn nexrad_process::detection::StormCellDetector::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_process::detection::StormCellDetector
+pub fn nexrad_process::detection::StormCellDetector::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_process::detection::StormCellDetector
+impl core::marker::Freeze for nexrad_process::detection::StormCellDetector
+impl core::marker::Send for nexrad_process::detection::StormCellDetector
+impl core::marker::Sync for nexrad_process::detection::StormCellDetector
+impl core::marker::Unpin for nexrad_process::detection::StormCellDetector
+impl core::marker::UnsafeUnpin for nexrad_process::detection::StormCellDetector
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::detection::StormCellDetector
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::detection::StormCellDetector
+pub mod nexrad_process::filter
+pub struct nexrad_process::filter::CorrelationCoefficientFilter
+impl nexrad_process::filter::CorrelationCoefficientFilter
+pub fn nexrad_process::filter::CorrelationCoefficientFilter::new(f32, nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<Self>
+impl core::clone::Clone for nexrad_process::filter::CorrelationCoefficientFilter
+pub fn nexrad_process::filter::CorrelationCoefficientFilter::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_process::filter::CorrelationCoefficientFilter
+pub fn nexrad_process::filter::CorrelationCoefficientFilter::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_process::filter::CorrelationCoefficientFilter
+pub fn nexrad_process::filter::CorrelationCoefficientFilter::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_process::filter::CorrelationCoefficientFilter
+impl nexrad_process::SweepProcessor for nexrad_process::filter::CorrelationCoefficientFilter
+pub fn nexrad_process::filter::CorrelationCoefficientFilter::name(&self) -> &str
+pub fn nexrad_process::filter::CorrelationCoefficientFilter::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl core::marker::Freeze for nexrad_process::filter::CorrelationCoefficientFilter
+impl core::marker::Send for nexrad_process::filter::CorrelationCoefficientFilter
+impl core::marker::Sync for nexrad_process::filter::CorrelationCoefficientFilter
+impl core::marker::Unpin for nexrad_process::filter::CorrelationCoefficientFilter
+impl core::marker::UnsafeUnpin for nexrad_process::filter::CorrelationCoefficientFilter
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::filter::CorrelationCoefficientFilter
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::filter::CorrelationCoefficientFilter
+pub struct nexrad_process::filter::GaussianSmooth
+impl nexrad_process::filter::GaussianSmooth
+pub fn nexrad_process::filter::GaussianSmooth::new(f32, f32) -> nexrad_process::result::Result<Self>
+pub fn nexrad_process::filter::GaussianSmooth::sigma_azimuth(&self) -> f32
+pub fn nexrad_process::filter::GaussianSmooth::sigma_range(&self) -> f32
+impl core::clone::Clone for nexrad_process::filter::GaussianSmooth
+pub fn nexrad_process::filter::GaussianSmooth::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_process::filter::GaussianSmooth
+pub fn nexrad_process::filter::GaussianSmooth::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_process::filter::GaussianSmooth
+pub fn nexrad_process::filter::GaussianSmooth::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_process::filter::GaussianSmooth
+impl nexrad_process::SweepProcessor for nexrad_process::filter::GaussianSmooth
+pub fn nexrad_process::filter::GaussianSmooth::name(&self) -> &str
+pub fn nexrad_process::filter::GaussianSmooth::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl core::marker::Freeze for nexrad_process::filter::GaussianSmooth
+impl core::marker::Send for nexrad_process::filter::GaussianSmooth
+impl core::marker::Sync for nexrad_process::filter::GaussianSmooth
+impl core::marker::Unpin for nexrad_process::filter::GaussianSmooth
+impl core::marker::UnsafeUnpin for nexrad_process::filter::GaussianSmooth
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::filter::GaussianSmooth
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::filter::GaussianSmooth
+pub struct nexrad_process::filter::MedianFilter
+impl nexrad_process::filter::MedianFilter
+pub fn nexrad_process::filter::MedianFilter::azimuth_kernel(&self) -> usize
+pub fn nexrad_process::filter::MedianFilter::new(usize, usize) -> nexrad_process::result::Result<Self>
+pub fn nexrad_process::filter::MedianFilter::range_kernel(&self) -> usize
+impl core::clone::Clone for nexrad_process::filter::MedianFilter
+pub fn nexrad_process::filter::MedianFilter::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_process::filter::MedianFilter
+pub fn nexrad_process::filter::MedianFilter::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_process::filter::MedianFilter
+pub fn nexrad_process::filter::MedianFilter::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_process::filter::MedianFilter
+impl nexrad_process::SweepProcessor for nexrad_process::filter::MedianFilter
+pub fn nexrad_process::filter::MedianFilter::name(&self) -> &str
+pub fn nexrad_process::filter::MedianFilter::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl core::marker::Freeze for nexrad_process::filter::MedianFilter
+impl core::marker::Send for nexrad_process::filter::MedianFilter
+impl core::marker::Sync for nexrad_process::filter::MedianFilter
+impl core::marker::Unpin for nexrad_process::filter::MedianFilter
+impl core::marker::UnsafeUnpin for nexrad_process::filter::MedianFilter
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::filter::MedianFilter
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::filter::MedianFilter
+pub struct nexrad_process::filter::ThresholdFilter
+impl nexrad_process::filter::ThresholdFilter
+pub fn nexrad_process::filter::ThresholdFilter::max(&self) -> core::option::Option<f32>
+pub fn nexrad_process::filter::ThresholdFilter::min(&self) -> core::option::Option<f32>
+pub fn nexrad_process::filter::ThresholdFilter::new(core::option::Option<f32>, core::option::Option<f32>) -> nexrad_process::result::Result<Self>
+impl core::clone::Clone for nexrad_process::filter::ThresholdFilter
+pub fn nexrad_process::filter::ThresholdFilter::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_process::filter::ThresholdFilter
+pub fn nexrad_process::filter::ThresholdFilter::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_process::filter::ThresholdFilter
+pub fn nexrad_process::filter::ThresholdFilter::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_process::filter::ThresholdFilter
+impl nexrad_process::SweepProcessor for nexrad_process::filter::ThresholdFilter
+pub fn nexrad_process::filter::ThresholdFilter::name(&self) -> &str
+pub fn nexrad_process::filter::ThresholdFilter::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl core::marker::Freeze for nexrad_process::filter::ThresholdFilter
+impl core::marker::Send for nexrad_process::filter::ThresholdFilter
+impl core::marker::Sync for nexrad_process::filter::ThresholdFilter
+impl core::marker::Unpin for nexrad_process::filter::ThresholdFilter
+impl core::marker::UnsafeUnpin for nexrad_process::filter::ThresholdFilter
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::filter::ThresholdFilter
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::filter::ThresholdFilter
+pub mod nexrad_process::pipeline
+pub struct nexrad_process::pipeline::SweepPipeline
+impl nexrad_process::pipeline::SweepPipeline
+pub fn nexrad_process::pipeline::SweepPipeline::execute(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+pub fn nexrad_process::pipeline::SweepPipeline::new() -> Self
+pub fn nexrad_process::pipeline::SweepPipeline::then(self, impl nexrad_process::SweepProcessor + 'static) -> Self
+impl core::default::Default for nexrad_process::pipeline::SweepPipeline
+pub fn nexrad_process::pipeline::SweepPipeline::default() -> Self
+impl core::fmt::Debug for nexrad_process::pipeline::SweepPipeline
+pub fn nexrad_process::pipeline::SweepPipeline::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl nexrad_process::SweepProcessor for nexrad_process::pipeline::SweepPipeline
+pub fn nexrad_process::pipeline::SweepPipeline::name(&self) -> &str
+pub fn nexrad_process::pipeline::SweepPipeline::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl core::marker::Freeze for nexrad_process::pipeline::SweepPipeline
+impl !core::marker::Send for nexrad_process::pipeline::SweepPipeline
+impl !core::marker::Sync for nexrad_process::pipeline::SweepPipeline
+impl core::marker::Unpin for nexrad_process::pipeline::SweepPipeline
+impl core::marker::UnsafeUnpin for nexrad_process::pipeline::SweepPipeline
+impl !core::panic::unwind_safe::RefUnwindSafe for nexrad_process::pipeline::SweepPipeline
+impl !core::panic::unwind_safe::UnwindSafe for nexrad_process::pipeline::SweepPipeline
+pub mod nexrad_process::result
+#[non_exhaustive] pub enum nexrad_process::result::Error
+pub nexrad_process::result::Error::InvalidGeometry(alloc::string::String)
+pub nexrad_process::result::Error::InvalidParameter(alloc::string::String)
+pub nexrad_process::result::Error::MissingData(alloc::string::String)
+impl core::error::Error for nexrad_process::result::Error
+impl core::fmt::Debug for nexrad_process::result::Error
+pub fn nexrad_process::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_process::result::Error
+pub fn nexrad_process::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for nexrad_process::result::Error
+impl core::marker::Send for nexrad_process::result::Error
+impl core::marker::Sync for nexrad_process::result::Error
+impl core::marker::Unpin for nexrad_process::result::Error
+impl core::marker::UnsafeUnpin for nexrad_process::result::Error
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::result::Error
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::result::Error
+pub type nexrad_process::result::Result<T> = core::result::Result<T, nexrad_process::result::Error>
+#[non_exhaustive] pub enum nexrad_process::Error
+pub nexrad_process::Error::InvalidGeometry(alloc::string::String)
+pub nexrad_process::Error::InvalidParameter(alloc::string::String)
+pub nexrad_process::Error::MissingData(alloc::string::String)
+impl core::error::Error for nexrad_process::result::Error
+impl core::fmt::Debug for nexrad_process::result::Error
+pub fn nexrad_process::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_process::result::Error
+pub fn nexrad_process::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for nexrad_process::result::Error
+impl core::marker::Send for nexrad_process::result::Error
+impl core::marker::Sync for nexrad_process::result::Error
+impl core::marker::Unpin for nexrad_process::result::Error
+impl core::marker::UnsafeUnpin for nexrad_process::result::Error
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::result::Error
+impl core::panic::unwind_safe::UnwindSafe for nexrad_process::result::Error
+pub struct nexrad_process::SweepPipeline
+impl nexrad_process::pipeline::SweepPipeline
+pub fn nexrad_process::pipeline::SweepPipeline::execute(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+pub fn nexrad_process::pipeline::SweepPipeline::new() -> Self
+pub fn nexrad_process::pipeline::SweepPipeline::then(self, impl nexrad_process::SweepProcessor + 'static) -> Self
+impl core::default::Default for nexrad_process::pipeline::SweepPipeline
+pub fn nexrad_process::pipeline::SweepPipeline::default() -> Self
+impl core::fmt::Debug for nexrad_process::pipeline::SweepPipeline
+pub fn nexrad_process::pipeline::SweepPipeline::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl nexrad_process::SweepProcessor for nexrad_process::pipeline::SweepPipeline
+pub fn nexrad_process::pipeline::SweepPipeline::name(&self) -> &str
+pub fn nexrad_process::pipeline::SweepPipeline::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl core::marker::Freeze for nexrad_process::pipeline::SweepPipeline
+impl !core::marker::Send for nexrad_process::pipeline::SweepPipeline
+impl !core::marker::Sync for nexrad_process::pipeline::SweepPipeline
+impl core::marker::Unpin for nexrad_process::pipeline::SweepPipeline
+impl core::marker::UnsafeUnpin for nexrad_process::pipeline::SweepPipeline
+impl !core::panic::unwind_safe::RefUnwindSafe for nexrad_process::pipeline::SweepPipeline
+impl !core::panic::unwind_safe::UnwindSafe for nexrad_process::pipeline::SweepPipeline
+pub trait nexrad_process::ScanDerivedProduct
+pub fn nexrad_process::ScanDerivedProduct::compute(&self, &[nexrad_model::data::field::SweepField], &nexrad_model::geo::RadarCoordinateSystem, &nexrad_model::geo::GeoExtent, (usize, usize)) -> nexrad_process::result::Result<nexrad_model::data::field::CartesianField>
+pub fn nexrad_process::ScanDerivedProduct::name(&self) -> &str
+impl nexrad_process::ScanDerivedProduct for nexrad_process::derived::CompositeReflectivity
+pub fn nexrad_process::derived::CompositeReflectivity::compute(&self, &[nexrad_model::data::field::SweepField], &nexrad_model::geo::RadarCoordinateSystem, &nexrad_model::geo::GeoExtent, (usize, usize)) -> nexrad_process::result::Result<nexrad_model::data::field::CartesianField>
+pub fn nexrad_process::derived::CompositeReflectivity::name(&self) -> &str
+pub trait nexrad_process::SweepProcessor
+pub fn nexrad_process::SweepProcessor::name(&self) -> &str
+pub fn nexrad_process::SweepProcessor::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl nexrad_process::SweepProcessor for nexrad_process::derived::StormRelativeVelocity
+pub fn nexrad_process::derived::StormRelativeVelocity::name(&self) -> &str
+pub fn nexrad_process::derived::StormRelativeVelocity::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl nexrad_process::SweepProcessor for nexrad_process::filter::CorrelationCoefficientFilter
+pub fn nexrad_process::filter::CorrelationCoefficientFilter::name(&self) -> &str
+pub fn nexrad_process::filter::CorrelationCoefficientFilter::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl nexrad_process::SweepProcessor for nexrad_process::filter::GaussianSmooth
+pub fn nexrad_process::filter::GaussianSmooth::name(&self) -> &str
+pub fn nexrad_process::filter::GaussianSmooth::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl nexrad_process::SweepProcessor for nexrad_process::filter::MedianFilter
+pub fn nexrad_process::filter::MedianFilter::name(&self) -> &str
+pub fn nexrad_process::filter::MedianFilter::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl nexrad_process::SweepProcessor for nexrad_process::filter::ThresholdFilter
+pub fn nexrad_process::filter::ThresholdFilter::name(&self) -> &str
+pub fn nexrad_process::filter::ThresholdFilter::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+impl nexrad_process::SweepProcessor for nexrad_process::pipeline::SweepPipeline
+pub fn nexrad_process::pipeline::SweepPipeline::name(&self) -> &str
+pub fn nexrad_process::pipeline::SweepPipeline::process(&self, &nexrad_model::data::field::SweepField) -> nexrad_process::result::Result<nexrad_model::data::field::SweepField>
+pub type nexrad_process::Result<T> = core::result::Result<T, nexrad_process::result::Error>

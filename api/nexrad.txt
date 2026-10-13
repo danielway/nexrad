@@ -1,0 +1,86 @@
+pub mod nexrad
+pub use nexrad::data
+pub use nexrad::decode
+pub use nexrad::model
+pub use nexrad::process
+pub use nexrad::render
+pub mod nexrad::result
+#[non_exhaustive] pub enum nexrad::result::Error
+pub nexrad::result::Error::Data(nexrad_data::result::Error)
+pub nexrad::result::Error::Decode(nexrad_decode::result::Error)
+pub nexrad::result::Error::Io(core::io::error::Error)
+pub nexrad::result::Error::Model(nexrad_model::result::Error)
+pub nexrad::result::Error::NoDataAvailable
+pub nexrad::result::Error::NoDataAvailable::date: alloc::string::String
+pub nexrad::result::Error::NoDataAvailable::site: alloc::string::String
+pub nexrad::result::Error::Process(nexrad_process::result::Error)
+pub nexrad::result::Error::Render(nexrad_render::result::Error)
+impl core::convert::From<core::io::error::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(core::io::error::Error) -> Self
+impl core::convert::From<nexrad_data::result::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(nexrad_data::result::Error) -> Self
+impl core::convert::From<nexrad_decode::result::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(nexrad_decode::result::Error) -> Self
+impl core::convert::From<nexrad_model::result::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(nexrad_model::result::Error) -> Self
+impl core::convert::From<nexrad_process::result::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(nexrad_process::result::Error) -> Self
+impl core::convert::From<nexrad_render::result::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(nexrad_render::result::Error) -> Self
+impl core::error::Error for nexrad::result::Error
+pub fn nexrad::result::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Debug for nexrad::result::Error
+pub fn nexrad::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad::result::Error
+pub fn nexrad::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for nexrad::result::Error
+impl core::marker::Send for nexrad::result::Error
+impl core::marker::Sync for nexrad::result::Error
+impl core::marker::Unpin for nexrad::result::Error
+impl core::marker::UnsafeUnpin for nexrad::result::Error
+impl !core::panic::unwind_safe::RefUnwindSafe for nexrad::result::Error
+impl !core::panic::unwind_safe::UnwindSafe for nexrad::result::Error
+pub type nexrad::result::Result<T> = core::result::Result<T, nexrad::result::Error>
+#[non_exhaustive] pub enum nexrad::Error
+pub nexrad::Error::Data(nexrad_data::result::Error)
+pub nexrad::Error::Decode(nexrad_decode::result::Error)
+pub nexrad::Error::Io(core::io::error::Error)
+pub nexrad::Error::Model(nexrad_model::result::Error)
+pub nexrad::Error::NoDataAvailable
+pub nexrad::Error::NoDataAvailable::date: alloc::string::String
+pub nexrad::Error::NoDataAvailable::site: alloc::string::String
+pub nexrad::Error::Process(nexrad_process::result::Error)
+pub nexrad::Error::Render(nexrad_render::result::Error)
+impl core::convert::From<core::io::error::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(core::io::error::Error) -> Self
+impl core::convert::From<nexrad_data::result::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(nexrad_data::result::Error) -> Self
+impl core::convert::From<nexrad_decode::result::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(nexrad_decode::result::Error) -> Self
+impl core::convert::From<nexrad_model::result::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(nexrad_model::result::Error) -> Self
+impl core::convert::From<nexrad_process::result::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(nexrad_process::result::Error) -> Self
+impl core::convert::From<nexrad_render::result::Error> for nexrad::result::Error
+pub fn nexrad::result::Error::from(nexrad_render::result::Error) -> Self
+impl core::error::Error for nexrad::result::Error
+pub fn nexrad::result::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Debug for nexrad::result::Error
+pub fn nexrad::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad::result::Error
+pub fn nexrad::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for nexrad::result::Error
+impl core::marker::Send for nexrad::result::Error
+impl core::marker::Sync for nexrad::result::Error
+impl core::marker::Unpin for nexrad::result::Error
+impl core::marker::UnsafeUnpin for nexrad::result::Error
+impl !core::panic::unwind_safe::RefUnwindSafe for nexrad::result::Error
+impl !core::panic::unwind_safe::UnwindSafe for nexrad::result::Error
+pub async fn nexrad::download(nexrad_data::aws::archive::identifier::Identifier) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
+pub async fn nexrad::download_at(&str, chrono::naive::datetime::NaiveDateTime) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
+pub async fn nexrad::download_latest(&str, chrono::naive::date::NaiveDate) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
+pub async fn nexrad::list_scans(&str, chrono::naive::date::NaiveDate) -> nexrad::result::Result<alloc::vec::Vec<nexrad_data::aws::archive::identifier::Identifier>>
+pub fn nexrad::load(&[u8]) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
+pub fn nexrad::load_file<P: core::convert::AsRef<std::path::Path>>(P) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
+pub fn nexrad::stream<S, F>(&str, S) -> impl futures_core::stream::Stream<Item = nexrad::result::Result<nexrad_data::aws::realtime::chunk_iterator::DownloadedChunk>> where S: core::ops::function::Fn(core::time::Duration) -> F, F: core::future::future::Future<Output = ()>
+pub type nexrad::Result<T> = core::result::Result<T, nexrad::result::Error>

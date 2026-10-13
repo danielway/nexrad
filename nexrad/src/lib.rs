@@ -5,10 +5,13 @@
 //! This crate serves as the main entry point for the NEXRAD library suite, providing
 //! ergonomic top-level functions and re-exports from the underlying crates:
 //!
-//! - `nexrad-model` - Core data model types (Scan, Sweep, Radial, Site)
-//! - `nexrad-decode` - Binary protocol decoding for Archive II format
-//! - `nexrad-data` - Data access (local files, AWS S3)
-//! - `nexrad-render` - Visualization and rendering
+//! - `nexrad-model` as [`model`] - Core data model types (Scan, Sweep, Radial, Site)
+//! - `nexrad-decode` as [`decode`] - Binary protocol decoding for Archive II format
+//! - `nexrad-data` as [`data`] - Data access (local files, AWS S3)
+//! - `nexrad-process` as [`process`] - Radar data processing algorithms
+//! - `nexrad-render` as [`render`] - Visualization and rendering
+//! - `chrono` as [`chrono`] - Date and time types, re-exported because [`download_latest`],
+//!   [`download_at`] and [`list_scans`] take them
 //!
 //! ## Quick Start
 //!
@@ -53,20 +56,20 @@
 //! All features are enabled by default through the `full` feature. Each feature enables the
 //! features it depends on, listed under "Implies":
 //!
-//! | Feature | Description | Implies | Dependencies | WASM-compatible |
-//! |---------|-------------|---------|--------------|-----------------|
-//! | `model` | Core data model types | | Pure Rust | Yes |
-//! | `decode` | Protocol decoding | `model` | chrono, zerocopy | Yes |
+//! | Feature | Description | Implies | Notable dependencies | WASM-compatible |
+//! |---------|-------------|---------|----------------------|-----------------|
+//! | `model` | Core data model types | | | Yes |
+//! | `decode` | Protocol decoding | `model` | zerocopy | Yes |
 //! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model` | bzip2 | Yes |
 //! | `render` | Visualization and rendering | `model` | image | Yes |
-//! | `process` | Radar data processing algorithms | `model` | nexrad-model | Yes |
+//! | `process` | Radar data processing algorithms | `model` | | Yes |
 //! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`) and real-time streaming (`stream`) | `data`, `chrono` | reqwest, futures-util | Yes |
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
 //! | `serde` | Serialization support for model types | | serde | Yes |
 //! | `uom` | Type-safe units of measure | | uom | Yes |
-//! | `chrono` | Date/time type support | | chrono | Yes |
+//! | `chrono` | Date/time types on model types, and the [`chrono`] re-export | | chrono | Yes |
 //! | `wasm` | All WASM-compatible features | `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, `chrono` | | Yes |
-//! | `full` | Enable all features (default) | `wasm`, `parallel` | All above | No |
+//! | `full` | Enable all features (default) | `wasm`, `parallel` | | No |
 //!
 //! ### Common Configurations
 //!
@@ -88,14 +91,21 @@
 //! errors automatically convert to the unified type via `From` traits, enabling seamless
 //! error propagation:
 //!
-//! ```ignore
+//! ```no_run
+//! # #[cfg(feature = "data")]
 //! fn process_scan() -> nexrad::Result<()> {
-//!     let data = std::fs::read("volume.ar2")?;  // io::Error converts
-//!     let file = nexrad::data::volume::File::new(data);
-//!     let scan = file.scan()?;  // data/decode/model errors convert
+//!     let data = std::fs::read("volume.ar2")?; // io::Error converts
+//!     let file = nexrad::data::volume::File::new(data).decompress()?;
+//!     let scan = file.scan()?; // data/decode/model errors convert
+//!     println!("{} sweeps", scan.sweeps().len());
 //!     Ok(())
 //! }
 //! ```
+//!
+//! Each variant names the layer an error originated in: decode, model and I/O errors raised
+//! inside `nexrad-data` surface as `Error::Decode`, `Error::Model` and `Error::Io`, and only
+//! failures specific to data access (decompression, archive layout, AWS) surface as
+//! `Error::Data`.
 //!
 //! See the [`result`] module for detailed error handling documentation.
 //!

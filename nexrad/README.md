@@ -41,7 +41,7 @@ for sweep in scan.sweeps() {
 | Function | Description |
 |----------|-------------|
 | `list_scans(site, date)` | List available scans for a site and date |
-| `download(identifier)` | Download a specific scan by archive identifier |
+| `download(&identifier)` | Download a specific scan by archive identifier (taken by reference, as returned by `list_scans`) |
 | `download_latest(site, date)` | Download the most recent scan for a date |
 | `download_at(site, datetime)` | Download the scan overlapping a specific time |
 
@@ -61,11 +61,24 @@ Access sub-crate APIs through module re-exports:
 - `nexrad::process` — Processing algorithms (`SweepPipeline`, filters, derived products)
 - `nexrad::render` — Visualization (`render_sweep`, color scales, `RenderOptions`)
 
+`nexrad::chrono` re-exports `chrono` (with the `chrono` feature, implied by `aws`) because
+`list_scans`, `download_latest` and `download_at` take `NaiveDate`/`NaiveDateTime`, so you
+don't need a separate `chrono` dependency to call them.
+
 Helpers that only need model types live on those types: `sweep.field(product)`,
 `scan.fields(product)` and `scan.first_field(product)` extract `SweepField`s,
 `scan.coordinate_system()` builds a `RadarCoordinateSystem` from the scan's site, and
 `nexrad::model::meta::registry` provides `sites()`, `site_by_id(id)` and
 `nearest_site(lat, lon)` for the static site registry.
+
+## Error Handling
+
+All top-level functions return `nexrad::Result<T>`, and every sub-crate error converts into
+`nexrad::Error` with `?`. Each variant names the layer an error came from: decode, model and
+I/O errors raised inside `nexrad-data` surface as `Error::Decode`, `Error::Model` and
+`Error::Io`, while `Error::Data` is reserved for data-access failures such as decompression,
+archive layout and AWS errors. `Error::NoDataAvailable` (with `aws`) reports that no archive
+file matched the requested site and date.
 
 ## Features
 

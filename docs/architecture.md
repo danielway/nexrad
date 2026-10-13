@@ -125,20 +125,19 @@ Processing and rendering operate on three field types, all defined in `nexrad-mo
 
 ## Processing Architecture
 
-Processing algorithms are modeled as traits with three scopes:
+Processing algorithms are modeled as traits with two scopes:
 
 | Trait | Scope | Input → Output |
 |-------|-------|---------------|
 | `SweepProcessor` | Single sweep | `SweepField → SweepField` |
-| `ScanProcessor` | Multiple sweeps | `[SweepField] → [SweepField]` |
 | `ScanDerivedProduct` | Full scan → geographic surface | `[SweepField] → CartesianField` |
 
 `SweepProcessor` implementations can be composed into a `SweepPipeline`:
 
 ```rust
 let filtered = SweepPipeline::new()
-    .then(ThresholdFilter { min: Some(5.0), max: None })
-    .then(GaussianSmooth { sigma_azimuth: 1.0, sigma_range: 1.0 })
+    .then(ThresholdFilter::new(Some(5.0), None)?)
+    .then(GaussianSmooth::new(1.0, 1.0)?)
     .execute(&field)?;
 ```
 

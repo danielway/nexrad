@@ -57,10 +57,7 @@ fn main() -> nexrad::Result<()> {
     println!("Saved pipeline_original.png");
 
     // --- Apply a processing pipeline ---
-    let pipeline = SweepPipeline::new().then(ThresholdFilter {
-        min: Some(5.0),
-        max: Some(75.0),
-    });
+    let pipeline = SweepPipeline::new().then(ThresholdFilter::new(Some(5.0), Some(75.0))?);
 
     let filtered = pipeline.execute(&field)?;
 
@@ -80,8 +77,7 @@ fn main() -> nexrad::Result<()> {
         .expect("scan should contain site metadata");
     let extent = coord_sys.sweep_extent(ref_fields[0].max_range_km());
 
-    let composite =
-        CompositeReflectivity.compute(&scan, &ref_fields, &coord_sys, &extent, (800, 800))?;
+    let composite = CompositeReflectivity.compute(&ref_fields, &coord_sys, &extent, (800, 800))?;
 
     let cart_result =
         nexrad::render::render_cartesian(&composite, &color_scale, &RenderOptions::new(800, 800))?;

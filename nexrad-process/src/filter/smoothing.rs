@@ -10,11 +10,57 @@ use nexrad_model::data::{GateStatus, SweepField};
 /// are excluded from the median computation and left unchanged.
 ///
 /// The azimuth dimension wraps around 360 degrees.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad_process::filter::MedianFilter;
+///
+/// let filter = MedianFilter::new(3, 3)?;
+/// let filtered = filter.process(&field)?;
+/// ```
+#[derive(Debug, Clone, PartialEq)]
 pub struct MedianFilter {
-    /// Kernel width in the azimuth dimension (must be odd, >= 1).
-    pub azimuth_kernel: usize,
-    /// Kernel width in the range dimension (must be odd, >= 1).
-    pub range_kernel: usize,
+    /// Kernel width in the azimuth dimension (odd, >= 1).
+    azimuth_kernel: usize,
+    /// Kernel width in the range dimension (odd, >= 1).
+    range_kernel: usize,
+}
+
+impl MedianFilter {
+    /// Create a median filter with the given kernel size in gates.
+    ///
+    /// A 1x1 kernel is valid and leaves the field unchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidParameter`] if either kernel size is zero or even.
+    pub fn new(azimuth_kernel: usize, range_kernel: usize) -> Result<Self> {
+        if azimuth_kernel == 0 || range_kernel == 0 {
+            return Err(Error::InvalidParameter(
+                "kernel sizes must be >= 1".to_string(),
+            ));
+        }
+        if azimuth_kernel.is_multiple_of(2) || range_kernel.is_multiple_of(2) {
+            return Err(Error::InvalidParameter(
+                "kernel sizes must be odd".to_string(),
+            ));
+        }
+        Ok(Self {
+            azimuth_kernel,
+            range_kernel,
+        })
+    }
+
+    /// Kernel width in the azimuth dimension, in gates.
+    pub fn azimuth_kernel(&self) -> usize {
+        self.azimuth_kernel
+    }
+
+    /// Kernel width in the range dimension, in gates.
+    pub fn range_kernel(&self) -> usize {
+        self.range_kernel
+    }
 }
 
 impl SweepProcessor for MedianFilter {
@@ -23,17 +69,6 @@ impl SweepProcessor for MedianFilter {
     }
 
     fn process(&self, input: &SweepField) -> Result<SweepField> {
-        if self.azimuth_kernel.is_multiple_of(2) || self.range_kernel.is_multiple_of(2) {
-            return Err(Error::InvalidParameter(
-                "kernel sizes must be odd".to_string(),
-            ));
-        }
-        if self.azimuth_kernel == 0 || self.range_kernel == 0 {
-            return Err(Error::InvalidParameter(
-                "kernel sizes must be >= 1".to_string(),
-            ));
-        }
-
         // 1x1 kernel is a no-op
         if self.azimuth_kernel == 1 && self.range_kernel == 1 {
             return Ok(input.clone());
@@ -96,11 +131,51 @@ impl SweepProcessor for MedianFilter {
 /// gates contribute to the weighted average; invalid gates are left unchanged.
 ///
 /// The azimuth dimension wraps around 360 degrees.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad_process::filter::GaussianSmooth;
+///
+/// let smoother = GaussianSmooth::new(1.0, 1.0)?;
+/// let smoothed = smoother.process(&field)?;
+/// ```
+#[derive(Debug, Clone, PartialEq)]
 pub struct GaussianSmooth {
     /// Standard deviation in the azimuth dimension (in gate units).
-    pub sigma_azimuth: f32,
+    sigma_azimuth: f32,
     /// Standard deviation in the range dimension (in gate units).
-    pub sigma_range: f32,
+    sigma_range: f32,
+}
+
+impl GaussianSmooth {
+    /// Create a Gaussian smoother with the given standard deviations in gate units.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidParameter`] if either sigma is not a finite positive number.
+    pub fn new(sigma_azimuth: f32, sigma_range: f32) -> Result<Self> {
+        let valid = |sigma: f32| sigma.is_finite() && sigma > 0.0;
+        if !valid(sigma_azimuth) || !valid(sigma_range) {
+            return Err(Error::InvalidParameter(
+                "sigma values must be finite and positive".to_string(),
+            ));
+        }
+        Ok(Self {
+            sigma_azimuth,
+            sigma_range,
+        })
+    }
+
+    /// Standard deviation in the azimuth dimension, in gate units.
+    pub fn sigma_azimuth(&self) -> f32 {
+        self.sigma_azimuth
+    }
+
+    /// Standard deviation in the range dimension, in gate units.
+    pub fn sigma_range(&self) -> f32 {
+        self.sigma_range
+    }
 }
 
 impl SweepProcessor for GaussianSmooth {
@@ -109,12 +184,6 @@ impl SweepProcessor for GaussianSmooth {
     }
 
     fn process(&self, input: &SweepField) -> Result<SweepField> {
-        if self.sigma_azimuth <= 0.0 || self.sigma_range <= 0.0 {
-            return Err(Error::InvalidParameter(
-                "sigma values must be positive".to_string(),
-            ));
-        }
-
         let az_count = input.azimuth_count();
         let gate_count = input.gate_count();
 
@@ -204,14 +273,11 @@ mod tests {
     }
 
     #[test]
-    fn test_median_filter_uniform() {
+    fn test_median_filter_uniform() -> Result<()> {
         let field = make_test_field();
-        let filter = MedianFilter {
-            azimuth_kernel: 3,
-            range_kernel: 3,
-        };
+        let filter = MedianFilter::new(3, 3)?;
 
-        let result = filter.process(&field).unwrap();
+        let result = filter.process(&field)?;
 
         // Uniform input should produce uniform output
         for az in 0..5 {
@@ -221,76 +287,69 @@ mod tests {
                 assert_eq!(status, GateStatus::Valid);
             }
         }
+        Ok(())
     }
 
     #[test]
-    fn test_median_filter_removes_spike() {
+    fn test_median_filter_removes_spike() -> Result<()> {
         let mut field = make_test_field();
         // Add a single spike
         field.set(2, 2, 100.0, GateStatus::Valid);
 
-        let filter = MedianFilter {
-            azimuth_kernel: 3,
-            range_kernel: 3,
-        };
+        let filter = MedianFilter::new(3, 3)?;
 
-        let result = filter.process(&field).unwrap();
+        let result = filter.process(&field)?;
 
         // The spike should be removed (median of mostly 30.0 values)
         let (val, _) = result.get(2, 2);
         assert_eq!(val, 30.0);
+        Ok(())
     }
 
     #[test]
     fn test_median_filter_even_kernel_error() {
-        let field = make_test_field();
-        let filter = MedianFilter {
-            azimuth_kernel: 2,
-            range_kernel: 3,
-        };
-
-        assert!(filter.process(&field).is_err());
+        assert!(MedianFilter::new(2, 3).is_err());
+        assert!(MedianFilter::new(3, 4).is_err());
     }
 
     #[test]
-    fn test_median_filter_1x1_noop() {
+    fn test_median_filter_zero_kernel_error() {
+        assert!(MedianFilter::new(0, 3).is_err());
+        assert!(MedianFilter::new(3, 0).is_err());
+    }
+
+    #[test]
+    fn test_median_filter_1x1_noop() -> Result<()> {
         let mut field = make_test_field();
         field.set(2, 2, 99.0, GateStatus::Valid);
 
-        let filter = MedianFilter {
-            azimuth_kernel: 1,
-            range_kernel: 1,
-        };
+        let filter = MedianFilter::new(1, 1)?;
 
-        let result = filter.process(&field).unwrap();
+        let result = filter.process(&field)?;
         let (val, _) = result.get(2, 2);
         assert_eq!(val, 99.0);
+        Ok(())
     }
 
     #[test]
-    fn test_median_filter_preserves_nodata() {
+    fn test_median_filter_preserves_nodata() -> Result<()> {
         let mut field = make_test_field();
         field.set(2, 2, 0.0, GateStatus::NoData);
 
-        let filter = MedianFilter {
-            azimuth_kernel: 3,
-            range_kernel: 3,
-        };
+        let filter = MedianFilter::new(3, 3)?;
 
-        let result = filter.process(&field).unwrap();
+        let result = filter.process(&field)?;
         let (_, status) = result.get(2, 2);
         assert_eq!(status, GateStatus::NoData);
+        Ok(())
     }
 
     #[test]
-    fn test_gaussian_smooth_uniform() {
+    fn test_gaussian_smooth_uniform() -> Result<()> {
         let field = make_test_field();
-        let smoother = GaussianSmooth {
-            sigma_azimuth: 1.0,
-            sigma_range: 1.0,
-        };
+        let smoother = GaussianSmooth::new(1.0, 1.0)?;
 
-        let result = smoother.process(&field).unwrap();
+        let result = smoother.process(&field)?;
 
         // Uniform input should produce uniform output
         for az in 0..5 {
@@ -299,34 +358,30 @@ mod tests {
                 assert!((val - 30.0).abs() < 0.01, "Expected ~30.0, got {}", val);
             }
         }
+        Ok(())
     }
 
     #[test]
-    fn test_gaussian_smooth_reduces_spike() {
+    fn test_gaussian_smooth_reduces_spike() -> Result<()> {
         let mut field = make_test_field();
         field.set(2, 2, 100.0, GateStatus::Valid);
 
-        let smoother = GaussianSmooth {
-            sigma_azimuth: 1.0,
-            sigma_range: 1.0,
-        };
+        let smoother = GaussianSmooth::new(1.0, 1.0)?;
 
-        let result = smoother.process(&field).unwrap();
+        let result = smoother.process(&field)?;
 
         // The spike should be reduced (smoothed toward neighbors)
         let (val, _) = result.get(2, 2);
         assert!(val < 100.0, "Expected smoothed value < 100, got {}", val);
         assert!(val > 30.0, "Expected smoothed value > 30, got {}", val);
+        Ok(())
     }
 
     #[test]
     fn test_gaussian_smooth_invalid_sigma() {
-        let field = make_test_field();
-        let smoother = GaussianSmooth {
-            sigma_azimuth: 0.0,
-            sigma_range: 1.0,
-        };
-
-        assert!(smoother.process(&field).is_err());
+        assert!(GaussianSmooth::new(0.0, 1.0).is_err());
+        assert!(GaussianSmooth::new(1.0, -1.0).is_err());
+        assert!(GaussianSmooth::new(f32::NAN, 1.0).is_err());
+        assert!(GaussianSmooth::new(1.0, f32::INFINITY).is_err());
     }
 }

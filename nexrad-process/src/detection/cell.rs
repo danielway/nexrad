@@ -162,6 +162,7 @@ impl StormCell {
 ///     );
 /// }
 /// ```
+#[derive(Debug, Clone, PartialEq)]
 pub struct StormCellDetector {
     /// Minimum reflectivity (dBZ) for a gate to be included in a cell.
     reflectivity_threshold_dbz: f32,

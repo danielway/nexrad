@@ -1,4 +1,4 @@
-use crate::result::Result;
+use crate::result::{Error, Result};
 use crate::SweepProcessor;
 use nexrad_model::data::{GateStatus, SweepField};
 
@@ -13,14 +13,50 @@ use nexrad_model::data::{GateStatus, SweepField};
 /// use nexrad_process::filter::ThresholdFilter;
 ///
 /// // Remove all reflectivity below 5 dBZ
-/// let filter = ThresholdFilter { min: Some(5.0), max: None };
+/// let filter = ThresholdFilter::new(Some(5.0), None)?;
 /// let filtered = filter.process(&field)?;
 /// ```
+#[derive(Debug, Clone, PartialEq)]
 pub struct ThresholdFilter {
     /// Minimum acceptable value. Gates below this are masked.
-    pub min: Option<f32>,
+    min: Option<f32>,
     /// Maximum acceptable value. Gates above this are masked.
-    pub max: Option<f32>,
+    max: Option<f32>,
+}
+
+impl ThresholdFilter {
+    /// Create a threshold filter with optional lower and upper bounds.
+    ///
+    /// Passing `None` for both bounds yields a filter that leaves every gate unchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidParameter`] if either bound is NaN or if `min > max`.
+    pub fn new(min: Option<f32>, max: Option<f32>) -> Result<Self> {
+        if min.is_some_and(f32::is_nan) || max.is_some_and(f32::is_nan) {
+            return Err(Error::InvalidParameter(
+                "threshold bounds must not be NaN".to_string(),
+            ));
+        }
+        if let (Some(lo), Some(hi)) = (min, max) {
+            if lo > hi {
+                return Err(Error::InvalidParameter(format!(
+                    "threshold min ({lo}) must not exceed max ({hi})"
+                )));
+            }
+        }
+        Ok(Self { min, max })
+    }
+
+    /// Minimum acceptable value, if bounded below.
+    pub fn min(&self) -> Option<f32> {
+        self.min
+    }
+
+    /// Maximum acceptable value, if bounded above.
+    pub fn max(&self) -> Option<f32> {
+        self.max
+    }
 }
 
 impl SweepProcessor for ThresholdFilter {
@@ -77,14 +113,11 @@ mod tests {
     }
 
     #[test]
-    fn test_threshold_min_only() {
+    fn test_threshold_min_only() -> Result<()> {
         let field = make_test_field();
-        let filter = ThresholdFilter {
-            min: Some(20.0),
-            max: None,
-        };
+        let filter = ThresholdFilter::new(Some(20.0), None)?;
 
-        let result = filter.process(&field).unwrap();
+        let result = filter.process(&field)?;
 
         // Values below 20 should be masked
         for az in 0..3 {
@@ -100,17 +133,15 @@ mod tests {
                 }
             }
         }
+        Ok(())
     }
 
     #[test]
-    fn test_threshold_max_only() {
+    fn test_threshold_max_only() -> Result<()> {
         let field = make_test_field();
-        let filter = ThresholdFilter {
-            min: None,
-            max: Some(40.0),
-        };
+        let filter = ThresholdFilter::new(None, Some(40.0))?;
 
-        let result = filter.process(&field).unwrap();
+        let result = filter.process(&field)?;
 
         for az in 0..3 {
             for gate in 0..5 {
@@ -123,17 +154,15 @@ mod tests {
                 }
             }
         }
+        Ok(())
     }
 
     #[test]
-    fn test_threshold_both_bounds() {
+    fn test_threshold_both_bounds() -> Result<()> {
         let field = make_test_field();
-        let filter = ThresholdFilter {
-            min: Some(15.0),
-            max: Some(50.0),
-        };
+        let filter = ThresholdFilter::new(Some(15.0), Some(50.0))?;
 
-        let result = filter.process(&field).unwrap();
+        let result = filter.process(&field)?;
 
         for az in 0..3 {
             for gate in 0..5 {
@@ -146,35 +175,50 @@ mod tests {
                 }
             }
         }
+        Ok(())
     }
 
     #[test]
-    fn test_threshold_preserves_nodata() {
+    fn test_threshold_preserves_nodata() -> Result<()> {
         let mut field = make_test_field();
         // Mark some gates as already NoData
         field.set(1, 2, 0.0, GateStatus::NoData);
 
-        let filter = ThresholdFilter {
-            min: Some(0.0),
-            max: None,
-        };
+        let filter = ThresholdFilter::new(Some(0.0), None)?;
 
-        let result = filter.process(&field).unwrap();
+        let result = filter.process(&field)?;
 
         // The NoData gate should remain NoData
         let (_, status) = result.get(1, 2);
         assert_eq!(status, GateStatus::NoData);
+        Ok(())
     }
 
     #[test]
-    fn test_threshold_no_bounds() {
-        let field = make_test_field();
-        let filter = ThresholdFilter {
-            min: None,
-            max: None,
-        };
+    fn test_threshold_rejects_nan_bounds() {
+        assert!(ThresholdFilter::new(Some(f32::NAN), None).is_err());
+        assert!(ThresholdFilter::new(None, Some(f32::NAN)).is_err());
+    }
 
-        let result = filter.process(&field).unwrap();
+    #[test]
+    fn test_threshold_rejects_inverted_bounds() {
+        assert!(ThresholdFilter::new(Some(50.0), Some(10.0)).is_err());
+    }
+
+    #[test]
+    fn test_threshold_accepts_equal_bounds() -> Result<()> {
+        let filter = ThresholdFilter::new(Some(10.0), Some(10.0))?;
+        assert_eq!(filter.min(), Some(10.0));
+        assert_eq!(filter.max(), Some(10.0));
+        Ok(())
+    }
+
+    #[test]
+    fn test_threshold_no_bounds() -> Result<()> {
+        let field = make_test_field();
+        let filter = ThresholdFilter::new(None, None)?;
+
+        let result = filter.process(&field)?;
 
         // All valid values should remain valid
         for az in 0..3 {
@@ -185,5 +229,6 @@ mod tests {
                 assert_eq!(result_status, GateStatus::Valid);
             }
         }
+        Ok(())
     }
 }

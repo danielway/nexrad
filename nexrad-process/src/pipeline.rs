@@ -1,6 +1,7 @@
 use crate::result::Result;
 use crate::SweepProcessor;
 use nexrad_model::data::SweepField;
+use std::fmt;
 
 /// A composable pipeline of sweep processing steps.
 ///
@@ -14,8 +15,8 @@ use nexrad_model::data::SweepField;
 /// use nexrad_process::{SweepPipeline, filter::ThresholdFilter};
 ///
 /// let pipeline = SweepPipeline::new()
-///     .then(ThresholdFilter { min: Some(5.0), max: None })
-///     .then(ThresholdFilter { min: None, max: Some(75.0) });
+///     .then(ThresholdFilter::new(Some(5.0), None)?)
+///     .then(ThresholdFilter::new(None, Some(75.0))?);
 ///
 /// let output = pipeline.execute(&input_field)?;
 /// ```
@@ -51,6 +52,15 @@ impl SweepPipeline {
     }
 }
 
+impl fmt::Debug for SweepPipeline {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let names: Vec<&str> = self.steps.iter().map(|step| step.name()).collect();
+        f.debug_struct("SweepPipeline")
+            .field("steps", &names)
+            .finish()
+    }
+}
+
 impl Default for SweepPipeline {
     fn default() -> Self {
         Self::new()
@@ -64,5 +74,32 @@ impl SweepProcessor for SweepPipeline {
 
     fn process(&self, input: &SweepField) -> Result<SweepField> {
         self.execute(input)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::filter::{GaussianSmooth, ThresholdFilter};
+
+    #[test]
+    fn test_debug_lists_step_names() -> Result<()> {
+        let pipeline = SweepPipeline::new()
+            .then(ThresholdFilter::new(Some(5.0), None)?)
+            .then(GaussianSmooth::new(1.0, 1.0)?);
+
+        assert_eq!(
+            format!("{pipeline:?}"),
+            r#"SweepPipeline { steps: ["ThresholdFilter", "GaussianSmooth"] }"#
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_debug_empty_pipeline() {
+        assert_eq!(
+            format!("{:?}", SweepPipeline::new()),
+            "SweepPipeline { steps: [] }"
+        );
     }
 }

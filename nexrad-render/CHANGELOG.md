@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changes since `1.0.0-rc.4`, the last published release. Together they make up the 1.0.0 release.
 
-See [Migrating to 1.0](../docs/migrating-to-1.0.md) for step-by-step upgrade instructions.
+See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrating-to-1.0.md) for step-by-step upgrade instructions.
 
 ### Added
 
@@ -35,6 +35,8 @@ See [Migrating to 1.0](../docs/migrating-to-1.0.md) for step-by-step upgrade ins
   `RenderOptions::native_for` computes a `u32` size (saturating at `u32::MAX`). (#174)
 - `RenderResult::save` fails with `Error::Image(image::ImageError)` instead of `ImageSave(String)`, preserving the
   source error. (#174)
+- `Error` no longer implements `UnwindSafe`/`RefUnwindSafe`, because `image::ImageError` does not; wrap it in
+  `std::panic::AssertUnwindSafe` where that matters. (#174)
 - `Error::NoRadials` → `Error::EmptyField`, returned for a sweep field with no radials and for a Cartesian or vertical
   field with no rows or columns. `Error::InvalidDimensions` is also returned for a zero width or height or a buffer
   size that overflows `usize`. (#174)

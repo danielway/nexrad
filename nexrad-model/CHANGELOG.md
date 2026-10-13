@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changes since `1.0.0-rc.2`, the last published release. Together they make up the 1.0.0 release.
 
-See [Migrating to 1.0](../docs/migrating-to-1.0.md) for step-by-step upgrade instructions.
+See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrating-to-1.0.md) for step-by-step upgrade instructions.
 
 ### Added
 
@@ -78,7 +78,7 @@ See [Migrating to 1.0](../docs/migrating-to-1.0.md) for step-by-step upgrade ins
   `SweepField` gains a `product` field. (#170)
 - The site registry matches NOAA's operational radar list: `KBHX`, `KDOX`, `KHDC`, `KLGX` and `PAPD` are added; `KLIX`
   (replaced by `KHDC`), the invalid Alaska aliases `KABC`, `KACG`, `KAIH` and `KAKC`, and a duplicate `KCCX` entry are
-  removed; and the `KFDX` and `KPBZ` longitudes are corrected. `registry::site_by_id` returns `None` for the removed
+  removed; and the `KFDX` and `KPBZ` coordinates are corrected. `registry::site_by_id` returns `None` for the removed
   identifiers, and `registry::nearest_site` can return a different site. (#148)
 - `Debug` output changed: renamed types and variants print their new names (#160); binary blobs print
   `fnv1a: 0x<16 hex digits>` instead of `sha256: "<hex>"` (#162); `Radial`/`MomentData` no longer nest an

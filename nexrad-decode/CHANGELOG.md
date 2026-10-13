@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changes since `1.0.0-rc.3`, the last published release. Together they make up the 1.0.0 release.
 
-See [Migrating to 1.0](../docs/migrating-to-1.0.md) for step-by-step upgrade instructions.
+See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrating-to-1.0.md) for step-by-step upgrade instructions.
 
 ### Added
 

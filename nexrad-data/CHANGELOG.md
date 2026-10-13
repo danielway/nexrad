@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changes since `1.0.0-rc.7`, the last published release. Together they make up the 1.0.0 release.
 
-See [Migrating to 1.0](../docs/migrating-to-1.0.md) for step-by-step upgrade instructions.
+See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrating-to-1.0.md) for step-by-step upgrade instructions.
 
 ### Added
 
@@ -37,6 +37,8 @@ See [Migrating to 1.0](../docs/migrating-to-1.0.md) for step-by-step upgrade ins
   module is removed); `nexrad_data::AwsError` also works. (#171)
 - `AwsError::S3ListObjects`, `S3GetObjectRequest` and `S3Streaming` hold a
   `Box<dyn std::error::Error + Send + Sync + 'static>` instead of a `reqwest::Error`; `source()` returns it. (#171)
+- `Error` and `AwsError` no longer implement `UnwindSafe`/`RefUnwindSafe`, because the boxed error sources do not;
+  wrap them in `std::panic::AssertUnwindSafe` where that matters. (#171)
 - `aws::realtime::chunk_stream(config, sleep)` takes a caller-supplied sleep function as its second argument (with
   tokio, `|d| tokio::time::sleep(d)`) and no longer depends on tokio, so it builds for WASM. (#161)
 - `aws::realtime::Chunk<'a>` → `Chunk`; its `IntermediateOrEnd` variant holds a `volume::Record<'static>`.

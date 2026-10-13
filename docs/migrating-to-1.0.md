@@ -208,7 +208,7 @@ let site = Site::builder(*b"KDMX", 41.7312, -93.7229)
   `new_like`, optional on the builder).
 - **Site registry membership changed** (#148). Added `KBHX`, `KDOX`, `KHDC`, `KLGX` and `PAPD`. Removed `KLIX` (replaced
   by `KHDC`), the invalid Alaska aliases `KABC`, `KACG`, `KAIH` and `KAKC` (use the `P...` identifiers), and a duplicate
-  `KCCX` entry. `KFDX` and `KPBZ` longitudes were corrected. `registry::site_by_id("KLIX")` now returns `None`, and
+  `KCCX` entry. `KFDX` and `KPBZ` coordinates were corrected. `registry::site_by_id("KLIX")` now returns `None`, and
   `nearest_site` can return a different site near those locations.
 - **`Debug` output** prints the new type and variant names, `fnv1a: 0x...` instead of `sha256: "..."` for binary blobs,
   and a `product` field on `Radial`/`MomentData` moments. Update any snapshot tests that capture it.

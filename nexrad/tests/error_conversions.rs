@@ -6,6 +6,21 @@
 #[cfg(feature = "decode")]
 use std::error::Error as StdError;
 
+#[cfg(feature = "aws")]
+#[test]
+fn test_no_data_available_message() {
+    let date = nexrad::chrono::NaiveDate::from_ymd_opt(2023, 5, 20).expect("valid date");
+    let err = nexrad::Error::NoDataAvailable {
+        site: "KTLX".to_string(),
+        date,
+    };
+
+    assert_eq!(
+        err.to_string(),
+        "no data available for site KTLX on 2023-05-20"
+    );
+}
+
 #[cfg(feature = "model")]
 #[test]
 fn test_model_error_conversion() {
@@ -109,48 +124,106 @@ fn test_data_error_conversion() {
     );
 }
 
-#[cfg(all(feature = "data", feature = "decode"))]
+#[cfg(feature = "data")]
 #[test]
-fn test_nested_decode_error_through_data() {
-    // Create a decode error and wrap it in a data error
+fn test_decode_error_through_data_is_flattened() {
+    // A decode error wrapped by nexrad-data surfaces as Error::Decode
     let decode_err = nexrad_decode::result::Error::UnexpectedEof;
     let data_err: nexrad_data::result::Error = decode_err.into();
 
-    // Convert to unified error
     let unified_err: nexrad::Error = data_err.into();
 
-    // Verify it's wrapped as a Data error (since it came through nexrad-data)
     match unified_err {
-        nexrad::Error::Data(_) => {}
-        #[allow(unreachable_patterns)]
-        _ => panic!("Expected Error::Data variant"),
+        nexrad::Error::Decode(nexrad_decode::result::Error::UnexpectedEof) => {}
+        ref other => panic!("Expected Error::Decode(UnexpectedEof), got: {:?}", other),
     }
 
-    // Verify the error chain is preserved
     let err_string = unified_err.to_string();
     assert!(
-        err_string.contains("data error"),
-        "Expected 'data error' in message, got: {}",
+        err_string.contains("decode error"),
+        "Expected 'decode error' in message, got: {}",
         err_string
     );
 }
 
 #[cfg(feature = "data")]
 #[test]
-fn test_io_error_conversion_through_data() {
-    // Create an I/O error and convert through data
+fn test_model_error_through_data_is_flattened() {
+    // A model error wrapped by nexrad-data surfaces as Error::Model
+    let model_err = nexrad_model::result::Error::ElevationMismatch;
+    let data_err: nexrad_data::result::Error = model_err.into();
+
+    let unified_err: nexrad::Error = data_err.into();
+
+    match unified_err {
+        nexrad::Error::Model(nexrad_model::result::Error::ElevationMismatch) => {}
+        ref other => panic!("Expected Error::Model(ElevationMismatch), got: {:?}", other),
+    }
+
+    let err_string = unified_err.to_string();
+    assert!(
+        err_string.contains("model error"),
+        "Expected 'model error' in message, got: {}",
+        err_string
+    );
+}
+
+#[cfg(feature = "data")]
+#[test]
+fn test_io_error_through_data_is_flattened() {
+    // An I/O error wrapped by nexrad-data surfaces as Error::Io
     let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "access denied");
     let data_err: nexrad_data::result::Error = io_err.into();
 
-    // Convert to unified error
     let unified_err: nexrad::Error = data_err.into();
 
-    // Verify the error message
+    match &unified_err {
+        nexrad::Error::Io(io_err) => {
+            assert_eq!(io_err.kind(), std::io::ErrorKind::PermissionDenied);
+        }
+        other => panic!("Expected Error::Io, got: {:?}", other),
+    }
+
     let err_string = unified_err.to_string();
     assert!(
-        err_string.contains("data error"),
-        "Expected 'data error' in message, got: {}",
+        err_string.contains("I/O error") && err_string.contains("access denied"),
+        "Expected 'I/O error' and 'access denied' in message, got: {}",
         err_string
+    );
+}
+
+#[cfg(feature = "data")]
+#[test]
+fn test_decode_error_through_data_keeps_source() {
+    // Flattening must not lose the decode error as the source of the unified error
+    let decode_err = nexrad_decode::result::Error::Decoding("test error".to_string());
+    let data_err: nexrad_data::result::Error = decode_err.into();
+
+    let unified_err: nexrad::Error = data_err.into();
+
+    let source = unified_err
+        .source()
+        .expect("Expected error source to be available");
+    let source_string = source.to_string();
+    assert!(
+        source_string.contains("test error"),
+        "Expected 'test error' in source, got: {}",
+        source_string
+    );
+}
+
+#[cfg(feature = "data")]
+#[test]
+fn test_data_specific_error_keeps_source() {
+    let unified_err: nexrad::Error = nexrad_data::result::Error::CompressedData.into();
+
+    let source = unified_err
+        .source()
+        .expect("Expected error source to be available");
+    assert!(
+        source.to_string().contains("compressed data"),
+        "Expected the data error as the source, got: {}",
+        source
     );
 }
 

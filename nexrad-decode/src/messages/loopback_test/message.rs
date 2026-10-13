@@ -32,7 +32,7 @@ impl<'a> Message<'a> {
     }
 
     /// The total message size in halfwords (range 2-1200), not including the message header.
-    pub fn message_size(&self) -> u16 {
+    pub fn message_size_halfwords(&self) -> u16 {
         self.header.message_size.get()
     }
 

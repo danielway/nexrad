@@ -1,7 +1,7 @@
 use super::raw;
 use super::{
-    DataBlock, DataBlockId, ElevationDataBlock, GenericDataBlock, Header, RadialDataBlock,
-    VolumeDataBlock,
+    DataBlock, DataBlockId, DataBlockName, ElevationDataBlock, GenericDataBlock, Header,
+    RadialDataBlock, VolumeDataBlock,
 };
 use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
@@ -90,8 +90,8 @@ impl<'a> Message<'a> {
             let block_id = reader.take_ref::<raw::DataBlockId>()?;
             let id = DataBlockId::new(block_id);
 
-            match &block_id.data_name {
-                b"VOL" => {
+            match id.data_block_name() {
+                DataBlockName::Volume => {
                     // VOL expanded from 44 to 52 bytes at Build 20.0 (ICD 2620002U).
                     if reader.peek_u16().is_some_and(|lrtup| lrtup <= 44) {
                         let block = reader.take_ref::<raw::VolumeDataBlockLegacy>()?;
@@ -103,12 +103,12 @@ impl<'a> Message<'a> {
                             Some(DataBlock::new(id, VolumeDataBlock::new(block)));
                     }
                 }
-                b"ELV" => {
+                DataBlockName::Elevation => {
                     let elevation_block = reader.take_ref::<raw::ElevationDataBlock>()?;
                     message.elevation_data_block =
                         Some(DataBlock::new(id, ElevationDataBlock::new(elevation_block)));
                 }
-                b"RAD" => {
+                DataBlockName::Radial => {
                     // RAD expanded from 20 to 28 bytes at Build 12.0 (ICD 2620002K).
                     if reader.peek_u16().is_some_and(|lrtup| lrtup <= 20) {
                         let block = reader.take_ref::<raw::RadialDataBlockLegacy>()?;
@@ -120,33 +120,33 @@ impl<'a> Message<'a> {
                             Some(DataBlock::new(id, RadialDataBlock::new(block)));
                     }
                 }
-                _ => {
+                name => {
                     let generic_block = GenericDataBlock::parse(reader)?;
-                    match &block_id.data_name {
-                        b"REF" => {
+                    match name {
+                        DataBlockName::Reflectivity => {
                             message.reflectivity_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        b"VEL" => {
+                        DataBlockName::Velocity => {
                             message.velocity_data_block = Some(DataBlock::new(id, generic_block));
                         }
-                        b"SW " => {
+                        DataBlockName::SpectrumWidth => {
                             message.spectrum_width_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        b"ZDR" => {
+                        DataBlockName::DifferentialReflectivity => {
                             message.differential_reflectivity_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        b"PHI" => {
+                        DataBlockName::DifferentialPhase => {
                             message.differential_phase_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        b"RHO" => {
+                        DataBlockName::CorrelationCoefficient => {
                             message.correlation_coefficient_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
-                        b"CFP" => {
+                        DataBlockName::ClutterFilterPower => {
                             message.clutter_filter_power_data_block =
                                 Some(DataBlock::new(id, generic_block));
                         }
@@ -306,15 +306,14 @@ impl<'a> Message<'a> {
         header: &Header<'_>,
         moments: Vec<nexrad_model::data::MomentData>,
     ) -> crate::result::Result<nexrad_model::data::Radial> {
-        use super::RadialStatus;
         use crate::result::Error;
-        use nexrad_model::data::{Radial, RadialStatus as ModelRadialStatus};
+        use nexrad_model::data::Radial;
 
         let mut builder = Radial::builder(
             header.azimuth_number(),
-            header.azimuth_angle_raw(),
+            header.azimuth_angle_degrees(),
             header.elevation_number(),
-            header.elevation_angle_raw(),
+            header.elevation_angle_degrees(),
         )
         .collection_timestamp(
             header
@@ -322,16 +321,8 @@ impl<'a> Message<'a> {
                 .ok_or(Error::MessageMissingDate)?
                 .timestamp_millis(),
         )
-        .azimuth_spacing_degrees(header.azimuth_resolution_spacing_raw() as f32 * 0.5)
-        .radial_status(match header.radial_status() {
-            RadialStatus::ElevationStart => ModelRadialStatus::ElevationStart,
-            RadialStatus::IntermediateRadialData => ModelRadialStatus::IntermediateRadialData,
-            RadialStatus::ElevationEnd => ModelRadialStatus::ElevationEnd,
-            RadialStatus::VolumeScanStart => ModelRadialStatus::ScanStart,
-            RadialStatus::VolumeScanEnd => ModelRadialStatus::ScanEnd,
-            RadialStatus::ElevationStartVcpFinal => ModelRadialStatus::ElevationStartVcpFinal,
-            RadialStatus::Unknown(v) => ModelRadialStatus::Unknown(v),
-        });
+        .azimuth_spacing_degrees(header.azimuth_resolution_spacing_degrees())
+        .radial_status(header.radial_status().into());
 
         for moment in moments {
             builder = builder.moment(moment);
@@ -351,11 +342,11 @@ impl Message<'_> {
         Some(
             nexrad_model::meta::Site::builder(
                 *self.header.radar_identifier_raw(),
-                volume.latitude_raw() as f64,
-                volume.longitude_raw() as f64,
+                volume.latitude_degrees() as f64,
+                volume.longitude_degrees() as f64,
             )
-            .height_meters(volume.site_height_raw())
-            .tower_height_meters(volume.tower_height_raw())
+            .height_meters(volume.site_height_meters())
+            .tower_height_meters(volume.tower_height_meters())
             .build(),
         )
     }

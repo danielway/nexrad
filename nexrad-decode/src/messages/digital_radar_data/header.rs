@@ -53,8 +53,8 @@ impl<'a> Header<'a> {
         self.inner.azimuth_number.get()
     }
 
-    /// Azimuth angle at which the radial was collected in degrees (raw value).
-    pub fn azimuth_angle_raw(&self) -> f32 {
+    /// Azimuth angle at which the radial was collected, in degrees.
+    pub fn azimuth_angle_degrees(&self) -> f32 {
         self.inner.azimuth_angle.get()
     }
 
@@ -63,8 +63,8 @@ impl<'a> Header<'a> {
         self.inner.compression_indicator
     }
 
-    /// Uncompressed length of the radial in bytes (raw value).
-    pub fn radial_length_raw(&self) -> u16 {
+    /// Uncompressed length of the radial (including the data header block), in bytes.
+    pub fn radial_length_bytes(&self) -> u16 {
         self.inner.radial_length.get()
     }
 
@@ -89,8 +89,8 @@ impl<'a> Header<'a> {
         self.inner.cut_sector_number
     }
 
-    /// The radial's collection elevation angle in degrees (raw value).
-    pub fn elevation_angle_raw(&self) -> f32 {
+    /// The radial's collection elevation angle, in degrees.
+    pub fn elevation_angle_degrees(&self) -> f32 {
         self.inner.elevation_angle.get()
     }
 
@@ -145,23 +145,9 @@ impl<'a> Header<'a> {
         Information::new::<byte>(self.inner.radial_length.get() as f64)
     }
 
-    /// Azimuthal spacing between adjacent radials.
-    #[cfg(feature = "uom")]
-    pub fn azimuth_resolution_spacing(&self) -> Angle {
-        Angle::new::<degree>(self.inner.azimuth_resolution_spacing as f64 * 0.5)
-    }
-
     /// The radial's status within the larger scan.
     pub fn radial_status(&self) -> RadialStatus {
-        match self.inner.radial_status {
-            0 => RadialStatus::ElevationStart,
-            1 => RadialStatus::IntermediateRadialData,
-            2 => RadialStatus::ElevationEnd,
-            3 => RadialStatus::VolumeScanStart,
-            4 => RadialStatus::VolumeScanEnd,
-            5 => RadialStatus::ElevationStartVcpFinal,
-            other => RadialStatus::Unknown(other),
-        }
+        RadialStatus::from_raw(self.inner.radial_status)
     }
 
     /// The radial's collection elevation angle.
@@ -187,13 +173,18 @@ impl<'a> Header<'a> {
         }
     }
 
-    /// Azimuthal spacing between adjacent radials as a typed enum.
-    pub fn azimuth_resolution_spacing_type(&self) -> AzimuthResolutionSpacing {
+    /// Azimuthal spacing between adjacent radials.
+    pub fn azimuth_resolution_spacing(&self) -> AzimuthResolutionSpacing {
         match self.inner.azimuth_resolution_spacing {
             1 => AzimuthResolutionSpacing::HalfDegree,
             2 => AzimuthResolutionSpacing::OneDegree,
             other => AzimuthResolutionSpacing::Unknown(other),
         }
+    }
+
+    /// Azimuthal spacing between adjacent radials, in degrees (the raw code times 0.5).
+    pub fn azimuth_resolution_spacing_degrees(&self) -> f32 {
+        self.inner.azimuth_resolution_spacing as f32 * 0.5
     }
 
     /// The azimuth indexing value in degrees (if keyed to constant angles).

@@ -63,15 +63,16 @@ impl<'a> RadialDataBlock<'a> {
         }
     }
 
-    /// Size of data block in bytes (raw value).
-    pub fn lrtup_raw(&self) -> u16 {
+    /// Size of data block, in bytes.
+    pub fn lrtup_bytes(&self) -> u16 {
         match &self.inner {
             RadialDataBlockInner::Legacy(inner) => inner.lrtup.get(),
             RadialDataBlockInner::Modern(inner) => inner.lrtup.get(),
         }
     }
 
-    /// Unambiguous range, interval size, in km (raw scaled value).
+    /// Unambiguous range, interval size, in tenths of a km (raw scaled value). See
+    /// [`unambiguous_range_km()`](Self::unambiguous_range_km) for the decoded value.
     pub fn unambiguous_range_raw(&self) -> u16 {
         match &self.inner {
             RadialDataBlockInner::Legacy(inner) => inner.unambiguous_range.get(),
@@ -79,23 +80,24 @@ impl<'a> RadialDataBlock<'a> {
         }
     }
 
-    /// Noise level for the horizontal channel in dBm.
-    pub fn horizontal_channel_noise_level(&self) -> f32 {
+    /// Noise level for the horizontal channel, in dBm.
+    pub fn horizontal_channel_noise_level_dbm(&self) -> f32 {
         match &self.inner {
             RadialDataBlockInner::Legacy(inner) => inner.horizontal_channel_noise_level.get(),
             RadialDataBlockInner::Modern(inner) => inner.horizontal_channel_noise_level.get(),
         }
     }
 
-    /// Noise level for the vertical channel in dBm.
-    pub fn vertical_channel_noise_level(&self) -> f32 {
+    /// Noise level for the vertical channel, in dBm.
+    pub fn vertical_channel_noise_level_dbm(&self) -> f32 {
         match &self.inner {
             RadialDataBlockInner::Legacy(inner) => inner.vertical_channel_noise_level.get(),
             RadialDataBlockInner::Modern(inner) => inner.vertical_channel_noise_level.get(),
         }
     }
 
-    /// Nyquist velocity in m/s (raw scaled value).
+    /// Nyquist velocity in hundredths of a m/s (raw scaled value). See
+    /// [`nyquist_velocity_mps()`](Self::nyquist_velocity_mps) for the decoded value.
     pub fn nyquist_velocity_raw(&self) -> u16 {
         match &self.inner {
             RadialDataBlockInner::Legacy(inner) => inner.nyquist_velocity.get(),
@@ -115,7 +117,7 @@ impl<'a> RadialDataBlock<'a> {
     ///
     /// Returns `None` for legacy data (older builds) as this field was not
     /// present in earlier ICD revisions.
-    pub fn horizontal_channel_calibration_constant(&self) -> Option<f32> {
+    pub fn horizontal_channel_calibration_constant_db(&self) -> Option<f32> {
         match &self.inner {
             RadialDataBlockInner::Legacy(_) => None,
             RadialDataBlockInner::Modern(inner) => {
@@ -128,7 +130,7 @@ impl<'a> RadialDataBlock<'a> {
     ///
     /// Returns `None` for legacy data (older builds) as this field was not
     /// present in earlier ICD revisions.
-    pub fn vertical_channel_calibration_constant(&self) -> Option<f32> {
+    pub fn vertical_channel_calibration_constant_db(&self) -> Option<f32> {
         match &self.inner {
             RadialDataBlockInner::Legacy(_) => None,
             RadialDataBlockInner::Modern(inner) => {
@@ -137,16 +139,26 @@ impl<'a> RadialDataBlock<'a> {
         }
     }
 
+    /// Unambiguous range, interval size, in km.
+    pub fn unambiguous_range_km(&self) -> f32 {
+        self.unambiguous_range_raw() as f32 * 0.1
+    }
+
+    /// Nyquist velocity, in m/s.
+    pub fn nyquist_velocity_mps(&self) -> f32 {
+        self.nyquist_velocity_raw() as f32 * 0.01
+    }
+
     /// Size of data block.
     #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
-        Information::new::<uom::si::information::byte>(self.lrtup_raw() as f64)
+        Information::new::<uom::si::information::byte>(self.lrtup_bytes() as f64)
     }
 
     /// Unambiguous range, interval size.
     #[cfg(feature = "uom")]
     pub fn unambiguous_range(&self) -> Length {
-        Length::new::<uom::si::length::kilometer>(self.unambiguous_range_raw() as f64)
+        Length::new::<uom::si::length::kilometer>(self.unambiguous_range_raw() as f64 * 0.1)
     }
 
     /// Nyquist velocity.

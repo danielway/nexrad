@@ -68,7 +68,7 @@ impl<'a> MessageHeader<'a> {
     }
 
     /// The raw redundant channel value, as it appears on the wire. See
-    /// [`rda_redundant_channel()`](Self::rda_redundant_channel) for the decoded value.
+    /// [`redundant_channel()`](Self::redundant_channel) for the decoded value.
     pub fn redundant_channel_raw(&self) -> u8 {
         self.raw.redundant_channel
     }
@@ -85,20 +85,29 @@ impl<'a> MessageHeader<'a> {
     }
 
     /// If this message is [segmented](Self::segmented), this indicates this message segment's
-    /// size. Otherwise, this returns [None] and [`message_size()`](Self::message_size) should be
-    /// used to determine the message's full size.
-    #[cfg(feature = "uom")]
-    pub fn segment_size(&self) -> Option<Information> {
+    /// size in bytes. Otherwise, this returns [None] and
+    /// [`message_size_bytes()`](Self::message_size_bytes) should be used to determine the
+    /// message's full size.
+    pub fn segment_size_bytes(&self) -> Option<u32> {
         let segment_size = self.raw.segment_size.get();
         if segment_size < VARIABLE_LENGTH_MESSAGE_SIZE {
-            Some(Information::new::<byte>((segment_size * 2) as f64))
+            Some(segment_size as u32 * 2)
         } else {
             None
         }
     }
 
+    /// If this message is [segmented](Self::segmented), this indicates this message segment's
+    /// size. Otherwise, this returns [None] and [`message_size()`](Self::message_size) should be
+    /// used to determine the message's full size.
+    #[cfg(feature = "uom")]
+    pub fn segment_size(&self) -> Option<Information> {
+        self.segment_size_bytes()
+            .map(|bytes| Information::new::<byte>(bytes as f64))
+    }
+
     /// Whether the RDA is operating on a redundant channel.
-    pub fn rda_redundant_channel(&self) -> RedundantChannel {
+    pub fn redundant_channel(&self) -> RedundantChannel {
         match self.raw.redundant_channel {
             0 => RedundantChannel::LegacySingleChannel,
             1 => RedundantChannel::LegacyRedundantChannel1,
@@ -225,7 +234,7 @@ mod tests {
         assert_eq!(header.segment_size_raw(), 1216);
         assert_eq!(header.redundant_channel_raw(), 8);
         assert_eq!(
-            header.rda_redundant_channel(),
+            header.redundant_channel(),
             RedundantChannel::OrdaSingleChannel
         );
         assert_eq!(header.message_type_raw(), 2);

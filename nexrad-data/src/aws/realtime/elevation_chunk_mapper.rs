@@ -90,8 +90,8 @@ impl ElevationChunkMapper {
             let end_seq = total_chunk_count + elevation_chunk_count - 1;
             elevation_chunk_mappings.push((start_seq, end_seq));
 
-            let azimuth_rate = elevation.azimuth_rate();
-            let elevation_angle = elevation.elevation_angle();
+            let azimuth_rate = elevation.azimuth_rate_degrees_per_second();
+            let elevation_angle = elevation.elevation_angle_degrees();
 
             for chunk_idx in 0..elevation_chunk_count {
                 chunk_metadata.push(ChunkMetadata {

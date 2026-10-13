@@ -34,15 +34,15 @@ pub fn parse_digital_radar_data_legacy(data: &[u8]) -> String {
     output.push_str(&format!(
         "Azimuth: #{} at {:.2}\u{00b0}\n",
         msg.azimuth_number(),
-        msg.azimuth_angle()
+        msg.azimuth_angle_degrees()
     ));
     output.push_str(&format!(
         "Elevation: #{} at {:.2}\u{00b0}\n",
         msg.elevation_number(),
-        msg.elevation_angle()
+        msg.elevation_angle_degrees()
     ));
 
-    let status = msg.radial_status();
+    let status = msg.radial_status_raw();
     output.push_str(&format!(
         "Radial Status: {} ({})\n",
         status,
@@ -56,18 +56,18 @@ pub fn parse_digital_radar_data_legacy(data: &[u8]) -> String {
         }
     ));
 
-    output.push_str(&format!("VCP Number: {}\n", msg.vcp_number()));
+    output.push_str(&format!("VCP Number: {}\n", msg.vcp_number_raw()));
     output.push_str(&format!(
         "Unambiguous Range: {:.1} km\n",
         msg.unambiguous_range_km()
     ));
     output.push_str(&format!(
         "Calibration Constant: {:.2} dB\n",
-        msg.calibration_constant()
+        msg.calibration_constant_db()
     ));
     output.push_str(&format!(
         "Doppler Velocity Resolution: {:.1} m/s\n",
-        msg.doppler_velocity_resolution()
+        msg.doppler_velocity_resolution_mps()
     ));
 
     // Gate configuration
@@ -75,14 +75,14 @@ pub fn parse_digital_radar_data_legacy(data: &[u8]) -> String {
     output.push_str(&format!(
         "Surveillance Gates: {} (interval: {} m, first gate: {} m)\n",
         msg.num_surveillance_gates(),
-        msg.surveillance_gate_interval(),
-        msg.surveillance_first_gate_range()
+        msg.surveillance_gate_interval_meters(),
+        msg.surveillance_first_gate_range_meters()
     ));
     output.push_str(&format!(
         "Doppler Gates: {} (interval: {} m, first gate: {} m)\n",
         msg.num_doppler_gates(),
-        msg.doppler_gate_interval(),
-        msg.doppler_first_gate_range()
+        msg.doppler_gate_interval_meters(),
+        msg.doppler_first_gate_range_meters()
     ));
 
     // Reflectivity data
@@ -92,8 +92,8 @@ pub fn parse_digital_radar_data_legacy(data: &[u8]) -> String {
             &mut output,
             gates,
             "REF",
-            msg.surveillance_first_gate_range() as f32,
-            msg.surveillance_gate_interval() as f32,
+            msg.surveillance_first_gate_range_meters() as f32,
+            msg.surveillance_gate_interval_meters() as f32,
         );
     } else {
         output.push_str("\n--- Reflectivity ---\n");
@@ -107,8 +107,8 @@ pub fn parse_digital_radar_data_legacy(data: &[u8]) -> String {
             &mut output,
             gates,
             "VEL",
-            msg.doppler_first_gate_range() as f32,
-            msg.doppler_gate_interval() as f32,
+            msg.doppler_first_gate_range_meters() as f32,
+            msg.doppler_gate_interval_meters() as f32,
         );
     } else {
         output.push_str("\n--- Velocity ---\n");
@@ -125,8 +125,8 @@ pub fn parse_digital_radar_data_legacy(data: &[u8]) -> String {
             &mut output,
             gates,
             "SW",
-            msg.doppler_first_gate_range() as f32,
-            msg.doppler_gate_interval() as f32,
+            msg.doppler_first_gate_range_meters() as f32,
+            msg.doppler_gate_interval_meters() as f32,
         );
     } else {
         output.push_str("\n--- Spectrum Width ---\n");

@@ -24,7 +24,7 @@ pub fn parse_request_for_data(data: &[u8]) -> String {
     output.push_str("=== Request for Data (Type 9) ===\n\n");
     output.push_str(&format!(
         "Raw Request Type: 0x{:04X}\n\n",
-        msg.raw_data_request_type()
+        msg.data_request_type_raw()
     ));
 
     output.push_str("--- Requested Data ---\n");

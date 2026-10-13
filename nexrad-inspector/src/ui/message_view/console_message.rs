@@ -22,7 +22,10 @@ pub fn parse_console_message(data: &[u8]) -> String {
     let mut output = String::new();
 
     output.push_str("=== Console Message ===\n\n");
-    output.push_str(&format!("Message Size: {} bytes\n", msg.message_size()));
+    output.push_str(&format!(
+        "Message Size: {} bytes\n",
+        msg.message_size_bytes()
+    ));
 
     output.push_str("\n--- Text ---\n");
     match msg.text() {

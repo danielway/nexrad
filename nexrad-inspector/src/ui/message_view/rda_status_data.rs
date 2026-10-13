@@ -53,7 +53,7 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
     output.push_str("\n--- Power & Calibration ---\n");
     output.push_str(&format!(
         "Avg TX Power: {} watts\n",
-        message.average_transmitter_power()
+        message.average_transmitter_power_watts()
     ));
     output.push_str(&format!(
         "Aux Power Generator: {:?}\n",
@@ -65,11 +65,11 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
     ));
     output.push_str(&format!(
         "Horiz Reflectivity Cal: {:.2} dB\n",
-        message.horizontal_reflectivity_calibration_correction()
+        message.horizontal_reflectivity_calibration_correction_db()
     ));
     output.push_str(&format!(
         "Vert Reflectivity Cal: {:.2} dB\n",
-        message.raw_vertical_reflectivity_calibration_correction() as f32 / 100.0
+        message.vertical_reflectivity_calibration_correction_db()
     ));
 
     // Volume Coverage Pattern Section
@@ -222,7 +222,7 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
     ));
     output.push_str(&format!(
         "Signal Processor Options: 0x{:04X}\n",
-        message.raw_signal_processor_options()
+        message.signal_processor_options_raw()
     ));
 
     output

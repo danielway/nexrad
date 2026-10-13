@@ -222,7 +222,7 @@ fn test_chunk_metadata_azimuth_rates_match_vcp() {
     // For each elevation, all chunks should have the same azimuth rate from the VCP
     for (elev_idx, elev_data) in vcp.elevations().iter().enumerate() {
         let elev_num = elev_idx + 1;
-        let expected_rate = elev_data.azimuth_rate();
+        let expected_rate = elev_data.azimuth_rate_degrees_per_second();
 
         for seq in 1..=mapper.final_sequence() {
             let meta = mapper.get_chunk_metadata(seq).expect("metadata in range");

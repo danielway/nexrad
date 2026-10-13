@@ -24,7 +24,7 @@ impl<'a> Header<'a> {
     }
 
     /// Total message size in halfwords, including the header and all elevation blocks
-    pub fn message_size(&self) -> u16 {
+    pub fn message_size_halfwords(&self) -> u16 {
         self.inner.message_size.get()
     }
 
@@ -53,7 +53,9 @@ impl<'a> Header<'a> {
         self.inner.clutter_map_group_number
     }
 
-    /// Doppler velocity resolution.
+    /// Doppler velocity resolution (raw code). See
+    /// [`doppler_velocity_resolution_mps()`](Self::doppler_velocity_resolution_mps) for the
+    /// decoded value.
     /// 2 -> 0.5
     /// 4 -> 1.0
     pub fn doppler_velocity_resolution_raw(&self) -> u8 {
@@ -97,8 +99,8 @@ impl<'a> Header<'a> {
         }
     }
 
-    /// Doppler velocity resolution.
-    pub fn doppler_velocity_resolution(&self) -> f32 {
+    /// Doppler velocity resolution in m/s (0.0 for an unrecognized code).
+    pub fn doppler_velocity_resolution_mps(&self) -> f32 {
         match self.inner.doppler_velocity_resolution {
             2 => 0.5,
             4 => 1.0,

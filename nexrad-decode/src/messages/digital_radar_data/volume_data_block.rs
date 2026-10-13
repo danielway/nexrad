@@ -62,8 +62,8 @@ impl<'a> VolumeDataBlock<'a> {
         }
     }
 
-    /// Size of data block in bytes (raw value).
-    pub fn lrtup_raw(&self) -> u16 {
+    /// Size of data block, in bytes.
+    pub fn lrtup_bytes(&self) -> u16 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.lrtup.get(),
             VolumeDataBlockInner::Modern(inner) => inner.lrtup.get(),
@@ -86,32 +86,32 @@ impl<'a> VolumeDataBlock<'a> {
         }
     }
 
-    /// Latitude of radar in degrees (raw value).
-    pub fn latitude_raw(&self) -> f32 {
+    /// Latitude of radar, in degrees.
+    pub fn latitude_degrees(&self) -> f32 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.latitude.get(),
             VolumeDataBlockInner::Modern(inner) => inner.latitude.get(),
         }
     }
 
-    /// Longitude of radar in degrees (raw value).
-    pub fn longitude_raw(&self) -> f32 {
+    /// Longitude of radar, in degrees.
+    pub fn longitude_degrees(&self) -> f32 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.longitude.get(),
             VolumeDataBlockInner::Modern(inner) => inner.longitude.get(),
         }
     }
 
-    /// Height of site base above sea level in meters (raw value).
-    pub fn site_height_raw(&self) -> i16 {
+    /// Height of site base above sea level, in meters.
+    pub fn site_height_meters(&self) -> i16 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.site_height.get(),
             VolumeDataBlockInner::Modern(inner) => inner.site_height.get(),
         }
     }
 
-    /// Height of radar tower above ground in meters (raw value).
-    pub fn tower_height_raw(&self) -> u16 {
+    /// Height of radar tower above ground, in meters.
+    pub fn tower_height_meters(&self) -> u16 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.tower_height.get(),
             VolumeDataBlockInner::Modern(inner) => inner.tower_height.get(),
@@ -120,23 +120,23 @@ impl<'a> VolumeDataBlock<'a> {
 
     /// Reflectivity scaling factor without correction by ground noise scaling factors given in
     /// adaptation data message in dB.
-    pub fn calibration_constant(&self) -> f32 {
+    pub fn calibration_constant_db(&self) -> f32 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.calibration_constant.get(),
             VolumeDataBlockInner::Modern(inner) => inner.calibration_constant.get(),
         }
     }
 
-    /// Transmitter power for horizontal channel in kW (raw value).
-    pub fn horizontal_shv_tx_power_raw(&self) -> f32 {
+    /// Transmitter power for horizontal channel, in kW.
+    pub fn horizontal_shv_tx_power_kw(&self) -> f32 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.horizontal_shv_tx_power.get(),
             VolumeDataBlockInner::Modern(inner) => inner.horizontal_shv_tx_power.get(),
         }
     }
 
-    /// Transmitter power for vertical channel in kW (raw value).
-    pub fn vertical_shv_tx_power_raw(&self) -> f32 {
+    /// Transmitter power for vertical channel, in kW.
+    pub fn vertical_shv_tx_power_kw(&self) -> f32 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.vertical_shv_tx_power.get(),
             VolumeDataBlockInner::Modern(inner) => inner.vertical_shv_tx_power.get(),
@@ -144,23 +144,24 @@ impl<'a> VolumeDataBlock<'a> {
     }
 
     /// Calibration of system ZDR in dB.
-    pub fn system_differential_reflectivity(&self) -> f32 {
+    pub fn system_differential_reflectivity_db(&self) -> f32 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.system_differential_reflectivity.get(),
             VolumeDataBlockInner::Modern(inner) => inner.system_differential_reflectivity.get(),
         }
     }
 
-    /// Initial DP for the system in degrees (raw value).
-    pub fn initial_system_differential_phase_raw(&self) -> f32 {
+    /// Initial DP for the system, in degrees.
+    pub fn initial_system_differential_phase_degrees(&self) -> f32 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.initial_system_differential_phase.get(),
             VolumeDataBlockInner::Modern(inner) => inner.initial_system_differential_phase.get(),
         }
     }
 
-    /// Identifies the volume coverage pattern in use (raw value).
-    pub fn volume_coverage_pattern_number(&self) -> u16 {
+    /// Identifies the volume coverage pattern in use (raw value). See
+    /// [`volume_coverage_pattern()`](Self::volume_coverage_pattern) for the decoded value.
+    pub fn volume_coverage_pattern_raw(&self) -> u16 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.volume_coverage_pattern_number.get(),
             VolumeDataBlockInner::Modern(inner) => inner.volume_coverage_pattern_number.get(),
@@ -202,54 +203,54 @@ impl<'a> VolumeDataBlock<'a> {
     /// Size of data block.
     #[cfg(feature = "uom")]
     pub fn lrtup(&self) -> Information {
-        Information::new::<uom::si::information::byte>(self.lrtup_raw() as f64)
+        Information::new::<uom::si::information::byte>(self.lrtup_bytes() as f64)
     }
 
     /// Latitude of radar.
     #[cfg(feature = "uom")]
     pub fn latitude(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.latitude_raw() as f64)
+        Angle::new::<uom::si::angle::degree>(self.latitude_degrees() as f64)
     }
 
     /// Longitude of radar.
     #[cfg(feature = "uom")]
     pub fn longitude(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.longitude_raw() as f64)
+        Angle::new::<uom::si::angle::degree>(self.longitude_degrees() as f64)
     }
 
     /// Height of site base above sea level.
     #[cfg(feature = "uom")]
     pub fn site_height(&self) -> Length {
-        Length::new::<uom::si::length::meter>(self.site_height_raw() as f64)
+        Length::new::<uom::si::length::meter>(self.site_height_meters() as f64)
     }
 
     /// Height of radar tower above ground.
     #[cfg(feature = "uom")]
     pub fn tower_height(&self) -> Length {
-        Length::new::<uom::si::length::meter>(self.tower_height_raw() as f64)
+        Length::new::<uom::si::length::meter>(self.tower_height_meters() as f64)
     }
 
     /// Transmitter power for horizontal channel.
     #[cfg(feature = "uom")]
     pub fn horizontal_shv_tx_power(&self) -> Power {
-        Power::new::<uom::si::power::kilowatt>(self.horizontal_shv_tx_power_raw() as f64)
+        Power::new::<uom::si::power::kilowatt>(self.horizontal_shv_tx_power_kw() as f64)
     }
 
     /// Transmitter power for vertical channel.
     #[cfg(feature = "uom")]
     pub fn vertical_shv_tx_power(&self) -> Power {
-        Power::new::<uom::si::power::kilowatt>(self.vertical_shv_tx_power_raw() as f64)
+        Power::new::<uom::si::power::kilowatt>(self.vertical_shv_tx_power_kw() as f64)
     }
 
     /// Initial DP for the system.
     #[cfg(feature = "uom")]
     pub fn initial_system_differential_phase(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.initial_system_differential_phase_raw() as f64)
+        Angle::new::<uom::si::angle::degree>(self.initial_system_differential_phase_degrees() as f64)
     }
 
     /// Identifies the volume coverage pattern in use.
     pub fn volume_coverage_pattern(&self) -> VcpNumber {
-        VcpNumber::from_number(self.volume_coverage_pattern_number())
+        VcpNumber::from_number(self.volume_coverage_pattern_raw())
     }
 
     /// Processing option flags.

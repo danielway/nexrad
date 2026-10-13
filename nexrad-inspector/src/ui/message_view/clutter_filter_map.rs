@@ -105,7 +105,7 @@ pub fn parse_clutter_filter_map(data: &[u8]) -> String {
                 // Show zone details inline
                 let zone_details: Vec<String> = zones
                     .iter()
-                    .map(|z| format!("0-{} km {:?}", z.end_range(), z.op_code()))
+                    .map(|z| format!("0-{} km {:?}", z.end_range_km(), z.op_code()))
                     .collect();
                 output.push_str(&format!(" [{}]\n", zone_details.join(", ")));
 

@@ -22,7 +22,7 @@ impl<'a> Message<'a> {
     }
 
     /// The raw data request type bitfield value.
-    pub fn raw_data_request_type(&self) -> u16 {
+    pub fn data_request_type_raw(&self) -> u16 {
         self.inner.data_request_type.get()
     }
 

@@ -27,7 +27,7 @@ impl<'a> Message<'a> {
     }
 
     /// The size of the console message text in bytes/characters (range 2-404).
-    pub fn message_size(&self) -> u16 {
+    pub fn message_size_bytes(&self) -> u16 {
         self.header.message_size.get()
     }
 

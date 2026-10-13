@@ -71,7 +71,7 @@ fn test_decode_clutter_filter_map() {
                         .map(|az| {
                             az.range_zones()
                                 .iter()
-                                .map(|rz| (rz.raw_op_code(), rz.end_range()))
+                                .map(|rz| (rz.op_code_raw(), rz.end_range_km()))
                                 .collect()
                         })
                         .unwrap_or_default(),
@@ -80,7 +80,7 @@ fn test_decode_clutter_filter_map() {
                         .map(|az| {
                             az.range_zones()
                                 .iter()
-                                .map(|rz| (rz.raw_op_code(), rz.end_range()))
+                                .map(|rz| (rz.op_code_raw(), rz.end_range_km()))
                                 .collect()
                         })
                         .unwrap_or_default(),

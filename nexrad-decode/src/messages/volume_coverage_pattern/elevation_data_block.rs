@@ -163,7 +163,7 @@ impl<'a> ElevationDataBlock<'a> {
     }
 
     /// The elevation angle for this cut in degrees
-    pub fn elevation_angle(&self) -> f64 {
+    pub fn elevation_angle_degrees(&self) -> f64 {
         decode_angle(self.inner.elevation_angle)
     }
 
@@ -190,57 +190,57 @@ impl<'a> ElevationDataBlock<'a> {
     }
 
     /// The azimuth rate of the cut in degrees/second
-    pub fn azimuth_rate(&self) -> f64 {
+    pub fn azimuth_rate_degrees_per_second(&self) -> f64 {
         decode_angular_velocity(self.inner.azimuth_rate)
     }
 
     /// Signal to noise ratio (SNR) threshold for reflectivity in dB
-    pub fn reflectivity_threshold(&self) -> f32 {
+    pub fn reflectivity_threshold_db(&self) -> f32 {
         self.inner.reflectivity_threshold.get() as f32 / 8.0
     }
 
     /// Signal to noise ratio (SNR) threshold for velocity in dB
-    pub fn velocity_threshold(&self) -> f32 {
+    pub fn velocity_threshold_db(&self) -> f32 {
         self.inner.velocity_threshold.get() as f32 / 8.0
     }
 
     /// Signal to noise ratio (SNR) threshold for spectrum width in dB
-    pub fn spectrum_width_threshold(&self) -> f32 {
+    pub fn spectrum_width_threshold_db(&self) -> f32 {
         self.inner.spectrum_width_threshold.get() as f32 / 8.0
     }
 
     /// Signal to noise ratio (SNR) threshold for differential reflectivity in dB
-    pub fn differential_reflectivity_threshold(&self) -> f32 {
+    pub fn differential_reflectivity_threshold_db(&self) -> f32 {
         self.inner.differential_reflectivity_threshold.get() as f32 / 8.0
     }
 
     /// Signal to noise ratio (SNR) threshold for differential phase in dB
-    pub fn differential_phase_threshold(&self) -> f32 {
+    pub fn differential_phase_threshold_db(&self) -> f32 {
         self.inner.differential_phase_threshold.get() as f32 / 8.0
     }
 
     /// Signal to noise ratio (SNR) threshold for correlation coefficient in dB
-    pub fn correlation_coefficient_threshold(&self) -> f32 {
+    pub fn correlation_coefficient_threshold_db(&self) -> f32 {
         self.inner.correlation_coefficient_threshold.get() as f32 / 8.0
     }
 
     /// Sector 1 Azimuth Clockwise Edge Angle in degrees (denotes start angle)
-    pub fn sector_1_edge_angle(&self) -> f64 {
+    pub fn sector_1_edge_angle_degrees(&self) -> f64 {
         decode_angle(self.inner.sector_1_edge_angle)
     }
 
     /// Sector 2 Azimuth Clockwise Edge Angle in degrees (denotes start angle)
-    pub fn sector_2_edge_angle(&self) -> f64 {
+    pub fn sector_2_edge_angle_degrees(&self) -> f64 {
         decode_angle(self.inner.sector_2_edge_angle)
     }
 
     /// Sector 3 Azimuth Clockwise Edge Angle in degrees (denotes start angle)
-    pub fn sector_3_edge_angle(&self) -> f64 {
+    pub fn sector_3_edge_angle_degrees(&self) -> f64 {
         decode_angle(self.inner.sector_3_edge_angle)
     }
 
     /// The correction added to the elevation angle for this cut in degrees
-    pub fn ebc_angle(&self) -> f64 {
+    pub fn ebc_angle_degrees(&self) -> f64 {
         decode_angle(self.inner.ebc_angle)
     }
 

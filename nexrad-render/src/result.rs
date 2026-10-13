@@ -9,13 +9,14 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(ThisError, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// No radials were provided for rendering.
-    #[error("no radials provided for rendering")]
-    NoRadials,
-    /// The image dimensions were invalid for creating an image buffer.
+    /// The field to render contains no data (no radials, gates, rows or columns).
+    #[error("field contains no data")]
+    EmptyField,
+    /// The output image dimensions were invalid (zero, or too large for an image
+    /// buffer).
     #[error("invalid image dimensions")]
     InvalidDimensions,
-    /// An error occurred while saving an image to disk.
-    #[error("image save error: {0}")]
-    ImageSave(String),
+    /// An error from the [`image`] crate, such as failing to encode or save an image.
+    #[error("image error: {0}")]
+    Image(#[from] image::ImageError),
 }

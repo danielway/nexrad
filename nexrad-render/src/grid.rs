@@ -17,6 +17,11 @@ use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 /// * `color_scale` - Color scale to apply
 /// * `options` - Rendering options (size, background)
 ///
+/// # Errors
+///
+/// Returns [`Error::InvalidDimensions`] if either output dimension is zero and
+/// [`Error::EmptyField`] if the field has no rows or columns.
+///
 /// # Example
 ///
 /// ```ignore
@@ -38,73 +43,19 @@ pub fn render_cartesian(
     color_scale: &ColorScale,
     options: &RenderOptions,
 ) -> Result<RenderResult> {
-    let (width, height) = options.size;
-    let mut buffer = vec![0u8; width * height * 4];
-
-    if let Some(bg) = options.background {
-        for pixel in buffer.as_chunks_mut::<4>().0 {
-            pixel.copy_from_slice(&bg);
-        }
-    }
-
-    let field_width = field.width();
-    let field_height = field.height();
-
-    if field_width == 0 || field_height == 0 {
-        return Err(Error::NoRadials);
-    }
-
-    // Build LUT
-    let (min_val, max_val) = field.value_range().unwrap_or((-32.0, 95.0));
-    let lut = ColorLookupTable::new(color_scale, min_val, max_val, 256);
-
-    // Map output pixels to field cells
-    let use_bilinear = options.interpolation == Interpolation::Bilinear;
-    let max_row = field_height - 1;
-    let max_col = field_width - 1;
-
-    for y in 0..height {
-        let row_f = y as f64 / height as f64 * field_height as f64 - 0.5;
-        let row_f = row_f.max(0.0);
-
-        for x in 0..width {
-            let col_f = x as f64 / width as f64 * field_width as f64 - 0.5;
-            let col_f = col_f.max(0.0);
-
-            // Try bilinear interpolation first, then fall back to nearest-neighbor
-            if use_bilinear {
-                if let Some(val) =
-                    sample_grid_bilinear(row_f, col_f, max_row, max_col, |r, c| field.get(r, c))
-                {
-                    let color = lut.color(val);
-                    let pixel_index = (y * width + x) * 4;
-                    buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
-                    continue;
-                }
-            }
-
-            // Nearest-neighbor path (default, or bilinear fallback)
-            let field_row = (row_f + 0.5) as usize;
-            let field_row = field_row.min(max_row);
-            let field_col = (col_f + 0.5) as usize;
-            let field_col = field_col.min(max_col);
-
-            let (val, status) = field.get(field_row, field_col);
-            if status == GateStatus::Valid {
-                let color = lut.color(val);
-                let pixel_index = (y * width + x) * 4;
-                buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
-            }
-        }
-    }
-
-    let image =
-        RgbaImage::from_raw(width as u32, height as u32, buffer).ok_or(Error::InvalidDimensions)?;
+    let image = render_grid(
+        field.width(),
+        field.height(),
+        field.value_range(),
+        |row, col| field.get(row, col),
+        color_scale,
+        options,
+    )?;
 
     let extent = *field.extent();
     let metadata = RenderMetadata::new(
-        width as u32,
-        height as u32,
+        image.width(),
+        image.height(),
         Projection::Geographic { extent },
         Some(extent),
         options.coord_system.clone(),
@@ -123,6 +74,11 @@ pub fn render_cartesian(
 /// * `field` - The vertical field to render
 /// * `color_scale` - Color scale to apply
 /// * `options` - Rendering options (size, background)
+///
+/// # Errors
+///
+/// Returns [`Error::InvalidDimensions`] if either output dimension is zero and
+/// [`Error::EmptyField`] if the field has no rows or columns.
 ///
 /// # Example
 ///
@@ -145,24 +101,50 @@ pub fn render_vertical(
     color_scale: &ColorScale,
     options: &RenderOptions,
 ) -> Result<RenderResult> {
-    let (width, height) = options.size;
-    let mut buffer = vec![0u8; width * height * 4];
+    let image = render_grid(
+        field.width(),
+        field.height(),
+        field.value_range(),
+        |row, col| field.get(row, col),
+        color_scale,
+        options,
+    )?;
 
-    if let Some(bg) = options.background {
-        for pixel in buffer.as_chunks_mut::<4>().0 {
-            pixel.copy_from_slice(&bg);
-        }
-    }
+    let projection = Projection::Vertical {
+        distance_range_km: field.distance_range_km(),
+        altitude_range_m: field.altitude_range_meters(),
+    };
+    let metadata = RenderMetadata::new(
+        image.width(),
+        image.height(),
+        projection,
+        None,
+        options.coord_system.clone(),
+    );
 
-    let field_width = field.width();
-    let field_height = field.height();
+    Ok(RenderResult::new(image, metadata))
+}
+
+/// Rasterise a row-major grid of `field_width` x `field_height` cells, stretching it
+/// to fill the output image.
+fn render_grid(
+    field_width: usize,
+    field_height: usize,
+    value_range: Option<(f32, f32)>,
+    get: impl Fn(usize, usize) -> (f32, GateStatus),
+    color_scale: &ColorScale,
+    options: &RenderOptions,
+) -> Result<RgbaImage> {
+    let (image_width, image_height) = options.size;
+    let mut buffer = options.background_buffer()?;
+    let (width, height) = (image_width as usize, image_height as usize);
 
     if field_width == 0 || field_height == 0 {
-        return Err(Error::NoRadials);
+        return Err(Error::EmptyField);
     }
 
     // Build LUT
-    let (min_val, max_val) = field.value_range().unwrap_or((-32.0, 95.0));
+    let (min_val, max_val) = value_range.unwrap_or((-32.0, 95.0));
     let lut = ColorLookupTable::new(color_scale, min_val, max_val, 256);
 
     // Map output pixels to field cells
@@ -180,9 +162,7 @@ pub fn render_vertical(
 
             // Try bilinear interpolation first, then fall back to nearest-neighbor
             if use_bilinear {
-                if let Some(val) =
-                    sample_grid_bilinear(row_f, col_f, max_row, max_col, |r, c| field.get(r, c))
-                {
+                if let Some(val) = sample_grid_bilinear(row_f, col_f, max_row, max_col, &get) {
                     let color = lut.color(val);
                     let pixel_index = (y * width + x) * 4;
                     buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
@@ -196,7 +176,7 @@ pub fn render_vertical(
             let field_col = (col_f + 0.5) as usize;
             let field_col = field_col.min(max_col);
 
-            let (val, status) = field.get(field_row, field_col);
+            let (val, status) = get(field_row, field_col);
             if status == GateStatus::Valid {
                 let color = lut.color(val);
                 let pixel_index = (y * width + x) * 4;
@@ -205,22 +185,7 @@ pub fn render_vertical(
         }
     }
 
-    let image =
-        RgbaImage::from_raw(width as u32, height as u32, buffer).ok_or(Error::InvalidDimensions)?;
-
-    let projection = Projection::Vertical {
-        distance_range_km: field.distance_range_km(),
-        altitude_range_m: field.altitude_range_meters(),
-    };
-    let metadata = RenderMetadata::new(
-        width as u32,
-        height as u32,
-        projection,
-        None,
-        options.coord_system.clone(),
-    );
-
-    Ok(RenderResult::new(image, metadata))
+    RgbaImage::from_raw(image_width, image_height, buffer).ok_or(Error::InvalidDimensions)
 }
 
 /// Sample a row-major grid using bilinear interpolation in data-value space.

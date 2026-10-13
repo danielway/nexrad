@@ -19,18 +19,23 @@ use nexrad_model::data::{GateStatus, SweepField};
 /// * `color_scale` - Color scale to apply (discrete or continuous)
 /// * `options` - Rendering options (size, background, extent, coordinate system)
 ///
+/// # Errors
+///
+/// Returns [`Error::InvalidDimensions`] if either output dimension is zero and
+/// [`Error::EmptyField`] if the field has no radials.
+///
 /// # Example
 ///
 /// ```ignore
-/// use nexrad_render::{render_sweep, RenderOptions, ColorScale};
-/// use nexrad_model::data::{SweepField, Product};
+/// use nexrad_render::{default_scale, render_sweep, Product, RenderOptions};
 ///
-/// let field = SweepField::from_radials(sweep.radials(), Product::Reflectivity).unwrap();
-/// let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
+/// let field = sweep.field(Product::Reflectivity).unwrap();
+/// let scale = default_scale(Product::Reflectivity);
 /// let result = render_sweep(&field, &scale, &RenderOptions::new(800, 800))?;
 ///
-/// result.image().save("radar.png").unwrap();
+/// result.save("radar.png")?;
 /// let meta = result.metadata();
+/// // Polar renders support range/pixel conversions.
 /// let ring_px = meta.km_to_pixel_distance(100.0);
 /// ```
 pub fn render_sweep(
@@ -38,18 +43,12 @@ pub fn render_sweep(
     color_scale: &ColorScale,
     options: &RenderOptions,
 ) -> Result<RenderResult> {
-    let (width, height) = options.size;
-    let mut buffer = vec![0u8; width * height * 4];
-
-    // Fill background
-    if let Some(bg) = options.background {
-        for pixel in buffer.as_chunks_mut::<4>().0 {
-            pixel.copy_from_slice(&bg);
-        }
-    }
+    let (image_width, image_height) = options.size;
+    let mut buffer = options.background_buffer()?;
+    let (width, height) = (image_width as usize, image_height as usize);
 
     if field.azimuth_count() == 0 {
-        return Err(Error::NoRadials);
+        return Err(Error::EmptyField);
     }
 
     let first_gate_km = field.first_gate_range_km();
@@ -126,7 +125,7 @@ pub fn render_sweep(
     }
 
     let image =
-        RgbaImage::from_raw(width as u32, height as u32, buffer).ok_or(Error::InvalidDimensions)?;
+        RgbaImage::from_raw(image_width, image_height, buffer).ok_or(Error::InvalidDimensions)?;
 
     let geo_extent = options.extent.or_else(|| {
         options
@@ -142,8 +141,8 @@ pub fn render_sweep(
         elevation_degrees: f64::from(field.elevation_degrees()),
     };
     let metadata = RenderMetadata::new(
-        width as u32,
-        height as u32,
+        image_width,
+        image_height,
         projection,
         geo_extent,
         options.coord_system.clone(),

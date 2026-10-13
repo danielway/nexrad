@@ -169,6 +169,7 @@ Non-exhaustive (new failure modes, ICD message types, products, and scan strateg
 - Every crate's `Error` enum (`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`, `nexrad`) and `nexrad_data::result::AwsError`
 - `nexrad_decode`: `MessageContents`, `MessageType`, `RedundantChannel`, `DataBlockName`
 - `nexrad_model`: `Product`, `VcpNumber`
+- `nexrad_render`: `Projection`
 
 Exhaustive by design (variants are fixed by the NOAA ICD or by the crate's own format, and several are matched per gate or per radial in hot loops where an exhaustive match is clearer and lets callers rely on the compiler):
 

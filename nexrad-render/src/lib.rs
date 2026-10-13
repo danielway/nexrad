@@ -6,21 +6,42 @@
 //!
 //! # Example
 //!
-//! ```ignore
-//! use nexrad_model::data::Product;
-//! use nexrad_render::{render_radials, RenderOptions, nws_reflectivity_scale};
+//! Extract a [`SweepField`](nexrad_model::data::SweepField) from a sweep (or build one
+//! with `SweepField::from_radials`), pick a color scale and render it:
 //!
-//! let options = RenderOptions::new(800, 800);
-//! let image = render_radials(
-//!     sweep.radials(),
-//!     Product::Reflectivity,
-//!     &nws_reflectivity_scale(),
-//!     &options,
-//! ).unwrap();
+//! ```no_run
+//! use nexrad_model::data::Sweep;
+//! use nexrad_render::{default_scale, render_sweep, Product, RenderOptions};
 //!
-//! // Save directly to PNG
-//! image.save("radar.png").unwrap();
+//! fn render(sweep: &Sweep) -> nexrad_render::Result<()> {
+//!     let Some(field) = sweep.field(Product::Reflectivity) else {
+//!         return Ok(()); // this sweep carries no reflectivity
+//!     };
+//!
+//!     let scale = default_scale(Product::Reflectivity);
+//!     let result = render_sweep(&field, &scale, &RenderOptions::new(800, 800))?;
+//!
+//!     // Save directly to PNG
+//!     result.save("radar.png")?;
+//!
+//!     // Metadata maps pixels back to radar coordinates
+//!     let ring_px = result.metadata().km_to_pixel_distance(100.0);
+//!     println!("100 km ring radius: {ring_px:?} px");
+//!     Ok(())
+//! }
 //! ```
+//!
+//! [`render_cartesian`] and [`render_vertical`] render gridded and cross-section fields
+//! the same way; [`RenderMetadata::projection`] reports how each image's pixels map
+//! back to data coordinates.
+//!
+//! # The `image` dependency
+//!
+//! Rendered images are [`image::RgbaImage`] values and image I/O failures surface as
+//! [`Error::Image`], so the [`image`] crate is part of this crate's public API. It is
+//! re-exported as [`nexrad_render::image`](crate::image) so callers can use the
+//! matching version without a separate dependency. A major version bump of `image`
+//! is therefore a major version bump of `nexrad-render`.
 //!
 //! # Crate Boundaries
 //!
@@ -32,7 +53,7 @@
 //! - Render radar data to images ([`image::RgbaImage`])
 //! - Apply color scales to moment data
 //! - Handle geometric transformations (polar to Cartesian coordinates)
-//! - Consume `nexrad-model` types (Radial, MomentData)
+//! - Consume `nexrad-model` field types (`SweepField`, `CartesianField`, `VerticalField`)
 //!
 //! ## Constraints
 //!
@@ -49,6 +70,7 @@
 #![warn(unnameable_types)]
 #![deny(missing_docs)]
 
+pub use image;
 pub use image::RgbaImage;
 pub use nexrad_model::data::Product;
 

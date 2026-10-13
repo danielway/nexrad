@@ -4,7 +4,8 @@ use nexrad_model::data::Product;
 use nexrad_render::{
     clutter_filter_power_scale, correlation_coefficient_scale, default_scale,
     differential_phase_scale, differential_reflectivity_scale, nws_reflectivity_scale,
-    spectrum_width_scale, velocity_scale, Color, ColorScaleLevel, DiscreteColorScale,
+    spectrum_width_scale, velocity_scale, Color, ColorLookupTable, ColorScaleLevel,
+    DiscreteColorScale,
 };
 
 #[test]
@@ -286,5 +287,27 @@ fn test_default_scale_all_products() {
         // Just verify we can get colors without panicking
         let _ = scale.color(0.0);
         let _ = scale.color(50.0);
+    }
+}
+
+// Tests for ColorLookupTable
+
+#[test]
+fn test_lookup_table_matches_scale_at_range_ends() {
+    let scale = default_scale(Product::Reflectivity);
+    let lut = ColorLookupTable::new(&scale, -32.0, 95.0, 256);
+
+    assert_eq!(lut.color(-32.0), scale.color(-32.0).to_rgba8());
+    assert_eq!(lut.color(95.0), scale.color(95.0).to_rgba8());
+}
+
+#[test]
+fn test_lookup_table_tiny_sizes_are_clamped() {
+    let scale = default_scale(Product::Reflectivity);
+
+    for size in [0, 1, 2] {
+        let lut = ColorLookupTable::new(&scale, 0.0, 70.0, size);
+        assert_eq!(lut.color(0.0), scale.color(0.0).to_rgba8());
+        assert_eq!(lut.color(70.0), scale.color(70.0).to_rgba8());
     }
 }

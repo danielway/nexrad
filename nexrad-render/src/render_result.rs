@@ -112,9 +112,8 @@ impl RenderResult {
     ///
     /// Returns an error if the file cannot be written or the format is unsupported.
     pub fn save<P: AsRef<Path>>(&self, path: P) -> crate::result::Result<()> {
-        self.image
-            .save(path)
-            .map_err(|e| crate::result::Error::ImageSave(e.to_string()))
+        self.image.save(path)?;
+        Ok(())
     }
 
     /// Query the data value at a pixel coordinate.

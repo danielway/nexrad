@@ -1,5 +1,6 @@
 //! Rendering options.
 
+use crate::{Error, Result};
 use nexrad_model::data::SweepField;
 use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
 
@@ -49,7 +50,7 @@ pub enum Interpolation {
 /// ```
 #[derive(Debug, Clone)]
 pub struct RenderOptions {
-    pub(crate) size: (usize, usize),
+    pub(crate) size: (u32, u32),
     pub(crate) background: Option<[u8; 4]>,
     pub(crate) extent: Option<GeoExtent>,
     pub(crate) coord_system: Option<RadarCoordinateSystem>,
@@ -58,7 +59,10 @@ pub struct RenderOptions {
 
 impl RenderOptions {
     /// Creates new render options with the specified dimensions and black background.
-    pub fn new(width: usize, height: usize) -> Self {
+    ///
+    /// Zero dimensions are accepted here; rendering with them returns
+    /// [`Error::InvalidDimensions`].
+    pub fn new(width: u32, height: u32) -> Self {
         Self {
             size: (width, height),
             background: Some([0, 0, 0, 255]),
@@ -106,8 +110,9 @@ impl RenderOptions {
     /// Sets both width and height to `gate_count * 2`, which ensures approximately
     /// one pixel per gate at the outer edge of the sweep. This produces the highest
     /// fidelity rendering without wasting pixels.
+    /// The size saturates at `u32::MAX` for implausibly large gate counts.
     pub fn native_for(field: &SweepField) -> Self {
-        let size = field.gate_count() * 2;
+        let size = u32::try_from(field.gate_count().saturating_mul(2)).unwrap_or(u32::MAX);
         Self::new(size, size)
     }
 
@@ -129,7 +134,7 @@ impl RenderOptions {
     }
 
     /// Output image dimensions (width, height) in pixels.
-    pub fn size(&self) -> (usize, usize) {
+    pub fn size(&self) -> (u32, u32) {
         self.size
     }
 
@@ -160,5 +165,28 @@ impl RenderOptions {
     /// for smoother output that blends neighboring data gates.
     pub fn interpolation(&self) -> Interpolation {
         self.interpolation
+    }
+
+    /// Allocates an RGBA pixel buffer for the output image, filled with the background.
+    ///
+    /// Returns [`Error::InvalidDimensions`] if either dimension is zero or the buffer
+    /// size does not fit in memory addressing.
+    pub(crate) fn background_buffer(&self) -> Result<Vec<u8>> {
+        let (width, height) = self.size;
+        if width == 0 || height == 0 {
+            return Err(Error::InvalidDimensions);
+        }
+        let len = (width as usize)
+            .checked_mul(height as usize)
+            .and_then(|pixels| pixels.checked_mul(4))
+            .ok_or(Error::InvalidDimensions)?;
+
+        let mut buffer = vec![0u8; len];
+        if let Some(bg) = self.background {
+            for pixel in buffer.as_chunks_mut::<4>().0 {
+                pixel.copy_from_slice(&bg);
+            }
+        }
+        Ok(buffer)
     }
 }

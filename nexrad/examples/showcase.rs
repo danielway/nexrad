@@ -119,7 +119,7 @@ fn main() -> nexrad::Result<()> {
     );
 
     // Use native resolution for key renders, a moderate size for processing comparisons
-    let compare_size: usize = 1600;
+    let compare_size: u32 = 1600;
     let compare_options = RenderOptions::new(compare_size, compare_size);
 
     let ref_scale = default_scale(Product::Reflectivity);
@@ -447,11 +447,7 @@ fn main() -> nexrad::Result<()> {
             (native_size, native_size),
         )?;
 
-        let result = render_cartesian(
-            &composite,
-            &ref_scale,
-            &RenderOptions::new(native_size, native_size),
-        )?;
+        let result = render_cartesian(&composite, &ref_scale, &native_options)?;
 
         let path = format!("{}/06a_composite_reflectivity.png", OUTPUT_DIR);
         result.save(&path)?;
@@ -476,11 +472,7 @@ fn main() -> nexrad::Result<()> {
             (native_size, native_size),
         )?;
 
-        let result = render_cartesian(
-            &composite_zoom,
-            &ref_scale,
-            &RenderOptions::new(native_size, native_size),
-        )?;
+        let result = render_cartesian(&composite_zoom, &ref_scale, &native_options)?;
         let path = format!("{}/06b_composite_zoomed.png", OUTPUT_DIR);
         result.save(&path)?;
         println!(

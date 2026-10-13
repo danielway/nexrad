@@ -124,4 +124,5 @@ Rust 1.88. The MSRV is only raised in minor releases, never in patch releases.
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for the changes in each release, including the breaking changes in 1.0.0. Each
-re-exported crate has its own CHANGELOG.
+re-exported crate has its own CHANGELOG. To upgrade from 0.x or a release candidate, see
+[Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrating-to-1.0.md).

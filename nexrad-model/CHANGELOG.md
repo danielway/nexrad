@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changes since `1.0.0-rc.2`, the last published release. Together they make up the 1.0.0 release.
 
+See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrating-to-1.0.md) for step-by-step upgrade instructions.
+
 ### Added
 
 - `Error` and `Result` are re-exported at the crate root (`nexrad_model::Error`); `nexrad_model::result` remains the
@@ -34,10 +36,12 @@ Changes since `1.0.0-rc.2`, the last published release. Together they make up th
 - Acronyms in names follow UpperCamelCase (#160):
   - `VCPNumber` → `VcpNumber`, `CFPStatus` → `CfpStatus`.
   - `ChannelConfiguration::SZ2Phase` → `Sz2Phase`.
+  - `RadialStatus::ElevationStartVCPFinal` → `ElevationStartVcpFinal`.
   - `WaveformType::CS` → `ContiguousSurveillance`, `CDW` → `ContiguousDopplerWithAmbiguityResolution`,
     `CDWO` → `ContiguousDopplerWithoutAmbiguityResolution`, `B` → `Batch`, `SPP` → `StaggeredPulsePair`.
-  - With `serde`, `WaveformType` and `ChannelConfiguration` serialize the new variant names; data saved with the old
-    names (`"CS"`, `"CDW"`, `"CDWO"`, `"B"`, `"SPP"`, `"SZ2Phase"`) no longer deserializes.
+  - With `serde`, `WaveformType`, `ChannelConfiguration` and `RadialStatus` serialize the new variant names; data saved
+    with the old names (`"CS"`, `"CDW"`, `"CDWO"`, `"B"`, `"SPP"`, `"SZ2Phase"`, `"ElevationStartVCPFinal"`) no longer
+    deserializes.
 - Geographic coordinates and polar angles are `f64` (#164):
   - `meta::Site::latitude()`/`longitude()` return `f64`; with `uom`, `Site::height()`/`tower_height()` return
     `uom::si::f64::Length`.
@@ -72,6 +76,10 @@ Changes since `1.0.0-rc.2`, the last published release. Together they make up th
 - `From<&MomentValue> for GateStatus` maps `CfpStatus(_)` to `GateStatus::NoData`. (#170)
 - With `serde`, `MomentData` serializes as a struct with a `product` field (it was `serde(transparent)`), and
   `SweepField` gains a `product` field. (#170)
+- The site registry matches NOAA's operational radar list: `KBHX`, `KDOX`, `KHDC`, `KLGX` and `PAPD` are added; `KLIX`
+  (replaced by `KHDC`), the invalid Alaska aliases `KABC`, `KACG`, `KAIH` and `KAKC`, and a duplicate `KCCX` entry are
+  removed; and the `KFDX` and `KPBZ` coordinates are corrected. `registry::site_by_id` returns `None` for the removed
+  identifiers, and `registry::nearest_site` can return a different site. (#148)
 - `Debug` output changed: renamed types and variants print their new names (#160); binary blobs print
   `fnv1a: 0x<16 hex digits>` instead of `sha256: "<hex>"` (#162); `Radial`/`MomentData` no longer nest an
   `inner: MomentDataBlock { .. }` and show a `product` field (#170).

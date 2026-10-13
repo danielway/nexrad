@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changes since `1.0.0-rc.7`, the last published release. Together they make up the 1.0.0 release.
 
+See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrating-to-1.0.md) for step-by-step upgrade instructions.
+
 ### Added
 
 - `Error` and `Result` are re-exported at the crate root (`nexrad_data::Error`), and `AwsError` with the `aws`
@@ -35,6 +37,8 @@ Changes since `1.0.0-rc.7`, the last published release. Together they make up th
   module is removed); `nexrad_data::AwsError` also works. (#171)
 - `AwsError::S3ListObjects`, `S3GetObjectRequest` and `S3Streaming` hold a
   `Box<dyn std::error::Error + Send + Sync + 'static>` instead of a `reqwest::Error`; `source()` returns it. (#171)
+- `Error` and `AwsError` no longer implement `UnwindSafe`/`RefUnwindSafe`, because the boxed error sources do not;
+  wrap them in `std::panic::AssertUnwindSafe` where that matters. (#171)
 - `aws::realtime::chunk_stream(config, sleep)` takes a caller-supplied sleep function as its second argument (with
   tokio, `|d| tokio::time::sleep(d)`) and no longer depends on tokio, so it builds for WASM. (#161)
 - `aws::realtime::Chunk<'a>` → `Chunk`; its `IntermediateOrEnd` variant holds a `volume::Record<'static>`.
@@ -60,6 +64,9 @@ Changes since `1.0.0-rc.7`, the last published release. Together they make up th
   `Option<String>`. (#171)
 - `aws::archive::list_files(site, date: NaiveDate)` takes the date by value, and
   `aws::archive::download_file(identifier: &Identifier)` takes the identifier by reference. (#171)
+- `aws::realtime::list_chunks_in_volume` reads every listing page and returns only the chunks of the newest scan in a
+  reused volume directory, sorted by sequence; `max_keys` limits the returned chunks rather than the S3 request.
+  `ChunkIterator` waits instead of moving into a next volume that still holds an older scan. (#149)
 - Volume assembly is delegated to `nexrad-decode`'s `ScanBuilder` (#169):
   - `volume::File::scan` includes legacy (type 1) radials, consistent with `Record::radials()`;
     `assemble_volume` accepts type 1 messages too.
@@ -84,5 +91,7 @@ Changes since `1.0.0-rc.7`, the last published release. Together they make up th
 
 ### Fixed
 
+- `aws::realtime::get_latest_volume` no longer returns an older volume when the bucket's volume numbers wrap around.
+  (#149, #154)
 - `volume::File::records()` returns `Error::TruncatedRecord` instead of panicking when the data is shorter than the
   24-byte volume header. (#171)

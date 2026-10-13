@@ -2,8 +2,8 @@
 //! internals. Tests of the public real-time surface live in `nexrad-data/tests/`.
 
 use super::{
-    ChunkCharacteristics, ChunkIdentifier, ChunkTimingModel, ChunkTimingStats, ChunkType,
-    ElevationChunkMapper, NextChunk, VolumeIndex,
+    next_volume_start, Chunk, ChunkCharacteristics, ChunkIdentifier, ChunkTimingModel,
+    ChunkTimingStats, ChunkType, ElevationChunkMapper, NextChunk, VolumeIndex,
 };
 use chrono::{Duration, NaiveDateTime};
 use nexrad_decode::messages::volume_coverage_pattern::{self, ChannelConfiguration, WaveformType};
@@ -21,21 +21,9 @@ fn get_test_vcp() -> volume_coverage_pattern::Message<'static> {
     static VCP: OnceLock<volume_coverage_pattern::Message<'static>> = OnceLock::new();
     VCP.get_or_init(|| {
         let data = std::fs::read(TEST_NEXRAD_FILE).expect("read test volume");
-        let volume_file = crate::volume::File::new(data);
-
-        for mut record in volume_file.records().expect("records") {
-            if record.compressed() {
-                record = record.decompress().unwrap();
-            }
-            for message in record.messages().unwrap() {
-                if let nexrad_decode::messages::MessageContents::VolumeCoveragePattern(vcp) =
-                    message.contents()
-                {
-                    return vcp.clone().into_owned();
-                }
-            }
-        }
-        panic!("No VCP found in test file");
+        crate::volume::File::new(data)
+            .coverage_pattern_message()
+            .expect("test volume carries a VCP")
     })
     .clone()
 }
@@ -735,4 +723,153 @@ fn test_chunk_identifier_next_chunk_intermediate() {
         }
         _ => panic!("Expected NextChunk::Volume for final chunk"),
     }
+}
+
+// === Volume rollover tests ===
+
+fn volume_chunk(
+    volume: usize,
+    stamp: &str,
+    sequence: usize,
+    chunk_type: ChunkType,
+) -> ChunkIdentifier {
+    ChunkIdentifier::new(
+        "KDMX",
+        VolumeIndex::new(volume),
+        NaiveDateTime::parse_from_str(stamp, "%Y%m%d_%H%M%S").unwrap(),
+        sequence,
+        chunk_type,
+        None,
+    )
+}
+
+/// The listing of a volume whose scan has published sequences `1..=published`.
+fn volume_listing(volume: usize, stamp: &str, published: usize) -> Vec<ChunkIdentifier> {
+    (1..=published)
+        .map(|sequence| {
+            let chunk_type = if sequence == 1 {
+                ChunkType::Start
+            } else {
+                ChunkType::Intermediate
+            };
+            volume_chunk(volume, stamp, sequence, chunk_type)
+        })
+        .collect()
+}
+
+#[test]
+fn test_rollover_yields_start_chunk_then_continues_in_sequence() {
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    // The previous volume ended; several chunks of the next volume were published while waiting
+    let end = volume_chunk(
+        41,
+        "20220305_232324",
+        mapper.final_sequence(),
+        ChunkType::End,
+    );
+    let next_volume = match end.next_chunk(&mapper) {
+        Some(NextChunk::Volume(volume)) => volume,
+        other => panic!(
+            "Expected NextChunk::Volume after the End chunk, got {:?}",
+            other
+        ),
+    };
+    let listed = volume_listing(next_volume.as_number(), "20220305_232852", 7);
+
+    // The Start chunk is fetched rather than the newest listed chunk
+    let start = next_volume_start(Some(&end), &listed).expect("next volume has a newer scan");
+    assert_eq!(start.volume().as_number(), 42);
+    assert_eq!(start.sequence(), 1);
+    assert_eq!(start.chunk_type(), ChunkType::Start);
+    assert_eq!(start.name(), "20220305-232852-001-S");
+
+    // Iteration then continues from sequence 2 of the new volume's scan
+    match start.next_chunk(&mapper) {
+        Some(NextChunk::Sequence(next)) => {
+            assert_eq!(next.volume().as_number(), 42);
+            assert_eq!(next.name(), "20220305-232852-002-I");
+        }
+        other => panic!(
+            "Expected NextChunk::Sequence after the Start chunk, got {:?}",
+            other
+        ),
+    }
+}
+
+#[test]
+fn test_rollover_targets_start_chunk_of_listed_scan_when_start_not_listed() {
+    let end = volume_chunk(41, "20220305_232324", 60, ChunkType::End);
+    let listed = vec![
+        volume_chunk(42, "20220305_232852", 5, ChunkType::Intermediate),
+        volume_chunk(42, "20220305_232852", 6, ChunkType::Intermediate),
+    ];
+
+    let start = next_volume_start(Some(&end), &listed).unwrap();
+    assert_eq!(start.name(), "20220305-232852-001-S");
+}
+
+#[test]
+fn test_rollover_waits_for_newer_scan_in_next_volume() {
+    let end = volume_chunk(41, "20220305_232324", 60, ChunkType::End);
+
+    // Nothing published yet
+    assert!(next_volume_start(Some(&end), &[]).is_none());
+
+    // A reused volume number still holding its previous rotation
+    let stale = volume_listing(42, "20220302_101500", 60);
+    assert!(next_volume_start(Some(&end), &stale).is_none());
+}
+
+#[test]
+fn test_rollover_across_volume_number_wrap() {
+    let end = volume_chunk(999, "20220305_232324", 60, ChunkType::End);
+    let listed = volume_listing(1, "20220305_232852", 3);
+
+    let start = next_volume_start(Some(&end), &listed).unwrap();
+    assert_eq!(start.volume().as_number(), 1);
+    assert_eq!(start.name(), "20220305-232852-001-S");
+}
+
+// === Start chunk VCP tests ===
+
+/// Builds a real-time Start chunk from the test archive volume's header and its LDM record at
+/// `record_index`. The archive's first record carries the metadata messages, including the VCP;
+/// later records carry only radials.
+fn start_chunk_from_test_volume(record_index: usize) -> Chunk {
+    use crate::volume::{File, Header};
+
+    let data = std::fs::read(TEST_NEXRAD_FILE).expect("read test volume");
+    let file = File::new(data);
+    let records = file.records().expect("records");
+
+    let mut chunk_data = file.data()[..Header::SIZE].to_vec();
+    chunk_data.extend_from_slice(records[record_index].data());
+    Chunk::new(chunk_data).expect("start chunk")
+}
+
+#[test]
+fn test_coverage_pattern_message_from_start_chunk() {
+    let Chunk::Start(file) = start_chunk_from_test_volume(0) else {
+        panic!("Expected Chunk::Start");
+    };
+
+    let vcp = file
+        .coverage_pattern_message()
+        .expect("start chunk carries a VCP");
+    assert_eq!(vcp, get_test_vcp());
+    assert!(!vcp.elevations().is_empty());
+}
+
+#[test]
+fn test_coverage_pattern_message_missing() {
+    let Chunk::Start(file) = start_chunk_from_test_volume(1) else {
+        panic!("Expected Chunk::Start");
+    };
+
+    assert!(matches!(
+        file.coverage_pattern_message(),
+        Err(crate::result::Error::MissingCoveragePattern)
+    ));
 }

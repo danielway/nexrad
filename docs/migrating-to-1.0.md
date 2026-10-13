@@ -436,7 +436,7 @@ are exposed through `ChunkIterator`:
   newest scan in a reused volume directory, sorted by sequence; `max_keys` now caps the returned chunks, not the S3
   request. `get_latest_volume` no longer returns an older volume when the newest one sits just after the wrap-around,
   and `ChunkIterator` waits instead of replaying an older scan left in the next volume directory.
-- **Real-time volume rollover yields the Start chunk**. When `ChunkIterator::try_next` or `chunk_stream`
+- **Real-time volume rollover yields the Start chunk** (#183). When `ChunkIterator::try_next` or `chunk_stream`
   moves to a new volume, it now yields that volume's Start chunk (sequence 1, the volume header and VCP) and then every
   later chunk in sequence order. Previously it jumped to the newest chunk already published in the new volume, skipping
   the Start chunk and the chunks before the newest. Consumers feeding `assemble_volume` now receive every volume's Start

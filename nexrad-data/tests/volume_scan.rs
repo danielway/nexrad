@@ -226,7 +226,7 @@ fn test_scan_radial_timestamps() {
     // All radials should have valid timestamps
     for sweep in sweeps {
         for radial in sweep.radials() {
-            let timestamp = radial.collection_timestamp();
+            let timestamp = radial.collection_timestamp_millis();
             // Timestamps should be reasonable (after year 2000)
             assert!(
                 timestamp > 946684800000,
@@ -246,8 +246,12 @@ fn test_scan_radial_timestamps() {
         .radials()
         .first()
         .unwrap()
-        .collection_timestamp();
-    let last_timestamp = first_sweep.radials().last().unwrap().collection_timestamp();
+        .collection_timestamp_millis();
+    let last_timestamp = first_sweep
+        .radials()
+        .last()
+        .unwrap()
+        .collection_timestamp_millis();
     assert!(
         last_timestamp >= first_timestamp,
         "Timestamps should be sequential within a sweep"

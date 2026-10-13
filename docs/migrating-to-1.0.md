@@ -154,29 +154,29 @@ value, and ends with `.build()`:
 ```rust
 // 1.0.0-rc.2
 let radial = Radial::new(
-    timestamp, azimuth_number, azimuth_degrees, 0.5, RadialStatus::IntermediateRadialData,
-    elevation_number, elevation_degrees, Some(reflectivity), None, None, None, None, None, None,
+    timestamp, azimuth_number, azimuth_angle_degrees, 0.5, RadialStatus::IntermediateRadialData,
+    elevation_number, elevation_angle_degrees, Some(reflectivity), None, None, None, None, None, None,
 );
 let site = Site::new(*b"KDMX", 41.7312, -93.7229, 299, 34);
 
 // 1.0
-let radial = Radial::builder(azimuth_number, azimuth_degrees, elevation_number, elevation_degrees)
-    .collection_timestamp(timestamp)
+let radial = Radial::builder(azimuth_number, azimuth_angle_degrees, elevation_number, elevation_angle_degrees)
+    .collection_timestamp_millis(timestamp)
     .azimuth_spacing_degrees(0.5)
     .moment(reflectivity) // stored under reflectivity.product()
     .build();
 let site = Site::builder(*b"KDMX", 41.7312, -93.7229)
-    .height_meters(299)
-    .tower_height_meters(34)
+    .site_elevation_meters(299)
+    .feedhorn_height_meters(34)
     .build();
 ```
 
 | 1.0.0-rc.2 item | 1.0 replacement | Notes / PR |
 |---|---|---|
-| `Radial::new(..)` (14 arguments) | `Radial::builder(azimuth_number, azimuth_angle_degrees, elevation_number, elevation_angle_degrees)` with `.collection_timestamp`, `.azimuth_spacing_degrees`, `.radial_status`, `.moment(data)` | Defaults: timestamp `0`, spacing `1.0`, status `IntermediateRadialData`. #165, #170 |
+| `Radial::new(..)` (14 arguments) | `Radial::builder(azimuth_number, azimuth_angle_degrees, elevation_number, elevation_angle_degrees)` with `.collection_timestamp_millis`, `.azimuth_spacing_degrees`, `.radial_status`, `.moment(data)` | Defaults: timestamp `0`, spacing `1.0`, status `IntermediateRadialData`. #165, #170 |
 | `ElevationCut::new(..)` (22 arguments) | `ElevationCut::builder(elevation_angle_degrees, waveform_type, channel_configuration)` | **Argument order changed**: waveform now comes before channel configuration. #165 |
 | `VolumeCoveragePattern::new(pattern_number: u16, ..)` | `VolumeCoveragePattern::builder(VcpNumber::from_number(n))` | #165 |
-| `Site::new(id, lat, lon, height, tower_height)` | `Site::builder(id, lat, lon).height_meters(..).tower_height_meters(..).build()` | Latitude and longitude are `f64`. #164, #165 |
+| `Site::new(id, lat, lon, height, tower_height)` | `Site::builder(id, lat, lon).site_elevation_meters(..).feedhorn_height_meters(..).build()` | Latitude and longitude are `f64`. #164, #165, #182 |
 | `SweepField::new_empty(label, unit, ..)` | `SweepField::builder(label, unit)` with setters, `.build()?` | `build()` returns `Result` and validates the geometry. #165 |
 | `VCPNumber` | `VcpNumber` | #160 |
 | `CFPStatus` | `CfpStatus` | #160 |
@@ -190,20 +190,34 @@ let site = Site::builder(*b"KDMX", 41.7312, -93.7229)
 | `Product::moment_data(&radial)` / `Product::cfp_moment_data(&radial)` | `radial.moment(product)` | #170 |
 | `BinaryData` | Not public | It appeared in no public signature. #162 |
 | (facade) `nexrad::extract_field(sweep, p)` and friends | `sweep.field(p)`, `scan.fields(p)`, `scan.first_field(p)`, `scan.coordinate_system()` | New model methods. #172 |
+| `Site::height_meters()` / `height()` | `Site::site_elevation_meters()` / `site_elevation()` | Above mean sea level. #182 |
+| `Site::tower_height_meters()` / `tower_height()` | `Site::feedhorn_height_meters()` / `feedhorn_height()` | Above ground level. #182 |
+| `registry::SiteEntry::elevation_meters` | `registry::SiteEntry::site_elevation_meters` | Above mean sea level. `SiteEntry` is `#[non_exhaustive]`, so it cannot be built with a struct literal outside the crate. #182 |
+| `Radial::collection_timestamp()` | `Radial::collection_timestamp_millis()` | Milliseconds since the Unix epoch, UTC. #182 |
+| `SweepField::elevation_degrees()` | `SweepField::elevation_angle_degrees()` | #182 |
+| `SweepField::azimuths()` | `SweepField::azimuth_angles_degrees()` | #182 |
+| `SweepField::radial_status_mut(usize)` | `SweepField::radial_statuses_mut(usize)` | #182 |
+| `VolumeCoveragePattern::doppler_velocity_resolution()` | `VolumeCoveragePattern::doppler_velocity_resolution_mps()` | #182 |
+| `VolumeCoveragePattern::{sails_cuts, mrle_cuts}()` | `VolumeCoveragePattern::{sails_cut_count, mrle_cut_count}()` | #182 |
+| `geo::PolarPoint::{azimuth_degrees, elevation_degrees}` | `geo::PolarPoint::{azimuth_angle_degrees, elevation_angle_degrees}` | #182 |
 
 #### Behaviour and type changes
 
 - **Coordinates and angles are `f64`** (#164). `Site::latitude()`/`longitude()`, `registry::SiteEntry::{latitude,
-  longitude}`, `registry::nearest_site(f64, f64)`, `geo::PolarPoint::{azimuth_degrees, elevation_degrees}`,
-  `RadarCoordinateSystem::{geo_to_polar, gate_location}`, `SweepField::value_at_polar` and `Scan::sweeps_at_elevation`
-  use `f64`. With `uom`, `Radial::{azimuth, azimuth_spacing, elevation_angle}`, `Sweep::elevation_angle` and
-  `Site::{height, tower_height}` return `uom::si::f64` quantities. Literals keep compiling; `f32` variables need
-  `f64::from(x)` or `x as f64`. The angles stored on `Radial`, `Sweep` and `SweepField` (the `*_degrees` accessors)
-  remain `f32`.
+  longitude}`, `registry::nearest_site(f64, f64)`, `geo::PolarPoint::{azimuth_angle_degrees, elevation_angle_degrees}`,
+  `RadarCoordinateSystem::{geo_to_polar, gate_location}` and `SweepField::value_at_polar` use `f64`. With `uom`,
+  `Radial::{azimuth, azimuth_spacing, elevation_angle}`, `Sweep::elevation_angle` and
+  `Site::{site_elevation, feedhorn_height}` return `uom::si::f64` quantities. Literals keep compiling; `f32` variables
+  need `f64::from(x)` or `x as f64`. The angles stored on `Radial`, `Sweep`, `SweepField` and `ElevationCut` (the
+  `*_degrees` accessors) remain `f32`.
+- **`ElevationCut` angles are `f32`** (#182), like the other stored angles: `ElevationCut::builder` takes and
+  `ElevationCut::elevation_angle_degrees()` returns `f32` (was `f64`). `Scan::sweeps_at_elevation` takes `f32`, as it
+  did in 1.0.0-rc.2, so it compares directly against `Sweep::elevation_angle_degrees()`.
 - **`MomentValue` gained `CfpStatus(CfpStatus)`** and is still exhaustive, so an exhaustive `match` needs a new arm. It
   is only produced for `Product::ClutterFilterPower`, and `GateStatus::from(&MomentValue::CfpStatus(_))` is `NoData`.
-- **`SweepFieldBuilder::build` validates.** It returns `Err(Error::InvalidSweepGeometry(..))` when `azimuths` is empty,
-  `gate_count` is 0, or `gate_interval_km` is not positive. `new_empty` accepted any geometry.
+- **`SweepFieldBuilder::build` validates.** It returns `Err(Error::InvalidSweepGeometry(..))` when
+  `azimuth_angles_degrees` is empty, `gate_count` is 0, or `gate_interval_km` is not positive. `new_empty` accepted any
+  geometry.
 - **`SweepField::product()`** records which product a field holds (`Some` for fields built from radials, copied by
   `new_like`, optional on the builder).
 - **Site registry membership changed** (#148). Added `KBHX`, `KDOX`, `KHDC`, `KLGX` and `PAPD`. Removed `KLIX` (replaced
@@ -469,7 +483,9 @@ let composite = CompositeReflectivity.compute(&fields, &coords, &extent, (512, 5
 | `GaussianSmooth { sigma_azimuth, sigma_range }` | `GaussianSmooth::new(sigma_azimuth, sigma_range)?`; getters | #175 |
 | `ScanDerivedProduct::compute(&self, scan, fields, coords, extent, resolution)` | `compute(&self, fields, coords, extent, resolution)` | Drop the `scan` argument in calls and in your own impls. #175 |
 | `ScanProcessor` trait | Removed (no implementations); use a free function or your own trait | #175 |
-| `VerticalCrossSection::new(azimuth_degrees: f32, ..)` | `azimuth_degrees: f64` | #164 |
+| `VerticalCrossSection::new(azimuth_degrees: f32, max_range_km, max_altitude_m, ..)` | `new(azimuth_angle_degrees: f64, max_range_km, max_altitude_meters, ..)`; only the type of the first argument affects callers | #164, #182 |
+| `StormCell::elevation_degrees()` | `StormCell::elevation_angle_degrees()` | #182 |
+| `StormCell::max_reflectivity_azimuth_degrees()` | `StormCell::max_reflectivity_azimuth_angle_degrees()` | #182 |
 
 #### Behaviour and type changes
 
@@ -517,6 +533,8 @@ let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options
 | `RenderOptions::new(usize, usize)`, `size() -> (usize, usize)` | `u32` | #174 |
 | `RenderResult::new(..)` | Crate-private | #174 |
 | `RenderMetadata::{center_pixel, pixels_per_km, max_range_km, polar_to_pixel, pixel_distance_to_km, km_to_pixel_distance}` returning plain values | Return `Option`, `Some` only for polar renders | #174 |
+| `RenderMetadata::elevation_degrees() -> Option<f32>` | `RenderMetadata::elevation_angle_degrees() -> Option<f64>` | #164, #182 |
+| `PointQuery { polar, geo, value, status }` struct literal | Read `PointQuery` from `RenderResult::query_*`; it is `#[non_exhaustive]`, and `polar` is a `PolarPoint` with `azimuth_angle_degrees` and `elevation_angle_degrees` fields | #182 |
 
 #### Behaviour and type changes
 
@@ -524,8 +542,10 @@ let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options
   `Projection::Geographic` or `Projection::Vertical`. Polar-only accessors and `RenderResult::query_pixel`,
   `query_polar` and `query_geo` return `None` for `render_cartesian` and `render_vertical` results, which used to report
   `pixels_per_km = 0` and divide by zero in `pixel_to_polar`. For `render_cartesian` results, `pixel_to_geo` and
-  `geo_to_pixel` now map linearly through the extent.
-- **Polar angles are `f64`** (#164): `RenderMetadata::elevation_degrees()`, `polar_to_pixel` and
+  `geo_to_pixel` now map linearly through the extent. The `Polar`, `Geographic` and `Vertical` variants are
+  `#[non_exhaustive]`, so a struct pattern on them needs `..`: `Projection::Polar { center_pixel, .. }`. The `Polar`
+  elevation field is `elevation_angle_degrees` and the `Vertical` altitude field is `altitude_range_meters` (#182).
+- **Polar angles are `f64`** (#164): `RenderMetadata::elevation_angle_degrees()`, `polar_to_pixel` and
   `RenderResult::query_polar` take or return `f64`.
 - **Image dimensions are `u32`** (#174). `RenderOptions::native_for` saturates at `u32::MAX`.
 - **`ColorLookupTable::new` clamps sizes below 2 to 2**; the old constructors divided by zero or produced NaN.
@@ -619,14 +639,20 @@ II source files.** There is no compatibility shim. The incompatible changes are:
 | `MomentData` | A struct with a `product` field next to the encoding fields; it was `serde(transparent)` over an inner block. Every moment on a `Radial`, including `clutter_filter_power`, has this shape | #170 |
 | `SweepField` | Gains a `product` field | #170 |
 | `Site` | `latitude` and `longitude` are `f64` (were `f32`). Self-describing formats such as JSON still read old values; fixed-width binary formats such as bincode do not | #164 |
+| `Site` | `height_meters` and `tower_height_meters` are renamed `site_elevation_meters` and `feedhorn_height_meters` | #182 |
+| `Radial` | `collection_timestamp` is renamed `collection_timestamp_millis` | #182 |
+| `SweepField` | `elevation_degrees` and `azimuths` are renamed `elevation_angle_degrees` and `azimuth_angles_degrees` | #182 |
+| `VolumeCoveragePattern` | `doppler_velocity_resolution`, `sails_cuts` and `mrle_cuts` are renamed `doppler_velocity_resolution_mps`, `sails_cut_count` and `mrle_cut_count` | #182 |
+| `ElevationCut` | `elevation_angle_degrees` is `f32` (was `f64`) | #182 |
+| `PolarPoint` | `azimuth_degrees` and `elevation_degrees` are renamed `azimuth_angle_degrees` and `elevation_angle_degrees` | #182 |
 
 Unchanged: `VcpNumber` serializes as its `u16` number (as `VCPNumber` already did), `CfpStatus` keeps its snake_case
-variant names, and the field names of `Scan`, `Sweep`, `Radial`, `Site`, `VolumeCoveragePattern` and `ElevationCut`
-are the same. The `nexrad-model/tests/snapshots/` files show the 1.0 serialized form of a real scan.
+variant names, and the field names of `Scan` and `Sweep` are the same. The `nexrad-model/tests/snapshots/` files
+show the 1.0 serialized form of a real scan.
 
 Data serialized by `nexrad-model` 0.1.0 is further away: its `Scan` held a `coverage_pattern_number` instead of a
-`coverage_pattern`, its `Site` had `feedhorn_height_meters`, its `RadialStatus` used `VolumeScanStart`/`VolumeScanEnd`,
-and its `MomentData` held only scale, offset and values. Regenerate it as well.
+`coverage_pattern`, its `Site` had `height_meters` where 1.0 has `site_elevation_meters`, its `RadialStatus` used
+`VolumeScanStart`/`VolumeScanEnd`, and its `MomentData` held only scale, offset and values. Regenerate it as well.
 
 `Debug` output also changed (see the [nexrad-model](#nexrad-model-from-100-rc2) section); it was never a stable
 format.
@@ -698,10 +724,11 @@ Feature flags:
 | `Scan::new(coverage_pattern_number: u16, sweeps)` | `Scan::new(VolumeCoveragePattern, sweeps)` or `Scan::with_site(site, vcp, sweeps)` |
 | `Scan::coverage_pattern_number() -> u16` | `-> VcpNumber`; `.number()` gives the `u16` |
 | `Scan::sweeps() -> &Vec<Sweep>`, `Sweep::radials() -> &Vec<Radial>` | Return slices |
-| `Site::new(id, lat: f32, lon: f32, height, feedhorn_height)` | `Site::builder(id, lat: f64, lon: f64).height_meters(..).tower_height_meters(..).build()` |
+| `Site::new(id, lat: f32, lon: f32, height, feedhorn_height)` | `Site::builder(id, lat: f64, lon: f64).site_elevation_meters(..).feedhorn_height_meters(..).build()` |
 | `Site::latitude()`/`longitude() -> f32` | `-> f64` |
-| `Site::feedhorn_height_meters()` / `feedhorn_height()` | `tower_height_meters()` / `tower_height()` |
-| `uom` accessors (`Radial::azimuth()`, `Site::height()`, ...) returning `uom::si::f32` | `uom::si::f64` |
+| `Site::height_meters()` / `height()` | `site_elevation_meters()` / `site_elevation()` |
+| `Site::feedhorn_height_meters()` / `feedhorn_height()` | Unchanged |
+| `uom` accessors (`Radial::azimuth()`, `Site::feedhorn_height()`, ...) returning `uom::si::f32` | `uom::si::f64` |
 | `Error::ElevationMismatchError` | `Error::ElevationMismatch` |
 
 New in 1.0: `Product`, `VolumeCoveragePattern`, `ElevationCut`, `VcpNumber`, `SweepField`, `CartesianField`,
@@ -1140,19 +1167,29 @@ items that replace nothing are in the CHANGELOGs.
 | `data::Radial::{azimuth, azimuth_spacing, elevation_angle}() -> uom::si::f32::Angle` | `-> uom::si::f64::Angle` |
 | `data::Sweep::elevation_angle() -> Option<uom::si::f32::Angle>` | `-> Option<uom::si::f64::Angle>` |
 | `data::Scan::coverage_pattern_number() -> VCPNumber` | `-> VcpNumber` |
-| `data::Scan::sweeps_at_elevation(f32)` | `sweeps_at_elevation(f64)` |
-| `data::ElevationCut::new(f64, ChannelConfiguration, WaveformType, ..)` (22 arguments) | `ElevationCut::builder(f64, WaveformType, ChannelConfiguration)` → `ElevationCutBuilder` |
+| `data::ElevationCut::new(f64, ChannelConfiguration, WaveformType, ..)` (22 arguments) | `ElevationCut::builder(f32, WaveformType, ChannelConfiguration)` → `ElevationCutBuilder` |
+| `data::ElevationCut::elevation_angle_degrees() -> f64` | `-> f32` |
 | `data::VolumeCoveragePattern::new(u16, ..)` (14 arguments) | `VolumeCoveragePattern::builder(VcpNumber)` → `VolumeCoveragePatternBuilder` |
 | `data::VolumeCoveragePattern::pattern_number() -> VCPNumber` | `-> VcpNumber` |
 | `data::SweepField::new_empty(label, unit, f32, Vec<f32>, f32, f64, f64, usize)` | `SweepField::builder(label, unit)` → `SweepFieldBuilder`, `build() -> Result<SweepField>` |
 | `data::SweepField::value_at_polar(f32, f64)` | `value_at_polar(f64, f64)` |
-| `geo::PolarPoint::{azimuth_degrees, elevation_degrees}: f32` | `f64` |
+| `data::SweepField::elevation_degrees()` | `elevation_angle_degrees()` |
+| `data::SweepField::azimuths() -> &[f32]` | `azimuth_angles_degrees() -> &[f32]` |
+| `data::SweepField::radial_status_mut(usize)` | `radial_statuses_mut(usize)` |
+| `data::Radial::collection_timestamp() -> i64` | `collection_timestamp_millis() -> i64` |
+| `data::VolumeCoveragePattern::doppler_velocity_resolution() -> f32` | `doppler_velocity_resolution_mps() -> f32` |
+| `data::VolumeCoveragePattern::{sails_cuts, mrle_cuts}() -> u8` | `{sails_cut_count, mrle_cut_count}() -> u8` |
+| `geo::PolarPoint::{azimuth_degrees, elevation_degrees}: f32` | `{azimuth_angle_degrees, elevation_angle_degrees}: f64` |
 | `geo::RadarCoordinateSystem::gate_location(f32, f32, usize, f64, f64)` | `gate_location(f64, f64, usize, f64, f64)` |
 | `geo::RadarCoordinateSystem::geo_to_polar(GeoPoint, f32)` | `geo_to_polar(GeoPoint, f64)` |
 | `meta::Site::new([u8; 4], f32, f32, i16, u16)` | `Site::builder([u8; 4], f64, f64)` → `SiteBuilder` |
 | `meta::Site::{latitude, longitude}() -> f32` | `-> f64` |
-| `meta::Site::{height, tower_height}() -> uom::si::f32::Length` | `-> uom::si::f64::Length` |
+| `meta::Site::height_meters() -> i16` | `site_elevation_meters() -> i16` |
+| `meta::Site::tower_height_meters() -> u16` | `feedhorn_height_meters() -> u16` |
+| `meta::Site::{height, tower_height}() -> uom::si::f32::Length` | `{site_elevation, feedhorn_height}() -> uom::si::f64::Length` |
+| `meta::registry::SiteEntry` | `#[non_exhaustive]` |
 | `meta::registry::SiteEntry::{latitude, longitude}: f32` | `f64` |
+| `meta::registry::SiteEntry::elevation_meters: i16` | `site_elevation_meters: i16` |
 | `meta::registry::nearest_site(f32, f32)` | `nearest_site(f64, f64)` |
 | `result::Error` | `#[non_exhaustive]`; new `InvalidSweepGeometry(String)` |
 
@@ -1293,6 +1330,8 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `filter::MedianFilter::{azimuth_kernel, range_kernel}` fields | `MedianFilter::new(usize, usize) -> Result<Self>`, getters |
 | `filter::GaussianSmooth::{sigma_azimuth, sigma_range}` fields | `GaussianSmooth::new(f32, f32) -> Result<Self>`, getters |
 | `derived::VerticalCrossSection::new(f32, f64, f64, usize, usize)` | `new(f64, f64, f64, usize, usize)` |
+| `detection::StormCell::elevation_degrees() -> f32` | `elevation_angle_degrees() -> f32` |
+| `detection::StormCell::max_reflectivity_azimuth_degrees() -> f32` | `max_reflectivity_azimuth_angle_degrees() -> f32` |
 | `result::Error` | `#[non_exhaustive]` |
 
 </details>
@@ -1316,7 +1355,8 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `RenderMetadata::{pixels_per_km, max_range_km}() -> f64` | `-> Option<f64>` |
 | `RenderMetadata::{pixel_distance_to_km, km_to_pixel_distance}(f64) -> f64` | `-> Option<f64>` |
 | `RenderMetadata::polar_to_pixel(f32, f64) -> (f64, f64)` | `polar_to_pixel(f64, f64) -> Option<(f64, f64)>` |
-| `RenderMetadata::elevation_degrees() -> Option<f32>` | `-> Option<f64>` |
+| `RenderMetadata::elevation_degrees() -> Option<f32>` | `elevation_angle_degrees() -> Option<f64>` |
+| `PointQuery` | `#[non_exhaustive]` |
 | `result::Error::{NoRadials, ImageSave(String), ProductNotFound}` | `EmptyField`, `Image(image::ImageError)`, removed |
 | `result::Error` | `#[non_exhaustive]` |
 

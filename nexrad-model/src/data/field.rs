@@ -33,9 +33,9 @@ pub struct SweepField {
     /// The radar product this field holds, if it corresponds to one.
     product: Option<Product>,
     /// Elevation angle in degrees.
-    elevation_degrees: f32,
+    elevation_angle_degrees: f32,
     /// Azimuth angle in degrees for each radial row, sorted ascending.
-    azimuths: Vec<f32>,
+    azimuth_angles_degrees: Vec<f32>,
     /// Azimuthal spacing between radials in degrees.
     azimuth_spacing_degrees: f32,
     /// Range to center of first gate in km.
@@ -65,7 +65,7 @@ impl SweepField {
         let (first_gate_range_km, gate_interval_km, gate_count) =
             Self::extract_gate_params(radials, product)?;
 
-        let elevation_degrees = radials[0].elevation_angle_degrees();
+        let elevation_angle_degrees = radials[0].elevation_angle_degrees();
         let azimuth_spacing_degrees = radials[0].azimuth_spacing_degrees();
 
         // Collect (azimuth, radial_index) for radials that have data, then sort by
@@ -86,12 +86,12 @@ impl SweepField {
 
         let azimuth_count = indexed.len();
         let total_gates = azimuth_count * gate_count;
-        let mut azimuths = Vec::with_capacity(azimuth_count);
+        let mut azimuth_angles_degrees = Vec::with_capacity(azimuth_count);
         let mut values = vec![0.0f32; total_gates];
         let mut status = vec![GateStatus::NoData; total_gates];
 
         for (row, &(az, radial_idx)) in indexed.iter().enumerate() {
-            azimuths.push(az);
+            azimuth_angles_degrees.push(az);
             let row_offset = row * gate_count;
             Self::decode_moment_into(
                 &radials[radial_idx],
@@ -105,8 +105,8 @@ impl SweepField {
             label: product.label().to_string(),
             unit: product.unit().to_string(),
             product: Some(product),
-            elevation_degrees,
-            azimuths,
+            elevation_angle_degrees,
+            azimuth_angles_degrees,
             azimuth_spacing_degrees,
             first_gate_range_km,
             gate_interval_km,
@@ -130,7 +130,7 @@ impl SweepField {
         let (first_gate_range_km, gate_interval_km, gate_count) =
             Self::extract_gate_params(&radials, product)?;
 
-        let elevation_degrees = radials[0].elevation_angle_degrees();
+        let elevation_angle_degrees = radials[0].elevation_angle_degrees();
         let azimuth_spacing_degrees = radials[0].azimuth_spacing_degrees();
 
         // Build sort order by azimuth. We store the original index so we can
@@ -150,7 +150,7 @@ impl SweepField {
 
         let azimuth_count = indexed.len();
         let total_gates = azimuth_count * gate_count;
-        let mut azimuths = Vec::with_capacity(azimuth_count);
+        let mut azimuth_angles_degrees = Vec::with_capacity(azimuth_count);
         let mut values = vec![0.0f32; total_gates];
         let mut status = vec![GateStatus::NoData; total_gates];
 
@@ -166,7 +166,7 @@ impl SweepField {
 
         // Stash azimuths in order (we already have them from indexed).
         for &(az, _) in &indexed {
-            azimuths.push(az);
+            azimuth_angles_degrees.push(az);
         }
 
         for &(row, orig_idx) in &work {
@@ -185,8 +185,8 @@ impl SweepField {
             label: product.label().to_string(),
             unit: product.unit().to_string(),
             product: Some(product),
-            elevation_degrees,
-            azimuths,
+            elevation_angle_degrees,
+            azimuth_angles_degrees,
             azimuth_spacing_degrees,
             first_gate_range_km,
             gate_interval_km,
@@ -205,8 +205,8 @@ impl SweepField {
             label: label.into(),
             unit: unit.into(),
             product: None,
-            elevation_degrees: 0.0,
-            azimuths: Vec::new(),
+            elevation_angle_degrees: 0.0,
+            azimuth_angles_degrees: Vec::new(),
             azimuth_spacing_degrees: 1.0,
             first_gate_range_km: 0.0,
             gate_interval_km: 0.0,
@@ -219,13 +219,13 @@ impl SweepField {
     ///
     /// All values are initialized to `0.0` with [`GateStatus::NoData`].
     pub fn new_like(&self, label: impl Into<String>, unit: impl Into<String>) -> Self {
-        let total = self.azimuths.len() * self.gate_count;
+        let total = self.azimuth_angles_degrees.len() * self.gate_count;
         Self {
             label: label.into(),
             unit: unit.into(),
             product: self.product,
-            elevation_degrees: self.elevation_degrees,
-            azimuths: self.azimuths.clone(),
+            elevation_angle_degrees: self.elevation_angle_degrees,
+            azimuth_angles_degrees: self.azimuth_angles_degrees.clone(),
             azimuth_spacing_degrees: self.azimuth_spacing_degrees,
             first_gate_range_km: self.first_gate_range_km,
             gate_interval_km: self.gate_interval_km,
@@ -257,13 +257,13 @@ impl SweepField {
     }
 
     /// Elevation angle in degrees.
-    pub fn elevation_degrees(&self) -> f32 {
-        self.elevation_degrees
+    pub fn elevation_angle_degrees(&self) -> f32 {
+        self.elevation_angle_degrees
     }
 
     /// Number of azimuth rows.
     pub fn azimuth_count(&self) -> usize {
-        self.azimuths.len()
+        self.azimuth_angles_degrees.len()
     }
 
     /// Number of gates per radial.
@@ -272,8 +272,8 @@ impl SweepField {
     }
 
     /// Azimuth angles for each radial row (sorted ascending).
-    pub fn azimuths(&self) -> &[f32] {
-        &self.azimuths
+    pub fn azimuth_angles_degrees(&self) -> &[f32] {
+        &self.azimuth_angles_degrees
     }
 
     /// Azimuthal spacing between radials in degrees.
@@ -328,7 +328,7 @@ impl SweepField {
     }
 
     /// Get a mutable slice of statuses for a full radial row.
-    pub fn radial_status_mut(&mut self, azimuth_idx: usize) -> &mut [GateStatus] {
+    pub fn radial_statuses_mut(&mut self, azimuth_idx: usize) -> &mut [GateStatus] {
         let start = azimuth_idx * self.gate_count;
         &mut self.status[start..start + self.gate_count]
     }
@@ -392,13 +392,13 @@ impl SweepField {
 
     /// Find the nearest azimuth index for the given angle.
     fn find_nearest_azimuth(&self, azimuth_degrees: f64) -> Option<usize> {
-        if self.azimuths.is_empty() {
+        if self.azimuth_angles_degrees.is_empty() {
             return None;
         }
 
-        let len = self.azimuths.len();
+        let len = self.azimuth_angles_degrees.len();
         let pos = self
-            .azimuths
+            .azimuth_angles_degrees
             .binary_search_by(|a| {
                 (*a as f64)
                     .partial_cmp(&azimuth_degrees)
@@ -407,24 +407,24 @@ impl SweepField {
             .unwrap_or_else(|i| i);
 
         if pos == 0 {
-            let dist_first = ((self.azimuths[0] as f64) - azimuth_degrees).abs();
-            let dist_last = 360.0 - (self.azimuths[len - 1] as f64) + azimuth_degrees;
+            let dist_first = ((self.azimuth_angles_degrees[0] as f64) - azimuth_degrees).abs();
+            let dist_last = 360.0 - (self.azimuth_angles_degrees[len - 1] as f64) + azimuth_degrees;
             if dist_last < dist_first {
                 Some(len - 1)
             } else {
                 Some(0)
             }
         } else if pos >= len {
-            let dist_last = (azimuth_degrees - (self.azimuths[len - 1] as f64)).abs();
-            let dist_first = 360.0 - azimuth_degrees + (self.azimuths[0] as f64);
+            let dist_last = (azimuth_degrees - (self.azimuth_angles_degrees[len - 1] as f64)).abs();
+            let dist_first = 360.0 - azimuth_degrees + (self.azimuth_angles_degrees[0] as f64);
             if dist_first < dist_last {
                 Some(0)
             } else {
                 Some(len - 1)
             }
         } else {
-            let dist_prev = (azimuth_degrees - (self.azimuths[pos - 1] as f64)).abs();
-            let dist_curr = ((self.azimuths[pos] as f64) - azimuth_degrees).abs();
+            let dist_prev = (azimuth_degrees - (self.azimuth_angles_degrees[pos - 1] as f64)).abs();
+            let dist_curr = ((self.azimuth_angles_degrees[pos] as f64) - azimuth_degrees).abs();
             if dist_prev <= dist_curr {
                 Some(pos - 1)
             } else {
@@ -493,15 +493,16 @@ impl SweepField {
 /// The label and unit are required. The product and geometry default to:
 ///
 /// - `product`: `None`
-/// - `elevation_degrees`: `0.0`
-/// - `azimuths`: empty
+/// - `elevation_angle_degrees`: `0.0`
+/// - `azimuth_angles_degrees`: empty
 /// - `azimuth_spacing_degrees`: `1.0`
 /// - `first_gate_range_km`: `0.0`
 /// - `gate_interval_km`: `0.0`
 /// - `gate_count`: `0`
 ///
-/// [`build`](Self::build) returns [`Error::InvalidSweepGeometry`] unless `azimuths` is
-/// non-empty, `gate_count` is greater than zero, and `gate_interval_km` is greater than zero.
+/// [`build`](Self::build) returns [`Error::InvalidSweepGeometry`] unless
+/// `azimuth_angles_degrees` is non-empty, `gate_count` is greater than zero, and
+/// `gate_interval_km` is greater than zero.
 /// All values of the built field are initialized to `0.0` with [`GateStatus::NoData`].
 ///
 /// # Example
@@ -510,8 +511,8 @@ impl SweepField {
 /// use nexrad_model::data::SweepField;
 ///
 /// let field = SweepField::builder("Reflectivity", "dBZ")
-///     .elevation_degrees(0.5)
-///     .azimuths(vec![0.0, 1.0, 2.0])
+///     .elevation_angle_degrees(0.5)
+///     .azimuth_angles_degrees(vec![0.0, 1.0, 2.0])
 ///     .first_gate_range_km(2.0)
 ///     .gate_interval_km(0.25)
 ///     .gate_count(100)
@@ -526,8 +527,8 @@ pub struct SweepFieldBuilder {
     label: String,
     unit: String,
     product: Option<Product>,
-    elevation_degrees: f32,
-    azimuths: Vec<f32>,
+    elevation_angle_degrees: f32,
+    azimuth_angles_degrees: Vec<f32>,
     azimuth_spacing_degrees: f32,
     first_gate_range_km: f64,
     gate_interval_km: f64,
@@ -542,15 +543,15 @@ impl SweepFieldBuilder {
     }
 
     /// Set the elevation angle in degrees. Defaults to `0.0`.
-    pub fn elevation_degrees(mut self, elevation_degrees: f32) -> Self {
-        self.elevation_degrees = elevation_degrees;
+    pub fn elevation_angle_degrees(mut self, elevation_angle_degrees: f32) -> Self {
+        self.elevation_angle_degrees = elevation_angle_degrees;
         self
     }
 
     /// Set the azimuth angle in degrees for each radial row, sorted ascending. Defaults to
     /// empty; must be non-empty for [`build`](Self::build) to succeed.
-    pub fn azimuths(mut self, azimuths: Vec<f32>) -> Self {
-        self.azimuths = azimuths;
+    pub fn azimuth_angles_degrees(mut self, azimuth_angles_degrees: Vec<f32>) -> Self {
+        self.azimuth_angles_degrees = azimuth_angles_degrees;
         self
     }
 
@@ -587,7 +588,7 @@ impl SweepFieldBuilder {
     /// Returns [`Error::InvalidSweepGeometry`] if no azimuths were set, `gate_count` is zero,
     /// or `gate_interval_km` is not greater than zero (including NaN).
     pub fn build(self) -> Result<SweepField> {
-        if self.azimuths.is_empty() {
+        if self.azimuth_angles_degrees.is_empty() {
             return Err(Error::InvalidSweepGeometry(
                 "at least one azimuth is required".to_string(),
             ));
@@ -604,13 +605,13 @@ impl SweepFieldBuilder {
             )));
         }
 
-        let total = self.azimuths.len() * self.gate_count;
+        let total = self.azimuth_angles_degrees.len() * self.gate_count;
         Ok(SweepField {
             label: self.label,
             unit: self.unit,
             product: self.product,
-            elevation_degrees: self.elevation_degrees,
-            azimuths: self.azimuths,
+            elevation_angle_degrees: self.elevation_angle_degrees,
+            azimuth_angles_degrees: self.azimuth_angles_degrees,
             azimuth_spacing_degrees: self.azimuth_spacing_degrees,
             first_gate_range_km: self.first_gate_range_km,
             gate_interval_km: self.gate_interval_km,

@@ -7,6 +7,7 @@
 
 /// Metadata for a NEXRAD radar site in the static registry.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub struct SiteEntry {
     /// Four-letter ICAO identifier (e.g., "KTLX").
     pub id: &'static str,
@@ -18,8 +19,8 @@ pub struct SiteEntry {
     pub latitude: f64,
     /// Longitude in degrees.
     pub longitude: f64,
-    /// Elevation above sea level in meters.
-    pub elevation_meters: i16,
+    /// Site elevation above mean sea level in meters.
+    pub site_elevation_meters: i16,
 }
 
 impl SiteEntry {
@@ -31,7 +32,7 @@ impl SiteEntry {
         id[..len].copy_from_slice(&bytes[..len]);
 
         super::Site::builder(id, self.latitude, self.longitude)
-            .height_meters(self.elevation_meters)
+            .site_elevation_meters(self.site_elevation_meters)
             .build()
     }
 }
@@ -108,7 +109,7 @@ static SITES: &[SiteEntry] = &[
         state: "AL",
         latitude: 33.1722,
         longitude: -86.7698,
-        elevation_meters: 197,
+        site_elevation_meters: 197,
     },
     SiteEntry {
         id: "KEOX",
@@ -116,7 +117,7 @@ static SITES: &[SiteEntry] = &[
         state: "AL",
         latitude: 31.4606,
         longitude: -85.4592,
-        elevation_meters: 132,
+        site_elevation_meters: 132,
     },
     SiteEntry {
         id: "KHTX",
@@ -124,7 +125,7 @@ static SITES: &[SiteEntry] = &[
         state: "AL",
         latitude: 34.9306,
         longitude: -86.0833,
-        elevation_meters: 536,
+        site_elevation_meters: 536,
     },
     SiteEntry {
         id: "KMOB",
@@ -132,7 +133,7 @@ static SITES: &[SiteEntry] = &[
         state: "AL",
         latitude: 30.6794,
         longitude: -88.2397,
-        elevation_meters: 63,
+        site_elevation_meters: 63,
     },
     SiteEntry {
         id: "KMXX",
@@ -140,7 +141,7 @@ static SITES: &[SiteEntry] = &[
         state: "AL",
         latitude: 32.5367,
         longitude: -85.7897,
-        elevation_meters: 122,
+        site_elevation_meters: 122,
     },
     // Alaska
     SiteEntry {
@@ -149,7 +150,7 @@ static SITES: &[SiteEntry] = &[
         state: "AK",
         latitude: 60.7919,
         longitude: -161.8764,
-        elevation_meters: 48,
+        site_elevation_meters: 48,
     },
     SiteEntry {
         id: "PACG",
@@ -157,7 +158,7 @@ static SITES: &[SiteEntry] = &[
         state: "AK",
         latitude: 56.8525,
         longitude: -135.5294,
-        elevation_meters: 63,
+        site_elevation_meters: 63,
     },
     SiteEntry {
         id: "PAEC",
@@ -165,7 +166,7 @@ static SITES: &[SiteEntry] = &[
         state: "AK",
         latitude: 64.5114,
         longitude: -165.295,
-        elevation_meters: 16,
+        site_elevation_meters: 16,
     },
     SiteEntry {
         id: "PAHG",
@@ -173,7 +174,7 @@ static SITES: &[SiteEntry] = &[
         state: "AK",
         latitude: 60.7258,
         longitude: -151.3514,
-        elevation_meters: 74,
+        site_elevation_meters: 74,
     },
     SiteEntry {
         id: "PAIH",
@@ -181,7 +182,7 @@ static SITES: &[SiteEntry] = &[
         state: "AK",
         latitude: 59.4614,
         longitude: -146.3031,
-        elevation_meters: 20,
+        site_elevation_meters: 20,
     },
     SiteEntry {
         id: "PAKC",
@@ -189,7 +190,7 @@ static SITES: &[SiteEntry] = &[
         state: "AK",
         latitude: 58.6794,
         longitude: -156.6297,
-        elevation_meters: 19,
+        site_elevation_meters: 19,
     },
     SiteEntry {
         id: "PAPD",
@@ -197,7 +198,7 @@ static SITES: &[SiteEntry] = &[
         state: "AK",
         latitude: 65.0351,
         longitude: -147.5014,
-        elevation_meters: 825,
+        site_elevation_meters: 825,
     },
     // Arizona
     SiteEntry {
@@ -206,7 +207,7 @@ static SITES: &[SiteEntry] = &[
         state: "AZ",
         latitude: 31.8939,
         longitude: -110.6303,
-        elevation_meters: 1586,
+        site_elevation_meters: 1586,
     },
     SiteEntry {
         id: "KFSX",
@@ -214,7 +215,7 @@ static SITES: &[SiteEntry] = &[
         state: "AZ",
         latitude: 34.5744,
         longitude: -111.1983,
-        elevation_meters: 2261,
+        site_elevation_meters: 2261,
     },
     SiteEntry {
         id: "KIWA",
@@ -222,7 +223,7 @@ static SITES: &[SiteEntry] = &[
         state: "AZ",
         latitude: 33.2892,
         longitude: -111.67,
-        elevation_meters: 413,
+        site_elevation_meters: 413,
     },
     SiteEntry {
         id: "KYUX",
@@ -230,7 +231,7 @@ static SITES: &[SiteEntry] = &[
         state: "AZ",
         latitude: 32.4953,
         longitude: -114.6567,
-        elevation_meters: 53,
+        site_elevation_meters: 53,
     },
     // Arkansas
     SiteEntry {
@@ -239,7 +240,7 @@ static SITES: &[SiteEntry] = &[
         state: "AR",
         latitude: 34.8364,
         longitude: -92.2622,
-        elevation_meters: 173,
+        site_elevation_meters: 173,
     },
     SiteEntry {
         id: "KSRX",
@@ -247,7 +248,7 @@ static SITES: &[SiteEntry] = &[
         state: "AR",
         latitude: 35.2906,
         longitude: -94.3619,
-        elevation_meters: 195,
+        site_elevation_meters: 195,
     },
     // California
     SiteEntry {
@@ -256,7 +257,7 @@ static SITES: &[SiteEntry] = &[
         state: "CA",
         latitude: 39.4961,
         longitude: -121.6317,
-        elevation_meters: 53,
+        site_elevation_meters: 53,
     },
     SiteEntry {
         id: "KBHX",
@@ -264,7 +265,7 @@ static SITES: &[SiteEntry] = &[
         state: "CA",
         latitude: 40.4986,
         longitude: -124.2922,
-        elevation_meters: 767,
+        site_elevation_meters: 767,
     },
     SiteEntry {
         id: "KEYX",
@@ -272,7 +273,7 @@ static SITES: &[SiteEntry] = &[
         state: "CA",
         latitude: 35.0978,
         longitude: -117.5608,
-        elevation_meters: 840,
+        site_elevation_meters: 840,
     },
     SiteEntry {
         id: "KHNX",
@@ -280,7 +281,7 @@ static SITES: &[SiteEntry] = &[
         state: "CA",
         latitude: 36.3142,
         longitude: -119.6322,
-        elevation_meters: 74,
+        site_elevation_meters: 74,
     },
     SiteEntry {
         id: "KMUX",
@@ -288,7 +289,7 @@ static SITES: &[SiteEntry] = &[
         state: "CA",
         latitude: 37.1553,
         longitude: -121.8983,
-        elevation_meters: 1057,
+        site_elevation_meters: 1057,
     },
     SiteEntry {
         id: "KNKX",
@@ -296,7 +297,7 @@ static SITES: &[SiteEntry] = &[
         state: "CA",
         latitude: 32.9189,
         longitude: -117.0419,
-        elevation_meters: 291,
+        site_elevation_meters: 291,
     },
     SiteEntry {
         id: "KSOX",
@@ -304,7 +305,7 @@ static SITES: &[SiteEntry] = &[
         state: "CA",
         latitude: 33.8178,
         longitude: -117.6358,
-        elevation_meters: 923,
+        site_elevation_meters: 923,
     },
     SiteEntry {
         id: "KVBX",
@@ -312,7 +313,7 @@ static SITES: &[SiteEntry] = &[
         state: "CA",
         latitude: 34.8383,
         longitude: -120.3978,
-        elevation_meters: 373,
+        site_elevation_meters: 373,
     },
     SiteEntry {
         id: "KVTX",
@@ -320,7 +321,7 @@ static SITES: &[SiteEntry] = &[
         state: "CA",
         latitude: 34.4114,
         longitude: -119.1794,
-        elevation_meters: 831,
+        site_elevation_meters: 831,
     },
     SiteEntry {
         id: "KDAX",
@@ -328,7 +329,7 @@ static SITES: &[SiteEntry] = &[
         state: "CA",
         latitude: 38.5011,
         longitude: -121.6778,
-        elevation_meters: 9,
+        site_elevation_meters: 9,
     },
     // Colorado
     SiteEntry {
@@ -337,7 +338,7 @@ static SITES: &[SiteEntry] = &[
         state: "CO",
         latitude: 39.7867,
         longitude: -104.5458,
-        elevation_meters: 1675,
+        site_elevation_meters: 1675,
     },
     SiteEntry {
         id: "KGJX",
@@ -345,7 +346,7 @@ static SITES: &[SiteEntry] = &[
         state: "CO",
         latitude: 39.0622,
         longitude: -108.2139,
-        elevation_meters: 3045,
+        site_elevation_meters: 3045,
     },
     SiteEntry {
         id: "KPUX",
@@ -353,7 +354,7 @@ static SITES: &[SiteEntry] = &[
         state: "CO",
         latitude: 38.4594,
         longitude: -104.1817,
-        elevation_meters: 1600,
+        site_elevation_meters: 1600,
     },
     // Delaware
     SiteEntry {
@@ -362,7 +363,7 @@ static SITES: &[SiteEntry] = &[
         state: "DE",
         latitude: 38.8258,
         longitude: -75.4401,
-        elevation_meters: 50,
+        site_elevation_meters: 50,
     },
     // Connecticut / New England
     SiteEntry {
@@ -371,7 +372,7 @@ static SITES: &[SiteEntry] = &[
         state: "NY",
         latitude: 40.8656,
         longitude: -72.8639,
-        elevation_meters: 26,
+        site_elevation_meters: 26,
     },
     // Florida
     SiteEntry {
@@ -380,7 +381,7 @@ static SITES: &[SiteEntry] = &[
         state: "FL",
         latitude: 25.6111,
         longitude: -80.4128,
-        elevation_meters: 4,
+        site_elevation_meters: 4,
     },
     SiteEntry {
         id: "KEVX",
@@ -388,7 +389,7 @@ static SITES: &[SiteEntry] = &[
         state: "FL",
         latitude: 30.5644,
         longitude: -85.9214,
-        elevation_meters: 43,
+        site_elevation_meters: 43,
     },
     SiteEntry {
         id: "KJAX",
@@ -396,7 +397,7 @@ static SITES: &[SiteEntry] = &[
         state: "FL",
         latitude: 30.4847,
         longitude: -81.7019,
-        elevation_meters: 10,
+        site_elevation_meters: 10,
     },
     SiteEntry {
         id: "KMLB",
@@ -404,7 +405,7 @@ static SITES: &[SiteEntry] = &[
         state: "FL",
         latitude: 28.1133,
         longitude: -80.6542,
-        elevation_meters: 11,
+        site_elevation_meters: 11,
     },
     SiteEntry {
         id: "KTBW",
@@ -412,7 +413,7 @@ static SITES: &[SiteEntry] = &[
         state: "FL",
         latitude: 27.7056,
         longitude: -82.4017,
-        elevation_meters: 13,
+        site_elevation_meters: 13,
     },
     SiteEntry {
         id: "KTLH",
@@ -420,7 +421,7 @@ static SITES: &[SiteEntry] = &[
         state: "FL",
         latitude: 30.3975,
         longitude: -84.3289,
-        elevation_meters: 19,
+        site_elevation_meters: 19,
     },
     SiteEntry {
         id: "KBYX",
@@ -428,7 +429,7 @@ static SITES: &[SiteEntry] = &[
         state: "FL",
         latitude: 24.5975,
         longitude: -81.7031,
-        elevation_meters: 3,
+        site_elevation_meters: 3,
     },
     // Georgia
     SiteEntry {
@@ -437,7 +438,7 @@ static SITES: &[SiteEntry] = &[
         state: "GA",
         latitude: 33.3636,
         longitude: -84.5658,
-        elevation_meters: 262,
+        site_elevation_meters: 262,
     },
     SiteEntry {
         id: "KJGX",
@@ -445,7 +446,7 @@ static SITES: &[SiteEntry] = &[
         state: "GA",
         latitude: 32.6756,
         longitude: -83.3511,
-        elevation_meters: 159,
+        site_elevation_meters: 159,
     },
     SiteEntry {
         id: "KVAX",
@@ -453,7 +454,7 @@ static SITES: &[SiteEntry] = &[
         state: "GA",
         latitude: 30.8900,
         longitude: -83.0019,
-        elevation_meters: 54,
+        site_elevation_meters: 54,
     },
     // Hawaii
     SiteEntry {
@@ -462,7 +463,7 @@ static SITES: &[SiteEntry] = &[
         state: "HI",
         latitude: 21.8939,
         longitude: -159.5522,
-        elevation_meters: 55,
+        site_elevation_meters: 55,
     },
     SiteEntry {
         id: "PHKM",
@@ -470,7 +471,7 @@ static SITES: &[SiteEntry] = &[
         state: "HI",
         latitude: 20.1253,
         longitude: -155.7781,
-        elevation_meters: 1161,
+        site_elevation_meters: 1161,
     },
     SiteEntry {
         id: "PHMO",
@@ -478,7 +479,7 @@ static SITES: &[SiteEntry] = &[
         state: "HI",
         latitude: 21.1328,
         longitude: -157.1803,
-        elevation_meters: 416,
+        site_elevation_meters: 416,
     },
     SiteEntry {
         id: "PHWA",
@@ -486,7 +487,7 @@ static SITES: &[SiteEntry] = &[
         state: "HI",
         latitude: 19.0950,
         longitude: -155.5689,
-        elevation_meters: 421,
+        site_elevation_meters: 421,
     },
     // Idaho
     SiteEntry {
@@ -495,7 +496,7 @@ static SITES: &[SiteEntry] = &[
         state: "ID",
         latitude: 43.4908,
         longitude: -116.2358,
-        elevation_meters: 933,
+        site_elevation_meters: 933,
     },
     SiteEntry {
         id: "KSFX",
@@ -503,7 +504,7 @@ static SITES: &[SiteEntry] = &[
         state: "ID",
         latitude: 43.1058,
         longitude: -112.6861,
-        elevation_meters: 1364,
+        site_elevation_meters: 1364,
     },
     // Illinois
     SiteEntry {
@@ -512,7 +513,7 @@ static SITES: &[SiteEntry] = &[
         state: "IL",
         latitude: 40.1506,
         longitude: -89.3369,
-        elevation_meters: 177,
+        site_elevation_meters: 177,
     },
     SiteEntry {
         id: "KLOT",
@@ -520,7 +521,7 @@ static SITES: &[SiteEntry] = &[
         state: "IL",
         latitude: 41.6044,
         longitude: -88.0847,
-        elevation_meters: 202,
+        site_elevation_meters: 202,
     },
     // Indiana
     SiteEntry {
@@ -529,7 +530,7 @@ static SITES: &[SiteEntry] = &[
         state: "IN",
         latitude: 39.7075,
         longitude: -86.2803,
-        elevation_meters: 241,
+        site_elevation_meters: 241,
     },
     SiteEntry {
         id: "KIWX",
@@ -537,7 +538,7 @@ static SITES: &[SiteEntry] = &[
         state: "IN",
         latitude: 41.3586,
         longitude: -85.7000,
-        elevation_meters: 293,
+        site_elevation_meters: 293,
     },
     SiteEntry {
         id: "KVWX",
@@ -545,7 +546,7 @@ static SITES: &[SiteEntry] = &[
         state: "IN",
         latitude: 38.2603,
         longitude: -87.7247,
-        elevation_meters: 155,
+        site_elevation_meters: 155,
     },
     // Iowa
     SiteEntry {
@@ -554,7 +555,7 @@ static SITES: &[SiteEntry] = &[
         state: "IA",
         latitude: 41.7311,
         longitude: -93.7228,
-        elevation_meters: 299,
+        site_elevation_meters: 299,
     },
     SiteEntry {
         id: "KDVN",
@@ -562,7 +563,7 @@ static SITES: &[SiteEntry] = &[
         state: "IA",
         latitude: 41.6117,
         longitude: -90.5808,
-        elevation_meters: 230,
+        site_elevation_meters: 230,
     },
     // Kansas
     SiteEntry {
@@ -571,7 +572,7 @@ static SITES: &[SiteEntry] = &[
         state: "KS",
         latitude: 37.7608,
         longitude: -99.9689,
-        elevation_meters: 790,
+        site_elevation_meters: 790,
     },
     SiteEntry {
         id: "KGLD",
@@ -579,7 +580,7 @@ static SITES: &[SiteEntry] = &[
         state: "KS",
         latitude: 39.3669,
         longitude: -101.7003,
-        elevation_meters: 1113,
+        site_elevation_meters: 1113,
     },
     SiteEntry {
         id: "KICT",
@@ -587,7 +588,7 @@ static SITES: &[SiteEntry] = &[
         state: "KS",
         latitude: 37.6544,
         longitude: -97.4428,
-        elevation_meters: 407,
+        site_elevation_meters: 407,
     },
     SiteEntry {
         id: "KTWX",
@@ -595,7 +596,7 @@ static SITES: &[SiteEntry] = &[
         state: "KS",
         latitude: 38.9969,
         longitude: -96.2325,
-        elevation_meters: 417,
+        site_elevation_meters: 417,
     },
     // Kentucky
     SiteEntry {
@@ -604,7 +605,7 @@ static SITES: &[SiteEntry] = &[
         state: "KY",
         latitude: 36.7369,
         longitude: -87.2850,
-        elevation_meters: 177,
+        site_elevation_meters: 177,
     },
     SiteEntry {
         id: "KJKL",
@@ -612,7 +613,7 @@ static SITES: &[SiteEntry] = &[
         state: "KY",
         latitude: 37.5908,
         longitude: -83.3131,
-        elevation_meters: 415,
+        site_elevation_meters: 415,
     },
     SiteEntry {
         id: "KLVX",
@@ -620,7 +621,7 @@ static SITES: &[SiteEntry] = &[
         state: "KY",
         latitude: 37.9753,
         longitude: -85.9439,
-        elevation_meters: 219,
+        site_elevation_meters: 219,
     },
     SiteEntry {
         id: "KPAH",
@@ -628,7 +629,7 @@ static SITES: &[SiteEntry] = &[
         state: "KY",
         latitude: 37.0683,
         longitude: -88.7722,
-        elevation_meters: 119,
+        site_elevation_meters: 119,
     },
     // Louisiana
     SiteEntry {
@@ -637,7 +638,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 29.4719,
         longitude: -95.0792,
-        elevation_meters: 5,
+        site_elevation_meters: 5,
     },
     SiteEntry {
         id: "KLCH",
@@ -645,7 +646,7 @@ static SITES: &[SiteEntry] = &[
         state: "LA",
         latitude: 30.1253,
         longitude: -93.2158,
-        elevation_meters: 4,
+        site_elevation_meters: 4,
     },
     SiteEntry {
         id: "KHDC",
@@ -653,7 +654,7 @@ static SITES: &[SiteEntry] = &[
         state: "LA",
         latitude: 30.5193,
         longitude: -90.4074,
-        elevation_meters: 13,
+        site_elevation_meters: 13,
     },
     SiteEntry {
         id: "KPOE",
@@ -661,7 +662,7 @@ static SITES: &[SiteEntry] = &[
         state: "LA",
         latitude: 31.1556,
         longitude: -92.9756,
-        elevation_meters: 124,
+        site_elevation_meters: 124,
     },
     SiteEntry {
         id: "KSHV",
@@ -669,7 +670,7 @@ static SITES: &[SiteEntry] = &[
         state: "LA",
         latitude: 32.4508,
         longitude: -93.8411,
-        elevation_meters: 83,
+        site_elevation_meters: 83,
     },
     // Maine
     SiteEntry {
@@ -678,7 +679,7 @@ static SITES: &[SiteEntry] = &[
         state: "ME",
         latitude: 46.0392,
         longitude: -67.8067,
-        elevation_meters: 227,
+        site_elevation_meters: 227,
     },
     SiteEntry {
         id: "KGYX",
@@ -686,7 +687,7 @@ static SITES: &[SiteEntry] = &[
         state: "ME",
         latitude: 43.8914,
         longitude: -70.2567,
-        elevation_meters: 125,
+        site_elevation_meters: 125,
     },
     // Maryland
     SiteEntry {
@@ -695,7 +696,7 @@ static SITES: &[SiteEntry] = &[
         state: "VA",
         latitude: 38.9753,
         longitude: -77.4778,
-        elevation_meters: 83,
+        site_elevation_meters: 83,
     },
     // Massachusetts
     SiteEntry {
@@ -704,7 +705,7 @@ static SITES: &[SiteEntry] = &[
         state: "MA",
         latitude: 41.9558,
         longitude: -71.1369,
-        elevation_meters: 36,
+        site_elevation_meters: 36,
     },
     // Michigan
     SiteEntry {
@@ -713,7 +714,7 @@ static SITES: &[SiteEntry] = &[
         state: "MI",
         latitude: 44.9072,
         longitude: -84.7197,
-        elevation_meters: 446,
+        site_elevation_meters: 446,
     },
     SiteEntry {
         id: "KDTX",
@@ -721,7 +722,7 @@ static SITES: &[SiteEntry] = &[
         state: "MI",
         latitude: 42.6997,
         longitude: -83.4717,
-        elevation_meters: 327,
+        site_elevation_meters: 327,
     },
     SiteEntry {
         id: "KGRR",
@@ -729,7 +730,7 @@ static SITES: &[SiteEntry] = &[
         state: "MI",
         latitude: 42.8939,
         longitude: -85.5447,
-        elevation_meters: 237,
+        site_elevation_meters: 237,
     },
     SiteEntry {
         id: "KMQT",
@@ -737,7 +738,7 @@ static SITES: &[SiteEntry] = &[
         state: "MI",
         latitude: 46.5314,
         longitude: -87.5486,
-        elevation_meters: 430,
+        site_elevation_meters: 430,
     },
     // Minnesota
     SiteEntry {
@@ -746,7 +747,7 @@ static SITES: &[SiteEntry] = &[
         state: "MN",
         latitude: 46.8369,
         longitude: -92.2097,
-        elevation_meters: 435,
+        site_elevation_meters: 435,
     },
     SiteEntry {
         id: "KMPX",
@@ -754,7 +755,7 @@ static SITES: &[SiteEntry] = &[
         state: "MN",
         latitude: 44.8489,
         longitude: -93.5653,
-        elevation_meters: 288,
+        site_elevation_meters: 288,
     },
     // Mississippi
     SiteEntry {
@@ -763,7 +764,7 @@ static SITES: &[SiteEntry] = &[
         state: "MS",
         latitude: 32.2800,
         longitude: -89.9844,
-        elevation_meters: 149,
+        site_elevation_meters: 149,
     },
     SiteEntry {
         id: "KGWX",
@@ -771,7 +772,7 @@ static SITES: &[SiteEntry] = &[
         state: "MS",
         latitude: 33.8967,
         longitude: -88.3289,
-        elevation_meters: 145,
+        site_elevation_meters: 145,
     },
     // Missouri
     SiteEntry {
@@ -780,7 +781,7 @@ static SITES: &[SiteEntry] = &[
         state: "MO",
         latitude: 38.8103,
         longitude: -94.2644,
-        elevation_meters: 303,
+        site_elevation_meters: 303,
     },
     SiteEntry {
         id: "KLSX",
@@ -788,7 +789,7 @@ static SITES: &[SiteEntry] = &[
         state: "MO",
         latitude: 38.6986,
         longitude: -90.6828,
-        elevation_meters: 185,
+        site_elevation_meters: 185,
     },
     SiteEntry {
         id: "KSGF",
@@ -796,7 +797,7 @@ static SITES: &[SiteEntry] = &[
         state: "MO",
         latitude: 37.2353,
         longitude: -93.4006,
-        elevation_meters: 390,
+        site_elevation_meters: 390,
     },
     // Montana
     SiteEntry {
@@ -805,7 +806,7 @@ static SITES: &[SiteEntry] = &[
         state: "MT",
         latitude: 45.8536,
         longitude: -108.6069,
-        elevation_meters: 1097,
+        site_elevation_meters: 1097,
     },
     SiteEntry {
         id: "KGGW",
@@ -813,7 +814,7 @@ static SITES: &[SiteEntry] = &[
         state: "MT",
         latitude: 48.2064,
         longitude: -106.6253,
-        elevation_meters: 694,
+        site_elevation_meters: 694,
     },
     SiteEntry {
         id: "KMSX",
@@ -821,7 +822,7 @@ static SITES: &[SiteEntry] = &[
         state: "MT",
         latitude: 47.0411,
         longitude: -113.9864,
-        elevation_meters: 2394,
+        site_elevation_meters: 2394,
     },
     SiteEntry {
         id: "KTFX",
@@ -829,7 +830,7 @@ static SITES: &[SiteEntry] = &[
         state: "MT",
         latitude: 47.4597,
         longitude: -111.3853,
-        elevation_meters: 1132,
+        site_elevation_meters: 1132,
     },
     // Nebraska
     SiteEntry {
@@ -838,7 +839,7 @@ static SITES: &[SiteEntry] = &[
         state: "NE",
         latitude: 41.9578,
         longitude: -100.5761,
-        elevation_meters: 906,
+        site_elevation_meters: 906,
     },
     SiteEntry {
         id: "KOAX",
@@ -846,7 +847,7 @@ static SITES: &[SiteEntry] = &[
         state: "NE",
         latitude: 41.3203,
         longitude: -96.3667,
-        elevation_meters: 350,
+        site_elevation_meters: 350,
     },
     SiteEntry {
         id: "KUEX",
@@ -854,7 +855,7 @@ static SITES: &[SiteEntry] = &[
         state: "NE",
         latitude: 40.3208,
         longitude: -98.4419,
-        elevation_meters: 602,
+        site_elevation_meters: 602,
     },
     // Nevada
     SiteEntry {
@@ -863,7 +864,7 @@ static SITES: &[SiteEntry] = &[
         state: "NV",
         latitude: 40.7400,
         longitude: -116.8025,
-        elevation_meters: 2056,
+        site_elevation_meters: 2056,
     },
     SiteEntry {
         id: "KESX",
@@ -871,7 +872,7 @@ static SITES: &[SiteEntry] = &[
         state: "NV",
         latitude: 35.7011,
         longitude: -114.8914,
-        elevation_meters: 1483,
+        site_elevation_meters: 1483,
     },
     SiteEntry {
         id: "KRGX",
@@ -879,7 +880,7 @@ static SITES: &[SiteEntry] = &[
         state: "NV",
         latitude: 39.7542,
         longitude: -119.4622,
-        elevation_meters: 2530,
+        site_elevation_meters: 2530,
     },
     // New Mexico
     SiteEntry {
@@ -888,7 +889,7 @@ static SITES: &[SiteEntry] = &[
         state: "NM",
         latitude: 35.1497,
         longitude: -106.8239,
-        elevation_meters: 1789,
+        site_elevation_meters: 1789,
     },
     SiteEntry {
         id: "KFDX",
@@ -896,7 +897,7 @@ static SITES: &[SiteEntry] = &[
         state: "NM",
         latitude: 34.6350,
         longitude: -103.6189,
-        elevation_meters: 1417,
+        site_elevation_meters: 1417,
     },
     SiteEntry {
         id: "KHDX",
@@ -904,7 +905,7 @@ static SITES: &[SiteEntry] = &[
         state: "NM",
         latitude: 33.0769,
         longitude: -106.12,
-        elevation_meters: 1287,
+        site_elevation_meters: 1287,
     },
     // New York
     SiteEntry {
@@ -913,7 +914,7 @@ static SITES: &[SiteEntry] = &[
         state: "NY",
         latitude: 42.1997,
         longitude: -75.9847,
-        elevation_meters: 490,
+        site_elevation_meters: 490,
     },
     SiteEntry {
         id: "KBUF",
@@ -921,7 +922,7 @@ static SITES: &[SiteEntry] = &[
         state: "NY",
         latitude: 42.9486,
         longitude: -78.7369,
-        elevation_meters: 211,
+        site_elevation_meters: 211,
     },
     SiteEntry {
         id: "KENX",
@@ -929,7 +930,7 @@ static SITES: &[SiteEntry] = &[
         state: "NY",
         latitude: 42.5864,
         longitude: -74.0639,
-        elevation_meters: 557,
+        site_elevation_meters: 557,
     },
     SiteEntry {
         id: "KTYX",
@@ -937,7 +938,7 @@ static SITES: &[SiteEntry] = &[
         state: "NY",
         latitude: 43.7558,
         longitude: -75.6800,
-        elevation_meters: 562,
+        site_elevation_meters: 562,
     },
     // North Carolina
     SiteEntry {
@@ -946,7 +947,7 @@ static SITES: &[SiteEntry] = &[
         state: "NC",
         latitude: 34.7761,
         longitude: -76.8764,
-        elevation_meters: 9,
+        site_elevation_meters: 9,
     },
     SiteEntry {
         id: "KRAX",
@@ -954,7 +955,7 @@ static SITES: &[SiteEntry] = &[
         state: "NC",
         latitude: 35.6656,
         longitude: -78.4903,
-        elevation_meters: 106,
+        site_elevation_meters: 106,
     },
     SiteEntry {
         id: "KLTX",
@@ -962,7 +963,7 @@ static SITES: &[SiteEntry] = &[
         state: "NC",
         latitude: 33.9892,
         longitude: -78.4292,
-        elevation_meters: 19,
+        site_elevation_meters: 19,
     },
     // North Dakota
     SiteEntry {
@@ -971,7 +972,7 @@ static SITES: &[SiteEntry] = &[
         state: "ND",
         latitude: 46.7708,
         longitude: -100.7603,
-        elevation_meters: 505,
+        site_elevation_meters: 505,
     },
     SiteEntry {
         id: "KMVX",
@@ -979,7 +980,7 @@ static SITES: &[SiteEntry] = &[
         state: "ND",
         latitude: 47.5281,
         longitude: -97.3256,
-        elevation_meters: 301,
+        site_elevation_meters: 301,
     },
     SiteEntry {
         id: "KMBX",
@@ -987,7 +988,7 @@ static SITES: &[SiteEntry] = &[
         state: "ND",
         latitude: 48.3925,
         longitude: -100.8644,
-        elevation_meters: 455,
+        site_elevation_meters: 455,
     },
     // Ohio
     SiteEntry {
@@ -996,7 +997,7 @@ static SITES: &[SiteEntry] = &[
         state: "OH",
         latitude: 41.4131,
         longitude: -81.8597,
-        elevation_meters: 233,
+        site_elevation_meters: 233,
     },
     SiteEntry {
         id: "KILN",
@@ -1004,7 +1005,7 @@ static SITES: &[SiteEntry] = &[
         state: "OH",
         latitude: 39.4203,
         longitude: -83.8217,
-        elevation_meters: 322,
+        site_elevation_meters: 322,
     },
     // Oklahoma
     SiteEntry {
@@ -1013,7 +1014,7 @@ static SITES: &[SiteEntry] = &[
         state: "OK",
         latitude: 34.3622,
         longitude: -98.9764,
-        elevation_meters: 386,
+        site_elevation_meters: 386,
     },
     SiteEntry {
         id: "KINX",
@@ -1021,7 +1022,7 @@ static SITES: &[SiteEntry] = &[
         state: "OK",
         latitude: 36.1750,
         longitude: -95.5647,
-        elevation_meters: 204,
+        site_elevation_meters: 204,
     },
     SiteEntry {
         id: "KTLX",
@@ -1029,7 +1030,7 @@ static SITES: &[SiteEntry] = &[
         state: "OK",
         latitude: 35.3331,
         longitude: -97.2778,
-        elevation_meters: 370,
+        site_elevation_meters: 370,
     },
     SiteEntry {
         id: "KVNX",
@@ -1037,7 +1038,7 @@ static SITES: &[SiteEntry] = &[
         state: "OK",
         latitude: 36.7406,
         longitude: -98.1278,
-        elevation_meters: 369,
+        site_elevation_meters: 369,
     },
     // Oregon
     SiteEntry {
@@ -1046,7 +1047,7 @@ static SITES: &[SiteEntry] = &[
         state: "OR",
         latitude: 42.0811,
         longitude: -122.7167,
-        elevation_meters: 2290,
+        site_elevation_meters: 2290,
     },
     SiteEntry {
         id: "KPDT",
@@ -1054,7 +1055,7 @@ static SITES: &[SiteEntry] = &[
         state: "OR",
         latitude: 45.6906,
         longitude: -118.8528,
-        elevation_meters: 462,
+        site_elevation_meters: 462,
     },
     SiteEntry {
         id: "KRTX",
@@ -1062,7 +1063,7 @@ static SITES: &[SiteEntry] = &[
         state: "OR",
         latitude: 45.7150,
         longitude: -122.9653,
-        elevation_meters: 479,
+        site_elevation_meters: 479,
     },
     // Pennsylvania
     SiteEntry {
@@ -1071,7 +1072,7 @@ static SITES: &[SiteEntry] = &[
         state: "PA",
         latitude: 40.9231,
         longitude: -78.0039,
-        elevation_meters: 733,
+        site_elevation_meters: 733,
     },
     SiteEntry {
         id: "KDIX",
@@ -1079,7 +1080,7 @@ static SITES: &[SiteEntry] = &[
         state: "PA",
         latitude: 39.9469,
         longitude: -74.4108,
-        elevation_meters: 45,
+        site_elevation_meters: 45,
     },
     SiteEntry {
         id: "KPBZ",
@@ -1087,7 +1088,7 @@ static SITES: &[SiteEntry] = &[
         state: "PA",
         latitude: 40.5317,
         longitude: -80.2179,
-        elevation_meters: 361,
+        site_elevation_meters: 361,
     },
     // Puerto Rico
     SiteEntry {
@@ -1096,7 +1097,7 @@ static SITES: &[SiteEntry] = &[
         state: "PR",
         latitude: 18.1156,
         longitude: -66.0781,
-        elevation_meters: 867,
+        site_elevation_meters: 867,
     },
     // South Carolina
     SiteEntry {
@@ -1105,7 +1106,7 @@ static SITES: &[SiteEntry] = &[
         state: "SC",
         latitude: 33.9486,
         longitude: -81.1186,
-        elevation_meters: 70,
+        site_elevation_meters: 70,
     },
     SiteEntry {
         id: "KCLX",
@@ -1113,7 +1114,7 @@ static SITES: &[SiteEntry] = &[
         state: "SC",
         latitude: 32.6556,
         longitude: -81.0425,
-        elevation_meters: 30,
+        site_elevation_meters: 30,
     },
     SiteEntry {
         id: "KGSP",
@@ -1121,7 +1122,7 @@ static SITES: &[SiteEntry] = &[
         state: "SC",
         latitude: 34.8833,
         longitude: -82.2200,
-        elevation_meters: 296,
+        site_elevation_meters: 296,
     },
     // South Dakota
     SiteEntry {
@@ -1130,7 +1131,7 @@ static SITES: &[SiteEntry] = &[
         state: "SD",
         latitude: 45.4558,
         longitude: -98.4131,
-        elevation_meters: 397,
+        site_elevation_meters: 397,
     },
     SiteEntry {
         id: "KUDX",
@@ -1138,7 +1139,7 @@ static SITES: &[SiteEntry] = &[
         state: "SD",
         latitude: 44.1250,
         longitude: -102.8297,
-        elevation_meters: 919,
+        site_elevation_meters: 919,
     },
     SiteEntry {
         id: "KFSD",
@@ -1146,7 +1147,7 @@ static SITES: &[SiteEntry] = &[
         state: "SD",
         latitude: 43.5878,
         longitude: -96.7289,
-        elevation_meters: 436,
+        site_elevation_meters: 436,
     },
     // Tennessee
     SiteEntry {
@@ -1155,7 +1156,7 @@ static SITES: &[SiteEntry] = &[
         state: "TN",
         latitude: 36.1686,
         longitude: -83.4017,
-        elevation_meters: 408,
+        site_elevation_meters: 408,
     },
     SiteEntry {
         id: "KNQA",
@@ -1163,7 +1164,7 @@ static SITES: &[SiteEntry] = &[
         state: "TN",
         latitude: 35.3447,
         longitude: -89.8733,
-        elevation_meters: 86,
+        site_elevation_meters: 86,
     },
     SiteEntry {
         id: "KOHX",
@@ -1171,7 +1172,7 @@ static SITES: &[SiteEntry] = &[
         state: "TN",
         latitude: 36.2472,
         longitude: -86.5625,
-        elevation_meters: 176,
+        site_elevation_meters: 176,
     },
     // Texas
     SiteEntry {
@@ -1180,7 +1181,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 35.2333,
         longitude: -101.7092,
-        elevation_meters: 1093,
+        site_elevation_meters: 1093,
     },
     SiteEntry {
         id: "KBRO",
@@ -1188,7 +1189,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 25.9158,
         longitude: -97.4189,
-        elevation_meters: 7,
+        site_elevation_meters: 7,
     },
     SiteEntry {
         id: "KCRP",
@@ -1196,7 +1197,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 27.7842,
         longitude: -97.5111,
-        elevation_meters: 14,
+        site_elevation_meters: 14,
     },
     SiteEntry {
         id: "KDFX",
@@ -1204,7 +1205,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 29.2722,
         longitude: -100.2803,
-        elevation_meters: 345,
+        site_elevation_meters: 345,
     },
     SiteEntry {
         id: "KDYX",
@@ -1212,7 +1213,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 32.5386,
         longitude: -99.2544,
-        elevation_meters: 463,
+        site_elevation_meters: 463,
     },
     SiteEntry {
         id: "KEPZ",
@@ -1220,7 +1221,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 31.8731,
         longitude: -106.6978,
-        elevation_meters: 1251,
+        site_elevation_meters: 1251,
     },
     SiteEntry {
         id: "KEWX",
@@ -1228,7 +1229,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 29.7039,
         longitude: -98.0286,
-        elevation_meters: 193,
+        site_elevation_meters: 193,
     },
     SiteEntry {
         id: "KFWS",
@@ -1236,7 +1237,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 32.5731,
         longitude: -97.3031,
-        elevation_meters: 208,
+        site_elevation_meters: 208,
     },
     SiteEntry {
         id: "KGRK",
@@ -1244,7 +1245,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 30.7217,
         longitude: -97.3828,
-        elevation_meters: 164,
+        site_elevation_meters: 164,
     },
     SiteEntry {
         id: "KLBB",
@@ -1252,7 +1253,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 33.6542,
         longitude: -101.8142,
-        elevation_meters: 993,
+        site_elevation_meters: 993,
     },
     SiteEntry {
         id: "KMAF",
@@ -1260,7 +1261,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 31.9433,
         longitude: -102.1892,
-        elevation_meters: 874,
+        site_elevation_meters: 874,
     },
     SiteEntry {
         id: "KSJT",
@@ -1268,7 +1269,7 @@ static SITES: &[SiteEntry] = &[
         state: "TX",
         latitude: 31.3714,
         longitude: -100.4925,
-        elevation_meters: 576,
+        site_elevation_meters: 576,
     },
     // Utah
     SiteEntry {
@@ -1277,7 +1278,7 @@ static SITES: &[SiteEntry] = &[
         state: "UT",
         latitude: 37.5911,
         longitude: -112.8622,
-        elevation_meters: 3231,
+        site_elevation_meters: 3231,
     },
     SiteEntry {
         id: "KMTX",
@@ -1285,7 +1286,7 @@ static SITES: &[SiteEntry] = &[
         state: "UT",
         latitude: 41.2628,
         longitude: -112.4478,
-        elevation_meters: 1969,
+        site_elevation_meters: 1969,
     },
     // Vermont
     SiteEntry {
@@ -1294,7 +1295,7 @@ static SITES: &[SiteEntry] = &[
         state: "VT",
         latitude: 44.5111,
         longitude: -73.1667,
-        elevation_meters: 97,
+        site_elevation_meters: 97,
     },
     // Virginia
     SiteEntry {
@@ -1303,7 +1304,7 @@ static SITES: &[SiteEntry] = &[
         state: "VA",
         latitude: 36.9839,
         longitude: -77.0072,
-        elevation_meters: 34,
+        site_elevation_meters: 34,
     },
     SiteEntry {
         id: "KFCX",
@@ -1311,7 +1312,7 @@ static SITES: &[SiteEntry] = &[
         state: "VA",
         latitude: 37.0242,
         longitude: -80.2744,
-        elevation_meters: 874,
+        site_elevation_meters: 874,
     },
     // Washington
     SiteEntry {
@@ -1320,7 +1321,7 @@ static SITES: &[SiteEntry] = &[
         state: "WA",
         latitude: 48.1944,
         longitude: -122.4958,
-        elevation_meters: 151,
+        site_elevation_meters: 151,
     },
     SiteEntry {
         id: "KLGX",
@@ -1328,7 +1329,7 @@ static SITES: &[SiteEntry] = &[
         state: "WA",
         latitude: 47.1169,
         longitude: -124.1067,
-        elevation_meters: 112,
+        site_elevation_meters: 112,
     },
     SiteEntry {
         id: "KOTX",
@@ -1336,7 +1337,7 @@ static SITES: &[SiteEntry] = &[
         state: "WA",
         latitude: 47.6806,
         longitude: -117.6267,
-        elevation_meters: 728,
+        site_elevation_meters: 728,
     },
     // West Virginia
     SiteEntry {
@@ -1345,7 +1346,7 @@ static SITES: &[SiteEntry] = &[
         state: "WV",
         latitude: 38.3111,
         longitude: -81.7231,
-        elevation_meters: 329,
+        site_elevation_meters: 329,
     },
     // Wisconsin
     SiteEntry {
@@ -1354,7 +1355,7 @@ static SITES: &[SiteEntry] = &[
         state: "WI",
         latitude: 43.8228,
         longitude: -91.1911,
-        elevation_meters: 389,
+        site_elevation_meters: 389,
     },
     SiteEntry {
         id: "KGRB",
@@ -1362,7 +1363,7 @@ static SITES: &[SiteEntry] = &[
         state: "WI",
         latitude: 44.4986,
         longitude: -88.1111,
-        elevation_meters: 208,
+        site_elevation_meters: 208,
     },
     SiteEntry {
         id: "KMKX",
@@ -1370,7 +1371,7 @@ static SITES: &[SiteEntry] = &[
         state: "WI",
         latitude: 42.9678,
         longitude: -88.5506,
-        elevation_meters: 292,
+        site_elevation_meters: 292,
     },
     // Wyoming
     SiteEntry {
@@ -1379,7 +1380,7 @@ static SITES: &[SiteEntry] = &[
         state: "WY",
         latitude: 41.1519,
         longitude: -104.8061,
-        elevation_meters: 1868,
+        site_elevation_meters: 1868,
     },
     SiteEntry {
         id: "KRIW",
@@ -1387,7 +1388,7 @@ static SITES: &[SiteEntry] = &[
         state: "WY",
         latitude: 43.0661,
         longitude: -108.4772,
-        elevation_meters: 1697,
+        site_elevation_meters: 1697,
     },
     // Guam
     SiteEntry {
@@ -1396,7 +1397,7 @@ static SITES: &[SiteEntry] = &[
         state: "GU",
         latitude: 13.4544,
         longitude: 144.8111,
-        elevation_meters: 78,
+        site_elevation_meters: 78,
     },
 ];
 

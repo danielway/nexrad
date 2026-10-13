@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ElevationCut {
-    elevation_angle_degrees: f64,
+    elevation_angle_degrees: f32,
     channel_configuration: ChannelConfiguration,
     waveform_type: WaveformType,
     azimuth_rate_degrees_per_second: f64,
@@ -47,7 +47,7 @@ impl ElevationCut {
     ///
     /// All other properties take the defaults documented on [`ElevationCutBuilder`].
     pub fn builder(
-        elevation_angle_degrees: f64,
+        elevation_angle_degrees: f32,
         waveform_type: WaveformType,
         channel_configuration: ChannelConfiguration,
     ) -> ElevationCutBuilder {
@@ -80,7 +80,7 @@ impl ElevationCut {
     }
 
     /// The elevation angle for this cut in degrees.
-    pub fn elevation_angle_degrees(&self) -> f64 {
+    pub fn elevation_angle_degrees(&self) -> f32 {
         self.elevation_angle_degrees
     }
 

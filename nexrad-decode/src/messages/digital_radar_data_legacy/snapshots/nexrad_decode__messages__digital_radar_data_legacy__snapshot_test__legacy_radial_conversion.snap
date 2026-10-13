@@ -3,7 +3,7 @@ source: nexrad-decode/src/messages/digital_radar_data_legacy/snapshot_test.rs
 expression: radial
 ---
 Radial {
-    collection_timestamp: 1104538053477,
+    collection_timestamp_millis: 1104538053477,
     azimuth_number: 1,
     azimuth_angle_degrees: 21.92871,
     azimuth_spacing_degrees: 1.0,

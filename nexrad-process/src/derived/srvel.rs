@@ -71,7 +71,7 @@ impl SweepProcessor for StormRelativeVelocity {
         let storm_v = self.storm_speed_mps * storm_to_rad.cos();
 
         for az_idx in 0..input.azimuth_count() {
-            let azimuth_rad = input.azimuths()[az_idx].to_radians();
+            let azimuth_rad = input.azimuth_angles_degrees()[az_idx].to_radians();
 
             // Unit vector along the radial direction (from radar toward target)
             let radial_u = azimuth_rad.sin();
@@ -105,8 +105,8 @@ mod tests {
         let gate_count = 5;
 
         let mut field = SweepField::builder("Velocity", "m/s")
-            .elevation_degrees(0.5)
-            .azimuths(azimuths)
+            .elevation_angle_degrees(0.5)
+            .azimuth_angles_degrees(azimuths)
             .first_gate_range_km(2.0)
             .gate_interval_km(0.25)
             .gate_count(gate_count)

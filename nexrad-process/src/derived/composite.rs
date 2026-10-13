@@ -81,11 +81,11 @@ impl ScanDerivedProduct for CompositeReflectivity {
                 let mut found_valid = false;
 
                 for field in fields {
-                    let polar =
-                        coord_system.geo_to_polar(geo_point, field.elevation_degrees() as f64);
+                    let polar = coord_system
+                        .geo_to_polar(geo_point, field.elevation_angle_degrees() as f64);
 
                     if let Some((val, status)) =
-                        field.value_at_polar(polar.azimuth_degrees, polar.range_km)
+                        field.value_at_polar(polar.azimuth_angle_degrees, polar.range_km)
                     {
                         if status == GateStatus::Valid && val > max_value {
                             max_value = val;
@@ -113,8 +113,8 @@ mod tests {
 
     fn test_site() -> Site {
         Site::builder(*b"KTLX", 35.3331, -97.2778)
-            .height_meters(370)
-            .tower_height_meters(10)
+            .site_elevation_meters(370)
+            .feedhorn_height_meters(10)
             .build()
     }
 
@@ -126,8 +126,8 @@ mod tests {
 
         let gate_count = 100;
         let mut field = SweepField::builder("Reflectivity", "dBZ")
-            .elevation_degrees(elevation)
-            .azimuths(azimuths)
+            .elevation_angle_degrees(elevation)
+            .azimuth_angles_degrees(azimuths)
             .first_gate_range_km(2.0)
             .gate_interval_km(0.25)
             .gate_count(gate_count)

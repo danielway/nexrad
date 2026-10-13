@@ -2,7 +2,7 @@
 source: nexrad-model/tests/scan_snapshot.rs
 expression: radials
 ---
-- collection_timestamp: 1646522604299
+- collection_timestamp_millis: 1646522604299
   azimuth_number: 1
   azimuth_angle_degrees: 155.22308
   azimuth_spacing_degrees: 0.5
@@ -56,7 +56,7 @@ expression: radials
     scale: 1
     offset: 8
     values: "bytes::<1832>::sha256:67b8a73e70525928da2a1971383b53e692a38033f85acba9a14d7d7cb57005f9"
-- collection_timestamp: 1646522621735
+- collection_timestamp_millis: 1646522621735
   azimuth_number: 1
   azimuth_angle_degrees: 177.23694
   azimuth_spacing_degrees: 0.5
@@ -94,7 +94,7 @@ expression: radials
   differential_phase: ~
   correlation_coefficient: ~
   clutter_filter_power: ~
-- collection_timestamp: 1646522644659
+- collection_timestamp_millis: 1646522644659
   azimuth_number: 1
   azimuth_angle_degrees: 192.23602
   azimuth_spacing_degrees: 0.5

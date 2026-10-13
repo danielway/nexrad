@@ -266,7 +266,7 @@ fn test_record_radials() {
     for radial in &radials {
         assert!(radial.azimuth_angle_degrees() >= 0.0 && radial.azimuth_angle_degrees() < 360.0);
         assert!(radial.elevation_angle_degrees() >= 0.0);
-        assert!(radial.collection_timestamp() > 946684800000); // After year 2000
+        assert!(radial.collection_timestamp_millis() > 946684800000); // After year 2000
     }
 }
 

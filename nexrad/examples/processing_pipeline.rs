@@ -43,7 +43,7 @@ fn main() -> nexrad::Result<()> {
     println!(
         "Extracted reflectivity from sweep {} ({:.1}° elevation, {} azimuths × {} gates)",
         sweep_idx,
-        field.elevation_degrees(),
+        field.elevation_angle_degrees(),
         field.azimuth_count(),
         field.gate_count(),
     );
@@ -110,7 +110,7 @@ fn main() -> nexrad::Result<()> {
         );
         println!(
             "  Polar: {:.1}° azimuth, {:.1} km range",
-            query.polar.azimuth_degrees, query.polar.range_km
+            query.polar.azimuth_angle_degrees, query.polar.range_km
         );
         println!("  Value: {:.1} {}", query.value, field.unit());
         println!("  Status: {:?}", query.status);

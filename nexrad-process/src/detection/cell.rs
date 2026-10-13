@@ -63,9 +63,9 @@ pub struct StormCell {
     /// Geographic bounding box of the cell.
     bounds: StormCellBounds,
     /// Elevation angle of the sweep this cell was detected on (degrees).
-    elevation_degrees: f32,
+    elevation_angle_degrees: f32,
     /// Azimuth of the gate with maximum reflectivity (degrees).
-    max_reflectivity_azimuth_degrees: f32,
+    max_reflectivity_azimuth_angle_degrees: f32,
     /// Range of the gate with maximum reflectivity (km).
     max_reflectivity_range_km: f64,
 }
@@ -110,13 +110,13 @@ impl StormCell {
     }
 
     /// Elevation angle of the source sweep in degrees.
-    pub fn elevation_degrees(&self) -> f32 {
-        self.elevation_degrees
+    pub fn elevation_angle_degrees(&self) -> f32 {
+        self.elevation_angle_degrees
     }
 
     /// Azimuth of the maximum reflectivity gate (degrees).
-    pub fn max_reflectivity_azimuth_degrees(&self) -> f32 {
-        self.max_reflectivity_azimuth_degrees
+    pub fn max_reflectivity_azimuth_angle_degrees(&self) -> f32 {
+        self.max_reflectivity_azimuth_angle_degrees
     }
 
     /// Range of the maximum reflectivity gate (km).
@@ -352,7 +352,7 @@ impl StormCellDetector {
         for &(az_idx, gate_idx) in component {
             let (val, _) = field.get(az_idx, gate_idx);
 
-            let azimuth_deg = field.azimuths()[az_idx];
+            let azimuth_deg = field.azimuth_angles_degrees()[az_idx];
             let range_km = field.first_gate_range_km() + gate_idx as f64 * field.gate_interval_km();
 
             // Reflectivity statistics
@@ -365,9 +365,9 @@ impl StormCellDetector {
 
             // Geographic position of this gate
             let geo = coord_system.polar_to_geo(PolarPoint {
-                azimuth_degrees: azimuth_deg as f64,
+                azimuth_angle_degrees: azimuth_deg as f64,
                 range_km,
-                elevation_degrees: field.elevation_degrees() as f64,
+                elevation_angle_degrees: field.elevation_angle_degrees() as f64,
             });
 
             // Reflectivity-weighted centroid
@@ -413,8 +413,8 @@ impl StormCellDetector {
                 min_longitude: min_lon,
                 max_longitude: max_lon,
             },
-            elevation_degrees: field.elevation_degrees(),
-            max_reflectivity_azimuth_degrees: max_dbz_az,
+            elevation_angle_degrees: field.elevation_angle_degrees(),
+            max_reflectivity_azimuth_angle_degrees: max_dbz_az,
             max_reflectivity_range_km: max_dbz_range,
         }
     }
@@ -427,8 +427,8 @@ mod tests {
 
     fn test_site() -> Site {
         Site::builder(*b"KTLX", 35.3331, -97.2778)
-            .height_meters(370)
-            .tower_height_meters(10)
+            .site_elevation_meters(370)
+            .feedhorn_height_meters(10)
             .build()
     }
 
@@ -440,8 +440,8 @@ mod tests {
     fn make_empty_field(gate_count: usize) -> SweepField {
         let azimuths: Vec<f32> = (0..360).map(|i| i as f32).collect();
         SweepField::builder("Reflectivity", "dBZ")
-            .elevation_degrees(0.5)
-            .azimuths(azimuths)
+            .elevation_angle_degrees(0.5)
+            .azimuth_angles_degrees(azimuths)
             .first_gate_range_km(2.0)
             .gate_interval_km(0.25)
             .gate_count(gate_count)
@@ -696,7 +696,10 @@ mod tests {
         // The weighted centroid should be shifted toward the high-end (gate 43-45)
         // meaning further from the radar than the geometric midpoint
         let centroid_range_km = {
-            let polar = cs.geo_to_polar(cells[0].centroid(), cells[0].elevation_degrees() as f64);
+            let polar = cs.geo_to_polar(
+                cells[0].centroid(),
+                cells[0].elevation_angle_degrees() as f64,
+            );
             polar.range_km
         };
 

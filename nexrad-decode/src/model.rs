@@ -137,7 +137,7 @@ mod tests {
         assert_eq!(model.version(), vcp.header().version());
         assert_eq!(model.pulse_width(), nexrad_model::data::PulseWidth::Short);
         assert!(model.mrle_enabled());
-        assert_eq!(model.mrle_cuts(), 3);
+        assert_eq!(model.mrle_cut_count(), 3);
         assert_eq!(model.number_of_elevation_cuts(), vcp.elevations().len());
 
         let first = &model.elevation_cuts()[0];
@@ -167,8 +167,8 @@ mod tests {
         assert_eq!(site.identifier(), b"KDMX");
         assert_eq!(site.latitude(), 41.7312_f32 as f64);
         assert_eq!(site.longitude(), -93.72287_f32 as f64);
-        assert_eq!(site.height_meters(), 299);
-        assert_eq!(site.tower_height_meters(), 34);
+        assert_eq!(site.site_elevation_meters(), 299);
+        assert_eq!(site.feedhorn_height_meters(), 34);
     }
 
     #[test]

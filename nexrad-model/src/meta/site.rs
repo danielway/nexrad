@@ -13,8 +13,8 @@ pub struct Site {
     identifier: [u8; 4],
     latitude: f64,
     longitude: f64,
-    height_meters: i16,
-    tower_height_meters: u16,
+    site_elevation_meters: i16,
+    feedhorn_height_meters: u16,
 }
 
 impl Site {
@@ -27,8 +27,8 @@ impl Site {
                 identifier,
                 latitude,
                 longitude,
-                height_meters: 0,
-                tower_height_meters: 0,
+                site_elevation_meters: 0,
+                feedhorn_height_meters: 0,
             },
         }
     }
@@ -53,26 +53,26 @@ impl Site {
         self.longitude
     }
 
-    /// The height of the radar site above sea level in meters.
-    pub fn height_meters(&self) -> i16 {
-        self.height_meters
+    /// The elevation of the radar site above mean sea level in meters.
+    pub fn site_elevation_meters(&self) -> i16 {
+        self.site_elevation_meters
     }
 
-    /// The height of the radar site above sea level.
+    /// The elevation of the radar site above mean sea level.
     #[cfg(feature = "uom")]
-    pub fn height(&self) -> Length {
-        Length::new::<meter>(self.height_meters as f64)
+    pub fn site_elevation(&self) -> Length {
+        Length::new::<meter>(self.site_elevation_meters as f64)
     }
 
-    /// The height of the radar tower above ground in meters.
-    pub fn tower_height_meters(&self) -> u16 {
-        self.tower_height_meters
+    /// The height of the radar feedhorn above ground level in meters.
+    pub fn feedhorn_height_meters(&self) -> u16 {
+        self.feedhorn_height_meters
     }
 
-    /// The height of the radar tower above ground.
+    /// The height of the radar feedhorn above ground level.
     #[cfg(feature = "uom")]
-    pub fn tower_height(&self) -> Length {
-        Length::new::<meter>(self.tower_height_meters as f64)
+    pub fn feedhorn_height(&self) -> Length {
+        Length::new::<meter>(self.feedhorn_height_meters as f64)
     }
 }
 
@@ -81,8 +81,8 @@ impl Site {
 /// The identifier, latitude, and longitude are required. All other properties are optional and
 /// default to:
 ///
-/// - `height_meters`: `0`
-/// - `tower_height_meters`: `0`
+/// - `site_elevation_meters`: `0`
+/// - `feedhorn_height_meters`: `0`
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct SiteBuilder {
@@ -90,15 +90,15 @@ pub struct SiteBuilder {
 }
 
 impl SiteBuilder {
-    /// Set the height of the radar site above sea level in meters. Defaults to `0`.
-    pub fn height_meters(mut self, height_meters: i16) -> Self {
-        self.site.height_meters = height_meters;
+    /// Set the elevation of the radar site above mean sea level in meters. Defaults to `0`.
+    pub fn site_elevation_meters(mut self, site_elevation_meters: i16) -> Self {
+        self.site.site_elevation_meters = site_elevation_meters;
         self
     }
 
-    /// Set the height of the radar tower above ground in meters. Defaults to `0`.
-    pub fn tower_height_meters(mut self, tower_height_meters: u16) -> Self {
-        self.site.tower_height_meters = tower_height_meters;
+    /// Set the height of the radar feedhorn above ground level in meters. Defaults to `0`.
+    pub fn feedhorn_height_meters(mut self, feedhorn_height_meters: u16) -> Self {
+        self.site.feedhorn_height_meters = feedhorn_height_meters;
         self
     }
 
@@ -117,7 +117,7 @@ impl Display for Site {
             self.identifier_string(),
             self.latitude,
             self.longitude,
-            self.height_meters
+            self.site_elevation_meters
         )
     }
 }

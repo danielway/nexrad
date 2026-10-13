@@ -76,7 +76,7 @@ struct SweepTiming {
 
 #[derive(Debug, Clone)]
 struct VCPCutInfo {
-    elevation_angle_deg: f64,
+    elevation_angle_deg: f32,
     waveform_type: String,
     azimuth_rate_dps: f64,
     super_res_half_deg: bool,
@@ -93,9 +93,9 @@ struct VolumeTiming {
     vcp_number: String,
     vcp_version: u8,
     sails_enabled: bool,
-    sails_cuts: u8,
+    sails_cut_count: u8,
     mrle_enabled: bool,
-    mrle_cuts: u8,
+    mrle_cut_count: u8,
     mpda_enabled: bool,
     total_sweeps: usize,
     sweep_timings: Vec<SweepTiming>,
@@ -194,9 +194,9 @@ fn analyze_scan(
         vcp_number: format!("{}", scan.coverage_pattern_number()),
         vcp_version: vcp.version(),
         sails_enabled: vcp.sails_enabled(),
-        sails_cuts: vcp.sails_cuts(),
+        sails_cut_count: vcp.sails_cut_count(),
         mrle_enabled: vcp.mrle_enabled(),
-        mrle_cuts: vcp.mrle_cuts(),
+        mrle_cut_count: vcp.mrle_cut_count(),
         mpda_enabled: vcp.mpda_enabled(),
         total_sweeps: sweep_timings.len(),
         sweep_timings,
@@ -217,9 +217,9 @@ fn print_json_output(results: &[VolumeTiming]) {
         println!("    \"vcp_number\": \"{}\",", vol.vcp_number);
         println!("    \"vcp_version\": {},", vol.vcp_version);
         println!("    \"sails_enabled\": {},", vol.sails_enabled);
-        println!("    \"sails_cuts\": {},", vol.sails_cuts);
+        println!("    \"sails_cut_count\": {},", vol.sails_cut_count);
         println!("    \"mrle_enabled\": {},", vol.mrle_enabled);
-        println!("    \"mrle_cuts\": {},", vol.mrle_cuts);
+        println!("    \"mrle_cut_count\": {},", vol.mrle_cut_count);
         println!("    \"mpda_enabled\": {},", vol.mpda_enabled);
         println!("    \"total_sweeps\": {},", vol.total_sweeps);
         println!("    \"volume_start\": \"{}\",", vol.volume_start);

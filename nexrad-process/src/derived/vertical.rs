@@ -43,11 +43,11 @@ const EFFECTIVE_EARTH_RADIUS_KM: f64 = 6371.0 * 4.0 / 3.0;
 #[derive(Debug, Clone, PartialEq)]
 pub struct VerticalCrossSection {
     /// Target azimuth in degrees (0-360).
-    azimuth_degrees: f64,
+    azimuth_angle_degrees: f64,
     /// Maximum range in km for the horizontal axis.
     max_range_km: f64,
     /// Maximum altitude in meters for the vertical axis.
-    max_altitude_m: f64,
+    max_altitude_meters: f64,
     /// Output grid width (range bins).
     width: usize,
     /// Output grid height (altitude bins).
@@ -59,9 +59,9 @@ impl VerticalCrossSection {
     ///
     /// # Parameters
     ///
-    /// - `azimuth_degrees` — target azimuth (0-360 degrees)
+    /// - `azimuth_angle_degrees` — target azimuth (0-360 degrees)
     /// - `max_range_km` — horizontal extent in km
-    /// - `max_altitude_m` — vertical extent in meters
+    /// - `max_altitude_meters` — vertical extent in meters
     /// - `width` — number of horizontal bins (columns)
     /// - `height` — number of vertical bins (rows)
     ///
@@ -69,9 +69,9 @@ impl VerticalCrossSection {
     ///
     /// Returns an error if any parameter is non-positive.
     pub fn new(
-        azimuth_degrees: f64,
+        azimuth_angle_degrees: f64,
         max_range_km: f64,
-        max_altitude_m: f64,
+        max_altitude_meters: f64,
         width: usize,
         height: usize,
     ) -> Result<Self> {
@@ -80,9 +80,9 @@ impl VerticalCrossSection {
                 "max_range_km must be positive".to_string(),
             ));
         }
-        if max_altitude_m <= 0.0 {
+        if max_altitude_meters <= 0.0 {
             return Err(Error::InvalidParameter(
-                "max_altitude_m must be positive".to_string(),
+                "max_altitude_meters must be positive".to_string(),
             ));
         }
         if width == 0 || height == 0 {
@@ -91,9 +91,9 @@ impl VerticalCrossSection {
             ));
         }
         Ok(Self {
-            azimuth_degrees,
+            azimuth_angle_degrees,
             max_range_km,
-            max_altitude_m,
+            max_altitude_meters,
             width,
             height,
         })
@@ -121,7 +121,7 @@ impl VerticalCrossSection {
             label,
             unit,
             (0.0, self.max_range_km),
-            (0.0, self.max_altitude_m),
+            (0.0, self.max_altitude_meters),
             self.width,
             self.height,
         );
@@ -129,7 +129,7 @@ impl VerticalCrossSection {
         let re = EFFECTIVE_EARTH_RADIUS_KM;
 
         for field in fields {
-            let elev_rad = (field.elevation_degrees() as f64).to_radians();
+            let elev_rad = (field.elevation_angle_degrees() as f64).to_radians();
 
             for col in 0..self.width {
                 let range_km = (col as f64 + 0.5) / self.width as f64 * self.max_range_km;
@@ -138,18 +138,20 @@ impl VerticalCrossSection {
                 let altitude_km = range_km * elev_rad.sin() + (range_km * range_km) / (2.0 * re);
                 let altitude_m = altitude_km * 1000.0;
 
-                if altitude_m < 0.0 || altitude_m > self.max_altitude_m {
+                if altitude_m < 0.0 || altitude_m > self.max_altitude_meters {
                     continue;
                 }
 
                 // Row 0 = top = highest altitude
-                let row = ((self.max_altitude_m - altitude_m) / self.max_altitude_m
+                let row = ((self.max_altitude_meters - altitude_m) / self.max_altitude_meters
                     * self.height as f64) as usize;
                 if row >= self.height {
                     continue;
                 }
 
-                if let Some((val, status)) = field.value_at_polar(self.azimuth_degrees, range_km) {
+                if let Some((val, status)) =
+                    field.value_at_polar(self.azimuth_angle_degrees, range_km)
+                {
                     if status == GateStatus::Valid {
                         let (existing_val, existing_status) = output.get(row, col);
                         if existing_status != GateStatus::Valid || val > existing_val {
@@ -176,8 +178,8 @@ mod tests {
 
         let gate_count = 100;
         let mut field = SweepField::builder("Reflectivity", "dBZ")
-            .elevation_degrees(elevation)
-            .azimuths(azimuths)
+            .elevation_angle_degrees(elevation)
+            .azimuth_angles_degrees(azimuths)
             .first_gate_range_km(2.0)
             .gate_interval_km(0.25)
             .gate_count(gate_count)

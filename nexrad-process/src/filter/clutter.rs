@@ -97,8 +97,8 @@ mod tests {
         let azimuths = vec![0.0, 1.0, 2.0];
 
         let mut target = SweepField::builder("Reflectivity", "dBZ")
-            .elevation_degrees(0.5)
-            .azimuths(azimuths.clone())
+            .elevation_angle_degrees(0.5)
+            .azimuth_angles_degrees(azimuths.clone())
             .first_gate_range_km(2.0)
             .gate_interval_km(0.25)
             .gate_count(gate_count)
@@ -106,8 +106,8 @@ mod tests {
             .expect("valid geometry");
 
         let mut cc = SweepField::builder("CC", "")
-            .elevation_degrees(0.5)
-            .azimuths(azimuths)
+            .elevation_angle_degrees(0.5)
+            .azimuth_angles_degrees(azimuths)
             .first_gate_range_km(2.0)
             .gate_interval_km(0.25)
             .gate_count(gate_count)
@@ -211,16 +211,16 @@ mod tests {
         let azimuths_4 = vec![0.0, 1.0, 2.0, 3.0];
 
         let mut target = SweepField::builder("Reflectivity", "dBZ")
-            .elevation_degrees(0.5)
-            .azimuths(azimuths_3)
+            .elevation_angle_degrees(0.5)
+            .azimuth_angles_degrees(azimuths_3)
             .first_gate_range_km(2.0)
             .gate_interval_km(0.25)
             .gate_count(5)
             .build()
             .expect("valid geometry");
         let mut cc = SweepField::builder("CC", "")
-            .elevation_degrees(0.5)
-            .azimuths(azimuths_4)
+            .elevation_angle_degrees(0.5)
+            .azimuth_angles_degrees(azimuths_4)
             .first_gate_range_km(2.0)
             .gate_interval_km(0.25)
             .gate_count(5)

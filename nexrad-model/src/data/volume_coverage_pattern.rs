@@ -13,16 +13,16 @@ use serde::{Deserialize, Serialize};
 pub struct VolumeCoveragePattern {
     pattern_number: VcpNumber,
     version: u8,
-    doppler_velocity_resolution: f32,
+    doppler_velocity_resolution_mps: f32,
     pulse_width: PulseWidth,
 
     // SAILS (Supplemental Adaptive Intra-volume Low-level Scan)
     sails_enabled: bool,
-    sails_cuts: u8,
+    sails_cut_count: u8,
 
     // MRLE (Mid-volume Rescan of Low Elevation)
     mrle_enabled: bool,
-    mrle_cuts: u8,
+    mrle_cut_count: u8,
 
     // Other capabilities
     mpda_enabled: bool,
@@ -46,12 +46,12 @@ impl VolumeCoveragePattern {
             vcp: VolumeCoveragePattern {
                 pattern_number,
                 version: 0,
-                doppler_velocity_resolution: 0.5,
+                doppler_velocity_resolution_mps: 0.5,
                 pulse_width: PulseWidth::Short,
                 sails_enabled: false,
-                sails_cuts: 0,
+                sails_cut_count: 0,
                 mrle_enabled: false,
-                mrle_cuts: 0,
+                mrle_cut_count: 0,
                 mpda_enabled: false,
                 base_tilt_enabled: false,
                 base_tilt_count: 0,
@@ -73,8 +73,8 @@ impl VolumeCoveragePattern {
     }
 
     /// Doppler velocity resolution in m/s (typically 0.5 or 1.0).
-    pub fn doppler_velocity_resolution(&self) -> f32 {
-        self.doppler_velocity_resolution
+    pub fn doppler_velocity_resolution_mps(&self) -> f32 {
+        self.doppler_velocity_resolution_mps
     }
 
     /// The pulse width configuration.
@@ -91,8 +91,8 @@ impl VolumeCoveragePattern {
     }
 
     /// The number of SAILS cuts in this VCP.
-    pub fn sails_cuts(&self) -> u8 {
-        self.sails_cuts
+    pub fn sails_cut_count(&self) -> u8 {
+        self.sails_cut_count
     }
 
     /// Whether MRLE (Mid-volume Rescan of Low Elevation) is enabled.
@@ -103,8 +103,8 @@ impl VolumeCoveragePattern {
     }
 
     /// The number of MRLE cuts in this VCP.
-    pub fn mrle_cuts(&self) -> u8 {
-        self.mrle_cuts
+    pub fn mrle_cut_count(&self) -> u8 {
+        self.mrle_cut_count
     }
 
     /// Whether MPDA (Multiple PRF Dealiasing Algorithm) is enabled.
@@ -155,10 +155,10 @@ impl Display for VolumeCoveragePattern {
 
         let mut features = Vec::new();
         if self.sails_enabled {
-            features.push(format!("SAILS({})", self.sails_cuts));
+            features.push(format!("SAILS({})", self.sails_cut_count));
         }
         if self.mrle_enabled {
-            features.push(format!("MRLE({})", self.mrle_cuts));
+            features.push(format!("MRLE({})", self.mrle_cut_count));
         }
         if self.mpda_enabled {
             features.push("MPDA".to_string());
@@ -177,12 +177,12 @@ impl Display for VolumeCoveragePattern {
 /// The pattern number is required. All other properties are optional and default to:
 ///
 /// - `version`: `0`
-/// - `doppler_velocity_resolution`: `0.5`
+/// - `doppler_velocity_resolution_mps`: `0.5`
 /// - `pulse_width`: `PulseWidth::Short`
 /// - `sails_enabled`: `false`
-/// - `sails_cuts`: `0`
+/// - `sails_cut_count`: `0`
 /// - `mrle_enabled`: `false`
-/// - `mrle_cuts`: `0`
+/// - `mrle_cut_count`: `0`
 /// - `mpda_enabled`: `false`
 /// - `base_tilt_enabled`: `false`
 /// - `base_tilt_count`: `0`
@@ -203,8 +203,8 @@ impl VolumeCoveragePatternBuilder {
     }
 
     /// Set the Doppler velocity resolution in m/s. Defaults to `0.5`.
-    pub fn doppler_velocity_resolution(mut self, doppler_velocity_resolution: f32) -> Self {
-        self.vcp.doppler_velocity_resolution = doppler_velocity_resolution;
+    pub fn doppler_velocity_resolution_mps(mut self, doppler_velocity_resolution_mps: f32) -> Self {
+        self.vcp.doppler_velocity_resolution_mps = doppler_velocity_resolution_mps;
         self
     }
 
@@ -221,8 +221,8 @@ impl VolumeCoveragePatternBuilder {
     }
 
     /// Set the number of SAILS cuts in this VCP. Defaults to `0`.
-    pub fn sails_cuts(mut self, sails_cuts: u8) -> Self {
-        self.vcp.sails_cuts = sails_cuts;
+    pub fn sails_cut_count(mut self, sails_cut_count: u8) -> Self {
+        self.vcp.sails_cut_count = sails_cut_count;
         self
     }
 
@@ -233,8 +233,8 @@ impl VolumeCoveragePatternBuilder {
     }
 
     /// Set the number of MRLE cuts in this VCP. Defaults to `0`.
-    pub fn mrle_cuts(mut self, mrle_cuts: u8) -> Self {
-        self.vcp.mrle_cuts = mrle_cuts;
+    pub fn mrle_cut_count(mut self, mrle_cut_count: u8) -> Self {
+        self.vcp.mrle_cut_count = mrle_cut_count;
         self
     }
 

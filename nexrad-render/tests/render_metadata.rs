@@ -132,10 +132,13 @@ fn render_cartesian_reports_geographic_projection() {
     let result = render_cartesian(&field, &scale, &RenderOptions::new(16, 16)).expect("renders");
     let meta = result.metadata();
 
-    assert_eq!(
-        meta.projection(),
-        &Projection::Geographic { extent: extent() }
-    );
+    let Projection::Geographic { extent: actual, .. } = meta.projection() else {
+        panic!(
+            "expected a geographic projection, got {:?}",
+            meta.projection()
+        );
+    };
+    assert_eq!(actual, &extent());
     assert_eq!(meta.geo_extent(), Some(&extent()));
     assert!(meta.pixels_per_km().is_none());
     assert!(meta.pixel_to_polar(8.0, 8.0).is_none());
@@ -152,13 +155,19 @@ fn render_vertical_reports_vertical_projection() {
     let result = render_vertical(&field, &scale, &RenderOptions::new(16, 16)).expect("renders");
     let meta = result.metadata();
 
-    assert_eq!(
-        meta.projection(),
-        &Projection::Vertical {
-            distance_range_km: (0.0, 100.0),
-            altitude_range_m: (0.0, 10000.0),
-        }
-    );
+    let Projection::Vertical {
+        distance_range_km,
+        altitude_range_meters,
+        ..
+    } = *meta.projection()
+    else {
+        panic!(
+            "expected a vertical projection, got {:?}",
+            meta.projection()
+        );
+    };
+    assert_eq!(distance_range_km, (0.0, 100.0));
+    assert_eq!(altitude_range_meters, (0.0, 10000.0));
     assert!(meta.geo_extent().is_none());
     assert!(meta.pixel_to_polar(8.0, 8.0).is_none());
     assert!(meta.pixel_to_geo(8.0, 8.0).is_none());

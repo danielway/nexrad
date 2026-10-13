@@ -65,10 +65,10 @@ impl nexrad_process::detection::StormCell
 pub fn nexrad_process::detection::StormCell::area_km2(&self) -> f64
 pub fn nexrad_process::detection::StormCell::bounds(&self) -> &nexrad_process::detection::StormCellBounds
 pub fn nexrad_process::detection::StormCell::centroid(&self) -> nexrad_model::geo::GeoPoint
-pub fn nexrad_process::detection::StormCell::elevation_degrees(&self) -> f32
+pub fn nexrad_process::detection::StormCell::elevation_angle_degrees(&self) -> f32
 pub fn nexrad_process::detection::StormCell::gate_count(&self) -> usize
 pub fn nexrad_process::detection::StormCell::id(&self) -> u32
-pub fn nexrad_process::detection::StormCell::max_reflectivity_azimuth_degrees(&self) -> f32
+pub fn nexrad_process::detection::StormCell::max_reflectivity_azimuth_angle_degrees(&self) -> f32
 pub fn nexrad_process::detection::StormCell::max_reflectivity_dbz(&self) -> f32
 pub fn nexrad_process::detection::StormCell::max_reflectivity_range_km(&self) -> f64
 pub fn nexrad_process::detection::StormCell::mean_reflectivity_dbz(&self) -> f32

@@ -29,6 +29,7 @@ pub struct RenderResult {
 #[non_exhaustive]
 pub enum Projection {
     /// A radar-centred plan view with north at the top.
+    #[non_exhaustive]
     Polar {
         /// Pixel coordinate of the radar site.
         center_pixel: (f64, f64),
@@ -37,21 +38,23 @@ pub enum Projection {
         /// Maximum range of the rendered data in kilometres.
         max_range_km: f64,
         /// Elevation angle of the rendered sweep in degrees.
-        elevation_degrees: f64,
+        elevation_angle_degrees: f64,
     },
     /// A latitude/longitude grid where x spans the extent west to east and y spans
     /// it north to south.
+    #[non_exhaustive]
     Geographic {
         /// Geographic extent covered by the image.
         extent: GeoExtent,
     },
     /// A vertical cross-section where x spans distance from the radar and y spans
     /// altitude (the top of the image is the highest altitude).
+    #[non_exhaustive]
     Vertical {
         /// Horizontal axis range `(min, max)` in kilometres.
         distance_range_km: (f64, f64),
         /// Vertical axis range `(min, max)` in metres.
-        altitude_range_m: (f64, f64),
+        altitude_range_meters: (f64, f64),
     },
 }
 
@@ -71,6 +74,7 @@ pub struct RenderMetadata {
 
 /// Result of querying a data value at a specific point.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct PointQuery {
     /// The polar coordinate of the queried point.
     pub polar: PolarPoint,
@@ -133,13 +137,13 @@ impl RenderResult {
     pub fn query_polar(
         &self,
         field: &SweepField,
-        azimuth_degrees: f64,
+        azimuth_angle_degrees: f64,
         range_km: f64,
     ) -> Option<PointQuery> {
         let polar = PolarPoint {
-            azimuth_degrees,
+            azimuth_angle_degrees,
             range_km,
-            elevation_degrees: self.metadata.elevation_degrees()?,
+            elevation_angle_degrees: self.metadata.elevation_angle_degrees()?,
         };
         self.build_query(field, polar)
     }
@@ -149,14 +153,14 @@ impl RenderResult {
     /// Requires a [`Polar`](Projection::Polar) projection and a coordinate system in
     /// the metadata. Returns `None` otherwise, or if the point is outside the field.
     pub fn query_geo(&self, field: &SweepField, point: &GeoPoint) -> Option<PointQuery> {
-        let elevation = self.metadata.elevation_degrees()?;
+        let elevation = self.metadata.elevation_angle_degrees()?;
         let coord_system = self.metadata.coord_system.as_ref()?;
         let polar = coord_system.geo_to_polar(*point, elevation);
         self.build_query(field, polar)
     }
 
     fn build_query(&self, field: &SweepField, polar: PolarPoint) -> Option<PointQuery> {
-        let (value, status) = field.value_at_polar(polar.azimuth_degrees, polar.range_km)?;
+        let (value, status) = field.value_at_polar(polar.azimuth_angle_degrees, polar.range_km)?;
 
         let geo = self
             .metadata
@@ -233,11 +237,12 @@ impl RenderMetadata {
 
     /// Elevation angle of the rendered sweep in degrees. `Some` only for
     /// [`Projection::Polar`].
-    pub fn elevation_degrees(&self) -> Option<f64> {
+    pub fn elevation_angle_degrees(&self) -> Option<f64> {
         match self.projection {
             Projection::Polar {
-                elevation_degrees, ..
-            } => Some(elevation_degrees),
+                elevation_angle_degrees,
+                ..
+            } => Some(elevation_angle_degrees),
             Projection::Geographic { .. } | Projection::Vertical { .. } => None,
         }
     }
@@ -267,7 +272,7 @@ impl RenderMetadata {
             center_pixel,
             pixels_per_km,
             max_range_km,
-            elevation_degrees,
+            elevation_angle_degrees,
         } = self.projection
         else {
             return None;
@@ -283,22 +288,22 @@ impl RenderMetadata {
         }
 
         let azimuth_rad = dx.atan2(-dy);
-        let azimuth_degrees = (azimuth_rad.to_degrees() + 360.0) % 360.0;
+        let azimuth_angle_degrees = (azimuth_rad.to_degrees() + 360.0) % 360.0;
 
         Some(PolarPoint {
-            azimuth_degrees,
+            azimuth_angle_degrees,
             range_km,
-            elevation_degrees,
+            elevation_angle_degrees,
         })
     }
 
     /// Convert polar coordinates to a pixel coordinate.
     ///
     /// Returns `None` if the image does not use a [`Polar`](Projection::Polar) projection.
-    pub fn polar_to_pixel(&self, azimuth_degrees: f64, range_km: f64) -> Option<(f64, f64)> {
+    pub fn polar_to_pixel(&self, azimuth_angle_degrees: f64, range_km: f64) -> Option<(f64, f64)> {
         let center_pixel = self.center_pixel()?;
         let distance_px = self.km_to_pixel_distance(range_km)?;
-        let az_rad = azimuth_degrees.to_radians();
+        let az_rad = azimuth_angle_degrees.to_radians();
         let x = center_pixel.0 + distance_px * az_rad.sin();
         let y = center_pixel.1 - distance_px * az_rad.cos();
         Some((x, y))
@@ -345,11 +350,12 @@ impl RenderMetadata {
     pub fn geo_to_pixel(&self, point: &GeoPoint) -> Option<(f64, f64)> {
         match &self.projection {
             Projection::Polar {
-                elevation_degrees, ..
+                elevation_angle_degrees,
+                ..
             } => {
                 let coord_system = self.coord_system.as_ref()?;
-                let polar = coord_system.geo_to_polar(*point, *elevation_degrees);
-                self.polar_to_pixel(polar.azimuth_degrees, polar.range_km)
+                let polar = coord_system.geo_to_polar(*point, *elevation_angle_degrees);
+                self.polar_to_pixel(polar.azimuth_angle_degrees, polar.range_km)
             }
             Projection::Geographic { extent } => {
                 let lon_span = extent.max.longitude - extent.min.longitude;
@@ -414,7 +420,7 @@ mod tests {
             300,
             Projection::Vertical {
                 distance_range_km: (0.0, 230.0),
-                altitude_range_m: (0.0, 18_000.0),
+                altitude_range_meters: (0.0, 18_000.0),
             },
             None,
             None,
@@ -429,7 +435,7 @@ mod tests {
                 center_pixel: (100.0, 100.0),
                 pixels_per_km: 0.5,
                 max_range_km: 200.0,
-                elevation_degrees: 0.5,
+                elevation_angle_degrees: 0.5,
             },
             None,
             None,
@@ -503,7 +509,7 @@ mod tests {
         assert!(meta.center_pixel().is_none());
         assert!(meta.pixels_per_km().is_none());
         assert!(meta.max_range_km().is_none());
-        assert!(meta.elevation_degrees().is_none());
+        assert!(meta.elevation_angle_degrees().is_none());
         assert!(meta.pixel_to_polar(10.0, 10.0).is_none());
         assert!(meta.polar_to_pixel(90.0, 10.0).is_none());
         assert!(meta.pixel_distance_to_km(10.0).is_none());
@@ -517,7 +523,7 @@ mod tests {
         assert!(meta.center_pixel().is_none());
         assert!(meta.pixels_per_km().is_none());
         assert!(meta.max_range_km().is_none());
-        assert!(meta.elevation_degrees().is_none());
+        assert!(meta.elevation_angle_degrees().is_none());
         assert!(meta.pixel_to_polar(10.0, 10.0).is_none());
         assert!(meta.polar_to_pixel(90.0, 10.0).is_none());
         assert!(meta.pixel_to_geo(10.0, 10.0).is_none());
@@ -543,9 +549,9 @@ mod tests {
         let Some(back) = meta.pixel_to_polar(150.0, 100.0) else {
             panic!("pixel should be inside coverage");
         };
-        assert_close(back.azimuth_degrees, 90.0);
+        assert_close(back.azimuth_angle_degrees, 90.0);
         assert_close(back.range_km, 100.0);
-        assert_close(back.elevation_degrees, 0.5);
+        assert_close(back.elevation_angle_degrees, 0.5);
         assert!(meta.pixel_to_polar(-200.0, 100.0).is_none());
     }
 }

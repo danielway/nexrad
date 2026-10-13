@@ -915,12 +915,14 @@ pub nexrad_model::result::Error::InvalidGeometry
 pub nexrad_model::result::Error::InvalidGeometry::parameter: &'static str
 pub nexrad_model::result::Error::InvalidGeometry::reason: &'static str
 pub nexrad_model::result::Error::InvalidMomentData
-pub nexrad_model::result::Error::InvalidMomentData::actual: usize
-pub nexrad_model::result::Error::InvalidMomentData::expected: usize
 pub nexrad_model::result::Error::InvalidMomentData::parameter: &'static str
+pub nexrad_model::result::Error::InvalidMomentData::reason: &'static str
 pub nexrad_model::result::Error::InvalidSite
 pub nexrad_model::result::Error::InvalidSite::parameter: &'static str
 pub nexrad_model::result::Error::InvalidSite::reason: &'static str
+pub nexrad_model::result::Error::MomentDataLength
+pub nexrad_model::result::Error::MomentDataLength::actual: usize
+pub nexrad_model::result::Error::MomentDataLength::expected: usize
 impl core::clone::Clone for nexrad_model::result::Error
 pub fn nexrad_model::result::Error::clone(&self) -> Self
 impl core::cmp::PartialEq for nexrad_model::result::Error
@@ -952,12 +954,14 @@ pub nexrad_model::Error::InvalidGeometry
 pub nexrad_model::Error::InvalidGeometry::parameter: &'static str
 pub nexrad_model::Error::InvalidGeometry::reason: &'static str
 pub nexrad_model::Error::InvalidMomentData
-pub nexrad_model::Error::InvalidMomentData::actual: usize
-pub nexrad_model::Error::InvalidMomentData::expected: usize
 pub nexrad_model::Error::InvalidMomentData::parameter: &'static str
+pub nexrad_model::Error::InvalidMomentData::reason: &'static str
 pub nexrad_model::Error::InvalidSite
 pub nexrad_model::Error::InvalidSite::parameter: &'static str
 pub nexrad_model::Error::InvalidSite::reason: &'static str
+pub nexrad_model::Error::MomentDataLength
+pub nexrad_model::Error::MomentDataLength::actual: usize
+pub nexrad_model::Error::MomentDataLength::expected: usize
 impl core::clone::Clone for nexrad_model::result::Error
 pub fn nexrad_model::result::Error::clone(&self) -> Self
 impl core::cmp::PartialEq for nexrad_model::result::Error

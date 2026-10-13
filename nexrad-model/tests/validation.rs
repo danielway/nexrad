@@ -32,14 +32,17 @@ fn geometry_parameter(result: Result<impl std::fmt::Debug, Error>) -> &'static s
     }
 }
 
-fn moment_parameter(result: Result<MomentData, Error>) -> (&'static str, usize, usize) {
+fn moment_parameter(result: Result<MomentData, Error>) -> (&'static str, &'static str) {
     match result {
-        Err(Error::InvalidMomentData {
-            parameter,
-            expected,
-            actual,
-        }) => (parameter, expected, actual),
+        Err(Error::InvalidMomentData { parameter, reason }) => (parameter, reason),
         other => panic!("expected InvalidMomentData, got {other:?}"),
+    }
+}
+
+fn moment_length(result: Result<MomentData, Error>) -> (usize, usize) {
+    match result {
+        Err(Error::MomentDataLength { expected, actual }) => (expected, actual),
+        other => panic!("expected MomentDataLength, got {other:?}"),
     }
 }
 
@@ -389,8 +392,14 @@ fn moment_data_rejects_invalid_word_size() {
         )
     };
 
-    assert_eq!(moment_parameter(build(4)), ("data_word_size", 8, 4));
-    assert_eq!(moment_parameter(build(32)), ("data_word_size", 16, 32));
+    assert_eq!(
+        moment_parameter(build(4)),
+        ("data_word_size", "must be 8 or 16")
+    );
+    assert_eq!(
+        moment_parameter(build(32)),
+        ("data_word_size", "must be 8 or 16")
+    );
     assert!(build(8).is_ok());
 }
 
@@ -409,15 +418,16 @@ fn moment_data_rejects_mismatched_value_length() {
         )
     };
 
-    assert_eq!(moment_parameter(build(3, 8, vec![1, 2])), ("values", 3, 2));
-    assert_eq!(
-        moment_parameter(build(2, 16, vec![1, 2, 3])),
-        ("values", 4, 3)
-    );
-    assert_eq!(moment_parameter(build(1, 16, vec![1])), ("values", 2, 1));
+    assert_eq!(moment_length(build(3, 8, vec![1, 2])), (3, 2));
+    assert_eq!(moment_length(build(2, 16, vec![1, 2, 3])), (4, 3));
+    assert_eq!(moment_length(build(1, 16, vec![1])), (2, 1));
     assert_eq!(
         moment_parameter(build(70_000, 8, vec![])),
-        ("gate_count", usize::from(u16::MAX), 70_000)
+        ("gate_count", "must fit in a u16")
+    );
+    assert_eq!(
+        build(3, 8, vec![1, 2]).unwrap_err().to_string(),
+        "invalid moment data length: expected 3 bytes for the gate count and word size, got 2"
     );
     assert!(build(2, 16, vec![0, 2, 1, 0]).is_ok());
     assert!(build(0, 8, vec![]).is_ok());
@@ -438,9 +448,22 @@ fn moment_data_rejects_non_finite_scale_and_offset() {
         )
     };
 
-    assert_eq!(moment_parameter(build(f32::NAN, 66.0)).0, "scale");
-    assert_eq!(moment_parameter(build(f32::INFINITY, 66.0)).0, "scale");
-    assert_eq!(moment_parameter(build(2.0, f32::NEG_INFINITY)).0, "offset");
+    assert_eq!(
+        moment_parameter(build(f32::NAN, 66.0)),
+        ("scale", "must be finite")
+    );
+    assert_eq!(
+        moment_parameter(build(f32::INFINITY, 66.0)),
+        ("scale", "must be finite")
+    );
+    assert_eq!(
+        moment_parameter(build(2.0, f32::NEG_INFINITY)),
+        ("offset", "must be finite")
+    );
+    assert_eq!(
+        build(f32::NAN, 66.0).unwrap_err().to_string(),
+        "invalid moment data: `scale` must be finite"
+    );
     assert!(build(0.0, 0.0).is_ok());
 }
 

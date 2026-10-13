@@ -36,18 +36,26 @@ pub enum Error {
         reason: &'static str,
     },
 
-    /// Moment data's encoding parameters are inconsistent with its values.
+    /// A moment data encoding parameter is invalid, such as an unsupported `data_word_size` or a
+    /// non-finite `scale`.
     ///
     /// Returned by [`MomentData::from_fixed_point`](crate::data::MomentData::from_fixed_point).
-    /// For `data_word_size`, `expected` is the nearest supported size (8 or 16). For a
-    /// non-finite `scale` or `offset`, `expected` and `actual` are both zero.
-    #[error("invalid moment data: `{parameter}` expected {expected}, got {actual}")]
+    #[error("invalid moment data: `{parameter}` {reason}")]
     InvalidMomentData {
         /// The name of the offending parameter.
         parameter: &'static str,
-        /// The expected value or length.
+        /// Why the parameter's value was rejected.
+        reason: &'static str,
+    },
+
+    /// Moment data's encoded values do not hold exactly the declared number of gates.
+    ///
+    /// Returned by [`MomentData::from_fixed_point`](crate::data::MomentData::from_fixed_point).
+    #[error("invalid moment data length: expected {expected} bytes for the gate count and word size, got {actual}")]
+    MomentDataLength {
+        /// The number of bytes `gate_count` gates of `data_word_size` bits occupy.
         expected: usize,
-        /// The actual value or length.
+        /// The number of bytes provided.
         actual: usize,
     },
 

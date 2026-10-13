@@ -61,8 +61,8 @@ impl MomentData {
     /// # Errors
     ///
     /// Returns [`Error::InvalidMomentData`] if `data_word_size` is not 8 or 16, `gate_count`
-    /// does not fit in a `u16`, `values` does not hold exactly `gate_count` gates, or `scale` or
-    /// `offset` is not finite.
+    /// does not fit in a `u16`, or `scale` or `offset` is not finite, and
+    /// [`Error::MomentDataLength`] if `values` does not hold exactly `gate_count` gates.
     ///
     /// # Example
     ///
@@ -99,21 +99,18 @@ impl MomentData {
             _ => {
                 return Err(Error::InvalidMomentData {
                     parameter: "data_word_size",
-                    expected: if data_word_size < 12 { 8 } else { 16 },
-                    actual: usize::from(data_word_size),
+                    reason: "must be 8 or 16",
                 })
             }
         };
         let compact_gate_count =
             u16::try_from(gate_count).map_err(|_| Error::InvalidMomentData {
                 parameter: "gate_count",
-                expected: usize::from(u16::MAX),
-                actual: gate_count,
+                reason: "must fit in a u16",
             })?;
         let expected_len = gate_count * bytes_per_gate;
         if values.len() != expected_len {
-            return Err(Error::InvalidMomentData {
-                parameter: "values",
+            return Err(Error::MomentDataLength {
                 expected: expected_len,
                 actual: values.len(),
             });
@@ -122,8 +119,7 @@ impl MomentData {
             if !value.is_finite() {
                 return Err(Error::InvalidMomentData {
                     parameter,
-                    expected: 0,
-                    actual: 0,
+                    reason: "must be finite",
                 });
             }
         }

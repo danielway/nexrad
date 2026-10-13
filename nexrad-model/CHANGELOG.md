@@ -28,9 +28,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   which replace the facade's `extract_field`, `extract_fields`, `extract_first_field` and `coordinate_system`. (#172)
 - `MomentData::first_gate_range_meters()` and `gate_interval_meters()`, returning the `u16` meters that
   `from_fixed_point` takes. (#185)
-- Structured `Error` variants: `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, expected,
-  actual }`, `InvalidSite { parameter, reason }` and `IndexOutOfBounds { row, column, rows, columns }`. `Error`
-  implements `Clone` and `PartialEq`. (#185)
+- Structured `Error` variants: `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, reason }`,
+  `MomentDataLength { expected, actual }`, `InvalidSite { parameter, reason }` and
+  `IndexOutOfBounds { row, column, rows, columns }`. `Error` implements `Clone` and `PartialEq`. (#185)
 
 ### Changed
 

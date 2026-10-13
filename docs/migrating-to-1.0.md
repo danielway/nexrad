@@ -149,7 +149,10 @@ No feature changes. `serde`, `chrono` and `uom` are still opt-in.
   offending argument in a `parameter: &'static str` field:
   - `InvalidGeometry { parameter, reason }`, from `SweepFieldBuilder::build`, `RadialBuilder::build`,
     `CartesianField::new` and `VerticalField::new`;
-  - `InvalidMomentData { parameter, expected, actual }`, from `MomentData::from_fixed_point`;
+  - `InvalidMomentData { parameter, reason }`, from `MomentData::from_fixed_point` for an unsupported
+    `data_word_size`, a `gate_count` above `u16::MAX`, or a non-finite `scale` or `offset`;
+  - `MomentDataLength { expected, actual }`, from `MomentData::from_fixed_point` when `values` does not hold exactly
+    `gate_count` gates (lengths in bytes);
   - `InvalidSite { parameter, reason }`, from `SiteBuilder::build` and `registry::SiteEntry::to_site`;
   - `IndexOutOfBounds { row, column, rows, columns }`, from the field `set` methods.
 - `Error` implements `Clone` and `PartialEq`.
@@ -1275,7 +1278,7 @@ items that replace nothing are in the CHANGELOGs.
 | `meta::registry::SiteEntry::elevation_meters: i16` | `site_elevation_meters: i16` |
 | `meta::registry::nearest_site(f32, f32)` | `nearest_site(f64, f64)` |
 | `meta::registry::SiteEntry::to_site() -> Site` | `-> Result<Site>` |
-| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, expected, actual }`, `InvalidSite { parameter, reason }`, `IndexOutOfBounds { row, column, rows, columns }` |
+| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, reason }`, `MomentDataLength { expected, actual }`, `InvalidSite { parameter, reason }`, `IndexOutOfBounds { row, column, rows, columns }` |
 | `result::Error::ElevationMismatch` (unit variant) | `ElevationMismatch { expected: u8, actual: u8 }` |
 
 </details>

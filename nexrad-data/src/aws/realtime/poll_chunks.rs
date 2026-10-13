@@ -222,9 +222,14 @@ fn record_arrival(
     chunk: &Chunk,
     attempts: usize,
 ) {
-    if let (Some(upload_time), Some(prev_time)) =
-        (chunk_id.upload_date_time(), state.previous_chunk_time)
-    {
+    // The hop from the Start chunk to sequence 2 is estimated with a fixed gap and never read back
+    // from the statistics, so it is not recorded.
+    let previous_is_start = state.current_chunk.chunk_type() == ChunkType::Start;
+    if let (false, Some(upload_time), Some(prev_time)) = (
+        previous_is_start,
+        chunk_id.upload_date_time(),
+        state.previous_chunk_time,
+    ) {
         if let Some(characteristics) = ChunkCharacteristics::for_chunk(
             chunk_id.sequence(),
             chunk_id.chunk_type(),
@@ -366,6 +371,61 @@ mod tests {
         assert_eq!(
             state.next_chunk_estimate(),
             Some(upload + Duration::seconds(7))
+        );
+    }
+
+    #[test]
+    fn start_to_first_intermediate_hop_is_not_recorded() {
+        use crate::aws::realtime::tests::get_test_vcp;
+        use chrono::{NaiveDateTime, TimeZone};
+
+        let vcp = get_test_vcp();
+        let elevation_mapper = ElevationChunkMapper::new(&vcp);
+        let upload = Utc.with_ymd_and_hms(2022, 3, 5, 23, 30, 0).unwrap();
+        let prefix = NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap();
+        let start = ChunkIdentifier::new(
+            "KDMX",
+            VolumeIndex::new(1),
+            prefix,
+            1,
+            ChunkType::Start,
+            Some(upload),
+        );
+        let second = ChunkIdentifier::new(
+            "KDMX",
+            VolumeIndex::new(1),
+            prefix,
+            2,
+            ChunkType::Intermediate,
+            Some(upload + Duration::milliseconds(1500)),
+        );
+
+        let mut state = ChunkStreamState {
+            site: "KDMX".to_string(),
+            current_chunk: start.clone(),
+            elevation_mapper,
+            vcp,
+            timing_stats: ChunkTimingStats::new(),
+            previous_chunk_time: start.upload_date_time(),
+            download_policy: RetryPolicy::default_download(),
+            discovery_policy: RetryPolicy::default_discovery(),
+        };
+
+        let chunk = Chunk::IntermediateOrEnd(crate::volume::Record::new(vec![0; 8]));
+        record_arrival(&mut state, &second, &chunk, 1);
+        assert_eq!(state.current_chunk, second);
+        assert_eq!(state.previous_chunk_time, second.upload_date_time());
+
+        let characteristics = ChunkCharacteristics::for_chunk(
+            2,
+            ChunkType::Intermediate,
+            &state.vcp,
+            &state.elevation_mapper,
+        )
+        .unwrap();
+        assert_eq!(
+            state.timing_stats.get_average_timing(&characteristics),
+            None
         );
     }
 

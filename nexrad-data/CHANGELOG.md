@@ -112,3 +112,5 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `aws::realtime`: `ChunkIterator` and `chunk_stream` record the interval into each chunk under that chunk's
   characteristics and read it back under the same key when predicting the chunk, so learned timings are applied at
   sweep boundaries instead of falling back to the physics model. (#184)
+- The hop from the Start chunk to sequence 2 is no longer recorded in the timing statistics; its estimate is a
+  fixed gap, so the sample only skewed the first-in-sweep bucket of the first elevation. (#184)

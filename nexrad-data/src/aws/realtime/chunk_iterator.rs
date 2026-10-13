@@ -400,7 +400,13 @@ impl ChunkIterator {
     /// which [`next_expected_time`](Self::next_expected_time) looks it up to predict this chunk
     /// from its predecessor.
     fn record_arrival(&mut self, identifier: &ChunkIdentifier, attempts: usize) {
-        if let (Some(upload_time), Some(prev_time), Some(vcp), Some(mapper)) = (
+        // The hop from the Start chunk to sequence 2 is estimated with a fixed gap and never read
+        // back from the statistics, so it is not recorded.
+        let previous_is_start = self
+            .current()
+            .is_some_and(|current| current.chunk_type() == ChunkType::Start);
+        if let (false, Some(upload_time), Some(prev_time), Some(vcp), Some(mapper)) = (
+            previous_is_start,
             identifier.upload_date_time(),
             self.last_chunk_time,
             &self.vcp,
@@ -582,6 +588,43 @@ mod timing_tests {
         assert_eq!(
             iterator.next_expected_time(),
             Some(upload + Duration::seconds(7))
+        );
+    }
+
+    #[test]
+    fn start_to_first_intermediate_hop_is_not_recorded() {
+        let vcp = get_test_vcp();
+        let mapper = ElevationChunkMapper::new(&vcp);
+        let upload = Utc.with_ymd_and_hms(2022, 3, 5, 23, 30, 0).unwrap();
+        let start = ChunkIdentifier::new(
+            "KDMX",
+            VolumeIndex::new(1),
+            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+            1,
+            ChunkType::Start,
+            Some(upload),
+        );
+        let second = chunk_at(2, upload + Duration::milliseconds(1500));
+
+        let mut iterator = ChunkIterator::from_chunk(PollConfig::new("KDMX"), start.clone());
+        iterator.vcp = Some(vcp);
+        iterator.elevation_mapper = Some(mapper);
+        iterator.last_chunk_time = start.upload_date_time();
+
+        iterator.record_arrival(&second, 1);
+        assert_eq!(iterator.current(), Some(&second));
+        assert_eq!(iterator.last_chunk_time, second.upload_date_time());
+
+        let characteristics = ChunkCharacteristics::for_chunk(
+            2,
+            ChunkType::Intermediate,
+            iterator.vcp.as_ref().unwrap(),
+            iterator.elevation_mapper.as_ref().unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            iterator.timing_stats.get_average_timing(&characteristics),
+            None
         );
     }
 }

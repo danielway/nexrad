@@ -111,6 +111,14 @@ Images are `image::RgbaImage` values and I/O failures surface as `Error::Image(i
 so the `image` crate is part of the public API and is re-exported as `nexrad_render::image`.
 A major version bump of `image` is a major version bump of `nexrad-render`.
 
+## Minimum Supported Rust Version
+
+Rust 1.88. The MSRV is only raised in minor releases, never in patch releases.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the changes in each release, including the breaking changes in 1.0.0.
+
 ## Crate Boundaries
 
 This crate provides **visualization and rendering** only:

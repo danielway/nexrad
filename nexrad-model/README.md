@@ -54,6 +54,32 @@ Each field stores parallel `f32` and `GateStatus` arrays in row-major order for 
 `Sweep::field(product)` extracts a `SweepField` from one sweep; `Scan::fields(product)` and
 `Scan::first_field(product)` do the same across a scan's sweeps.
 
+## Constructing Model Types
+
+Types with invariants have private fields and are built with builders: `Radial::builder`, `ElevationCut::builder`,
+`VolumeCoveragePattern::builder`, `SweepField::builder` and `Site::builder`. Each takes the required values up front
+and has a setter per optional field:
+
+```rust
+use nexrad_model::data::{Product, SweepField};
+use nexrad_model::meta::Site;
+
+let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
+    .height_meters(370)
+    .build();
+
+let field = SweepField::builder("Reflectivity", "dBZ")
+    .product(Product::Reflectivity)
+    .azimuths(vec![0.0, 1.0, 2.0])
+    .gate_interval_km(0.25)
+    .gate_count(1832)
+    .build()
+    .expect("valid geometry");
+```
+
+`SweepFieldBuilder::build` validates the grid geometry and returns `nexrad_model::Result`. `Error` and `Result` are
+re-exported at the crate root.
+
 ## Geographic Types
 
 The `geo` module provides coordinate types and transformations:
@@ -85,6 +111,14 @@ let nearest = registry::nearest_site(35.4676, -97.5164).unwrap();
 - `uom`: Use the `uom` crate for type-safe units of measure. Enables methods returning `Length`, `Velocity`, etc. instead of raw `f64` values.
 - `serde`: Implement `serde::Serialize` and `serde::Deserialize` for all model types.
 - `chrono`: Use the `chrono` crate for date and time types. Enables `collection_time()` returning `DateTime<Utc>` instead of raw timestamps.
+
+## Minimum Supported Rust Version
+
+Rust 1.88. The MSRV is only raised in minor releases, never in patch releases.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the changes in each release, including the breaking changes in 1.0.0.
 
 ## Crate Boundaries
 

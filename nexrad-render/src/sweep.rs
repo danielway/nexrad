@@ -116,7 +116,9 @@ pub fn render_sweep(
                 continue;
             }
 
-            let (val, status) = field.get(radial_idx, gate_index);
+            let Some((val, status)) = field.get(radial_idx, gate_index) else {
+                continue;
+            };
             if status == GateStatus::Valid {
                 let color = lut.color(val);
                 let pixel_index = (y * width + x) * 4;
@@ -289,10 +291,10 @@ fn sample_sweep_bilinear(
     let g_frac = (gate_f - g_lo as f64) as f32;
 
     // Fetch the four corners and require all Valid
-    let (v00, s00) = field.get(az_lo, g_lo);
-    let (v01, s01) = field.get(az_lo, g_hi);
-    let (v10, s10) = field.get(az_hi, g_lo);
-    let (v11, s11) = field.get(az_hi, g_hi);
+    let (v00, s00) = field.get(az_lo, g_lo)?;
+    let (v01, s01) = field.get(az_lo, g_hi)?;
+    let (v10, s10) = field.get(az_hi, g_lo)?;
+    let (v11, s11) = field.get(az_hi, g_hi)?;
 
     if s00 != GateStatus::Valid
         || s01 != GateStatus::Valid

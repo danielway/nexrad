@@ -46,12 +46,13 @@ impl ScanBuilder {
     /// 31 message carrying a volume data block records the scan's site. The first volume
     /// coverage pattern message is kept; later ones are ignored, as are all other message types.
     ///
-    /// Returns an error if a radar data message cannot be converted to a radial.
+    /// Returns an error if a radar data message cannot be converted to a radial or its site
+    /// metadata is invalid.
     pub fn add_message(&mut self, message: Message<'_>) -> Result<()> {
         match message.into_contents() {
             MessageContents::DigitalRadarData(message) => {
                 if self.site.is_none() {
-                    self.site = message.site();
+                    self.site = message.site()?;
                 }
                 self.radials.push(message.into_radial()?);
             }
@@ -163,12 +164,31 @@ mod tests {
             panic!("expected a digital radar data message");
         };
 
-        let site = radar.site().expect("message has a volume data block");
-        assert_eq!(site.identifier(), b"KDMX");
+        let site = radar
+            .site()
+            .expect("site is valid")
+            .expect("message has a volume data block");
+        assert_eq!(site.identifier(), "KDMX");
         assert_eq!(site.latitude(), 41.7312_f32 as f64);
         assert_eq!(site.longitude(), -93.72287_f32 as f64);
         assert_eq!(site.site_elevation_meters(), 299);
         assert_eq!(site.feedhorn_height_meters(), 34);
+    }
+
+    #[test]
+    fn model_errors_convert_into_decode_errors() {
+        let error: Error = nexrad_model::result::Error::InvalidSite {
+            parameter: "latitude",
+            reason: "must be finite and within -90.0..=90.0",
+        }
+        .into();
+        assert!(matches!(
+            error,
+            Error::Model(nexrad_model::result::Error::InvalidSite {
+                parameter: "latitude",
+                ..
+            })
+        ));
     }
 
     #[test]
@@ -206,7 +226,7 @@ mod tests {
         let scan = builder.build().expect("builds scan");
 
         assert_eq!(scan.coverage_pattern_number().number(), 212);
-        assert_eq!(scan.site().map(|site| site.identifier()), Some(b"KDMX"));
+        assert_eq!(scan.site().map(|site| site.identifier()), Some("KDMX"));
         assert_eq!(radials(&scan), [&expected_modern, &expected_legacy]);
     }
 

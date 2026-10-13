@@ -15,6 +15,11 @@ pub enum Error {
     /// A parameter value is out of the acceptable range.
     #[error("invalid parameter: {0}")]
     InvalidParameter(String),
+
+    /// A model constructor or accessor rejected the output geometry, such as a composite
+    /// extent outside valid latitudes and longitudes.
+    #[error("model error: {0}")]
+    Model(#[from] nexrad_model::result::Error),
 }
 
 /// Result type for processing operations.

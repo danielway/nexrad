@@ -25,7 +25,10 @@ fn test_no_data_available_message() {
 #[test]
 fn test_model_error_conversion() {
     // Create a model error
-    let model_err = nexrad_model::result::Error::ElevationMismatch;
+    let model_err = nexrad_model::result::Error::ElevationMismatch {
+        expected: 1,
+        actual: 2,
+    };
 
     // Convert to unified error
     let unified_err: nexrad::Error = model_err.into();
@@ -150,13 +153,16 @@ fn test_decode_error_through_data_is_flattened() {
 #[test]
 fn test_model_error_through_data_is_flattened() {
     // A model error wrapped by nexrad-data surfaces as Error::Model
-    let model_err = nexrad_model::result::Error::ElevationMismatch;
+    let model_err = nexrad_model::result::Error::ElevationMismatch {
+        expected: 1,
+        actual: 2,
+    };
     let data_err: nexrad_data::result::Error = model_err.into();
 
     let unified_err: nexrad::Error = data_err.into();
 
     match unified_err {
-        nexrad::Error::Model(nexrad_model::result::Error::ElevationMismatch) => {}
+        nexrad::Error::Model(nexrad_model::result::Error::ElevationMismatch { .. }) => {}
         ref other => panic!("Expected Error::Model(ElevationMismatch), got: {:?}", other),
     }
 
@@ -253,7 +259,10 @@ fn test_error_source_chain() {
 #[test]
 fn test_error_debug_format() {
     // Create a model error
-    let model_err = nexrad_model::result::Error::ElevationMismatch;
+    let model_err = nexrad_model::result::Error::ElevationMismatch {
+        expected: 1,
+        actual: 2,
+    };
     let unified_err: nexrad::Error = model_err.into();
 
     // Verify Debug format works and contains useful info
@@ -296,7 +305,10 @@ fn test_all_features_enabled() {
     // This test only compiles when default features are enabled
     // It verifies that all error variants are available
 
-    let model_err = nexrad_model::result::Error::ElevationMismatch;
+    let model_err = nexrad_model::result::Error::ElevationMismatch {
+        expected: 1,
+        actual: 2,
+    };
     let _: nexrad::Error = model_err.into();
 
     let decode_err = nexrad_decode::result::Error::UnexpectedEof;
@@ -316,7 +328,10 @@ fn test_all_features_enabled() {
 #[test]
 fn test_all_features_including_render_and_process() {
     // This test verifies all error variants including render and process
-    let model_err = nexrad_model::result::Error::ElevationMismatch;
+    let model_err = nexrad_model::result::Error::ElevationMismatch {
+        expected: 1,
+        actual: 2,
+    };
     let _: nexrad::Error = model_err.into();
 
     let decode_err = nexrad_decode::result::Error::UnexpectedEof;

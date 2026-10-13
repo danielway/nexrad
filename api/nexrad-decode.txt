@@ -636,7 +636,7 @@ impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::di
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::Header<'a>
 pub struct nexrad_decode::messages::digital_radar_data::Message<'a>
 impl nexrad_decode::messages::digital_radar_data::Message<'_>
-pub fn nexrad_decode::messages::digital_radar_data::Message<'_>::site(&self) -> core::option::Option<nexrad_model::meta::site::Site>
+pub fn nexrad_decode::messages::digital_radar_data::Message<'_>::site(&self) -> nexrad_decode::result::Result<core::option::Option<nexrad_model::meta::site::Site>>
 impl<'a> nexrad_decode::messages::digital_radar_data::Message<'a>
 pub fn nexrad_decode::messages::digital_radar_data::Message<'a>::clutter_filter_power_data_block(&self) -> core::option::Option<&nexrad_decode::messages::digital_radar_data::DataBlock<'a, nexrad_decode::messages::digital_radar_data::GenericDataBlock<'a>>>
 pub fn nexrad_decode::messages::digital_radar_data::Message<'a>::correlation_coefficient_data_block(&self) -> core::option::Option<&nexrad_decode::messages::digital_radar_data::DataBlock<'a, nexrad_decode::messages::digital_radar_data::GenericDataBlock<'a>>>
@@ -2524,10 +2524,14 @@ pub nexrad_decode::result::Error::InvalidMessageLength::delta: i32
 pub nexrad_decode::result::Error::InvalidMessageLength::message_type: alloc::string::String
 pub nexrad_decode::result::Error::MessageMissingDate
 pub nexrad_decode::result::Error::MissingCoveragePattern
+pub nexrad_decode::result::Error::Model(nexrad_model::result::Error)
 pub nexrad_decode::result::Error::UnexpectedEof
 pub nexrad_decode::result::Error::UnknownDataBlockType
 pub nexrad_decode::result::Error::UnknownDataBlockType::block_type: alloc::string::String
+impl core::convert::From<nexrad_model::result::Error> for nexrad_decode::result::Error
+pub fn nexrad_decode::result::Error::from(nexrad_model::result::Error) -> Self
 impl core::error::Error for nexrad_decode::result::Error
+pub fn nexrad_decode::result::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
 impl core::fmt::Debug for nexrad_decode::result::Error
 pub fn nexrad_decode::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for nexrad_decode::result::Error
@@ -2552,10 +2556,14 @@ pub nexrad_decode::Error::InvalidMessageLength::delta: i32
 pub nexrad_decode::Error::InvalidMessageLength::message_type: alloc::string::String
 pub nexrad_decode::Error::MessageMissingDate
 pub nexrad_decode::Error::MissingCoveragePattern
+pub nexrad_decode::Error::Model(nexrad_model::result::Error)
 pub nexrad_decode::Error::UnexpectedEof
 pub nexrad_decode::Error::UnknownDataBlockType
 pub nexrad_decode::Error::UnknownDataBlockType::block_type: alloc::string::String
+impl core::convert::From<nexrad_model::result::Error> for nexrad_decode::result::Error
+pub fn nexrad_decode::result::Error::from(nexrad_model::result::Error) -> Self
 impl core::error::Error for nexrad_decode::result::Error
+pub fn nexrad_decode::result::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
 impl core::fmt::Debug for nexrad_decode::result::Error
 pub fn nexrad_decode::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for nexrad_decode::result::Error

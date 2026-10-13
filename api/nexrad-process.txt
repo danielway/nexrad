@@ -237,7 +237,11 @@ pub mod nexrad_process::result
 pub nexrad_process::result::Error::InvalidGeometry(alloc::string::String)
 pub nexrad_process::result::Error::InvalidParameter(alloc::string::String)
 pub nexrad_process::result::Error::MissingData(alloc::string::String)
+pub nexrad_process::result::Error::Model(nexrad_model::result::Error)
+impl core::convert::From<nexrad_model::result::Error> for nexrad_process::result::Error
+pub fn nexrad_process::result::Error::from(nexrad_model::result::Error) -> Self
 impl core::error::Error for nexrad_process::result::Error
+pub fn nexrad_process::result::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
 impl core::fmt::Debug for nexrad_process::result::Error
 pub fn nexrad_process::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for nexrad_process::result::Error
@@ -254,7 +258,11 @@ pub type nexrad_process::result::Result<T> = core::result::Result<T, nexrad_proc
 pub nexrad_process::Error::InvalidGeometry(alloc::string::String)
 pub nexrad_process::Error::InvalidParameter(alloc::string::String)
 pub nexrad_process::Error::MissingData(alloc::string::String)
+pub nexrad_process::Error::Model(nexrad_model::result::Error)
+impl core::convert::From<nexrad_model::result::Error> for nexrad_process::result::Error
+pub fn nexrad_process::result::Error::from(nexrad_model::result::Error) -> Self
 impl core::error::Error for nexrad_process::result::Error
+pub fn nexrad_process::result::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
 impl core::fmt::Debug for nexrad_process::result::Error
 pub fn nexrad_process::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for nexrad_process::result::Error

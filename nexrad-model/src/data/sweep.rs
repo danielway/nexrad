@@ -25,14 +25,32 @@ pub struct Sweep {
 
 impl Sweep {
     /// Create a new radar sweep with the given elevation number and radials.
-    pub fn new(elevation_number: u8, radials: Vec<Radial>) -> Self {
-        Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::ElevationMismatch`] if any radial's elevation number differs from
+    /// `elevation_number`.
+    pub fn new(elevation_number: u8, radials: Vec<Radial>) -> Result<Self> {
+        if let Some(radial) = radials
+            .iter()
+            .find(|radial| radial.elevation_number() != elevation_number)
+        {
+            return Err(Error::ElevationMismatch {
+                expected: elevation_number,
+                actual: radial.elevation_number(),
+            });
+        }
+
+        Ok(Self {
             elevation_number,
             radials,
-        }
+        })
     }
 
     /// Create a new radar sweep from a list of radials by splitting them by elevation.
+    ///
+    /// Consecutive radials with the same elevation number form one sweep, so every returned
+    /// sweep upholds the invariant checked by [`new`](Self::new).
     pub fn from_radials(radials: Vec<Radial>) -> Vec<Self> {
         let mut sweeps = Vec::new();
 
@@ -42,8 +60,10 @@ impl Sweep {
         for radial in radials {
             if let Some(elevation_number) = sweep_elevation_number {
                 if elevation_number != radial.elevation_number() {
-                    sweeps.push(Sweep::new(elevation_number, sweep_radials));
-                    sweep_radials = Vec::new();
+                    sweeps.push(Sweep {
+                        elevation_number,
+                        radials: std::mem::take(&mut sweep_radials),
+                    });
                 }
             }
 
@@ -54,7 +74,10 @@ impl Sweep {
         // Push the final sweep if there are remaining radials
         if let Some(elevation_number) = sweep_elevation_number {
             if !sweep_radials.is_empty() {
-                sweeps.push(Sweep::new(elevation_number, sweep_radials));
+                sweeps.push(Sweep {
+                    elevation_number,
+                    radials: sweep_radials,
+                });
             }
         }
 
@@ -76,23 +99,12 @@ impl Sweep {
     ///
     /// Returns `None` if the sweep has no radials.
     pub fn elevation_angle_degrees(&self) -> Option<f32> {
-        if self.radials.is_empty() {
-            return None;
-        }
-
         let mut angles: Vec<f32> = self
             .radials
             .iter()
             .map(|r| r.elevation_angle_degrees())
             .collect();
-        angles.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-
-        let mid = angles.len() / 2;
-        if angles.len().is_multiple_of(2) {
-            Some((angles[mid - 1] + angles[mid]) / 2.0)
-        } else {
-            Some(angles[mid])
-        }
+        median(&mut angles)
     }
 
     /// The elevation angle for this sweep.
@@ -125,13 +137,14 @@ impl Sweep {
     ///
     /// let reflectivity = MomentData::from_fixed_point(
     ///     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
-    /// );
-    /// let radial = Radial::builder(0, 0.0, 1, 0.5).moment(reflectivity).build();
-    /// let sweep = Sweep::new(1, vec![radial]);
+    /// )?;
+    /// let radial = Radial::builder(0, 0.0, 1, 0.5).moment(reflectivity).build()?;
+    /// let sweep = Sweep::new(1, vec![radial])?;
     ///
     /// let field = sweep.field(Product::Reflectivity).unwrap();
     /// assert_eq!(field.gate_count(), 3);
     /// assert!(sweep.field(Product::Velocity).is_none());
+    /// # Ok::<(), nexrad_model::result::Error>(())
     /// ```
     pub fn field(&self, product: Product) -> Option<SweepField> {
         SweepField::from_radials(self.radials(), product)
@@ -163,9 +176,16 @@ impl Sweep {
 
     /// Merges this sweep with another sweep, combining their radials into a single sweep. The
     /// sweeps must be at the same elevation, and they should not have duplicate azimuth radials.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::ElevationMismatch`] if the sweeps' elevation numbers differ.
     pub fn merge(self, other: Self) -> Result<Self> {
         if self.elevation_number != other.elevation_number {
-            return Err(Error::ElevationMismatch);
+            return Err(Error::ElevationMismatch {
+                expected: self.elevation_number,
+                actual: other.elevation_number,
+            });
         }
 
         let mut radials = self.radials;
@@ -193,5 +213,20 @@ impl Display for Sweep {
         } else {
             write!(f, "Sweep (no radials)")
         }
+    }
+}
+
+/// The median of `values`, sorting them in place. The mean of the two middle values is used for
+/// an even count. Returns `None` if `values` is empty.
+pub(crate) fn median(values: &mut [f32]) -> Option<f32> {
+    values.sort_by(f32::total_cmp);
+
+    let mid = values.len() / 2;
+    let upper = *values.get(mid)?;
+    if values.len().is_multiple_of(2) {
+        let lower = *values.get(mid.checked_sub(1)?)?;
+        Some((lower + upper) / 2.0)
+    } else {
+        Some(upper)
     }
 }

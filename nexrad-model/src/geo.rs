@@ -252,6 +252,7 @@ mod tests {
             .site_elevation_meters(370)
             .feedhorn_height_meters(10)
             .build()
+            .unwrap()
     }
 
     #[test]

@@ -21,8 +21,12 @@ fn sweep_field() -> SweepField {
                 2.0,
                 66.0,
                 vec![100; 100],
-            );
-            Radial::builder(0, az as f32, 1, 0.5).moment(moment).build()
+            )
+            .unwrap();
+            Radial::builder(0, az as f32, 1, 0.5)
+                .moment(moment)
+                .build()
+                .unwrap()
         })
         .collect();
     SweepField::from_radials(&radials, Product::Reflectivity).expect("field is created")
@@ -42,20 +46,21 @@ fn extent() -> GeoExtent {
 }
 
 fn cartesian_field(width: usize, height: usize) -> CartesianField {
-    let mut field = CartesianField::new("Test", "dBZ", extent(), width, height);
+    let mut field = CartesianField::new("Test", "dBZ", extent(), width, height).unwrap();
     for row in 0..height {
         for col in 0..width {
-            field.set(row, col, 30.0, GateStatus::Valid);
+            field.set(row, col, 30.0, GateStatus::Valid).unwrap();
         }
     }
     field
 }
 
 fn vertical_field(width: usize, height: usize) -> VerticalField {
-    let mut field = VerticalField::new("Test", "dBZ", (0.0, 100.0), (0.0, 10000.0), width, height);
+    let mut field =
+        VerticalField::new("Test", "dBZ", (0.0, 100.0), (0.0, 10000.0), width, height).unwrap();
     for row in 0..height {
         for col in 0..width {
-            field.set(row, col, 30.0, GateStatus::Valid);
+            field.set(row, col, 30.0, GateStatus::Valid).unwrap();
         }
     }
     field
@@ -82,17 +87,21 @@ fn zero_dimensions_are_rejected_by_every_renderer() {
 }
 
 #[test]
-fn empty_grid_fields_are_rejected() {
-    let scale = default_scale(Product::Reflectivity);
-    let options = RenderOptions::new(16, 16);
-
+fn empty_grid_fields_cannot_be_constructed() {
+    // The model rejects zero-sized grids, so the renderers never receive one from a constructor.
     assert!(matches!(
-        render_cartesian(&cartesian_field(0, 4), &scale, &options),
-        Err(Error::EmptyField)
+        CartesianField::new("Test", "dBZ", extent(), 0, 4),
+        Err(nexrad_model::result::Error::InvalidGeometry {
+            parameter: "width",
+            ..
+        })
     ));
     assert!(matches!(
-        render_vertical(&vertical_field(4, 0), &scale, &options),
-        Err(Error::EmptyField)
+        VerticalField::new("Test", "dBZ", (0.0, 100.0), (0.0, 10000.0), 4, 0),
+        Err(nexrad_model::result::Error::InvalidGeometry {
+            parameter: "height",
+            ..
+        })
     ));
 }
 

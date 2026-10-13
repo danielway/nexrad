@@ -1,3 +1,4 @@
+use crate::result::{Error, Result};
 use std::fmt::Display;
 
 #[cfg(feature = "serde")]
@@ -33,14 +34,10 @@ impl Site {
         }
     }
 
-    /// The four-letter ICAO identifier for the radar site.
-    pub fn identifier(&self) -> &[u8; 4] {
-        &self.identifier
-    }
-
-    /// The four-letter ICAO identifier for the radar site as a string.
-    pub fn identifier_string(&self) -> String {
-        String::from_utf8_lossy(&self.identifier).to_string()
+    /// The four-letter ICAO identifier for the radar site, such as `"KTLX"`.
+    pub fn identifier(&self) -> &str {
+        // The builder only accepts four ASCII alphanumeric bytes, which are always valid UTF-8.
+        std::str::from_utf8(&self.identifier).unwrap_or_default()
     }
 
     /// The latitude of the radar site in degrees.
@@ -83,6 +80,23 @@ impl Site {
 ///
 /// - `site_elevation_meters`: `0`
 /// - `feedhorn_height_meters`: `0`
+///
+/// [`build`](Self::build) returns [`Error::InvalidSite`] unless the identifier is four ASCII
+/// alphanumeric bytes, the latitude is finite and within `-90.0..=90.0`, and the longitude is
+/// finite and within `-180.0..=180.0`.
+///
+/// # Example
+///
+/// ```
+/// use nexrad_model::meta::Site;
+///
+/// let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
+///     .site_elevation_meters(370)
+///     .build()?;
+/// assert_eq!(site.identifier(), "KTLX");
+/// assert!(Site::builder(*b"KT X", 35.3331, -97.2778).build().is_err());
+/// # Ok::<(), nexrad_model::result::Error>(())
+/// ```
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct SiteBuilder {
@@ -103,9 +117,31 @@ impl SiteBuilder {
     }
 
     /// Build the [`Site`].
-    #[must_use]
-    pub fn build(self) -> Site {
-        self.site
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidSite`] if any rule listed on [`SiteBuilder`] is broken.
+    pub fn build(self) -> Result<Site> {
+        let site = &self.site;
+        if !site.identifier.iter().all(u8::is_ascii_alphanumeric) {
+            return Err(Error::InvalidSite {
+                parameter: "identifier",
+                reason: "must be four ASCII alphanumeric characters",
+            });
+        }
+        if !(-90.0..=90.0).contains(&site.latitude) {
+            return Err(Error::InvalidSite {
+                parameter: "latitude",
+                reason: "must be finite and within -90.0..=90.0",
+            });
+        }
+        if !(-180.0..=180.0).contains(&site.longitude) {
+            return Err(Error::InvalidSite {
+                parameter: "longitude",
+                reason: "must be finite and within -180.0..=180.0",
+            });
+        }
+        Ok(self.site)
     }
 }
 
@@ -114,7 +150,7 @@ impl Display for Site {
         write!(
             f,
             "{} ({:.4}°, {:.4}°, {}m)",
-            self.identifier_string(),
+            self.identifier(),
             self.latitude,
             self.longitude,
             self.site_elevation_meters

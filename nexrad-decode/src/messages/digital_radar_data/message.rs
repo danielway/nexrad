@@ -328,26 +328,33 @@ impl<'a> Message<'a> {
             builder = builder.moment(moment);
         }
 
-        Ok(builder.build())
+        Ok(builder.build()?)
     }
 }
 
 #[cfg(feature = "model")]
 impl Message<'_> {
     /// The radar site that produced this message, built from the header's radar identifier and
-    /// the volume data block's location and heights. Returns `None` when the message carries no
-    /// volume data block.
-    pub fn site(&self) -> Option<nexrad_model::meta::Site> {
-        let volume = self.volume_data_block.as_ref()?.inner();
-        Some(
-            nexrad_model::meta::Site::builder(
-                *self.header.radar_identifier_raw(),
-                volume.latitude_degrees() as f64,
-                volume.longitude_degrees() as f64,
-            )
-            .site_elevation_meters(volume.site_height_meters())
-            .feedhorn_height_meters(volume.tower_height_meters())
-            .build(),
+    /// the volume data block's location and heights. Returns `Ok(None)` when the message carries
+    /// no volume data block.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Model`](crate::result::Error::Model) if the radar identifier or location
+    /// is invalid.
+    pub fn site(&self) -> crate::result::Result<Option<nexrad_model::meta::Site>> {
+        let Some(volume) = self.volume_data_block.as_ref() else {
+            return Ok(None);
+        };
+        let volume = volume.inner();
+        let site = nexrad_model::meta::Site::builder(
+            *self.header.radar_identifier_raw(),
+            volume.latitude_degrees() as f64,
+            volume.longitude_degrees() as f64,
         )
+        .site_elevation_meters(volume.site_height_meters())
+        .feedhorn_height_meters(volume.tower_height_meters())
+        .build()?;
+        Ok(Some(site))
     }
 }

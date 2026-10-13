@@ -5,6 +5,8 @@
 //! [NOAA Radar Operations Center](https://www.roc.noaa.gov/build-loaded.php), with location data
 //! from the [NCEI station report](https://www.ncei.noaa.gov/access/homr/file/nexrad-stations.txt).
 
+use crate::result::{Error, Result};
+
 /// Metadata for a NEXRAD radar site in the static registry.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
@@ -25,13 +27,22 @@ pub struct SiteEntry {
 
 impl SiteEntry {
     /// Create a [`super::Site`] from this registry entry.
-    pub fn to_site(&self) -> super::Site {
-        let mut id = [0u8; 4];
-        let bytes = self.id.as_bytes();
-        let len = bytes.len().min(4);
-        id[..len].copy_from_slice(&bytes[..len]);
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidSite`] if the entry's identifier is not four ASCII alphanumeric
+    /// characters or its location is out of range, which no entry in the registry is.
+    pub fn to_site(&self) -> Result<super::Site> {
+        let identifier: [u8; 4] =
+            self.id
+                .as_bytes()
+                .try_into()
+                .map_err(|_| Error::InvalidSite {
+                    parameter: "identifier",
+                    reason: "must be four ASCII alphanumeric characters",
+                })?;
 
-        super::Site::builder(id, self.latitude, self.longitude)
+        super::Site::builder(identifier, self.latitude, self.longitude)
             .site_elevation_meters(self.site_elevation_meters)
             .build()
     }
@@ -1421,6 +1432,16 @@ mod tests {
 
         for id in ["KABC", "KACG", "KAIH", "KAKC", "KLIX"] {
             assert!(site_by_id(id).is_none(), "unexpected obsolete site {id}");
+        }
+    }
+
+    #[test]
+    fn every_registry_entry_converts_to_a_valid_site() {
+        for entry in sites() {
+            let site = entry
+                .to_site()
+                .unwrap_or_else(|error| panic!("{} is invalid: {error}", entry.id));
+            assert_eq!(site.identifier(), entry.id);
         }
     }
 

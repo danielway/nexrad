@@ -5,13 +5,13 @@
 //! This crate serves as the main entry point for the NEXRAD library suite, providing
 //! ergonomic top-level functions and re-exports from the underlying crates:
 //!
-//! - `nexrad-model` as [`model`] - Core data model types (Scan, Sweep, Radial, Site)
-//! - `nexrad-decode` as [`decode`] - Binary protocol decoding for Archive II format
-//! - `nexrad-data` as [`data`] - Data access (local files, AWS S3)
-//! - `nexrad-process` as [`process`] - Radar data processing algorithms
-//! - `nexrad-render` as [`render`] - Visualization and rendering
-//! - `chrono` as [`chrono`] - Date and time types, re-exported because [`download_latest`],
-//!   [`download_at`] and [`list_scans`] take them
+//! - `nexrad-model` as `model` - Core data model types (Scan, Sweep, Radial, Site)
+//! - `nexrad-decode` as `decode` - Binary protocol decoding for Archive II format
+//! - `nexrad-data` as `data` - Data access (local files, AWS S3)
+//! - `nexrad-process` as `process` - Radar data processing algorithms
+//! - `nexrad-render` as `render` - Visualization and rendering
+//! - `chrono` as `chrono` - Date and time types, re-exported because `download_latest`,
+//!   `download_at` and `list_scans` take them
 //!
 //! ## Quick Start
 //!
@@ -67,7 +67,7 @@
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
 //! | `serde` | Serialization support for model types | | serde | Yes |
 //! | `uom` | Type-safe units of measure | | uom | Yes |
-//! | `chrono` | Date/time types on model types, and the [`chrono`] re-export | | chrono | Yes |
+//! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono | Yes |
 //! | `wasm` | All WASM-compatible features | `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, `chrono` | | Yes |
 //! | `full` | Enable all features (default) | `wasm`, `parallel` | | No |
 //!

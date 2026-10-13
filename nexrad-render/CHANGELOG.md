@@ -18,7 +18,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Projection`, a `#[non_exhaustive]` enum describing how a rendered image maps to data coordinates:
   `Polar { center_pixel, pixels_per_km, max_range_km, elevation_angle_degrees }`, `Geographic { extent }` and
   `Vertical { distance_range_km, altitude_range_meters }`; read it with `RenderMetadata::projection()`. Each variant
-  is also `#[non_exhaustive]`, so struct patterns outside this crate need `..`. (#174, #PRN)
+  is also `#[non_exhaustive]`, so struct patterns outside this crate need `..`. (#174, #182)
 - `pub use image;`: the `image` crate is re-exported at the crate root, alongside `RgbaImage`. An `image` major
   version bump is a `nexrad-render` major version bump. (#174)
 - `ColorLookupTable::new(&ColorScale, min, max, size)`. (#174)
@@ -49,9 +49,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `RenderMetadata::pixel_to_geo` and `geo_to_pixel` map linearly through the extent for `render_cartesian` results
   and return `None` for `render_vertical` results; polar behaviour is unchanged. (#174)
 - `RenderResult::new` is crate-private; it could not be called usefully outside the crate. (#174)
-- `RenderMetadata::elevation_degrees()` → `elevation_angle_degrees()`, matching the `nexrad-model` angle stems. (#PRN)
+- `RenderMetadata::elevation_degrees()` → `elevation_angle_degrees()`, matching the `nexrad-model` angle stems. (#182)
 - `PointQuery` is `#[non_exhaustive]`; it can no longer be built with a struct literal outside this crate. Its `polar`
-  field follows the renamed `PolarPoint::{azimuth_angle_degrees, elevation_angle_degrees}`. (#PRN)
+  field follows the renamed `PolarPoint::{azimuth_angle_degrees, elevation_angle_degrees}`. (#182)
 - When a field has no valid data, `render_sweep` picks its color lookup range from the field's product
   (`Product::value_range`) before the reflectivity default. Rendered output does not change. (#174)
 

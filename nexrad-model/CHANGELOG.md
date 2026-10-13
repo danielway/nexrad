@@ -61,7 +61,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `VolumeCoveragePattern::builder(pattern_number: VcpNumber)`; convert a number with `VcpNumber::from_number(n)`. (#165)
 - `Site::new(identifier, latitude, longitude, height_meters, tower_height_meters)` is replaced by
   `Site::builder(identifier, latitude, longitude).site_elevation_meters(..).feedhorn_height_meters(..).build()`.
-  (#165, #PRN)
+  (#165, #182)
 - `SweepField::new_empty(..)` is replaced by `SweepField::builder(label, unit)` with setters. `build()` returns
   `Result<SweepField>` and fails with `Error::InvalidSweepGeometry` when `azimuth_angles_degrees` is empty,
   `gate_count` is 0 or `gate_interval_km` is not positive; `new_empty` did no validation. (#165)
@@ -82,7 +82,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   identifiers, and `registry::nearest_site` can return a different site. (#148)
 - Model accessors follow one naming rule: angles use the stems `azimuth_angle_degrees`/`elevation_angle_degrees`,
   lengths end in `_meters` or `_km`, velocities in `_mps` and timestamps in `_millis`. The matching builder setters and
-  serde field names change with them (#PRN):
+  serde field names change with them (#182):
   - `SweepField::elevation_degrees()` → `elevation_angle_degrees()`, `azimuths()` → `azimuth_angles_degrees()` and
     `radial_status_mut(usize)` → `radial_statuses_mut(usize)`.
   - `geo::PolarPoint::{azimuth_degrees, elevation_degrees}` → `{azimuth_angle_degrees, elevation_angle_degrees}`.
@@ -95,9 +95,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   - `meta::registry::SiteEntry::elevation_meters` → `site_elevation_meters`.
 - `ElevationCut::elevation_angle_degrees()` returns `f32` and `ElevationCut::builder` takes an `f32` elevation angle,
   like the angles on `Radial`, `Sweep` and `SweepField`. `Scan::sweeps_at_elevation` takes `f32` (as in
-  1.0.0-rc.2). (#PRN)
+  1.0.0-rc.2). (#182)
 - `meta::registry::SiteEntry` is `#[non_exhaustive]`; it can no longer be built with a struct literal outside this
-  crate. (#PRN)
+  crate. (#182)
 - `Debug` output changed: renamed types and variants print their new names (#160); binary blobs print
   `fnv1a: 0x<16 hex digits>` instead of `sha256: "<hex>"` (#162); `Radial`/`MomentData` no longer nest an
   `inner: MomentDataBlock { .. }` and show a `product` field (#170).

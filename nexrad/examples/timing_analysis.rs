@@ -463,7 +463,7 @@ async fn main() -> nexrad::Result<()> {
                     let name = scan_id.name().to_string();
                     eprintln!("    Downloading: {}", name);
 
-                    match nexrad::download(scan_id.clone()).await {
+                    match nexrad::download(scan_id).await {
                         Ok(scan) => {
                             if let Some(timing) = analyze_scan(&scan, &name, site) {
                                 eprintln!(

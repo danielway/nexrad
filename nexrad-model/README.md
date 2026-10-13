@@ -66,18 +66,19 @@ use nexrad_model::meta::Site;
 
 let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
     .site_elevation_meters(370)
-    .build();
+    .build()?;
 
 let field = SweepField::builder("Reflectivity", "dBZ")
     .product(Product::Reflectivity)
     .azimuth_angles_degrees(vec![0.0, 1.0, 2.0])
     .gate_interval_km(0.25)
     .gate_count(1832)
-    .build()
-    .expect("valid geometry");
+    .build()?;
 ```
 
-`SweepFieldBuilder::build` validates the grid geometry and returns `nexrad_model::Result`. `Error` and `Result` are
+Constructors and builders with invariants (such as `SiteBuilder::build`, `SweepFieldBuilder::build`,
+`RadialBuilder::build` and `MomentData::from_fixed_point`) validate their input and return `nexrad_model::Result`;
+field indexing (`get`, the row accessors) returns `Option`. `Error` and `Result` are
 re-exported at the crate root.
 
 ## Geographic Types

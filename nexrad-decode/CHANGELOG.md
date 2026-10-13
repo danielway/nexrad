@@ -37,6 +37,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `RadialDataBlock::unambiguous_range_km()` and `nyquist_velocity_mps()`, `GenericDataBlockHeader::tover_db()`,
   `snr_threshold_db()` and `moment_size_bytes()`, `Header::azimuth_resolution_spacing_degrees()` and
   `rda_status_data::Message::vertical_reflectivity_calibration_correction_db()`. (#173)
+- `Error::Model(nexrad_model::Error)` (feature `model`), returned when decoded values fail a model constructor's
+  validation, such as moment data whose gate count does not match its data or a radial with an azimuth outside
+  `0.0..360.0`. (#PRNUM)
 
 ### Changed
 
@@ -109,6 +112,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Debug` output changed: renamed types and variants print their new names (#160), binary blobs print
   `fnv1a: 0x<16 hex digits>` instead of `sha256: "<hex>"` (#162), and `digital_radar_data_legacy::Message` field
   names follow the accessor names (#173).
+- `digital_radar_data::Message::site()` returns `Result<Option<Site>>`, failing with `Error::Model` when the radar
+  identifier or location is invalid; `model::ScanBuilder::add_message` propagates it. (#PRNUM)
+- `DataBlock::moment_data`/`into_moment_data`, `Message::radial`/`into_radial` (types 1 and 31) return
+  `Error::Model` for data the model rejects instead of building an invalid `MomentData` or `Radial`. (#PRNUM)
 
 ### Removed
 

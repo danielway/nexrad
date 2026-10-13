@@ -230,7 +230,11 @@ builds for WASM. Only `parallel` (rayon threads) is excluded from the `wasm` fea
   value; a decoded plain number is `<stem>_<unit>()` (`azimuth_angle_degrees()`, `unambiguous_range_km()`); a decoded
   enum or struct is the bare stem (`radial_status()`); and `uom` accessors take the bare stem and are feature-gated
   (`azimuth_angle()`).
-- **Model types** keep unit suffixes on plain numbers: `_degrees`, `_km`, `_mps`, `_meters`.
+- **Model types** keep unit suffixes on plain numbers. Angle accessors use the stems `azimuth_angle_degrees` and
+  `elevation_angle_degrees` (a slice of azimuths is `azimuth_angles_degrees`); lengths end in `_meters` or `_km`,
+  velocities in `_mps`, and timestamps in `_millis` (`collection_timestamp_millis`). Site heights use one vocabulary:
+  `site_elevation_meters` is the ground elevation above mean sea level (MSL) and `feedhorn_height_meters` is the
+  feedhorn's height above ground level (AGL).
 - **Numeric types**: geographic coordinates and ranges are `f64`; gate values (and the angles stored alongside them on
   `Radial`, `Sweep` and `SweepField`) are `f32`; image dimensions are `u32`.
 - **Constructors**: types with invariants have private fields. `Radial`, `ElevationCut`, `VolumeCoveragePattern`,
@@ -364,6 +368,13 @@ Non-exhaustive (new failure modes, ICD message types, products, and scan strateg
   `digital_radar_data::DataBlockName`
 - `nexrad_model::data`: `Product`, `VcpNumber`
 - `nexrad_render`: `Projection`
+
+Non-exhaustive structs and enum variants (fields may be added during 1.x, so code outside the defining crate cannot
+construct them with a literal and must use `..` in struct patterns):
+
+- `nexrad_model::meta::registry::SiteEntry`
+- `nexrad_render`: the `Projection::Polar`, `Projection::Geographic` and `Projection::Vertical` variants, and
+  `PointQuery`
 
 Exhaustive by design (variants are fixed by the NOAA ICD or by the crate's own format, and several are matched per gate
 or per radial in hot loops where an exhaustive match is clearer and lets callers rely on the compiler):

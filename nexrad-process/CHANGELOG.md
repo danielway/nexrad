@@ -36,6 +36,11 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Invalid `MedianFilter` kernel sizes and `GaussianSmooth` sigmas are reported by `new` instead of
   `SweepProcessor::process`, and `GaussianSmooth::new` rejects NaN and infinite sigmas, which were previously
   accepted. (#175)
+- Angle accessors use the `nexrad-model` stems: `detection::StormCell::elevation_degrees()` →
+  `elevation_angle_degrees()` and `max_reflectivity_azimuth_degrees()` → `max_reflectivity_azimuth_angle_degrees()`.
+  (#PRN)
+- `derived::VerticalCrossSection::new` parameters are named `azimuth_angle_degrees` and `max_altitude_meters`
+  (formerly `azimuth_degrees` and `max_altitude_m`); the types are unchanged. (#PRN)
 
 ### Removed
 

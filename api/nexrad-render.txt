@@ -84,15 +84,15 @@ impl core::marker::UnsafeUnpin for nexrad_render::Interpolation
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_render::Interpolation
 impl core::panic::unwind_safe::UnwindSafe for nexrad_render::Interpolation
 #[non_exhaustive] pub enum nexrad_render::Projection
-pub nexrad_render::Projection::Geographic
+#[non_exhaustive] pub nexrad_render::Projection::Geographic
 pub nexrad_render::Projection::Geographic::extent: nexrad_model::geo::GeoExtent
-pub nexrad_render::Projection::Polar
+#[non_exhaustive] pub nexrad_render::Projection::Polar
 pub nexrad_render::Projection::Polar::center_pixel: (f64, f64)
-pub nexrad_render::Projection::Polar::elevation_degrees: f64
+pub nexrad_render::Projection::Polar::elevation_angle_degrees: f64
 pub nexrad_render::Projection::Polar::max_range_km: f64
 pub nexrad_render::Projection::Polar::pixels_per_km: f64
-pub nexrad_render::Projection::Vertical
-pub nexrad_render::Projection::Vertical::altitude_range_m: (f64, f64)
+#[non_exhaustive] pub nexrad_render::Projection::Vertical
+pub nexrad_render::Projection::Vertical::altitude_range_meters: (f64, f64)
 pub nexrad_render::Projection::Vertical::distance_range_km: (f64, f64)
 impl core::clone::Clone for nexrad_render::Projection
 pub fn nexrad_render::Projection::clone(&self) -> Self
@@ -216,7 +216,7 @@ impl core::marker::Unpin for nexrad_render::DiscreteColorScale
 impl core::marker::UnsafeUnpin for nexrad_render::DiscreteColorScale
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_render::DiscreteColorScale
 impl core::panic::unwind_safe::UnwindSafe for nexrad_render::DiscreteColorScale
-pub struct nexrad_render::PointQuery
+#[non_exhaustive] pub struct nexrad_render::PointQuery
 pub nexrad_render::PointQuery::geo: core::option::Option<nexrad_model::geo::GeoPoint3D>
 pub nexrad_render::PointQuery::polar: nexrad_model::geo::PolarPoint
 pub nexrad_render::PointQuery::status: nexrad_model::data::moment::GateStatus
@@ -236,7 +236,7 @@ pub struct nexrad_render::RenderMetadata
 impl nexrad_render::RenderMetadata
 pub fn nexrad_render::RenderMetadata::center_pixel(&self) -> core::option::Option<(f64, f64)>
 pub fn nexrad_render::RenderMetadata::coord_system(&self) -> core::option::Option<&nexrad_model::geo::RadarCoordinateSystem>
-pub fn nexrad_render::RenderMetadata::elevation_degrees(&self) -> core::option::Option<f64>
+pub fn nexrad_render::RenderMetadata::elevation_angle_degrees(&self) -> core::option::Option<f64>
 pub fn nexrad_render::RenderMetadata::geo_extent(&self) -> core::option::Option<&nexrad_model::geo::GeoExtent>
 pub fn nexrad_render::RenderMetadata::geo_to_pixel(&self, &nexrad_model::geo::GeoPoint) -> core::option::Option<(f64, f64)>
 pub fn nexrad_render::RenderMetadata::height(&self) -> u32

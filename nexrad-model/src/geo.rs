@@ -45,11 +45,11 @@ pub struct GeoExtent {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PolarPoint {
     /// Azimuth angle in degrees clockwise from north (0-360).
-    pub azimuth_degrees: f64,
+    pub azimuth_angle_degrees: f64,
     /// Slant range from the radar in kilometers.
     pub range_km: f64,
     /// Elevation angle in degrees above the horizon.
-    pub elevation_degrees: f64,
+    pub elevation_angle_degrees: f64,
 }
 
 /// Standard 4/3 effective earth radius in meters.
@@ -77,12 +77,14 @@ pub struct RadarCoordinateSystem {
 impl RadarCoordinateSystem {
     /// Create a new radar coordinate system from a site's metadata.
     ///
-    /// The antenna height is computed as the site's ground elevation plus its tower height.
+    /// The antenna height is the sum of the site elevation above mean sea level and the feedhorn
+    /// height above ground level.
     pub fn new(site: &Site) -> Self {
         Self {
             latitude: site.latitude(),
             longitude: site.longitude(),
-            antenna_height_meters: site.height_meters() as f64 + site.tower_height_meters() as f64,
+            antenna_height_meters: site.site_elevation_meters() as f64
+                + site.feedhorn_height_meters() as f64,
         }
     }
 
@@ -96,7 +98,8 @@ impl RadarCoordinateSystem {
         self.longitude
     }
 
-    /// The radar antenna height above mean sea level in meters.
+    /// The radar antenna height above mean sea level in meters: the sum of
+    /// [`Site::site_elevation_meters`] and [`Site::feedhorn_height_meters`].
     pub fn antenna_height_meters(&self) -> f64 {
         self.antenna_height_meters
     }
@@ -108,8 +111,8 @@ impl RadarCoordinateSystem {
     /// and elevation from the radar.
     pub fn polar_to_geo(&self, polar: PolarPoint) -> GeoPoint3D {
         let range_m = polar.range_km * 1000.0;
-        let elev_rad = polar.elevation_degrees.to_radians();
-        let az_rad = polar.azimuth_degrees.to_radians();
+        let elev_rad = polar.elevation_angle_degrees.to_radians();
+        let az_rad = polar.azimuth_angle_degrees.to_radians();
 
         // Beam height using 4/3 earth radius model
         // h = sqrt(r^2 + R_e^2 + 2*r*R_e*sin(el)) - R_e + h_antenna
@@ -150,7 +153,7 @@ impl RadarCoordinateSystem {
     ///
     /// Computes the azimuth and range from the radar to the given geographic point
     /// at the specified elevation angle.
-    pub fn geo_to_polar(&self, point: GeoPoint, elevation_degrees: f64) -> PolarPoint {
+    pub fn geo_to_polar(&self, point: GeoPoint, elevation_angle_degrees: f64) -> PolarPoint {
         let lat1 = self.latitude.to_radians();
         let lon1 = self.longitude.to_radians();
         let lat2 = point.latitude.to_radians();
@@ -162,7 +165,7 @@ impl RadarCoordinateSystem {
         let y = d_lon.sin() * lat2.cos();
         let x = lat1.cos() * lat2.sin() - lat1.sin() * lat2.cos() * d_lon.cos();
         let azimuth_rad = y.atan2(x);
-        let azimuth_degrees = (azimuth_rad.to_degrees() + 360.0) % 360.0;
+        let azimuth_angle_degrees = (azimuth_rad.to_degrees() + 360.0) % 360.0;
 
         // Great-circle distance
         let a = ((lat2 - lat1) / 2.0).sin().powi(2)
@@ -171,13 +174,13 @@ impl RadarCoordinateSystem {
         let ground_range_m = angular_distance * 6_371_000.0;
 
         // Invert the beam height equation to get slant range
-        let elev_rad = elevation_degrees.to_radians();
+        let elev_rad = elevation_angle_degrees.to_radians();
         let range_m = ground_range_m / elev_rad.cos(); // Approximation for small elevations
 
         PolarPoint {
-            azimuth_degrees,
+            azimuth_angle_degrees,
             range_km: range_m / 1000.0,
-            elevation_degrees,
+            elevation_angle_degrees,
         }
     }
 
@@ -188,24 +191,24 @@ impl RadarCoordinateSystem {
     pub fn sweep_extent(&self, max_range_km: f64) -> GeoExtent {
         // Compute the geographic offset for the max range in each cardinal direction
         let north = self.polar_to_geo(PolarPoint {
-            azimuth_degrees: 0.0,
+            azimuth_angle_degrees: 0.0,
             range_km: max_range_km,
-            elevation_degrees: 0.0,
+            elevation_angle_degrees: 0.0,
         });
         let south = self.polar_to_geo(PolarPoint {
-            azimuth_degrees: 180.0,
+            azimuth_angle_degrees: 180.0,
             range_km: max_range_km,
-            elevation_degrees: 0.0,
+            elevation_angle_degrees: 0.0,
         });
         let east = self.polar_to_geo(PolarPoint {
-            azimuth_degrees: 90.0,
+            azimuth_angle_degrees: 90.0,
             range_km: max_range_km,
-            elevation_degrees: 0.0,
+            elevation_angle_degrees: 0.0,
         });
         let west = self.polar_to_geo(PolarPoint {
-            azimuth_degrees: 270.0,
+            azimuth_angle_degrees: 270.0,
             range_km: max_range_km,
-            elevation_degrees: 0.0,
+            elevation_angle_degrees: 0.0,
         });
 
         GeoExtent {
@@ -223,17 +226,17 @@ impl RadarCoordinateSystem {
     /// Compute the geographic location of a specific gate in a radial.
     pub fn gate_location(
         &self,
-        azimuth_degrees: f64,
-        elevation_degrees: f64,
+        azimuth_angle_degrees: f64,
+        elevation_angle_degrees: f64,
         gate_index: usize,
         first_gate_km: f64,
         gate_interval_km: f64,
     ) -> GeoPoint3D {
         let range_km = first_gate_km + (gate_index as f64) * gate_interval_km;
         self.polar_to_geo(PolarPoint {
-            azimuth_degrees,
+            azimuth_angle_degrees,
             range_km,
-            elevation_degrees,
+            elevation_angle_degrees,
         })
     }
 }
@@ -246,8 +249,8 @@ mod tests {
     fn test_site() -> Site {
         // KTLX (Oklahoma City) approximate coordinates
         Site::builder(*b"KTLX", 35.3331, -97.2778)
-            .height_meters(370)
-            .tower_height_meters(10)
+            .site_elevation_meters(370)
+            .feedhorn_height_meters(10)
             .build()
     }
 
@@ -255,9 +258,9 @@ mod tests {
     fn test_polar_to_geo_at_origin() {
         let cs = RadarCoordinateSystem::new(&test_site());
         let result = cs.polar_to_geo(PolarPoint {
-            azimuth_degrees: 0.0,
+            azimuth_angle_degrees: 0.0,
             range_km: 0.0,
-            elevation_degrees: 0.5,
+            elevation_angle_degrees: 0.5,
         });
 
         // At zero range, the point should be at the radar location
@@ -269,9 +272,9 @@ mod tests {
     fn test_polar_to_geo_northward() {
         let cs = RadarCoordinateSystem::new(&test_site());
         let result = cs.polar_to_geo(PolarPoint {
-            azimuth_degrees: 0.0,
+            azimuth_angle_degrees: 0.0,
             range_km: 100.0,
-            elevation_degrees: 0.5,
+            elevation_angle_degrees: 0.5,
         });
 
         // 100km north should increase latitude by roughly 0.9 degrees
@@ -298,14 +301,14 @@ mod tests {
     fn test_beam_height_increases_with_range() {
         let cs = RadarCoordinateSystem::new(&test_site());
         let near = cs.polar_to_geo(PolarPoint {
-            azimuth_degrees: 0.0,
+            azimuth_angle_degrees: 0.0,
             range_km: 50.0,
-            elevation_degrees: 0.5,
+            elevation_angle_degrees: 0.5,
         });
         let far = cs.polar_to_geo(PolarPoint {
-            azimuth_degrees: 0.0,
+            azimuth_angle_degrees: 0.0,
             range_km: 200.0,
-            elevation_degrees: 0.5,
+            elevation_angle_degrees: 0.5,
         });
 
         assert!(far.altitude_meters > near.altitude_meters);
@@ -315,14 +318,14 @@ mod tests {
     fn test_beam_height_increases_with_elevation() {
         let cs = RadarCoordinateSystem::new(&test_site());
         let low = cs.polar_to_geo(PolarPoint {
-            azimuth_degrees: 0.0,
+            azimuth_angle_degrees: 0.0,
             range_km: 100.0,
-            elevation_degrees: 0.5,
+            elevation_angle_degrees: 0.5,
         });
         let high = cs.polar_to_geo(PolarPoint {
-            azimuth_degrees: 0.0,
+            azimuth_angle_degrees: 0.0,
             range_km: 100.0,
-            elevation_degrees: 5.0,
+            elevation_angle_degrees: 5.0,
         });
 
         assert!(high.altitude_meters > low.altitude_meters);

@@ -10,7 +10,7 @@ use nexrad_model::meta::Site;
 fn test_vcp(pattern_number: u16) -> VolumeCoveragePattern {
     VolumeCoveragePattern::builder(VcpNumber::from_number(pattern_number))
         .version(1)
-        .doppler_velocity_resolution(0.5)
+        .doppler_velocity_resolution_mps(0.5)
         .pulse_width(PulseWidth::Short)
         .build()
 }
@@ -18,23 +18,23 @@ fn test_vcp(pattern_number: u16) -> VolumeCoveragePattern {
 #[test]
 fn test_site_creation() {
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
-        .height_meters(370)
-        .tower_height_meters(401)
+        .site_elevation_meters(370)
+        .feedhorn_height_meters(401)
         .build();
 
     assert_eq!(site.identifier(), b"KTLX");
     assert_eq!(site.identifier_string(), "KTLX");
     assert!((site.latitude() - 35.3331).abs() < 0.0001);
     assert!((site.longitude() - (-97.2778)).abs() < 0.0001);
-    assert_eq!(site.height_meters(), 370);
-    assert_eq!(site.tower_height_meters(), 401);
+    assert_eq!(site.site_elevation_meters(), 370);
+    assert_eq!(site.feedhorn_height_meters(), 401);
 }
 
 #[test]
 fn test_site_display() {
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
-        .height_meters(370)
-        .tower_height_meters(401)
+        .site_elevation_meters(370)
+        .feedhorn_height_meters(401)
         .build();
     let display = format!("{}", site);
 
@@ -47,8 +47,8 @@ fn test_site_display() {
 #[test]
 fn test_site_debug() {
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
-        .height_meters(370)
-        .tower_height_meters(401)
+        .site_elevation_meters(370)
+        .feedhorn_height_meters(401)
         .build();
     let debug = format!("{:?}", site);
 
@@ -59,8 +59,8 @@ fn test_site_debug() {
 #[test]
 fn test_site_clone() {
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
-        .height_meters(370)
-        .tower_height_meters(401)
+        .site_elevation_meters(370)
+        .feedhorn_height_meters(401)
         .build();
     let cloned = site.clone();
 
@@ -383,7 +383,7 @@ fn test_radial_builder_defaults() {
     assert_eq!(radial.azimuth_angle_degrees(), 6.5);
     assert_eq!(radial.elevation_number(), 2);
     assert_eq!(radial.elevation_angle_degrees(), 0.9);
-    assert_eq!(radial.collection_timestamp(), 0);
+    assert_eq!(radial.collection_timestamp_millis(), 0);
     assert_eq!(radial.azimuth_spacing_degrees(), 1.0);
     assert_eq!(radial.radial_status(), RadialStatus::IntermediateRadialData);
     assert!(radial.reflectivity().is_none());
@@ -412,13 +412,13 @@ fn test_radial_builder_setters() {
         vec![100, 110, 120],
     );
     let radial = Radial::builder(1, 0.25, 1, 0.5)
-        .collection_timestamp(1_700_000_000_000)
+        .collection_timestamp_millis(1_700_000_000_000)
         .azimuth_spacing_degrees(0.5)
         .radial_status(RadialStatus::ScanStart)
         .moment(moment.clone())
         .build();
 
-    assert_eq!(radial.collection_timestamp(), 1_700_000_000_000);
+    assert_eq!(radial.collection_timestamp_millis(), 1_700_000_000_000);
     assert_eq!(radial.azimuth_spacing_degrees(), 0.5);
     assert_eq!(radial.radial_status(), RadialStatus::ScanStart);
     assert_eq!(radial.reflectivity(), Some(&moment));
@@ -513,7 +513,7 @@ fn test_vcp_builder_defaults_and_cuts() {
     let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
     assert_eq!(vcp.pattern_number(), VcpNumber::from_number(212));
     assert_eq!(vcp.version(), 0);
-    assert_eq!(vcp.doppler_velocity_resolution(), 0.5);
+    assert_eq!(vcp.doppler_velocity_resolution_mps(), 0.5);
     assert_eq!(vcp.pulse_width(), PulseWidth::Short);
     assert!(!vcp.sails_enabled());
     assert!(vcp.elevation_cuts().is_empty());
@@ -535,8 +535,8 @@ fn test_vcp_builder_defaults_and_cuts() {
 fn test_site_builder_defaults() {
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build();
     assert_eq!(site.identifier(), b"KTLX");
-    assert_eq!(site.height_meters(), 0);
-    assert_eq!(site.tower_height_meters(), 0);
+    assert_eq!(site.site_elevation_meters(), 0);
+    assert_eq!(site.feedhorn_height_meters(), 0);
 }
 
 #[test]
@@ -544,8 +544,8 @@ fn test_sweep_field_builder() {
     use nexrad_model::data::{GateStatus, SweepField};
 
     let field = SweepField::builder("Reflectivity", "dBZ")
-        .elevation_degrees(0.5)
-        .azimuths(vec![0.0, 1.0, 2.0])
+        .elevation_angle_degrees(0.5)
+        .azimuth_angles_degrees(vec![0.0, 1.0, 2.0])
         .first_gate_range_km(2.0)
         .gate_interval_km(0.25)
         .gate_count(4)
@@ -554,7 +554,7 @@ fn test_sweep_field_builder() {
 
     assert_eq!(field.label(), "Reflectivity");
     assert_eq!(field.unit(), "dBZ");
-    assert_eq!(field.elevation_degrees(), 0.5);
+    assert_eq!(field.elevation_angle_degrees(), 0.5);
     assert_eq!(field.azimuth_count(), 3);
     assert_eq!(field.azimuth_spacing_degrees(), 1.0);
     assert_eq!(field.first_gate_range_km(), 2.0);
@@ -565,7 +565,10 @@ fn test_sweep_field_builder() {
 
     let like = field.new_like("Copy", "m/s");
     assert_eq!(like.label(), "Copy");
-    assert_eq!(like.azimuths(), field.azimuths());
+    assert_eq!(
+        like.azimuth_angles_degrees(),
+        field.azimuth_angles_degrees()
+    );
     assert_eq!(like.gate_count(), field.gate_count());
 }
 
@@ -575,12 +578,12 @@ fn test_sweep_field_builder_rejects_invalid_geometry() {
     use nexrad_model::Error;
 
     let valid = SweepField::builder("Test", "dBZ")
-        .azimuths(vec![0.0])
+        .azimuth_angles_degrees(vec![0.0])
         .gate_interval_km(0.25)
         .gate_count(1);
 
     assert!(matches!(
-        valid.clone().azimuths(vec![]).build(),
+        valid.clone().azimuth_angles_degrees(vec![]).build(),
         Err(Error::InvalidSweepGeometry(_))
     ));
     assert!(matches!(
@@ -632,7 +635,7 @@ fn test_sweep_field_product() {
     assert_eq!(like.product(), Some(Product::ClutterFilterPower));
 
     let built = SweepField::builder("Reflectivity", "dBZ")
-        .azimuths(vec![0.0])
+        .azimuth_angles_degrees(vec![0.0])
         .gate_count(1)
         .gate_interval_km(0.25)
         .build()
@@ -641,7 +644,7 @@ fn test_sweep_field_product() {
 
     let built = SweepField::builder("Reflectivity", "dBZ")
         .product(Product::Reflectivity)
-        .azimuths(vec![0.0])
+        .azimuth_angles_degrees(vec![0.0])
         .gate_count(1)
         .gate_interval_km(0.25)
         .build()
@@ -743,8 +746,8 @@ fn test_scan_coordinate_system() {
     use nexrad_model::geo::RadarCoordinateSystem;
 
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
-        .height_meters(370)
-        .tower_height_meters(20)
+        .site_elevation_meters(370)
+        .feedhorn_height_meters(20)
         .build();
     let scan = Scan::with_site(site.clone(), test_vcp(212), vec![]);
 

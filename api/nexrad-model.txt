@@ -310,12 +310,12 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::CartesianField
 pub struct nexrad_model::data::ElevationCut
 impl nexrad_model::data::ElevationCut
 pub fn nexrad_model::data::ElevationCut::azimuth_rate_degrees_per_second(&self) -> f64
-pub fn nexrad_model::data::ElevationCut::builder(f64, nexrad_model::data::WaveformType, nexrad_model::data::ChannelConfiguration) -> nexrad_model::data::ElevationCutBuilder
+pub fn nexrad_model::data::ElevationCut::builder(f32, nexrad_model::data::WaveformType, nexrad_model::data::ChannelConfiguration) -> nexrad_model::data::ElevationCutBuilder
 pub fn nexrad_model::data::ElevationCut::channel_configuration(&self) -> nexrad_model::data::ChannelConfiguration
 pub fn nexrad_model::data::ElevationCut::correlation_coefficient_threshold_db(&self) -> f32
 pub fn nexrad_model::data::ElevationCut::differential_phase_threshold_db(&self) -> f32
 pub fn nexrad_model::data::ElevationCut::differential_reflectivity_threshold_db(&self) -> f32
-pub fn nexrad_model::data::ElevationCut::elevation_angle_degrees(&self) -> f64
+pub fn nexrad_model::data::ElevationCut::elevation_angle_degrees(&self) -> f32
 pub fn nexrad_model::data::ElevationCut::is_base_tilt_cut(&self) -> bool
 pub fn nexrad_model::data::ElevationCut::is_mpda_cut(&self) -> bool
 pub fn nexrad_model::data::ElevationCut::is_mrle_cut(&self) -> bool
@@ -427,7 +427,7 @@ pub fn nexrad_model::data::Radial::azimuth_spacing_degrees(&self) -> f32
 pub fn nexrad_model::data::Radial::builder(u16, f32, u8, f32) -> nexrad_model::data::RadialBuilder
 pub fn nexrad_model::data::Radial::clutter_filter_power(&self) -> core::option::Option<&nexrad_model::data::MomentData>
 pub fn nexrad_model::data::Radial::collection_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
-pub fn nexrad_model::data::Radial::collection_timestamp(&self) -> i64
+pub fn nexrad_model::data::Radial::collection_timestamp_millis(&self) -> i64
 pub fn nexrad_model::data::Radial::correlation_coefficient(&self) -> core::option::Option<&nexrad_model::data::MomentData>
 pub fn nexrad_model::data::Radial::differential_phase(&self) -> core::option::Option<&nexrad_model::data::MomentData>
 pub fn nexrad_model::data::Radial::differential_reflectivity(&self) -> core::option::Option<&nexrad_model::data::MomentData>
@@ -461,7 +461,7 @@ pub struct nexrad_model::data::RadialBuilder
 impl nexrad_model::data::RadialBuilder
 pub fn nexrad_model::data::RadialBuilder::azimuth_spacing_degrees(self, f32) -> Self
 pub fn nexrad_model::data::RadialBuilder::build(self) -> nexrad_model::data::Radial
-pub fn nexrad_model::data::RadialBuilder::collection_timestamp(self, i64) -> Self
+pub fn nexrad_model::data::RadialBuilder::collection_timestamp_millis(self, i64) -> Self
 pub fn nexrad_model::data::RadialBuilder::moment(self, nexrad_model::data::MomentData) -> Self
 pub fn nexrad_model::data::RadialBuilder::radial_status(self, nexrad_model::data::RadialStatus) -> Self
 impl core::clone::Clone for nexrad_model::data::RadialBuilder
@@ -485,7 +485,7 @@ pub fn nexrad_model::data::Scan::first_field(&self, nexrad_model::data::Product)
 pub fn nexrad_model::data::Scan::new(nexrad_model::data::VolumeCoveragePattern, alloc::vec::Vec<nexrad_model::data::Sweep>) -> Self
 pub fn nexrad_model::data::Scan::site(&self) -> core::option::Option<&nexrad_model::meta::Site>
 pub fn nexrad_model::data::Scan::sweeps(&self) -> &[nexrad_model::data::Sweep]
-pub fn nexrad_model::data::Scan::sweeps_at_elevation(&self, f64) -> impl core::iter::traits::iterator::Iterator<Item = &nexrad_model::data::Sweep>
+pub fn nexrad_model::data::Scan::sweeps_at_elevation(&self, f32) -> impl core::iter::traits::iterator::Iterator<Item = &nexrad_model::data::Sweep>
 pub fn nexrad_model::data::Scan::time_range(&self) -> core::option::Option<(chrono::datetime::DateTime<chrono::offset::utc::Utc>, chrono::datetime::DateTime<chrono::offset::utc::Utc>)>
 pub fn nexrad_model::data::Scan::with_site(nexrad_model::meta::Site, nexrad_model::data::VolumeCoveragePattern, alloc::vec::Vec<nexrad_model::data::Sweep>) -> Self
 impl core::clone::Clone for nexrad_model::data::Scan
@@ -541,11 +541,11 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::Sweep
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::Sweep
 pub struct nexrad_model::data::SweepField
 impl nexrad_model::data::SweepField
+pub fn nexrad_model::data::SweepField::azimuth_angles_degrees(&self) -> &[f32]
 pub fn nexrad_model::data::SweepField::azimuth_count(&self) -> usize
 pub fn nexrad_model::data::SweepField::azimuth_spacing_degrees(&self) -> f32
-pub fn nexrad_model::data::SweepField::azimuths(&self) -> &[f32]
 pub fn nexrad_model::data::SweepField::builder(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> nexrad_model::data::SweepFieldBuilder
-pub fn nexrad_model::data::SweepField::elevation_degrees(&self) -> f32
+pub fn nexrad_model::data::SweepField::elevation_angle_degrees(&self) -> f32
 pub fn nexrad_model::data::SweepField::first_gate_range_km(&self) -> f64
 pub fn nexrad_model::data::SweepField::from_radials(&[nexrad_model::data::Radial], nexrad_model::data::Product) -> core::option::Option<Self>
 pub fn nexrad_model::data::SweepField::from_radials_owned(alloc::vec::Vec<nexrad_model::data::Radial>, nexrad_model::data::Product) -> core::option::Option<Self>
@@ -556,8 +556,8 @@ pub fn nexrad_model::data::SweepField::label(&self) -> &str
 pub fn nexrad_model::data::SweepField::max_range_km(&self) -> f64
 pub fn nexrad_model::data::SweepField::new_like(&self, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn nexrad_model::data::SweepField::product(&self) -> core::option::Option<nexrad_model::data::Product>
-pub fn nexrad_model::data::SweepField::radial_status_mut(&mut self, usize) -> &mut [nexrad_model::data::GateStatus]
 pub fn nexrad_model::data::SweepField::radial_statuses(&self, usize) -> &[nexrad_model::data::GateStatus]
+pub fn nexrad_model::data::SweepField::radial_statuses_mut(&mut self, usize) -> &mut [nexrad_model::data::GateStatus]
 pub fn nexrad_model::data::SweepField::radial_values(&self, usize) -> &[f32]
 pub fn nexrad_model::data::SweepField::radial_values_mut(&mut self, usize) -> &mut [f32]
 pub fn nexrad_model::data::SweepField::set(&mut self, usize, usize, f32, nexrad_model::data::GateStatus)
@@ -586,10 +586,10 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::SweepField
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::SweepField
 pub struct nexrad_model::data::SweepFieldBuilder
 impl nexrad_model::data::SweepFieldBuilder
+pub fn nexrad_model::data::SweepFieldBuilder::azimuth_angles_degrees(self, alloc::vec::Vec<f32>) -> Self
 pub fn nexrad_model::data::SweepFieldBuilder::azimuth_spacing_degrees(self, f32) -> Self
-pub fn nexrad_model::data::SweepFieldBuilder::azimuths(self, alloc::vec::Vec<f32>) -> Self
 pub fn nexrad_model::data::SweepFieldBuilder::build(self) -> nexrad_model::result::Result<nexrad_model::data::SweepField>
-pub fn nexrad_model::data::SweepFieldBuilder::elevation_degrees(self, f32) -> Self
+pub fn nexrad_model::data::SweepFieldBuilder::elevation_angle_degrees(self, f32) -> Self
 pub fn nexrad_model::data::SweepFieldBuilder::first_gate_range_km(self, f64) -> Self
 pub fn nexrad_model::data::SweepFieldBuilder::gate_count(self, usize) -> Self
 pub fn nexrad_model::data::SweepFieldBuilder::gate_interval_km(self, f64) -> Self
@@ -643,15 +643,15 @@ impl nexrad_model::data::VolumeCoveragePattern
 pub fn nexrad_model::data::VolumeCoveragePattern::base_tilt_count(&self) -> u8
 pub fn nexrad_model::data::VolumeCoveragePattern::base_tilt_enabled(&self) -> bool
 pub fn nexrad_model::data::VolumeCoveragePattern::builder(nexrad_model::data::VcpNumber) -> nexrad_model::data::VolumeCoveragePatternBuilder
-pub fn nexrad_model::data::VolumeCoveragePattern::doppler_velocity_resolution(&self) -> f32
+pub fn nexrad_model::data::VolumeCoveragePattern::doppler_velocity_resolution_mps(&self) -> f32
 pub fn nexrad_model::data::VolumeCoveragePattern::elevation_cuts(&self) -> &[nexrad_model::data::ElevationCut]
 pub fn nexrad_model::data::VolumeCoveragePattern::mpda_enabled(&self) -> bool
-pub fn nexrad_model::data::VolumeCoveragePattern::mrle_cuts(&self) -> u8
+pub fn nexrad_model::data::VolumeCoveragePattern::mrle_cut_count(&self) -> u8
 pub fn nexrad_model::data::VolumeCoveragePattern::mrle_enabled(&self) -> bool
 pub fn nexrad_model::data::VolumeCoveragePattern::number_of_elevation_cuts(&self) -> usize
 pub fn nexrad_model::data::VolumeCoveragePattern::pattern_number(&self) -> nexrad_model::data::VcpNumber
 pub fn nexrad_model::data::VolumeCoveragePattern::pulse_width(&self) -> nexrad_model::data::PulseWidth
-pub fn nexrad_model::data::VolumeCoveragePattern::sails_cuts(&self) -> u8
+pub fn nexrad_model::data::VolumeCoveragePattern::sails_cut_count(&self) -> u8
 pub fn nexrad_model::data::VolumeCoveragePattern::sails_enabled(&self) -> bool
 pub fn nexrad_model::data::VolumeCoveragePattern::sequence_active(&self) -> bool
 pub fn nexrad_model::data::VolumeCoveragePattern::truncated(&self) -> bool
@@ -681,14 +681,14 @@ impl nexrad_model::data::VolumeCoveragePatternBuilder
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::base_tilt_count(self, u8) -> Self
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::base_tilt_enabled(self, bool) -> Self
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::build(self) -> nexrad_model::data::VolumeCoveragePattern
-pub fn nexrad_model::data::VolumeCoveragePatternBuilder::doppler_velocity_resolution(self, f32) -> Self
+pub fn nexrad_model::data::VolumeCoveragePatternBuilder::doppler_velocity_resolution_mps(self, f32) -> Self
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::elevation_cut(self, nexrad_model::data::ElevationCut) -> Self
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::elevation_cuts(self, alloc::vec::Vec<nexrad_model::data::ElevationCut>) -> Self
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::mpda_enabled(self, bool) -> Self
-pub fn nexrad_model::data::VolumeCoveragePatternBuilder::mrle_cuts(self, u8) -> Self
+pub fn nexrad_model::data::VolumeCoveragePatternBuilder::mrle_cut_count(self, u8) -> Self
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::mrle_enabled(self, bool) -> Self
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::pulse_width(self, nexrad_model::data::PulseWidth) -> Self
-pub fn nexrad_model::data::VolumeCoveragePatternBuilder::sails_cuts(self, u8) -> Self
+pub fn nexrad_model::data::VolumeCoveragePatternBuilder::sails_cut_count(self, u8) -> Self
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::sails_enabled(self, bool) -> Self
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::sequence_active(self, bool) -> Self
 pub fn nexrad_model::data::VolumeCoveragePatternBuilder::truncated(self, bool) -> Self
@@ -773,8 +773,8 @@ impl core::marker::UnsafeUnpin for nexrad_model::geo::GeoPoint3D
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::geo::GeoPoint3D
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::geo::GeoPoint3D
 pub struct nexrad_model::geo::PolarPoint
-pub nexrad_model::geo::PolarPoint::azimuth_degrees: f64
-pub nexrad_model::geo::PolarPoint::elevation_degrees: f64
+pub nexrad_model::geo::PolarPoint::azimuth_angle_degrees: f64
+pub nexrad_model::geo::PolarPoint::elevation_angle_degrees: f64
 pub nexrad_model::geo::PolarPoint::range_km: f64
 impl core::clone::Clone for nexrad_model::geo::PolarPoint
 pub fn nexrad_model::geo::PolarPoint::clone(&self) -> Self
@@ -825,12 +825,12 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::geo::RadarCoordin
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::geo::RadarCoordinateSystem
 pub mod nexrad_model::meta
 pub mod nexrad_model::meta::registry
-pub struct nexrad_model::meta::registry::SiteEntry
+#[non_exhaustive] pub struct nexrad_model::meta::registry::SiteEntry
 pub nexrad_model::meta::registry::SiteEntry::city: &'static str
-pub nexrad_model::meta::registry::SiteEntry::elevation_meters: i16
 pub nexrad_model::meta::registry::SiteEntry::id: &'static str
 pub nexrad_model::meta::registry::SiteEntry::latitude: f64
 pub nexrad_model::meta::registry::SiteEntry::longitude: f64
+pub nexrad_model::meta::registry::SiteEntry::site_elevation_meters: i16
 pub nexrad_model::meta::registry::SiteEntry::state: &'static str
 impl nexrad_model::meta::registry::SiteEntry
 pub fn nexrad_model::meta::registry::SiteEntry::to_site(&self) -> nexrad_model::meta::Site
@@ -856,14 +856,14 @@ pub fn nexrad_model::meta::registry::sites() -> &'static [nexrad_model::meta::re
 pub struct nexrad_model::meta::Site
 impl nexrad_model::meta::Site
 pub fn nexrad_model::meta::Site::builder([u8; 4], f64, f64) -> nexrad_model::meta::SiteBuilder
-pub fn nexrad_model::meta::Site::height(&self) -> uom::si::f64::Length
-pub fn nexrad_model::meta::Site::height_meters(&self) -> i16
+pub fn nexrad_model::meta::Site::feedhorn_height(&self) -> uom::si::f64::Length
+pub fn nexrad_model::meta::Site::feedhorn_height_meters(&self) -> u16
 pub fn nexrad_model::meta::Site::identifier(&self) -> &[u8; 4]
 pub fn nexrad_model::meta::Site::identifier_string(&self) -> alloc::string::String
 pub fn nexrad_model::meta::Site::latitude(&self) -> f64
 pub fn nexrad_model::meta::Site::longitude(&self) -> f64
-pub fn nexrad_model::meta::Site::tower_height(&self) -> uom::si::f64::Length
-pub fn nexrad_model::meta::Site::tower_height_meters(&self) -> u16
+pub fn nexrad_model::meta::Site::site_elevation(&self) -> uom::si::f64::Length
+pub fn nexrad_model::meta::Site::site_elevation_meters(&self) -> i16
 impl core::clone::Clone for nexrad_model::meta::Site
 pub fn nexrad_model::meta::Site::clone(&self) -> Self
 impl core::cmp::PartialEq for nexrad_model::meta::Site
@@ -887,8 +887,8 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_model::meta::Site
 pub struct nexrad_model::meta::SiteBuilder
 impl nexrad_model::meta::SiteBuilder
 pub fn nexrad_model::meta::SiteBuilder::build(self) -> nexrad_model::meta::Site
-pub fn nexrad_model::meta::SiteBuilder::height_meters(self, i16) -> Self
-pub fn nexrad_model::meta::SiteBuilder::tower_height_meters(self, u16) -> Self
+pub fn nexrad_model::meta::SiteBuilder::feedhorn_height_meters(self, u16) -> Self
+pub fn nexrad_model::meta::SiteBuilder::site_elevation_meters(self, i16) -> Self
 impl core::clone::Clone for nexrad_model::meta::SiteBuilder
 pub fn nexrad_model::meta::SiteBuilder::clone(&self) -> Self
 impl core::fmt::Debug for nexrad_model::meta::SiteBuilder

@@ -153,7 +153,7 @@ fn main() -> nexrad::Result<()> {
                     "  {} (sweep {}) - {:.1} deg, {:.0} km, {}x{} gates -> {}x{} px",
                     product.label(),
                     sweep_idx,
-                    f.elevation_degrees(),
+                    f.elevation_angle_degrees(),
                     f.max_range_km(),
                     f.azimuth_count(),
                     f.gate_count(),
@@ -186,12 +186,12 @@ fn main() -> nexrad::Result<()> {
     for (i, sweep) in scan.sweeps().iter().enumerate() {
         if let Some(field) = sweep.field(Product::Reflectivity) {
             // Round to 1 decimal to group identical angles
-            let angle_key = (field.elevation_degrees() * 10.0).round() as i32;
+            let angle_key = (field.elevation_angle_degrees() * 10.0).round() as i32;
             if !seen_elevations.insert(angle_key) {
                 continue;
             }
 
-            let angle = field.elevation_degrees();
+            let angle = field.elevation_angle_degrees();
             let result = render_sweep(&field, &ref_scale, &compare_options)?;
             let path = format!("{}/02_elevation_{:02}_{:.1}deg.png", OUTPUT_DIR, i, angle);
             result.save(&path)?;
@@ -345,7 +345,7 @@ fn main() -> nexrad::Result<()> {
             result.save(&path)?;
             println!(
                 "  Raw velocity ({:.1} deg, {}px native) -> {}",
-                vf.elevation_degrees(),
+                vf.elevation_angle_degrees(),
                 vel_native,
                 path
             );
@@ -447,7 +447,10 @@ fn main() -> nexrad::Result<()> {
 
     if !ref_fields.is_empty() {
         let distinct_elevations: Vec<f32> = {
-            let mut elevs: Vec<f32> = ref_fields.iter().map(|f| f.elevation_degrees()).collect();
+            let mut elevs: Vec<f32> = ref_fields
+                .iter()
+                .map(|f| f.elevation_angle_degrees())
+                .collect();
             elevs.sort_by(|a, b| a.partial_cmp(b).unwrap());
             elevs.dedup_by(|a, b| (*a - *b).abs() < 0.05);
             elevs
@@ -539,7 +542,7 @@ fn main() -> nexrad::Result<()> {
         );
         println!(
             "    Polar: az={:.1} deg, range={:.1} km",
-            query.polar.azimuth_degrees, query.polar.range_km,
+            query.polar.azimuth_angle_degrees, query.polar.range_km,
         );
     }
 

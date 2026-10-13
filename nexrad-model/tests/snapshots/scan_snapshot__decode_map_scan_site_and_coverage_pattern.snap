@@ -9,23 +9,23 @@ expression: "(scan.site(), scan.coverage_pattern())"
     - 88
   latitude: 41.731201171875
   longitude: -93.72286987304688
-  height_meters: 299
-  tower_height_meters: 34
+  site_elevation_meters: 299
+  feedhorn_height_meters: 34
 - pattern_number: 212
   version: 1
-  doppler_velocity_resolution: 0.5
+  doppler_velocity_resolution_mps: 0.5
   pulse_width: Short
   sails_enabled: false
-  sails_cuts: 0
+  sails_cut_count: 0
   mrle_enabled: true
-  mrle_cuts: 3
+  mrle_cut_count: 3
   mpda_enabled: false
   base_tilt_enabled: false
   base_tilt_count: 0
   sequence_active: false
   truncated: false
   elevation_cuts:
-    - elevation_angle_degrees: 0.4833984375
+    - elevation_angle_degrees: 0.48339844
       channel_configuration: Sz2Phase
       waveform_type: ContiguousSurveillance
       azimuth_rate_degrees_per_second: 21.148681640625
@@ -47,7 +47,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 0.4833984375
+    - elevation_angle_degrees: 0.48339844
       channel_configuration: Sz2Phase
       waveform_type: ContiguousDopplerWithAmbiguityResolution
       azimuth_rate_degrees_per_second: 15.831298828125
@@ -113,7 +113,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 1.318359375
+    - elevation_angle_degrees: 1.3183594
       channel_configuration: Sz2Phase
       waveform_type: ContiguousSurveillance
       azimuth_rate_degrees_per_second: 23.02734375
@@ -135,7 +135,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 1.318359375
+    - elevation_angle_degrees: 1.3183594
       channel_configuration: Sz2Phase
       waveform_type: ContiguousDopplerWithAmbiguityResolution
       azimuth_rate_degrees_per_second: 15.831298828125
@@ -157,7 +157,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 1.8017578125
+    - elevation_angle_degrees: 1.8017578
       channel_configuration: ConstantPhase
       waveform_type: Batch
       azimuth_rate_degrees_per_second: 26.38916015625
@@ -179,7 +179,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 2.4169921875
+    - elevation_angle_degrees: 2.4169922
       channel_configuration: ConstantPhase
       waveform_type: Batch
       azimuth_rate_degrees_per_second: 27.333984375
@@ -201,7 +201,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 3.1201171875
+    - elevation_angle_degrees: 3.1201172
       channel_configuration: ConstantPhase
       waveform_type: Batch
       azimuth_rate_degrees_per_second: 28.223876953125
@@ -223,7 +223,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 3.9990234375
+    - elevation_angle_degrees: 3.9990234
       channel_configuration: ConstantPhase
       waveform_type: Batch
       azimuth_rate_degrees_per_second: 26.400146484375
@@ -245,7 +245,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 5.09765625
+    - elevation_angle_degrees: 5.0976563
       channel_configuration: ConstantPhase
       waveform_type: Batch
       azimuth_rate_degrees_per_second: 26.400146484375
@@ -267,7 +267,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 0.4833984375
+    - elevation_angle_degrees: 0.48339844
       channel_configuration: Sz2Phase
       waveform_type: ContiguousSurveillance
       azimuth_rate_degrees_per_second: 21.148681640625
@@ -289,7 +289,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 1
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 0.4833984375
+    - elevation_angle_degrees: 0.48339844
       channel_configuration: Sz2Phase
       waveform_type: ContiguousDopplerWithAmbiguityResolution
       azimuth_rate_degrees_per_second: 15.831298828125
@@ -355,7 +355,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 2
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 1.318359375
+    - elevation_angle_degrees: 1.3183594
       channel_configuration: Sz2Phase
       waveform_type: ContiguousSurveillance
       azimuth_rate_degrees_per_second: 23.02734375
@@ -377,7 +377,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 3
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 1.318359375
+    - elevation_angle_degrees: 1.3183594
       channel_configuration: Sz2Phase
       waveform_type: ContiguousDopplerWithAmbiguityResolution
       azimuth_rate_degrees_per_second: 15.831298828125
@@ -399,7 +399,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 3
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 6.416015625
+    - elevation_angle_degrees: 6.4160156
       channel_configuration: ConstantPhase
       waveform_type: Batch
       azimuth_rate_degrees_per_second: 26.400146484375
@@ -421,7 +421,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 7.998046875
+    - elevation_angle_degrees: 7.998047
       channel_configuration: ConstantPhase
       waveform_type: ContiguousDopplerWithoutAmbiguityResolution
       azimuth_rate_degrees_per_second: 28.421630859375
@@ -443,7 +443,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 10.01953125
+    - elevation_angle_degrees: 10.019531
       channel_configuration: ConstantPhase
       waveform_type: ContiguousDopplerWithoutAmbiguityResolution
       azimuth_rate_degrees_per_second: 28.41064453125
@@ -465,7 +465,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 12.48046875
+    - elevation_angle_degrees: 12.480469
       channel_configuration: ConstantPhase
       waveform_type: ContiguousDopplerWithoutAmbiguityResolution
       azimuth_rate_degrees_per_second: 28.740234375
@@ -487,7 +487,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 15.6005859375
+    - elevation_angle_degrees: 15.600586
       channel_configuration: ConstantPhase
       waveform_type: ContiguousDopplerWithoutAmbiguityResolution
       azimuth_rate_degrees_per_second: 28.740234375
@@ -509,7 +509,7 @@ expression: "(scan.site(), scan.coverage_pattern())"
       mrle_sequence_number: 0
       is_mpda_cut: false
       is_base_tilt_cut: false
-    - elevation_angle_degrees: 19.51171875
+    - elevation_angle_degrees: 19.511719
       channel_configuration: ConstantPhase
       waveform_type: ContiguousDopplerWithoutAmbiguityResolution
       azimuth_rate_degrees_per_second: 28.740234375

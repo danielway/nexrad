@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Radial {
-    collection_timestamp: i64,
+    collection_timestamp_millis: i64,
 
     azimuth_number: u16,
     azimuth_angle_degrees: f32,
@@ -48,7 +48,7 @@ impl Radial {
     ) -> RadialBuilder {
         RadialBuilder {
             radial: Radial {
-                collection_timestamp: 0,
+                collection_timestamp_millis: 0,
                 azimuth_number,
                 azimuth_angle_degrees,
                 azimuth_spacing_degrees: 1.0,
@@ -66,15 +66,15 @@ impl Radial {
         }
     }
 
-    /// The collection timestamp in milliseconds since midnight Jan 1, 1970 (epoch/UNIX timestamp).
-    pub fn collection_timestamp(&self) -> i64 {
-        self.collection_timestamp
+    /// The collection timestamp in milliseconds since the Unix epoch, UTC.
+    pub fn collection_timestamp_millis(&self) -> i64 {
+        self.collection_timestamp_millis
     }
 
     /// The collection time for this radial and its data.
     #[cfg(feature = "chrono")]
     pub fn collection_time(&self) -> Option<DateTime<Utc>> {
-        DateTime::from_timestamp_millis(self.collection_timestamp)
+        DateTime::from_timestamp_millis(self.collection_timestamp_millis)
     }
 
     /// The index number for this radial's azimuth in the elevation sweep, ranging up to 720
@@ -184,7 +184,7 @@ impl Radial {
 /// The azimuth number, azimuth angle, elevation number, and elevation angle are required. All
 /// other properties are optional and default to:
 ///
-/// - `collection_timestamp`: `0`
+/// - `collection_timestamp_millis`: `0`
 /// - `azimuth_spacing_degrees`: `1.0`
 /// - `radial_status`: [`RadialStatus::IntermediateRadialData`]
 /// - moment data for every product: `None` (set with [`moment`](Self::moment))
@@ -195,9 +195,9 @@ pub struct RadialBuilder {
 }
 
 impl RadialBuilder {
-    /// Set the collection timestamp in milliseconds since the UNIX epoch. Defaults to `0`.
-    pub fn collection_timestamp(mut self, collection_timestamp: i64) -> Self {
-        self.radial.collection_timestamp = collection_timestamp;
+    /// Set the collection timestamp in milliseconds since the Unix epoch, UTC. Defaults to `0`.
+    pub fn collection_timestamp_millis(mut self, collection_timestamp_millis: i64) -> Self {
+        self.radial.collection_timestamp_millis = collection_timestamp_millis;
         self
     }
 

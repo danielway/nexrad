@@ -270,7 +270,7 @@ Common azimuth rates observed across VCPs, useful for building lookup tables:
 - **Tool**: Custom Rust analysis binary using the `nexrad` crate, outputting JSON
 - **Data source**: AWS NEXRAD archive S3 bucket + local files
 - **Files analyzed**: 59 volumes (39 local, 20+ downloaded)
-- **Timestamps**: Derived from per-radial `collection_timestamp` (millisecond precision)
+- **Timestamps**: Derived from per-radial `collection_timestamp_millis` (millisecond precision)
 - **Sweep boundaries**: Determined by `elevation_number` changes in radial sequence
 - **Analysis scripts**: `nexrad/examples/timing_analysis.rs` (Rust data extraction), `/tmp/analyze_timings.py` (Python statistical analysis)
 

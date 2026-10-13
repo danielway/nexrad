@@ -330,7 +330,7 @@ impl<'a> Message<'a> {
             elevation_number,
             elevation_angle,
         )
-        .collection_timestamp(timestamp)
+        .collection_timestamp_millis(timestamp)
         .azimuth_spacing_degrees(1.0)
         .radial_status(radial_status);
         for moment in [reflectivity, velocity, spectrum_width]
@@ -408,7 +408,7 @@ impl<'a> Message<'a> {
             msg.elevation_number(),
             msg.elevation_angle_degrees(),
         )
-        .collection_timestamp(timestamp)
+        .collection_timestamp_millis(timestamp)
         .azimuth_spacing_degrees(1.0)
         .radial_status(msg.radial_status().into());
         for moment in [reflectivity, velocity, spectrum_width]

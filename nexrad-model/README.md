@@ -65,12 +65,12 @@ use nexrad_model::data::{Product, SweepField};
 use nexrad_model::meta::Site;
 
 let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
-    .height_meters(370)
+    .site_elevation_meters(370)
     .build();
 
 let field = SweepField::builder("Reflectivity", "dBZ")
     .product(Product::Reflectivity)
-    .azimuths(vec![0.0, 1.0, 2.0])
+    .azimuth_angles_degrees(vec![0.0, 1.0, 2.0])
     .gate_interval_km(0.25)
     .gate_count(1832)
     .build()

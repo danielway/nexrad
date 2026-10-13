@@ -112,7 +112,7 @@ pub fn render_vertical(
 
     let projection = Projection::Vertical {
         distance_range_km: field.distance_range_km(),
-        altitude_range_m: field.altitude_range_meters(),
+        altitude_range_meters: field.altitude_range_meters(),
     };
     let metadata = RenderMetadata::new(
         image.width(),

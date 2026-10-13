@@ -64,7 +64,7 @@ impl<'a> Message<'a> {
             .iter()
             .map(|elev| {
                 ElevationCut::builder(
-                    elev.elevation_angle_degrees(),
+                    elev.elevation_angle_degrees() as f32,
                     elev.waveform_type().into(),
                     elev.channel_configuration().into(),
                 )
@@ -97,12 +97,12 @@ impl<'a> Message<'a> {
 
         VolumeCoveragePattern::builder(VcpNumber::from_number(header.pattern_number()))
             .version(header.version())
-            .doppler_velocity_resolution(header.doppler_velocity_resolution_mps())
+            .doppler_velocity_resolution_mps(header.doppler_velocity_resolution_mps())
             .pulse_width(header.pulse_width().into())
             .sails_enabled(header.is_sails_vcp())
-            .sails_cuts(header.number_of_sails_cuts())
+            .sails_cut_count(header.number_of_sails_cuts())
             .mrle_enabled(header.is_mrle_vcp())
-            .mrle_cuts(header.number_of_mrle_cuts())
+            .mrle_cut_count(header.number_of_mrle_cuts())
             .mpda_enabled(header.is_mpda_vcp())
             .base_tilt_enabled(header.is_base_tilt_vcp())
             .base_tilt_count(header.number_of_base_tilts())

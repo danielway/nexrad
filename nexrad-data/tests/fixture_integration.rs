@@ -145,10 +145,10 @@ fn test_timestamp_monotonicity_within_sweeps() {
                 continue;
             }
 
-            let mut prev_timestamp = radials[0].collection_timestamp();
+            let mut prev_timestamp = radials[0].collection_timestamp_millis();
 
             for (radial_idx, radial) in radials.iter().enumerate().skip(1) {
-                let curr_timestamp = radial.collection_timestamp();
+                let curr_timestamp = radial.collection_timestamp_millis();
                 assert!(
                     curr_timestamp >= prev_timestamp,
                     "Fixture {} sweep {} radial {}: timestamp went backwards ({} < {})",

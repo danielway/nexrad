@@ -315,7 +315,7 @@ impl<'a> Message<'a> {
             header.elevation_number(),
             header.elevation_angle_degrees(),
         )
-        .collection_timestamp(
+        .collection_timestamp_millis(
             header
                 .date_time()
                 .ok_or(Error::MessageMissingDate)?
@@ -345,8 +345,8 @@ impl Message<'_> {
                 volume.latitude_degrees() as f64,
                 volume.longitude_degrees() as f64,
             )
-            .height_meters(volume.site_height_meters())
-            .tower_height_meters(volume.tower_height_meters())
+            .site_elevation_meters(volume.site_height_meters())
+            .feedhorn_height_meters(volume.tower_height_meters())
             .build(),
         )
     }

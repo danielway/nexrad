@@ -29,10 +29,18 @@ fn main() -> nexrad::Result<()> {
     println!("Version: {}", vcp.version());
     println!(
         "Doppler Resolution: {} m/s",
-        vcp.doppler_velocity_resolution()
+        vcp.doppler_velocity_resolution_mps()
     );
-    println!("SAILS: {} ({} cuts)", vcp.sails_enabled(), vcp.sails_cuts());
-    println!("MRLE: {} ({} cuts)", vcp.mrle_enabled(), vcp.mrle_cuts());
+    println!(
+        "SAILS: {} ({} cuts)",
+        vcp.sails_enabled(),
+        vcp.sails_cut_count()
+    );
+    println!(
+        "MRLE: {} ({} cuts)",
+        vcp.mrle_enabled(),
+        vcp.mrle_cut_count()
+    );
     println!("MPDA: {}", vcp.mpda_enabled());
 
     println!("\n=== Elevation Cuts ===");

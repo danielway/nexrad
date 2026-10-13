@@ -104,7 +104,8 @@ pub fn render_sweep(
             }
 
             // Nearest-neighbor path (default, or bilinear fallback)
-            let (radial_idx, angular_distance) = find_closest_radial(field.azimuths(), azimuth_deg);
+            let (radial_idx, angular_distance) =
+                find_closest_radial(field.azimuth_angles_degrees(), azimuth_deg);
 
             if angular_distance > max_azimuth_gap {
                 continue;
@@ -138,7 +139,7 @@ pub fn render_sweep(
         center_pixel: (center_x, center_y),
         pixels_per_km: scale_factor,
         max_range_km: radar_range_km,
-        elevation_degrees: f64::from(field.elevation_degrees()),
+        elevation_angle_degrees: f64::from(field.elevation_angle_degrees()),
     };
     let metadata = RenderMetadata::new(
         image_width,
@@ -274,7 +275,7 @@ fn sample_sweep_bilinear(
 
     // Azimuth axis: find bracketing radials
     let (az_lo, az_hi, az_frac) =
-        find_bracketing_radials(field.azimuths(), azimuth_deg, max_azimuth_gap)?;
+        find_bracketing_radials(field.azimuth_angles_degrees(), azimuth_deg, max_azimuth_gap)?;
 
     // Range axis: find bracketing gates
     let gate_f = (distance_km - first_gate_km) / gate_interval_km;

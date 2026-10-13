@@ -261,7 +261,6 @@ impl App {
         let file_data = volume_file.data().to_vec();
         let header = volume_file
             .header()
-            .cloned()
             .ok_or("Failed to parse volume header")?;
 
         let records: Vec<RecordInfo> = volume_file
@@ -296,7 +295,6 @@ impl App {
     ) -> AppResult<()> {
         let header = volume_file
             .header()
-            .cloned()
             .ok_or("Failed to parse volume header")?;
 
         let file_data = volume_file.data().to_vec();

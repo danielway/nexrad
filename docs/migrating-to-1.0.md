@@ -413,6 +413,7 @@ are exposed through `ChunkIterator`:
 | `ChunkTimingModel`, `ChunkTimingStats`, `ChunkCharacteristics`, `ElevationChunkMapper`, `ChunkMetadata`, `estimate_chunk_processing_time`, `project_scan_timing`, `project_full_scan_timing`, `ScanTimingProjection`, `ChunkProjection`, `RetryState`, `NextChunk`, `ChunkIdentifier::next_chunk` | No public replacement; `ChunkIterator` and `chunk_stream` handle sequencing, retries and timing | #167 |
 | `volume::split_compressed_records(bytes)` | `volume::File::new(bytes).records()?` | #171 |
 | `volume::Header::{tape_filename, extension_number, icao_of_radar}() -> Option<String>` | `-> Option<&str>` | #171 |
+| `volume::File::header() -> Option<&Header>`, zerocopy traits on `volume::Header`, `size_of::<Header>()` | `header() -> Option<Header>` (by value), no zerocopy traits, `Header::SIZE` | #181 |
 | `aws::archive::list_files(site, &date)` | `list_files(site, date)` | #171 |
 | `aws::archive::download_file(identifier)` | `download_file(&identifier)` | #171 |
 
@@ -1253,6 +1254,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `result::Error` | `#[non_exhaustive]` |
 | `volume::split_compressed_records(&[u8])` | Removed; `File::records()` |
 | `volume::Header::{extension_number, icao_of_radar, tape_filename}() -> Option<String>` | `-> Option<&str>` |
+| `volume::File::header() -> Option<&Header>`; `#[repr(C)] volume::Header` with `zerocopy::{FromBytes, FromZeros, Immutable, KnownLayout, TryFromBytes}` | `header() -> Option<Header>`; `Header` without zerocopy traits, `Header::SIZE` |
 | `volume::Record::decompress<'b>(&self) -> Result<Record<'b>>` | `decompress(&self) -> Result<Record<'static>>` |
 | `aws::archive::list_files(&str, &NaiveDate)` | `list_files(&str, NaiveDate)` |
 | `aws::archive::download_file(Identifier)` | `download_file(&Identifier)` |

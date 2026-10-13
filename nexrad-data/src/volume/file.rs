@@ -1,6 +1,5 @@
 use crate::volume::{split_records, Header, Record};
 use std::fmt::Debug;
-use zerocopy::Ref;
 
 /// Gzip magic bytes (RFC 1952).
 const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
@@ -61,10 +60,8 @@ impl File {
     ///
     /// Returns `None` if the header cannot be parsed (e.g. if the file is still
     /// gzip-compressed).
-    pub fn header(&self) -> Option<&Header> {
-        Ref::<_, Header>::from_prefix(self.0.as_slice())
-            .ok()
-            .map(|(header, _rest)| Ref::into_ref(header))
+    pub fn header(&self) -> Option<Header> {
+        Header::parse(&self.0)
     }
 
     /// The file's LDM records.
@@ -79,13 +76,10 @@ impl File {
             return Err(Error::CompressedFile);
         }
 
-        let record_data = self
-            .0
-            .get(size_of::<Header>()..)
-            .ok_or(Error::TruncatedRecord {
-                expected: size_of::<Header>(),
-                actual: self.0.len(),
-            })?;
+        let record_data = self.0.get(Header::SIZE..).ok_or(Error::TruncatedRecord {
+            expected: Header::SIZE,
+            actual: self.0.len(),
+        })?;
 
         split_records(record_data)
     }

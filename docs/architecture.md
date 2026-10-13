@@ -145,7 +145,8 @@ appear in public signatures:
 
 Not allowed in public signatures: `reqwest`, `bzip2`, `zerocopy` traits, `tokio`, `once_cell`. HTTP failures are boxed
 as `Box<dyn std::error::Error + Send + Sync>` inside `AwsError`, bzip2 failures surface as `Error::Io`, and no public
-`nexrad-decode` type implements zerocopy traits.
+`nexrad-decode` or `nexrad-data` type implements zerocopy traits (the `#[repr(C)]` wire structs stay private in both
+crates).
 
 ### Minimum Supported Rust Version
 

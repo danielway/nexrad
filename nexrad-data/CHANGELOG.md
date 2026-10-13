@@ -62,6 +62,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `volume::Record::decompress(&self)` returns `Result<Record<'static>>`. (#171)
 - `volume::Header::tape_filename()`, `extension_number()` and `icao_of_radar()` return `Option<&str>` instead of
   `Option<String>`. (#171)
+- `volume::Header` no longer implements zerocopy traits (`FromBytes`, `FromZeros`, `Immutable`, `KnownLayout`,
+  `TryFromBytes`) and is no longer `#[repr(C)]`; `volume::File::header()` returns `Option<Header>` by value instead of
+  `Option<&Header>`, and `Header::SIZE` replaces `size_of::<Header>()` for the header length. (#181)
 - `aws::archive::list_files(site, date: NaiveDate)` takes the date by value, and
   `aws::archive::download_file(identifier: &Identifier)` takes the identifier by reference. (#171)
 - `aws::realtime::list_chunks_in_volume` reads every listing page and returns only the chunks of the newest scan in a

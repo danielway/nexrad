@@ -40,6 +40,7 @@ const EFFECTIVE_EARTH_RADIUS_KM: f64 = 6371.0 * 4.0 / 3.0;
 /// let result = render_vertical(&vertical_field, &scale, &RenderOptions::new(1200, 600))?;
 /// result.save("vertical_cross_section.png")?;
 /// ```
+#[derive(Debug, Clone, PartialEq)]
 pub struct VerticalCrossSection {
     /// Target azimuth in degrees (0-360).
     azimuth_degrees: f64,

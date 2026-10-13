@@ -19,9 +19,10 @@ use nexrad_model::data::{GateStatus, SweepField};
 /// use nexrad_process::filter::CorrelationCoefficientFilter;
 ///
 /// let cc_field = SweepField::from_radials(radials, Product::CorrelationCoefficient).unwrap();
-/// let filter = CorrelationCoefficientFilter::new(0.90, cc_field);
+/// let filter = CorrelationCoefficientFilter::new(0.90, cc_field)?;
 /// let cleaned = filter.process(&reflectivity_field)?;
 /// ```
+#[derive(Debug, Clone, PartialEq)]
 pub struct CorrelationCoefficientFilter {
     /// Gates with CC below this value are masked in the target field.
     threshold: f32,

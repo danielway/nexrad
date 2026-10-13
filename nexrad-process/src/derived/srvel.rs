@@ -21,6 +21,7 @@ use nexrad_model::data::{GateStatus, SweepField};
 /// let srv = StormRelativeVelocity::new(240.0, 15.0)?;
 /// let sr_velocity = srv.process(&velocity_field)?;
 /// ```
+#[derive(Debug, Clone, PartialEq)]
 pub struct StormRelativeVelocity {
     /// Storm motion direction in degrees clockwise from north (0-360).
     storm_direction_degrees: f32,

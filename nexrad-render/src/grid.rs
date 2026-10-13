@@ -20,7 +20,7 @@ use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 /// # Example
 ///
 /// ```ignore
-/// use nexrad_render::{render_cartesian, default_color_scale, RenderOptions};
+/// use nexrad_render::{render_cartesian, default_scale, RenderOptions};
 /// use nexrad_model::data::Product;
 /// use nexrad_process::{ScanDerivedProduct, derived::CompositeReflectivity};
 ///
@@ -29,7 +29,7 @@ use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 /// let cartesian = cref.compute(&scan, &ref_fields, &coord_sys, &extent, (800, 800))?;
 ///
 /// // Render the cartesian field
-/// let scale = default_color_scale(Product::Reflectivity);
+/// let scale = default_scale(Product::Reflectivity);
 /// let result = render_cartesian(&cartesian, &scale, &RenderOptions::new(800, 800))?;
 /// result.save("composite_reflectivity.png")?;
 /// ```
@@ -56,7 +56,7 @@ pub fn render_cartesian(
 
     // Build LUT
     let (min_val, max_val) = field.value_range().unwrap_or((-32.0, 95.0));
-    let lut = ColorLookupTable::from_color_scale(color_scale, min_val, max_val, 256);
+    let lut = ColorLookupTable::new(color_scale, min_val, max_val, 256);
 
     // Map output pixels to field cells
     let use_bilinear = options.interpolation == Interpolation::Bilinear;
@@ -129,7 +129,7 @@ pub fn render_cartesian(
 /// # Example
 ///
 /// ```ignore
-/// use nexrad_render::{render_vertical, default_color_scale, RenderOptions};
+/// use nexrad_render::{render_vertical, default_scale, RenderOptions};
 /// use nexrad_model::data::Product;
 /// use nexrad_process::derived::VerticalCrossSection;
 ///
@@ -138,7 +138,7 @@ pub fn render_cartesian(
 /// let vertical = vcs.compute(&ref_fields)?;
 ///
 /// // Render the vertical field
-/// let scale = default_color_scale(Product::Reflectivity);
+/// let scale = default_scale(Product::Reflectivity);
 /// let result = render_vertical(&vertical, &scale, &RenderOptions::new(1200, 600))?;
 /// result.save("vertical_cross_section.png")?;
 /// ```
@@ -165,7 +165,7 @@ pub fn render_vertical(
 
     // Build LUT
     let (min_val, max_val) = field.value_range().unwrap_or((-32.0, 95.0));
-    let lut = ColorLookupTable::from_color_scale(color_scale, min_val, max_val, 256);
+    let lut = ColorLookupTable::new(color_scale, min_val, max_val, 256);
 
     // Map output pixels to field cells
     let use_bilinear = options.interpolation == Interpolation::Bilinear;

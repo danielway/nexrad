@@ -18,7 +18,7 @@ use nexrad::process::derived::CompositeReflectivity;
 use nexrad::process::filter::ThresholdFilter;
 use nexrad::process::ScanDerivedProduct;
 use nexrad::process::SweepPipeline;
-use nexrad::render::{default_color_scale, render_sweep, ColorScale, RenderOptions};
+use nexrad::render::{default_scale, render_sweep, ColorScale, RenderOptions};
 use std::env;
 
 fn main() -> nexrad::Result<()> {
@@ -48,7 +48,7 @@ fn main() -> nexrad::Result<()> {
         field.gate_count(),
     );
 
-    let color_scale: ColorScale = default_color_scale(Product::Reflectivity);
+    let color_scale: ColorScale = default_scale(Product::Reflectivity);
 
     // --- Render original (unprocessed) ---
     let options = RenderOptions::native_for(&field);

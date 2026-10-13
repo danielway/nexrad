@@ -27,10 +27,11 @@ pub enum Interpolation {
     Bilinear,
 }
 
-/// Options for rendering radar radials.
+/// Options for rendering radar data.
 ///
 /// Use the builder methods to configure rendering options, then pass to
-/// [`render_radials`](crate::render_radials).
+/// [`render_sweep`](crate::render_sweep), [`render_cartesian`](crate::render_cartesian)
+/// or [`render_vertical`](crate::render_vertical).
 ///
 /// # Example
 ///

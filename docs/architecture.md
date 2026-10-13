@@ -158,8 +158,6 @@ Three rendering entry points match the three field types:
 | `render_cartesian` | `CartesianField` | `RenderResult` |
 | `render_vertical` | `VerticalField` | `RenderResult` |
 
-The legacy `render_radials` function operates directly on `&[Radial]` and returns a plain `RgbaImage` without metadata.
-
 `RenderResult` bundles the image with `RenderMetadata`, enabling pixel-to-geographic coordinate conversion and data value queries — useful for interactive applications and map overlays.
 
 ## Enum Stability

@@ -68,4 +68,4 @@ pub mod result;
 pub use result::{Error, Result};
 
 mod sweep;
-pub use sweep::{render_radials, render_radials_default, render_sweep};
+pub use sweep::render_sweep;

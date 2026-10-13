@@ -30,7 +30,7 @@ use nexrad::process::filter::{
 };
 use nexrad::process::{ScanDerivedProduct, SweepPipeline, SweepProcessor};
 use nexrad::render::{
-    default_color_scale, render_cartesian, render_sweep, render_vertical, RenderOptions,
+    default_scale, render_cartesian, render_sweep, render_vertical, RenderOptions,
 };
 
 /// Full 23-sweep scan downloaded from AWS via `download_scan` example.
@@ -122,7 +122,7 @@ fn main() -> nexrad::Result<()> {
     let compare_size: usize = 1600;
     let compare_options = RenderOptions::new(compare_size, compare_size);
 
-    let ref_scale = default_color_scale(Product::Reflectivity);
+    let ref_scale = default_scale(Product::Reflectivity);
 
     // ========================================================================
     // Section 1: All Radar Products at Native Resolution
@@ -145,7 +145,7 @@ fn main() -> nexrad::Result<()> {
             Some((sweep_idx, f)) => {
                 let opts = RenderOptions::native_for(&f);
                 let field_native = f.gate_count() * 2;
-                let scale = default_color_scale(*product);
+                let scale = default_scale(*product);
                 let result = render_sweep(&f, &scale, &opts)?;
                 let path = format!("{}/01_product_{}.png", OUTPUT_DIR, slug(product.label()));
                 result.save(&path)?;
@@ -369,7 +369,7 @@ fn main() -> nexrad::Result<()> {
     if let Some((_, vf)) = scan.first_field(Product::Velocity) {
         let vel_native_options = RenderOptions::native_for(&vf);
         let vel_native = vf.gate_count() * 2;
-        let vel_scale = default_color_scale(Product::Velocity);
+        let vel_scale = default_scale(Product::Velocity);
 
         // 5a. Raw velocity at native resolution
         {
@@ -633,7 +633,7 @@ fn main() -> nexrad::Result<()> {
 
     let count = std::fs::read_dir(OUTPUT_DIR)?
         .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "png"))
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "png"))
         .count();
 
     println!("Generated {} images in {}/", count, OUTPUT_DIR);

@@ -237,6 +237,9 @@ Each library crate records its changes in its own CHANGELOG:
 [`nexrad-decode`](nexrad-decode/CHANGELOG.md), [`nexrad-data`](nexrad-data/CHANGELOG.md),
 [`nexrad-process`](nexrad-process/CHANGELOG.md) and [`nexrad-render`](nexrad-render/CHANGELOG.md).
 
+Upgrading from a 0.x release or a `1.0.0-rc` release candidate? [Migrating to 1.0](docs/migrating-to-1.0.md) walks
+through the changes crate by crate, with before-and-after examples.
+
 ## Maintaining the Radar Site Registry
 
 The checked-in NEXRAD site registry is audited against NOAA's radar site catalog.

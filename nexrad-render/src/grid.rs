@@ -31,7 +31,7 @@ use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 ///
 /// // Compute composite reflectivity from all elevation tilts
 /// let cref = CompositeReflectivity;
-/// let cartesian = cref.compute(&scan, &ref_fields, &coord_sys, &extent, (800, 800))?;
+/// let cartesian = cref.compute(&ref_fields, &coord_sys, &extent, (800, 800))?;
 ///
 /// // Render the cartesian field
 /// let scale = default_scale(Product::Reflectivity);

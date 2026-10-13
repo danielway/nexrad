@@ -158,6 +158,51 @@ jobs:
       - name: Run tests
         run: cargo test --all-features --workspace
 
+  public-api:
+    name: Public API baselines
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Listing a public API needs rustdoc JSON from nightly. The toolchain is pinned so the
+      # output is reproducible; keep it in sync with NIGHTLY_TOOLCHAIN in
+      # xtask/src/public_api.rs.
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          toolchain: nightly-2026-10-11
+          system-deps: "false"
+
+      # cargo-public-api 0.52.0 is the latest release as of October 2026 and supports the
+      # rustdoc JSON format of the pinned nightly.
+      - name: Install cargo-public-api
+        run: cargo install cargo-public-api --locked --version 0.52.0
+
+      - name: Check public API baselines
+        run: cargo run -p xtask -- public-api --check
+
+  semver-checks:
+    name: Semver checks
+    runs-on: ubuntu-latest
+    # Every crate is still on the 1.0.0-rc series, whose published releases predate
+    # intentional breaking changes. Make this job blocking once 1.0.0 has been released.
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          system-deps: "false"
+
+      - name: Check semver against the latest published releases
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          rust-toolchain: manual
+          exclude: nexrad-inspector,xtask
+
   wasm-compatibility:
     name: WASM compatibility check
     runs-on: ubuntu-latest

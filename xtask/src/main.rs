@@ -17,6 +17,12 @@ enum Command {
     },
     /// Download NOAA data and rebuild the checked-in radar site snapshot.
     UpdateRadarSites,
+    /// Regenerate the public API baselines under api/ (requires cargo-public-api and nightly).
+    PublicApi {
+        /// Fail with a diff instead of rewriting baselines that are out of date.
+        #[arg(long)]
+        check: bool,
+    },
 }
 
 #[tokio::main]
@@ -33,5 +39,7 @@ async fn main() -> xtask::Result<()> {
         }
         Command::CheckRadarSites { live: true } => xtask::check_against_noaa().await,
         Command::UpdateRadarSites => xtask::update_radar_sites().await,
+        Command::PublicApi { check: false } => xtask::public_api::update(),
+        Command::PublicApi { check: true } => xtask::public_api::check(),
     }
 }

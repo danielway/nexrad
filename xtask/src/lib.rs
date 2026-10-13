@@ -1,3 +1,5 @@
+pub mod public_api;
+
 use chrono::{NaiveDate, Utc};
 use nexrad_model::meta::registry;
 use std::collections::btree_map::Entry;

@@ -283,6 +283,7 @@ impl<'a> Message<'a> {
         let azimuth_angle = self.azimuth_angle_degrees();
         let elevation_number = self.elevation_number();
         let elevation_angle = self.elevation_angle_degrees();
+        let unambiguous_range_km = self.unambiguous_range_km();
 
         let reflectivity = self
             .reflectivity_gates
@@ -342,6 +343,9 @@ impl<'a> Message<'a> {
         .collection_timestamp_millis(timestamp)
         .azimuth_spacing_degrees(1.0)
         .radial_status(radial_status);
+        if unambiguous_range_km > 0.0 {
+            builder = builder.unambiguous_range_km(unambiguous_range_km);
+        }
         for moment in [reflectivity, velocity, spectrum_width]
             .into_iter()
             .flatten()
@@ -426,6 +430,9 @@ impl<'a> Message<'a> {
         .collection_timestamp_millis(timestamp)
         .azimuth_spacing_degrees(1.0)
         .radial_status(msg.radial_status().into());
+        if msg.unambiguous_range_km() > 0.0 {
+            builder = builder.unambiguous_range_km(msg.unambiguous_range_km());
+        }
         for moment in [reflectivity, velocity, spectrum_width]
             .into_iter()
             .flatten()

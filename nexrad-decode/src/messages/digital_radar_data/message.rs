@@ -278,12 +278,13 @@ impl<'a> Message<'a> {
         .map(DataBlock::moment_data)
         .collect::<crate::result::Result<Vec<_>>>()?;
 
-        Self::build_radial(&self.header, moments)
+        Self::build_radial(&self.header, self.radial_data_block.as_ref(), moments)
     }
 
     /// Convert this digital radar data message into a common model radial, minimizing data copy.
     #[cfg(feature = "model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
+        let radial_data_block = self.radial_data_block;
         let moments = [
             self.reflectivity_data_block,
             self.velocity_data_block,
@@ -298,12 +299,16 @@ impl<'a> Message<'a> {
         .map(DataBlock::into_moment_data)
         .collect::<crate::result::Result<Vec<_>>>()?;
 
-        Self::build_radial(&self.header, moments)
+        Self::build_radial(&self.header, radial_data_block.as_ref(), moments)
     }
 
+    /// Build a model radial from the header, the optional radial data block (the source of the
+    /// Nyquist velocity and unambiguous range, which stay `None` when the block is absent or
+    /// carries a zero value), and the converted moments.
     #[cfg(feature = "model")]
     fn build_radial(
         header: &Header<'_>,
+        radial_data_block: Option<&DataBlock<'_, RadialDataBlock<'_>>>,
         moments: Vec<nexrad_model::data::MomentData>,
     ) -> crate::result::Result<nexrad_model::data::Radial> {
         use crate::result::Error;
@@ -323,6 +328,18 @@ impl<'a> Message<'a> {
         )
         .azimuth_spacing_degrees(header.azimuth_resolution_spacing_degrees())
         .radial_status(header.radial_status().into());
+
+        if let Some(block) = radial_data_block {
+            let block = block.inner();
+            let nyquist_velocity_mps = block.nyquist_velocity_mps();
+            if nyquist_velocity_mps > 0.0 {
+                builder = builder.nyquist_velocity_mps(nyquist_velocity_mps);
+            }
+            let unambiguous_range_km = block.unambiguous_range_km();
+            if unambiguous_range_km > 0.0 {
+                builder = builder.unambiguous_range_km(unambiguous_range_km);
+            }
+        }
 
         for moment in moments {
             builder = builder.moment(moment);

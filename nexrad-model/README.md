@@ -85,10 +85,12 @@ re-exported at the crate root.
 
 The `geo` module provides coordinate types and transformations:
 
-- `GeoPoint` / `GeoPoint3D` — WGS-84 latitude/longitude (with optional altitude)
+- `GeoPoint` / `GeoPoint3D` — latitude/longitude (with optional altitude above mean sea level)
 - `GeoExtent` — axis-aligned bounding box
 - `PolarPoint` — azimuth, range, and elevation from a radar
-- `RadarCoordinateSystem` — converts between polar and geographic coordinates
+- `RadarCoordinateSystem` — converts between polar and geographic coordinates and gives beam height and ground range,
+  using a spherical earth of radius 6371 km with 4/3 effective-radius refraction and the antenna height above mean sea
+  level
 
 `Scan::coordinate_system()` builds a `RadarCoordinateSystem` from a scan's site metadata.
 

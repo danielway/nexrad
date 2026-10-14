@@ -40,6 +40,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Error::Model(nexrad_model::Error)` (feature `model`), returned when decoded values fail a model constructor's
   validation, such as moment data whose gate count does not match its data or a radial with an azimuth outside
   `0.0..360.0`. (#185)
+- `messages::VcpNumber::{Vcp11, Vcp21, Vcp121, Vcp211, Vcp221}`, matching `nexrad_model::data::VcpNumber` variant for
+  variant. (#188)
 
 ### Changed
 
@@ -116,6 +118,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   identifier or location is invalid; `model::ScanBuilder::add_message` propagates it. (#185)
 - `DataBlock::moment_data`/`into_moment_data`, `Message::radial`/`into_radial` (types 1 and 31) return
   `Error::Model` for data the model rejects instead of building an invalid `MomentData` or `Radial`. (#185)
+- VCP numbers 11, 21, 121, 211 and 221 decode as their named `VcpNumber` variants instead of `Unknown(n)`. (#188)
+- `digital_radar_data::Message::radial`/`into_radial` set the model radial's Nyquist velocity and unambiguous range
+  from the radial data block, and `digital_radar_data_legacy::Message::radial`/`into_radial` set its unambiguous range
+  from the header; each stays `None` when absent or zero. The `Radial` `Debug` output gains both fields. (#188)
 
 ### Removed
 

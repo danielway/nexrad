@@ -1,23 +1,24 @@
 use crate::result::{Error, Result};
 use nexrad_model::data::{GateStatus, SweepField, VerticalField};
-
-/// Effective earth radius in km using the standard 4/3 refraction model.
-const EFFECTIVE_EARTH_RADIUS_KM: f64 = 6371.0 * 4.0 / 3.0;
+use nexrad_model::geo::RadarCoordinateSystem;
 
 /// Vertical cross-section (RHI-style) — assembles a range-height display from
 /// PPI scan data at a fixed azimuth.
 ///
-/// For each cell in the output grid, the beam-height equation (standard 4/3
-/// earth-radius model) is used to map range and altitude back to each
-/// elevation tilt's polar coordinates. The maximum valid value across all
-/// tilts is retained, producing a pseudo-RHI from PPI scan data.
+/// Each elevation tilt is sampled along the target azimuth and placed at its ground range and
+/// beam height above mean sea level from
+/// [`RadarCoordinateSystem::ground_range_km`] and [`RadarCoordinateSystem::beam_height_meters`]
+/// (spherical earth with 4/3 effective-radius refraction, including the antenna height). The
+/// maximum valid value across all tilts is retained, producing a pseudo-RHI from PPI scan data.
+/// The horizontal axis is ground range in kilometers and the vertical axis is altitude above
+/// mean sea level in meters.
 ///
 /// Unlike [`CompositeReflectivity`](super::CompositeReflectivity), this type does not
 /// implement [`ScanDerivedProduct`](crate::ScanDerivedProduct) because its output is a
 /// [`VerticalField`] (range vs. altitude) rather than a
 /// [`CartesianField`](nexrad_model::data::CartesianField). Its
 /// construction parameters (azimuth, range, altitude, dimensions) fully define the
-/// output grid, so no coordinate system or geographic extent is needed at compute time.
+/// output grid; the radar's coordinate system supplies the beam geometry at compute time.
 ///
 /// # Example
 ///
@@ -32,7 +33,8 @@ const EFFECTIVE_EARTH_RADIUS_KM: f64 = 6371.0 * 4.0 / 3.0;
 ///
 /// // Create a cross-section at 200° azimuth, 0-230 km range, 0-18 km altitude
 /// let vcs = VerticalCrossSection::new(200.0, 230.0, 18000.0, 600, 300)?;
-/// let vertical_field = vcs.compute(&ref_fields)?;
+/// let coord_sys = scan.coordinate_system().unwrap();
+/// let vertical_field = vcs.compute(&ref_fields, &coord_sys)?;
 ///
 /// // Render with nexrad-render
 /// use nexrad_render::{render_vertical, default_scale, RenderOptions};
@@ -60,8 +62,8 @@ impl VerticalCrossSection {
     /// # Parameters
     ///
     /// - `azimuth_angle_degrees` — target azimuth (0-360 degrees)
-    /// - `max_range_km` — horizontal extent in km
-    /// - `max_altitude_meters` — vertical extent in meters
+    /// - `max_range_km` — horizontal extent in km of ground range
+    /// - `max_altitude_meters` — vertical extent in meters above mean sea level
     /// - `width` — number of horizontal bins (columns)
     /// - `height` — number of vertical bins (rows)
     ///
@@ -101,15 +103,19 @@ impl VerticalCrossSection {
 
     /// Compute the vertical cross-section from sweep fields at multiple elevations.
     ///
-    /// Each input field contributes data at the altitude determined by its elevation
-    /// angle and the beam-height equation. Where multiple tilts overlap the same
+    /// Each input field contributes data at the ground range and altitude that
+    /// `coordinate_system` gives for its elevation angle. Where multiple tilts overlap the same
     /// output cell, the maximum valid value is retained. The label and unit of the
     /// output field are taken from the first input field.
     ///
     /// # Errors
     ///
     /// Returns an error if no fields are provided.
-    pub fn compute(&self, fields: &[SweepField]) -> Result<VerticalField> {
+    pub fn compute(
+        &self,
+        fields: &[SweepField],
+        coordinate_system: &RadarCoordinateSystem,
+    ) -> Result<VerticalField> {
         if fields.is_empty() {
             return Err(Error::MissingData("no sweep fields provided".to_string()));
         }
@@ -126,19 +132,22 @@ impl VerticalCrossSection {
             self.height,
         )?;
 
-        let re = EFFECTIVE_EARTH_RADIUS_KM;
-
         for field in fields {
-            let elev_rad = (field.elevation_angle_degrees() as f64).to_radians();
+            let elevation_angle_degrees = field.elevation_angle_degrees() as f64;
 
-            for col in 0..self.width {
-                let range_km = (col as f64 + 0.5) / self.width as f64 * self.max_range_km;
+            for sample in 0..self.width {
+                let range_km = (sample as f64 + 0.5) / self.width as f64 * self.max_range_km;
 
-                // Beam height using 4/3 earth radius model
-                let altitude_km = range_km * elev_rad.sin() + (range_km * range_km) / (2.0 * re);
-                let altitude_m = altitude_km * 1000.0;
-
+                let altitude_m =
+                    coordinate_system.beam_height_meters(range_km, elevation_angle_degrees);
                 if altitude_m < 0.0 || altitude_m > self.max_altitude_meters {
+                    continue;
+                }
+
+                let ground_range_km =
+                    coordinate_system.ground_range_km(range_km, elevation_angle_degrees);
+                let col = (ground_range_km / self.max_range_km * self.width as f64) as usize;
+                if col >= self.width {
                     continue;
                 }
 
@@ -171,6 +180,14 @@ impl VerticalCrossSection {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nexrad_model::meta::Site;
+
+    fn coordinate_system() -> RadarCoordinateSystem {
+        let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
+            .build()
+            .expect("valid site");
+        RadarCoordinateSystem::new(&site)
+    }
 
     fn make_uniform_field(elevation: f32, value: f32) -> SweepField {
         let mut azimuths = Vec::new();
@@ -202,7 +219,7 @@ mod tests {
         let fields = vec![make_uniform_field(0.5, 30.0), make_uniform_field(3.5, 40.0)];
 
         let vcs = VerticalCrossSection::new(180.0, 25.0, 5000.0, 50, 25).unwrap();
-        let result = vcs.compute(&fields).unwrap();
+        let result = vcs.compute(&fields, &coordinate_system()).unwrap();
 
         assert_eq!(result.width(), 50);
         assert_eq!(result.height(), 25);
@@ -225,7 +242,7 @@ mod tests {
         let fields = vec![make_uniform_field(0.5, 20.0), make_uniform_field(0.5, 40.0)];
 
         let vcs = VerticalCrossSection::new(180.0, 25.0, 5000.0, 50, 25).unwrap();
-        let result = vcs.compute(&fields).unwrap();
+        let result = vcs.compute(&fields, &coordinate_system()).unwrap();
 
         // Overlapping beams should take the max value
         for row in 0..result.height() {
@@ -250,7 +267,10 @@ mod tests {
 
         // Alongside a valid tilt, only the valid values appear.
         let result = vcs
-            .compute(&[make_uniform_field(0.5, 20.0), filtered.clone()])
+            .compute(
+                &[make_uniform_field(0.5, 20.0), filtered.clone()],
+                &coordinate_system(),
+            )
             .unwrap();
         let mut found_valid = false;
         for row in 0..result.height() {
@@ -266,7 +286,7 @@ mod tests {
         assert!(found_valid, "expected at least some valid data");
 
         // A fully filtered tilt contributes nothing.
-        let result = vcs.compute(&[filtered]).unwrap();
+        let result = vcs.compute(&[filtered], &coordinate_system()).unwrap();
         assert!(result
             .statuses()
             .iter()
@@ -276,7 +296,7 @@ mod tests {
     #[test]
     fn test_vertical_empty_fields_error() {
         let vcs = VerticalCrossSection::new(180.0, 25.0, 5000.0, 50, 25).unwrap();
-        assert!(vcs.compute(&[]).is_err());
+        assert!(vcs.compute(&[], &coordinate_system()).is_err());
     }
 
     #[test]

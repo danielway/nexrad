@@ -2398,10 +2398,15 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::Redund
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::RedundantChannel
 #[non_exhaustive] pub enum nexrad_decode::messages::VcpNumber
 pub nexrad_decode::messages::VcpNumber::Unknown(u16)
+pub nexrad_decode::messages::VcpNumber::Vcp11
 pub nexrad_decode::messages::VcpNumber::Vcp112
 pub nexrad_decode::messages::VcpNumber::Vcp12
+pub nexrad_decode::messages::VcpNumber::Vcp121
+pub nexrad_decode::messages::VcpNumber::Vcp21
+pub nexrad_decode::messages::VcpNumber::Vcp211
 pub nexrad_decode::messages::VcpNumber::Vcp212
 pub nexrad_decode::messages::VcpNumber::Vcp215
+pub nexrad_decode::messages::VcpNumber::Vcp221
 pub nexrad_decode::messages::VcpNumber::Vcp31
 pub nexrad_decode::messages::VcpNumber::Vcp32
 pub nexrad_decode::messages::VcpNumber::Vcp35

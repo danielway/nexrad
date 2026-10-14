@@ -174,8 +174,12 @@ impl Sweep {
         earliest.zip(latest)
     }
 
-    /// Merges this sweep with another sweep, combining their radials into a single sweep. The
-    /// sweeps must be at the same elevation, and they should not have duplicate azimuth radials.
+    /// Joins two partial sweeps that share an elevation number into a single sweep, such as
+    /// radials of one sweep assembled from separate real-time chunks. The radials are combined
+    /// and ordered by azimuth number; the sweeps should not have duplicate azimuth radials.
+    ///
+    /// This does not combine a surveillance cut with its Doppler cut: the two halves of a split
+    /// cut have different elevation numbers.
     ///
     /// # Errors
     ///

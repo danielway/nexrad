@@ -5,7 +5,12 @@ use crate::result::{Error, Result};
 use chrono::{DateTime, Utc};
 
 #[cfg(feature = "uom")]
-use uom::si::{angle::degree, f64::Angle};
+use uom::si::{
+    angle::degree,
+    f64::{Angle, Length, Velocity},
+    length::kilometer,
+    velocity::meter_per_second,
+};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -27,6 +32,11 @@ pub struct Radial {
 
     elevation_number: u8,
     elevation_angle_degrees: f32,
+
+    #[cfg_attr(feature = "serde", serde(default))]
+    nyquist_velocity_mps: Option<f32>,
+    #[cfg_attr(feature = "serde", serde(default))]
+    unambiguous_range_km: Option<f32>,
 
     reflectivity: Option<MomentData>,
     velocity: Option<MomentData>,
@@ -56,6 +66,8 @@ impl Radial {
                 radial_status: RadialStatus::IntermediateRadialData,
                 elevation_number,
                 elevation_angle_degrees,
+                nyquist_velocity_mps: None,
+                unambiguous_range_km: None,
                 reflectivity: None,
                 velocity: None,
                 spectrum_width: None,
@@ -127,6 +139,40 @@ impl Radial {
         Angle::new::<degree>(self.elevation_angle_degrees as f64)
     }
 
+    /// The Nyquist velocity in meters per second, if the source carried it.
+    ///
+    /// This is the largest radial velocity that can be measured unambiguously with the pulse
+    /// repetition frequency (PRF) used on this radial; faster motion aliases into the
+    /// `-nyquist..nyquist` interval. It can differ between radials of one sweep because Doppler
+    /// PRF sectors vary by azimuth, so dealiasing must use the per-radial value.
+    pub fn nyquist_velocity_mps(&self) -> Option<f32> {
+        self.nyquist_velocity_mps
+    }
+
+    /// The Nyquist velocity, if the source carried it. See
+    /// [`nyquist_velocity_mps`](Self::nyquist_velocity_mps).
+    #[cfg(feature = "uom")]
+    pub fn nyquist_velocity(&self) -> Option<Velocity> {
+        self.nyquist_velocity_mps
+            .map(|mps| Velocity::new::<meter_per_second>(mps as f64))
+    }
+
+    /// The unambiguous range in kilometers, if the source carried it.
+    ///
+    /// This is the maximum range for the pulse repetition frequency used on this radial before
+    /// echoes from beyond it (second-trip echoes) fold back to a shorter apparent range.
+    pub fn unambiguous_range_km(&self) -> Option<f32> {
+        self.unambiguous_range_km
+    }
+
+    /// The unambiguous range, if the source carried it. See
+    /// [`unambiguous_range_km`](Self::unambiguous_range_km).
+    #[cfg(feature = "uom")]
+    pub fn unambiguous_range(&self) -> Option<Length> {
+        self.unambiguous_range_km
+            .map(|km| Length::new::<kilometer>(km as f64))
+    }
+
     /// Reflectivity data for this radial if available.
     pub fn reflectivity(&self) -> Option<&MomentData> {
         self.reflectivity.as_ref()
@@ -188,11 +234,13 @@ impl Radial {
 /// - `collection_timestamp_millis`: `0`
 /// - `azimuth_spacing_degrees`: `1.0`
 /// - `radial_status`: [`RadialStatus::IntermediateRadialData`]
+/// - `nyquist_velocity_mps` and `unambiguous_range_km`: `None`
 /// - moment data for every product: `None` (set with [`moment`](Self::moment))
 ///
 /// [`build`](Self::build) returns [`Error::InvalidGeometry`] unless the azimuth angle is finite
 /// and in `0.0..360.0`, the elevation angle is finite, and the azimuth spacing is finite and
-/// greater than zero.
+/// greater than zero, and unless the Nyquist velocity and unambiguous range, when set, are finite
+/// and greater than zero.
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct RadialBuilder {
@@ -216,6 +264,21 @@ impl RadialBuilder {
     /// [`RadialStatus::IntermediateRadialData`].
     pub fn radial_status(mut self, radial_status: RadialStatus) -> Self {
         self.radial.radial_status = radial_status;
+        self
+    }
+
+    /// Set the Nyquist velocity in meters per second: the largest unambiguous radial velocity
+    /// for the pulse repetition frequency used on this radial. Defaults to `None`. See
+    /// [`Radial::nyquist_velocity_mps`].
+    pub fn nyquist_velocity_mps(mut self, nyquist_velocity_mps: f32) -> Self {
+        self.radial.nyquist_velocity_mps = Some(nyquist_velocity_mps);
+        self
+    }
+
+    /// Set the unambiguous range in kilometers: the maximum range before second-trip echoes
+    /// fold. Defaults to `None`. See [`Radial::unambiguous_range_km`].
+    pub fn unambiguous_range_km(mut self, unambiguous_range_km: f32) -> Self {
+        self.radial.unambiguous_range_km = Some(unambiguous_range_km);
         self
     }
 
@@ -260,6 +323,22 @@ impl RadialBuilder {
                 parameter: "azimuth_spacing_degrees",
                 reason: "must be finite and greater than zero",
             });
+        }
+        if let Some(nyquist) = radial.nyquist_velocity_mps {
+            if !(nyquist.is_finite() && nyquist > 0.0) {
+                return Err(Error::InvalidGeometry {
+                    parameter: "nyquist_velocity_mps",
+                    reason: "must be finite and greater than zero",
+                });
+            }
+        }
+        if let Some(range) = radial.unambiguous_range_km {
+            if !(range.is_finite() && range > 0.0) {
+                return Err(Error::InvalidGeometry {
+                    parameter: "unambiguous_range_km",
+                    reason: "must be finite and greater than zero",
+                });
+            }
         }
         Ok(self.radial)
     }

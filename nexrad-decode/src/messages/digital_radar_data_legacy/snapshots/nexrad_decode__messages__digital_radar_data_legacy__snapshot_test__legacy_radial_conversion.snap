@@ -10,6 +10,10 @@ Radial {
     radial_status: ScanStart,
     elevation_number: 1,
     elevation_angle_degrees: 0.57128906,
+    nyquist_velocity_mps: None,
+    unambiguous_range_km: Some(
+        466.0,
+    ),
     reflectivity: Some(
         MomentData {
             product: Reflectivity,

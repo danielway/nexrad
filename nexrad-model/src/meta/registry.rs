@@ -4,6 +4,10 @@
 //! sites in the United States and its territories. Operational status is sourced from the
 //! [NOAA Radar Operations Center](https://www.roc.noaa.gov/build-loaded.php), with location data
 //! from the [NCEI station report](https://www.ncei.noaa.gov/access/homr/file/nexrad-stations.txt).
+//!
+//! The registry carries no feedhorn height. A scan's own [`Scan::site`](crate::data::Scan::site),
+//! decoded from the volume data block, carries both the site elevation and the feedhorn height
+//! and is the preferred source for a [`RadarCoordinateSystem`](crate::geo::RadarCoordinateSystem).
 
 use crate::result::{Error, Result};
 
@@ -27,6 +31,13 @@ pub struct SiteEntry {
 
 impl SiteEntry {
     /// Create a [`super::Site`] from this registry entry.
+    ///
+    /// The registry carries no feedhorn height, so the site's
+    /// [`feedhorn_height_meters`](super::Site::feedhorn_height_meters) is `0` and a
+    /// [`RadarCoordinateSystem`](crate::geo::RadarCoordinateSystem) built from it places the
+    /// antenna at ground level. Prefer a scan's own
+    /// [`Scan::site`](crate::data::Scan::site), decoded from the volume data block, as the
+    /// source for coordinate systems.
     ///
     /// # Errors
     ///
@@ -77,8 +88,9 @@ pub fn site_by_id(id: &str) -> Option<&'static SiteEntry> {
 
 /// Find the nearest NEXRAD site to a given latitude/longitude.
 ///
-/// Uses great-circle distance approximation. Returns `None` only if the
-/// registry is empty (which should never happen).
+/// Compares great-circle (haversine) distances on a spherical earth, so the result is correct
+/// across the antimeridian and near the poles. Returns `None` only if the registry is empty
+/// (which should never happen).
 ///
 /// # Example
 ///
@@ -91,21 +103,20 @@ pub fn site_by_id(id: &str) -> Option<&'static SiteEntry> {
 /// ```
 pub fn nearest_site(latitude: f64, longitude: f64) -> Option<&'static SiteEntry> {
     SITES.iter().min_by(|a, b| {
-        let dist_a = approx_distance_squared(latitude, longitude, a.latitude, a.longitude);
-        let dist_b = approx_distance_squared(latitude, longitude, b.latitude, b.longitude);
-        dist_a
-            .partial_cmp(&dist_b)
-            .unwrap_or(std::cmp::Ordering::Equal)
+        let dist_a = haversine_central_angle(latitude, longitude, a.latitude, a.longitude);
+        let dist_b = haversine_central_angle(latitude, longitude, b.latitude, b.longitude);
+        dist_a.total_cmp(&dist_b)
     })
 }
 
-/// Approximate squared distance for comparison purposes (not actual distance).
-/// Uses equirectangular approximation, which is adequate for nearest-neighbor queries
-/// within CONUS-scale distances.
-fn approx_distance_squared(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
-    let dlat = lat2 - lat1;
-    let dlon = (lon2 - lon1) * ((lat1 + lat2) * 0.5).to_radians().cos();
-    dlat * dlat + dlon * dlon
+/// The great-circle central angle in radians between two points given in degrees, by the
+/// haversine formula. Longitude differences wrap across the antimeridian.
+fn haversine_central_angle(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
+    let (lat1, lat2) = (lat1.to_radians(), lat2.to_radians());
+    let d_lat = lat2 - lat1;
+    let d_lon = (lon2 - lon1).to_radians();
+    let a = (d_lat / 2.0).sin().powi(2) + lat1.cos() * lat2.cos() * (d_lon / 2.0).sin().powi(2);
+    2.0 * a.sqrt().min(1.0).asin()
 }
 
 /// Static registry of all NEXRAD WSR-88D radar sites.

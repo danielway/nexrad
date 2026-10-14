@@ -9,6 +9,8 @@ expression: radials
   radial_status: ScanStart
   elevation_number: 1
   elevation_angle_degrees: 0.6097412
+  nyquist_velocity_mps: 8.849999
+  unambiguous_range_km: 467
   reflectivity:
     product: Reflectivity
     gate_count: 1832
@@ -63,6 +65,8 @@ expression: radials
   radial_status: ElevationStart
   elevation_number: 2
   elevation_angle_degrees: 0.52734375
+  nyquist_velocity_mps: 27.93
+  unambiguous_range_km: 148
   reflectivity:
     product: Reflectivity
     gate_count: 1192
@@ -101,6 +105,8 @@ expression: radials
   radial_status: ElevationStart
   elevation_number: 3
   elevation_angle_degrees: 0.8404541
+  nyquist_velocity_mps: 8.849999
+  unambiguous_range_km: 467
   reflectivity:
     product: Reflectivity
     gate_count: 1832

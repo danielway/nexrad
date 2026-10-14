@@ -253,7 +253,11 @@ let Some(row) = field.radial_values(azimuth_idx) else { return Ok(()) };
   `ElevationCut::elevation_angle_degrees()` returns `f32` (was `f64`). `Scan::sweeps_at_elevation` takes `f32`, as it
   did in 1.0.0-rc.2, so it compares directly against `Sweep::elevation_angle_degrees()`.
 - **`MomentValue` gained `CfpStatus(CfpStatus)`** and is still exhaustive, so an exhaustive `match` needs a new arm. It
-  is only produced for `Product::ClutterFilterPower`, and `GateStatus::from(&MomentValue::CfpStatus(_))` is `NoData`.
+  is only produced for `Product::ClutterFilterPower`, and `GateStatus::from(MomentValue::CfpStatus(_))` is `NoData`.
+- **`GateStatus` gained `Filtered`** (#187) and is still exhaustive, so an exhaustive `match` needs a new arm. It marks
+  a gate whose valid value a processing step removed; the value is kept.
+- **`GateStatus::from` takes `MomentValue` by value** (#187): `GateStatus::from(&value)` becomes
+  `GateStatus::from(value)`.
 - **Constructors validate** (#185). `new_empty` accepted any geometry; `SweepFieldBuilder::build` returns
   `Err(Error::InvalidGeometry { parameter, .. })` unless the azimuths are non-empty, finite, in `0.0..360.0` and
   strictly ascending, `gate_count` is non-zero, `gate_interval_km` and `azimuth_spacing_degrees` are finite and positive,
@@ -562,6 +566,11 @@ let composite = CompositeReflectivity.compute(&fields, &coords, &extent, (512, 5
 
 - `MedianFilter::new` rejects zero or even kernel sizes, `GaussianSmooth::new` rejects sigmas that are not finite and
   positive (NaN and infinity used to be accepted), and `ThresholdFilter::new` rejects a NaN bound or `min > max`.
+- **Masked gates are `Filtered`** (#187). `ThresholdFilter` and `CorrelationCoefficientFilter` mark the gates they
+  remove `GateStatus::Filtered` and keep their values; they used to set `NoData` with `0.0`. Code that looks for
+  `NoData` to find masked gates should look for `Filtered`; code that checks for `Valid` is unaffected. Smoothing and
+  storm-relative velocity pass `Filtered` gates through, and composite reflectivity, cross-sections and cell detection
+  skip them, as they do `NoData`.
 - The processors now implement `Debug`, `Clone` and `PartialEq` (and `CompositeReflectivity` also `Copy` and
   `Default`).
 
@@ -1260,6 +1269,8 @@ items that replace nothing are in the CHANGELOGs.
 | `data::CartesianField::get(usize, usize) -> (f32, GateStatus)`, `set(..)` | `get -> Option<(f32, GateStatus)>`, `set -> Result<()>` |
 | `data::VerticalField::new(label, unit, (f64, f64), (f64, f64), usize, usize) -> Self` | `-> Result<Self>` |
 | `data::VerticalField::get(usize, usize) -> (f32, GateStatus)`, `set(..)` | `get -> Option<(f32, GateStatus)>`, `set -> Result<()>` |
+| `data::GateStatus::{Valid, BelowThreshold, RangeFolded, NoData}` | Adds `Filtered`; still exhaustive |
+| `impl From<&data::MomentValue> for data::GateStatus` | `impl From<data::MomentValue> for data::GateStatus` |
 | `data::Radial::collection_timestamp() -> i64` | `collection_timestamp_millis() -> i64` |
 | `data::VolumeCoveragePattern::doppler_velocity_resolution() -> f32` | `doppler_velocity_resolution_mps() -> f32` |
 | `data::VolumeCoveragePattern::{sails_cuts, mrle_cuts}() -> u8` | `{sails_cut_count, mrle_cut_count}() -> u8` |
@@ -1423,6 +1434,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `derived::VerticalCrossSection::new(f32, f64, f64, usize, usize)` | `new(f64, f64, f64, usize, usize)` |
 | `detection::StormCell::elevation_degrees() -> f32` | `elevation_angle_degrees() -> f32` |
 | `detection::StormCell::max_reflectivity_azimuth_degrees() -> f32` | `max_reflectivity_azimuth_angle_degrees() -> f32` |
+| `filter::{ThresholdFilter, CorrelationCoefficientFilter}` mask gates as `(0.0, GateStatus::NoData)` | Mask gates as `(value, GateStatus::Filtered)` |
 | `result::Error` | `#[non_exhaustive]`; new `Model(nexrad_model::Error)` |
 
 </details>

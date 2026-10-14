@@ -1,14 +1,19 @@
 //! Geographic coordinate types and radar coordinate system.
 //!
 //! This module provides types for working with geographic coordinates and converting
-//! between radar-relative polar coordinates and geographic (WGS-84) coordinates.
+//! between radar-relative polar coordinates and geographic coordinates.
+//!
+//! The earth is modelled as a sphere of radius 6371 km. Beam propagation uses the standard
+//! 4/3 effective earth radius to account for atmospheric refraction, and the radar antenna
+//! sits at its height above mean sea level. Latitudes and longitudes are geodetic degrees as
+//! reported by the radar; altitudes are above mean sea level.
 
 use crate::meta::Site;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-/// A geographic point in WGS-84 coordinates.
+/// A geographic point in latitude and longitude degrees.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GeoPoint {
@@ -52,17 +57,23 @@ pub struct PolarPoint {
     pub elevation_angle_degrees: f64,
 }
 
+/// Mean earth radius in meters, the radius of the spherical earth model.
+const EARTH_RADIUS_M: f64 = 6_371_000.0;
+
 /// Standard 4/3 effective earth radius in meters.
 ///
 /// The standard atmosphere assumption uses 4/3 of the true earth radius to account
 /// for electromagnetic beam refraction. This is the standard meteorological convention
 /// used by the NWS and in radar meteorology textbooks.
-const EFFECTIVE_EARTH_RADIUS_M: f64 = 6_371_000.0 * 4.0 / 3.0;
+const EFFECTIVE_EARTH_RADIUS_M: f64 = EARTH_RADIUS_M * 4.0 / 3.0;
 
 /// Radar coordinate system for converting between polar and geographic coordinates.
 ///
-/// Uses the standard 4/3 earth radius beam propagation model, which is the established
-/// meteorological convention for radar beam height and range calculations.
+/// Uses a spherical earth of radius 6371 km with the standard 4/3 effective earth radius beam
+/// propagation model, which is the established meteorological convention for radar beam height
+/// and range calculations, and accounts for the antenna's height above mean sea level.
+/// [`polar_to_geo`](Self::polar_to_geo) and [`geo_to_polar`](Self::geo_to_polar) are exact
+/// inverses under this model.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RadarCoordinateSystem {
@@ -104,35 +115,73 @@ impl RadarCoordinateSystem {
         self.antenna_height_meters
     }
 
+    /// The height of the beam centre above mean sea level in meters at `range_km` slant range
+    /// along a beam at `elevation_angle_degrees`.
+    ///
+    /// With `R'` the 4/3 effective earth radius, `h0` the
+    /// [antenna height](Self::antenna_height_meters), `r` the slant range and `theta` the
+    /// elevation angle, the height is
+    /// `h = sqrt(r^2 + (R' + h0)^2 + 2 r (R' + h0) sin(theta)) - R'`, equivalently
+    /// `(R' + h0) cos(theta) / cos(theta + phi) - R'` with `phi` the angle subtended at the
+    /// earth's centre (see [`ground_range_km`](Self::ground_range_km)).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nexrad_model::geo::RadarCoordinateSystem;
+    /// use nexrad_model::meta::Site;
+    ///
+    /// let site = Site::builder(*b"KTLX", 35.3331, -97.2778).site_elevation_meters(370).build()?;
+    /// let coords = RadarCoordinateSystem::new(&site);
+    ///
+    /// // The 0.5 degree beam is about 1.46 km above the antenna at 100 km.
+    /// let above_antenna = coords.beam_height_meters(100.0, 0.5) - coords.antenna_height_meters();
+    /// assert!((above_antenna - 1460.0).abs() < 10.0);
+    /// # Ok::<(), nexrad_model::result::Error>(())
+    /// ```
+    pub fn beam_height_meters(&self, range_km: f64, elevation_angle_degrees: f64) -> f64 {
+        let range_m = range_km * 1000.0;
+        let antenna_radius_m = EFFECTIVE_EARTH_RADIUS_M + self.antenna_height_meters;
+        let sin_elevation = elevation_angle_degrees.to_radians().sin();
+        (range_m * range_m
+            + antenna_radius_m * antenna_radius_m
+            + 2.0 * range_m * antenna_radius_m * sin_elevation)
+            .sqrt()
+            - EFFECTIVE_EARTH_RADIUS_M
+    }
+
+    /// The great-circle distance in kilometers along the earth's surface from the radar to the
+    /// point beneath the beam centre at `range_km` slant range along a beam at
+    /// `elevation_angle_degrees`.
+    ///
+    /// The angle subtended at the earth's centre is
+    /// `phi = atan2(r cos(theta), (R' + h0) + r sin(theta))`, and the ground range is `R' * phi`;
+    /// see [`beam_height_meters`](Self::beam_height_meters) for the symbols.
+    pub fn ground_range_km(&self, range_km: f64, elevation_angle_degrees: f64) -> f64 {
+        let range_m = range_km * 1000.0;
+        let antenna_radius_m = EFFECTIVE_EARTH_RADIUS_M + self.antenna_height_meters;
+        let elevation_rad = elevation_angle_degrees.to_radians();
+        let central_angle =
+            (range_m * elevation_rad.cos()).atan2(antenna_radius_m + range_m * elevation_rad.sin());
+        EFFECTIVE_EARTH_RADIUS_M * central_angle / 1000.0
+    }
+
     /// Convert radar-relative polar coordinates to geographic coordinates.
     ///
-    /// Uses the standard 4/3 earth radius beam propagation model to compute the
-    /// geographic location and altitude of a point at the given azimuth, range,
-    /// and elevation from the radar.
+    /// The altitude is [`beam_height_meters`](Self::beam_height_meters) and the point lies
+    /// [`ground_range_km`](Self::ground_range_km) from the radar along the great circle at the
+    /// given azimuth. [`geo_to_polar`](Self::geo_to_polar) is its exact inverse.
     pub fn polar_to_geo(&self, polar: PolarPoint) -> GeoPoint3D {
-        let range_m = polar.range_km * 1000.0;
-        let elev_rad = polar.elevation_angle_degrees.to_radians();
+        let altitude_meters =
+            self.beam_height_meters(polar.range_km, polar.elevation_angle_degrees);
+        let ground_range_m =
+            self.ground_range_km(polar.range_km, polar.elevation_angle_degrees) * 1000.0;
         let az_rad = polar.azimuth_angle_degrees.to_radians();
 
-        // Beam height using 4/3 earth radius model
-        // h = sqrt(r^2 + R_e^2 + 2*r*R_e*sin(el)) - R_e + h_antenna
-        let height_m = ((range_m * range_m)
-            + (EFFECTIVE_EARTH_RADIUS_M * EFFECTIVE_EARTH_RADIUS_M)
-            + (2.0 * range_m * EFFECTIVE_EARTH_RADIUS_M * elev_rad.sin()))
-        .sqrt()
-            - EFFECTIVE_EARTH_RADIUS_M
-            + self.antenna_height_meters;
-
-        // Ground range (arc distance along earth surface)
-        // s = R_e * arcsin(r * cos(el) / (R_e + h))
-        let ground_range_m = EFFECTIVE_EARTH_RADIUS_M
-            * ((range_m * elev_rad.cos()) / (EFFECTIVE_EARTH_RADIUS_M + height_m)).asin();
-
-        // Convert ground range + azimuth to lat/lon offset
         let lat_rad = self.latitude.to_radians();
         let lon_rad = self.longitude.to_radians();
 
-        let angular_distance = ground_range_m / 6_371_000.0; // Use true earth radius for lat/lon
+        let angular_distance = ground_range_m / EARTH_RADIUS_M;
 
         let new_lat = (lat_rad.sin() * angular_distance.cos()
             + lat_rad.cos() * angular_distance.sin() * az_rad.cos())
@@ -145,14 +194,21 @@ impl RadarCoordinateSystem {
         GeoPoint3D {
             latitude: new_lat.to_degrees(),
             longitude: new_lon.to_degrees(),
-            altitude_meters: height_m,
+            altitude_meters,
         }
     }
 
     /// Convert geographic coordinates to radar-relative polar coordinates.
     ///
-    /// Computes the azimuth and range from the radar to the given geographic point
-    /// at the specified elevation angle.
+    /// Computes the azimuth to `point` and the slant range at which a beam at
+    /// `elevation_angle_degrees` passes over it. With `phi = ground_range / R'` the angle
+    /// subtended at the earth's centre, the slant range is
+    /// `r = (R' + h0) sin(phi) / cos(theta + phi)`; see
+    /// [`beam_height_meters`](Self::beam_height_meters) for the symbols. This is the exact
+    /// inverse of [`polar_to_geo`](Self::polar_to_geo).
+    ///
+    /// The range is not finite or is negative when no beam at that elevation passes over the
+    /// point (`theta + phi` of 90 degrees or more).
     pub fn geo_to_polar(&self, point: GeoPoint, elevation_angle_degrees: f64) -> PolarPoint {
         let lat1 = self.latitude.to_radians();
         let lon1 = self.longitude.to_radians();
@@ -167,15 +223,18 @@ impl RadarCoordinateSystem {
         let azimuth_rad = y.atan2(x);
         let azimuth_angle_degrees = (azimuth_rad.to_degrees() + 360.0) % 360.0;
 
-        // Great-circle distance
+        // Great-circle (haversine) distance
         let a = ((lat2 - lat1) / 2.0).sin().powi(2)
             + lat1.cos() * lat2.cos() * (d_lon / 2.0).sin().powi(2);
         let angular_distance = 2.0 * a.sqrt().asin();
-        let ground_range_m = angular_distance * 6_371_000.0;
+        let ground_range_m = angular_distance * EARTH_RADIUS_M;
 
-        // Invert the beam height equation to get slant range
-        let elev_rad = elevation_angle_degrees.to_radians();
-        let range_m = ground_range_m / elev_rad.cos(); // Approximation for small elevations
+        // Slant range of the beam above that ground range
+        let central_angle = ground_range_m / EFFECTIVE_EARTH_RADIUS_M;
+        let elevation_rad = elevation_angle_degrees.to_radians();
+        let antenna_radius_m = EFFECTIVE_EARTH_RADIUS_M + self.antenna_height_meters;
+        let range_m =
+            antenna_radius_m * central_angle.sin() / (elevation_rad + central_angle).cos();
 
         PolarPoint {
             azimuth_angle_degrees,

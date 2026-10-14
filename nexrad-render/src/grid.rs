@@ -89,7 +89,7 @@ pub fn render_cartesian(
 ///
 /// // Create a vertical cross-section at 200° azimuth
 /// let vcs = VerticalCrossSection::new(200.0, 230.0, 18000.0, 600, 300)?;
-/// let vertical = vcs.compute(&ref_fields)?;
+/// let vertical = vcs.compute(&ref_fields, &coord_sys)?;
 ///
 /// // Render the vertical field
 /// let scale = default_scale(Product::Reflectivity);

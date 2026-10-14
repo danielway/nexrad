@@ -58,6 +58,7 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::ChannelConf
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::ChannelConfiguration
 pub enum nexrad_model::data::GateStatus
 pub nexrad_model::data::GateStatus::BelowThreshold
+pub nexrad_model::data::GateStatus::Filtered
 pub nexrad_model::data::GateStatus::NoData
 pub nexrad_model::data::GateStatus::RangeFolded
 pub nexrad_model::data::GateStatus::Valid
@@ -66,8 +67,8 @@ pub fn nexrad_model::data::GateStatus::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_model::data::GateStatus
 impl core::cmp::PartialEq for nexrad_model::data::GateStatus
 pub fn nexrad_model::data::GateStatus::eq(&self, &Self) -> bool
-impl core::convert::From<&nexrad_model::data::MomentValue> for nexrad_model::data::GateStatus
-pub fn nexrad_model::data::GateStatus::from(&nexrad_model::data::MomentValue) -> Self
+impl core::convert::From<nexrad_model::data::MomentValue> for nexrad_model::data::GateStatus
+pub fn nexrad_model::data::GateStatus::from(nexrad_model::data::MomentValue) -> Self
 impl core::fmt::Debug for nexrad_model::data::GateStatus
 pub fn nexrad_model::data::GateStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for nexrad_model::data::GateStatus
@@ -94,8 +95,8 @@ impl core::clone::Clone for nexrad_model::data::MomentValue
 pub fn nexrad_model::data::MomentValue::clone(&self) -> Self
 impl core::cmp::PartialEq for nexrad_model::data::MomentValue
 pub fn nexrad_model::data::MomentValue::eq(&self, &Self) -> bool
-impl core::convert::From<&nexrad_model::data::MomentValue> for nexrad_model::data::GateStatus
-pub fn nexrad_model::data::GateStatus::from(&nexrad_model::data::MomentValue) -> Self
+impl core::convert::From<nexrad_model::data::MomentValue> for nexrad_model::data::GateStatus
+pub fn nexrad_model::data::GateStatus::from(nexrad_model::data::MomentValue) -> Self
 impl core::fmt::Debug for nexrad_model::data::MomentValue
 pub fn nexrad_model::data::MomentValue::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for nexrad_model::data::MomentValue

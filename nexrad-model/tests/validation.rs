@@ -773,3 +773,32 @@ fn value_at_polar_sector_tolerance_crosses_north() {
     assert_eq!(row_at(&sector, 2.6), Some(2.0));
     assert_eq!(row_at(&sector, 2.8), None);
 }
+
+// --- value_range ---
+
+#[test]
+fn value_range_ignores_filtered_gates() {
+    let mut sweep = SweepField::builder("Test", "dBZ")
+        .azimuth_angles_degrees(vec![0.0, 1.0])
+        .gate_interval_km(0.25)
+        .gate_count(2)
+        .build()
+        .unwrap();
+    sweep.set(0, 0, 10.0, GateStatus::Valid).unwrap();
+    sweep.set(0, 1, 20.0, GateStatus::Valid).unwrap();
+    sweep.set(1, 0, -50.0, GateStatus::Filtered).unwrap();
+    sweep.set(1, 1, 90.0, GateStatus::Filtered).unwrap();
+    assert_eq!(sweep.value_range(), Some((10.0, 20.0)));
+    assert_eq!(sweep.get(1, 1), Some((90.0, GateStatus::Filtered)));
+
+    let mut cartesian = CartesianField::new("Test", "dBZ", valid_extent(), 2, 1).unwrap();
+    cartesian.set(0, 0, 5.0, GateStatus::Valid).unwrap();
+    cartesian.set(0, 1, 90.0, GateStatus::Filtered).unwrap();
+    assert_eq!(cartesian.value_range(), Some((5.0, 5.0)));
+
+    let mut vertical =
+        VerticalField::new("Test", "dBZ", (0.0, 100.0), (0.0, 10_000.0), 2, 1).unwrap();
+    vertical.set(0, 0, 90.0, GateStatus::Filtered).unwrap();
+    vertical.set(0, 1, 90.0, GateStatus::Filtered).unwrap();
+    assert_eq!(vertical.value_range(), None);
+}

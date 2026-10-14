@@ -242,6 +242,28 @@ fn site_out_of_range_is_rejected() {
 }
 
 #[test]
+fn site_identifier_is_a_string() {
+    let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
+        .build()
+        .expect("valid site");
+    let text = serde_json::to_string(&site).expect("serializes to JSON");
+    assert!(text.contains(r#""identifier":"KTLX""#), "{text}");
+
+    for identifier in [json!("KT"), json!("KTLXX"), json!("KT X"), json!("KT-X")] {
+        let mut document = to_json(&site);
+        document["identifier"] = identifier.clone();
+        assert!(
+            serde_json::from_value::<Site>(document).is_err(),
+            "accepted {identifier}"
+        );
+    }
+
+    let mut document = to_json(&site);
+    document["identifier"] = json!([75, 84, 76, 88]);
+    assert!(serde_json::from_value::<Site>(document).is_err());
+}
+
+#[test]
 fn sweep_elevation_mismatch_is_rejected() {
     let mut document = to_json(&scan().sweeps()[0]);
     document["elevation_number"] = json!(3);

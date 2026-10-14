@@ -2,11 +2,7 @@
 source: nexrad-model/tests/scan_snapshot.rs
 expression: "(scan.site(), scan.coverage_pattern())"
 ---
-- identifier:
-    - 75
-    - 68
-    - 77
-    - 88
+- identifier: KDMX
   latitude: 41.731201171875
   longitude: -93.72286987304688
   site_elevation_meters: 299

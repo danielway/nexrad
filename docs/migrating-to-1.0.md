@@ -767,6 +767,7 @@ II source files.** There is no compatibility shim. The incompatible changes are:
 | `MomentData` | `first_gate_range`, `gate_interval` and `values` are renamed `first_gate_range_meters`, `gate_interval_meters` and `raw_values`, matching the accessors | #189 |
 | `MomentData` | `raw_values` serializes as a byte string (`serialize_bytes`) instead of a sequence of integers. JSON and other formats without a bytes type still write and read an array of integers; formats with one, such as MessagePack and CBOR, write a binary string | #189 |
 | `SweepField`, `CartesianField`, `VerticalField` | `status` is renamed `statuses`, matching the accessor | #189 |
+| `Site` | `identifier` serializes as the four-character string `Site::identifier()` returns (`"KTLX"`) instead of an array of four byte values (`[75, 84, 76, 88]`); only the string form deserializes | #189 |
 | `CfpStatus` | Variants serialize as their PascalCase names (`"FilterNotApplied"`, `"PointClutterFilterApplied"`, `"DualPolOnlyFilterApplied"`, `{"Reserved": n}`) instead of snake_case (`"filter_not_applied"`, ...) | #189 |
 | `SweepField`, `CartesianField`, `VerticalField`, `MomentData`, `Radial`, `Site`, `Sweep` | Deserialization applies the constructors' validation and fails on data they reject: field `values` and `statuses` must each hold one entry per cell, `raw_values` must hold exactly `gate_count` gates of `data_word_size` bits, each `Radial` moment must sit under its own product's key, `Site` coordinates must be in range, and every radial of a `Sweep` must share its `elevation_number` | #189 |
 
@@ -1339,6 +1340,7 @@ items that replace nothing are in the CHANGELOGs.
 | `result::Error::ElevationMismatch` (unit variant) | `ElevationMismatch { expected: u8, actual: u8 }` |
 | serde: `data::MomentData` keys `first_gate_range`, `gate_interval`, `values` (a sequence of integers) | `first_gate_range_meters`, `gate_interval_meters`, `raw_values` (a byte string) |
 | serde: `data::{SweepField, CartesianField, VerticalField}` key `status` | `statuses` |
+| serde: `meta::Site` key `identifier` as `[u8; 4]` (an array of four numbers) | A four-character string (`"KTLX"`) |
 | serde: `data::CfpStatus` variants in snake_case | PascalCase variant names |
 | serde: `Deserialize` for `data::{SweepField, CartesianField, VerticalField, MomentData, Radial, Sweep}` and `meta::Site` (no validation) | Validates as the constructors and builders do |
 

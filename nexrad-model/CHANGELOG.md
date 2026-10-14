@@ -159,6 +159,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   - The `Debug` output of `MomentData` shows the renamed fields.
 - With `serde`, `MomentData`'s raw gate bytes serialize as a byte string instead of a sequence of integers. Formats
   without a bytes type, such as JSON, still write an array of integers, and both forms deserialize. (#189)
+- With `serde`, `Site`'s `identifier` serializes as the four-character string `identifier()` returns (`"KTLX"`)
+  instead of an array of four byte values, and only the string form deserializes. (#189)
 - With `serde`, `CfpStatus` variants serialize as their PascalCase names (`"FilterNotApplied"`), like every other model
   enum; it used snake_case (`"filter_not_applied"`). (#189)
 - With `serde`, deserializing `SweepField`, `CartesianField`, `VerticalField`, `MomentData`, `Radial`, `Sweep` and

@@ -79,10 +79,7 @@ fn test_scan_creation() {
     ];
     let scan = Scan::new(test_vcp(212), sweeps);
 
-    assert_eq!(
-        scan.coverage_pattern_number(),
-        VcpNumber::PrecipitationSz2_212
-    );
+    assert_eq!(scan.coverage_pattern_number(), VcpNumber::Vcp212);
     assert_eq!(scan.sweeps().len(), 2);
 }
 

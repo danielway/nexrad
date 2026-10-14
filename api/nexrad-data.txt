@@ -26,8 +26,29 @@ impl core::marker::Unpin for nexrad_data::aws::archive::Identifier
 impl core::marker::UnsafeUnpin for nexrad_data::aws::archive::Identifier
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_data::aws::archive::Identifier
 impl core::panic::unwind_safe::UnwindSafe for nexrad_data::aws::archive::Identifier
+pub struct nexrad_data::aws::archive::ListedFile
+impl nexrad_data::aws::archive::ListedFile
+pub fn nexrad_data::aws::archive::ListedFile::identifier(&self) -> &nexrad_data::aws::archive::Identifier
+pub fn nexrad_data::aws::archive::ListedFile::into_identifier(self) -> nexrad_data::aws::archive::Identifier
+pub fn nexrad_data::aws::archive::ListedFile::size(&self) -> u64
+impl core::clone::Clone for nexrad_data::aws::archive::ListedFile
+pub fn nexrad_data::aws::archive::ListedFile::clone(&self) -> Self
+impl core::cmp::Eq for nexrad_data::aws::archive::ListedFile
+impl core::cmp::PartialEq for nexrad_data::aws::archive::ListedFile
+pub fn nexrad_data::aws::archive::ListedFile::eq(&self, &Self) -> bool
+impl core::hash::Hash for nexrad_data::aws::archive::ListedFile
+pub fn nexrad_data::aws::archive::ListedFile::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for nexrad_data::aws::archive::ListedFile
+impl core::marker::Freeze for nexrad_data::aws::archive::ListedFile
+impl core::marker::Send for nexrad_data::aws::archive::ListedFile
+impl core::marker::Sync for nexrad_data::aws::archive::ListedFile
+impl core::marker::Unpin for nexrad_data::aws::archive::ListedFile
+impl core::marker::UnsafeUnpin for nexrad_data::aws::archive::ListedFile
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_data::aws::archive::ListedFile
+impl core::panic::unwind_safe::UnwindSafe for nexrad_data::aws::archive::ListedFile
 pub async fn nexrad_data::aws::archive::download_file(&nexrad_data::aws::archive::Identifier) -> nexrad_data::result::Result<nexrad_data::volume::File>
 pub async fn nexrad_data::aws::archive::list_files(&str, chrono::naive::date::NaiveDate) -> nexrad_data::result::Result<alloc::vec::Vec<nexrad_data::aws::archive::Identifier>>
+pub async fn nexrad_data::aws::archive::list_files_with_sizes(&str, chrono::naive::date::NaiveDate) -> nexrad_data::result::Result<alloc::vec::Vec<nexrad_data::aws::archive::ListedFile>>
 pub mod nexrad_data::aws::realtime
 pub enum nexrad_data::aws::realtime::Chunk
 pub nexrad_data::aws::realtime::Chunk::IntermediateOrEnd(nexrad_data::volume::Record<'static>)

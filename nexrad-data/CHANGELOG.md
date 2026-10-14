@@ -23,6 +23,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `volume::File::coverage_pattern_message()`, which decodes the file's volume coverage pattern (message type 5) as an
   owned `nexrad_decode` message and returns `Error::MissingCoveragePattern` when the file has none. Use it on a
   real-time `Chunk::Start`'s file to read the volume's VCP. (#183)
+- `aws::archive::list_files_with_sizes(site, date)`, which returns each volume file's `ListedFile` (its `Identifier`
+  and compressed size in bytes) from the same listing request `list_files` makes. File size tracks how much echo a
+  volume holds, so it works as a cheap storm-activity signal without downloading anything. (#186)
 
 ### Changed
 

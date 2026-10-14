@@ -154,6 +154,32 @@ async fn test_list_files_basic() {
 
 #[tokio::test]
 #[ignore = "requires AWS access"]
+async fn test_list_files_with_sizes_matches_list_files() {
+    let site = "KDMX";
+    let date = NaiveDate::from_ymd_opt(2022, 3, 5).unwrap();
+
+    let names: Vec<String> = archive::list_files(site, date)
+        .await
+        .unwrap()
+        .iter()
+        .map(|file| file.name().to_string())
+        .collect();
+    let listed = archive::list_files_with_sizes(site, date).await.unwrap();
+
+    let listed_names: Vec<String> = listed
+        .iter()
+        .map(|file| file.identifier().name().to_string())
+        .collect();
+    assert_eq!(names, listed_names);
+    for file in &listed {
+        if file.identifier().name().ends_with("_V06") {
+            assert!(file.size() > 0, "{} has no size", file.identifier().name());
+        }
+    }
+}
+
+#[tokio::test]
+#[ignore = "requires AWS access"]
 async fn test_list_files_no_data() {
     let site = "KDMX";
     // Use a date far in the future where no data should exist

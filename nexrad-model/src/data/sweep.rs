@@ -17,8 +17,28 @@ use uom::si::f64::Angle;
 /// azimuthal distance between rays and thus and number of rays in the sweep. Multiple sweeps are
 /// taken at different elevation angles to create a complete scan.
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Sweep {
+    elevation_number: u8,
+    radials: Vec<Radial>,
+}
+
+/// Deserializes through [`Sweep::new`], so every radial must share the sweep's elevation number.
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Sweep {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        let repr = SweepRepr::deserialize(deserializer)?;
+        Sweep::new(repr.elevation_number, repr.radials).map_err(serde::de::Error::custom)
+    }
+}
+
+/// The serialized form of [`Sweep`], validated before it becomes one.
+#[cfg(feature = "serde")]
+#[derive(Deserialize)]
+#[serde(rename = "Sweep")]
+struct SweepRepr {
     elevation_number: u8,
     radials: Vec<Radial>,
 }

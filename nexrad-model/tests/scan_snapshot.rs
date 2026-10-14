@@ -147,25 +147,15 @@ fn test_decode_map_scan_sample_radials() {
     assert_eq!(radials.len(), SAMPLED_SWEEPS);
 
     assert_yaml_snapshot!("decode_map_scan_sample_radials", radials, {
-      ".**.values" => insta::dynamic_redaction(|value, _path| redact_bytes_like(value)),
+      ".**.raw_values" => insta::dynamic_redaction(|value, _path| redact_bytes_like(value)),
     });
 }
 
 fn redact_bytes_like(value: insta::internals::Content) -> insta::internals::Content {
-    if let Some(items) = value.as_slice() {
-        let mut buf = Vec::with_capacity(items.len());
-        for item in items {
-            if let Some(n) = item.as_u64() {
-                if n <= 255 {
-                    buf.push(n as u8);
-                    continue;
-                }
-            }
-            panic!("unexpected value in binary data: {:?}", item);
-        }
-        return hash_bytes_to_content(&buf);
+    match value.as_bytes() {
+        Some(bytes) => hash_bytes_to_content(bytes),
+        None => panic!("raw moment values are not serialized as bytes: {value:?}"),
     }
-    value
 }
 
 fn hash_bytes_to_content(bytes: &[u8]) -> insta::internals::Content {

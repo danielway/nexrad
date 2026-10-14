@@ -11,7 +11,6 @@ use uom::si::{f64::Length, length::kilometer};
 /// CFP status codes for clutter filter power moments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum CfpStatus {
     /// Clutter filter not applied.
     FilterNotApplied,
@@ -38,17 +37,17 @@ pub enum CfpStatus {
 /// `(raw - offset) / scale`. The raw encoding parameters and bytes are also exposed for
 /// consumers that decode gate values themselves.
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct MomentData {
     product: Product,
     gate_count: u16,
-    first_gate_range: u16,
-    gate_interval: u16,
+    first_gate_range_meters: u16,
+    gate_interval_meters: u16,
     /// Bits per gate (8 or 16). Dual-pol moments often use 16-bit words.
     data_word_size: u8,
     scale: f32,
     offset: f32,
-    values: BinaryData<Vec<u8>>,
+    raw_values: BinaryData<Vec<u8>>,
 }
 
 impl MomentData {
@@ -127,12 +126,12 @@ impl MomentData {
         Ok(Self {
             product,
             gate_count: compact_gate_count,
-            first_gate_range: first_gate_range_meters,
-            gate_interval: gate_interval_meters,
+            first_gate_range_meters,
+            gate_interval_meters,
             data_word_size,
             scale,
             offset,
-            values: BinaryData::new(values),
+            raw_values: BinaryData::new(values),
         })
     }
 
@@ -148,34 +147,34 @@ impl MomentData {
 
     /// The range to the center of the first gate in meters.
     pub fn first_gate_range_meters(&self) -> u16 {
-        self.first_gate_range
+        self.first_gate_range_meters
     }
 
     /// The range between the centers of consecutive gates in meters.
     pub fn gate_interval_meters(&self) -> u16 {
-        self.gate_interval
+        self.gate_interval_meters
     }
 
     /// The range to the center of the first gate in kilometers.
     pub fn first_gate_range_km(&self) -> f64 {
-        self.first_gate_range as f64 * 0.001
+        self.first_gate_range_meters as f64 * 0.001
     }
 
     /// The range to the center of the first gate.
     #[cfg(feature = "uom")]
     pub fn first_gate_range(&self) -> Length {
-        Length::new::<kilometer>(self.first_gate_range as f64 * 0.001)
+        Length::new::<kilometer>(self.first_gate_range_meters as f64 * 0.001)
     }
 
     /// The range between the centers of consecutive gates in kilometers.
     pub fn gate_interval_km(&self) -> f64 {
-        self.gate_interval as f64 * 0.001
+        self.gate_interval_meters as f64 * 0.001
     }
 
     /// The range between the centers of consecutive gates.
     #[cfg(feature = "uom")]
     pub fn gate_interval(&self) -> Length {
-        Length::new::<kilometer>(self.gate_interval as f64 * 0.001)
+        Length::new::<kilometer>(self.gate_interval_meters as f64 * 0.001)
     }
 
     /// Number of bits per gate (8 or 16).
@@ -198,14 +197,14 @@ impl MomentData {
     /// The raw encoded gate values as bytes. For 8-bit moments, each byte is one gate.
     /// For 16-bit moments, each pair of bytes is a big-endian `u16` gate value.
     pub fn raw_values(&self) -> &[u8] {
-        &self.values
+        &self.raw_values
     }
 
     /// Iterator over raw gate values as `u16`, handling both 8-bit and 16-bit word sizes.
     pub fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
         let is_16bit = self.data_word_size == 16;
         let step = if is_16bit { 2 } else { 1 };
-        self.values.chunks_exact(step).map(move |chunk| {
+        self.raw_values.chunks_exact(step).map(move |chunk| {
             if is_16bit {
                 u16::from_be_bytes([chunk[0], chunk[1]])
             } else {
@@ -256,6 +255,43 @@ impl MomentData {
     pub fn values(&self) -> Vec<MomentValue> {
         self.iter().collect()
     }
+}
+
+/// Deserializes through [`MomentData::from_fixed_point`], so invalid encoding parameters or a
+/// byte length that does not match the gate count and word size are rejected.
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for MomentData {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        let repr = MomentDataRepr::deserialize(deserializer)?;
+        MomentData::from_fixed_point(
+            repr.product,
+            usize::from(repr.gate_count),
+            repr.first_gate_range_meters,
+            repr.gate_interval_meters,
+            repr.data_word_size,
+            repr.scale,
+            repr.offset,
+            repr.raw_values.0,
+        )
+        .map_err(serde::de::Error::custom)
+    }
+}
+
+/// The serialized form of [`MomentData`], validated before it becomes one.
+#[cfg(feature = "serde")]
+#[derive(Deserialize)]
+#[serde(rename = "MomentData")]
+struct MomentDataRepr {
+    product: Product,
+    gate_count: u16,
+    first_gate_range_meters: u16,
+    gate_interval_meters: u16,
+    data_word_size: u8,
+    scale: f32,
+    offset: f32,
+    raw_values: BinaryData<Vec<u8>>,
 }
 
 /// The data moment value for a product in a radial's gate. The value may be a floating-point

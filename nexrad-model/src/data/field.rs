@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 ///     .expect("reflectivity data present");
 /// ```
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SweepField {
     /// Human-readable label (e.g., "Reflectivity", "Dealiased Velocity").
     label: String,
@@ -47,8 +47,8 @@ pub struct SweepField {
     gate_count: usize,
     /// Flat array of gate values, row-major: `values[az_idx * gate_count + gate_idx]`.
     values: Vec<f32>,
-    /// Parallel status array: `status[az_idx * gate_count + gate_idx]`.
-    status: Vec<GateStatus>,
+    /// Parallel status array: `statuses[az_idx * gate_count + gate_idx]`.
+    statuses: Vec<GateStatus>,
 }
 
 /// The geometry and row order of a sweep field extracted from radials.
@@ -175,7 +175,7 @@ impl SweepField {
             gate_interval_km: self.gate_interval_km,
             gate_count: self.gate_count,
             values: vec![0.0; total],
-            status: vec![GateStatus::NoData; total],
+            statuses: vec![GateStatus::NoData; total],
         }
     }
 
@@ -247,7 +247,7 @@ impl SweepField {
 
     /// All gate statuses as a flat slice.
     pub fn statuses(&self) -> &[GateStatus] {
-        &self.status
+        &self.statuses
     }
 
     // --- Per-gate access ---
@@ -258,7 +258,7 @@ impl SweepField {
     /// or `gate_idx` is not less than [`gate_count`](Self::gate_count).
     pub fn get(&self, azimuth_idx: usize, gate_idx: usize) -> Option<(f32, GateStatus)> {
         let idx = flat_index(azimuth_idx, gate_idx, self.azimuth_count(), self.gate_count)?;
-        Some((*self.values.get(idx)?, *self.status.get(idx)?))
+        Some((*self.values.get(idx)?, *self.statuses.get(idx)?))
     }
 
     /// Set the value and status at a specific (azimuth_index, gate_index).
@@ -277,7 +277,7 @@ impl SweepField {
         let columns = self.gate_count;
         set_cell(
             &mut self.values,
-            &mut self.status,
+            &mut self.statuses,
             (azimuth_idx, gate_idx),
             (rows, columns),
             (value, status),
@@ -297,7 +297,7 @@ impl SweepField {
     /// Returns `None` if `azimuth_idx` is not less than [`azimuth_count`](Self::azimuth_count).
     pub fn radial_statuses_mut(&mut self, azimuth_idx: usize) -> Option<&mut [GateStatus]> {
         let range = self.row_range(azimuth_idx)?;
-        self.status.get_mut(range)
+        self.statuses.get_mut(range)
     }
 
     /// Get an immutable slice of values for a full radial row.
@@ -311,7 +311,7 @@ impl SweepField {
     ///
     /// Returns `None` if `azimuth_idx` is not less than [`azimuth_count`](Self::azimuth_count).
     pub fn radial_statuses(&self, azimuth_idx: usize) -> Option<&[GateStatus]> {
-        self.status.get(self.row_range(azimuth_idx)?)
+        self.statuses.get(self.row_range(azimuth_idx)?)
     }
 
     // --- Queries ---
@@ -339,7 +339,7 @@ impl SweepField {
     ///
     /// Returns `None` if the field contains no valid values.
     pub fn value_range(&self) -> Option<(f32, f32)> {
-        valid_value_range(&self.values, &self.status)
+        valid_value_range(&self.values, &self.statuses)
     }
 
     // --- Internal helpers ---
@@ -459,7 +459,7 @@ impl SweepField {
         layout: RadialLayout,
         product: Product,
         values: Vec<f32>,
-        status: Vec<GateStatus>,
+        statuses: Vec<GateStatus>,
     ) -> Self {
         Self {
             label: product.label().to_string(),
@@ -472,7 +472,7 @@ impl SweepField {
             gate_interval_km: layout.gate_interval_km,
             gate_count: layout.gate_count,
             values,
-            status,
+            statuses,
         }
     }
 
@@ -666,7 +666,7 @@ impl SweepFieldBuilder {
             gate_interval_km: self.gate_interval_km,
             gate_count: self.gate_count,
             values: vec![0.0; total],
-            status: vec![GateStatus::NoData; total],
+            statuses: vec![GateStatus::NoData; total],
         })
     }
 }
@@ -678,7 +678,7 @@ impl SweepFieldBuilder {
 ///
 /// Layout: `values[row * width + col]`, row 0 = north edge.
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct CartesianField {
     /// Human-readable label.
     label: String,
@@ -693,7 +693,7 @@ pub struct CartesianField {
     /// Flat array of values, row-major.
     values: Vec<f32>,
     /// Parallel status array.
-    status: Vec<GateStatus>,
+    statuses: Vec<GateStatus>,
 }
 
 impl CartesianField {
@@ -749,7 +749,7 @@ impl CartesianField {
             width,
             height,
             values: vec![0.0; total],
-            status: vec![GateStatus::NoData; total],
+            statuses: vec![GateStatus::NoData; total],
         })
     }
 
@@ -785,7 +785,7 @@ impl CartesianField {
 
     /// All statuses as a flat slice.
     pub fn statuses(&self) -> &[GateStatus] {
-        &self.status
+        &self.statuses
     }
 
     /// Get the value and status at a specific (row, col).
@@ -794,7 +794,7 @@ impl CartesianField {
     /// than [`width`](Self::width).
     pub fn get(&self, row: usize, col: usize) -> Option<(f32, GateStatus)> {
         let idx = flat_index(row, col, self.height, self.width)?;
-        Some((*self.values.get(idx)?, *self.status.get(idx)?))
+        Some((*self.values.get(idx)?, *self.statuses.get(idx)?))
     }
 
     /// Set the value and status at a specific (row, col).
@@ -805,7 +805,7 @@ impl CartesianField {
     pub fn set(&mut self, row: usize, col: usize, value: f32, status: GateStatus) -> Result<()> {
         set_cell(
             &mut self.values,
-            &mut self.status,
+            &mut self.statuses,
             (row, col),
             (self.height, self.width),
             (value, status),
@@ -835,7 +835,7 @@ impl CartesianField {
 
     /// Compute the (min, max) of valid values in this field.
     pub fn value_range(&self) -> Option<(f32, f32)> {
-        valid_value_range(&self.values, &self.status)
+        valid_value_range(&self.values, &self.statuses)
     }
 }
 
@@ -847,7 +847,7 @@ impl CartesianField {
 ///
 /// Layout: `values[row * width + col]`, row 0 = top (highest altitude).
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct VerticalField {
     /// Human-readable label.
     label: String,
@@ -864,7 +864,7 @@ pub struct VerticalField {
     /// Flat array of values, row-major.
     values: Vec<f32>,
     /// Parallel status array.
-    status: Vec<GateStatus>,
+    statuses: Vec<GateStatus>,
 }
 
 impl VerticalField {
@@ -907,7 +907,7 @@ impl VerticalField {
             width,
             height,
             values: vec![0.0; total],
-            status: vec![GateStatus::NoData; total],
+            statuses: vec![GateStatus::NoData; total],
         })
     }
 
@@ -948,7 +948,7 @@ impl VerticalField {
 
     /// All statuses as a flat slice.
     pub fn statuses(&self) -> &[GateStatus] {
-        &self.status
+        &self.statuses
     }
 
     /// Get the value and status at a specific (row, col).
@@ -957,7 +957,7 @@ impl VerticalField {
     /// than [`width`](Self::width).
     pub fn get(&self, row: usize, col: usize) -> Option<(f32, GateStatus)> {
         let idx = flat_index(row, col, self.height, self.width)?;
-        Some((*self.values.get(idx)?, *self.status.get(idx)?))
+        Some((*self.values.get(idx)?, *self.statuses.get(idx)?))
     }
 
     /// Set the value and status at a specific (row, col).
@@ -968,7 +968,7 @@ impl VerticalField {
     pub fn set(&mut self, row: usize, col: usize, value: f32, status: GateStatus) -> Result<()> {
         set_cell(
             &mut self.values,
-            &mut self.status,
+            &mut self.statuses,
             (row, col),
             (self.height, self.width),
             (value, status),
@@ -998,13 +998,139 @@ impl VerticalField {
 
     /// Compute the (min, max) of valid values in this field.
     pub fn value_range(&self) -> Option<(f32, f32)> {
-        valid_value_range(&self.values, &self.status)
+        valid_value_range(&self.values, &self.statuses)
     }
 }
 
 /// The flat row-major index of `(row, col)`, if both are within the dimensions.
 fn flat_index(row: usize, col: usize, rows: usize, columns: usize) -> Option<usize> {
     (row < rows && col < columns).then(|| row * columns + col)
+}
+
+/// Deserializes through [`SweepField::builder`], so the geometry is validated and `values` and
+/// `statuses` must each hold one entry per gate.
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for SweepField {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        let repr = SweepFieldRepr::deserialize(deserializer)?;
+        let mut builder = SweepField::builder(repr.label, repr.unit)
+            .elevation_angle_degrees(repr.elevation_angle_degrees)
+            .azimuth_angles_degrees(repr.azimuth_angles_degrees)
+            .azimuth_spacing_degrees(repr.azimuth_spacing_degrees)
+            .first_gate_range_km(repr.first_gate_range_km)
+            .gate_interval_km(repr.gate_interval_km)
+            .gate_count(repr.gate_count);
+        if let Some(product) = repr.product {
+            builder = builder.product(product);
+        }
+        let mut field = builder.build().map_err(serde::de::Error::custom)?;
+        (field.values, field.statuses) = cells(field.values.len(), repr.values, repr.statuses)?;
+        Ok(field)
+    }
+}
+
+/// The serialized form of [`SweepField`], validated before it becomes one.
+#[cfg(feature = "serde")]
+#[derive(Deserialize)]
+#[serde(rename = "SweepField")]
+struct SweepFieldRepr {
+    label: String,
+    unit: String,
+    product: Option<Product>,
+    elevation_angle_degrees: f32,
+    azimuth_angles_degrees: Vec<f32>,
+    azimuth_spacing_degrees: f32,
+    first_gate_range_km: f64,
+    gate_interval_km: f64,
+    gate_count: usize,
+    values: Vec<f32>,
+    statuses: Vec<GateStatus>,
+}
+
+/// Deserializes through [`CartesianField::new`], so the dimensions and extent are validated and
+/// `values` and `statuses` must each hold one entry per cell.
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for CartesianField {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        let repr = CartesianFieldRepr::deserialize(deserializer)?;
+        let mut field =
+            CartesianField::new(repr.label, repr.unit, repr.extent, repr.width, repr.height)
+                .map_err(serde::de::Error::custom)?;
+        (field.values, field.statuses) = cells(field.values.len(), repr.values, repr.statuses)?;
+        Ok(field)
+    }
+}
+
+/// The serialized form of [`CartesianField`], validated before it becomes one.
+#[cfg(feature = "serde")]
+#[derive(Deserialize)]
+#[serde(rename = "CartesianField")]
+struct CartesianFieldRepr {
+    label: String,
+    unit: String,
+    extent: GeoExtent,
+    width: usize,
+    height: usize,
+    values: Vec<f32>,
+    statuses: Vec<GateStatus>,
+}
+
+/// Deserializes through [`VerticalField::new`], so the dimensions and ranges are validated and
+/// `values` and `statuses` must each hold one entry per cell.
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for VerticalField {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        let repr = VerticalFieldRepr::deserialize(deserializer)?;
+        let mut field = VerticalField::new(
+            repr.label,
+            repr.unit,
+            repr.distance_range_km,
+            repr.altitude_range_meters,
+            repr.width,
+            repr.height,
+        )
+        .map_err(serde::de::Error::custom)?;
+        (field.values, field.statuses) = cells(field.values.len(), repr.values, repr.statuses)?;
+        Ok(field)
+    }
+}
+
+/// The serialized form of [`VerticalField`], validated before it becomes one.
+#[cfg(feature = "serde")]
+#[derive(Deserialize)]
+#[serde(rename = "VerticalField")]
+struct VerticalFieldRepr {
+    label: String,
+    unit: String,
+    distance_range_km: (f64, f64),
+    altitude_range_meters: (f64, f64),
+    width: usize,
+    height: usize,
+    values: Vec<f32>,
+    statuses: Vec<GateStatus>,
+}
+
+/// Check that deserialized value and status arrays each hold exactly `expected` cells.
+#[cfg(feature = "serde")]
+fn cells<E: serde::de::Error>(
+    expected: usize,
+    values: Vec<f32>,
+    statuses: Vec<GateStatus>,
+) -> std::result::Result<(Vec<f32>, Vec<GateStatus>), E> {
+    for (name, len) in [("values", values.len()), ("statuses", statuses.len())] {
+        if len != expected {
+            return Err(E::custom(format_args!(
+                "`{name}` holds {len} entries, expected {expected} for the field's dimensions"
+            )));
+        }
+    }
+    Ok((values, statuses))
 }
 
 /// Set one cell of parallel row-major value and status arrays.

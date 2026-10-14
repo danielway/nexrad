@@ -14,50 +14,50 @@ expression: radials
   reflectivity:
     product: Reflectivity
     gate_count: 1832
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 8
     scale: 2
     offset: 66
-    values: "bytes::<1832>::sha256:cdff6c84364d51f345bd3fa2df34ed33a9051f7a349576e54bca8f5227ab6596"
+    raw_values: "bytes::<1832>::sha256:cdff6c84364d51f345bd3fa2df34ed33a9051f7a349576e54bca8f5227ab6596"
   velocity: ~
   spectrum_width: ~
   differential_reflectivity:
     product: DifferentialReflectivity
     gate_count: 1192
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 16
     scale: 32
     offset: 418
-    values: "bytes::<2384>::sha256:54631ca25760cf401abf792230ec43460b9238f02934193f4a95d0e92e02f4fd"
+    raw_values: "bytes::<2384>::sha256:54631ca25760cf401abf792230ec43460b9238f02934193f4a95d0e92e02f4fd"
   differential_phase:
     product: DifferentialPhase
     gate_count: 1192
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 16
     scale: 2.8361
     offset: 2
-    values: "bytes::<2384>::sha256:b9498549c8d1d88945c5fc2df5d5e2f8165f446cdba63ca41b010c5cd870cbf5"
+    raw_values: "bytes::<2384>::sha256:b9498549c8d1d88945c5fc2df5d5e2f8165f446cdba63ca41b010c5cd870cbf5"
   correlation_coefficient:
     product: CorrelationCoefficient
     gate_count: 1192
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 8
     scale: 300
     offset: -60.5
-    values: "bytes::<1192>::sha256:fe6e7bcab83faf9aff3d0441430a7660788409d345688e44ff8816746e6d4cff"
+    raw_values: "bytes::<1192>::sha256:fe6e7bcab83faf9aff3d0441430a7660788409d345688e44ff8816746e6d4cff"
   clutter_filter_power:
     product: ClutterFilterPower
     gate_count: 1832
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 8
     scale: 1
     offset: 8
-    values: "bytes::<1832>::sha256:67b8a73e70525928da2a1971383b53e692a38033f85acba9a14d7d7cb57005f9"
+    raw_values: "bytes::<1832>::sha256:67b8a73e70525928da2a1971383b53e692a38033f85acba9a14d7d7cb57005f9"
 - collection_timestamp_millis: 1646522621735
   azimuth_number: 1
   azimuth_angle_degrees: 177.23694
@@ -70,30 +70,30 @@ expression: radials
   reflectivity:
     product: Reflectivity
     gate_count: 1192
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 8
     scale: 2
     offset: 66
-    values: "bytes::<1192>::sha256:fca50f3b4bd700864651f072749a4c73553cb7fa2a62759acd5e9750835fa93d"
+    raw_values: "bytes::<1192>::sha256:fca50f3b4bd700864651f072749a4c73553cb7fa2a62759acd5e9750835fa93d"
   velocity:
     product: Velocity
     gate_count: 1192
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 8
     scale: 2
     offset: 129
-    values: "bytes::<1192>::sha256:c51b7569f3b6a274fb0a6bddaebf17a3b7b4113083b7d1970be37c869c41ecb3"
+    raw_values: "bytes::<1192>::sha256:c51b7569f3b6a274fb0a6bddaebf17a3b7b4113083b7d1970be37c869c41ecb3"
   spectrum_width:
     product: SpectrumWidth
     gate_count: 1192
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 8
     scale: 2
     offset: 129
-    values: "bytes::<1192>::sha256:734324bacd58053f10efed7f308802ce550d35f244b5fb9458f7f9596eba01f6"
+    raw_values: "bytes::<1192>::sha256:734324bacd58053f10efed7f308802ce550d35f244b5fb9458f7f9596eba01f6"
   differential_reflectivity: ~
   differential_phase: ~
   correlation_coefficient: ~
@@ -110,47 +110,47 @@ expression: radials
   reflectivity:
     product: Reflectivity
     gate_count: 1832
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 8
     scale: 2
     offset: 66
-    values: "bytes::<1832>::sha256:1415819272557d4a50cff17912c06337c6b2a6b8c3132bc6f96a562da71d6108"
+    raw_values: "bytes::<1832>::sha256:1415819272557d4a50cff17912c06337c6b2a6b8c3132bc6f96a562da71d6108"
   velocity: ~
   spectrum_width: ~
   differential_reflectivity:
     product: DifferentialReflectivity
     gate_count: 1192
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 16
     scale: 32
     offset: 418
-    values: "bytes::<2384>::sha256:bae183c51fd1f4d646e16a4ed24fc6b2846c04db3c491ede41f2d38fcaefc55d"
+    raw_values: "bytes::<2384>::sha256:bae183c51fd1f4d646e16a4ed24fc6b2846c04db3c491ede41f2d38fcaefc55d"
   differential_phase:
     product: DifferentialPhase
     gate_count: 1192
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 16
     scale: 2.8361
     offset: 2
-    values: "bytes::<2384>::sha256:193c42d6fae3a3533cec1ff4c08731e4e9007ba28c96b83d81ef129870f0241e"
+    raw_values: "bytes::<2384>::sha256:193c42d6fae3a3533cec1ff4c08731e4e9007ba28c96b83d81ef129870f0241e"
   correlation_coefficient:
     product: CorrelationCoefficient
     gate_count: 1192
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 8
     scale: 300
     offset: -60.5
-    values: "bytes::<1192>::sha256:8effee95af74c8d89e31c3b4c02b2c64943f0ed189a1f1e27a20268139fab7b9"
+    raw_values: "bytes::<1192>::sha256:8effee95af74c8d89e31c3b4c02b2c64943f0ed189a1f1e27a20268139fab7b9"
   clutter_filter_power:
     product: ClutterFilterPower
     gate_count: 1832
-    first_gate_range: 2125
-    gate_interval: 250
+    first_gate_range_meters: 2125
+    gate_interval_meters: 250
     data_word_size: 8
     scale: 1
     offset: 8
-    values: "bytes::<1832>::sha256:63ff8c4f27bc66f50777377fdda879b0f9a65f13482c5c4f0aabf6ef8e2a4980"
+    raw_values: "bytes::<1832>::sha256:63ff8c4f27bc66f50777377fdda879b0f9a65f13482c5c4f0aabf6ef8e2a4980"

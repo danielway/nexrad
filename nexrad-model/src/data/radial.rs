@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 /// and spectrum width) for each range gate in that ray. The range of the radar and gate interval
 /// distance determines the resolution of the ray and the number of gates in the ray.
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Radial {
     collection_timestamp_millis: i64,
 
@@ -33,9 +33,7 @@ pub struct Radial {
     elevation_number: u8,
     elevation_angle_degrees: f32,
 
-    #[cfg_attr(feature = "serde", serde(default))]
     nyquist_velocity_mps: Option<f32>,
-    #[cfg_attr(feature = "serde", serde(default))]
     unambiguous_range_km: Option<f32>,
 
     reflectivity: Option<MomentData>,
@@ -342,6 +340,91 @@ impl RadialBuilder {
         }
         Ok(self.radial)
     }
+}
+
+/// Deserializes through [`Radial::builder`], so the geometry is validated and each moment must
+/// be stored under the key for its own product.
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Radial {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        let repr = RadialRepr::deserialize(deserializer)?;
+        let mut builder = Radial::builder(
+            repr.azimuth_number,
+            repr.azimuth_angle_degrees,
+            repr.elevation_number,
+            repr.elevation_angle_degrees,
+        )
+        .collection_timestamp_millis(repr.collection_timestamp_millis)
+        .azimuth_spacing_degrees(repr.azimuth_spacing_degrees)
+        .radial_status(repr.radial_status);
+        if let Some(nyquist_velocity_mps) = repr.nyquist_velocity_mps {
+            builder = builder.nyquist_velocity_mps(nyquist_velocity_mps);
+        }
+        if let Some(unambiguous_range_km) = repr.unambiguous_range_km {
+            builder = builder.unambiguous_range_km(unambiguous_range_km);
+        }
+        let moments = [
+            (Product::Reflectivity, repr.reflectivity),
+            (Product::Velocity, repr.velocity),
+            (Product::SpectrumWidth, repr.spectrum_width),
+            (
+                Product::DifferentialReflectivity,
+                repr.differential_reflectivity,
+            ),
+            (Product::DifferentialPhase, repr.differential_phase),
+            (
+                Product::CorrelationCoefficient,
+                repr.correlation_coefficient,
+            ),
+            (Product::ClutterFilterPower, repr.clutter_filter_power),
+        ];
+        for (product, moment) in moments {
+            if let Some(moment) = moment {
+                if moment.product() != product {
+                    return Err(serde::de::Error::custom(format_args!(
+                        "moment data for {:?} stored under the key for {product:?}",
+                        moment.product()
+                    )));
+                }
+                builder = builder.moment(moment);
+            }
+        }
+        builder.build().map_err(serde::de::Error::custom)
+    }
+}
+
+/// The serialized form of [`Radial`], validated before it becomes one.
+#[cfg(feature = "serde")]
+#[derive(Deserialize)]
+#[serde(rename = "Radial")]
+struct RadialRepr {
+    collection_timestamp_millis: i64,
+    azimuth_number: u16,
+    azimuth_angle_degrees: f32,
+    azimuth_spacing_degrees: f32,
+    radial_status: RadialStatus,
+    elevation_number: u8,
+    elevation_angle_degrees: f32,
+    #[serde(default)]
+    nyquist_velocity_mps: Option<f32>,
+    #[serde(default)]
+    unambiguous_range_km: Option<f32>,
+    #[serde(default)]
+    reflectivity: Option<MomentData>,
+    #[serde(default)]
+    velocity: Option<MomentData>,
+    #[serde(default)]
+    spectrum_width: Option<MomentData>,
+    #[serde(default)]
+    differential_reflectivity: Option<MomentData>,
+    #[serde(default)]
+    differential_phase: Option<MomentData>,
+    #[serde(default)]
+    correlation_coefficient: Option<MomentData>,
+    #[serde(default)]
+    clutter_filter_power: Option<MomentData>,
 }
 
 /// Describe a radial's position within the sequence of radials comprising a scan.

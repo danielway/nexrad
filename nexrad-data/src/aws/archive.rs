@@ -18,6 +18,6 @@ mod download_file;
 pub use download_file::download_file;
 
 mod list_files;
-pub use list_files::list_files;
+pub use list_files::{list_files, list_files_with_sizes, ListedFile};
 
 const ARCHIVE_BUCKET: &str = "unidata-nexrad-level2";

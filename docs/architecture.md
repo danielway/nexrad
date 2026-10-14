@@ -275,7 +275,8 @@ SweepField (2D polar grid of f32 + GateStatus)
 
 ### Moment Data
 
-Every moment on a `Radial`, including clutter filter power, is a `MomentData` that carries its `Product`.
+Every moment on a `Radial`, including clutter filter power, is a `MomentData` that carries its `Product`, and the
+radial carries its own Nyquist velocity and unambiguous range when the source provides them.
 `Radial::moment(product)` is the uniform accessor (the named getters such as `reflectivity()` are shorthands for it),
 gates decode to `MomentValue` (`Value`, `BelowThreshold`, `RangeFolded`, or `CfpStatus` for clutter filter power), and
 `SweepField::product()` records which product a field was extracted from.

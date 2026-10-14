@@ -1,4 +1,6 @@
-use crate::data::{Product, Sweep, SweepField, VcpNumber, VolumeCoveragePattern};
+use crate::data::{
+    ElevationCut, Product, Sweep, SweepField, VcpNumber, VolumeCoveragePattern, WaveformType,
+};
 use crate::geo::RadarCoordinateSystem;
 use crate::meta::Site;
 use std::fmt::Display;
@@ -72,6 +74,11 @@ impl Scan {
     /// [`sweeps`](Self::sweeps); the remaining fields are in scan order. See
     /// [`Sweep::field`].
     ///
+    /// Split cuts, SAILS, MRLE and MPDA repeat elevations within a volume, so reflectivity and
+    /// velocity at one angle usually come from different sweeps and a product may appear
+    /// several times. Use [`elevation_cut`](Self::elevation_cut) and
+    /// [`sweeps_with_waveform`](Self::sweeps_with_waveform) to select sweeps by their cut.
+    ///
     /// # Example
     ///
     /// ```
@@ -104,6 +111,11 @@ impl Scan {
     ///
     /// Returns the index of that sweep within [`sweeps`](Self::sweeps) alongside the field,
     /// or `None` if no sweep has data for `product`.
+    ///
+    /// Split cuts, SAILS, MRLE and MPDA repeat elevations within a volume, so reflectivity and
+    /// velocity at one angle usually come from different sweeps and a product may appear
+    /// several times. Use [`elevation_cut`](Self::elevation_cut) and
+    /// [`sweeps_with_waveform`](Self::sweeps_with_waveform) to select sweeps by their cut.
     ///
     /// # Example
     ///
@@ -160,9 +172,11 @@ impl Scan {
 
     /// All sweeps at the given elevation angle in degrees, in scan order.
     ///
-    /// Uses a 0.05-degree tolerance for matching. SAILS and MRLE VCPs repeat certain
-    /// elevation angles at multiple points during a scan, so this may yield more than
-    /// one sweep.
+    /// Uses a 0.05-degree tolerance for matching. Split cuts, SAILS, MRLE and MPDA repeat
+    /// elevations within a volume, so this may yield several sweeps, and reflectivity and
+    /// velocity at one angle usually come from different ones. Use
+    /// [`elevation_cut`](Self::elevation_cut) and
+    /// [`sweeps_with_waveform`](Self::sweeps_with_waveform) to select sweeps by their cut.
     pub fn sweeps_at_elevation(
         &self,
         elevation_angle_degrees: f32,
@@ -171,6 +185,53 @@ impl Scan {
             s.elevation_angle_degrees()
                 .map(|a| (a - elevation_angle_degrees).abs() < 0.05)
                 .unwrap_or(false)
+        })
+    }
+
+    /// The coverage pattern's elevation cut that `sweep` was collected with.
+    ///
+    /// The cut is the one whose 1-based position in
+    /// [`VolumeCoveragePattern::elevation_cuts`] equals [`Sweep::elevation_number`]. Returns
+    /// `None` when the elevation number is zero or beyond the pattern's cuts.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nexrad_model::data::{ChannelConfiguration, ElevationCut, Radial, Scan, Sweep,
+    ///     VcpNumber, VolumeCoveragePattern, WaveformType};
+    ///
+    /// let surveillance = ElevationCut::builder(
+    ///     0.5, WaveformType::ContiguousSurveillance, ChannelConfiguration::ConstantPhase,
+    /// ).build();
+    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::Vcp212)
+    ///     .elevation_cut(surveillance)
+    ///     .build();
+    /// let sweep = Sweep::new(1, vec![Radial::builder(0, 0.0, 1, 0.5).build()?])?;
+    /// let scan = Scan::new(vcp, vec![sweep]);
+    ///
+    /// let cut = scan.elevation_cut(&scan.sweeps()[0]).unwrap();
+    /// assert_eq!(cut.waveform_type(), WaveformType::ContiguousSurveillance);
+    /// # Ok::<(), nexrad_model::result::Error>(())
+    /// ```
+    pub fn elevation_cut(&self, sweep: &Sweep) -> Option<&ElevationCut> {
+        let index = usize::from(sweep.elevation_number()).checked_sub(1)?;
+        self.coverage_pattern.elevation_cuts().get(index)
+    }
+
+    /// The sweeps whose [`elevation_cut`](Self::elevation_cut) uses `waveform_type`, in scan
+    /// order.
+    ///
+    /// Sweeps without a matching cut in the coverage pattern are skipped. Selecting
+    /// [`WaveformType::ContiguousSurveillance`] yields the long-PRT surveillance halves of split
+    /// cuts, which carry reflectivity with the greatest unambiguous range, while the Doppler
+    /// waveforms yield the sweeps carrying velocity.
+    pub fn sweeps_with_waveform(
+        &self,
+        waveform_type: WaveformType,
+    ) -> impl Iterator<Item = &Sweep> {
+        self.sweeps.iter().filter(move |sweep| {
+            self.elevation_cut(sweep)
+                .is_some_and(|cut| cut.waveform_type() == waveform_type)
         })
     }
 

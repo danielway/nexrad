@@ -27,11 +27,13 @@ fn create_test_radial(azimuth_degrees: f32, raw_value: u8) -> Radial {
         scale,
         offset,
         values,
-    );
+    )
+    .unwrap();
 
     Radial::builder(0, azimuth_degrees, 1, 0.5)
         .moment(moment_data)
         .build()
+        .unwrap()
 }
 
 /// Create a full 360-degree sweep of radials with a gradient in raw value.
@@ -132,8 +134,12 @@ fn test_bilinear_fallback_at_invalid_gates() {
     // Set a block of gates to NoData in the middle of the field
     let mid_az = field.azimuth_count() / 2;
     let mid_gate = field.gate_count() / 2;
-    field.set(mid_az, mid_gate, 0.0, GateStatus::NoData);
-    field.set(mid_az, mid_gate + 1, 0.0, GateStatus::NoData);
+    field
+        .set(mid_az, mid_gate, 0.0, GateStatus::NoData)
+        .unwrap();
+    field
+        .set(mid_az, mid_gate + 1, 0.0, GateStatus::NoData)
+        .unwrap();
 
     let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
     let background = [0, 0, 0, 255];
@@ -195,13 +201,13 @@ fn test_bilinear_cartesian_smooth() {
             longitude: -92.0,
         },
     };
-    let mut field = CartesianField::new("Test", "dBZ", extent, 4, 4);
+    let mut field = CartesianField::new("Test", "dBZ", extent, 4, 4).unwrap();
 
     // Fill with a gradient: value = 10 * row + col (0..40 range)
     for row in 0..4 {
         for col in 0..4 {
             let val = (10 * row + col) as f32;
-            field.set(row, col, val, GateStatus::Valid);
+            field.set(row, col, val, GateStatus::Valid).unwrap();
         }
     }
 
@@ -243,13 +249,13 @@ fn test_bilinear_cartesian_with_nodata_border() {
             longitude: -92.0,
         },
     };
-    let mut field = CartesianField::new("Test", "dBZ", extent, 4, 4);
+    let mut field = CartesianField::new("Test", "dBZ", extent, 4, 4).unwrap();
 
     // Only fill interior 2x2 with valid data
-    field.set(1, 1, 20.0, GateStatus::Valid);
-    field.set(1, 2, 30.0, GateStatus::Valid);
-    field.set(2, 1, 40.0, GateStatus::Valid);
-    field.set(2, 2, 50.0, GateStatus::Valid);
+    field.set(1, 1, 20.0, GateStatus::Valid).unwrap();
+    field.set(1, 2, 30.0, GateStatus::Valid).unwrap();
+    field.set(2, 1, 40.0, GateStatus::Valid).unwrap();
+    field.set(2, 2, 50.0, GateStatus::Valid).unwrap();
 
     let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
     let options = RenderOptions::new(16, 16).bilinear();
@@ -266,12 +272,12 @@ fn test_bilinear_cartesian_with_nodata_border() {
 #[test]
 fn test_bilinear_vertical_smooth() {
     // Create a small 4x4 VerticalField with a gradient
-    let mut field = VerticalField::new("Test", "dBZ", (0.0, 100.0), (0.0, 10000.0), 4, 4);
+    let mut field = VerticalField::new("Test", "dBZ", (0.0, 100.0), (0.0, 10000.0), 4, 4).unwrap();
 
     for row in 0..4 {
         for col in 0..4 {
             let val = (10 * row + col) as f32;
-            field.set(row, col, val, GateStatus::Valid);
+            field.set(row, col, val, GateStatus::Valid).unwrap();
         }
     }
 

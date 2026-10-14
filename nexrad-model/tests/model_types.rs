@@ -20,10 +20,10 @@ fn test_site_creation() {
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
         .site_elevation_meters(370)
         .feedhorn_height_meters(401)
-        .build();
+        .build()
+        .unwrap();
 
-    assert_eq!(site.identifier(), b"KTLX");
-    assert_eq!(site.identifier_string(), "KTLX");
+    assert_eq!(site.identifier(), "KTLX");
     assert!((site.latitude() - 35.3331).abs() < 0.0001);
     assert!((site.longitude() - (-97.2778)).abs() < 0.0001);
     assert_eq!(site.site_elevation_meters(), 370);
@@ -35,7 +35,8 @@ fn test_site_display() {
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
         .site_elevation_meters(370)
         .feedhorn_height_meters(401)
-        .build();
+        .build()
+        .unwrap();
     let display = format!("{}", site);
 
     assert!(display.contains("KTLX"));
@@ -49,7 +50,8 @@ fn test_site_debug() {
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
         .site_elevation_meters(370)
         .feedhorn_height_meters(401)
-        .build();
+        .build()
+        .unwrap();
     let debug = format!("{:?}", site);
 
     assert!(debug.contains("Site"));
@@ -61,7 +63,8 @@ fn test_site_clone() {
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
         .site_elevation_meters(370)
         .feedhorn_height_meters(401)
-        .build();
+        .build()
+        .unwrap();
     let cloned = site.clone();
 
     assert_eq!(site.identifier(), cloned.identifier());
@@ -70,7 +73,10 @@ fn test_site_clone() {
 
 #[test]
 fn test_scan_creation() {
-    let sweeps = vec![Sweep::new(1, vec![]), Sweep::new(2, vec![])];
+    let sweeps = vec![
+        Sweep::new(1, vec![]).unwrap(),
+        Sweep::new(2, vec![]).unwrap(),
+    ];
     let scan = Scan::new(test_vcp(212), sweeps);
 
     assert_eq!(
@@ -83,9 +89,9 @@ fn test_scan_creation() {
 #[test]
 fn test_scan_display() {
     let sweeps = vec![
-        Sweep::new(1, vec![]),
-        Sweep::new(2, vec![]),
-        Sweep::new(3, vec![]),
+        Sweep::new(1, vec![]).unwrap(),
+        Sweep::new(2, vec![]).unwrap(),
+        Sweep::new(3, vec![]).unwrap(),
     ];
     let scan = Scan::new(test_vcp(212), sweeps);
     let display = format!("{}", scan);
@@ -96,7 +102,7 @@ fn test_scan_display() {
 
 #[test]
 fn test_sweep_creation() {
-    let sweep = Sweep::new(5, vec![]);
+    let sweep = Sweep::new(5, vec![]).unwrap();
 
     assert_eq!(sweep.elevation_number(), 5);
     assert!(sweep.radials().is_empty());
@@ -104,7 +110,7 @@ fn test_sweep_creation() {
 
 #[test]
 fn test_sweep_display() {
-    let sweep = Sweep::new(5, vec![]);
+    let sweep = Sweep::new(5, vec![]).unwrap();
     let display = format!("{}", sweep);
 
     // Empty sweep should have a reasonable display
@@ -113,8 +119,8 @@ fn test_sweep_display() {
 
 #[test]
 fn test_sweep_merge_same_elevation() {
-    let sweep1 = Sweep::new(3, vec![]);
-    let sweep2 = Sweep::new(3, vec![]);
+    let sweep1 = Sweep::new(3, vec![]).unwrap();
+    let sweep2 = Sweep::new(3, vec![]).unwrap();
 
     let merged = sweep1.merge(sweep2);
     assert!(merged.is_ok());
@@ -123,8 +129,8 @@ fn test_sweep_merge_same_elevation() {
 
 #[test]
 fn test_sweep_merge_different_elevation() {
-    let sweep1 = Sweep::new(3, vec![]);
-    let sweep2 = Sweep::new(5, vec![]);
+    let sweep1 = Sweep::new(3, vec![]).unwrap();
+    let sweep2 = Sweep::new(5, vec![]).unwrap();
 
     let merged = sweep1.merge(sweep2);
     assert!(merged.is_err());
@@ -134,7 +140,8 @@ fn test_sweep_merge_different_elevation() {
 fn test_moment_data_creation() {
     let values = vec![0, 1, 50, 100, 150, 200, 255];
     let moment =
-        MomentData::from_fixed_point(Product::Reflectivity, 7, 500, 250, 8, 2.0, 33.0, values);
+        MomentData::from_fixed_point(Product::Reflectivity, 7, 500, 250, 8, 2.0, 33.0, values)
+            .unwrap();
 
     assert_eq!(moment.product(), Product::Reflectivity);
     assert_eq!(moment.gate_count(), 7);
@@ -161,7 +168,8 @@ fn test_moment_data_values_with_scale() {
 
     let values = vec![0, 1, 50, 100];
     let moment =
-        MomentData::from_fixed_point(Product::Reflectivity, 4, 500, 250, 8, 2.0, 33.0, values);
+        MomentData::from_fixed_point(Product::Reflectivity, 4, 500, 250, 8, 2.0, 33.0, values)
+            .unwrap();
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 4);
@@ -184,23 +192,22 @@ fn test_moment_data_values_with_scale() {
 
 #[test]
 fn test_moment_data_values_without_scale() {
-    // When scale=0.0, raw values are passed through directly
+    // When scale=0.0, raw values 0 and 1 are still the below-threshold and range-folded
+    // sentinels; larger raw values are passed through directly.
     let values = vec![0, 1, 50, 100];
     let moment =
-        MomentData::from_fixed_point(Product::Reflectivity, 4, 500, 250, 8, 0.0, 0.0, values);
+        MomentData::from_fixed_point(Product::Reflectivity, 4, 500, 250, 8, 0.0, 0.0, values)
+            .unwrap();
 
-    let decoded_values = moment.values();
-
-    // All should be Value variants with raw values
-    for (i, v) in decoded_values.iter().enumerate() {
-        match v {
-            MomentValue::Value(val) => {
-                let expected = [0.0, 1.0, 50.0, 100.0][i];
-                assert!((*val - expected).abs() < 0.01);
-            }
-            _ => panic!("Expected Value variant, got {:?}", v),
-        }
-    }
+    assert_eq!(
+        moment.values(),
+        vec![
+            MomentValue::BelowThreshold,
+            MomentValue::RangeFolded,
+            MomentValue::Value(50.0),
+            MomentValue::Value(100.0),
+        ]
+    );
 }
 
 #[test]
@@ -209,7 +216,8 @@ fn test_moment_data_values_16bit_with_scale() {
     // With scale=2.0, offset=10.0 => 5.0 and 10.0
     let values = vec![0x00, 0x14, 0x00, 0x1E];
     let moment =
-        MomentData::from_fixed_point(Product::Reflectivity, 2, 500, 250, 16, 2.0, 10.0, values);
+        MomentData::from_fixed_point(Product::Reflectivity, 2, 500, 250, 16, 2.0, 10.0, values)
+            .unwrap();
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 2);
@@ -232,7 +240,8 @@ fn test_moment_data_values_16bit_special_values() {
     // 16-bit raw values 0 and 1 should map to special cases when scale != 0.
     let values = vec![0x00, 0x00, 0x00, 0x01];
     let moment =
-        MomentData::from_fixed_point(Product::Reflectivity, 2, 500, 250, 16, 2.0, 0.0, values);
+        MomentData::from_fixed_point(Product::Reflectivity, 2, 500, 250, 16, 2.0, 0.0, values)
+            .unwrap();
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 2);
@@ -252,7 +261,8 @@ fn test_cfp_moment_values_status_and_data() {
         1.0,
         0.0,
         values,
-    );
+    )
+    .unwrap();
 
     let decoded = moment.values();
     assert_eq!(
@@ -286,7 +296,8 @@ fn test_cfp_moment_values_without_scale() {
         0.0,
         0.0,
         values,
-    );
+    )
+    .unwrap();
 
     let decoded = moment.values();
     assert_eq!(
@@ -302,7 +313,8 @@ fn test_cfp_moment_values_without_scale() {
 fn test_non_cfp_moment_values_have_no_status_codes() {
     // Raw values 2-7 are ordinary values for every product other than CFP.
     let values = vec![2, 7];
-    let moment = MomentData::from_fixed_point(Product::Velocity, 2, 500, 250, 8, 1.0, 0.0, values);
+    let moment =
+        MomentData::from_fixed_point(Product::Velocity, 2, 500, 250, 8, 1.0, 0.0, values).unwrap();
 
     assert_eq!(
         moment.values(),
@@ -377,7 +389,7 @@ fn test_moment_value_debug() {
 fn test_radial_builder_defaults() {
     use nexrad_model::data::{Radial, RadialStatus};
 
-    let radial = Radial::builder(12, 6.5, 2, 0.9).build();
+    let radial = Radial::builder(12, 6.5, 2, 0.9).build().unwrap();
 
     assert_eq!(radial.azimuth_number(), 12);
     assert_eq!(radial.azimuth_angle_degrees(), 6.5);
@@ -410,13 +422,15 @@ fn test_radial_builder_setters() {
         2.0,
         66.0,
         vec![100, 110, 120],
-    );
+    )
+    .unwrap();
     let radial = Radial::builder(1, 0.25, 1, 0.5)
         .collection_timestamp_millis(1_700_000_000_000)
         .azimuth_spacing_degrees(0.5)
         .radial_status(RadialStatus::ScanStart)
         .moment(moment.clone())
-        .build();
+        .build()
+        .unwrap();
 
     assert_eq!(radial.collection_timestamp_millis(), 1_700_000_000_000);
     assert_eq!(radial.azimuth_spacing_degrees(), 0.5);
@@ -442,18 +456,12 @@ fn test_radial_builder_moment_stores_by_product() {
 
     let mut builder = Radial::builder(1, 0.25, 1, 0.5);
     for (i, product) in products.iter().enumerate() {
-        builder = builder.moment(MomentData::from_fixed_point(
-            *product,
-            1,
-            2000,
-            250,
-            8,
-            2.0,
-            66.0,
-            vec![100 + i as u8],
-        ));
+        builder = builder.moment(
+            MomentData::from_fixed_point(*product, 1, 2000, 250, 8, 2.0, 66.0, vec![100 + i as u8])
+                .unwrap(),
+        );
     }
-    let radial = builder.build();
+    let radial = builder.build().unwrap();
 
     for product in products {
         let moment = radial.moment(product).expect("moment is set");
@@ -533,8 +541,8 @@ fn test_vcp_builder_defaults_and_cuts() {
 
 #[test]
 fn test_site_builder_defaults() {
-    let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build();
-    assert_eq!(site.identifier(), b"KTLX");
+    let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build().unwrap();
+    assert_eq!(site.identifier(), "KTLX");
     assert_eq!(site.site_elevation_meters(), 0);
     assert_eq!(site.feedhorn_height_meters(), 0);
 }
@@ -584,19 +592,19 @@ fn test_sweep_field_builder_rejects_invalid_geometry() {
 
     assert!(matches!(
         valid.clone().azimuth_angles_degrees(vec![]).build(),
-        Err(Error::InvalidSweepGeometry(_))
+        Err(Error::InvalidGeometry { .. })
     ));
     assert!(matches!(
         valid.clone().gate_count(0).build(),
-        Err(Error::InvalidSweepGeometry(_))
+        Err(Error::InvalidGeometry { .. })
     ));
     assert!(matches!(
         valid.clone().gate_interval_km(0.0).build(),
-        Err(Error::InvalidSweepGeometry(_))
+        Err(Error::InvalidGeometry { .. })
     ));
     assert!(matches!(
         valid.clone().gate_interval_km(f64::NAN).build(),
-        Err(Error::InvalidSweepGeometry(_))
+        Err(Error::InvalidGeometry { .. })
     ));
     assert!(valid.build().is_ok());
 
@@ -618,14 +626,15 @@ fn test_sweep_field_product() {
         1.0,
         0.0,
         vec![1, 8, 12],
-    );
-    let radials = vec![Radial::builder(0, 0.0, 1, 0.5).moment(cfp).build()];
+    )
+    .unwrap();
+    let radials = vec![Radial::builder(0, 0.0, 1, 0.5).moment(cfp).build().unwrap()];
 
     let field = SweepField::from_radials(&radials, Product::ClutterFilterPower).expect("cfp data");
     assert_eq!(field.product(), Some(Product::ClutterFilterPower));
-    assert_eq!(field.get(0, 0), (0.0, GateStatus::NoData));
-    assert_eq!(field.get(0, 1), (8.0, GateStatus::Valid));
-    assert_eq!(field.get(0, 2), (12.0, GateStatus::Valid));
+    assert_eq!(field.get(0, 0), Some((0.0, GateStatus::NoData)));
+    assert_eq!(field.get(0, 1), Some((8.0, GateStatus::Valid)));
+    assert_eq!(field.get(0, 2), Some((12.0, GateStatus::Valid)));
     assert!(SweepField::from_radials(&radials, Product::Reflectivity).is_none());
 
     let owned = SweepField::from_radials_owned(radials, Product::ClutterFilterPower).unwrap();
@@ -660,21 +669,12 @@ fn sweep_with_moments(elevation_number: u8, moments: Vec<MomentData>) -> Sweep {
     for moment in moments {
         builder = builder.moment(moment);
     }
-    Sweep::new(elevation_number, vec![builder.build()])
+    Sweep::new(elevation_number, vec![builder.build().unwrap()]).unwrap()
 }
 
 /// Helper to create a moment with one gate per raw value.
 fn test_moment(product: Product, values: Vec<u8>) -> MomentData {
-    MomentData::from_fixed_point(
-        product,
-        values.len() as u16,
-        2000,
-        250,
-        8,
-        2.0,
-        66.0,
-        values,
-    )
+    MomentData::from_fixed_point(product, values.len(), 2000, 250, 8, 2.0, 66.0, values).unwrap()
 }
 
 #[test]
@@ -691,7 +691,10 @@ fn test_sweep_field() {
         SweepField::from_radials(sweep.radials(), Product::Reflectivity)
     );
     assert!(sweep.field(Product::Velocity).is_none());
-    assert!(Sweep::new(1, vec![]).field(Product::Reflectivity).is_none());
+    assert!(Sweep::new(1, vec![])
+        .unwrap()
+        .field(Product::Reflectivity)
+        .is_none());
 }
 
 #[test]
@@ -748,7 +751,8 @@ fn test_scan_coordinate_system() {
     let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
         .site_elevation_meters(370)
         .feedhorn_height_meters(20)
-        .build();
+        .build()
+        .unwrap();
     let scan = Scan::with_site(site.clone(), test_vcp(212), vec![]);
 
     let coords = scan.coordinate_system().expect("site metadata");

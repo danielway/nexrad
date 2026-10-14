@@ -238,10 +238,12 @@ builds for WASM. Only `parallel` (rayon threads) is excluded from the `wasm` fea
 - **Numeric types**: geographic coordinates and ranges are `f64`; gate values (and the angles stored alongside them on
   `Radial`, `Sweep` and `SweepField`) are `f32`; image dimensions are `u32`.
 - **Constructors**: types with invariants have private fields. `Radial`, `ElevationCut`, `VolumeCoveragePattern`,
-  `SweepField` and `Site` have builders (`Radial::builder`, ...; `SweepFieldBuilder::build` validates and returns a
-  `Result`). `RetryPolicy` and `PollConfig` have constructors (`RetryPolicy::default_download`,
-  `RetryPolicy::default_discovery`, `PollConfig::new`) with `with_*` setters and getters. Every `nexrad-process`
-  processor with parameters has a validating `new`.
+  `SweepField` and `Site` have builders (`Radial::builder`, ...). Constructors and builders whose type has invariants
+  validate them and return a `Result` (`RadialBuilder::build`, `SiteBuilder::build`, `SweepFieldBuilder::build`,
+  `MomentData::from_fixed_point`, `Sweep::new`, `CartesianField::new`, `VerticalField::new`); field indexing (`get`
+  and the row accessors) returns `Option`, and `set` returns a `Result`. `RetryPolicy` and `PollConfig` have
+  constructors (`RetryPolicy::default_download`, `RetryPolicy::default_discovery`, `PollConfig::new`) with `with_*`
+  setters and getters. Every `nexrad-process` processor with parameters has a validating `new`.
 - **Lifetimes**: no public function returns a value with an unbounded output lifetime. `Record::decompress` returns
   `Record<'static>`, and the real-time `Chunk` has no lifetime parameter.
 

@@ -133,7 +133,7 @@ struct MomentStatsSnapshot {
 
 #[derive(Serialize)]
 struct MomentBlockStats {
-    gate_count: u16,
+    gate_count: usize,
     first_gate_range_km: f64,
     gate_interval_km: f64,
     data_sha256: String,

@@ -233,15 +233,14 @@ impl StormCellDetector {
         let total = az_count * num_gates;
 
         // Phase 1: Build threshold mask
-        let mut above_threshold = vec![false; total];
-        for az_idx in 0..az_count {
-            for gate_idx in 0..num_gates {
-                let (val, status) = field.get(az_idx, gate_idx);
-                if status == GateStatus::Valid && val >= self.reflectivity_threshold_dbz {
-                    above_threshold[az_idx * num_gates + gate_idx] = true;
-                }
-            }
-        }
+        let above_threshold: Vec<bool> = field
+            .values()
+            .iter()
+            .zip(field.statuses())
+            .map(|(&val, &status)| {
+                status == GateStatus::Valid && val >= self.reflectivity_threshold_dbz
+            })
+            .collect();
 
         // Phase 2: Flood-fill connected-component labeling
         let mut visited = vec![false; total];
@@ -350,7 +349,9 @@ impl StormCellDetector {
         let mut total_area_km2: f64 = 0.0;
 
         for &(az_idx, gate_idx) in component {
-            let (val, _) = field.get(az_idx, gate_idx);
+            let Some((val, _)) = field.get(az_idx, gate_idx) else {
+                continue;
+            };
 
             let azimuth_deg = field.azimuth_angles_degrees()[az_idx];
             let range_km = field.first_gate_range_km() + gate_idx as f64 * field.gate_interval_km();
@@ -430,6 +431,7 @@ mod tests {
             .site_elevation_meters(370)
             .feedhorn_height_meters(10)
             .build()
+            .unwrap()
     }
 
     fn test_coord_system() -> RadarCoordinateSystem {
@@ -454,7 +456,7 @@ mod tests {
         let mut field = make_empty_field(gate_count);
         for az in 0..360 {
             for gate in 0..gate_count {
-                field.set(az, gate, value, GateStatus::Valid);
+                field.set(az, gate, value, GateStatus::Valid).unwrap();
             }
         }
         field
@@ -479,7 +481,7 @@ mod tests {
         // Paint a 5x5 block at 40 dBZ
         for az in 10..15 {
             for gate in 20..25 {
-                field.set(az, gate, 40.0, GateStatus::Valid);
+                field.set(az, gate, 40.0, GateStatus::Valid).unwrap();
             }
         }
 
@@ -500,14 +502,14 @@ mod tests {
         // Block A: strong
         for az in 10..15 {
             for gate in 20..25 {
-                field.set(az, gate, 50.0, GateStatus::Valid);
+                field.set(az, gate, 50.0, GateStatus::Valid).unwrap();
             }
         }
 
         // Block B: weaker, well-separated
         for az in 100..105 {
             for gate in 50..55 {
-                field.set(az, gate, 40.0, GateStatus::Valid);
+                field.set(az, gate, 40.0, GateStatus::Valid).unwrap();
             }
         }
 
@@ -527,7 +529,7 @@ mod tests {
         let mut field = make_empty_field(100);
 
         // Single gate at 60 dBZ — below the min_gate_count threshold
-        field.set(50, 30, 60.0, GateStatus::Valid);
+        field.set(50, 30, 60.0, GateStatus::Valid).unwrap();
 
         let detector = StormCellDetector::new(35.0, 5).unwrap();
         let cells = detector.detect(&field, &cs).unwrap();
@@ -542,7 +544,7 @@ mod tests {
 
         // Gates spanning the azimuth wrap: 358, 359, 0, 1, 2
         for &az in &[358, 359, 0, 1, 2] {
-            field.set(az, 30, 40.0, GateStatus::Valid);
+            field.set(az, 30, 40.0, GateStatus::Valid).unwrap();
         }
 
         let detector = StormCellDetector::new(35.0, 3).unwrap();
@@ -578,7 +580,7 @@ mod tests {
         // Cell near the radar
         for az in 10..15 {
             for gate in 5..10 {
-                field.set(az, gate, 45.0, GateStatus::Valid);
+                field.set(az, gate, 45.0, GateStatus::Valid).unwrap();
             }
         }
 
@@ -616,7 +618,7 @@ mod tests {
 
         for az in az_start..az_end {
             for gate in gate_start..gate_end {
-                field.set(az, gate, 45.0, GateStatus::Valid);
+                field.set(az, gate, 45.0, GateStatus::Valid).unwrap();
             }
         }
 
@@ -654,11 +656,11 @@ mod tests {
         // Create a 3x3 block with a NoData hole in the center
         for az in 10..13 {
             for gate in 20..23 {
-                field.set(az, gate, 40.0, GateStatus::Valid);
+                field.set(az, gate, 40.0, GateStatus::Valid).unwrap();
             }
         }
         // Punch a hole — this gate stays NoData so it's not part of any cell
-        field.set(11, 21, 0.0, GateStatus::NoData);
+        field.set(11, 21, 0.0, GateStatus::NoData).unwrap();
 
         let detector = StormCellDetector::new(35.0, 1).unwrap();
         let cells = detector.detect(&field, &cs).unwrap();
@@ -676,11 +678,11 @@ mod tests {
         // Create a cell where one end is much stronger
         // Low end: gates 40-42 at 36 dBZ
         for gate in 40..43 {
-            field.set(90, gate, 36.0, GateStatus::Valid);
+            field.set(90, gate, 36.0, GateStatus::Valid).unwrap();
         }
         // High end: gates 43-45 at 60 dBZ
         for gate in 43..46 {
-            field.set(90, gate, 60.0, GateStatus::Valid);
+            field.set(90, gate, 60.0, GateStatus::Valid).unwrap();
         }
 
         let detector = StormCellDetector::new(35.0, 3).unwrap();

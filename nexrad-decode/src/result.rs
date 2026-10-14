@@ -52,4 +52,10 @@ pub enum Error {
     /// No volume coverage pattern message was found while assembling a scan.
     #[error("no volume coverage pattern message found")]
     MissingCoveragePattern,
+    /// Decoded values were rejected by a [`nexrad_model`] constructor, such as moment data
+    /// whose gate count does not match its encoded data or a radial with an out-of-range
+    /// azimuth.
+    #[cfg(feature = "model")]
+    #[error("decoded data is invalid for the model: {0}")]
+    Model(#[from] nexrad_model::result::Error),
 }

@@ -59,7 +59,7 @@ impl ScanDerivedProduct for CompositeReflectivity {
             *output_extent,
             width,
             height,
-        );
+        )?;
 
         let lat_range = output_extent.max.latitude - output_extent.min.latitude;
         let lon_range = output_extent.max.longitude - output_extent.min.longitude;
@@ -95,7 +95,7 @@ impl ScanDerivedProduct for CompositeReflectivity {
                 }
 
                 if found_valid {
-                    output.set(row, col, max_value, GateStatus::Valid);
+                    output.set(row, col, max_value, GateStatus::Valid)?;
                 }
             }
         }
@@ -116,6 +116,7 @@ mod tests {
             .site_elevation_meters(370)
             .feedhorn_height_meters(10)
             .build()
+            .unwrap()
     }
 
     fn make_uniform_field(elevation: f32, value: f32) -> SweepField {
@@ -136,7 +137,7 @@ mod tests {
 
         for az in 0..360 {
             for gate in 0..gate_count {
-                field.set(az, gate, value, GateStatus::Valid);
+                field.set(az, gate, value, GateStatus::Valid).unwrap();
             }
         }
 
@@ -155,7 +156,7 @@ mod tests {
             .unwrap();
 
         // Center pixel should have data
-        let (val, status) = result.get(5, 5);
+        let (val, status) = result.get(5, 5).unwrap();
         assert_eq!(status, GateStatus::Valid);
         assert_eq!(val, 30.0);
     }
@@ -176,7 +177,7 @@ mod tests {
             .unwrap();
 
         // Center pixel should have the max value (40.0)
-        let (val, status) = result.get(5, 5);
+        let (val, status) = result.get(5, 5).unwrap();
         assert_eq!(status, GateStatus::Valid);
         assert_eq!(val, 40.0);
     }

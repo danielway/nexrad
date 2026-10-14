@@ -70,8 +70,8 @@ impl SweepProcessor for StormRelativeVelocity {
         let storm_u = self.storm_speed_mps * storm_to_rad.sin();
         let storm_v = self.storm_speed_mps * storm_to_rad.cos();
 
-        for az_idx in 0..input.azimuth_count() {
-            let azimuth_rad = input.azimuth_angles_degrees()[az_idx].to_radians();
+        for (az_idx, azimuth) in input.azimuth_angles_degrees().iter().enumerate() {
+            let azimuth_rad = azimuth.to_radians();
 
             // Unit vector along the radial direction (from radar toward target)
             let radial_u = azimuth_rad.sin();
@@ -80,15 +80,18 @@ impl SweepProcessor for StormRelativeVelocity {
             // Component of storm motion along this radial
             let storm_radial_component = storm_u * radial_u + storm_v * radial_v;
 
-            for gate_idx in 0..input.gate_count() {
-                let (val, status) = input.get(az_idx, gate_idx);
-                if status != GateStatus::Valid {
-                    continue;
-                }
+            let (Some(statuses), Some(values)) = (
+                input.radial_statuses(az_idx),
+                output.radial_values_mut(az_idx),
+            ) else {
+                continue;
+            };
 
-                // Subtract storm motion component
-                let sr_velocity = val - storm_radial_component;
-                output.set(az_idx, gate_idx, sr_velocity, GateStatus::Valid);
+            // Subtract the storm motion component from valid gates
+            for (value, status) in values.iter_mut().zip(statuses) {
+                if *status == GateStatus::Valid {
+                    *value -= storm_radial_component;
+                }
             }
         }
 
@@ -116,7 +119,7 @@ mod tests {
         // Set uniform velocity of 10 m/s at all azimuths
         for az in 0..4 {
             for gate in 0..gate_count {
-                field.set(az, gate, 10.0, GateStatus::Valid);
+                field.set(az, gate, 10.0, GateStatus::Valid).unwrap();
             }
         }
 
@@ -132,7 +135,7 @@ mod tests {
         // No storm motion — output should match input
         for az in 0..4 {
             for gate in 0..5 {
-                let (val, _) = result.get(az, gate);
+                let (val, _) = result.get(az, gate).unwrap();
                 assert!((val - 10.0).abs() < 0.01);
             }
         }
@@ -148,13 +151,13 @@ mod tests {
         // At azimuth 0° (north): radial is along storm direction
         // Storm component along north radial = +10 m/s
         // SR velocity = 10 - 10 = 0
-        let (val, _) = result.get(0, 2);
+        let (val, _) = result.get(0, 2).unwrap();
         assert!(val.abs() < 0.1, "Expected ~0 at north azimuth, got {}", val);
 
         // At azimuth 180° (south): radial is opposite storm direction
         // Storm component along south radial = -10 m/s
         // SR velocity = 10 - (-10) = 20
-        let (val, _) = result.get(2, 2);
+        let (val, _) = result.get(2, 2).unwrap();
         assert!(
             (val - 20.0).abs() < 0.1,
             "Expected ~20 at south azimuth, got {}",
@@ -164,7 +167,7 @@ mod tests {
         // At azimuth 90° (east): radial is perpendicular to storm direction
         // Storm component along east radial = 0
         // SR velocity = 10 - 0 = 10
-        let (val, _) = result.get(1, 2);
+        let (val, _) = result.get(1, 2).unwrap();
         assert!(
             (val - 10.0).abs() < 0.1,
             "Expected ~10 at east azimuth, got {}",
@@ -175,12 +178,12 @@ mod tests {
     #[test]
     fn test_srv_preserves_nodata() {
         let mut field = make_velocity_field();
-        field.set(1, 2, 0.0, GateStatus::NoData);
+        field.set(1, 2, 0.0, GateStatus::NoData).unwrap();
 
         let srv = StormRelativeVelocity::new(180.0, 10.0).unwrap();
         let result = srv.process(&field).unwrap();
 
-        let (_, status) = result.get(1, 2);
+        let (_, status) = result.get(1, 2).unwrap();
         assert_eq!(status, GateStatus::NoData);
     }
 

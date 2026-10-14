@@ -124,7 +124,7 @@ impl VerticalCrossSection {
             (0.0, self.max_altitude_meters),
             self.width,
             self.height,
-        );
+        )?;
 
         let re = EFFECTIVE_EARTH_RADIUS_KM;
 
@@ -153,9 +153,11 @@ impl VerticalCrossSection {
                     field.value_at_polar(self.azimuth_angle_degrees, range_km)
                 {
                     if status == GateStatus::Valid {
-                        let (existing_val, existing_status) = output.get(row, col);
+                        let Some((existing_val, existing_status)) = output.get(row, col) else {
+                            continue;
+                        };
                         if existing_status != GateStatus::Valid || val > existing_val {
-                            output.set(row, col, val, GateStatus::Valid);
+                            output.set(row, col, val, GateStatus::Valid)?;
                         }
                     }
                 }
@@ -188,7 +190,7 @@ mod tests {
 
         for az in 0..360 {
             for gate in 0..gate_count {
-                field.set(az, gate, value, GateStatus::Valid);
+                field.set(az, gate, value, GateStatus::Valid).unwrap();
             }
         }
 
@@ -209,7 +211,7 @@ mod tests {
         let mut found_valid = false;
         for row in 0..result.height() {
             for col in 0..result.width() {
-                let (_, status) = result.get(row, col);
+                let (_, status) = result.get(row, col).unwrap();
                 if status == GateStatus::Valid {
                     found_valid = true;
                 }
@@ -228,7 +230,7 @@ mod tests {
         // Overlapping beams should take the max value
         for row in 0..result.height() {
             for col in 0..result.width() {
-                let (val, status) = result.get(row, col);
+                let (val, status) = result.get(row, col).unwrap();
                 if status == GateStatus::Valid {
                     assert_eq!(val, 40.0);
                 }

@@ -1,5 +1,6 @@
 use crate::binary_data::BinaryData;
 use crate::data::Product;
+use crate::result::{Error, Result};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -53,35 +54,86 @@ pub struct MomentData {
 impl MomentData {
     /// Create new moment data for a product from fixed-point encoding.
     ///
-    /// `first_gate_range` and `gate_interval` are in meters. `data_word_size` is the number of
-    /// bits per gate (8 or 16); 16-bit gate values are stored big-endian in `values`.
+    /// `first_gate_range_meters` and `gate_interval_meters` are in meters. `data_word_size` is
+    /// the number of bits per gate (8 or 16); 16-bit gate values are stored big-endian in
+    /// `values`, which must hold exactly `gate_count` gates.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidMomentData`] if `data_word_size` is not 8 or 16, `gate_count`
+    /// does not fit in a `u16`, or `scale` or `offset` is not finite, and
+    /// [`Error::MomentDataLength`] if `values` does not hold exactly `gate_count` gates.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nexrad_model::data::{MomentData, MomentValue, Product};
+    ///
+    /// let moment = MomentData::from_fixed_point(
+    ///     Product::Reflectivity, 3, 2125, 250, 8, 2.0, 66.0, vec![0, 1, 100],
+    /// )?;
+    /// assert_eq!(
+    ///     moment.values(),
+    ///     vec![MomentValue::BelowThreshold, MomentValue::RangeFolded, MomentValue::Value(17.0)],
+    /// );
+    /// assert!(MomentData::from_fixed_point(
+    ///     Product::Reflectivity, 4, 2125, 250, 8, 2.0, 66.0, vec![0, 1, 100],
+    /// )
+    /// .is_err());
+    /// # Ok::<(), nexrad_model::result::Error>(())
+    /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn from_fixed_point(
         product: Product,
-        gate_count: u16,
-        first_gate_range: u16,
-        gate_interval: u16,
+        gate_count: usize,
+        first_gate_range_meters: u16,
+        gate_interval_meters: u16,
         data_word_size: u8,
         scale: f32,
         offset: f32,
         values: Vec<u8>,
-    ) -> Self {
-        debug_assert!(
-            data_word_size != 16 || values.len().is_multiple_of(2),
-            "16-bit moment data must have an even number of bytes, got {}",
-            values.len()
-        );
+    ) -> Result<Self> {
+        let bytes_per_gate = match data_word_size {
+            8 => 1,
+            16 => 2,
+            _ => {
+                return Err(Error::InvalidMomentData {
+                    parameter: "data_word_size",
+                    reason: "must be 8 or 16",
+                })
+            }
+        };
+        let compact_gate_count =
+            u16::try_from(gate_count).map_err(|_| Error::InvalidMomentData {
+                parameter: "gate_count",
+                reason: "must fit in a u16",
+            })?;
+        let expected_len = gate_count * bytes_per_gate;
+        if values.len() != expected_len {
+            return Err(Error::MomentDataLength {
+                expected: expected_len,
+                actual: values.len(),
+            });
+        }
+        for (parameter, value) in [("scale", scale), ("offset", offset)] {
+            if !value.is_finite() {
+                return Err(Error::InvalidMomentData {
+                    parameter,
+                    reason: "must be finite",
+                });
+            }
+        }
 
-        Self {
+        Ok(Self {
             product,
-            gate_count,
-            first_gate_range,
-            gate_interval,
+            gate_count: compact_gate_count,
+            first_gate_range: first_gate_range_meters,
+            gate_interval: gate_interval_meters,
             data_word_size,
             scale,
             offset,
             values: BinaryData::new(values),
-        }
+        })
     }
 
     /// The product this moment data holds.
@@ -90,8 +142,18 @@ impl MomentData {
     }
 
     /// The number of gates in this data moment.
-    pub fn gate_count(&self) -> u16 {
-        self.gate_count
+    pub fn gate_count(&self) -> usize {
+        usize::from(self.gate_count)
+    }
+
+    /// The range to the center of the first gate in meters.
+    pub fn first_gate_range_meters(&self) -> u16 {
+        self.first_gate_range
+    }
+
+    /// The range between the centers of consecutive gates in meters.
+    pub fn gate_interval_meters(&self) -> u16 {
+        self.gate_interval
     }
 
     /// The range to the center of the first gate in kilometers.
@@ -171,18 +233,18 @@ impl MomentData {
                 }
             }
 
-            // scale == 0.0 is an exact comparison; the value comes from a binary format
-            // where IEEE 754 zero is stored literally.
-            if scale == 0.0 {
-                return MomentValue::Value(raw_value as f32);
-            }
-
             if !is_cfp {
                 match raw_value {
                     0 => return MomentValue::BelowThreshold,
                     1 => return MomentValue::RangeFolded,
                     _ => {}
                 }
+            }
+
+            // scale == 0.0 is an exact comparison; the value comes from a binary format
+            // where IEEE 754 zero is stored literally.
+            if scale == 0.0 {
+                return MomentValue::Value(raw_value as f32);
             }
 
             MomentValue::Value((raw_value as f32 - offset) / scale)

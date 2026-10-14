@@ -278,11 +278,11 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::WaveformType
 pub struct nexrad_model::data::CartesianField
 impl nexrad_model::data::CartesianField
 pub fn nexrad_model::data::CartesianField::extent(&self) -> &nexrad_model::geo::GeoExtent
-pub fn nexrad_model::data::CartesianField::get(&self, usize, usize) -> (f32, nexrad_model::data::GateStatus)
+pub fn nexrad_model::data::CartesianField::get(&self, usize, usize) -> core::option::Option<(f32, nexrad_model::data::GateStatus)>
 pub fn nexrad_model::data::CartesianField::height(&self) -> usize
 pub fn nexrad_model::data::CartesianField::label(&self) -> &str
-pub fn nexrad_model::data::CartesianField::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, nexrad_model::geo::GeoExtent, usize, usize) -> Self
-pub fn nexrad_model::data::CartesianField::set(&mut self, usize, usize, f32, nexrad_model::data::GateStatus)
+pub fn nexrad_model::data::CartesianField::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, nexrad_model::geo::GeoExtent, usize, usize) -> nexrad_model::result::Result<Self>
+pub fn nexrad_model::data::CartesianField::set(&mut self, usize, usize, f32, nexrad_model::data::GateStatus) -> nexrad_model::result::Result<()>
 pub fn nexrad_model::data::CartesianField::statuses(&self) -> &[nexrad_model::data::GateStatus]
 pub fn nexrad_model::data::CartesianField::unit(&self) -> &str
 pub fn nexrad_model::data::CartesianField::value_at_geo(&self, nexrad_model::geo::GeoPoint) -> core::option::Option<(f32, nexrad_model::data::GateStatus)>
@@ -388,10 +388,12 @@ impl nexrad_model::data::MomentData
 pub fn nexrad_model::data::MomentData::data_word_size(&self) -> u8
 pub fn nexrad_model::data::MomentData::first_gate_range(&self) -> uom::si::f64::Length
 pub fn nexrad_model::data::MomentData::first_gate_range_km(&self) -> f64
-pub fn nexrad_model::data::MomentData::from_fixed_point(nexrad_model::data::Product, u16, u16, u16, u8, f32, f32, alloc::vec::Vec<u8>) -> Self
-pub fn nexrad_model::data::MomentData::gate_count(&self) -> u16
+pub fn nexrad_model::data::MomentData::first_gate_range_meters(&self) -> u16
+pub fn nexrad_model::data::MomentData::from_fixed_point(nexrad_model::data::Product, usize, u16, u16, u8, f32, f32, alloc::vec::Vec<u8>) -> nexrad_model::result::Result<Self>
+pub fn nexrad_model::data::MomentData::gate_count(&self) -> usize
 pub fn nexrad_model::data::MomentData::gate_interval(&self) -> uom::si::f64::Length
 pub fn nexrad_model::data::MomentData::gate_interval_km(&self) -> f64
+pub fn nexrad_model::data::MomentData::gate_interval_meters(&self) -> u16
 pub fn nexrad_model::data::MomentData::iter(&self) -> impl core::iter::traits::iterator::Iterator<Item = nexrad_model::data::MomentValue> + '_
 pub fn nexrad_model::data::MomentData::offset(&self) -> f32
 pub fn nexrad_model::data::MomentData::product(&self) -> nexrad_model::data::Product
@@ -460,7 +462,7 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::Radial
 pub struct nexrad_model::data::RadialBuilder
 impl nexrad_model::data::RadialBuilder
 pub fn nexrad_model::data::RadialBuilder::azimuth_spacing_degrees(self, f32) -> Self
-pub fn nexrad_model::data::RadialBuilder::build(self) -> nexrad_model::data::Radial
+pub fn nexrad_model::data::RadialBuilder::build(self) -> nexrad_model::result::Result<nexrad_model::data::Radial>
 pub fn nexrad_model::data::RadialBuilder::collection_timestamp_millis(self, i64) -> Self
 pub fn nexrad_model::data::RadialBuilder::moment(self, nexrad_model::data::MomentData) -> Self
 pub fn nexrad_model::data::RadialBuilder::radial_status(self, nexrad_model::data::RadialStatus) -> Self
@@ -516,7 +518,7 @@ pub fn nexrad_model::data::Sweep::elevation_number(&self) -> u8
 pub fn nexrad_model::data::Sweep::field(&self, nexrad_model::data::Product) -> core::option::Option<nexrad_model::data::SweepField>
 pub fn nexrad_model::data::Sweep::from_radials(alloc::vec::Vec<nexrad_model::data::Radial>) -> alloc::vec::Vec<Self>
 pub fn nexrad_model::data::Sweep::merge(self, Self) -> nexrad_model::result::Result<Self>
-pub fn nexrad_model::data::Sweep::new(u8, alloc::vec::Vec<nexrad_model::data::Radial>) -> Self
+pub fn nexrad_model::data::Sweep::new(u8, alloc::vec::Vec<nexrad_model::data::Radial>) -> nexrad_model::result::Result<Self>
 pub fn nexrad_model::data::Sweep::radials(&self) -> &[nexrad_model::data::Radial]
 pub fn nexrad_model::data::Sweep::time_range(&self) -> core::option::Option<(chrono::datetime::DateTime<chrono::offset::utc::Utc>, chrono::datetime::DateTime<chrono::offset::utc::Utc>)>
 impl core::clone::Clone for nexrad_model::data::Sweep
@@ -551,16 +553,16 @@ pub fn nexrad_model::data::SweepField::from_radials(&[nexrad_model::data::Radial
 pub fn nexrad_model::data::SweepField::from_radials_owned(alloc::vec::Vec<nexrad_model::data::Radial>, nexrad_model::data::Product) -> core::option::Option<Self>
 pub fn nexrad_model::data::SweepField::gate_count(&self) -> usize
 pub fn nexrad_model::data::SweepField::gate_interval_km(&self) -> f64
-pub fn nexrad_model::data::SweepField::get(&self, usize, usize) -> (f32, nexrad_model::data::GateStatus)
+pub fn nexrad_model::data::SweepField::get(&self, usize, usize) -> core::option::Option<(f32, nexrad_model::data::GateStatus)>
 pub fn nexrad_model::data::SweepField::label(&self) -> &str
 pub fn nexrad_model::data::SweepField::max_range_km(&self) -> f64
 pub fn nexrad_model::data::SweepField::new_like(&self, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn nexrad_model::data::SweepField::product(&self) -> core::option::Option<nexrad_model::data::Product>
-pub fn nexrad_model::data::SweepField::radial_statuses(&self, usize) -> &[nexrad_model::data::GateStatus]
-pub fn nexrad_model::data::SweepField::radial_statuses_mut(&mut self, usize) -> &mut [nexrad_model::data::GateStatus]
-pub fn nexrad_model::data::SweepField::radial_values(&self, usize) -> &[f32]
-pub fn nexrad_model::data::SweepField::radial_values_mut(&mut self, usize) -> &mut [f32]
-pub fn nexrad_model::data::SweepField::set(&mut self, usize, usize, f32, nexrad_model::data::GateStatus)
+pub fn nexrad_model::data::SweepField::radial_statuses(&self, usize) -> core::option::Option<&[nexrad_model::data::GateStatus]>
+pub fn nexrad_model::data::SweepField::radial_statuses_mut(&mut self, usize) -> core::option::Option<&mut [nexrad_model::data::GateStatus]>
+pub fn nexrad_model::data::SweepField::radial_values(&self, usize) -> core::option::Option<&[f32]>
+pub fn nexrad_model::data::SweepField::radial_values_mut(&mut self, usize) -> core::option::Option<&mut [f32]>
+pub fn nexrad_model::data::SweepField::set(&mut self, usize, usize, f32, nexrad_model::data::GateStatus) -> nexrad_model::result::Result<()>
 pub fn nexrad_model::data::SweepField::statuses(&self) -> &[nexrad_model::data::GateStatus]
 pub fn nexrad_model::data::SweepField::unit(&self) -> &str
 pub fn nexrad_model::data::SweepField::value_at_polar(&self, f64, f64) -> core::option::Option<(f32, nexrad_model::data::GateStatus)>
@@ -609,11 +611,11 @@ pub struct nexrad_model::data::VerticalField
 impl nexrad_model::data::VerticalField
 pub fn nexrad_model::data::VerticalField::altitude_range_meters(&self) -> (f64, f64)
 pub fn nexrad_model::data::VerticalField::distance_range_km(&self) -> (f64, f64)
-pub fn nexrad_model::data::VerticalField::get(&self, usize, usize) -> (f32, nexrad_model::data::GateStatus)
+pub fn nexrad_model::data::VerticalField::get(&self, usize, usize) -> core::option::Option<(f32, nexrad_model::data::GateStatus)>
 pub fn nexrad_model::data::VerticalField::height(&self) -> usize
 pub fn nexrad_model::data::VerticalField::label(&self) -> &str
-pub fn nexrad_model::data::VerticalField::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, (f64, f64), (f64, f64), usize, usize) -> Self
-pub fn nexrad_model::data::VerticalField::set(&mut self, usize, usize, f32, nexrad_model::data::GateStatus)
+pub fn nexrad_model::data::VerticalField::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, (f64, f64), (f64, f64), usize, usize) -> nexrad_model::result::Result<Self>
+pub fn nexrad_model::data::VerticalField::set(&mut self, usize, usize, f32, nexrad_model::data::GateStatus) -> nexrad_model::result::Result<()>
 pub fn nexrad_model::data::VerticalField::statuses(&self) -> &[nexrad_model::data::GateStatus]
 pub fn nexrad_model::data::VerticalField::unit(&self) -> &str
 pub fn nexrad_model::data::VerticalField::value_at(&self, f64, f64) -> core::option::Option<(f32, nexrad_model::data::GateStatus)>
@@ -833,7 +835,7 @@ pub nexrad_model::meta::registry::SiteEntry::longitude: f64
 pub nexrad_model::meta::registry::SiteEntry::site_elevation_meters: i16
 pub nexrad_model::meta::registry::SiteEntry::state: &'static str
 impl nexrad_model::meta::registry::SiteEntry
-pub fn nexrad_model::meta::registry::SiteEntry::to_site(&self) -> nexrad_model::meta::Site
+pub fn nexrad_model::meta::registry::SiteEntry::to_site(&self) -> nexrad_model::result::Result<nexrad_model::meta::Site>
 impl core::clone::Clone for nexrad_model::meta::registry::SiteEntry
 pub fn nexrad_model::meta::registry::SiteEntry::clone(&self) -> Self
 impl core::cmp::PartialEq for nexrad_model::meta::registry::SiteEntry
@@ -858,8 +860,7 @@ impl nexrad_model::meta::Site
 pub fn nexrad_model::meta::Site::builder([u8; 4], f64, f64) -> nexrad_model::meta::SiteBuilder
 pub fn nexrad_model::meta::Site::feedhorn_height(&self) -> uom::si::f64::Length
 pub fn nexrad_model::meta::Site::feedhorn_height_meters(&self) -> u16
-pub fn nexrad_model::meta::Site::identifier(&self) -> &[u8; 4]
-pub fn nexrad_model::meta::Site::identifier_string(&self) -> alloc::string::String
+pub fn nexrad_model::meta::Site::identifier(&self) -> &str
 pub fn nexrad_model::meta::Site::latitude(&self) -> f64
 pub fn nexrad_model::meta::Site::longitude(&self) -> f64
 pub fn nexrad_model::meta::Site::site_elevation(&self) -> uom::si::f64::Length
@@ -886,7 +887,7 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::meta::Site
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::meta::Site
 pub struct nexrad_model::meta::SiteBuilder
 impl nexrad_model::meta::SiteBuilder
-pub fn nexrad_model::meta::SiteBuilder::build(self) -> nexrad_model::meta::Site
+pub fn nexrad_model::meta::SiteBuilder::build(self) -> nexrad_model::result::Result<nexrad_model::meta::Site>
 pub fn nexrad_model::meta::SiteBuilder::feedhorn_height_meters(self, u16) -> Self
 pub fn nexrad_model::meta::SiteBuilder::site_elevation_meters(self, i16) -> Self
 impl core::clone::Clone for nexrad_model::meta::SiteBuilder
@@ -903,12 +904,35 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_model::meta::SiteBuilder
 pub mod nexrad_model::result
 #[non_exhaustive] pub enum nexrad_model::result::Error
 pub nexrad_model::result::Error::ElevationMismatch
-pub nexrad_model::result::Error::InvalidSweepGeometry(alloc::string::String)
+pub nexrad_model::result::Error::ElevationMismatch::actual: u8
+pub nexrad_model::result::Error::ElevationMismatch::expected: u8
+pub nexrad_model::result::Error::IndexOutOfBounds
+pub nexrad_model::result::Error::IndexOutOfBounds::column: usize
+pub nexrad_model::result::Error::IndexOutOfBounds::columns: usize
+pub nexrad_model::result::Error::IndexOutOfBounds::row: usize
+pub nexrad_model::result::Error::IndexOutOfBounds::rows: usize
+pub nexrad_model::result::Error::InvalidGeometry
+pub nexrad_model::result::Error::InvalidGeometry::parameter: &'static str
+pub nexrad_model::result::Error::InvalidGeometry::reason: &'static str
+pub nexrad_model::result::Error::InvalidMomentData
+pub nexrad_model::result::Error::InvalidMomentData::parameter: &'static str
+pub nexrad_model::result::Error::InvalidMomentData::reason: &'static str
+pub nexrad_model::result::Error::InvalidSite
+pub nexrad_model::result::Error::InvalidSite::parameter: &'static str
+pub nexrad_model::result::Error::InvalidSite::reason: &'static str
+pub nexrad_model::result::Error::MomentDataLength
+pub nexrad_model::result::Error::MomentDataLength::actual: usize
+pub nexrad_model::result::Error::MomentDataLength::expected: usize
+impl core::clone::Clone for nexrad_model::result::Error
+pub fn nexrad_model::result::Error::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_model::result::Error
+pub fn nexrad_model::result::Error::eq(&self, &Self) -> bool
 impl core::error::Error for nexrad_model::result::Error
 impl core::fmt::Debug for nexrad_model::result::Error
 pub fn nexrad_model::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for nexrad_model::result::Error
 pub fn nexrad_model::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_model::result::Error
 impl core::marker::Freeze for nexrad_model::result::Error
 impl core::marker::Send for nexrad_model::result::Error
 impl core::marker::Sync for nexrad_model::result::Error
@@ -919,12 +943,35 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_model::result::Error
 pub type nexrad_model::result::Result<T> = core::result::Result<T, nexrad_model::result::Error>
 #[non_exhaustive] pub enum nexrad_model::Error
 pub nexrad_model::Error::ElevationMismatch
-pub nexrad_model::Error::InvalidSweepGeometry(alloc::string::String)
+pub nexrad_model::Error::ElevationMismatch::actual: u8
+pub nexrad_model::Error::ElevationMismatch::expected: u8
+pub nexrad_model::Error::IndexOutOfBounds
+pub nexrad_model::Error::IndexOutOfBounds::column: usize
+pub nexrad_model::Error::IndexOutOfBounds::columns: usize
+pub nexrad_model::Error::IndexOutOfBounds::row: usize
+pub nexrad_model::Error::IndexOutOfBounds::rows: usize
+pub nexrad_model::Error::InvalidGeometry
+pub nexrad_model::Error::InvalidGeometry::parameter: &'static str
+pub nexrad_model::Error::InvalidGeometry::reason: &'static str
+pub nexrad_model::Error::InvalidMomentData
+pub nexrad_model::Error::InvalidMomentData::parameter: &'static str
+pub nexrad_model::Error::InvalidMomentData::reason: &'static str
+pub nexrad_model::Error::InvalidSite
+pub nexrad_model::Error::InvalidSite::parameter: &'static str
+pub nexrad_model::Error::InvalidSite::reason: &'static str
+pub nexrad_model::Error::MomentDataLength
+pub nexrad_model::Error::MomentDataLength::actual: usize
+pub nexrad_model::Error::MomentDataLength::expected: usize
+impl core::clone::Clone for nexrad_model::result::Error
+pub fn nexrad_model::result::Error::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_model::result::Error
+pub fn nexrad_model::result::Error::eq(&self, &Self) -> bool
 impl core::error::Error for nexrad_model::result::Error
 impl core::fmt::Debug for nexrad_model::result::Error
 pub fn nexrad_model::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for nexrad_model::result::Error
 pub fn nexrad_model::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_model::result::Error
 impl core::marker::Freeze for nexrad_model::result::Error
 impl core::marker::Send for nexrad_model::result::Error
 impl core::marker::Sync for nexrad_model::result::Error

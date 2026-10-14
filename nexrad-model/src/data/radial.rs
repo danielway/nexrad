@@ -1,4 +1,5 @@
 use crate::data::{MomentData, Product};
+use crate::result::{Error, Result};
 
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
@@ -188,6 +189,10 @@ impl Radial {
 /// - `azimuth_spacing_degrees`: `1.0`
 /// - `radial_status`: [`RadialStatus::IntermediateRadialData`]
 /// - moment data for every product: `None` (set with [`moment`](Self::moment))
+///
+/// [`build`](Self::build) returns [`Error::InvalidGeometry`] unless the azimuth angle is finite
+/// and in `0.0..360.0`, the elevation angle is finite, and the azimuth spacing is finite and
+/// greater than zero.
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct RadialBuilder {
@@ -232,9 +237,31 @@ impl RadialBuilder {
     }
 
     /// Build the [`Radial`].
-    #[must_use]
-    pub fn build(self) -> Radial {
-        self.radial
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidGeometry`] if any rule listed on [`RadialBuilder`] is broken.
+    pub fn build(self) -> Result<Radial> {
+        let radial = &self.radial;
+        if !(0.0..360.0).contains(&radial.azimuth_angle_degrees) {
+            return Err(Error::InvalidGeometry {
+                parameter: "azimuth_angle_degrees",
+                reason: "must be finite and in 0.0..360.0",
+            });
+        }
+        if !radial.elevation_angle_degrees.is_finite() {
+            return Err(Error::InvalidGeometry {
+                parameter: "elevation_angle_degrees",
+                reason: "must be finite",
+            });
+        }
+        if !(radial.azimuth_spacing_degrees.is_finite() && radial.azimuth_spacing_degrees > 0.0) {
+            return Err(Error::InvalidGeometry {
+                parameter: "azimuth_spacing_degrees",
+                reason: "must be finite and greater than zero",
+            });
+        }
+        Ok(self.radial)
     }
 }
 

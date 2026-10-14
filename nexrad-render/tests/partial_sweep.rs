@@ -26,11 +26,13 @@ fn create_test_radial(azimuth_degrees: f32, reflectivity_value: u8) -> Radial {
         scale,
         offset,
         values,
-    );
+    )
+    .unwrap();
 
     Radial::builder(0, azimuth_degrees, 1, 0.5)
         .moment(moment_data)
         .build()
+        .unwrap()
 }
 
 /// Creates radials covering a specific azimuth range.

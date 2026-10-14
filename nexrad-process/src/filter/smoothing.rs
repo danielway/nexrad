@@ -84,7 +84,9 @@ impl SweepProcessor for MedianFilter {
 
         for az_idx in 0..az_count {
             for gate_idx in 0..gate_count {
-                let (_, status) = input.get(az_idx, gate_idx);
+                let Some((_, status)) = input.get(az_idx, gate_idx) else {
+                    continue;
+                };
                 if status != GateStatus::Valid {
                     continue;
                 }
@@ -104,7 +106,9 @@ impl SweepProcessor for MedianFilter {
                             continue;
                         }
 
-                        let (val, st) = input.get(neighbor_az, neighbor_gate as usize);
+                        let Some((val, st)) = input.get(neighbor_az, neighbor_gate as usize) else {
+                            continue;
+                        };
                         if st == GateStatus::Valid {
                             neighborhood.push(val);
                         }
@@ -115,7 +119,7 @@ impl SweepProcessor for MedianFilter {
                     neighborhood
                         .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
                     let median = neighborhood[neighborhood.len() / 2];
-                    output.set(az_idx, gate_idx, median, GateStatus::Valid);
+                    output.set(az_idx, gate_idx, median, GateStatus::Valid)?;
                 }
             }
         }
@@ -195,7 +199,9 @@ impl SweepProcessor for GaussianSmooth {
 
         for az_idx in 0..az_count {
             for gate_idx in 0..gate_count {
-                let (_, status) = input.get(az_idx, gate_idx);
+                let Some((_, status)) = input.get(az_idx, gate_idx) else {
+                    continue;
+                };
                 if status != GateStatus::Valid {
                     continue;
                 }
@@ -216,7 +222,9 @@ impl SweepProcessor for GaussianSmooth {
                             continue;
                         }
 
-                        let (val, st) = input.get(neighbor_az, neighbor_gate as usize);
+                        let Some((val, st)) = input.get(neighbor_az, neighbor_gate as usize) else {
+                            continue;
+                        };
                         if st != GateStatus::Valid {
                             continue;
                         }
@@ -239,7 +247,7 @@ impl SweepProcessor for GaussianSmooth {
                         gate_idx,
                         (weighted_sum / weight_sum) as f32,
                         GateStatus::Valid,
-                    );
+                    )?;
                 }
             }
         }
@@ -265,7 +273,7 @@ mod tests {
         // Set uniform values
         for az in 0..5 {
             for gate in 0..5 {
-                field.set(az, gate, 30.0, GateStatus::Valid);
+                field.set(az, gate, 30.0, GateStatus::Valid).unwrap();
             }
         }
 
@@ -282,7 +290,7 @@ mod tests {
         // Uniform input should produce uniform output
         for az in 0..5 {
             for gate in 0..5 {
-                let (val, status) = result.get(az, gate);
+                let (val, status) = result.get(az, gate).unwrap();
                 assert_eq!(val, 30.0);
                 assert_eq!(status, GateStatus::Valid);
             }
@@ -294,14 +302,14 @@ mod tests {
     fn test_median_filter_removes_spike() -> Result<()> {
         let mut field = make_test_field();
         // Add a single spike
-        field.set(2, 2, 100.0, GateStatus::Valid);
+        field.set(2, 2, 100.0, GateStatus::Valid).unwrap();
 
         let filter = MedianFilter::new(3, 3)?;
 
         let result = filter.process(&field)?;
 
         // The spike should be removed (median of mostly 30.0 values)
-        let (val, _) = result.get(2, 2);
+        let (val, _) = result.get(2, 2).unwrap();
         assert_eq!(val, 30.0);
         Ok(())
     }
@@ -321,12 +329,12 @@ mod tests {
     #[test]
     fn test_median_filter_1x1_noop() -> Result<()> {
         let mut field = make_test_field();
-        field.set(2, 2, 99.0, GateStatus::Valid);
+        field.set(2, 2, 99.0, GateStatus::Valid).unwrap();
 
         let filter = MedianFilter::new(1, 1)?;
 
         let result = filter.process(&field)?;
-        let (val, _) = result.get(2, 2);
+        let (val, _) = result.get(2, 2).unwrap();
         assert_eq!(val, 99.0);
         Ok(())
     }
@@ -334,12 +342,12 @@ mod tests {
     #[test]
     fn test_median_filter_preserves_nodata() -> Result<()> {
         let mut field = make_test_field();
-        field.set(2, 2, 0.0, GateStatus::NoData);
+        field.set(2, 2, 0.0, GateStatus::NoData).unwrap();
 
         let filter = MedianFilter::new(3, 3)?;
 
         let result = filter.process(&field)?;
-        let (_, status) = result.get(2, 2);
+        let (_, status) = result.get(2, 2).unwrap();
         assert_eq!(status, GateStatus::NoData);
         Ok(())
     }
@@ -354,7 +362,7 @@ mod tests {
         // Uniform input should produce uniform output
         for az in 0..5 {
             for gate in 0..5 {
-                let (val, _) = result.get(az, gate);
+                let (val, _) = result.get(az, gate).unwrap();
                 assert!((val - 30.0).abs() < 0.01, "Expected ~30.0, got {}", val);
             }
         }
@@ -364,14 +372,14 @@ mod tests {
     #[test]
     fn test_gaussian_smooth_reduces_spike() -> Result<()> {
         let mut field = make_test_field();
-        field.set(2, 2, 100.0, GateStatus::Valid);
+        field.set(2, 2, 100.0, GateStatus::Valid).unwrap();
 
         let smoother = GaussianSmooth::new(1.0, 1.0)?;
 
         let result = smoother.process(&field)?;
 
         // The spike should be reduced (smoothed toward neighbors)
-        let (val, _) = result.get(2, 2);
+        let (val, _) = result.get(2, 2).unwrap();
         assert!(val < 100.0, "Expected smoothed value < 100, got {}", val);
         assert!(val > 30.0, "Expected smoothed value > 30, got {}", val);
         Ok(())

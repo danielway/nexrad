@@ -131,7 +131,7 @@ fn render_grid(
     field_width: usize,
     field_height: usize,
     value_range: Option<(f32, f32)>,
-    get: impl Fn(usize, usize) -> (f32, GateStatus),
+    get: impl Fn(usize, usize) -> Option<(f32, GateStatus)>,
     color_scale: &ColorScale,
     options: &RenderOptions,
 ) -> Result<RgbaImage> {
@@ -176,7 +176,9 @@ fn render_grid(
             let field_col = (col_f + 0.5) as usize;
             let field_col = field_col.min(max_col);
 
-            let (val, status) = get(field_row, field_col);
+            let Some((val, status)) = get(field_row, field_col) else {
+                continue;
+            };
             if status == GateStatus::Valid {
                 let color = lut.color(val);
                 let pixel_index = (y * width + x) * 4;
@@ -198,7 +200,7 @@ fn sample_grid_bilinear(
     col_f: f64,
     max_row: usize,
     max_col: usize,
-    get_fn: impl Fn(usize, usize) -> (f32, GateStatus),
+    get_fn: impl Fn(usize, usize) -> Option<(f32, GateStatus)>,
 ) -> Option<f32> {
     let r0 = row_f as usize;
     let c0 = col_f as usize;
@@ -208,10 +210,10 @@ fn sample_grid_bilinear(
     let rf = (row_f - r0 as f64) as f32;
     let cf = (col_f - c0 as f64) as f32;
 
-    let (v00, s00) = get_fn(r0, c0);
-    let (v01, s01) = get_fn(r0, c1);
-    let (v10, s10) = get_fn(r1, c0);
-    let (v11, s11) = get_fn(r1, c1);
+    let (v00, s00) = get_fn(r0, c0)?;
+    let (v01, s01) = get_fn(r0, c1)?;
+    let (v10, s10) = get_fn(r1, c0)?;
+    let (v11, s11) = get_fn(r1, c1)?;
 
     if s00 != GateStatus::Valid
         || s01 != GateStatus::Valid

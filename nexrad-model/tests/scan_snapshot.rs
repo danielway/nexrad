@@ -64,7 +64,7 @@ struct ProductDigest {
 struct GateGeometry {
     first_gate_range_km: f64,
     gate_interval_km: f64,
-    gate_count: u16,
+    gate_count: usize,
 }
 
 fn digest_sweep(sweep: &Sweep) -> SweepDigest {
@@ -87,7 +87,9 @@ fn digest_sweep(sweep: &Sweep) -> SweepDigest {
                     geometries.push(geometry);
                 }
 
-                hash.update(moment.gate_count().to_le_bytes());
+                // Hashed as the u16 the format stores, keeping digests independent of usize width.
+                let gate_count = u16::try_from(moment.gate_count()).expect("gate count fits u16");
+                hash.update(gate_count.to_le_bytes());
                 for value in moment.iter() {
                     hash_moment_value(&mut hash, value);
                 }

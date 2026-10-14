@@ -19,7 +19,6 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `ElevationCut::builder`, `VolumeCoveragePattern::builder`, `SweepField::builder` and `Site::builder`, with the new
   types `data::{RadialBuilder, ElevationCutBuilder, VolumeCoveragePatternBuilder, SweepFieldBuilder}` and
   `meta::SiteBuilder`. (#165)
-- `Error::InvalidSweepGeometry(String)`, returned by `SweepFieldBuilder::build`. (#165)
 - `Radial::moment(Product) -> Option<&MomentData>`, a uniform accessor for every moment. (#170)
 - `MomentData::product()`, `SweepField::product() -> Option<Product>` and `SweepFieldBuilder::product(Product)`.
   (#170)
@@ -27,6 +26,11 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   exhaustive matches need a new arm. (#170)
 - `Sweep::field(product)`, `Scan::fields(product)`, `Scan::first_field(product)` and `Scan::coordinate_system()`,
   which replace the facade's `extract_field`, `extract_fields`, `extract_first_field` and `coordinate_system`. (#172)
+- `MomentData::first_gate_range_meters()` and `gate_interval_meters()`, returning the `u16` meters that
+  `from_fixed_point` takes. (#185)
+- Structured `Error` variants: `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, reason }`,
+  `MomentDataLength { expected, actual }`, `InvalidSite { parameter, reason }` and
+  `IndexOutOfBounds { row, column, rows, columns }`. `Error` implements `Clone` and `PartialEq`. (#185)
 
 ### Changed
 
@@ -63,8 +67,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Site::builder(identifier, latitude, longitude).site_elevation_meters(..).feedhorn_height_meters(..).build()`.
   (#165, #182)
 - `SweepField::new_empty(..)` is replaced by `SweepField::builder(label, unit)` with setters. `build()` returns
-  `Result<SweepField>` and fails with `Error::InvalidSweepGeometry` when `azimuth_angles_degrees` is empty,
-  `gate_count` is 0 or `gate_interval_km` is not positive; `new_empty` did no validation. (#165)
+  `Result<SweepField>` and validates the geometry (see below); `new_empty` did no validation. (#165)
 - Clutter filter power is a `MomentData` like every other moment: `Radial::clutter_filter_power()` returns
   `Option<&MomentData>`, and `CfpMomentValue::Status(s)` / `CfpMomentValue::Value(v)` become
   `MomentValue::CfpStatus(s)` / `MomentValue::Value(v)`. (#170)
@@ -101,6 +104,32 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Debug` output changed: renamed types and variants print their new names (#160); binary blobs print
   `fnv1a: 0x<16 hex digits>` instead of `sha256: "<hex>"` (#162); `Radial`/`MomentData` no longer nest an
   `inner: MomentDataBlock { .. }` and show a `product` field (#170).
+- Field indexing is checked; no public model API panics on an out-of-range index (#185):
+  - `SweepField::get`, `CartesianField::get` and `VerticalField::get` return `Option<(f32, GateStatus)>`, checking the
+    row and column against their own dimensions (`get(0, width + 3)` used to read row 1 silently).
+  - `SweepField::set`, `CartesianField::set` and `VerticalField::set` return `Result<()>`, failing with
+    `Error::IndexOutOfBounds`.
+  - `SweepField::radial_values`, `radial_values_mut`, `radial_statuses` and `radial_statuses_mut` return `Option`.
+- Constructors with invariants return `Result` (#185):
+  - `CartesianField::new` requires non-zero dimensions whose product fits in `usize`, and a finite extent with
+    `min < max` within `-90..=90` latitude and `-180..=180` longitude.
+  - `VerticalField::new` requires non-zero dimensions and finite ranges with `min < max`.
+  - `MomentData::from_fixed_point` requires a `data_word_size` of 8 or 16, exactly `gate_count` gates of data and a
+    finite `scale` and `offset`. Its `gate_count` parameter and `MomentData::gate_count()` are `usize`, and the range
+    parameters are named `first_gate_range_meters` and `gate_interval_meters`.
+  - `RadialBuilder::build` requires a finite azimuth angle in `0.0..360.0`, a finite elevation angle and a finite,
+    positive azimuth spacing.
+  - `Sweep::new` requires every radial's elevation number to match the sweep's (`Error::ElevationMismatch`).
+    `Sweep::from_radials` and `Sweep::merge` are unchanged.
+  - `SiteBuilder::build` requires a four-character ASCII alphanumeric identifier and a finite latitude in `-90..=90`
+    and longitude in `-180..=180`.
+  - `meta::registry::SiteEntry::to_site` returns `Result<Site>`; every registry entry is valid.
+- `SweepFieldBuilder::build` returns `Error::InvalidGeometry` (which replaces `InvalidSweepGeometry(String)`) unless
+  the azimuths are non-empty, finite, in `0.0..360.0` and strictly ascending, the gate count is non-zero, the gate
+  interval and azimuth spacing are finite and positive, the first gate range is finite and not negative, and the
+  elevation angle is finite. (#185)
+- `Site::identifier()` returns `&str` (it returned `&[u8; 4]`). (#185)
+- `Error::ElevationMismatch` is a struct variant carrying the `expected` and `actual` elevation numbers. (#185)
 
 ### Removed
 
@@ -110,3 +139,16 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Product::ClutterFilterPower` and `MomentValue::CfpStatus`. (#170)
 - The `DataMoment` trait; its methods are inherent on `MomentData`. (#170)
 - `Product::moment_data(&Radial)` and `Product::cfp_moment_data(&Radial)`; use `radial.moment(product)`. (#170)
+- `Site::identifier_string()`; `Site::identifier()` returns `&str`. (#185)
+
+### Fixed
+
+- `MomentData::iter`/`values` decode raw 0 and 1 as `BelowThreshold` and `RangeFolded` for every product other than
+  clutter filter power, as documented, also when `scale` is `0.0`; they decoded as `Value(0.0)` and `Value(1.0)`.
+  (#185)
+- `SweepField::from_radials`/`from_radials_owned` take the elevation angle (the median) and azimuth spacing from the
+  radials carrying the product instead of the first radial, and skip radials whose first gate range or gate interval
+  differ from the first such radial, which were mis-registered. (#185)
+- `SweepField::value_at_polar` normalizes the azimuth into `0.0..360.0` and only wraps across north when the field
+  covers the full circle; for a sector or partial sweep it returns `None` for azimuths more than half the azimuth
+  spacing outside the covered sector instead of matching the far end. (#185)

@@ -71,16 +71,20 @@ impl SweepProcessor for CorrelationCoefficientFilter {
 
         for az_idx in 0..input.azimuth_count() {
             for gate_idx in 0..shared_gates {
-                let (_, input_status) = input.get(az_idx, gate_idx);
+                let Some((_, input_status)) = input.get(az_idx, gate_idx) else {
+                    continue;
+                };
                 if input_status != GateStatus::Valid {
                     continue;
                 }
 
-                let (cc_val, cc_status) = self.cc_field.get(az_idx, gate_idx);
+                let Some((cc_val, cc_status)) = self.cc_field.get(az_idx, gate_idx) else {
+                    continue;
+                };
 
                 // If CC is invalid or below threshold, mask the target gate
                 if cc_status != GateStatus::Valid || cc_val < self.threshold {
-                    output.set(az_idx, gate_idx, 0.0, GateStatus::NoData);
+                    output.set(az_idx, gate_idx, 0.0, GateStatus::NoData)?;
                 }
             }
         }
@@ -117,8 +121,8 @@ mod tests {
         // Fill target with valid data
         for az in 0..3 {
             for gate in 0..gate_count {
-                target.set(az, gate, 30.0, GateStatus::Valid);
-                cc.set(az, gate, 0.98, GateStatus::Valid);
+                target.set(az, gate, 30.0, GateStatus::Valid).unwrap();
+                cc.set(az, gate, 0.98, GateStatus::Valid).unwrap();
             }
         }
 
@@ -133,7 +137,7 @@ mod tests {
 
         for az in 0..3 {
             for gate in 0..5 {
-                let (val, status) = result.get(az, gate);
+                let (val, status) = result.get(az, gate).unwrap();
                 assert_eq!(val, 30.0);
                 assert_eq!(status, GateStatus::Valid);
             }
@@ -144,21 +148,21 @@ mod tests {
     fn test_cc_filter_masks_low_cc() {
         let (target, mut cc) = make_fields(5);
         // Set low CC for some gates
-        cc.set(1, 2, 0.5, GateStatus::Valid);
-        cc.set(1, 3, 0.8, GateStatus::Valid);
+        cc.set(1, 2, 0.5, GateStatus::Valid).unwrap();
+        cc.set(1, 3, 0.8, GateStatus::Valid).unwrap();
 
         let filter = CorrelationCoefficientFilter::new(0.90, cc).unwrap();
         let result = filter.process(&target).unwrap();
 
         // Low CC gates should be masked
-        let (_, status) = result.get(1, 2);
+        let (_, status) = result.get(1, 2).unwrap();
         assert_eq!(status, GateStatus::NoData);
 
-        let (_, status) = result.get(1, 3);
+        let (_, status) = result.get(1, 3).unwrap();
         assert_eq!(status, GateStatus::NoData);
 
         // High CC gate should be preserved
-        let (val, status) = result.get(1, 1);
+        let (val, status) = result.get(1, 1).unwrap();
         assert_eq!(val, 30.0);
         assert_eq!(status, GateStatus::Valid);
     }
@@ -166,12 +170,12 @@ mod tests {
     #[test]
     fn test_cc_filter_masks_invalid_cc() {
         let (target, mut cc) = make_fields(5);
-        cc.set(0, 0, 0.0, GateStatus::NoData);
+        cc.set(0, 0, 0.0, GateStatus::NoData).unwrap();
 
         let filter = CorrelationCoefficientFilter::new(0.90, cc).unwrap();
         let result = filter.process(&target).unwrap();
 
-        let (_, status) = result.get(0, 0);
+        let (_, status) = result.get(0, 0).unwrap();
         assert_eq!(status, GateStatus::NoData);
     }
 
@@ -194,12 +198,12 @@ mod tests {
         let result = filter.process(&target).unwrap();
 
         // Gates in the shared range should be preserved (high CC)
-        let (val, status) = result.get(0, 2);
+        let (val, status) = result.get(0, 2).unwrap();
         assert_eq!(val, 30.0);
         assert_eq!(status, GateStatus::Valid);
 
         // Gates beyond CC range should be left unchanged
-        let (val, status) = result.get(0, 7);
+        let (val, status) = result.get(0, 7).unwrap();
         assert_eq!(val, 30.0);
         assert_eq!(status, GateStatus::Valid);
     }
@@ -229,12 +233,12 @@ mod tests {
 
         for az in 0..3 {
             for gate in 0..5 {
-                target.set(az, gate, 30.0, GateStatus::Valid);
+                target.set(az, gate, 30.0, GateStatus::Valid).unwrap();
             }
         }
         for az in 0..4 {
             for gate in 0..5 {
-                cc.set(az, gate, 0.98, GateStatus::Valid);
+                cc.set(az, gate, 0.98, GateStatus::Valid).unwrap();
             }
         }
 

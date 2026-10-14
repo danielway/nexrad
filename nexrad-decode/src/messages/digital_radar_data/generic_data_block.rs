@@ -72,19 +72,20 @@ impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
     ///
     /// Returns [`Error::UnknownDataBlockType`](crate::result::Error::UnknownDataBlockType) if the
     /// block's data name is not one of the known moment names (`REF`, `VEL`, `SW `, `ZDR`,
-    /// `PHI`, `RHO`, `CFP`).
+    /// `PHI`, `RHO`, `CFP`), or [`Error::Model`](crate::result::Error::Model) if the block's
+    /// encoding parameters are inconsistent with its data.
     pub fn moment_data(&self) -> Result<nexrad_model::data::MomentData> {
         let header = self.header();
         Ok(nexrad_model::data::MomentData::from_fixed_point(
             self.product()?,
-            header.number_of_data_moment_gates(),
+            usize::from(header.number_of_data_moment_gates()),
             header.data_moment_range_raw(),
             header.data_moment_range_sample_interval_raw(),
             header.data_word_size_raw(),
             header.scale(),
             header.offset(),
             self.encoded_values().to_vec(),
-        ))
+        )?)
     }
 
     /// Convert this generic data block into a [`MomentData`](nexrad_model::data::MomentData),
@@ -95,19 +96,20 @@ impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
     ///
     /// Returns [`Error::UnknownDataBlockType`](crate::result::Error::UnknownDataBlockType) if the
     /// block's data name is not one of the known moment names (`REF`, `VEL`, `SW `, `ZDR`,
-    /// `PHI`, `RHO`, `CFP`).
+    /// `PHI`, `RHO`, `CFP`), or [`Error::Model`](crate::result::Error::Model) if the block's
+    /// encoding parameters are inconsistent with its data.
     pub fn into_moment_data(self) -> Result<nexrad_model::data::MomentData> {
         let product = self.product()?;
         let block = self.into_inner();
         Ok(nexrad_model::data::MomentData::from_fixed_point(
             product,
-            block.header.number_of_data_moment_gates(),
+            usize::from(block.header.number_of_data_moment_gates()),
             block.header.data_moment_range_raw(),
             block.header.data_moment_range_sample_interval_raw(),
             block.header.data_word_size_raw(),
             block.header.scale(),
             block.header.offset(),
             block.encoded_data.into_inner().into_owned(),
-        ))
+        )?)
     }
 }

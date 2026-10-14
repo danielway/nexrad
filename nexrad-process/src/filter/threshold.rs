@@ -69,14 +69,16 @@ impl SweepProcessor for ThresholdFilter {
 
         for az_idx in 0..output.azimuth_count() {
             for gate_idx in 0..output.gate_count() {
-                let (val, status) = output.get(az_idx, gate_idx);
+                let Some((val, status)) = output.get(az_idx, gate_idx) else {
+                    continue;
+                };
 
                 if status == GateStatus::Valid {
                     let below_min = self.min.is_some_and(|m| val < m);
                     let above_max = self.max.is_some_and(|m| val > m);
 
                     if below_min || above_max {
-                        output.set(az_idx, gate_idx, 0.0, GateStatus::NoData);
+                        output.set(az_idx, gate_idx, 0.0, GateStatus::NoData)?;
                     }
                 }
             }
@@ -105,7 +107,7 @@ mod tests {
         for az in 0..3 {
             for gate in 0..5 {
                 let value = (az * 5 + gate) as f32 * 5.0; // 0, 5, 10, ..., 70
-                field.set(az, gate, value, GateStatus::Valid);
+                field.set(az, gate, value, GateStatus::Valid).unwrap();
             }
         }
 
@@ -123,7 +125,7 @@ mod tests {
         for az in 0..3 {
             for gate in 0..5 {
                 let original_value = (az * 5 + gate) as f32 * 5.0;
-                let (val, status) = result.get(az, gate);
+                let (val, status) = result.get(az, gate).unwrap();
                 if original_value < 20.0 {
                     assert_eq!(status, GateStatus::NoData);
                     assert_eq!(val, 0.0);
@@ -146,7 +148,7 @@ mod tests {
         for az in 0..3 {
             for gate in 0..5 {
                 let original_value = (az * 5 + gate) as f32 * 5.0;
-                let (_, status) = result.get(az, gate);
+                let (_, status) = result.get(az, gate).unwrap();
                 if original_value > 40.0 {
                     assert_eq!(status, GateStatus::NoData);
                 } else {
@@ -167,7 +169,7 @@ mod tests {
         for az in 0..3 {
             for gate in 0..5 {
                 let original_value = (az * 5 + gate) as f32 * 5.0;
-                let (_, status) = result.get(az, gate);
+                let (_, status) = result.get(az, gate).unwrap();
                 if original_value < 15.0 || original_value > 50.0 {
                     assert_eq!(status, GateStatus::NoData);
                 } else {
@@ -182,14 +184,14 @@ mod tests {
     fn test_threshold_preserves_nodata() -> Result<()> {
         let mut field = make_test_field();
         // Mark some gates as already NoData
-        field.set(1, 2, 0.0, GateStatus::NoData);
+        field.set(1, 2, 0.0, GateStatus::NoData).unwrap();
 
         let filter = ThresholdFilter::new(Some(0.0), None)?;
 
         let result = filter.process(&field)?;
 
         // The NoData gate should remain NoData
-        let (_, status) = result.get(1, 2);
+        let (_, status) = result.get(1, 2).unwrap();
         assert_eq!(status, GateStatus::NoData);
         Ok(())
     }
@@ -223,8 +225,8 @@ mod tests {
         // All valid values should remain valid
         for az in 0..3 {
             for gate in 0..5 {
-                let (orig_val, _) = field.get(az, gate);
-                let (result_val, result_status) = result.get(az, gate);
+                let (orig_val, _) = field.get(az, gate).unwrap();
+                let (result_val, result_status) = result.get(az, gate).unwrap();
                 assert_eq!(result_val, orig_val);
                 assert_eq!(result_status, GateStatus::Valid);
             }

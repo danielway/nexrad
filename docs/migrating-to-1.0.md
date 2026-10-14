@@ -764,9 +764,15 @@ II source files.** There is no compatibility shim. The incompatible changes are:
 | `VolumeCoveragePattern` | `doppler_velocity_resolution`, `sails_cuts` and `mrle_cuts` are renamed `doppler_velocity_resolution_mps`, `sails_cut_count` and `mrle_cut_count` | #182 |
 | `ElevationCut` | `elevation_angle_degrees` is `f32` (was `f64`) | #182 |
 | `PolarPoint` | `azimuth_degrees` and `elevation_degrees` are renamed `azimuth_angle_degrees` and `elevation_angle_degrees` | #182 |
+| `MomentData` | `first_gate_range`, `gate_interval` and `values` are renamed `first_gate_range_meters`, `gate_interval_meters` and `raw_values`, matching the accessors | #PR |
+| `MomentData` | `raw_values` serializes as a byte string (`serialize_bytes`) instead of a sequence of integers. JSON and other formats without a bytes type still write and read an array of integers; formats with one, such as MessagePack and CBOR, write a binary string | #PR |
+| `SweepField`, `CartesianField`, `VerticalField` | `status` is renamed `statuses`, matching the accessor | #PR |
+| `CfpStatus` | Variants serialize as their PascalCase names (`"FilterNotApplied"`, `"PointClutterFilterApplied"`, `"DualPolOnlyFilterApplied"`, `{"Reserved": n}`) instead of snake_case (`"filter_not_applied"`, ...) | #PR |
+| `SweepField`, `CartesianField`, `VerticalField`, `MomentData`, `Radial`, `Site`, `Sweep` | Deserialization applies the constructors' validation and fails on data they reject: field `values` and `statuses` must each hold one entry per cell, `raw_values` must hold exactly `gate_count` gates of `data_word_size` bits, each `Radial` moment must sit under its own product's key, `Site` coordinates must be in range, and every radial of a `Sweep` must share its `elevation_number` | #PR |
 
-Unchanged: `VcpNumber` serializes as its `u16` number (as `VCPNumber` already did), `CfpStatus` keeps its snake_case
-variant names, and the field names of `Scan` and `Sweep` are the same. The `nexrad-model/tests/snapshots/` files
+Unchanged: `VcpNumber` serializes as its `u16` number (as `VCPNumber` already did), and the field names of `Scan` and
+`Sweep` are the same. From 1.0, every serialized field name equals its accessor's name, every enum variant serializes
+as its PascalCase Rust name, and this representation is stable within 1.x. The `nexrad-model/tests/snapshots/` files
 show the 1.0 serialized form of a real scan.
 
 Data serialized by `nexrad-model` 0.1.0 is further away: its `Scan` held a `coverage_pattern_number` instead of a
@@ -1331,6 +1337,10 @@ items that replace nothing are in the CHANGELOGs.
 | `meta::registry::SiteEntry::to_site() -> Site` | `-> Result<Site>` |
 | `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, reason }`, `MomentDataLength { expected, actual }`, `InvalidSite { parameter, reason }`, `IndexOutOfBounds { row, column, rows, columns }` |
 | `result::Error::ElevationMismatch` (unit variant) | `ElevationMismatch { expected: u8, actual: u8 }` |
+| serde: `data::MomentData` keys `first_gate_range`, `gate_interval`, `values` (a sequence of integers) | `first_gate_range_meters`, `gate_interval_meters`, `raw_values` (a byte string) |
+| serde: `data::{SweepField, CartesianField, VerticalField}` key `status` | `statuses` |
+| serde: `data::CfpStatus` variants in snake_case | PascalCase variant names |
+| serde: `Deserialize` for `data::{SweepField, CartesianField, VerticalField, MomentData, Radial, Sweep}` and `meta::Site` (no validation) | Validates as the constructors and builders do |
 
 </details>
 

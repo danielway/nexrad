@@ -151,6 +151,20 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The `geo` module uses one documented model, a spherical earth of radius 6371 km with 4/3 effective-radius refraction
   and the antenna at its height above mean sea level (the docs claimed WGS-84). `polar_to_geo` measures the beam from
   the antenna, which moves its heights and positions by under a metre at 300 km. (#188)
+- With `serde`, the serialized representation is stable within 1.x, and every serialized field name equals its
+  accessor's name (#PR):
+  - `MomentData`: `first_gate_range` → `first_gate_range_meters`, `gate_interval` → `gate_interval_meters`, `values`
+    → `raw_values`.
+  - `SweepField`, `CartesianField` and `VerticalField`: `status` → `statuses`.
+  - The `Debug` output of `MomentData` shows the renamed fields.
+- With `serde`, `MomentData`'s raw gate bytes serialize as a byte string instead of a sequence of integers. Formats
+  without a bytes type, such as JSON, still write an array of integers, and both forms deserialize. (#PR)
+- With `serde`, `CfpStatus` variants serialize as their PascalCase names (`"FilterNotApplied"`), like every other model
+  enum; it used snake_case (`"filter_not_applied"`). (#PR)
+- With `serde`, deserializing `SweepField`, `CartesianField`, `VerticalField`, `MomentData`, `Radial`, `Sweep` and
+  `Site` applies the same validation as their constructors and builders, and fails with the validation error's message
+  for data they reject. Field `values` and `statuses` must each hold one entry per cell, and each `Radial` moment must
+  be stored under its own product's key. (#PR)
 
 ### Removed
 

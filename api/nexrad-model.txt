@@ -205,14 +205,19 @@ impl core::marker::UnsafeUnpin for nexrad_model::data::RadialStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::RadialStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::RadialStatus
 #[non_exhaustive] pub enum nexrad_model::data::VcpNumber
-pub nexrad_model::data::VcpNumber::ClearAir35
-pub nexrad_model::data::VcpNumber::ClearAirLongPulse31
-pub nexrad_model::data::VcpNumber::ClearAirShortPulse32
-pub nexrad_model::data::VcpNumber::GeneralSurveillance215
-pub nexrad_model::data::VcpNumber::Precipitation12
-pub nexrad_model::data::VcpNumber::PrecipitationMpda112
-pub nexrad_model::data::VcpNumber::PrecipitationSz2_212
 pub nexrad_model::data::VcpNumber::Unknown(u16)
+pub nexrad_model::data::VcpNumber::Vcp11
+pub nexrad_model::data::VcpNumber::Vcp112
+pub nexrad_model::data::VcpNumber::Vcp12
+pub nexrad_model::data::VcpNumber::Vcp121
+pub nexrad_model::data::VcpNumber::Vcp21
+pub nexrad_model::data::VcpNumber::Vcp211
+pub nexrad_model::data::VcpNumber::Vcp212
+pub nexrad_model::data::VcpNumber::Vcp215
+pub nexrad_model::data::VcpNumber::Vcp221
+pub nexrad_model::data::VcpNumber::Vcp31
+pub nexrad_model::data::VcpNumber::Vcp32
+pub nexrad_model::data::VcpNumber::Vcp35
 impl nexrad_model::data::VcpNumber
 pub fn nexrad_model::data::VcpNumber::description(&self) -> &'static str
 pub fn nexrad_model::data::VcpNumber::from_number(u16) -> Self
@@ -438,9 +443,13 @@ pub fn nexrad_model::data::Radial::elevation_angle(&self) -> uom::si::f64::Angle
 pub fn nexrad_model::data::Radial::elevation_angle_degrees(&self) -> f32
 pub fn nexrad_model::data::Radial::elevation_number(&self) -> u8
 pub fn nexrad_model::data::Radial::moment(&self, nexrad_model::data::Product) -> core::option::Option<&nexrad_model::data::MomentData>
+pub fn nexrad_model::data::Radial::nyquist_velocity(&self) -> core::option::Option<uom::si::f64::Velocity>
+pub fn nexrad_model::data::Radial::nyquist_velocity_mps(&self) -> core::option::Option<f32>
 pub fn nexrad_model::data::Radial::radial_status(&self) -> nexrad_model::data::RadialStatus
 pub fn nexrad_model::data::Radial::reflectivity(&self) -> core::option::Option<&nexrad_model::data::MomentData>
 pub fn nexrad_model::data::Radial::spectrum_width(&self) -> core::option::Option<&nexrad_model::data::MomentData>
+pub fn nexrad_model::data::Radial::unambiguous_range(&self) -> core::option::Option<uom::si::f64::Length>
+pub fn nexrad_model::data::Radial::unambiguous_range_km(&self) -> core::option::Option<f32>
 pub fn nexrad_model::data::Radial::velocity(&self) -> core::option::Option<&nexrad_model::data::MomentData>
 impl core::clone::Clone for nexrad_model::data::Radial
 pub fn nexrad_model::data::Radial::clone(&self) -> Self
@@ -466,7 +475,9 @@ pub fn nexrad_model::data::RadialBuilder::azimuth_spacing_degrees(self, f32) -> 
 pub fn nexrad_model::data::RadialBuilder::build(self) -> nexrad_model::result::Result<nexrad_model::data::Radial>
 pub fn nexrad_model::data::RadialBuilder::collection_timestamp_millis(self, i64) -> Self
 pub fn nexrad_model::data::RadialBuilder::moment(self, nexrad_model::data::MomentData) -> Self
+pub fn nexrad_model::data::RadialBuilder::nyquist_velocity_mps(self, f32) -> Self
 pub fn nexrad_model::data::RadialBuilder::radial_status(self, nexrad_model::data::RadialStatus) -> Self
+pub fn nexrad_model::data::RadialBuilder::unambiguous_range_km(self, f32) -> Self
 impl core::clone::Clone for nexrad_model::data::RadialBuilder
 pub fn nexrad_model::data::RadialBuilder::clone(&self) -> Self
 impl core::fmt::Debug for nexrad_model::data::RadialBuilder
@@ -483,12 +494,14 @@ impl nexrad_model::data::Scan
 pub fn nexrad_model::data::Scan::coordinate_system(&self) -> core::option::Option<nexrad_model::geo::RadarCoordinateSystem>
 pub fn nexrad_model::data::Scan::coverage_pattern(&self) -> &nexrad_model::data::VolumeCoveragePattern
 pub fn nexrad_model::data::Scan::coverage_pattern_number(&self) -> nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::Scan::elevation_cut(&self, &nexrad_model::data::Sweep) -> core::option::Option<&nexrad_model::data::ElevationCut>
 pub fn nexrad_model::data::Scan::fields(&self, nexrad_model::data::Product) -> alloc::vec::Vec<nexrad_model::data::SweepField>
 pub fn nexrad_model::data::Scan::first_field(&self, nexrad_model::data::Product) -> core::option::Option<(usize, nexrad_model::data::SweepField)>
 pub fn nexrad_model::data::Scan::new(nexrad_model::data::VolumeCoveragePattern, alloc::vec::Vec<nexrad_model::data::Sweep>) -> Self
 pub fn nexrad_model::data::Scan::site(&self) -> core::option::Option<&nexrad_model::meta::Site>
 pub fn nexrad_model::data::Scan::sweeps(&self) -> &[nexrad_model::data::Sweep]
 pub fn nexrad_model::data::Scan::sweeps_at_elevation(&self, f32) -> impl core::iter::traits::iterator::Iterator<Item = &nexrad_model::data::Sweep>
+pub fn nexrad_model::data::Scan::sweeps_with_waveform(&self, nexrad_model::data::WaveformType) -> impl core::iter::traits::iterator::Iterator<Item = &nexrad_model::data::Sweep>
 pub fn nexrad_model::data::Scan::time_range(&self) -> core::option::Option<(chrono::datetime::DateTime<chrono::offset::utc::Utc>, chrono::datetime::DateTime<chrono::offset::utc::Utc>)>
 pub fn nexrad_model::data::Scan::with_site(nexrad_model::meta::Site, nexrad_model::data::VolumeCoveragePattern, alloc::vec::Vec<nexrad_model::data::Sweep>) -> Self
 impl core::clone::Clone for nexrad_model::data::Scan
@@ -801,8 +814,10 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_model::geo::PolarPoint
 pub struct nexrad_model::geo::RadarCoordinateSystem
 impl nexrad_model::geo::RadarCoordinateSystem
 pub fn nexrad_model::geo::RadarCoordinateSystem::antenna_height_meters(&self) -> f64
+pub fn nexrad_model::geo::RadarCoordinateSystem::beam_height_meters(&self, f64, f64) -> f64
 pub fn nexrad_model::geo::RadarCoordinateSystem::gate_location(&self, f64, f64, usize, f64, f64) -> nexrad_model::geo::GeoPoint3D
 pub fn nexrad_model::geo::RadarCoordinateSystem::geo_to_polar(&self, nexrad_model::geo::GeoPoint, f64) -> nexrad_model::geo::PolarPoint
+pub fn nexrad_model::geo::RadarCoordinateSystem::ground_range_km(&self, f64, f64) -> f64
 pub fn nexrad_model::geo::RadarCoordinateSystem::latitude(&self) -> f64
 pub fn nexrad_model::geo::RadarCoordinateSystem::longitude(&self) -> f64
 pub fn nexrad_model::geo::RadarCoordinateSystem::new(&nexrad_model::meta::Site) -> Self

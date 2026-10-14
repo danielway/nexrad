@@ -43,7 +43,7 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::derived::StormR
 impl core::panic::unwind_safe::UnwindSafe for nexrad_process::derived::StormRelativeVelocity
 pub struct nexrad_process::derived::VerticalCrossSection
 impl nexrad_process::derived::VerticalCrossSection
-pub fn nexrad_process::derived::VerticalCrossSection::compute(&self, &[nexrad_model::data::field::SweepField]) -> nexrad_process::result::Result<nexrad_model::data::field::VerticalField>
+pub fn nexrad_process::derived::VerticalCrossSection::compute(&self, &[nexrad_model::data::field::SweepField], &nexrad_model::geo::RadarCoordinateSystem) -> nexrad_process::result::Result<nexrad_model::data::field::VerticalField>
 pub fn nexrad_process::derived::VerticalCrossSection::new(f64, f64, f64, usize, usize) -> nexrad_process::result::Result<Self>
 impl core::clone::Clone for nexrad_process::derived::VerticalCrossSection
 pub fn nexrad_process::derived::VerticalCrossSection::clone(&self) -> Self

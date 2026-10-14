@@ -267,7 +267,10 @@ mod tests {
 
         // Alongside a valid tilt, only the valid values appear.
         let result = vcs
-            .compute(&[make_uniform_field(0.5, 20.0), filtered.clone()])
+            .compute(
+                &[make_uniform_field(0.5, 20.0), filtered.clone()],
+                &coordinate_system(),
+            )
             .unwrap();
         let mut found_valid = false;
         for row in 0..result.height() {
@@ -283,7 +286,7 @@ mod tests {
         assert!(found_valid, "expected at least some valid data");
 
         // A fully filtered tilt contributes nothing.
-        let result = vcs.compute(&[filtered]).unwrap();
+        let result = vcs.compute(&[filtered], &coordinate_system()).unwrap();
         assert!(result
             .statuses()
             .iter()

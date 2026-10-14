@@ -181,3 +181,40 @@ fn render_vertical_reports_vertical_projection() {
     assert!(meta.pixel_to_polar(8.0, 8.0).is_none());
     assert!(meta.pixel_to_geo(8.0, 8.0).is_none());
 }
+
+#[test]
+fn filtered_gates_render_as_background() {
+    const BACKGROUND: [u8; 4] = [1, 2, 3, 255];
+    let scale = default_scale(Product::Reflectivity);
+    let options = RenderOptions::new(100, 100).with_background(BACKGROUND);
+    let all_background =
+        |image: &nexrad_render::RgbaImage| image.pixels().all(|p| p.0 == BACKGROUND);
+
+    let mut sweep = sweep_field();
+    for az in 0..sweep.azimuth_count() {
+        for gate in 0..sweep.gate_count() {
+            sweep.set(az, gate, 40.0, GateStatus::Filtered).unwrap();
+        }
+    }
+    let result = render_sweep(&sweep, &scale, &options).expect("renders");
+    assert!(all_background(result.image()));
+
+    let query = result
+        .query_pixel(&sweep, 70.0, 50.0)
+        .expect("pixel is inside the field");
+    assert_eq!(query.status, GateStatus::Filtered);
+    assert_eq!(query.value, 40.0);
+
+    let mut cartesian = cartesian_field(4, 4);
+    let mut vertical = vertical_field(4, 4);
+    for row in 0..4 {
+        for col in 0..4 {
+            cartesian.set(row, col, 40.0, GateStatus::Filtered).unwrap();
+            vertical.set(row, col, 40.0, GateStatus::Filtered).unwrap();
+        }
+    }
+    let result = render_cartesian(&cartesian, &scale, &options).expect("renders");
+    assert!(all_background(result.image()));
+    let result = render_vertical(&vertical, &scale, &options).expect("renders");
+    assert!(all_background(result.image()));
+}

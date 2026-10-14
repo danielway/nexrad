@@ -183,6 +183,37 @@ mod tests {
     }
 
     #[test]
+    fn test_cref_skips_filtered_gates() {
+        let coord_sys = RadarCoordinateSystem::new(&test_site());
+        let extent = coord_sys.sweep_extent(25.0);
+
+        let mut filtered = make_uniform_field(1.5, 60.0);
+        for az in 0..filtered.azimuth_count() {
+            for gate in 0..filtered.gate_count() {
+                filtered.set(az, gate, 60.0, GateStatus::Filtered).unwrap();
+            }
+        }
+
+        let result = CompositeReflectivity
+            .compute(
+                &[make_uniform_field(0.5, 20.0), filtered.clone()],
+                &coord_sys,
+                &extent,
+                (10, 10),
+            )
+            .unwrap();
+        assert_eq!(result.get(5, 5), Some((20.0, GateStatus::Valid)));
+
+        let result = CompositeReflectivity
+            .compute(&[filtered], &coord_sys, &extent, (10, 10))
+            .unwrap();
+        assert_eq!(
+            result.get(5, 5).map(|(_, status)| status),
+            Some(GateStatus::NoData)
+        );
+    }
+
+    #[test]
     fn test_cref_empty_fields_error() {
         let coord_sys = RadarCoordinateSystem::new(&test_site());
         let extent = coord_sys.sweep_extent(25.0);

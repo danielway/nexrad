@@ -188,6 +188,18 @@ mod tests {
     }
 
     #[test]
+    fn test_srv_preserves_filtered() {
+        let mut field = make_velocity_field();
+        field.set(2, 2, 10.0, GateStatus::Filtered).unwrap();
+
+        let srv = StormRelativeVelocity::new(180.0, 10.0).unwrap();
+        let result = srv.process(&field).unwrap();
+
+        // A filtered gate keeps its original value rather than being adjusted.
+        assert_eq!(result.get(2, 2), Some((10.0, GateStatus::Filtered)));
+    }
+
+    #[test]
     fn test_srv_negative_speed_error() {
         assert!(StormRelativeVelocity::new(0.0, -5.0).is_err());
     }

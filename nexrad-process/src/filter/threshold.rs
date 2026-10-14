@@ -4,8 +4,9 @@ use nexrad_model::data::{GateStatus, SweepField};
 
 /// Masks gates whose values fall outside a specified range.
 ///
-/// Gates with values below `min` or above `max` are set to [`GateStatus::NoData`].
-/// Either bound may be `None` to leave that side unbounded.
+/// Valid gates with values below `min` or above `max` are marked [`GateStatus::Filtered`] and
+/// keep their values. Either bound may be `None` to leave that side unbounded. Gates that are not
+/// [`GateStatus::Valid`] pass through unchanged.
 ///
 /// # Example
 ///
@@ -78,7 +79,7 @@ impl SweepProcessor for ThresholdFilter {
                     let above_max = self.max.is_some_and(|m| val > m);
 
                     if below_min || above_max {
-                        output.set(az_idx, gate_idx, 0.0, GateStatus::NoData)?;
+                        output.set(az_idx, gate_idx, val, GateStatus::Filtered)?;
                     }
                 }
             }
@@ -126,12 +127,11 @@ mod tests {
             for gate in 0..5 {
                 let original_value = (az * 5 + gate) as f32 * 5.0;
                 let (val, status) = result.get(az, gate).unwrap();
+                assert_eq!(val, original_value);
                 if original_value < 20.0 {
-                    assert_eq!(status, GateStatus::NoData);
-                    assert_eq!(val, 0.0);
+                    assert_eq!(status, GateStatus::Filtered);
                 } else {
                     assert_eq!(status, GateStatus::Valid);
-                    assert_eq!(val, original_value);
                 }
             }
         }
@@ -150,7 +150,7 @@ mod tests {
                 let original_value = (az * 5 + gate) as f32 * 5.0;
                 let (_, status) = result.get(az, gate).unwrap();
                 if original_value > 40.0 {
-                    assert_eq!(status, GateStatus::NoData);
+                    assert_eq!(status, GateStatus::Filtered);
                 } else {
                     assert_eq!(status, GateStatus::Valid);
                 }
@@ -171,7 +171,7 @@ mod tests {
                 let original_value = (az * 5 + gate) as f32 * 5.0;
                 let (_, status) = result.get(az, gate).unwrap();
                 if original_value < 15.0 || original_value > 50.0 {
-                    assert_eq!(status, GateStatus::NoData);
+                    assert_eq!(status, GateStatus::Filtered);
                 } else {
                     assert_eq!(status, GateStatus::Valid);
                 }
@@ -193,6 +193,20 @@ mod tests {
         // The NoData gate should remain NoData
         let (_, status) = result.get(1, 2).unwrap();
         assert_eq!(status, GateStatus::NoData);
+        Ok(())
+    }
+
+    #[test]
+    fn test_threshold_preserves_filtered() -> Result<()> {
+        let mut field = make_test_field();
+        field.set(1, 2, 35.0, GateStatus::Filtered).unwrap();
+
+        let filter = ThresholdFilter::new(None, Some(20.0))?;
+
+        let result = filter.process(&field)?;
+
+        // An already-filtered gate keeps its value and status.
+        assert_eq!(result.get(1, 2), Some((35.0, GateStatus::Filtered)));
         Ok(())
     }
 

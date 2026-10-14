@@ -239,9 +239,9 @@ let Some(row) = field.radial_values(azimuth_idx) else { return Ok(()) };
 | `VolumeCoveragePattern::doppler_velocity_resolution()` | `VolumeCoveragePattern::doppler_velocity_resolution_mps()` | #182 |
 | `VolumeCoveragePattern::{sails_cuts, mrle_cuts}()` | `VolumeCoveragePattern::{sails_cut_count, mrle_cut_count}()` | #182 |
 | `geo::PolarPoint::{azimuth_degrees, elevation_degrees}` | `geo::PolarPoint::{azimuth_angle_degrees, elevation_angle_degrees}` | #182 |
-| `VcpNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `VcpNumber::{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}` | Same names as `nexrad_decode::messages::VcpNumber`; see the table below. #PRNUM |
+| `VcpNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `VcpNumber::{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}` | Same names as `nexrad_decode::messages::VcpNumber`; see the table below. #188 |
 
-`VcpNumber` variants are named by pattern number (#PRNUM), as in `nexrad-decode`:
+`VcpNumber` variants are named by pattern number (#188), as in `nexrad-decode`:
 
 | 1.0.0-rc.2 | 1.0 |
 |---|---|
@@ -300,18 +300,18 @@ let Some(row) = field.radial_values(azimuth_idx) else { return Ok(()) };
   by `KHDC`), the invalid Alaska aliases `KABC`, `KACG`, `KAIH` and `KAKC` (use the `P...` identifiers), and a duplicate
   `KCCX` entry. `KFDX` and `KPBZ` coordinates were corrected. `registry::site_by_id("KLIX")` now returns `None`, and
   `nearest_site` can return a different site near those locations.
-- **`geo_to_polar` returns different ranges** (#PRNUM). It is now the exact inverse of `polar_to_geo` under one model
+- **`geo_to_polar` returns different ranges** (#188). It is now the exact inverse of `polar_to_geo` under one model
   (spherical earth of radius 6371 km, 4/3 effective-radius refraction, antenna height above mean sea level). It used
   `ground / cos(elevation)` and ignored the antenna height, so the new range is longer, by about 3.6 km at 300 km on a
   19.5 degree tilt and by metres on the low tilts. `polar_to_geo` results move by under a metre. The new
   `beam_height_meters` and `ground_range_km` expose the same geometry.
-- **`registry::nearest_site` uses great-circle distance** (#PRNUM), so near the antimeridian it can return a different
+- **`registry::nearest_site` uses great-circle distance** (#188), so near the antimeridian it can return a different
   (correct) site. Registry sites have a feedhorn height of 0; prefer `Scan::site()`, decoded from the volume data
   block, for a `RadarCoordinateSystem`.
-- **Radials carry Nyquist velocity and unambiguous range** (#PRNUM). `Radial::nyquist_velocity_mps()` and
+- **Radials carry Nyquist velocity and unambiguous range** (#188). `Radial::nyquist_velocity_mps()` and
   `unambiguous_range_km()` return `Option<f32>`, filled by the `nexrad-decode` conversions. Dealias with the per-radial
   Nyquist velocity: Doppler PRF sectors vary by azimuth within a sweep.
-- **Sweeps link to their elevation cut** (#PRNUM). Split cuts, SAILS, MRLE and MPDA repeat elevations, so
+- **Sweeps link to their elevation cut** (#188). Split cuts, SAILS, MRLE and MPDA repeat elevations, so
   `Scan::fields`, `first_field` and `sweeps_at_elevation` can return several sweeps per angle with reflectivity and
   velocity in different ones. Select by cut with `Scan::elevation_cut(&sweep)` and
   `Scan::sweeps_with_waveform(WaveformType::ContiguousSurveillance)`.
@@ -426,9 +426,9 @@ Scan assembly moved into this crate (#169). If you assembled a `Scan` from decod
   accessors; enable the feature or switch to the unit-suffixed accessors.
 - **VCP 32 is recognised.** `VcpNumber::Vcp32` replaces what decoded as `Unknown(32)` in the type 31 path (#163).
   `VcpNumber` also implements `Display` (`VCP 212`), which the old `VolumeCoveragePattern` enum did not.
-- **VCPs 11, 21, 121, 211 and 221 are recognised** (#PRNUM): `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211` and `Vcp221` replace
+- **VCPs 11, 21, 121, 211 and 221 are recognised** (#188): `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211` and `Vcp221` replace
   `Unknown(n)`, and the variants match `nexrad_model::data::VcpNumber` one for one.
-- **Converted radials carry radar physics** (#PRNUM). `digital_radar_data::Message::radial()`/`into_radial()` set the
+- **Converted radials carry radar physics** (#188). `digital_radar_data::Message::radial()`/`into_radial()` set the
   model radial's Nyquist velocity and unambiguous range from the radial data block (left `None` when the block is
   absent), and the legacy (type 1) conversion sets the unambiguous range from its header.
 - **Negative elevation angles decode correctly** (#146). VCP elevation and sector angles with the sign bit set were
@@ -593,7 +593,7 @@ let composite = CompositeReflectivity.compute(&fields, &coords, &extent, (512, 5
 | `ScanDerivedProduct::compute(&self, scan, fields, coords, extent, resolution)` | `compute(&self, fields, coords, extent, resolution)` | Drop the `scan` argument in calls and in your own impls. #175 |
 | `ScanProcessor` trait | Removed (no implementations); use a free function or your own trait | #175 |
 | `VerticalCrossSection::new(azimuth_degrees: f32, max_range_km, max_altitude_m, ..)` | `new(azimuth_angle_degrees: f64, max_range_km, max_altitude_meters, ..)`; only the type of the first argument affects callers | #164, #182 |
-| `VerticalCrossSection::compute(&fields)` | `compute(&fields, &coordinate_system)`, for example with `scan.coordinate_system()` | The vertical axis is altitude above mean sea level, including the antenna height, and the horizontal axis is ground range. #PRNUM |
+| `VerticalCrossSection::compute(&fields)` | `compute(&fields, &coordinate_system)`, for example with `scan.coordinate_system()` | The vertical axis is altitude above mean sea level, including the antenna height, and the horizontal axis is ground range. #188 |
 | `StormCell::elevation_degrees()` | `StormCell::elevation_angle_degrees()` | #182 |
 | `StormCell::max_reflectivity_azimuth_degrees()` | `StormCell::max_reflectivity_azimuth_angle_degrees()` | #182 |
 
@@ -759,7 +759,7 @@ II source files.** There is no compatibility shim. The incompatible changes are:
 | `Site` | `latitude` and `longitude` are `f64` (were `f32`). Self-describing formats such as JSON still read old values; fixed-width binary formats such as bincode do not | #164 |
 | `Site` | `height_meters` and `tower_height_meters` are renamed `site_elevation_meters` and `feedhorn_height_meters` | #182 |
 | `Radial` | `collection_timestamp` is renamed `collection_timestamp_millis` | #182 |
-| `Radial` | Gains `nyquist_velocity_mps` and `unambiguous_range_km` (`Option<f32>`). Self-describing formats such as JSON read data without them as `None`; fixed-width binary formats such as bincode do not | #PRNUM |
+| `Radial` | Gains `nyquist_velocity_mps` and `unambiguous_range_km` (`Option<f32>`). Self-describing formats such as JSON read data without them as `None`; fixed-width binary formats such as bincode do not | #188 |
 | `SweepField` | `elevation_degrees` and `azimuths` are renamed `elevation_angle_degrees` and `azimuth_angles_degrees` | #182 |
 | `VolumeCoveragePattern` | `doppler_velocity_resolution`, `sails_cuts` and `mrle_cuts` are renamed `doppler_velocity_resolution_mps`, `sails_cut_count` and `mrle_cut_count` | #182 |
 | `ElevationCut` | `elevation_angle_degrees` is `f32` (was `f64`) | #182 |

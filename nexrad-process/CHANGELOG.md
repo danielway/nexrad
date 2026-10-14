@@ -49,7 +49,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   vertical cross-section, storm cell detection). (#187)
 - `derived::VerticalCrossSection::compute(&self, fields, coordinate_system)` takes the radar's
   `RadarCoordinateSystem` and places each tilt with its `ground_range_km` and `beam_height_meters`: the horizontal axis
-  is ground range and the vertical axis is altitude above mean sea level, including the antenna height. (#PRNUM)
+  is ground range and the vertical axis is altitude above mean sea level, including the antenna height. (#188)
 
 ### Removed
 

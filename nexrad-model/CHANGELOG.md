@@ -37,12 +37,12 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   not carry them; with `uom` also `nyquist_velocity()` and `unambiguous_range()`), set with
   `RadialBuilder::nyquist_velocity_mps(f32)` and `RadialBuilder::unambiguous_range_km(f32)`. The Nyquist velocity is
   per radial because Doppler PRF sectors vary by azimuth. `RadialBuilder::build` returns `Error::InvalidGeometry` for a
-  value that is not finite and positive. (#PRNUM)
+  value that is not finite and positive. (#188)
 - `Scan::elevation_cut(&Sweep) -> Option<&ElevationCut>`, the coverage pattern cut a sweep was collected with, and
-  `Scan::sweeps_with_waveform(WaveformType)`, the sweeps whose cut uses a waveform. (#PRNUM)
-- `VcpNumber::{Vcp11, Vcp21, Vcp121, Vcp211, Vcp221}`; these numbers were `Unknown(n)`. (#PRNUM)
+  `Scan::sweeps_with_waveform(WaveformType)`, the sweeps whose cut uses a waveform. (#188)
+- `VcpNumber::{Vcp11, Vcp21, Vcp121, Vcp211, Vcp221}`; these numbers were `Unknown(n)`. (#188)
 - `RadarCoordinateSystem::beam_height_meters(range_km, elevation_angle_degrees)` (above mean sea level) and
-  `RadarCoordinateSystem::ground_range_km(range_km, elevation_angle_degrees)`. (#PRNUM)
+  `RadarCoordinateSystem::ground_range_km(range_km, elevation_angle_degrees)`. (#188)
 
 ### Changed
 
@@ -144,13 +144,13 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Error::ElevationMismatch` is a struct variant carrying the `expected` and `actual` elevation numbers. (#185)
 - `GateStatus` implements `From<MomentValue>` instead of `From<&MomentValue>`: write `GateStatus::from(value)` instead
   of `GateStatus::from(&value)`. (#187)
-- `VcpNumber` variants are named by pattern number, matching `nexrad_decode::messages::VcpNumber` (#PRNUM):
+- `VcpNumber` variants are named by pattern number, matching `nexrad_decode::messages::VcpNumber` (#188):
   `Precipitation12` → `Vcp12`, `ClearAirLongPulse31` → `Vcp31`, `ClearAirShortPulse32` → `Vcp32`, `ClearAir35` →
   `Vcp35`, `PrecipitationMpda112` → `Vcp112`, `PrecipitationSz2_212` → `Vcp212`, `GeneralSurveillance215` → `Vcp215`.
   `description()` and the serialized `u16` are unchanged.
 - The `geo` module uses one documented model, a spherical earth of radius 6371 km with 4/3 effective-radius refraction
   and the antenna at its height above mean sea level (the docs claimed WGS-84). `polar_to_geo` measures the beam from
-  the antenna, which moves its heights and positions by under a metre at 300 km. (#PRNUM)
+  the antenna, which moves its heights and positions by under a metre at 300 km. (#188)
 
 ### Removed
 
@@ -175,6 +175,6 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   spacing outside the covered sector instead of matching the far end. (#185)
 - `RadarCoordinateSystem::geo_to_polar` is the exact inverse of `polar_to_geo`. It used the flat-earth
   `ground / cos(elevation)` and ignored antenna height, which put the range about 3.6 km short at 300 km on a 19.5
-  degree tilt. (#PRNUM)
+  degree tilt. (#188)
 - `registry::nearest_site` compares great-circle (haversine) distances, so it is correct across the antimeridian; west
-  of 180 degrees in the Bering Sea it returned Guam instead of Nome. (#PRNUM)
+  of 180 degrees in the Bering Sea it returned Guam instead of Nome. (#188)

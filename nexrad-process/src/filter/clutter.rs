@@ -5,7 +5,9 @@ use nexrad_model::data::{GateStatus, SweepField};
 /// Correlation coefficient-based clutter removal.
 ///
 /// Masks gates in a target field (e.g., reflectivity) where the corresponding
-/// gate in a correlation coefficient (CC) field falls below a threshold. This is
+/// gate in a correlation coefficient (CC) field is not valid or falls below a threshold.
+/// Masked gates are marked [`GateStatus::Filtered`] and keep their values; gates that are
+/// not [`GateStatus::Valid`] in the target field pass through unchanged. This is
 /// a standard technique for removing non-meteorological echoes such as ground
 /// clutter, biological targets, and debris.
 ///
@@ -71,7 +73,7 @@ impl SweepProcessor for CorrelationCoefficientFilter {
 
         for az_idx in 0..input.azimuth_count() {
             for gate_idx in 0..shared_gates {
-                let Some((_, input_status)) = input.get(az_idx, gate_idx) else {
+                let Some((input_val, input_status)) = input.get(az_idx, gate_idx) else {
                     continue;
                 };
                 if input_status != GateStatus::Valid {
@@ -84,7 +86,7 @@ impl SweepProcessor for CorrelationCoefficientFilter {
 
                 // If CC is invalid or below threshold, mask the target gate
                 if cc_status != GateStatus::Valid || cc_val < self.threshold {
-                    output.set(az_idx, gate_idx, 0.0, GateStatus::NoData)?;
+                    output.set(az_idx, gate_idx, input_val, GateStatus::Filtered)?;
                 }
             }
         }
@@ -154,12 +156,9 @@ mod tests {
         let filter = CorrelationCoefficientFilter::new(0.90, cc).unwrap();
         let result = filter.process(&target).unwrap();
 
-        // Low CC gates should be masked
-        let (_, status) = result.get(1, 2).unwrap();
-        assert_eq!(status, GateStatus::NoData);
-
-        let (_, status) = result.get(1, 3).unwrap();
-        assert_eq!(status, GateStatus::NoData);
+        // Low CC gates are masked and keep their values
+        assert_eq!(result.get(1, 2), Some((30.0, GateStatus::Filtered)));
+        assert_eq!(result.get(1, 3), Some((30.0, GateStatus::Filtered)));
 
         // High CC gate should be preserved
         let (val, status) = result.get(1, 1).unwrap();
@@ -175,8 +174,7 @@ mod tests {
         let filter = CorrelationCoefficientFilter::new(0.90, cc).unwrap();
         let result = filter.process(&target).unwrap();
 
-        let (_, status) = result.get(0, 0).unwrap();
-        assert_eq!(status, GateStatus::NoData);
+        assert_eq!(result.get(0, 0), Some((30.0, GateStatus::Filtered)));
     }
 
     #[test]

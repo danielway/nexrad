@@ -287,16 +287,20 @@ pub enum GateStatus {
     Valid,
     /// The signal was below the detection threshold.
     BelowThreshold,
-    /// The velocity was range-folded (aliased).
+    /// The gate exceeded the maximum unambiguous range (a second-trip echo), so its value is
+    /// unavailable.
     RangeFolded,
     /// No data is available for this gate.
     NoData,
+    /// The gate had a valid value that a processing step removed (for example a threshold or
+    /// correlation-coefficient filter); the value is kept so consumers can still inspect it.
+    Filtered,
 }
 
-impl From<&MomentValue> for GateStatus {
+impl From<MomentValue> for GateStatus {
     /// Maps a decoded moment value to its gate status. Clutter filter power status codes carry
     /// no measurement and map to [`GateStatus::NoData`].
-    fn from(value: &MomentValue) -> Self {
+    fn from(value: MomentValue) -> Self {
         match value {
             MomentValue::Value(_) => GateStatus::Valid,
             MomentValue::BelowThreshold => GateStatus::BelowThreshold,

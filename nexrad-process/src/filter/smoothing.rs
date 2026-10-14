@@ -6,8 +6,8 @@ use nexrad_model::data::{GateStatus, SweepField};
 ///
 /// Replaces each valid gate value with the median of the valid values in its
 /// neighborhood. The kernel size is specified as the number of gates in each
-/// dimension (must be odd). Invalid gates (NoData, BelowThreshold, RangeFolded)
-/// are excluded from the median computation and left unchanged.
+/// dimension (must be odd). Gates that are not [`GateStatus::Valid`] (including
+/// [`GateStatus::Filtered`]) are excluded from the median computation and left unchanged.
 ///
 /// The azimuth dimension wraps around 360 degrees.
 ///
@@ -132,7 +132,8 @@ impl SweepProcessor for MedianFilter {
 ///
 /// Applies a 2D Gaussian kernel over the azimuth x range grid. The sigma values
 /// control the smoothing width in each dimension (in number of gates). Only valid
-/// gates contribute to the weighted average; invalid gates are left unchanged.
+/// gates contribute to the weighted average; gates that are not [`GateStatus::Valid`]
+/// (including [`GateStatus::Filtered`]) are left unchanged.
 ///
 /// The azimuth dimension wraps around 360 degrees.
 ///
@@ -349,6 +350,42 @@ mod tests {
         let result = filter.process(&field)?;
         let (_, status) = result.get(2, 2).unwrap();
         assert_eq!(status, GateStatus::NoData);
+        Ok(())
+    }
+
+    #[test]
+    fn test_median_filter_ignores_and_preserves_filtered() -> Result<()> {
+        let mut field = make_test_field();
+        field.set(2, 1, 1000.0, GateStatus::Filtered).unwrap();
+
+        let filter = MedianFilter::new(1, 3)?;
+
+        let result = filter.process(&field)?;
+        // With the filtered neighbour included the median at gate 0 would be 1000.
+        assert_eq!(result.get(2, 0), Some((30.0, GateStatus::Valid)));
+        assert_eq!(result.get(2, 1), Some((1000.0, GateStatus::Filtered)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_gaussian_smooth_ignores_and_preserves_filtered() -> Result<()> {
+        let mut field = make_test_field();
+        field.set(2, 2, 1000.0, GateStatus::Filtered).unwrap();
+
+        let smoother = GaussianSmooth::new(1.0, 1.0)?;
+
+        let result = smoother.process(&field)?;
+        for az in 0..5 {
+            for gate in 0..5 {
+                let (val, status) = result.get(az, gate).unwrap();
+                if (az, gate) == (2, 2) {
+                    assert_eq!((val, status), (1000.0, GateStatus::Filtered));
+                } else {
+                    assert!((val - 30.0).abs() < 0.01, "Expected ~30.0, got {}", val);
+                    assert_eq!(status, GateStatus::Valid);
+                }
+            }
+        }
         Ok(())
     }
 

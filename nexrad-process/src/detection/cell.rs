@@ -671,6 +671,28 @@ mod tests {
     }
 
     #[test]
+    fn test_filtered_gates_not_included() {
+        let cs = test_coord_system();
+        let mut field = make_empty_field(100);
+
+        // A radial run of five gates whose middle gate was filtered with a strong value
+        for gate in 20..25 {
+            field.set(10, gate, 40.0, GateStatus::Valid).unwrap();
+        }
+        field.set(10, 22, 60.0, GateStatus::Filtered).unwrap();
+
+        let detector = StormCellDetector::new(35.0, 1).unwrap();
+        let cells = detector.detect(&field, &cs).unwrap();
+
+        // The filtered gate splits the run and contributes neither area nor intensity
+        assert_eq!(cells.len(), 2);
+        for cell in &cells {
+            assert_eq!(cell.gate_count(), 2);
+            assert_eq!(cell.max_reflectivity_dbz(), 40.0);
+        }
+    }
+
+    #[test]
     fn test_varying_reflectivity_weighted_centroid() {
         let cs = test_coord_system();
         let mut field = make_empty_field(100);

@@ -324,20 +324,17 @@ fn test_non_cfp_moment_values_have_no_status_codes() {
 
 #[test]
 fn test_gate_status_from_moment_value() {
+    assert_eq!(GateStatus::from(MomentValue::Value(1.0)), GateStatus::Valid);
     assert_eq!(
-        GateStatus::from(&MomentValue::Value(1.0)),
-        GateStatus::Valid
-    );
-    assert_eq!(
-        GateStatus::from(&MomentValue::BelowThreshold),
+        GateStatus::from(MomentValue::BelowThreshold),
         GateStatus::BelowThreshold
     );
     assert_eq!(
-        GateStatus::from(&MomentValue::RangeFolded),
+        GateStatus::from(MomentValue::RangeFolded),
         GateStatus::RangeFolded
     );
     assert_eq!(
-        GateStatus::from(&MomentValue::CfpStatus(CfpStatus::FilterNotApplied)),
+        GateStatus::from(MomentValue::CfpStatus(CfpStatus::FilterNotApplied)),
         GateStatus::NoData
     );
 }

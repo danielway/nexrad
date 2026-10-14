@@ -43,6 +43,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   (#182)
 - `derived::VerticalCrossSection::new` parameters are named `azimuth_angle_degrees` and `max_altitude_meters`
   (formerly `azimuth_degrees` and `max_altitude_m`); the types are unchanged. (#182)
+- `ThresholdFilter` and `CorrelationCoefficientFilter` mark the gates they remove `GateStatus::Filtered` and keep their
+  values, instead of setting `GateStatus::NoData` with `0.0`. The other processors use only `Valid` gates, so they
+  pass `Filtered` gates through unchanged (smoothing, storm-relative velocity) or skip them (composite reflectivity,
+  vertical cross-section, storm cell detection). (#187)
 
 ### Removed
 

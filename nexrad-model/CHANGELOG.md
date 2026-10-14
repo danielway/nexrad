@@ -31,6 +31,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Structured `Error` variants: `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, reason }`,
   `MomentDataLength { expected, actual }`, `InvalidSite { parameter, reason }` and
   `IndexOutOfBounds { row, column, rows, columns }`. `Error` implements `Clone` and `PartialEq`. (#185)
+- `GateStatus::Filtered`, for a gate whose valid value a processing step removed; the value is kept. `GateStatus` is
+  exhaustive, so exhaustive matches need a new arm. (#187)
 
 ### Changed
 
@@ -76,7 +78,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `MomentData::from_fixed_point` takes the `Product` as a new first parameter. (#170)
 - `RadialBuilder::moment(data)` stores a moment under `data.product()`; it replaces the per-product setters
   (`reflectivity`, `velocity`, ..., `clutter_filter_power`). (#170)
-- `From<&MomentValue> for GateStatus` maps `CfpStatus(_)` to `GateStatus::NoData`. (#170)
+- `GateStatus::from` maps `MomentValue::CfpStatus(_)` to `GateStatus::NoData`. (#170)
 - With `serde`, `MomentData` serializes as a struct with a `product` field (it was `serde(transparent)`), and
   `SweepField` gains a `product` field. (#170)
 - The site registry matches NOAA's operational radar list: `KBHX`, `KDOX`, `KHDC`, `KLGX` and `PAPD` are added; `KLIX`
@@ -130,6 +132,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   elevation angle is finite. (#185)
 - `Site::identifier()` returns `&str` (it returned `&[u8; 4]`). (#185)
 - `Error::ElevationMismatch` is a struct variant carrying the `expected` and `actual` elevation numbers. (#185)
+- `GateStatus` implements `From<MomentValue>` instead of `From<&MomentValue>`: write `GateStatus::from(value)` instead
+  of `GateStatus::from(&value)`. (#187)
 
 ### Removed
 

@@ -239,6 +239,41 @@ mod tests {
     }
 
     #[test]
+    fn test_vertical_skips_filtered_gates() {
+        let mut filtered = make_uniform_field(0.5, 60.0);
+        for az in 0..filtered.azimuth_count() {
+            for gate in 0..filtered.gate_count() {
+                filtered.set(az, gate, 60.0, GateStatus::Filtered).unwrap();
+            }
+        }
+        let vcs = VerticalCrossSection::new(180.0, 25.0, 5000.0, 50, 25).unwrap();
+
+        // Alongside a valid tilt, only the valid values appear.
+        let result = vcs
+            .compute(&[make_uniform_field(0.5, 20.0), filtered.clone()])
+            .unwrap();
+        let mut found_valid = false;
+        for row in 0..result.height() {
+            for col in 0..result.width() {
+                let (val, status) = result.get(row, col).unwrap();
+                assert_ne!(status, GateStatus::Filtered);
+                if status == GateStatus::Valid {
+                    assert_eq!(val, 20.0);
+                    found_valid = true;
+                }
+            }
+        }
+        assert!(found_valid, "expected at least some valid data");
+
+        // A fully filtered tilt contributes nothing.
+        let result = vcs.compute(&[filtered]).unwrap();
+        assert!(result
+            .statuses()
+            .iter()
+            .all(|status| *status == GateStatus::NoData));
+    }
+
+    #[test]
     fn test_vertical_empty_fields_error() {
         let vcs = VerticalCrossSection::new(180.0, 25.0, 5000.0, 50, 25).unwrap();
         assert!(vcs.compute(&[]).is_err());

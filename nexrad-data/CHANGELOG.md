@@ -105,3 +105,12 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   (#149, #154)
 - `volume::File::records()` returns `Error::TruncatedRecord` instead of panicking when the data is shorter than the
   24-byte volume header. (#171)
+- `aws::realtime`: after a volume's Start chunk, `ChunkIterator::next_expected_time` and `chunk_stream` expect
+  sequence 2 about 1.5 s later instead of after the 8.5 s inter-volume gap. (#184)
+- `aws::realtime`: real-time timing statistics keep samples for the first chunk of a sweep, which include the
+  inter-sweep transition, apart from samples for chunks within a sweep. (#184)
+- `aws::realtime`: `ChunkIterator` and `chunk_stream` record the interval into each chunk under that chunk's
+  characteristics and read it back under the same key when predicting the chunk, so learned timings are applied at
+  sweep boundaries instead of falling back to the physics model. (#184)
+- The hop from the Start chunk to sequence 2 is no longer recorded in the timing statistics; its estimate is a
+  fixed gap, so the sample only skewed the first-in-sweep bucket of the first elevation. (#184)

@@ -17,7 +17,7 @@ const TEST_NEXRAD_FILE: &str = concat!(
 );
 
 /// Returns the VCP from the test archive volume, decoding it once per test binary.
-fn get_test_vcp() -> volume_coverage_pattern::Message<'static> {
+pub(super) fn get_test_vcp() -> volume_coverage_pattern::Message<'static> {
     static VCP: OnceLock<volume_coverage_pattern::Message<'static>> = OnceLock::new();
     VCP.get_or_init(|| {
         let data = std::fs::read(TEST_NEXRAD_FILE).expect("read test volume");
@@ -235,18 +235,21 @@ fn test_chunk_characteristics_equality() {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     let char2 = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     let char3 = ChunkCharacteristics {
         chunk_type: ChunkType::End,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     assert_eq!(char1, char2);
@@ -261,12 +264,14 @@ fn test_chunk_characteristics_hash() {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     let char2 = ChunkCharacteristics {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     let mut set = HashSet::new();
@@ -275,6 +280,53 @@ fn test_chunk_characteristics_hash() {
 
     // char1 and char2 are equal, so set should have only 1 element
     assert_eq!(set.len(), 1);
+}
+
+#[test]
+fn test_chunk_characteristics_distinguish_sweep_position() {
+    use std::collections::HashSet;
+
+    let first = ChunkCharacteristics {
+        chunk_type: ChunkType::Intermediate,
+        waveform_type: WaveformType::ContiguousSurveillance,
+        channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: true,
+    };
+    let intra = ChunkCharacteristics {
+        is_first_in_sweep: false,
+        ..first
+    };
+
+    assert_ne!(first, intra);
+
+    let set: HashSet<_> = [first, intra].into_iter().collect();
+    assert_eq!(set.len(), 2);
+}
+
+#[test]
+fn test_chunk_characteristics_for_chunk() {
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    // The Start chunk belongs to no elevation
+    assert!(ChunkCharacteristics::for_chunk(1, ChunkType::Start, &vcp, &mapper).is_none());
+    assert!(ChunkCharacteristics::for_chunk(
+        mapper.final_sequence() + 1,
+        ChunkType::Intermediate,
+        &vcp,
+        &mapper
+    )
+    .is_none());
+
+    // Sequences 2 and 3 share the first elevation and differ only in sweep position
+    let first = ChunkCharacteristics::for_chunk(2, ChunkType::Intermediate, &vcp, &mapper).unwrap();
+    let second =
+        ChunkCharacteristics::for_chunk(3, ChunkType::Intermediate, &vcp, &mapper).unwrap();
+    assert!(first.is_first_in_sweep);
+    assert!(!second.is_first_in_sweep);
+    assert_eq!(first.waveform_type, second.waveform_type);
+    assert_eq!(first.channel_configuration, second.channel_configuration);
+    assert_ne!(first, second);
 }
 
 // === ChunkTimingStats tests ===
@@ -286,6 +338,7 @@ fn test_chunk_timing_stats_new() {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     // New stats should have no samples
@@ -301,6 +354,7 @@ fn test_chunk_timing_stats_add_and_retrieve() {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     // Add a timing sample
@@ -322,6 +376,7 @@ fn test_chunk_timing_stats_average() {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     // Add multiple samples
@@ -346,12 +401,14 @@ fn test_chunk_timing_stats_different_characteristics() {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     let char2 = ChunkCharacteristics {
         chunk_type: ChunkType::End,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     stats.add_timing(char1, Duration::seconds(5), 1);
@@ -368,6 +425,28 @@ fn test_chunk_timing_stats_different_characteristics() {
 }
 
 #[test]
+fn test_chunk_timing_stats_separate_sweep_position_buckets() {
+    let mut stats = ChunkTimingStats::new();
+
+    let first = ChunkCharacteristics {
+        chunk_type: ChunkType::Intermediate,
+        waveform_type: WaveformType::ContiguousSurveillance,
+        channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: true,
+    };
+    let intra = ChunkCharacteristics {
+        is_first_in_sweep: false,
+        ..first
+    };
+
+    stats.add_timing(first, Duration::seconds(9), 1);
+    stats.add_timing(intra, Duration::seconds(3), 1);
+
+    assert_eq!(stats.get_average_timing(&first), Some(Duration::seconds(9)));
+    assert_eq!(stats.get_average_timing(&intra), Some(Duration::seconds(3)));
+}
+
+#[test]
 fn test_chunk_timing_stats_rolling_window() {
     let mut stats = ChunkTimingStats::new();
 
@@ -375,6 +454,7 @@ fn test_chunk_timing_stats_rolling_window() {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     // Add more than MAX_TIMING_SAMPLES (which is 10)
@@ -398,6 +478,7 @@ fn test_chunk_timing_stats_attempts_tracking() {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     // Add samples with different attempt counts
@@ -417,6 +498,7 @@ fn test_chunk_timing_stats_clone() {
         chunk_type: ChunkType::Intermediate,
         waveform_type: WaveformType::ContiguousSurveillance,
         channel_configuration: ChannelConfiguration::ConstantPhase,
+        is_first_in_sweep: false,
     };
 
     stats.add_timing(characteristics, Duration::seconds(5), 1);
@@ -430,6 +512,17 @@ fn test_chunk_timing_stats_clone() {
 
 // === Timing estimation tests ===
 
+fn chunk_at(sequence: usize, chunk_type: ChunkType) -> ChunkIdentifier {
+    ChunkIdentifier::new(
+        "KDMX".to_string(),
+        VolumeIndex::new(1),
+        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
+        sequence,
+        chunk_type,
+        None,
+    )
+}
+
 #[test]
 fn test_estimate_chunk_processing_time_start_chunk() {
     use super::estimate_next_chunk_time::estimate_chunk_processing_time;
@@ -437,20 +530,41 @@ fn test_estimate_chunk_processing_time_start_chunk() {
     let vcp = get_test_vcp();
     let mapper = ElevationChunkMapper::new(&vcp);
 
-    let start_chunk = ChunkIdentifier::new(
-        "KDMX".to_string(),
-        VolumeIndex::new(1),
-        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
-        1,
-        ChunkType::Start,
-        None,
-    );
+    let estimate =
+        estimate_chunk_processing_time(&chunk_at(1, ChunkType::Start), &vcp, &mapper, None);
 
-    let estimate = estimate_chunk_processing_time(&start_chunk, &vcp, &mapper, None);
+    // The first radial chunk follows the Start chunk after 1.5 seconds
+    assert_eq!(estimate, Some(Duration::milliseconds(1500)));
+}
 
-    // Start chunks use the inter-volume gap model (8.5 seconds)
-    assert!(estimate.is_some());
-    assert_eq!(estimate.unwrap(), Duration::milliseconds(8500));
+#[test]
+fn test_estimate_chunk_processing_time_start_chunk_ignores_stats() {
+    use super::estimate_next_chunk_time::estimate_chunk_processing_time;
+
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    let mut stats = ChunkTimingStats::new();
+    let second =
+        ChunkCharacteristics::for_chunk(2, ChunkType::Intermediate, &vcp, &mapper).unwrap();
+    stats.add_timing(second, Duration::seconds(20), 1);
+
+    let estimate =
+        estimate_chunk_processing_time(&chunk_at(1, ChunkType::Start), &vcp, &mapper, Some(&stats));
+    assert_eq!(estimate, Some(Duration::milliseconds(1500)));
+}
+
+#[test]
+fn test_end_to_start_interval_is_inter_volume_gap() {
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    let end = mapper.get_chunk_metadata(mapper.final_sequence()).unwrap();
+    let start = mapper.get_chunk_metadata(1).unwrap();
+
+    let interval = ChunkTimingModel::estimate_chunk_interval_secs(end, start);
+    assert!((interval - ChunkTimingModel::inter_volume_gap_secs()).abs() < 0.001);
+    assert!((interval - ChunkTimingModel::start_to_first_intermediate_gap_secs()).abs() > 1.0);
 }
 
 #[test]
@@ -460,34 +574,87 @@ fn test_estimate_chunk_processing_time_with_stats() {
     let vcp = get_test_vcp();
     let mapper = ElevationChunkMapper::new(&vcp);
 
-    // Get characteristics for sequence 2
-    let elevation = mapper.get_sequence_elevation_number(2).unwrap();
-    let elev_data = &vcp.elevations()[elevation - 1];
-
-    let characteristics = ChunkCharacteristics {
-        chunk_type: ChunkType::Intermediate,
-        waveform_type: elev_data.waveform_type(),
-        channel_configuration: elev_data.channel_configuration(),
-    };
-
-    // Create stats with known timing
+    // A sample recorded on the arrival of sequence 3 predicts sequence 3 from sequence 2
+    let characteristics =
+        ChunkCharacteristics::for_chunk(3, ChunkType::Intermediate, &vcp, &mapper).unwrap();
     let mut stats = ChunkTimingStats::new();
     stats.add_timing(characteristics, Duration::seconds(5), 2);
 
-    let chunk = ChunkIdentifier::new(
-        "KDMX".to_string(),
-        VolumeIndex::new(1),
-        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
-        2,
-        ChunkType::Intermediate,
-        None,
+    let estimate = estimate_chunk_processing_time(
+        &chunk_at(2, ChunkType::Intermediate),
+        &vcp,
+        &mapper,
+        Some(&stats),
     );
 
-    let estimate = estimate_chunk_processing_time(&chunk, &vcp, &mapper, Some(&stats));
+    // Historical timing (5 seconds) plus 1 second for the extra attempt
+    assert_eq!(estimate, Some(Duration::seconds(6)));
+}
 
-    // Should use historical timing (5 seconds + 1 second for the extra attempt)
-    assert!(estimate.is_some());
-    assert_eq!(estimate.unwrap(), Duration::seconds(6)); // 5 + (2-1)
+#[test]
+fn test_estimate_chunk_processing_time_keys_stats_by_predicted_chunk_across_sweeps() {
+    use super::estimate_next_chunk_time::estimate_chunk_processing_time;
+
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    // The first chunk of the second sweep, predicted from the last chunk of the first sweep
+    let next_sequence = (2..=mapper.final_sequence())
+        .find(|&sequence| {
+            sequence > 2
+                && mapper
+                    .get_chunk_metadata(sequence)
+                    .unwrap()
+                    .is_first_in_sweep()
+        })
+        .unwrap();
+    let previous = chunk_at(next_sequence - 1, ChunkType::Intermediate);
+
+    let physics = estimate_chunk_processing_time(&previous, &vcp, &mapper, None).unwrap();
+
+    // A sample under the previous chunk's characteristics does not predict the next chunk
+    let mut stats = ChunkTimingStats::new();
+    let previous_characteristics =
+        ChunkCharacteristics::for_chunk(next_sequence - 1, ChunkType::Intermediate, &vcp, &mapper)
+            .unwrap();
+    stats.add_timing(previous_characteristics, Duration::seconds(40), 1);
+    assert_eq!(
+        estimate_chunk_processing_time(&previous, &vcp, &mapper, Some(&stats)),
+        Some(physics)
+    );
+
+    // A sample under the next chunk's characteristics does
+    let next_characteristics =
+        ChunkCharacteristics::for_chunk(next_sequence, ChunkType::Intermediate, &vcp, &mapper)
+            .unwrap();
+    assert!(next_characteristics.is_first_in_sweep);
+    stats.add_timing(next_characteristics, Duration::seconds(30), 1);
+    assert_eq!(
+        estimate_chunk_processing_time(&previous, &vcp, &mapper, Some(&stats)),
+        Some(Duration::seconds(30))
+    );
+}
+
+#[test]
+fn test_estimate_chunk_processing_time_predicts_end_chunk_with_end_stats() {
+    use super::estimate_next_chunk_time::estimate_chunk_processing_time;
+
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+    let final_sequence = mapper.final_sequence();
+
+    let mut stats = ChunkTimingStats::new();
+    let end =
+        ChunkCharacteristics::for_chunk(final_sequence, ChunkType::End, &vcp, &mapper).unwrap();
+    stats.add_timing(end, Duration::seconds(12), 1);
+
+    let estimate = estimate_chunk_processing_time(
+        &chunk_at(final_sequence - 1, ChunkType::Intermediate),
+        &vcp,
+        &mapper,
+        Some(&stats),
+    );
+    assert_eq!(estimate, Some(Duration::seconds(12)));
 }
 
 #[test]

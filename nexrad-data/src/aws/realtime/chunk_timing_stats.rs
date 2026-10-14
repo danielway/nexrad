@@ -1,13 +1,17 @@
-use crate::aws::realtime::ChunkType;
+use crate::aws::realtime::{ChunkType, ElevationChunkMapper};
 use chrono::Duration;
-use nexrad_decode::messages::volume_coverage_pattern::{ChannelConfiguration, WaveformType};
+use nexrad_decode::messages::volume_coverage_pattern::{self, ChannelConfiguration, WaveformType};
 use std::collections::{HashMap, VecDeque};
 use std::hash::{Hash, Hasher};
 
 /// Maximum number of timing samples to keep per chunk characteristics
 const MAX_TIMING_SAMPLES: usize = 10;
 
-/// Characteristics of a chunk that affect timing
+/// Characteristics of a chunk that affect timing.
+///
+/// Timing samples are keyed by the characteristics of the chunk they lead into: the interval
+/// between the uploads of chunks N-1 and N is recorded under chunk N's characteristics when N
+/// arrives, and read back under the same characteristics to predict N from N-1.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub(crate) struct ChunkCharacteristics {
     /// Type of the chunk
@@ -16,6 +20,33 @@ pub(crate) struct ChunkCharacteristics {
     pub(crate) waveform_type: WaveformType,
     /// Channel configuration of the elevation
     pub(crate) channel_configuration: ChannelConfiguration,
+    /// Whether the chunk is the first in its sweep, so the interval into it includes the
+    /// inter-sweep transition
+    pub(crate) is_first_in_sweep: bool,
+}
+
+impl ChunkCharacteristics {
+    /// Returns the characteristics of the chunk at `sequence` with the given type, as described by
+    /// the VCP and its chunk mapping. Returns `None` for the Start chunk, which belongs to no
+    /// elevation, and for a sequence outside the volume.
+    pub(crate) fn for_chunk(
+        sequence: usize,
+        chunk_type: ChunkType,
+        vcp: &volume_coverage_pattern::Message,
+        mapper: &ElevationChunkMapper,
+    ) -> Option<Self> {
+        let metadata = mapper.get_chunk_metadata(sequence)?;
+        let elevation = vcp
+            .elevations()
+            .get(metadata.elevation_number()?.checked_sub(1)?)?;
+
+        Some(Self {
+            chunk_type,
+            waveform_type: elevation.waveform_type(),
+            channel_configuration: elevation.channel_configuration(),
+            is_first_in_sweep: metadata.is_first_in_sweep(),
+        })
+    }
 }
 
 impl Hash for ChunkCharacteristics {
@@ -23,6 +54,7 @@ impl Hash for ChunkCharacteristics {
         std::mem::discriminant(&self.chunk_type).hash(state);
         std::mem::discriminant(&self.waveform_type).hash(state);
         std::mem::discriminant(&self.channel_configuration).hash(state);
+        self.is_first_in_sweep.hash(state);
     }
 }
 

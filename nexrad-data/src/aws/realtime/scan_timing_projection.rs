@@ -39,22 +39,20 @@ pub(crate) fn project_volume_end_time(
         let mut interval_secs =
             ChunkTimingModel::estimate_chunk_interval_secs(prev_metadata, next_metadata);
 
-        // Blend with historical data if available
+        // Blend with historical data recorded for the chunk being projected, if available
         if let Some(stats) = timing_stats {
-            if let Some(elev_num) = next_metadata.elevation_number() {
-                if let Some(elev_data) = vcp.elevations().get(elev_num - 1) {
-                    let characteristics = ChunkCharacteristics {
-                        chunk_type: ChunkType::Intermediate,
-                        waveform_type: elev_data.waveform_type(),
-                        channel_configuration: elev_data.channel_configuration(),
-                    };
+            let chunk_type = if seq == final_sequence {
+                ChunkType::End
+            } else {
+                ChunkType::Intermediate
+            };
 
-                    if let Some(avg_timing) = stats.get_average_timing(&characteristics) {
-                        let historical_secs = avg_timing.num_milliseconds() as f64 / 1000.0;
-                        // Blend: 70% physics, 30% historical
-                        interval_secs = interval_secs * 0.7 + historical_secs * 0.3;
-                    }
-                }
+            if let Some(avg_timing) = ChunkCharacteristics::for_chunk(seq, chunk_type, vcp, mapper)
+                .and_then(|characteristics| stats.get_average_timing(&characteristics))
+            {
+                let historical_secs = avg_timing.num_milliseconds() as f64 / 1000.0;
+                // Blend: 70% physics, 30% historical
+                interval_secs = interval_secs * 0.7 + historical_secs * 0.3;
             }
         }
 

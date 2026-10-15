@@ -136,6 +136,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `once_cell` is no longer a dependency. (#192)
 - `aws::realtime::chunk_stream` no longer caps its startup listing at 100 chunks, so in a longer volume it joins at the
   latest chunk. (#192)
+- `aws::realtime::get_latest_volume` searches all 999 volumes; it skipped volume 999, so it returned volume 998 when
+  999 held the newest data. (#192)
 - `aws::realtime`: after a volume's End chunk, `ChunkIterator::next_expected_time` and `chunk_stream` expect the next
   volume's Start chunk after the 8.5 s inter-volume gap instead of the 4 to 11 s elevation-based fallback. (#192)
 - `aws::realtime`: after a volume's Start chunk, `ChunkIterator::next_expected_time` and `chunk_stream` expect

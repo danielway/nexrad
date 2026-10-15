@@ -9,6 +9,9 @@ rust-version.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories = ["science", "visualization", "rendering"]
+exclude = [
+    "benches/",
+]
 
 [package.metadata.docs.rs]
 all-features = true

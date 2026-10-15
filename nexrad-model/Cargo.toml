@@ -9,6 +9,13 @@ rust-version.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
+exclude = [
+    "data/",
+    "tests/fixture_snapshots.rs",
+    "tests/scan_snapshot.rs",
+    "tests/snapshots/fixture_snapshots__*",
+    "tests/snapshots/scan_snapshot__*",
+]
 
 [package.metadata.docs.rs]
 all-features = true

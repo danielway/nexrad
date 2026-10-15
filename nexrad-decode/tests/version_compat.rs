@@ -13,7 +13,7 @@
 
 use nexrad_data::volume;
 use nexrad_decode::messages::rda_status_data::RdaBuildNumber;
-use nexrad_decode::messages::{decode_messages, MessageContents};
+use nexrad_decode::messages::{decode_messages, MessageContents, MessageType, RedundantChannel};
 
 /// Helper: decode a volume file and extract analysis data.
 fn analyze_volume(data: &[u8]) -> VolumeAnalysis {
@@ -268,6 +268,56 @@ fn test_message_type1_field_values() {
         }
     }
     assert!(checked, "should have checked at least one Type 1 message");
+}
+
+/// A legacy (pre-ORDA) RDA's clutter filter bypass map (type 13) and clutter filter map (type 15)
+/// use layouts the ORDA decoders do not read, so both decode as `Other` with their payloads.
+#[test]
+fn test_legacy_clutter_maps_decode_as_other() {
+    let file = volume::File::new(KABR_2005.to_vec())
+        .decompress()
+        .expect("decompresses gzip file");
+
+    let mut found = Vec::new();
+    for mut record in file.records().expect("records") {
+        if record.compressed() {
+            record = record.decompress().expect("decompresses record");
+        }
+
+        for message in decode_messages(record.data()).expect("decodes messages") {
+            let message_type = message.header().message_type();
+            if !matches!(
+                message_type,
+                MessageType::ClutterFilterBypassMap | MessageType::ClutterFilterMap
+            ) {
+                continue;
+            }
+
+            assert_eq!(
+                message.header().redundant_channel(),
+                RedundantChannel::LegacySingleChannel
+            );
+            match message.contents() {
+                MessageContents::Other {
+                    message_type: other_type,
+                    data,
+                } => {
+                    assert_eq!(*other_type, message_type);
+                    found.push((message_type, message.headers().count(), data.len()));
+                }
+                other => panic!("expected Other for legacy {message_type:?}, got {other:?}"),
+            }
+        }
+    }
+
+    found.sort();
+    assert_eq!(
+        found,
+        [
+            (MessageType::ClutterFilterBypassMap, 34, 81392),
+            (MessageType::ClutterFilterMap, 14, 32772),
+        ]
+    );
 }
 
 /// Validates the Message Type 1 Nyquist velocity and atmospheric attenuation against the ICD

@@ -239,15 +239,18 @@ fn decode_segmented_message<'a>(
         headers.push(segment_header);
     }
 
-    // A legacy (pre-ORDA) RDA sends a clutter filter notch width map as message type 15, whose
-    // layout differs from the ORDA clutter filter map this crate decodes.
-    let undecoded = message_type == MessageType::ClutterFilterMap
-        && matches!(
-            headers[0].redundant_channel(),
-            RedundantChannel::LegacySingleChannel
-                | RedundantChannel::LegacyRedundantChannel1
-                | RedundantChannel::LegacyRedundantChannel2
-        );
+    // A legacy (pre-ORDA) RDA sends a clutter filter notch width map as message type 15 and a
+    // clutter filter bypass map as message type 13 in layouts that differ from the ORDA messages
+    // this crate decodes.
+    let undecoded = matches!(
+        message_type,
+        MessageType::ClutterFilterMap | MessageType::ClutterFilterBypassMap
+    ) && matches!(
+        headers[0].redundant_channel(),
+        RedundantChannel::LegacySingleChannel
+            | RedundantChannel::LegacyRedundantChannel1
+            | RedundantChannel::LegacyRedundantChannel2
+    );
 
     let mut segmented_reader = SegmentedSliceReader::new(&payloads, &payload_offsets);
     let decoded = if undecoded {

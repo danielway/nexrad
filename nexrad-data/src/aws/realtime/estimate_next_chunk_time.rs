@@ -35,10 +35,11 @@ pub(crate) fn estimate_chunk_availability_time(
 /// relationship between chunk sequence and VCP elevations. A None result indicates that an estimate
 /// cannot be made.
 ///
-/// The Start chunk is followed by the volume's first radial chunk after a constant short gap.
-/// Otherwise, historical timing is looked up under the characteristics of the chunk being
-/// predicted (sequence + 1), the same key under which the interval into that chunk is recorded on
-/// its arrival; without history, the physics-based [ChunkTimingModel] is used.
+/// The Start chunk is followed by the volume's first radial chunk after a constant short gap, and
+/// a volume's final chunk by the next volume's Start chunk after the inter-volume gap. Otherwise,
+/// historical timing is looked up under the characteristics of the chunk being predicted
+/// (sequence + 1), the same key under which the interval into that chunk is recorded on its
+/// arrival; without history, the physics-based [ChunkTimingModel] is used.
 pub(crate) fn estimate_chunk_processing_time(
     chunk: &ChunkIdentifier,
     vcp: &volume_coverage_pattern::Message,
@@ -51,8 +52,16 @@ pub(crate) fn estimate_chunk_processing_time(
         return Some(ChronoDuration::milliseconds(gap_ms));
     }
 
+    let next = chunk.next_chunk(elevation_chunk_mapper);
+
+    // Final chunk: the next volume's Start chunk follows after the inter-volume gap
+    if let Some(NextChunk::Volume(_)) = next {
+        let gap_ms = (ChunkTimingModel::inter_volume_gap_secs() * 1000.0) as i64;
+        return Some(ChronoDuration::milliseconds(gap_ms));
+    }
+
     // Try historical timing, then the physics-based model, via the next chunk's metadata
-    if let Some(NextChunk::Sequence(next)) = chunk.next_chunk(elevation_chunk_mapper) {
+    if let Some(NextChunk::Sequence(next)) = next {
         if let Some(next_metadata) = elevation_chunk_mapper.get_chunk_metadata(next.sequence()) {
             // Historical timing is keyed by the chunk being predicted
             if let Some(characteristics) = ChunkCharacteristics::for_chunk(

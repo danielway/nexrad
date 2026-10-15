@@ -196,10 +196,8 @@ fn render_file_selection(frame: &mut Frame, state: &crate::app::AwsBrowserState,
         .iter()
         .map(|identifier| {
             let name = identifier.name();
-            let time = identifier
-                .date_time()
-                .map(|dt| format!("{:02}:{:02}:{:02}", dt.hour(), dt.minute(), dt.second()))
-                .unwrap_or_else(|| "Unknown".to_string());
+            let dt = identifier.date_time();
+            let time = format!("{:02}:{:02}:{:02}", dt.hour(), dt.minute(), dt.second());
 
             Row::new(vec![time, name.to_string()])
         })

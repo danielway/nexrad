@@ -25,7 +25,8 @@ pub struct ChunkIdentifier {
 }
 
 impl ChunkIdentifier {
-    /// Creates a new chunk identifier.
+    /// Creates a new chunk identifier. `date_time_prefix` is the scan's UTC date and time, as
+    /// it appears in the chunk name.
     pub fn new(
         site: impl Into<String>,
         volume: VolumeIndex,
@@ -109,7 +110,7 @@ impl ChunkIdentifier {
         &self.volume
     }
 
-    /// The chunk's date and time prefix, consistent across all chunks in a volume.
+    /// The chunk's UTC date and time prefix, consistent across all chunks in a volume.
     pub fn date_time_prefix(&self) -> &NaiveDateTime {
         &self.date_time_prefix
     }

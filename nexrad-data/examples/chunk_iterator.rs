@@ -4,8 +4,8 @@ use chrono::Utc;
 use clap::Parser;
 use env_logger::{Builder, Env};
 use log::{info, LevelFilter};
-use nexrad_data::aws::realtime::{Chunk, ChunkIterator, DownloadedChunk, PollConfig, RetryPolicy};
-use nexrad_data::Result;
+use nexrad_data::aws::realtime::{Chunk, ChunkIterator, DownloadedChunk};
+use nexrad_data::{Error, Result};
 use std::time::Duration;
 
 /// Example demonstrating the pull-based ChunkIterator for real-time NEXRAD data.
@@ -40,10 +40,7 @@ async fn main() -> Result<()> {
     info!("Creating ChunkIterator for site {}", cli.site);
 
     // Create the iterator - this discovers the latest volume and fetches initial chunks
-    let config = PollConfig::new(&cli.site)
-        .with_download_policy(RetryPolicy::default_download())
-        .with_discovery_policy(RetryPolicy::default_discovery());
-    let init = ChunkIterator::start_with(config).await?;
+    let init = ChunkIterator::start(&cli.site).await?;
 
     let mut iterator = init.iterator;
 
@@ -87,17 +84,21 @@ async fn main() -> Result<()> {
             }
         }
 
-        // Try to fetch the next chunk
-        match iterator.try_next().await? {
-            Some(chunk) => {
+        // Make a single attempt; the iterator never sleeps or retries, so the cadence is ours
+        match iterator.try_next().await {
+            Ok(Some(chunk)) => {
                 downloaded += 1;
                 log_chunk(&chunk, downloaded, cli.chunk_count);
             }
-            None => {
-                // Chunk not yet available, wait and retry
+            Ok(None) => {
                 info!("Chunk not yet available, waiting...");
                 tokio::time::sleep(Duration::from_millis(500)).await;
             }
+            Err(Error::Aws(error)) if error.is_transient() => {
+                info!("Transient error ({error}), waiting...");
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+            Err(error) => return Err(error),
         }
     }
 

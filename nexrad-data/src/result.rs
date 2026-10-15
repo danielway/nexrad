@@ -67,12 +67,23 @@ pub enum AwsError {
     /// S3 list objects response was unexpectedly truncated.
     #[error("unexpected truncated S3 list objects response")]
     TruncatedListObjectsResponse,
-    /// Failed to parse date/time from an archive file identifier.
-    #[error("error decoding date/time")]
-    DateTime(String),
-    /// The radar site identifier is not recognized.
-    #[error("invalid radar site identifier")]
-    InvalidSiteIdentifier(String),
+    /// An archive object name does not follow the archive naming grammar.
+    #[error("invalid archive identifier {name:?}: {reason}")]
+    InvalidIdentifier {
+        /// The rejected name.
+        name: String,
+        /// Which part of the grammar the name violates.
+        reason: &'static str,
+    },
+    /// A real-time volume index is outside `1..=999`.
+    #[error("invalid real-time volume index {index}, expected 1..=999")]
+    InvalidVolumeIndex {
+        /// The rejected index.
+        index: usize,
+    },
+    /// The shared HTTP client could not be built.
+    #[error("error building HTTP client")]
+    HttpClient(#[source] Box<dyn std::error::Error + Send + Sync + 'static>),
     /// Real-time chunk data is in an unrecognized format.
     #[error("chunk data in unrecognized format")]
     UnrecognizedChunkFormat,
@@ -91,9 +102,14 @@ pub enum AwsError {
     /// S3 get object request failed to send.
     #[error("error requesting AWS S3 object")]
     S3GetObjectRequest(#[source] Box<dyn std::error::Error + Send + Sync + 'static>),
-    /// S3 get object returned an error response.
-    #[error("error getting AWS S3 object")]
-    S3GetObject(Option<String>),
+    /// S3 get object returned an unsuccessful status other than 404.
+    #[error("error getting AWS S3 object: HTTP status {status}")]
+    S3GetObject {
+        /// The HTTP status code of the response.
+        status: u16,
+        /// The response body, if it could be read.
+        body: Option<String>,
+    },
     /// Requested S3 object was not found (404).
     #[error("AWS S3 object not found")]
     S3ObjectNotFound,
@@ -130,7 +146,7 @@ impl AwsError {
         matches!(
             self,
             Self::S3GetObjectRequest(_)
-                | Self::S3GetObject(_)
+                | Self::S3GetObject { .. }
                 | Self::S3Streaming(_)
                 | Self::S3ListObjects(_)
                 | Self::TruncatedListObjectsResponse
@@ -149,7 +165,11 @@ mod tests {
     #[test]
     fn transient_aws_errors() {
         assert!(AwsError::S3GetObjectRequest(boxed()).is_transient());
-        assert!(AwsError::S3GetObject(None).is_transient());
+        assert!(AwsError::S3GetObject {
+            status: 503,
+            body: None
+        }
+        .is_transient());
         assert!(AwsError::S3Streaming(boxed()).is_transient());
         assert!(AwsError::S3ListObjects(boxed()).is_transient());
         assert!(AwsError::TruncatedListObjectsResponse.is_transient());
@@ -164,7 +184,13 @@ mod tests {
         assert!(!AwsError::FailedToDetermineNextChunk.is_transient());
         assert!(!AwsError::UnrecognizedChunkFormat.is_transient());
         assert!(!AwsError::UnrecognizedChunkType(None).is_transient());
-        assert!(!AwsError::DateTime(String::new()).is_transient());
+        assert!(!AwsError::InvalidIdentifier {
+            name: String::new(),
+            reason: "empty",
+        }
+        .is_transient());
+        assert!(!AwsError::InvalidVolumeIndex { index: 0 }.is_transient());
+        assert!(!AwsError::HttpClient(boxed()).is_transient());
     }
 
     #[test]

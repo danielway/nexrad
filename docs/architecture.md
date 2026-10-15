@@ -211,8 +211,9 @@ builds for WASM. Only `parallel` (rayon threads) is excluded from the `wasm` fea
   (`nexrad_model::Error`, `nexrad_decode::Error`, `nexrad_data::Error`, ...). `nexrad-data` also re-exports
   `AwsError` at its root (feature `aws`).
 - Every `Error` enum, and `nexrad_data::result::AwsError`, is `#[non_exhaustive]`.
-- No error carries a 0.x dependency's error type as a payload. `AwsError::S3ListObjects`, `S3GetObjectRequest` and
-  `S3Streaming` box the underlying HTTP error as `Box<dyn std::error::Error + Send + Sync>`, which `source()` returns.
+- No error carries a 0.x dependency's error type as a payload. `AwsError::S3ListObjects`, `S3GetObjectRequest`,
+  `S3Streaming` and `HttpClient` box the underlying HTTP error as `Box<dyn std::error::Error + Send + Sync>`, which
+  `source()` returns.
   `AwsError::is_transient()` reports whether a failure is worth retrying.
 - `nexrad_data::Error::Decode`, `Model` and `Io` wrap the decode, model and I/O errors raised while reading data.
 - The facade's `From<nexrad_data::Error>` flattens those three into `nexrad::Error::Decode`, `nexrad::Error::Model` and

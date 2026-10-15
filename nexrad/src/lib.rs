@@ -334,7 +334,7 @@ pub async fn download(identifier: &data::aws::archive::Identifier) -> Result<mod
 
 /// Download the most recent scan for a site on a given date.
 ///
-/// Returns the last available archive file for the specified date. This is useful
+/// Returns the last available archive volume file for the specified UTC date. This is useful
 /// when you want the most complete data available for a particular day.
 ///
 /// # Example
@@ -367,7 +367,7 @@ pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<mode
 
 /// Download the scan that overlaps a specific datetime.
 ///
-/// Finds the archive file whose collection period contains the requested datetime.
+/// Finds the archive file whose collection period contains the requested UTC datetime.
 /// Archive files typically span approximately 5 minutes of data collection, so this
 /// function returns the scan that was being collected at the specified time.
 ///
@@ -397,11 +397,7 @@ pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<
     // Files are sorted chronologically; find the last one with start_time <= requested time.
     let file_id = files
         .iter()
-        .rfind(|f| {
-            f.date_time()
-                .map(|dt| dt.time() <= datetime.time())
-                .unwrap_or(false)
-        })
+        .rfind(|f| f.date_time().time() <= datetime.time())
         .cloned()
         .ok_or_else(|| Error::NoDataAvailable {
             site: site.to_string(),
@@ -413,7 +409,8 @@ pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<
 
 /// List available scans for a site and date.
 ///
-/// Returns identifiers for all archive files available on the specified date.
+/// Returns identifiers for all archive volume files available on the specified UTC date;
+/// metadata objects are not included.
 /// These identifiers can be used to selectively download specific scans.
 ///
 /// # Example

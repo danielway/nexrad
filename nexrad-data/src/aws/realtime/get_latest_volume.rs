@@ -2,6 +2,7 @@ use crate::aws::realtime::find_latest::find_latest;
 use crate::aws::realtime::list_chunks_in_volume::list_chunks_in_volume;
 use crate::aws::realtime::VolumeIndex;
 use chrono::{DateTime, Utc};
+use std::future::Future;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::Relaxed;
 
@@ -29,20 +30,37 @@ pub struct LatestVolumeResult {
 /// The result's `volume` is `None` if none of the site's volumes contain any chunks.
 pub async fn get_latest_volume(site: &str) -> crate::result::Result<LatestVolumeResult> {
     let calls = AtomicUsize::new(0);
-    let latest_volume = find_latest(VOLUME_COUNT - 1, |volume| {
+    let latest_volume = find_latest_volume(|volume| {
         calls.fetch_add(1, Relaxed);
         async move {
-            let chunks = list_chunks_in_volume(site, VolumeIndex::new(volume + 1), 1).await?;
+            let chunks = list_chunks_in_volume(site, volume).await?;
             Ok(chunks.first().and_then(|chunk| chunk.upload_date_time()))
         }
     })
-    .await
-    .map(|volume| volume.map(|index| VolumeIndex::new(index + 1)))?;
+    .await?;
 
     Ok(LatestVolumeResult {
         volume: latest_volume,
         calls: calls.load(Relaxed),
     })
+}
+
+/// Searches every volume `1..=999` for the one whose `probe` value is greatest, where `probe`
+/// resolves to a volume's upload time or `None` if the volume is empty.
+async fn find_latest_volume<F>(
+    mut probe: impl FnMut(VolumeIndex) -> F,
+) -> crate::result::Result<Option<VolumeIndex>>
+where
+    F: Future<Output = crate::result::Result<Option<DateTime<Utc>>>>,
+{
+    // Element `i` of the searched sequence is volume `i + 1`
+    find_latest(VOLUME_COUNT, |element| {
+        let probed = VolumeIndex::new(element + 1).map(&mut probe);
+        async move { probed?.await }
+    })
+    .await?
+    .map(|element| VolumeIndex::new(element + 1))
+    .transpose()
 }
 
 /// Identifies the volume index with the most recent data, starting from a previously known
@@ -100,7 +118,7 @@ async fn newest_upload_time(
     site: &str,
     volume: VolumeIndex,
 ) -> crate::result::Result<Option<DateTime<Utc>>> {
-    let chunks = list_chunks_in_volume(site, volume, usize::MAX).await?;
+    let chunks = list_chunks_in_volume(site, volume).await?;
     Ok(chunks.last().and_then(|chunk| chunk.upload_date_time()))
 }
 
@@ -131,5 +149,51 @@ mod tests {
     #[test]
     fn stops_at_empty_volume() {
         assert!(!should_advance(at(10), None));
+    }
+
+    /// Runs the volume search over in-memory upload times, where `times[n - 1]` is volume `n`.
+    async fn latest_of(times: &[Option<DateTime<Utc>>]) -> Option<usize> {
+        find_latest_volume(|volume| {
+            let time = times[volume.as_number() - 1];
+            async move { Ok(time) }
+        })
+        .await
+        .unwrap()
+        .map(|volume| volume.as_number())
+    }
+
+    /// Upload times for a full bucket rotation whose newest volume is `newest`.
+    fn rotation_ending_at(newest: usize) -> Vec<Option<DateTime<Utc>>> {
+        (1..=VOLUME_COUNT)
+            .map(|volume| {
+                let age = (newest + VOLUME_COUNT - volume) % VOLUME_COUNT;
+                Some(at(0) - chrono::Duration::minutes(age as i64))
+            })
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn search_covers_every_volume() {
+        for newest in [1, 2, 500, 998, 999] {
+            assert_eq!(
+                latest_of(&rotation_ending_at(newest)).await,
+                Some(newest),
+                "newest volume {newest}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn search_finds_volume_999_before_a_gap() {
+        let mut times = rotation_ending_at(999);
+        for time in &mut times[..100] {
+            *time = None;
+        }
+        assert_eq!(latest_of(&times).await, Some(999));
+    }
+
+    #[tokio::test]
+    async fn search_of_empty_bucket_finds_nothing() {
+        assert_eq!(latest_of(&vec![None; VOLUME_COUNT]).await, None);
     }
 }

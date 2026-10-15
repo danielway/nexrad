@@ -35,7 +35,7 @@ async fn list_objects_page(
     if let Some(after) = after {
         url.query_pairs_mut().append_pair("start-after", &after);
     }
-    let response = client()
+    let response = client()?
         .get(url)
         .send()
         .await

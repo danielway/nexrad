@@ -1,13 +1,15 @@
 use crate::aws::realtime::{ChunkIdentifier, VolumeIndex, REALTIME_BUCKET};
 use crate::aws::s3::list_all_objects;
 
-/// Lists only the newest scan generation for the specified radar site and volume.
-/// Read all pages before limiting results: volume numbers are reused while old chunks remain. The `max_keys` parameter can be used
-/// to limit the number of chunks returned.
+/// Lists the chunks of the newest scan generation in the specified radar site's volume, sorted by
+/// sequence.
+///
+/// Volume numbers are reused after 999 while old chunks remain, so every listing page is read and
+/// only the chunks sharing the newest date-time prefix are returned. An empty result means the
+/// volume holds no chunks.
 pub async fn list_chunks_in_volume(
     site: &str,
     volume: VolumeIndex,
-    max_keys: usize,
 ) -> crate::result::Result<Vec<ChunkIdentifier>> {
     let prefix = format!("{}/{}/", site, volume.as_number());
     let objects = list_all_objects(REALTIME_BUCKET, &prefix).await?;
@@ -24,9 +26,7 @@ pub async fn list_chunks_in_volume(
         })
         .collect::<crate::result::Result<Vec<_>>>()?;
 
-    let mut latest = latest_generation(metas);
-    latest.truncate(max_keys);
-    Ok(latest)
+    Ok(latest_generation(metas))
 }
 
 // Select one scan generation before callers inspect chunk sequence numbers.
@@ -42,7 +42,7 @@ fn latest_generation(mut chunks: Vec<ChunkIdentifier>) -> Vec<ChunkIdentifier> {
 mod regression_tests {
     use super::*;
     fn id(name: &str) -> ChunkIdentifier {
-        ChunkIdentifier::from_name("KBYX", VolumeIndex::new(589), name, None).unwrap()
+        ChunkIdentifier::from_name("KBYX", VolumeIndex::new(589).unwrap(), name, None).unwrap()
     }
     #[test]
     fn reused_volume_contains_only_newest_scan_in_sequence_order() {
@@ -69,5 +69,14 @@ mod regression_tests {
     #[test]
     fn empty_volume_stays_empty() {
         assert!(latest_generation(vec![]).is_empty());
+    }
+    #[test]
+    fn listing_is_not_capped() {
+        let names: Vec<_> = (1..=150)
+            .map(|sequence| format!("20260912-140452-{sequence:03}-I"))
+            .collect();
+        let chunks = latest_generation(names.iter().rev().map(|name| id(name)).collect());
+        assert_eq!(chunks.len(), 150);
+        assert_eq!(chunks.last().map(ChunkIdentifier::sequence), Some(150));
     }
 }

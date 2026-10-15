@@ -35,7 +35,8 @@ NOAA uploads archive and real-time NEXRAD data to AWS Open Data S3 buckets which
 
 Historical volumes are archived by date and radar site in the `unidata-nexrad-level2` bucket. The
 `nexrad_data::aws::archive` module provides functions for accessing these volumes. The `archive::list_files` function
-queries volumes for a given date and radar site, returning identifiers for each volume. The `archive::download_file`
+queries volume files for a given UTC date and radar site, returning a validated identifier for each volume
+(metadata objects are skipped). The `archive::download_file`
 function downloads a volume file by its identifier.
 
 ### Real-Time Data
@@ -43,14 +44,15 @@ function downloads a volume file by its identifier.
 Real-time volume data is uploaded in chunks to the `unidata-nexrad-level2-chunks` bucket. 999 volume directories are
 rotated through with chunks being added to each directory until they comprise a full volume. The
 `nexrad_data::aws::realtime` module provides functions for accessing these chunks. The `realtime::list_chunks_in_volume`
-function queries a volume for its chunks, returning identifiers for each chunk. The `realtime::download_chunk` function
+function queries a volume for the chunks of its newest scan, returning identifiers in sequence order. The `realtime::download_chunk` function
 downloads a chunk by its identifier. The `realtime::get_latest_volume` function can be used to identify which of the 999
 volume directories contain the latest data, and `realtime::get_latest_volume_from_hint` does the same in a few calls
 when starting from a previously seen volume. The `realtime::chunk_stream` function returns an async stream that
 continuously yields chunks as they become available; it is runtime-agnostic and takes a caller-supplied sleep function
 (with tokio, `chunk_stream(config, |d| tokio::time::sleep(d))`). For caller-controlled scheduling,
-`realtime::ChunkIterator` provides a pull-based interface with manual timing control: its `next_expected_time` and
-`time_until_next` methods estimate when the next chunk becomes available for download from S3. With the `model`
+`realtime::ChunkIterator` provides a pull-based interface with manual timing control: `try_next` makes a single
+attempt and returns `Ok(None)` until the next chunk is available, and the `next_expected_time` and `time_until_next`
+methods estimate when the next chunk becomes available for download from S3. With the `model`
 feature, `realtime::assemble_volume` turns a volume's chunks into a `Scan`.
 
 ## Errors

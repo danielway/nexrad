@@ -17,7 +17,7 @@ pub async fn download_object(
     debug!("Downloading object key \"{key}\" from bucket \"{bucket}\"");
     let path = format!("https://{bucket}.s3.amazonaws.com/{key}");
 
-    let response = client()
+    let response = client()?
         .get(&path)
         .send()
         .await
@@ -50,7 +50,10 @@ pub async fn download_object(
                 data,
             })
         }
-        _ => Err(Error::Aws(S3GetObject(response.text().await.ok()))),
+        status => Err(Error::Aws(S3GetObject {
+            status: status.as_u16(),
+            body: response.text().await.ok(),
+        })),
     }
 }
 

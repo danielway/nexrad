@@ -16,7 +16,7 @@ all-features = true
 [features]
 default = ["aws", "model"]
 # AWS S3 access, including real-time polling (WASM-compatible)
-aws = ["dep:reqwest", "dep:xml", "dep:once_cell", "dep:futures-util"]
+aws = ["dep:reqwest", "dep:xml", "dep:futures-util"]
 # Parallel decompression and decoding using rayon
 parallel = ["dep:rayon"]
 # Conversion of volume files and real-time chunks into `nexrad-model` types
@@ -34,7 +34,6 @@ reqwest = { workspace = true, optional = true }
 xml = { workspace = true, optional = true }
 nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model", optional = true }
 rayon = { workspace = true, optional = true }
-once_cell = { workspace = true, optional = true }
 futures-util = { workspace = true, optional = true }
 
 [dev-dependencies]

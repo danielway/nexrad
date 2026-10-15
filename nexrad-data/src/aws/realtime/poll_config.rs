@@ -5,6 +5,10 @@ use crate::aws::realtime::RetryPolicy;
 /// Configuration for consuming real-time NEXRAD chunks, shared by
 /// [`ChunkIterator`](super::ChunkIterator) and [`chunk_stream`](super::chunk_stream).
 ///
+/// The retry policies apply to [`chunk_stream`](super::chunk_stream) only: the
+/// [`ChunkIterator`](super::ChunkIterator) never sleeps or retries, and leaves polling cadence to
+/// its caller.
+///
 /// Create one with [`PollConfig::new`] and adjust it with the chainable `with_*` setters. New
 /// options are added as further setters, so existing code that builds a `PollConfig` keeps
 /// compiling.
@@ -30,23 +34,24 @@ impl PollConfig {
         &self.site
     }
 
-    /// Retry policy for downloading individual chunks.
+    /// Retry policy for downloading individual chunks in [`chunk_stream`](super::chunk_stream).
     pub fn download_policy(&self) -> &RetryPolicy {
         &self.download_policy
     }
 
-    /// Retry policy for discovering new volumes.
+    /// Retry policy for discovering new volumes in [`chunk_stream`](super::chunk_stream).
     pub fn discovery_policy(&self) -> &RetryPolicy {
         &self.discovery_policy
     }
 
-    /// Sets the retry policy for downloading individual chunks.
+    /// Sets the retry policy for downloading individual chunks in
+    /// [`chunk_stream`](super::chunk_stream).
     pub fn with_download_policy(mut self, policy: RetryPolicy) -> Self {
         self.download_policy = policy;
         self
     }
 
-    /// Sets the retry policy for discovering new volumes.
+    /// Sets the retry policy for discovering new volumes in [`chunk_stream`](super::chunk_stream).
     pub fn with_discovery_policy(mut self, policy: RetryPolicy) -> Self {
         self.discovery_policy = policy;
         self

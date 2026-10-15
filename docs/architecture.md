@@ -248,7 +248,7 @@ same validation as the constructors and builders. The representation is stable w
   `MomentData::from_fixed_point`, `Sweep::new`, `CartesianField::new`, `VerticalField::new`); field indexing (`get`
   and the row accessors) returns `Option`, and `set` returns a `Result`. `RetryPolicy` and `PollConfig` have
   constructors (`RetryPolicy::default_download`, `RetryPolicy::default_discovery`, `PollConfig::new`) with `with_*`
-  setters and getters. Every `nexrad-process` processor with parameters has a validating `new`.
+  setters and getters. Every `nexrad-process` processor with parameters has a validating `new` or builder.
 - **Lifetimes**: no public function returns a value with an unbounded output lifetime. `Record::decompress` returns
   `Record<'static>`, and the real-time `Chunk` has no lifetime parameter.
 
@@ -303,7 +303,7 @@ Processing algorithms are modeled as traits with two scopes:
 | Trait | Scope | Input → Output |
 |-------|-------|---------------|
 | `SweepProcessor` | Single sweep | `SweepField → SweepField` |
-| `ScanDerivedProduct` | Full scan → geographic surface | `[SweepField] → CartesianField` |
+| `ScanDerivedProduct` | Full scan → geographic surface | `[SweepField]` on a `CartesianGrid` → `CartesianField` |
 
 The built-in `SweepProcessor`s are `ThresholdFilter`, `MedianFilter`, `GaussianSmooth`, `CorrelationCoefficientFilter`
 and `StormRelativeVelocity`; `CompositeReflectivity` is a `ScanDerivedProduct`. `VerticalCrossSection` (producing a

@@ -4,9 +4,13 @@ use crate::aws::s3::list_objects;
 use crate::result::AwsError::TruncatedListObjectsResponse;
 use crate::result::Error::Aws;
 use chrono::NaiveDate;
+use std::cmp::Ordering;
 
 /// A volume file in an archive listing, with its stored size.
-#[derive(Clone, PartialEq, Eq, Hash)]
+///
+/// Ordering follows the identifier (chronological within a site), with the size breaking ties so
+/// that ordering agrees with equality.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ListedFile {
     identifier: Identifier,
     size: u64,
@@ -29,15 +33,35 @@ impl ListedFile {
     }
 }
 
-/// List data files for the specified site and date. This effectively returns an index of data files
-/// which can then be individually downloaded.
+impl PartialOrd for ListedFile {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for ListedFile {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.identifier
+            .cmp(&other.identifier)
+            .then(self.size.cmp(&other.size))
+    }
+}
+
+/// Lists the volume files for the specified site and UTC date. This effectively returns an index
+/// of volume files which can then be individually downloaded.
+///
+/// Only volume files are returned: metadata objects ([`Identifier::is_metadata`]) and objects whose
+/// names do not follow the archive grammar are skipped rather than reported as errors.
 pub async fn list_files(site: &str, date: NaiveDate) -> crate::result::Result<Vec<Identifier>> {
     let files = list_files_with_sizes(site, date).await?;
     Ok(files.into_iter().map(ListedFile::into_identifier).collect())
 }
 
-/// List data files for the specified site and date along with each file's size in bytes. Sizes come
-/// from the same listing request as [`list_files`], so this costs nothing extra.
+/// Lists the volume files for the specified site and UTC date along with each file's size in
+/// bytes. Sizes come from the same listing request as [`list_files`], so this costs nothing extra.
+///
+/// Only volume files are returned: metadata objects ([`Identifier::is_metadata`]) and objects whose
+/// names do not follow the archive grammar are skipped rather than reported as errors.
 pub async fn list_files_with_sizes(
     site: &str,
     date: NaiveDate,
@@ -51,15 +75,64 @@ pub async fn list_files_with_sizes(
     let files = list_result
         .objects
         .into_iter()
-        .map(|object| {
-            let name = object.key.split('/').skip(4).collect::<String>();
-
-            ListedFile {
-                identifier: Identifier::new(name),
-                size: object.size,
-            }
-        })
+        .filter_map(|object| volume_file(&object.key, object.size))
         .collect();
 
     Ok(files)
+}
+
+/// Maps an archive object key (`YYYY/MM/DD/SITE/NAME`) to a listing entry, or `None` if the
+/// object is not a volume file.
+fn volume_file(key: &str, size: u64) -> Option<ListedFile> {
+    let name = key.rsplit('/').next()?;
+    let identifier = Identifier::parse(name).ok()?;
+    (!identifier.is_metadata()).then_some(ListedFile { identifier, size })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn listing_keeps_only_volume_files() {
+        let keys = [
+            "2022/03/05/KDMX/KDMX20220305_232324_V06",
+            "2022/03/05/KDMX/KDMX20220305_232324_V06_MDM",
+            "2022/03/05/KDMX/NWS_NEXRAD_NXL2DP_KDMX_20220305.tar",
+            "2010/05/01/KTLX/KTLX20100501_000444_V03.gz",
+        ];
+        let names: Vec<_> = keys
+            .iter()
+            .filter_map(|key| volume_file(key, 1))
+            .map(|file| file.identifier().name().to_string())
+            .collect();
+        assert_eq!(
+            names,
+            ["KDMX20220305_232324_V06", "KTLX20100501_000444_V03.gz"]
+        );
+    }
+
+    #[test]
+    fn listed_files_order_by_identifier_then_size() {
+        let file = |name: &str, size| volume_file(name, size).unwrap();
+        let mut files = vec![
+            file("KDMX20220305_232324_V06", 5),
+            file("KDMX20220305_120000_V06", 9),
+            file("KDMX20220305_232324_V06", 3),
+        ];
+        files.sort();
+        let order: Vec<_> = files
+            .iter()
+            .map(|file| (file.identifier().name(), file.size()))
+            .collect();
+        assert_eq!(
+            order,
+            [
+                ("KDMX20220305_120000_V06", 9),
+                ("KDMX20220305_232324_V06", 3),
+                ("KDMX20220305_232324_V06", 5),
+            ]
+        );
+        assert!(format!("{:?}", files[0]).contains("KDMX20220305_120000_V06"));
+    }
 }

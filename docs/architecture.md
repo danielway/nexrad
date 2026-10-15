@@ -139,7 +139,7 @@ appear in public signatures:
 | `chrono` | Timestamps and dates in model, decode, data and the facade | Re-exported from the facade as `nexrad::chrono` |
 | `serde` | `Serialize`/`Deserialize` impls | Opt-in `serde` feature |
 | `uom` | Unit-typed accessors | Opt-in `uom` feature |
-| `image` | `nexrad-render` (`RgbaImage`, `Error::Image(ImageError)`) | Accepted coupling: `RgbaImage` stays in the API, `pub use image;` re-exports the crate, and an `image` major bump is a `nexrad-render` major bump |
+| `image` | `nexrad-render` (`RgbaImage`, `Error::Image(ImageError)`) | Accepted coupling: `RgbaImage` stays in the API, `pub use image;` re-exports the crate, and an `image` major bump is a `nexrad-render` major bump. Only the `png` codec is enabled; consumers enable other codecs on their own `image` dependency |
 | `futures_core` | The `Stream` returned by `nexrad_data::aws::realtime::chunk_stream` and `nexrad::stream` | Return type only |
 
 Not allowed in public signatures: `reqwest`, `bzip2`, `zerocopy` traits, `tokio`, `once_cell`. HTTP failures are boxed
@@ -327,22 +327,27 @@ The renderer converts field data to images through these steps:
 1. **Color scale selection** — a `ColorScale` is either discrete (step-function, `DiscreteColorScale`) or continuous
    (linear interpolation, `ContinuousColorScale`); `default_scale(product)` picks the standard scale for a product
 2. **LUT construction** — `ColorLookupTable::new(&scale, min, max, size)` pre-computes RGBA entries for O(1) lookup
+   and returns `Error::InvalidRange` unless `min < max`; renderers build it over `RenderOptions::value_range()`, else
+   the field's product range, else the field's valid-value range
 3. **Rasterization** — each output pixel is mapped to data coordinates, sampled (nearest-neighbor or bilinear, see
-   `Interpolation`), and colored
+   `Interpolation`), and colored; gates with a non-`Valid` status take `RenderOptions::status_color(status)` or stay
+   background
 
 Three rendering entry points match the three field types:
 
 | Function | Input | Output | Projection |
 |----------|-------|--------|------------|
-| `render_sweep` | `SweepField` | `RenderResult` (image + metadata) | `Projection::Polar` |
+| `render_sweep` | `SweepField` | `RenderResult` (image + metadata) | `Projection::Polar`; `Projection::Geographic` with `RenderOptions::with_extent` (each pixel mapped through the coordinate system to the sweep) |
 | `render_cartesian` | `CartesianField` | `RenderResult` | `Projection::Geographic` |
 | `render_vertical` | `VerticalField` | `RenderResult` | `Projection::Vertical` |
 
 Image dimensions (`RenderOptions::new(width, height)`, `RenderMetadata::width`/`height`) are `u32`. `RenderResult`
 bundles the image with `RenderMetadata`, whose `projection()` describes how pixels map back to data coordinates.
-Conversions a projection supports (polar ↔ pixel and point queries for `Polar`, geo ↔ pixel for `Polar` with a
-coordinate system and for `Geographic`) return `Some`; the rest return `None`. This enables pixel-to-geographic
-coordinate conversion and data value queries — useful for interactive applications and map overlays.
+Conversions a projection supports (polar ↔ pixel for `Polar`, geo ↔ pixel for `Polar` with a coordinate system and
+for `Geographic`, distance/altitude ↔ pixel for `Vertical`) return `Some`; the rest return `None`. Data value queries
+live on `RenderMetadata` and take the field that was rendered: `query_pixel`, `query_polar` and `query_geo` for
+sweeps, `query_cartesian` and `query_vertical` for grids. This enables pixel-to-geographic coordinate conversion and
+data value queries — useful for interactive applications and map overlays.
 
 ## Realtime Subsystem
 

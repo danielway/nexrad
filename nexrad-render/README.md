@@ -21,7 +21,8 @@ To render a sweep of radials, build a `SweepField` first with `sweep.field(produ
 `SweepField::from_radials(radials, product)`:
 
 ```rust,ignore
-use nexrad_render::{default_scale, render_sweep, Product, RenderOptions};
+use nexrad_model::data::Product;
+use nexrad_render::{default_scale, render_sweep, RenderOptions};
 
 let field = sweep.field(Product::Reflectivity).unwrap();
 let scale = default_scale(Product::Reflectivity);
@@ -35,25 +36,36 @@ Configure rendering via the builder API. Dimensions are `u32`; rendering with a 
 width or height returns `Error::InvalidDimensions`.
 
 ```rust,ignore
-use nexrad_render::{RenderOptions, Interpolation};
+use nexrad_model::data::GateStatus;
+use nexrad_render::{Color, Interpolation, RenderOptions};
 
 // Basic: fixed size with black background
 let options = RenderOptions::new(800, 800);
 
 // Transparent background (for compositing)
-let options = RenderOptions::new(800, 800).transparent();
+let options = RenderOptions::new(800, 800).with_background(Color::TRANSPARENT);
 
 // Native resolution (one pixel per gate at the outer edge)
 let options = RenderOptions::native_for(&field);
 
 // Bilinear interpolation (smoother output)
-let options = RenderOptions::new(800, 800).bilinear();
+let options = RenderOptions::new(800, 800).with_interpolation(Interpolation::Bilinear);
 
-// Geographic extent for consistent spatial mapping
+// Fixed color range and purple range-folded gates
+let options = RenderOptions::new(800, 800)
+    .with_value_range(-32.0, 95.0)
+    .with_status_color(GateStatus::RangeFolded, Color::rgb(0.5, 0.0, 0.5));
+
+// Render a sweep onto a lat/lon grid covering a fixed geographic extent
 let options = RenderOptions::new(800, 800)
     .with_extent(extent)
     .with_coord_system(coord_system);
 ```
+
+Without `with_value_range`, the color lookup range is the field's product range, else the
+range of its valid values. Gates with a non-`Valid` status are drawn as the background unless
+`with_status_color` sets a color for that status. `render_cartesian` and `render_vertical`
+ignore the extent: their fields carry their own.
 
 ## Color Scales
 
@@ -73,7 +85,10 @@ Use `default_scale(product)` to select the appropriate scale as a `ColorScale`; 
 individual functions above return a `DiscreteColorScale`, which converts with `.into()`.
 
 Custom scales can be built with `DiscreteColorScale` (step-function) or `ContinuousColorScale` (linear interpolation).
-`ColorLookupTable::new(&scale, min, max, size)` pre-computes a scale for O(1) lookups.
+`ColorLookupTable::new(&scale, min, max, size)` pre-computes a scale for O(1) lookups; it returns
+`Error::InvalidRange` unless `min < max` (both finite) and `Error::InvalidTableSize` for fewer than 2
+entries. `entries()` exposes the RGBA table (for example as a 1-D GPU texture), and
+`DiscreteColorScale::levels()` exposes each level's public `value` and `color` for legends.
 
 ## RenderResult and Metadata
 
@@ -82,15 +97,17 @@ Custom scales can be built with `DiscreteColorScale` (step-function) or `Continu
 ```rust,ignore
 let result = render_sweep(&field, &color_scale, &options)?;
 
-// Save the image
+// Save the image, or encode it into memory
 result.save("radar.png")?;
+let mut png = Vec::new();
+result.write_to(&mut png, nexrad_render::image::ImageFormat::Png)?;
 
-// Query data values at specific coordinates (polar renders only)
-let query = result.query_pixel(&field, 400.0, 300.0);
-let query = result.query_geo(&field, &geo_point);
+// Query data values at specific coordinates (pass the field that was rendered)
+let meta = result.metadata();
+let query = meta.query_pixel(&field, 400.0, 300.0);
+let query = meta.query_geo(&field, &geo_point);
 
 // Use metadata for map overlays
-let meta = result.metadata();
 let ring_px = meta.km_to_pixel_distance(100.0);  // Some(..): 100km range ring
 let pixel = meta.polar_to_pixel(180.0, 50.0);    // Some((x, y)): azimuth 180°, range 50km
 ```
@@ -99,9 +116,9 @@ let pixel = meta.polar_to_pixel(180.0, 50.0);    // Some((x, y)): azimuth 180°,
 
 | Projection | Produced by | Supported conversions |
 |------------|-------------|-----------------------|
-| `Projection::Polar` | `render_sweep` | polar ↔ pixel, km ↔ pixel distance, geo ↔ pixel (with a coordinate system), point queries |
-| `Projection::Geographic` | `render_cartesian` | geo ↔ pixel (linear through the extent) |
-| `Projection::Vertical` | `render_vertical` | none (axis ranges are in the projection) |
+| `Projection::Polar` | `render_sweep` | polar ↔ pixel, km ↔ pixel distance, geo ↔ pixel (with a coordinate system), `query_pixel`/`query_polar`/`query_geo` |
+| `Projection::Geographic` | `render_sweep` with an extent, `render_cartesian` | geo ↔ pixel (linear through the extent), `query_pixel`/`query_polar`/`query_geo` for sweeps, `query_cartesian` |
+| `Projection::Vertical` | `render_vertical` | `pixel_to_vertical`/`vertical_to_pixel`, `query_vertical` |
 
 Conversions a projection does not support return `None`.
 
@@ -110,6 +127,11 @@ Conversions a projection does not support return `None`.
 Images are `image::RgbaImage` values and I/O failures surface as `Error::Image(image::ImageError)`,
 so the `image` crate is part of the public API and is re-exported as `nexrad_render::image`.
 A major version bump of `image` is a major version bump of `nexrad-render`.
+
+Only the `image` PNG codec is enabled. To `save` or `write_to` other formats, enable the matching
+feature on your own `image` dependency (for example
+`image = { version = "0.25", default-features = false, features = ["jpeg"] }`); Cargo's feature
+unification makes the codec available to `nexrad-render`.
 
 ## Minimum Supported Rust Version
 

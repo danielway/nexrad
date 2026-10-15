@@ -308,7 +308,7 @@ Processing algorithms are modeled as traits with two scopes:
 The built-in `SweepProcessor`s are `ThresholdFilter`, `MedianFilter`, `GaussianSmooth`, `CorrelationCoefficientFilter`
 and `StormRelativeVelocity`; `CompositeReflectivity` is a `ScanDerivedProduct`. `VerticalCrossSection` (producing a
 `VerticalField`) and `StormCellDetector` (producing `StormCell`s) stand alone. Processors with parameters are built
-with a validating `new` that returns `Err(Error::InvalidParameter)` for invalid input, so invalid configuration is
+with a validating `new` or builder that returns `Err(Error::InvalidParameter)` for invalid input, so invalid configuration is
 reported at construction rather than by `process`.
 
 `SweepProcessor` implementations can be composed into a `SweepPipeline`:

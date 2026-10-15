@@ -751,8 +751,9 @@ let section = VerticalCrossSection::builder(200.0)
   `Default`).
 - **Inputs are checked by product** (#193). Build fields with `SweepField::from_radials` (or set
   `SweepFieldBuilder::product`): `CompositeReflectivity::compute` needs `Product::Reflectivity` fields,
-  `CorrelationCoefficientFilter::new` a `Product::CorrelationCoefficient` field and `StormRelativeVelocity` a
-  `Product::Velocity` input. Its output is labelled "Storm-Relative Velocity" with no product, so it no longer
+  `CorrelationCoefficientFilter::new` a `Product::CorrelationCoefficient` field, `StormRelativeVelocity` a
+  `Product::Velocity` input, and `VerticalCrossSection::compute` and `StormCellDetector::detect` `Product::Reflectivity`
+  fields. Its output is labelled "Storm-Relative Velocity" with no product, so it no longer
   passes as a velocity moment.
 - Every floating-point parameter must be finite (#193). `StormRelativeVelocity::new` also requires a direction in
   `0.0..360.0`, `VerticalCrossSection`'s builder an azimuth in `0.0..360.0`, and `CorrelationCoefficientFilter::new`
@@ -761,7 +762,8 @@ let section = VerticalCrossSection::builder(200.0)
   gate interval, returning `Error::GeometryMismatch` otherwise (#193). Gate counts may differ.
 - `StormCell::centroid()` is weighted by linear reflectivity factor rather than dBZ, which moves it toward the most
   intense gates (#193).
-- `MedianFilter` and `GaussianSmooth` no longer wrap a sector field's azimuths across north (#193).
+- `MedianFilter`, `GaussianSmooth` and `StormCellDetector` no longer wrap a sector field's azimuths across north
+  (#193).
 
 ### nexrad-render from 1.0.0-rc.4
 

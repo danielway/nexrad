@@ -79,6 +79,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Product::CorrelationCoefficient` field, and `StormRelativeVelocity` a `Product::Velocity` input; its output is
   labelled "Storm-Relative Velocity" in "m/s" with no product. Mismatches return `Error::UnexpectedProduct`.
   (#193)
+- `derived::VerticalCrossSection::compute` and `detection::StormCellDetector::detect` require every input field to
+  hold `Product::Reflectivity`, returning `Error::UnexpectedProduct` otherwise. (#193)
 - `detection::StormCell::bounds()` returns a `nexrad_model::geo::GeoExtent` by value. (#193)
 
 ### Removed
@@ -100,3 +102,5 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   is zero or negative at and below 0 dBZ and gave a NaN or misplaced centroid for low thresholds. (#193)
 - `MedianFilter` and `GaussianSmooth` wrap azimuth across north only when the field covers the full circle (the rule
   `SweepField::value_at_polar` uses); a sector's edges are boundaries instead of neighbours. (#193)
+- `StormCellDetector` joins gates across north only when the field covers the full circle, so a sector's two edges
+  are no longer merged into one cell. (#193)

@@ -200,7 +200,7 @@ This includes: `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `
 - `parallel` - requires threads (rayon)
 - `full` - includes `parallel`
 
-Real-time streaming (`nexrad::stream`) is part of `aws` and works on WASM: it takes a caller-supplied sleep
+Real-time streaming (`nexrad::stream`, `nexrad::stream_scans`) is part of `aws` and works on WASM: it takes a caller-supplied sleep
 function instead of depending on a specific async runtime.
 
 ### Examples

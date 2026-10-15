@@ -12,6 +12,8 @@
 //! - `nexrad-render` as `render` - Visualization and rendering
 //! - `chrono` as `chrono` - Date and time types, re-exported because `download_at` and
 //!   `list_scans` take them
+//! - `futures_util` as `futures_util` (with `aws`) - Stream utilities, re-exported because the
+//!   real-time functions return a `Stream`, whose `StreamExt::next` lives there
 //!
 //! ## Quick Start
 //!
@@ -42,6 +44,9 @@
 //! # Ok::<(), nexrad::Error>(())
 //! ```
 //!
+//! Real-time data arrives through `stream`, which yields chunks as they are published, and
+//! `stream_scans`, which yields one `Scan` per completed volume.
+//!
 //! Helpers that need only model types are methods on those types: `Sweep::field`,
 //! `Scan::fields` and `Scan::first_field` extract `SweepField`s, and
 //! `Scan::coordinate_system` builds a `RadarCoordinateSystem` from the scan's site. The
@@ -60,7 +65,7 @@
 //! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model` | bzip2 | Yes |
 //! | `render` | Visualization and rendering | `model` | image | Yes |
 //! | `process` | Radar data processing algorithms | `model` | | Yes |
-//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), and real-time streaming (`stream`) | `data`, `chrono` | reqwest, futures-util | Yes |
+//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) and the `futures_util` re-export | `data`, `chrono` | reqwest, futures-util | Yes |
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
 //! | `serde` | Serialization support for model types | | serde | Yes |
 //! | `uom` | Type-safe units of measure | | uom | Yes |
@@ -484,7 +489,8 @@ pub async fn list_scans(
 ///
 /// Returns a [`Stream`](futures_util::stream::Stream) that yields chunks as they become available
 /// from NOAA's real-time NEXRAD data feed. This is a convenience wrapper around
-/// [`data::aws::realtime::chunk_stream`] with default retry policies.
+/// [`data::aws::realtime::chunk_stream`] with default retry policies; [`stream_with`] takes a
+/// custom configuration.
 ///
 /// The stream is runtime-agnostic: `sleep` is called with each duration the
 /// stream needs to wait and must return a future that completes after that
@@ -495,7 +501,7 @@ pub async fn list_scans(
 /// # Example
 ///
 /// ```ignore
-/// use futures_util::StreamExt;
+/// use nexrad::futures_util::StreamExt;
 ///
 /// let stream = nexrad::stream("KTLX", |d| tokio::time::sleep(d));
 /// let mut stream = std::pin::pin!(stream);
@@ -514,9 +520,208 @@ where
     S: Fn(std::time::Duration) -> F,
     F: std::future::Future<Output = ()>,
 {
+    stream_with(data::aws::realtime::PollConfig::new(site), sleep)
+}
+
+/// Stream real-time radar data chunks with a custom configuration.
+///
+/// Like [`stream`], but takes a [`PollConfig`](data::aws::realtime::PollConfig), which names the
+/// site and sets the download and discovery retry policies. This is a wrapper around
+/// [`data::aws::realtime::chunk_stream`].
+///
+/// The stream is runtime-agnostic: `sleep` is called with each duration the
+/// stream needs to wait and must return a future that completes after that
+/// duration. With tokio, pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a
+/// timer crate such as `gloo-timers` provides an equivalent sleep future. The
+/// stream is `Send` whenever `S` and `F` are `Send`.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::data::aws::realtime::{PollConfig, RetryPolicy};
+/// use nexrad::futures_util::StreamExt;
+/// use std::time::Duration;
+///
+/// let config = PollConfig::new("KTLX").with_download_policy(
+///     RetryPolicy::default_download().with_initial_delay(Duration::from_millis(500)),
+/// );
+/// let stream = nexrad::stream_with(config, |d| tokio::time::sleep(d));
+/// let mut stream = std::pin::pin!(stream);
+/// while let Some(chunk) = stream.next().await {
+///     let chunk = chunk?;
+///     println!("Received chunk: {:?}", chunk.identifier);
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "aws")]
+pub fn stream_with<S, F>(
+    config: data::aws::realtime::PollConfig,
+    sleep: S,
+) -> impl futures_util::stream::Stream<Item = Result<data::aws::realtime::DownloadedChunk>>
+where
+    S: Fn(std::time::Duration) -> F,
+    F: std::future::Future<Output = ()>,
+{
     use futures_util::StreamExt;
-    let config = data::aws::realtime::PollConfig::new(site);
     data::aws::realtime::chunk_stream(config, sleep).map(|r| r.map_err(Error::from))
+}
+
+/// Stream complete real-time radar scans for a site.
+///
+/// Returns a [`Stream`](futures_util::stream::Stream) that yields one
+/// [`Scan`](model::data::Scan) per volume from NOAA's real-time NEXRAD data feed. It receives
+/// chunks as [`stream`] does, with default retry policies, and assembles each volume with
+/// [`data::aws::realtime::assemble_volume`] once its End chunk arrives; [`stream_scans_with`]
+/// takes a custom configuration.
+///
+/// Chunks received before the first Start chunk are skipped, so the volume in progress when the
+/// stream starts is not yielded. An error from the chunk stream is yielded as an error item and
+/// the partial volume is discarded; the next Start chunk begins a new one. Only complete volumes
+/// are yielded.
+///
+/// The stream is runtime-agnostic: `sleep` is called with each duration the
+/// stream needs to wait and must return a future that completes after that
+/// duration. With tokio, pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a
+/// timer crate such as `gloo-timers` provides an equivalent sleep future. The
+/// stream is `Send` whenever `S` and `F` are `Send`.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::futures_util::StreamExt;
+///
+/// let scans = nexrad::stream_scans("KTLX", |d| tokio::time::sleep(d));
+/// let mut scans = std::pin::pin!(scans);
+/// while let Some(scan) = scans.next().await {
+///     let scan = scan?;
+///     println!("{}, {} sweeps", scan.coverage_pattern_number(), scan.sweeps().len());
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "aws")]
+pub fn stream_scans<S, F>(
+    site: &str,
+    sleep: S,
+) -> impl futures_util::stream::Stream<Item = Result<model::data::Scan>>
+where
+    S: Fn(std::time::Duration) -> F,
+    F: std::future::Future<Output = ()>,
+{
+    stream_scans_with(data::aws::realtime::PollConfig::new(site), sleep)
+}
+
+/// Stream complete real-time radar scans with a custom configuration.
+///
+/// Like [`stream_scans`], but takes a [`PollConfig`](data::aws::realtime::PollConfig), which
+/// names the site and sets the download and discovery retry policies.
+///
+/// Chunks received before the first Start chunk are skipped, so the volume in progress when the
+/// stream starts is not yielded. An error from the chunk stream is yielded as an error item and
+/// the partial volume is discarded; the next Start chunk begins a new one. Only complete volumes
+/// are yielded.
+///
+/// The stream is runtime-agnostic: `sleep` is called with each duration the
+/// stream needs to wait and must return a future that completes after that
+/// duration. With tokio, pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a
+/// timer crate such as `gloo-timers` provides an equivalent sleep future. The
+/// stream is `Send` whenever `S` and `F` are `Send`.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::data::aws::realtime::PollConfig;
+/// use nexrad::futures_util::StreamExt;
+///
+/// let scans = nexrad::stream_scans_with(PollConfig::new("KTLX"), |d| tokio::time::sleep(d));
+/// let mut scans = std::pin::pin!(scans);
+/// while let Some(scan) = scans.next().await {
+///     let scan = scan?;
+///     println!("{}, {} sweeps", scan.coverage_pattern_number(), scan.sweeps().len());
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "aws")]
+pub fn stream_scans_with<S, F>(
+    config: data::aws::realtime::PollConfig,
+    sleep: S,
+) -> impl futures_util::stream::Stream<Item = Result<model::data::Scan>>
+where
+    S: Fn(std::time::Duration) -> F,
+    F: std::future::Future<Output = ()>,
+{
+    use futures_util::StreamExt;
+    let mut volume = VolumeAccumulator::default();
+    stream_with(config, sleep).filter_map(move |item| {
+        let scan = volume.accept(item).map(|chunks| {
+            chunks.and_then(|chunks| Ok(data::aws::realtime::assemble_volume(chunks)?))
+        });
+        futures_util::future::ready(scan)
+    })
+}
+
+/// Collects the chunks of one real-time volume, from its Start chunk through its End chunk.
+#[cfg(feature = "aws")]
+#[derive(Default)]
+struct VolumeAccumulator {
+    /// The chunks of the volume in progress, in sequence order.
+    chunks: Vec<data::aws::realtime::Chunk>,
+    /// The scan time and sequence number of the last chunk added to `chunks`, or `None` when no
+    /// volume is in progress.
+    last: Option<(chrono::NaiveDateTime, usize)>,
+}
+
+#[cfg(feature = "aws")]
+impl VolumeAccumulator {
+    /// Takes the next item from the chunk stream. Returns the volume's chunks once its End chunk
+    /// completes it, the error when the item is an error, and `None` otherwise.
+    ///
+    /// A Start chunk begins a new volume, replacing any partial one. Any other chunk is added
+    /// only when it directly follows the last chunk added, in the same volume; otherwise the
+    /// partial volume is discarded, as it is on an error.
+    fn accept(
+        &mut self,
+        item: Result<data::aws::realtime::DownloadedChunk>,
+    ) -> Option<Result<Vec<data::aws::realtime::Chunk>>> {
+        use data::aws::realtime::ChunkType;
+
+        let downloaded = match item {
+            Ok(downloaded) => downloaded,
+            Err(error) => {
+                self.discard();
+                return Some(Err(error));
+            }
+        };
+
+        let identifier = &downloaded.identifier;
+        let chunk_type = identifier.chunk_type();
+        let position = (*identifier.date_time_prefix(), identifier.sequence());
+        if chunk_type == ChunkType::Start {
+            self.chunks.clear();
+        } else {
+            let follows = self
+                .last
+                .is_some_and(|(scan_time, sequence)| (scan_time, sequence + 1) == position);
+            if !follows {
+                self.discard();
+                return None;
+            }
+        }
+
+        self.chunks.push(downloaded.chunk);
+        if chunk_type == ChunkType::End {
+            self.last = None;
+            Some(Ok(std::mem::take(&mut self.chunks)))
+        } else {
+            self.last = Some(position);
+            None
+        }
+    }
+
+    /// Drops the volume in progress.
+    fn discard(&mut self) {
+        self.chunks.clear();
+        self.last = None;
+    }
 }
 
 // ============================================================================
@@ -547,12 +752,18 @@ pub use nexrad_process as process;
 #[cfg(feature = "chrono")]
 pub use chrono;
 
+/// Re-export of `futures_util`, because the real-time functions return a `Stream`, whose
+/// `StreamExt::next` lives there.
+#[cfg(feature = "aws")]
+pub use futures_util;
+
 #[cfg(all(test, feature = "aws"))]
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     use chrono::NaiveDateTime;
     use data::aws::archive::Identifier;
+    use data::aws::realtime::{Chunk, ChunkIdentifier, ChunkType, DownloadedChunk, VolumeIndex};
 
     fn datetime(value: &str) -> NaiveDateTime {
         NaiveDateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S").expect("valid datetime")
@@ -626,5 +837,132 @@ mod tests {
 
         assert_eq!(selected(&day, &[], "2023-05-20 00:01:00"), None);
         assert_eq!(selected(&[], &[], "2023-05-20 00:01:00"), None);
+    }
+
+    fn chunk(scan_time: &str, sequence: usize, chunk_type: ChunkType) -> Result<DownloadedChunk> {
+        let identifier = ChunkIdentifier::new(
+            "KTLX",
+            VolumeIndex::new(1).expect("valid volume index"),
+            datetime(scan_time),
+            sequence,
+            chunk_type,
+            None,
+        );
+        let data = match chunk_type {
+            ChunkType::Start => b"AR2V0006.".to_vec(),
+            _ => b"\0\0\0\0BZh9".to_vec(),
+        };
+        let chunk = Chunk::new(data).expect("recognized chunk format");
+        Ok(DownloadedChunk::new(identifier, chunk, 1))
+    }
+
+    fn error() -> Result<DownloadedChunk> {
+        Err(Error::Io(std::io::Error::other("connection reset")))
+    }
+
+    /// Feeds `items` to a new accumulator and returns, per item, `None` when nothing was
+    /// yielded, `Some(Ok(n))` for a volume of `n` chunks and `Some(Err(()))` for an error.
+    fn accept_all(
+        items: impl IntoIterator<Item = Result<DownloadedChunk>>,
+    ) -> Vec<Option<std::result::Result<usize, ()>>> {
+        let mut volume = VolumeAccumulator::default();
+        items
+            .into_iter()
+            .map(|item| {
+                volume
+                    .accept(item)
+                    .map(|chunks| chunks.map(|chunks| chunks.len()).map_err(|_| ()))
+            })
+            .collect()
+    }
+
+    const VOLUME: &str = "2023-05-20 20:16:43";
+    const NEXT_VOLUME: &str = "2023-05-20 20:21:30";
+
+    #[test]
+    fn accumulator_yields_a_complete_volume() {
+        let results = accept_all([
+            chunk(VOLUME, 1, ChunkType::Start),
+            chunk(VOLUME, 2, ChunkType::Intermediate),
+            chunk(VOLUME, 3, ChunkType::End),
+        ]);
+
+        assert_eq!(results, [None, None, Some(Ok(3))]);
+    }
+
+    #[test]
+    fn accumulator_skips_chunks_before_the_first_start() {
+        let results = accept_all([
+            chunk(VOLUME, 5, ChunkType::Intermediate),
+            chunk(VOLUME, 6, ChunkType::End),
+            chunk(NEXT_VOLUME, 1, ChunkType::Start),
+            chunk(NEXT_VOLUME, 2, ChunkType::End),
+        ]);
+
+        assert_eq!(results, [None, None, None, Some(Ok(2))]);
+    }
+
+    #[test]
+    fn accumulator_discards_a_volume_missing_a_chunk() {
+        // The chunk stream joins mid-volume by yielding the Start chunk and then the latest one.
+        let results = accept_all([
+            chunk(VOLUME, 1, ChunkType::Start),
+            chunk(VOLUME, 7, ChunkType::Intermediate),
+            chunk(VOLUME, 8, ChunkType::End),
+            chunk(NEXT_VOLUME, 1, ChunkType::Start),
+            chunk(NEXT_VOLUME, 2, ChunkType::Intermediate),
+            chunk(NEXT_VOLUME, 3, ChunkType::End),
+        ]);
+
+        assert_eq!(results, [None, None, None, None, None, Some(Ok(3))]);
+    }
+
+    #[test]
+    fn accumulator_forwards_errors_and_discards_the_partial_volume() {
+        let results = accept_all([
+            chunk(VOLUME, 1, ChunkType::Start),
+            chunk(VOLUME, 2, ChunkType::Intermediate),
+            error(),
+            chunk(VOLUME, 3, ChunkType::End),
+            chunk(NEXT_VOLUME, 1, ChunkType::Start),
+            chunk(NEXT_VOLUME, 2, ChunkType::End),
+        ]);
+
+        assert_eq!(
+            results,
+            [None, None, Some(Err(())), None, None, Some(Ok(2))]
+        );
+    }
+
+    #[test]
+    fn accumulator_restarts_on_a_new_start_chunk() {
+        let results = accept_all([
+            chunk(VOLUME, 1, ChunkType::Start),
+            chunk(VOLUME, 2, ChunkType::Intermediate),
+            chunk(NEXT_VOLUME, 1, ChunkType::Start),
+            chunk(NEXT_VOLUME, 2, ChunkType::Intermediate),
+            chunk(NEXT_VOLUME, 3, ChunkType::End),
+        ]);
+
+        assert_eq!(results, [None, None, None, None, Some(Ok(3))]);
+    }
+
+    #[test]
+    fn streams_are_send_with_a_send_sleep() {
+        fn assert_send<T: Send>(_: &T) {}
+
+        let sleep = |_: std::time::Duration| async {};
+        assert_send(&stream("KTLX", sleep));
+        assert_send(&stream_scans("KTLX", sleep));
+    }
+
+    #[test]
+    fn accumulator_rejects_a_chunk_from_another_volume() {
+        let results = accept_all([
+            chunk(VOLUME, 1, ChunkType::Start),
+            chunk(NEXT_VOLUME, 2, ChunkType::End),
+        ]);
+
+        assert_eq!(results, [None, None]);
     }
 }

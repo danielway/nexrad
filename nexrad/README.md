@@ -50,6 +50,9 @@ for sweep in scan.sweeps() {
 | Function | Description |
 |----------|-------------|
 | `stream(site, sleep)` | Stream live radar data chunks as a `Stream`, waiting via the supplied sleep function (e.g. `\|d\| tokio::time::sleep(d)`) |
+| `stream_with(config, sleep)` | `stream` with a `PollConfig` that sets the retry policies |
+| `stream_scans(site, sleep)` | Stream one `Scan` per complete live volume |
+| `stream_scans_with(config, sleep)` | `stream_scans` with a `PollConfig` |
 
 ## Re-exported Crates
 
@@ -63,7 +66,8 @@ Access sub-crate APIs through module re-exports:
 
 `nexrad::chrono` re-exports `chrono` (with the `chrono` feature, implied by `aws`) because
 `list_scans` and `download_at` take `NaiveDate`/`NaiveDateTime`, so you don't need a separate
-`chrono` dependency to call them.
+`chrono` dependency to call them. `nexrad::futures_util` re-exports `futures_util` (with `aws`)
+for `StreamExt::next` on the real-time streams.
 
 Helpers that only need model types live on those types: `sweep.field(product)`,
 `scan.fields(product)` and `scan.first_field(product)` extract `SweepField`s,

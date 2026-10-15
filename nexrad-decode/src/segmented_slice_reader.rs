@@ -8,8 +8,9 @@ use zerocopy::FromBytes;
 /// part of the logical message data.
 ///
 /// The NEXRAD protocol is designed such that data structures do not span segment
-/// boundaries, so `take_ref` and `take_slice` will error if the requested data
-/// would cross a boundary.
+/// boundaries, so when `take_ref` or `take_slice` does not fit in the rest of the
+/// current segment, the rest is treated as padding and the read starts at the next
+/// segment. `read_bytes_owned` copies data that does span segments.
 #[derive(Debug, Clone)]
 pub struct SegmentedSliceReader<'a, 'seg> {
     /// The segment payloads (body data, excluding headers).
@@ -194,45 +195,6 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
 }
 
 #[cfg(test)]
-impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
-    /// Returns the total position across all segments (bytes read so far).
-    pub fn position(&self) -> usize {
-        let mut pos = 0;
-        for i in 0..self.current_segment {
-            pos += self.segments[i].len();
-        }
-        pos + self.position_in_segment
-    }
-
-    /// Returns a byte slice of `count` bytes and advances the reader past them.
-    ///
-    /// Returns an error if the bytes would span a segment boundary.
-    pub fn take_bytes(&mut self, count: usize) -> Result<&'a [u8]> {
-        let remaining = self.current_remaining();
-        if remaining.len() < count {
-            // Check if this is a boundary issue or just EOF
-            if self.remaining_total() >= count {
-                return Err(Error::DataSpansSegmentBoundary {
-                    position: self.input_offset(),
-                });
-            } else {
-                return Err(Error::UnexpectedEof {
-                    offset: self.input_offset(),
-                });
-            }
-        }
-        let bytes = &remaining[..count];
-        self.advance(count);
-        Ok(bytes)
-    }
-
-    /// Returns the current segment index (0-based).
-    pub fn current_segment_index(&self) -> usize {
-        self.current_segment
-    }
-}
-
-#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -242,39 +204,26 @@ mod tests {
         let segments = [data.as_slice()];
         let mut reader = SegmentedSliceReader::new(&segments, &[0]);
 
-        assert_eq!(reader.position(), 0);
         assert_eq!(reader.remaining_total(), 8);
-
-        let bytes = reader.take_bytes(4).unwrap();
-        assert_eq!(bytes, &[1, 2, 3, 4]);
-        assert_eq!(reader.position(), 4);
-
-        let bytes = reader.take_bytes(4).unwrap();
-        assert_eq!(bytes, &[5, 6, 7, 8]);
-        assert_eq!(reader.position(), 8);
+        assert_eq!(reader.take_slice::<u8>(4).unwrap(), &[1, 2, 3, 4]);
+        assert_eq!(reader.take_slice::<u8>(4).unwrap(), &[5, 6, 7, 8]);
         assert_eq!(reader.remaining_total(), 0);
     }
 
     #[test]
-    fn test_multiple_segments_advance() {
+    fn test_advance_crosses_segments() {
         let seg1 = [1u8, 2, 3, 4];
         let seg2 = [5u8, 6, 7, 8];
         let segments = [seg1.as_slice(), seg2.as_slice()];
         let mut reader = SegmentedSliceReader::new(&segments, &[0, 4]);
 
-        assert_eq!(reader.remaining_total(), 8);
+        assert_eq!(reader.take_slice::<u8>(2).unwrap(), &[1, 2]);
 
-        // Read from first segment
-        let bytes = reader.take_bytes(2).unwrap();
-        assert_eq!(bytes, &[1, 2]);
-
-        // Advance past rest of first segment into second
-        reader.advance(3); // 2 remaining in seg1 + 1 into seg2
-        assert_eq!(reader.position(), 5);
-        assert_eq!(reader.current_segment_index(), 1);
-
-        let bytes = reader.take_bytes(3).unwrap();
-        assert_eq!(bytes, &[6, 7, 8]);
+        // 2 remaining in the first segment + 1 into the second
+        reader.advance(3);
+        assert_eq!(reader.remaining_in_current_segment(), 3);
+        assert_eq!(reader.remaining_total(), 3);
+        assert_eq!(reader.take_slice::<u8>(3).unwrap(), &[6, 7, 8]);
     }
 
     #[test]
@@ -284,29 +233,37 @@ mod tests {
         let segments = [seg1.as_slice(), seg2.as_slice()];
         let mut reader = SegmentedSliceReader::new(&segments, &[0, 4]);
 
-        reader.take_bytes(2).unwrap();
+        reader.take_slice::<u8>(2).unwrap();
         reader.advance_to_next_segment();
 
-        assert_eq!(reader.current_segment_index(), 1);
-        assert_eq!(reader.position(), 4); // Full first segment
-
-        let bytes = reader.take_bytes(4).unwrap();
-        assert_eq!(bytes, &[5, 6, 7, 8]);
+        assert_eq!(reader.remaining_total(), 4);
+        assert_eq!(reader.take_slice::<u8>(4).unwrap(), &[5, 6, 7, 8]);
     }
 
     #[test]
-    fn test_spans_boundary_error() {
+    fn test_read_skips_padding_at_segment_end() {
+        let seg1 = [1u8, 2];
+        let seg2 = [3u8, 4, 5];
+        let segments = [seg1.as_slice(), seg2.as_slice()];
+        let mut reader = SegmentedSliceReader::new(&segments, &[10, 40]);
+
+        reader.take_slice::<u8>(1).unwrap();
+        // Two bytes do not fit in the first segment's remaining byte, so the read starts at the
+        // next segment.
+        assert_eq!(reader.take_slice::<u8>(2).unwrap(), &[3, 4]);
+    }
+
+    #[test]
+    fn test_read_bytes_owned_spans_segments() {
         let seg1 = [1u8, 2];
         let seg2 = [3u8, 4];
         let segments = [seg1.as_slice(), seg2.as_slice()];
         let mut reader = SegmentedSliceReader::new(&segments, &[10, 40]);
 
-        // Try to read 4 bytes when only 2 are in current segment
-        reader.take_bytes(1).unwrap();
-        let result = reader.take_bytes(3);
+        assert_eq!(reader.read_bytes_owned(3).unwrap(), vec![1, 2, 3]);
         assert_eq!(
-            result,
-            Err(Error::DataSpansSegmentBoundary { position: 11 })
+            reader.read_bytes_owned(2),
+            Err(Error::UnexpectedEof { offset: 41 })
         );
     }
 
@@ -316,8 +273,10 @@ mod tests {
         let segments = [data.as_slice()];
         let mut reader = SegmentedSliceReader::new(&segments, &[28]);
 
-        // Try to read more than available
-        let result = reader.take_bytes(4);
-        assert_eq!(result, Err(Error::UnexpectedEof { offset: 28 }));
+        reader.take_slice::<u8>(1).unwrap();
+        assert_eq!(
+            reader.take_slice::<u8>(4),
+            Err(Error::UnexpectedEof { offset: 29 })
+        );
     }
 }

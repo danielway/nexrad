@@ -44,12 +44,6 @@ pub enum Error {
         /// Offset of the data block's identifier.
         offset: usize,
     },
-    /// A data structure spans a segment boundary.
-    #[error("data structure spans segment boundary at offset {position}")]
-    DataSpansSegmentBoundary {
-        /// Offset of the structure that crosses the boundary.
-        position: usize,
-    },
     /// A segment of a multi-segment message is missing or out of order.
     #[error(
         "expected segment {expected_segment} of {segment_count} of message type {} at offset {offset}",

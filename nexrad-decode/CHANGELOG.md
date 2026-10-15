@@ -140,7 +140,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   as its own `Other` message whatever its segment fields say. (#190)
 - `Error` variants carry structured, input-relative detail: `UnexpectedEof { offset }`,
   `UnknownDataBlockType { block_type: [u8; 3], offset }` and `MessageMissingDate { message_type }`;
-  `InvalidDataBlockPointer` and `DataSpansSegmentBoundary` report offsets into the input slice. `Error` implements
+  `InvalidDataBlockPointer` reports its position as an offset into the input slice. `Error` implements
   `Clone` and `PartialEq`, `MissingCoveragePattern` requires the `model` feature, and messages no longer mention a
   file. (#190)
 - `digital_radar_data::DataBlock` no longer implements `Deref`; call `inner()` or `into_inner()` to reach the block.
@@ -165,7 +165,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - With `uom`, `digital_radar_data::Header::azimuth_resolution_spacing() -> Angle`; use
   `azimuth_resolution_spacing_degrees()`. (#173)
 - The `sha2` and `hex` dependencies. (#162)
-- `Error::Decoding(String)` and `Error::InvalidMessageLength`, which nothing constructed. (#190)
+- `Error::Decoding(String)`, `Error::InvalidMessageLength` and `Error::DataSpansSegmentBoundary`, which nothing
+  constructed. (#190)
 - `rda_adaptation_data::Message::{read_integer4_at, read_real4_at, read_string_at, data_raw, total_size}`; use the
   typed accessors. (#190)
 - `digital_radar_data::GenericDataBlockHeader::reserved()`, `VolumeDataBlock::spare()` and `is_legacy()`, and

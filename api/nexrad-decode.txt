@@ -2532,8 +2532,6 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::model::ScanBuild
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::model::ScanBuilder
 pub mod nexrad_decode::result
 #[non_exhaustive] pub enum nexrad_decode::result::Error
-pub nexrad_decode::result::Error::DataSpansSegmentBoundary
-pub nexrad_decode::result::Error::DataSpansSegmentBoundary::position: usize
 pub nexrad_decode::result::Error::InvalidDataBlockPointer
 pub nexrad_decode::result::Error::InvalidDataBlockPointer::bytes: usize
 pub nexrad_decode::result::Error::InvalidDataBlockPointer::position: usize
@@ -2573,8 +2571,6 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::result::Error
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::result::Error
 pub type nexrad_decode::result::Result<T> = core::result::Result<T, nexrad_decode::result::Error>
 #[non_exhaustive] pub enum nexrad_decode::Error
-pub nexrad_decode::Error::DataSpansSegmentBoundary
-pub nexrad_decode::Error::DataSpansSegmentBoundary::position: usize
 pub nexrad_decode::Error::InvalidDataBlockPointer
 pub nexrad_decode::Error::InvalidDataBlockPointer::bytes: usize
 pub nexrad_decode::Error::InvalidDataBlockPointer::position: usize

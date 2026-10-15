@@ -349,8 +349,8 @@ nexrad-decode = { version = "1.0", default-features = false, features = ["model"
   | `Error::UnexpectedEof` | `Error::UnexpectedEof { offset }`, the offset of the structure that runs past the end |
   | `Error::UnknownDataBlockType { block_type: String }` | `{ block_type: [u8; 3], offset }` |
   | `Error::MessageMissingDate` | `Error::MessageMissingDate { message_type }` |
-  | `Error::InvalidDataBlockPointer { bytes, position }`, `DataSpansSegmentBoundary { position }` | Same fields; `position` is an offset into the input slice |
-  | `Error::Decoding(String)`, `Error::InvalidMessageLength { .. }` | Removed (never constructed) |
+  | `Error::InvalidDataBlockPointer { bytes, position }` | Same fields; `position` is an offset into the input slice |
+  | `Error::Decoding(String)`, `Error::InvalidMessageLength { .. }`, `Error::DataSpansSegmentBoundary { .. }` | Removed (never constructed) |
   | `Error::MissingCoveragePattern` | Requires the `model` feature |
   | (new) | `Error::SegmentOutOfSequence { message_type, expected_segment, segment_count, offset }` |
 
@@ -1440,7 +1440,7 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `summarize` module (`messages`, `MessageSummary`, `MessageGroupSummary`, `VCPInfo`, `VCPElevationInfo`, `RDAStatusInfo`) | Removed |
 | `result::Error::Io(std::io::Error)`, `From<std::io::Error>` | Removed |
 | `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `MissingCoveragePattern` (feature `model`), `SegmentOutOfSequence` and (feature `model`) `Model(nexrad_model::Error)` |
-| `result::Error::Decoding(String)`, `InvalidMessageLength { message_type, delta }` | Removed |
+| `result::Error::Decoding(String)`, `InvalidMessageLength { message_type, delta }`, `DataSpansSegmentBoundary { position }` | Removed |
 | `result::Error::UnexpectedEof`, `MessageMissingDate` | `UnexpectedEof { offset }`, `MessageMissingDate { message_type }` |
 | `result::Error::UnknownDataBlockType { block_type: String }` | `UnknownDataBlockType { block_type: [u8; 3], offset }` |
 | `MessageContents::Other` | `MessageContents::Other { message_type: MessageType, data: Cow<'a, [u8]> }` |

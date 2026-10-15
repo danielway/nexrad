@@ -6,8 +6,24 @@ const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
 
 /// A NEXRAD Archive II volume data file.
 ///
-/// Older NEXRAD archives (pre-~2016) may be gzip-compressed. Call
-/// [`decompress`](Self::decompress) to inflate before accessing records.
+/// # Compression
+///
+/// Data is compressed at two levels, and each level has its own state rule:
+///
+/// - **File (gzip).** Older archive files (pre-~2016) are gzip-wrapped. While
+///   [`compressed`](Self::compressed) is true, [`records`](Self::records),
+///   `scan` and [`coverage_pattern_message`](Self::coverage_pattern_message)
+///   return [`Error::CompressedFile`](crate::result::Error::CompressedFile).
+///   [`decompress`](Self::decompress) inflates the file, and returns an uncompressed file
+///   unchanged.
+/// - **Record (bzip2).** Each LDM [`Record`] is normally bzip2-compressed. While
+///   [`Record::compressed`] is true, [`Record::messages`] and `Record::radials` return
+///   [`Error::CompressedData`](crate::result::Error::CompressedData).
+///   [`Record::decompress`] inflates the record, and returns
+///   [`Error::UncompressedData`](crate::result::Error::UncompressedData) for a record that is
+///   not compressed. `scan` and
+///   [`coverage_pattern_message`](Self::coverage_pattern_message) decompress records
+///   themselves.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct File(Vec<u8>);
 

@@ -13,9 +13,10 @@ use nexrad_data::volume;
 use nexrad_decode::messages::rda_status_data::RdaBuildNumber;
 use nexrad_decode::messages::{decode_messages, MessageContents};
 
-/// Maximum RDA build number the library is known to support.
-/// Update this when the library is verified against a new build.
-const MAX_SUPPORTED_BUILD: RdaBuildNumber = RdaBuildNumber::from_raw(2400);
+/// Earliest RDA build expected from a live radar: build 12.0 introduced
+/// dual-polarisation data. Later builds are decoded without a maximum, since
+/// `RdaBuildNumber` represents any build.
+const MIN_EXPECTED_BUILD: RdaBuildNumber = RdaBuildNumber::from_raw(1200);
 
 /// Sites to test against live data.
 const TEST_SITES: &[&str] = &[
@@ -52,14 +53,14 @@ struct DecodeResult {
 
 impl DecodeResult {
     fn print_report(&self) {
-        let build_ok = self.build_number <= MAX_SUPPORTED_BUILD;
+        let build_ok = self.build_number >= MIN_EXPECTED_BUILD;
         let build_status = if build_ok { "PASS" } else { "FAIL" };
 
         println!("=== Decode Results for {} ===", self.site);
         println!("File: {}", self.file_name);
         println!(
-            "Build Number: {} (max supported: {}) - {}",
-            self.build_number, MAX_SUPPORTED_BUILD, build_status
+            "Build Number: {} (minimum expected: {}) - {}",
+            self.build_number, MIN_EXPECTED_BUILD, build_status
         );
         println!("RDA Status Messages: {}", self.rda_status_count);
         println!("VCP Messages: {}", self.vcp_count);
@@ -174,11 +175,10 @@ fn validation_failures(result: &DecodeResult) -> Vec<String> {
     let mut failures = Vec::new();
 
     // Build number check
-    if result.build_number > MAX_SUPPORTED_BUILD {
+    if result.build_number < MIN_EXPECTED_BUILD {
         failures.push(format!(
-            "Build {} exceeds MAX_SUPPORTED_BUILD ({}). \
-             Update MAX_SUPPORTED_BUILD in live_decode.rs if this is expected.",
-            result.build_number, MAX_SUPPORTED_BUILD
+            "Build {} predates MIN_EXPECTED_BUILD ({}), the dual-polarisation era.",
+            result.build_number, MIN_EXPECTED_BUILD
         ));
     }
 
@@ -215,11 +215,11 @@ fn validation_failures(result: &DecodeResult) -> Vec<String> {
 /// surface prominently in the workflow UI. Only build issues get annotations
 /// since they signal that the library itself needs updating.
 fn emit_build_annotations(site: &str, result: &DecodeResult) {
-    if result.build_number > MAX_SUPPORTED_BUILD {
+    if result.build_number < MIN_EXPECTED_BUILD {
         println!(
-            "::error file=nexrad-data/tests/live_decode.rs,title=Build Exceeds Max::\
-             Site {} build {} exceeds MAX_SUPPORTED_BUILD {}. Update the constant.",
-            site, result.build_number, MAX_SUPPORTED_BUILD
+            "::error file=nexrad-data/tests/live_decode.rs,title=Build Below Minimum::\
+             Site {} build {} predates MIN_EXPECTED_BUILD {}.",
+            site, result.build_number, MIN_EXPECTED_BUILD
         );
     }
 }

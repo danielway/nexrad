@@ -305,9 +305,14 @@ impl From<ContinuousColorScale> for ColorScale {
 
 /// A pre-computed lookup table for O(1) color lookups.
 ///
-/// This table maps a range of values to RGBA colors using a fixed-size array.
-/// It is created from a [`ColorScale`] and provides fast color lookups during
-/// rendering.
+/// The table maps a value range to RGBA colors. It is created from a [`ColorScale`]
+/// and provides fast color lookups during rendering:
+///
+/// - For a [`DiscreteColorScale`], [`color`](Self::color) returns exactly the scale's
+///   color for any value in range, including values on a threshold, whatever the
+///   table size.
+/// - For a [`ContinuousColorScale`], [`color`](Self::color) returns the nearest of the
+///   [`entries`](Self::entries).
 ///
 /// # Example
 ///
@@ -320,6 +325,7 @@ impl From<ContinuousColorScale> for ColorScale {
 ///
 /// // O(1) lookup returning [R, G, B, A] bytes
 /// let color = lut.color(45.0);
+/// assert_eq!(color, scale.color(45.0).to_rgba8());
 ///
 /// // The raw table, e.g. for uploading as a 1-D GPU texture
 /// assert_eq!(lut.entries().len(), lut.len());
@@ -327,13 +333,35 @@ impl From<ContinuousColorScale> for ColorScale {
 /// ```
 #[derive(Debug, Clone)]
 pub struct ColorLookupTable {
-    /// RGBA color values indexed by quantized input value.
+    /// RGBA colors of the scale sampled at evenly spaced values from min to max.
     table: Vec<[u8; 4]>,
     /// Minimum value in the mapped range.
     min_value: f32,
     /// Maximum value in the mapped range.
     max_value: f32,
+    /// Exact step lookup for discrete scales; `None` for continuous scales.
+    steps: Option<Steps>,
 }
+
+/// Exact lookup of a discrete scale's step function over a value range.
+///
+/// The range is split into equal buckets. `bucket_first[b]` is the number of
+/// thresholds whose bucket is before `b`; every such threshold is below any value in
+/// bucket `b` because bucketing is monotonic, so a lookup only compares the value with
+/// the thresholds inside its own bucket. The bucket count is chosen so that buckets
+/// usually hold at most one threshold.
+#[derive(Debug, Clone)]
+struct Steps {
+    /// Distinct thresholds inside `(min, max]`, ascending.
+    thresholds: Vec<f32>,
+    /// `colors[0]` is the color at `min`; `colors[i + 1]` the color from `thresholds[i]`.
+    colors: Vec<[u8; 4]>,
+    /// Number of thresholds in buckets before each bucket.
+    bucket_first: Vec<usize>,
+}
+
+/// Upper bound on the bucket count of a discrete lookup.
+const MAX_BUCKETS: usize = 4096;
 
 impl ColorLookupTable {
     /// Creates a lookup table by sampling a color scale.
@@ -346,7 +374,7 @@ impl ColorLookupTable {
     /// * `size` - The number of entries in the lookup table (256 recommended)
     ///
     /// Entry `i` holds the scale's color at `min + i / (size - 1) * (max - min)`.
-    /// Values outside the `min..=max` range are clamped to the nearest entry.
+    /// Values outside the `min..=max` range take the color at the nearer end.
     ///
     /// # Errors
     ///
@@ -360,35 +388,57 @@ impl ColorLookupTable {
             return Err(Error::InvalidTableSize { size });
         }
 
-        let range = max - min;
+        let range = f64::from(max) - f64::from(min);
         let table = (0..size)
             .map(|i| {
-                let value = min + (i as f32 / (size - 1) as f32) * range;
-                scale.color(value).to_rgba8()
+                let value = (f64::from(min) + i as f64 / (size - 1) as f64 * range) as f32;
+                scale.color(value.clamp(min, max)).to_rgba8()
             })
             .collect();
+
+        let steps = match scale {
+            ColorScale::Discrete(discrete) => Some(Steps::new(discrete, min, max, size)),
+            ColorScale::Continuous(_) => None,
+        };
 
         Ok(Self {
             table,
             min_value: min,
             max_value: max,
+            steps,
         })
     }
 
     /// Returns the RGBA color for the given value.
     ///
-    /// This is an O(1) operation using direct array indexing. Values outside the
-    /// table's range map to the first or last entry; NaN maps to the first entry.
+    /// This is an O(1) operation. Values outside the table's range take the color at
+    /// the nearer end; NaN takes the color at the minimum.
     #[inline]
     pub fn color(&self, value: f32) -> [u8; 4] {
-        let normalized = (value - self.min_value) / (self.max_value - self.min_value);
-        let index = (normalized * (self.table.len() - 1) as f32) as usize;
-        let index = index.min(self.table.len() - 1);
-        self.table[index]
+        let value = if value.is_nan() {
+            self.min_value
+        } else {
+            value.clamp(self.min_value, self.max_value)
+        };
+        match &self.steps {
+            Some(steps) => steps.color(value, self.min_value, self.max_value),
+            None => {
+                let last = self.table.len() - 1;
+                let index = (self.fraction(value) * last as f32).round() as usize;
+                self.table[index.min(last)]
+            }
+        }
     }
 
-    /// The table's RGBA entries, from [`min_value`](Self::min_value) to
-    /// [`max_value`](Self::max_value) in equal steps.
+    /// Position of an in-range value within the range, `0.0..=1.0`.
+    #[inline]
+    fn fraction(&self, value: f32) -> f32 {
+        (value - self.min_value) / (self.max_value - self.min_value)
+    }
+
+    /// The table's RGBA entries: the scale sampled from
+    /// [`min_value`](Self::min_value) to [`max_value`](Self::max_value) in equal
+    /// steps.
     ///
     /// Suitable for uploading as a 1-D texture to apply the scale on a GPU.
     pub fn entries(&self) -> &[[u8; 4]] {
@@ -413,6 +463,70 @@ impl ColorLookupTable {
     /// Always `false`: a table has at least 2 entries.
     pub fn is_empty(&self) -> bool {
         self.table.is_empty()
+    }
+}
+
+impl Steps {
+    fn new(scale: &DiscreteColorScale, min: f32, max: f32, size: usize) -> Self {
+        let mut thresholds: Vec<f32> = scale
+            .levels()
+            .iter()
+            .map(|level| level.value)
+            .filter(|&value| value > min && value <= max)
+            .collect();
+        thresholds.sort_by(f32::total_cmp);
+        thresholds.dedup();
+
+        let colors = std::iter::once(min)
+            .chain(thresholds.iter().copied())
+            .map(|value| scale.color(value).to_rgba8())
+            .collect();
+
+        // Enough buckets that thresholds rarely share one.
+        let min_gap = thresholds
+            .windows(2)
+            .map(|pair| pair[1] - pair[0])
+            .fold(max - min, f32::min);
+        let wanted = ((max - min) / min_gap).ceil() as usize + 1;
+        let buckets = wanted.clamp(size, MAX_BUCKETS.max(size));
+
+        let mut bucket_first = vec![0; buckets];
+        let mut next = 0;
+        for (bucket, first) in bucket_first.iter_mut().enumerate() {
+            while next < thresholds.len()
+                && Self::bucket(thresholds[next], min, max, buckets) < bucket
+            {
+                next += 1;
+            }
+            *first = next;
+        }
+
+        Self {
+            thresholds,
+            colors,
+            bucket_first,
+        }
+    }
+
+    /// The bucket of an in-range value; monotonic in `value`.
+    #[inline]
+    fn bucket(value: f32, min: f32, max: f32, buckets: usize) -> usize {
+        let index = ((value - min) / (max - min) * buckets as f32) as usize;
+        index.min(buckets - 1)
+    }
+
+    #[inline]
+    fn color(&self, value: f32, min: f32, max: f32) -> [u8; 4] {
+        let bucket = Self::bucket(value, min, max, self.bucket_first.len());
+        let mut passed = self.bucket_first[bucket];
+        while self
+            .thresholds
+            .get(passed)
+            .is_some_and(|&threshold| value >= threshold)
+        {
+            passed += 1;
+        }
+        self.colors[passed]
     }
 }
 

@@ -4,8 +4,8 @@ use nexrad_model::data::Product;
 use nexrad_render::{
     clutter_filter_power_scale, correlation_coefficient_scale, default_scale,
     differential_phase_scale, differential_reflectivity_scale, nws_reflectivity_scale,
-    spectrum_width_scale, velocity_scale, Color, ColorLookupTable, ColorScaleLevel,
-    DiscreteColorScale, Error,
+    spectrum_width_scale, velocity_scale, Color, ColorLookupTable, ColorScale, ColorScaleLevel,
+    ColorStop, ContinuousColorScale, DiscreteColorScale, Error,
 };
 
 #[test]
@@ -406,5 +406,93 @@ fn test_lookup_table_rejects_tiny_sizes() {
             ColorLookupTable::new(&scale, 0.0, 70.0, size),
             Err(Error::InvalidTableSize { size: s }) if s == size
         ));
+    }
+}
+
+/// Every built-in discrete scale with the product range it is used over.
+fn builtin_discrete_scales() -> Vec<(DiscreteColorScale, Product)> {
+    vec![
+        (nws_reflectivity_scale(), Product::Reflectivity),
+        (velocity_scale(), Product::Velocity),
+        (spectrum_width_scale(), Product::SpectrumWidth),
+        (
+            differential_reflectivity_scale(),
+            Product::DifferentialReflectivity,
+        ),
+        (
+            correlation_coefficient_scale(),
+            Product::CorrelationCoefficient,
+        ),
+        (differential_phase_scale(), Product::DifferentialPhase),
+        (clutter_filter_power_scale(), Product::ClutterFilterPower),
+    ]
+}
+
+#[test]
+fn test_lookup_table_threshold_values_get_their_own_color() {
+    for (discrete, product) in builtin_discrete_scales() {
+        let (min, max) = product.value_range();
+        let scale = ColorScale::from(discrete.clone());
+
+        for size in [256, 16, 2] {
+            let lut = ColorLookupTable::new(&scale, min, max, size).unwrap();
+            for level in discrete.levels() {
+                assert_eq!(
+                    lut.color(level.value),
+                    level.color.to_rgba8(),
+                    "{product:?} level {} with {size} entries",
+                    level.value
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn test_lookup_table_matches_discrete_scale_between_thresholds() {
+    for (discrete, product) in builtin_discrete_scales() {
+        let (min, max) = product.value_range();
+        let scale = ColorScale::from(discrete);
+        let lut = ColorLookupTable::new(&scale, min, max, 16).unwrap();
+
+        for step in 0..=1000 {
+            let value = min + (max - min) * step as f32 / 1000.0;
+            assert_eq!(
+                lut.color(value),
+                scale.color(value).to_rgba8(),
+                "{product:?} value {value}"
+            );
+        }
+        // Out-of-range values take the color at the nearer end; NaN the minimum's.
+        assert_eq!(lut.color(max + 1000.0), scale.color(max).to_rgba8());
+        assert_eq!(lut.color(min - 1000.0), scale.color(min).to_rgba8());
+        assert_eq!(lut.color(f32::NAN), scale.color(min).to_rgba8());
+    }
+
+    // Just below a threshold keeps the lower level's color.
+    let scale = ColorScale::from(nws_reflectivity_scale());
+    let lut = ColorLookupTable::new(&scale, -32.0, 95.0, 16).unwrap();
+    let below = 20.0f32.next_down();
+    assert_eq!(lut.color(below), scale.color(15.0).to_rgba8());
+    assert_ne!(lut.color(below), lut.color(20.0));
+}
+
+#[test]
+fn test_lookup_table_interpolates_continuous_scales() {
+    let scale = ColorScale::from(ContinuousColorScale::new(vec![
+        ColorStop::new(0.0, Color::BLACK),
+        ColorStop::new(100.0, Color::WHITE),
+    ]));
+    let lut = ColorLookupTable::new(&scale, 0.0, 100.0, 256).unwrap();
+
+    assert_eq!(lut.color(0.0), [0, 0, 0, 255]);
+    assert_eq!(lut.color(100.0), [255, 255, 255, 255]);
+    for value in [12.5f32, 25.0, 50.0, 73.0] {
+        let expected = scale.color(value).to_rgba8()[0];
+        let actual = lut.color(value)[0];
+        assert!(
+            actual.abs_diff(expected) <= 1,
+            "value {value}: {actual} vs {expected}"
+        );
     }
 }

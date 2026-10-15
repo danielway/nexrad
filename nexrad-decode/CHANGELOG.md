@@ -177,6 +177,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
     `rda_status_data::Message::volume_coverage_pattern_raw()`/`volume_coverage_pattern()` →
     `vcp_number_raw()`/`vcp_number()`; `volume_coverage_pattern::Header::pattern_number()` → `vcp_number_raw()`.
   - `digital_radar_data::DataBlockId::data_name_raw()` → `data_block_name_raw()`.
+  - `digital_radar_data::ElevationDataBlock::atmos_raw()`/`atmos_db_per_km()` →
+    `atmospheric_attenuation_raw()`/`atmospheric_attenuation_db_per_km()`, matching the type 1 accessors.
   - Segment numbers: `clutter_filter_map::AzimuthSegment::azimuth_segment()` → `azimuth_segment_number()`,
     `clutter_filter_bypass_map::ElevationSegment::segment_number()` → `elevation_segment_number()`.
   - Counts are `<thing>_count()`: `clutter_filter_bypass_map::Message::number_of_elevation_segments()` →

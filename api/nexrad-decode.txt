@@ -509,8 +509,8 @@ impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::di
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::DataBlockId<'a>
 pub struct nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>
 impl<'a> nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>
-pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::atmos_db_per_km(&self) -> f32
-pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::atmos_raw(&self) -> i16
+pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::atmospheric_attenuation_db_per_km(&self) -> f32
+pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::atmospheric_attenuation_raw(&self) -> i16
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::calibration_constant_db(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'static>
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::lrtup(&self) -> uom::si::f64::Information

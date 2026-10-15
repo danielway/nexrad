@@ -33,9 +33,10 @@ impl<'a> ElevationDataBlock<'a> {
     }
 
     /// Atmospheric attenuation factor in thousandths of a dB/km (raw scaled value). See
-    /// [`atmos_db_per_km()`](Self::atmos_db_per_km) for the decoded value.
-    pub fn atmos_raw(&self) -> i16 {
-        self.inner.atmos.get()
+    /// [`atmospheric_attenuation_db_per_km()`](Self::atmospheric_attenuation_db_per_km) for the
+    /// decoded value.
+    pub fn atmospheric_attenuation_raw(&self) -> i16 {
+        self.inner.atmospheric_attenuation.get()
     }
 
     /// Scaling constant used by the signal processor for this elevation to calculate reflectivity
@@ -51,7 +52,7 @@ impl<'a> ElevationDataBlock<'a> {
     }
 
     /// Atmospheric attenuation factor, in dB/km.
-    pub fn atmos_db_per_km(&self) -> f32 {
-        self.inner.atmos.get() as f32 / 1000.0
+    pub fn atmospheric_attenuation_db_per_km(&self) -> f32 {
+        self.inner.atmospheric_attenuation.get() as f32 / 1000.0
     }
 }

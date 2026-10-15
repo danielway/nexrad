@@ -126,7 +126,7 @@ Message {
                     inner: ElevationDataBlock {
                         inner: ElevationDataBlock {
                             lrtup: 12,
-                            atmos: -12,
+                            atmospheric_attenuation: -12,
                             calibration_constant: -41.75,
                         },
                     },

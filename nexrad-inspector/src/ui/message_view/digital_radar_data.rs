@@ -142,7 +142,7 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         output.push_str("\n--- Elevation Data Block ---\n");
         output.push_str(&format!(
             "Atmospheric Attenuation: {:.4} dB/km\n",
-            elv.atmos_db_per_km()
+            elv.atmospheric_attenuation_db_per_km()
         ));
         output.push_str(&format!(
             "Calibration Constant: {:.2} dB\n",

@@ -424,6 +424,7 @@ These accessors and variants were also renamed to follow the same rule (#191):
 | `rda_status_data::Message::raw_volume_coverage_pattern()` | `vcp_number_raw()` |
 | `volume_coverage_pattern::Header::pattern_number()` | `vcp_number_raw()`; `vcp_number() -> VcpNumber` |
 | `digital_radar_data::DataBlockId::data_name_raw()` | `data_block_name_raw()` |
+| `digital_radar_data::ElevationDataBlock::atmos_raw()` / `atmos()` | `atmospheric_attenuation_raw()` / `atmospheric_attenuation_db_per_km()` |
 | `digital_radar_data::DataBlockId::data_block_name_str()` | Removed; use `data_block_name()` or `data_block_name_raw()` |
 | `digital_radar_data::DataBlockId::data_block_type_char()` | Removed; use `data_block_type()` or `data_block_type_raw()` |
 | `clutter_filter_map::AzimuthSegment::azimuth_segment()` | `azimuth_segment_number()` |
@@ -1539,7 +1540,7 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `digital_radar_data::RadialDataBlock` | `lrtup_raw()`, `horizontal_channel_noise_level()`, `vertical_channel_noise_level()` | `lrtup_bytes()`, `horizontal_channel_noise_level_dbm()`, `vertical_channel_noise_level_dbm()` |
 | `digital_radar_data::RadialDataBlock` | `horizontal_channel_calibration_constant()`, `vertical_channel_calibration_constant()` | `horizontal_channel_calibration_constant_db()`, `vertical_channel_calibration_constant_db()` |
 | `digital_radar_data::RadialDataBlock` | (none) | `unambiguous_range_km()`, `nyquist_velocity_mps()` |
-| `digital_radar_data::ElevationDataBlock` | `lrtup_raw()`, `calibration_constant()`, `atmos()` | `lrtup_bytes()`, `calibration_constant_db()`, `atmos_db_per_km()` |
+| `digital_radar_data::ElevationDataBlock` | `lrtup_raw()`, `calibration_constant()`, `atmos_raw()`, `atmos()` | `lrtup_bytes()`, `calibration_constant_db()`, `atmospheric_attenuation_raw()`, `atmospheric_attenuation_db_per_km()` |
 | `digital_radar_data::GenericDataBlockHeader` | (none) | `tover_db()`, `snr_threshold_db()`, `moment_size_bytes()` |
 | `digital_radar_data::GenericDataBlock` | `moment_data()`, `into_moment_data()`, `cfp_moment_data()`, `into_cfp_moment_data()` | `DataBlock<'a, GenericDataBlock<'a>>::moment_data() -> Result<MomentData>`, `into_moment_data()` |
 | `digital_radar_data::Message` | `site() -> Option<Site>` | `site() -> Result<Option<Site>>` |

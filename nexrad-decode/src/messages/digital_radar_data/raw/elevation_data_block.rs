@@ -10,7 +10,7 @@ pub struct ElevationDataBlock {
     pub lrtup: Integer2,
 
     /// Atmospheric attenuation factor in dB/km.
-    pub atmos: ScaledSInteger2,
+    pub atmospheric_attenuation: ScaledSInteger2,
 
     /// Scaling constant used by the signal processor for this elevation to calculate reflectivity
     /// in dB.

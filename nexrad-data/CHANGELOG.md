@@ -26,6 +26,11 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `aws::archive::list_files_with_sizes(site, date)`, which returns each volume file's `ListedFile` (its `Identifier`
   and compressed size in bytes) from the same listing request `list_files` makes. File size tracks how much echo a
   volume holds, so it works as a cheap storm-activity signal without downloading anything. (#186)
+- `aws::archive::Identifier::version()` (the `Vnn` suffix), `is_metadata()` (`_MDM` objects) and `is_gzip()` (`.gz`
+  objects), plus `FromStr`, `Display` (the name) and `Debug`. (#192)
+- `aws::archive::ListedFile` implements `Debug` and `PartialOrd`/`Ord`, ordering by identifier and then size. (#192)
+- `AwsError::InvalidIdentifier { name, reason }`, `AwsError::InvalidVolumeIndex { index }` and
+  `AwsError::HttpClient(Box<dyn std::error::Error + Send + Sync>)`; none is transient. (#192)
 
 ### Changed
 
@@ -64,7 +69,6 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   fields stay readable, but struct literals and exhaustive patterns outside the crate no longer compile. (#167)
 - `aws::realtime::ChunkIdentifier::new` and `from_name` take `impl Into<String>` for `site` (and `name`); pass
   `"KDMX"` rather than `"KDMX".into()`. (#167)
-- `aws::realtime::VolumeIndex::new` documents the valid range `1..=999` and its debug assertion rejects `0`. (#167)
 - `volume::Record::decompress(&self)` returns `Result<Record<'static>>`. (#171)
 - `volume::Header::tape_filename()`, `extension_number()` and `icao_of_radar()` return `Option<&str>` instead of
   `Option<String>`. (#171)
@@ -74,12 +78,27 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `aws::archive::list_files(site, date: NaiveDate)` takes the date by value, and
   `aws::archive::download_file(identifier: &Identifier)` takes the identifier by reference. (#171)
 - `aws::realtime::list_chunks_in_volume` reads every listing page and returns only the chunks of the newest scan in a
-  reused volume directory, sorted by sequence; `max_keys` limits the returned chunks rather than the S3 request.
-  `ChunkIterator` waits instead of moving into a next volume that still holds an older scan. (#149)
+  reused volume directory, sorted by sequence. `ChunkIterator` waits instead of moving into a next volume that still holds an older scan. (#149)
 - `aws::realtime::ChunkIterator` and `chunk_stream` consume each new volume from its Start chunk: at rollover they
   yield sequence 1 (the volume header and VCP) and then every later chunk in sequence order, instead of jumping to the
   newest chunk already published in the next volume. Every volume's chunks can now be passed to `assemble_volume`, and
   the VCP and chunk timing are refreshed when a new volume changes VCP. (#183)
+- `aws::archive::Identifier::new(String)` → `Identifier::parse(&str) -> Result<Identifier>`, which validates the
+  archive name grammar (`SSSSYYYYMMDD_HHMMSS[_Vnn][_MDM][.gz]`, UTC) and returns `AwsError::InvalidIdentifier` for
+  other names. `site()` returns `&str` and `date_time()` returns `DateTime<Utc>` instead of `Option`s. Equality,
+  ordering and hashing use the name only. (#192)
+- `aws::archive::list_files` and `list_files_with_sizes` return volume files only, skipping `_MDM` metadata objects and
+  objects whose names do not parse. (#192)
+- `aws::realtime::VolumeIndex::new(index)` returns `Result<VolumeIndex>` and rejects indexes outside `1..=999` with
+  `AwsError::InvalidVolumeIndex`. (#192)
+- `aws::realtime::list_chunks_in_volume(site, volume, max_keys)` → `list_chunks_in_volume(site, volume)`; it always
+  returns every chunk of the newest scan. (#192)
+- `aws::realtime::chunk_stream` yields the chunks it downloads at startup: the volume's Start chunk when joining
+  mid-volume, then the latest chunk, then the chunks after it. (#192)
+- `aws::realtime::ChunkIterator::try_next` makes a single attempt per call, including at volume rollover, and returns
+  `Ok(None)` until the next chunk or volume is available; request errors propagate instead of being retried or
+  swallowed. `PollConfig`'s retry policies apply to `chunk_stream` only. (#192)
+- `AwsError::S3GetObject(Option<String>)` → `S3GetObject { status: u16, body: Option<String> }`. (#192)
 - Volume assembly is delegated to `nexrad-decode`'s `ScanBuilder` (#169):
   - `volume::File::scan` includes legacy (type 1) radials, consistent with `Record::radials()`;
     `assemble_volume` accepts type 1 messages too.
@@ -104,6 +123,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Error::Decompression(bzip2::Error)` and its `From<bzip2::Error>` impl, which were never constructed; bzip2 failures
   surface as `Error::Io`. (#171)
 - `volume::split_compressed_records`; use `volume::File::new(bytes).records()`. (#171)
+- `AwsError::DateTime(String)` and `AwsError::InvalidSiteIdentifier(String)`; a parsed `Identifier` always has a site
+  and date, and invalid names fail in `Identifier::parse` with `AwsError::InvalidIdentifier`. (#192)
 
 ### Fixed
 
@@ -111,6 +132,12 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   (#149, #154)
 - `volume::File::records()` returns `Error::TruncatedRecord` instead of panicking when the data is shorter than the
   24-byte volume header. (#171)
+- Building the shared HTTP client no longer panics on failure; requests return `AwsError::HttpClient` instead, and
+  `once_cell` is no longer a dependency. (#192)
+- `aws::realtime::chunk_stream` no longer caps its startup listing at 100 chunks, so in a longer volume it joins at the
+  latest chunk. (#192)
+- `aws::realtime`: after a volume's End chunk, `ChunkIterator::next_expected_time` and `chunk_stream` expect the next
+  volume's Start chunk after the 8.5 s inter-volume gap instead of the 4 to 11 s elevation-based fallback. (#192)
 - `aws::realtime`: after a volume's Start chunk, `ChunkIterator::next_expected_time` and `chunk_stream` expect
   sequence 2 about 1.5 s later instead of after the 8.5 s inter-volume gap. (#184)
 - `aws::realtime`: real-time timing statistics keep samples for the first chunk of a sweep, which include the

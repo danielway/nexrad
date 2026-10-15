@@ -618,6 +618,9 @@ match err {
 | `AWSError::PollingAsync` | Removed (never constructed) | #171 |
 | `Error::Decompression(bzip2::Error)` | Removed (never constructed); bzip2 failures are `Error::Io` | #171 |
 | (new) | `AwsError::is_transient()` reports whether a failure is worth retrying | #171 |
+| `AWSError::S3GetObject(Option<String>)` | `AwsError::S3GetObject { status: u16, body: Option<String> }` | #192 |
+| `AWSError::DateTime(String)`, `AWSError::InvalidSiteIdentifier(String)` | Removed; invalid archive names fail in `Identifier::parse` with `AwsError::InvalidIdentifier { name, reason }` | #192 |
+| (new) | `AwsError::InvalidVolumeIndex { index }`, `AwsError::HttpClient(Box<dyn Error + Send + Sync>)` (building the HTTP client failed) | #192 |
 
 Both `Error` and `AwsError` are `#[non_exhaustive]`, and neither implements `UnwindSafe`/`RefUnwindSafe` (the boxed
 source error does not); wrap them in `AssertUnwindSafe` if you need that.
@@ -647,6 +650,10 @@ are exposed through `ChunkIterator`:
 | `volume::File::header() -> Option<&Header>`, zerocopy traits on `volume::Header`, `size_of::<Header>()` | `header() -> Option<Header>` (by value), no zerocopy traits, `Header::SIZE` | #181 |
 | `aws::archive::list_files(site, &date)` | `list_files(site, date)` | #171 |
 | `aws::archive::download_file(identifier)` | `download_file(&identifier)` | #171 |
+| `aws::archive::Identifier::new(name)` | `Identifier::parse(&name)?` or `name.parse::<Identifier>()?` | #192 |
+| `Identifier::site() -> Option<&str>`, `date_time() -> Option<DateTime<Utc>>` | `site() -> &str`, `date_time() -> DateTime<Utc>` | #192 |
+| `aws::realtime::VolumeIndex::new(n)` | `VolumeIndex::new(n)?` (`Result`) | #192 |
+| `aws::realtime::list_chunks_in_volume(site, volume, max_keys)` | `list_chunks_in_volume(site, volume)` | #192 |
 
 #### Behaviour and type changes
 
@@ -660,7 +667,23 @@ are exposed through `ChunkIterator`:
   read and move their fields; build a `DownloadedChunk` with `DownloadedChunk::new(identifier, chunk, attempts)`.
   `get_latest_volume` and the new `get_latest_volume_from_hint` return `Result<LatestVolumeResult>`, whose `volume`
   field is `Option<VolumeIndex>`.
-- **`VolumeIndex::new` accepts `1..=999`**; a debug assertion now rejects `0` (#167).
+- **`VolumeIndex::new` is fallible** (#192). It returns `AwsError::InvalidVolumeIndex` outside `1..=999`. If you
+  restore a `VolumeIndex` from storage (for example a hint for `get_latest_volume_from_hint`), handle the error, for
+  instance by falling back to `get_latest_volume`.
+- **`list_chunks_in_volume` has no cap** (#192). It always returns every chunk of the volume's newest scan, sorted by
+  sequence. If you passed a cap, drop the argument and take what you need from the result (`.first()`,
+  `.last()`, `.iter().take(n)`); a cap of `1` used as an existence probe becomes `.is_empty()`.
+- **Archive identifiers are validated** (#192). `Identifier::parse` accepts `SSSSYYYYMMDD_HHMMSS` (UTC) with optional
+  `_Vnn`, `_MDM` and `.gz` suffixes and rejects anything else. `list_files` and `list_files_with_sizes` return volume
+  files only: `_MDM` metadata objects and unparseable names are skipped. Equality, ordering and hashing use the name
+  only.
+- **`ChunkIterator::try_next` makes a single attempt** (#192). It never sleeps or retries: `Ok(None)` means the next
+  chunk or volume is not available yet, so poll again on your own cadence (for example after `time_until_next()`).
+  Request errors now propagate; check `AwsError::is_transient()` to decide whether to keep polling. It no longer
+  returns `AwsError::ExpectedChunkNotFound`. `PollConfig`'s retry policies apply to `chunk_stream` only.
+- **`chunk_stream` yields its startup chunks** (#192). The first items are the volume's Start chunk (when joining
+  mid-volume) and the latest chunk, followed by the chunks after it. When joining mid-volume the first volume is
+  partial.
 - **`File::scan` includes legacy (type 1) radials** (#169), matching `Record::radials()`. Legacy-only volumes now yield
   populated sweeps. `assemble_volume` accepts type 1 messages too.
 - **`Site::identifier` of a scan comes from the type 31 message header** rather than the Archive II volume header ICAO
@@ -668,9 +691,9 @@ are exposed through `ChunkIterator`:
 - **`File::records()` returns `Error::TruncatedRecord`** instead of panicking on data shorter than the 24-byte volume
   header (#171).
 - **Real-time volume selection** (#149, #154). `list_chunks_in_volume` reads every listing page and returns only the
-  newest scan in a reused volume directory, sorted by sequence; `max_keys` now caps the returned chunks, not the S3
-  request. `get_latest_volume` no longer returns an older volume when the newest one sits just after the wrap-around,
-  and `ChunkIterator` waits instead of replaying an older scan left in the next volume directory.
+  newest scan in a reused volume directory, sorted by sequence. `get_latest_volume` no longer returns an older volume
+  when the newest one sits just after the wrap-around, and `ChunkIterator` waits instead of replaying an older scan
+  left in the next volume directory.
 - **Real-time volume rollover yields the Start chunk** (#183). When `ChunkIterator::try_next` or `chunk_stream`
   moves to a new volume, it now yields that volume's Start chunk (sequence 1, the volume header and VCP) and then every
   later chunk in sequence order. Previously it jumped to the newest chunk already published in the new volume, skipping
@@ -1612,6 +1635,17 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `volume::Record::decompress<'b>(&self) -> Result<Record<'b>>` | `decompress(&self) -> Result<Record<'static>>` |
 | `aws::archive::list_files(&str, &NaiveDate)` | `list_files(&str, NaiveDate)` |
 | `aws::archive::download_file(Identifier)` | `download_file(&Identifier)` |
+| `aws::archive::Identifier::new(String) -> Identifier` | `Identifier::parse(&str) -> Result<Identifier>`, `impl FromStr` |
+| `aws::archive::Identifier::{site() -> Option<&str>, date_time() -> Option<DateTime<Utc>>}` | `site() -> &str`, `date_time() -> DateTime<Utc>` |
+| (new) | `aws::archive::Identifier::{version, is_metadata, is_gzip}()`, `Display`, `Debug`; `ListedFile`: `Debug`, `Ord` |
+| `aws::archive::{list_files, list_files_with_sizes}` returning every object | Volume files only |
+| `aws::realtime::VolumeIndex::new(usize) -> VolumeIndex` | `new(usize) -> Result<VolumeIndex>` |
+| `aws::realtime::list_chunks_in_volume(&str, VolumeIndex, usize)` | `list_chunks_in_volume(&str, VolumeIndex)` |
+| `AwsError::S3GetObject(Option<String>)` | `S3GetObject { status: u16, body: Option<String> }` |
+| `AwsError::{DateTime, InvalidSiteIdentifier}(String)` | Removed |
+| (new) | `AwsError::{InvalidIdentifier { name, reason }, InvalidVolumeIndex { index }, HttpClient(Box<dyn Error + Send + Sync>)}` |
+| `aws::realtime::ChunkIterator::try_next()` retrying volume discovery and returning `ExpectedChunkNotFound` when exhausted | Single attempt; `Ok(None)` until available |
+| `aws::realtime::chunk_stream(..)` discarding its startup chunks | Yields the Start chunk (when joining mid-volume) and the latest chunk first |
 | `aws::realtime::Chunk<'a>`, `Chunk::IntermediateOrEnd(Record<'a>)` | `Chunk`, `Chunk::IntermediateOrEnd(Record<'static>)` |
 | `aws::realtime::DownloadedChunk::chunk: Chunk<'static>` | `chunk: Chunk`; struct is `#[non_exhaustive]`, `DownloadedChunk::new` |
 | `aws::realtime::ChunkIteratorInit`, `LatestVolumeResult` | `#[non_exhaustive]` |

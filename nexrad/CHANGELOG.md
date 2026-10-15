@@ -30,6 +30,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `stream(site, sleep)` takes a caller-supplied sleep function as its second argument (with tokio,
   `|d| tokio::time::sleep(d)`) and no longer depends on tokio. (#161)
 - `download(identifier: Identifier)` → `download(identifier: &Identifier)`. (#176)
+- `list_scans`, `download_latest` and `download_at` see archive volume files only, so `download_latest` can no longer
+  pick an `_MDM` metadata object. (#192)
 - Errors from `nexrad-data` are flattened by layer (#176):
   - Decode, model and I/O errors raised inside `nexrad-data` (from `load`, `load_file`, `download*`, `stream`, or `?`
     on a `nexrad_data::Error`) become `Error::Decode`, `Error::Model` and `Error::Io` instead of

@@ -53,12 +53,12 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   VcpNumber`, `rda_prf_data::WaveformPrfData::waveform_type() -> volume_coverage_pattern::WaveformType`,
   `volume_coverage_pattern::Header::vcp_number() -> VcpNumber`, and
   `VolumeDataBlock::zdr_bias_estimate_weighted_mean_db() -> Option<f32>` (`(raw - 418) / 32`, `None` for legacy
-  blocks and the "not available" code 0). (#PRNUM)
+  blocks and the "not available" code 0). (#191)
 - `digital_radar_data_legacy::Message::nyquist_velocity_raw()`, `nyquist_velocity_mps()`,
   `atmospheric_attenuation_raw()` and `atmospheric_attenuation_db_per_km()`, and with `uom` `nyquist_velocity()`:
   the type 1 Nyquist velocity and atmospheric attenuation factor at message bytes 60–63, which were read as
-  spare. (#PRNUM)
-- `rda_status_data::RdaBuildNumber::{raw, major, minor}` and `Display` (`"24.0"`). (#PRNUM)
+  spare. (#191)
+- `rda_status_data::RdaBuildNumber::{raw, major, minor}` and `Display` (`"24.0"`). (#191)
 
 ### Changed
 
@@ -158,7 +158,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Debug` output of `digital_radar_data::DataBlock` gains the block's input `offset`, and that of
   `console_message::Message` and `loopback_test::Message` gains the `message_type` that records their direction.
   (#190)
-- The accessor naming convention applies across the crate (see "Accessor Naming" in the crate docs) (#PRNUM):
+- The accessor naming convention applies across the crate (see "Accessor Naming" in the crate docs) (#191):
   - Wire encodings take `_raw` and decoded forms the bare stem: `digital_radar_data::Header::date()`/`time()` →
     `date_raw()`/`time_raw()`; `clutter_filter_map::Message::map_generation_date()`/`map_generation_time()` →
     `*_raw()` and `date_time()` → `map_generation_date_time()`;
@@ -203,28 +203,28 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
     `RequestForData`, `RdaClutterFilterBypassMap` → `ClutterFilterBypassMap`, `RdaClutterFilterMap` →
     `ClutterFilterMap`, `RdaLoopBackTest`/`RpgLoopBackTest` → `RdaLoopbackTest`/`RpgLoopbackTest`; and
     `MessageContents::VolumeCoveragePattern` → `RdaVolumeCoveragePattern`, matching `MessageType`, which keeps
-    `RdaVolumeCoveragePattern` (type 5) apart from `RpgVolumeCoveragePattern` (type 7). (#PRNUM)
+    `RdaVolumeCoveragePattern` (type 5) apart from `RpgVolumeCoveragePattern` (type 7). (#191)
 - Code enums carry an unlisted wire value in one `Unknown(<wire type>)` variant:
   `digital_radar_data::CompressionIndicator::FutureUse` → `Unknown(u8)`; `ProcessingStatus::Other(u16)` →
   `Unknown(u16)`; `volume_coverage_pattern::{WaveformType, PulseWidth, ChannelConfiguration}::Unknown`/`UnknownPhase`
   → `Unknown(u8)` and `PatternType::Unknown` → `Unknown(u16)`; `rda_status_data::SpotBlankingStatus::Other(u8)` →
   `Unknown(u16)`, which no longer truncates the wire value; and `rda_status_data::TransitionPowerSourceStatus::Unknown`
-  and `Other(u16)` → `Unknown(u16)`, with the ICD's "unknown" code 4 decoding as `Unknown(4)`. (#PRNUM)
+  and `Other(u16)` → `Unknown(u16)`, with the ICD's "unknown" code 4 decoding as `Unknown(4)`. (#191)
 - `rda_status_data::RdaBuildNumber` is a newtype over the raw wire value instead of an enum of known builds
   (`Build12_0` .. `Build24_0`, `Unknown(f32)`): `from_raw(u16)` (now `const`), `raw()`, `major()`, `minor()` and
   `Display`; it is `Eq`, `Ord` and `Hash`, comparing by build. Build numbers below 12.0 or above 24.0 are no longer
-  `Unknown`. (#PRNUM)
+  `Unknown`. (#191)
 - `volume_coverage_pattern::ElevationDataBlock::{elevation_angle_degrees, sector_1_edge_angle_degrees,
   sector_2_edge_angle_degrees, sector_3_edge_angle_degrees, ebc_angle_degrees}` and
   `digital_radar_data::Header::azimuth_indexing_mode_degrees` return `f32` instead of `f64`, matching the model.
-  (#PRNUM)
+  (#191)
 - `digital_radar_data_legacy::Message::radial`/`into_radial` set the model radial's Nyquist velocity from the header
   (left `None` when zero), and its `Debug` output gains `nyquist_velocity_mps` and
-  `atmospheric_attenuation_db_per_km`. (#PRNUM)
+  `atmospheric_attenuation_db_per_km`. (#191)
 - A clutter filter bypass map (type 13) from a legacy (pre-ORDA) RDA uses a layout the ORDA decoder does not read and
   decodes as `Other`, as the legacy type 15 map does; it used to decode as an empty map with zero elevation segments.
-  (#PRNUM)
-- `Debug` output of decoded messages follows the renamed fields and variants. (#PRNUM)
+  (#191)
+- `Debug` output of decoded messages follows the renamed fields and variants. (#191)
 
 ### Removed
 
@@ -249,10 +249,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `digital_radar_data::GenericDataBlockHeader::reserved()`, `VolumeDataBlock::spare()` and `is_legacy()`, and
   `RadialDataBlock::is_legacy()`; `lrtup_bytes()` distinguishes the block layouts. (#190)
 - The `log` dependency. (#190)
-- `digital_radar_data::DataBlockId::data_block_name_str()`; use `data_block_name()` or `data_block_name_raw()`. (#PRNUM)
+- `digital_radar_data::DataBlockId::data_block_name_str()`; use `data_block_name()` or `data_block_name_raw()`. (#191)
 - `digital_radar_data::DataBlockId::data_block_type_char()`; use `data_block_type()` or `data_block_type_raw()`.
-  (#PRNUM)
-- `rda_status_data::RdaBuildNumber::as_float()` and `is_known()`; use `major()`, `minor()` or `Display`. (#PRNUM)
+  (#191)
+- `rda_status_data::RdaBuildNumber::as_float()` and `is_known()`; use `major()`, `minor()` or `Display`. (#191)
 
 ### Fixed
 

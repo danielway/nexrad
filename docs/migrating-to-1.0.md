@@ -382,31 +382,31 @@ The renames you are most likely to hit:
 | `MessageHeader::rda_redundant_channel()` | `redundant_channel()` | #173 |
 | `message_type as u8` | `message_type.number()`; `MessageType::from_number(u8)` | #166 |
 | `MessageType::{Spare1, Reserved1..5, ReservedFAARMSOnly1..5}` | `MessageType::Reserved(u8)` | #166 |
-| `MessageType::RDA*` / `RPG*`, `MessageContents::RDA*` | `Rda*` / `Rpg*` (`RDAStatusData` → `RdaStatusData`, `RDAPRFData` → `RdaPrfData`), with the `MessageType` names that differed from `MessageContents` renamed to match (see the next table) | #160, #PRNUM |
+| `MessageType::RDA*` / `RPG*`, `MessageContents::RDA*` | `Rda*` / `Rpg*` (`RDAStatusData` → `RdaStatusData`, `RDAPRFData` → `RdaPrfData`), with the `MessageType` names that differed from `MessageContents` renamed to match (see the next table) | #160, #191 |
 | `digital_radar_data::Header::azimuth_angle_raw()` | `azimuth_angle_degrees()` | #173 |
 | `digital_radar_data::Header::elevation_angle_raw()` | `elevation_angle_degrees()` | #173 |
 | `digital_radar_data::Header::radial_length_raw()` | `radial_length_bytes()` | #173 |
 | `digital_radar_data::Header::azimuth_resolution_spacing_type()` | `azimuth_resolution_spacing()` (see below) | #173 |
 | `VolumeDataBlock::latitude_raw()` / `longitude_raw()` | `latitude_degrees()` / `longitude_degrees()` | #173 |
 | `VolumeDataBlock::site_height_raw()` / `tower_height_raw()` | `site_height_meters()` / `tower_height_meters()` | #173 |
-| `VolumeDataBlock::volume_coverage_pattern() -> digital_radar_data::VolumeCoveragePattern` | `vcp_number() -> messages::VcpNumber` | #163, #PRNUM |
-| `VolumeDataBlock::volume_coverage_pattern_number()` | `vcp_number_raw()` | #173, #PRNUM |
+| `VolumeDataBlock::volume_coverage_pattern() -> digital_radar_data::VolumeCoveragePattern` | `vcp_number() -> messages::VcpNumber` | #163, #191 |
+| `VolumeDataBlock::volume_coverage_pattern_number()` | `vcp_number_raw()` | #173, #191 |
 | `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, ..}` | `messages::VcpNumber::{Vcp12, Vcp31, Vcp32, ..}` | #160, #163 |
 | `GenericDataBlock::moment_data()` / `into_moment_data()` | Call them on the `DataBlock` wrapper: `m.reflectivity_data_block().map(\|b\| b.moment_data())`; they return `Result<MomentData>` | #170 |
 | `GenericDataBlock::cfp_moment_data()` / `into_cfp_moment_data()` | `moment_data()` / `into_moment_data()` on the CFP block's `DataBlock` | #170 |
 | `digital_radar_data::Message::site() -> Option<Site>` | `site()? -> Option<Site>` (returns `Result<Option<Site>>`) | #185 |
 | `rda_status_data::RDAStatus`, `RDABuildNumber`, `RMSControlStatus` | `RdaStatus`, `RdaBuildNumber`, `RmsControlStatus` | #160 |
 | `rda_status_data::Message::raw_<stem>()` | `<stem>_raw()` (`raw_rda_build_number()` → `build_number_raw()`) | #173 |
-| `rda_status_data::Message::volume_coverage_pattern() -> Option<VolumeCoveragePatternNumber>` | `vcp_number() -> Option<VcpSelection>`; `number()` is a `VcpNumber`, `source()` replaces `local()`/`remote()` | #163, #PRNUM |
+| `rda_status_data::Message::volume_coverage_pattern() -> Option<VolumeCoveragePatternNumber>` | `vcp_number() -> Option<VcpSelection>`; `number()` is a `VcpNumber`, `source()` replaces `local()`/`remote()` | #163, #191 |
 | `volume_coverage_pattern::ElevationDataBlock::elevation_angle()` | `elevation_angle_degrees()` | #173 |
 | `summarize` module | Removed; iterate `decode_messages(..)` and match on `message.contents()` | #168 |
 | `MessageContents::Other` | `MessageContents::Other { message_type, data }`; match with `Other { .. }` | #190 |
-| `block.volume_coverage_pattern()` on a `DataBlock` (through `Deref`) | `block.inner().vcp_number()` | #190, #PRNUM |
+| `block.volume_coverage_pattern()` on a `DataBlock` (through `Deref`) | `block.inner().vcp_number()` | #190, #191 |
 | `rda_adaptation_data::Message::{read_integer4_at, read_real4_at, read_string_at, data_raw, total_size}` | Removed; use the typed accessors | #190 |
 | `VolumeDataBlock::is_legacy()`, `RadialDataBlock::is_legacy()` | Removed; `lrtup_bytes()` is 44 for a legacy volume block and 20 for a legacy radial block | #190 |
 | `VolumeDataBlock::spare()`, `GenericDataBlockHeader::reserved()` | Removed | #190 |
 
-These accessors and variants were also renamed to follow the same rule (#PRNUM):
+These accessors and variants were also renamed to follow the same rule (#191):
 
 | 1.0.0-rc.3 | 1.0 |
 |---|---|
@@ -539,22 +539,22 @@ Scan assembly moved into this crate (#169). If you assembled a `Scan` from decod
   `IntermediateRadialData` (#173). `digital_radar_data_legacy::Message::elevation_number()` returns `u8`, and
   `radial_status()` and `vcp_number()` return decoded enums, with the codes in `radial_status_raw()` and
   `vcp_number_raw()`.
-- **Code enums have one fallback** (#PRNUM). A status or code enum carries a value the ICD does not list in
+- **Code enums have one fallback** (#191). A status or code enum carries a value the ICD does not list in
   `Unknown(<wire type>)`: `CompressionIndicator::FutureUse` is `Unknown(u8)`, `ProcessingStatus::Other` and
   `rda_status_data::SpotBlankingStatus::Other` are `Unknown`, `TransitionPowerSourceStatus::Unknown` and `Other` merge
   into `Unknown(u16)` (the ICD's "unknown" code 4 is `Unknown(4)`), and the `volume_coverage_pattern` enums
   `WaveformType`, `PulseWidth` and `ChannelConfiguration` (`UnknownPhase`) carry `Unknown(u8)`, `PatternType`
   `Unknown(u16)`. Match `Unknown(_)` where you matched the unit variant.
-- **`RdaBuildNumber` is a number, not an enum** (#PRNUM). `RdaBuildNumber::from_raw(u16)` wraps the wire value;
+- **`RdaBuildNumber` is a number, not an enum** (#191). `RdaBuildNumber::from_raw(u16)` wraps the wire value;
   `major()`, `minor()`, `raw()` and `Display` (`"24.0"`) replace the `Build12_0` .. `Build24_0` variants,
   `as_float()` and `is_known()`, and builds compare in build order (`build >= RdaBuildNumber::from_raw(2000)`).
-- **VCP and azimuth indexing angles are `f32`** (#PRNUM). `volume_coverage_pattern::ElevationDataBlock`'s elevation,
+- **VCP and azimuth indexing angles are `f32`** (#191). `volume_coverage_pattern::ElevationDataBlock`'s elevation,
   sector edge and EBC angles and `digital_radar_data::Header::azimuth_indexing_mode_degrees()` return `f32`, matching
   `nexrad_model`; `azimuth_rate_degrees_per_second()` stays `f64`.
-- **Legacy radials carry their Nyquist velocity** (#PRNUM). `digital_radar_data_legacy::Message` exposes the type 1
+- **Legacy radials carry their Nyquist velocity** (#191). `digital_radar_data_legacy::Message` exposes the type 1
   Nyquist velocity and atmospheric attenuation factor, and its `radial()`/`into_radial()` set the model radial's
   Nyquist velocity (left `None` when zero, as on surveillance cuts).
-- **Legacy clutter filter bypass maps decode as `Other`** (#PRNUM). A type 13 map from a legacy (pre-ORDA) RDA used
+- **Legacy clutter filter bypass maps decode as `Other`** (#191). A type 13 map from a legacy (pre-ORDA) RDA used
   to decode as an empty `ClutterFilterBypassMap`; like the legacy type 15 map it is now `Other` with its payload.
 - **`MessageType` ordering.** It is no longer `#[repr(u8)]`, and its derived `Ord` puts `Reserved(_)` after
   `RdaLogData`. Compare `number()` to order by wire number.

@@ -138,7 +138,7 @@ impl<'a> Header<'a> {
             0 => CompressionIndicator::Uncompressed,
             1 => CompressionIndicator::CompressedBzip2,
             2 => CompressionIndicator::CompressedZlib,
-            _ => CompressionIndicator::FutureUse,
+            other => CompressionIndicator::Unknown(other),
         }
     }
 

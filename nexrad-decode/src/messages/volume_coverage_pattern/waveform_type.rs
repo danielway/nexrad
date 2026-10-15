@@ -11,8 +11,8 @@ pub enum WaveformType {
     Batch,
     /// Staggered Pulse Pair.
     StaggeredPulsePair,
-    /// Unknown waveform type.
-    Unknown,
+    /// A waveform type code the ICD does not define, carrying the raw value.
+    Unknown(u8),
 }
 
 impl WaveformType {
@@ -24,7 +24,7 @@ impl WaveformType {
             3 => WaveformType::ContiguousDopplerWithoutAmbiguityResolution,
             4 => WaveformType::Batch,
             5 => WaveformType::StaggeredPulsePair,
-            _ => WaveformType::Unknown,
+            other => WaveformType::Unknown(other),
         }
     }
 }
@@ -42,7 +42,7 @@ impl From<WaveformType> for nexrad_model::data::WaveformType {
             }
             WaveformType::Batch => Self::Batch,
             WaveformType::StaggeredPulsePair => Self::StaggeredPulsePair,
-            WaveformType::Unknown => Self::Unknown,
+            WaveformType::Unknown(_) => Self::Unknown,
         }
     }
 }

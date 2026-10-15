@@ -7,6 +7,6 @@ pub enum CompressionIndicator {
     CompressedBzip2,
     /// Data is compressed using ZLIB algorithm.
     CompressedZlib,
-    /// Reserved for future compression methods.
-    FutureUse,
+    /// A compression code the ICD does not define, carrying the raw value.
+    Unknown(u8),
 }

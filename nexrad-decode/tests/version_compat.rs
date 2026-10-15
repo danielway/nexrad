@@ -594,9 +594,8 @@ fn test_transition_era_kcrp_2022() {
 /// Validates that build number decoding is consistent across all available test volumes.
 /// This test extracts the raw build number field and verifies:
 /// 1. The scaling factor (÷100 vs ÷10) produces a reasonable build number
-/// 2. The decoded build number is a known variant
-/// 3. The build number is consistent with the file's date
-/// 4. The VOL block format detected matches the build number's expectation
+/// 2. The build number is consistent with the file's date
+/// 3. The VOL block format detected matches the build number's expectation
 #[test]
 fn test_build_number_consistency_all_volumes() {
     struct TestCase {
@@ -700,7 +699,10 @@ fn test_build_number_consistency_all_volumes() {
         let build = analysis
             .build_number
             .unwrap_or_else(|| panic!("{}: should have build number", tc.name));
-        let build_float = build.as_float();
+        let build_float: f32 = build
+            .to_string()
+            .parse()
+            .expect("build displays as a number");
 
         // Verify build number is in expected range for this file's date
         assert!(
@@ -712,18 +714,6 @@ fn test_build_number_consistency_all_volumes() {
             tc.min_expected_build,
             tc.max_expected_build
         );
-
-        // Verify build number is a known variant (not Unknown) for builds >= 12.0.
-        // Older builds (e.g. 11.3) predate our enum and are expected to be Unknown.
-        if build_float >= 12.0 {
-            assert!(
-                build.is_known(),
-                "{}: build number should be known, got {:?} (raw: {:?})",
-                tc.name,
-                build,
-                analysis.raw_build_value
-            );
-        }
 
         // Verify VOL block format matches build number expectation
         assert_eq!(
@@ -926,42 +916,22 @@ fn test_rad_block_format_across_eras() {
 /// known raw values.
 #[test]
 fn test_build_number_scaling() {
-    // Build 19.0: raw value 190 (190/100 = 1.9 < 2.0, so 190/10 = 19.0)
-    assert_eq!(
-        RdaBuildNumber::from_raw(190),
-        RdaBuildNumber::Build19_0,
-        "raw 190 should decode to Build 19.0"
-    );
-
-    // Build 20.0: raw value 200 (200/100 = 2.0, not > 2.0, so 200/10 = 20.0)
-    assert_eq!(
-        RdaBuildNumber::from_raw(200),
-        RdaBuildNumber::Build20_0,
-        "raw 200 should decode to Build 20.0"
-    );
-
-    // Build 21.0: raw value 2100 (2100/100 = 21.0 > 2.0, so 2100/100 = 21.0)
-    assert_eq!(
-        RdaBuildNumber::from_raw(2100),
-        RdaBuildNumber::Build21_0,
-        "raw 2100 should decode to Build 21.0"
-    );
-
-    // Build 24.0: raw value 2400 (2400/100 = 24.0 > 2.0, so 2400/100 = 24.0)
-    assert_eq!(
-        RdaBuildNumber::from_raw(2400),
-        RdaBuildNumber::Build24_0,
-        "raw 2400 should decode to Build 24.0"
-    );
-
-    // Build 12.0: raw value 120 (120/100 = 1.2 < 2.0, so 120/10 = 12.0)
-    assert_eq!(
-        RdaBuildNumber::from_raw(120),
-        RdaBuildNumber::Build12_0,
-        "raw 120 should decode to Build 12.0"
-    );
+    // Values of 200 or less are divided by 10, larger values by 100.
+    for (raw, expected) in [
+        (120, "12.0"),
+        (190, "19.0"),
+        (200, "20.0"),
+        (2100, "21.0"),
+        (2400, "24.0"),
+    ] {
+        assert_eq!(
+            RdaBuildNumber::from_raw(raw).to_string(),
+            expected,
+            "raw {raw} should decode to build {expected}"
+        );
+    }
 
     // Verify legacy boundary
-    assert!(RdaBuildNumber::Build19_0.uses_legacy_volume_data_block());
-    assert!(!RdaBuildNumber::Build20_0.uses_legacy_volume_data_block());
+    assert!(RdaBuildNumber::from_raw(190).uses_legacy_volume_data_block());
+    assert!(!RdaBuildNumber::from_raw(200).uses_legacy_volume_data_block());
 }

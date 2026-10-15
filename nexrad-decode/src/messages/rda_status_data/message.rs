@@ -469,7 +469,7 @@ impl<'a> Message<'a> {
             0 => SpotBlankingStatus::NotInstalled,
             1 => SpotBlankingStatus::Enabled,
             4 => SpotBlankingStatus::Disabled,
-            other => SpotBlankingStatus::Other(other as u8),
+            other => SpotBlankingStatus::Unknown(other),
         }
     }
 
@@ -495,8 +495,7 @@ impl<'a> Message<'a> {
             0 => TransitionPowerSourceStatus::NotInstalled,
             1 => TransitionPowerSourceStatus::Off,
             3 => TransitionPowerSourceStatus::Ok,
-            4 => TransitionPowerSourceStatus::Unknown,
-            other => TransitionPowerSourceStatus::Other(other),
+            other => TransitionPowerSourceStatus::Unknown(other),
         }
     }
 

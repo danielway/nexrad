@@ -257,7 +257,7 @@ impl<'a> VolumeDataBlock<'a> {
         match processing_status {
             0 => ProcessingStatus::RxrNoise,
             1 => ProcessingStatus::Cbt,
-            _ => ProcessingStatus::Other(processing_status),
+            _ => ProcessingStatus::Unknown(processing_status),
         }
     }
 }

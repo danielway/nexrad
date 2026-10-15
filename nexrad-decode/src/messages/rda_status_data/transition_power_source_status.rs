@@ -7,8 +7,7 @@ pub enum TransitionPowerSourceStatus {
     Off,
     /// Transition power source is OK.
     Ok,
-    /// Transition power source status is unknown.
-    Unknown,
-    /// Unrecognized TPS status value for forward compatibility.
-    Other(u16),
+    /// The transition power source status is unknown (code 4), or a value the ICD does not
+    /// define, carrying the raw value.
+    Unknown(u16),
 }

@@ -7,8 +7,8 @@ pub enum ChannelConfiguration {
     RandomPhase,
     /// SZ-2 phase coding for range dealiasing.
     Sz2Phase,
-    /// Unknown phase configuration.
-    UnknownPhase,
+    /// A channel configuration code the ICD does not define, carrying the raw value.
+    Unknown(u8),
 }
 
 #[cfg(feature = "model")]
@@ -18,7 +18,7 @@ impl From<ChannelConfiguration> for nexrad_model::data::ChannelConfiguration {
             ChannelConfiguration::ConstantPhase => Self::ConstantPhase,
             ChannelConfiguration::RandomPhase => Self::RandomPhase,
             ChannelConfiguration::Sz2Phase => Self::Sz2Phase,
-            ChannelConfiguration::UnknownPhase => Self::Unknown,
+            ChannelConfiguration::Unknown(_) => Self::Unknown,
         }
     }
 }

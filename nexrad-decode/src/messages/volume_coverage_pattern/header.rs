@@ -102,7 +102,7 @@ impl<'a> Header<'a> {
     pub fn pattern_type(&self) -> PatternType {
         match self.inner.pattern_type.get() {
             2 => PatternType::Constant,
-            _ => PatternType::Unknown,
+            other => PatternType::Unknown(other),
         }
     }
 
@@ -120,7 +120,7 @@ impl<'a> Header<'a> {
         match self.inner.pulse_width {
             2 => PulseWidth::Short,
             4 => PulseWidth::Long,
-            _ => PulseWidth::Unknown,
+            other => PulseWidth::Unknown(other),
         }
     }
 

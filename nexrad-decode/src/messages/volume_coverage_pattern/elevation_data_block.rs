@@ -173,7 +173,7 @@ impl<'a> ElevationDataBlock<'a> {
             0 => ChannelConfiguration::ConstantPhase,
             1 => ChannelConfiguration::RandomPhase,
             2 => ChannelConfiguration::Sz2Phase,
-            _ => ChannelConfiguration::UnknownPhase,
+            other => ChannelConfiguration::Unknown(other),
         }
     }
 

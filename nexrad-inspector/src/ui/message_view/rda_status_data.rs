@@ -212,10 +212,7 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
 
     // Build & Version Section
     output.push_str("\n--- Build & Version ---\n");
-    output.push_str(&format!(
-        "RDA Build Number: {:.1}\n",
-        message.build_number().as_float()
-    ));
+    output.push_str(&format!("RDA Build Number: {}\n", message.build_number()));
     output.push_str(&format!(
         "Status Message Version: {}\n",
         message.status_version()

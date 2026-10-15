@@ -3,6 +3,6 @@
 pub enum PatternType {
     /// Constant elevation scan pattern.
     Constant,
-    /// Unknown pattern type.
-    Unknown,
+    /// A pattern type code the ICD does not define, carrying the raw value.
+    Unknown(u16),
 }

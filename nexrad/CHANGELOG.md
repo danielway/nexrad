@@ -60,6 +60,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The wrapping variants `Model`, `Decode`, `Data`, `Render`, `Process` and `Io` no longer repeat the wrapped error in
   their `Display` text, which is the layer name alone (`decode error`); the wrapped error is still their `source()`,
   so reporters that walk the source chain print it once. (#195)
+- docs.rs shows the feature each feature-gated item requires.
+- The package description covers loading, downloading, decoding, processing and rendering.
+- The `aws` feature's build requirements (a C compiler, and NASM on Windows x86 targets) are documented.
 
 ### Removed
 

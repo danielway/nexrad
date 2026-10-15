@@ -2,7 +2,7 @@
 
 [![Crate](https://img.shields.io/crates/v/nexrad.svg)](https://crates.io/crates/nexrad)
 [![Docs.rs](https://docs.rs/nexrad/badge.svg)](https://docs.rs/nexrad)
-[![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
 
 Ergonomic APIs for accessing, decoding, processing, and rendering NEXRAD weather radar data.
 

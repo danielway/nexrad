@@ -47,8 +47,11 @@ impl File {
     /// Decompresses a gzip-compressed volume file.
     ///
     /// Returns a new `File` containing the decompressed data. If the file is not
-    /// gzip-compressed, returns it unchanged. Returns an error only if decompression
-    /// fails.
+    /// gzip-compressed, returns it unchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Io`](crate::result::Error::Io) if the gzip data cannot be decompressed.
     pub fn decompress(self) -> crate::result::Result<File> {
         use flate2::read::GzDecoder;
         use std::io::Read;
@@ -82,6 +85,8 @@ impl File {
 
     /// The file's LDM records.
     ///
+    /// # Errors
+    ///
     /// Returns an error if the file is gzip-compressed (call [`decompress`](Self::decompress)
     /// first), if the data is shorter than the volume header, or if the record data is truncated
     /// or malformed.
@@ -105,6 +110,8 @@ impl File {
     /// Searches the file's LDM records in order, decompressing each compressed record, and returns
     /// the first volume coverage pattern message found as an owned message. For a real-time Start
     /// chunk, this is the message that describes the volume's elevation cuts.
+    ///
+    /// # Errors
     ///
     /// Returns [`Error::MissingCoveragePattern`](crate::result::Error::MissingCoveragePattern) if
     /// no record carries one, and propagates record splitting, decompression, and decoding errors

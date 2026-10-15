@@ -8,7 +8,7 @@ license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 keywords.workspace = true
-categories.workspace = true
+categories = ["science", "data-structures"]
 exclude = [
     "data/",
     "tests/fixture_snapshots.rs",

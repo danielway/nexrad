@@ -285,6 +285,12 @@ impl<'a> Message<'a> {
     /// Get a radial from this digital radar data message. This clones the underlying moment
     /// data; use [`into_radial`](Self::into_radial) to avoid the copy when the message is no
     /// longer needed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a data block's moment data cannot be decoded, or
+    /// [`Error::Model`](crate::result::Error::Model) if the decoded values are invalid for a model
+    /// radial.
     #[cfg(feature = "model")]
     pub fn radial(&self) -> crate::result::Result<nexrad_model::data::Radial> {
         let moments = [
@@ -305,6 +311,10 @@ impl<'a> Message<'a> {
     }
 
     /// Convert this digital radar data message into a common model radial, minimizing data copy.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same errors as [`radial`](Self::radial).
     #[cfg(feature = "model")]
     pub fn into_radial(self) -> crate::result::Result<nexrad_model::data::Radial> {
         let radial_data_block = self.radial_data_block;

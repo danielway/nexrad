@@ -54,6 +54,13 @@ impl ChunkIdentifier {
     }
 
     /// Creates a new chunk identifier by parsing a chunk name.
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`AwsError`](crate::result::AwsError) if `name` does not follow the chunk naming
+    /// format `YYYYMMDD-HHMMSS-NNN-T`: `UnrecognizedChunkFormat` if it is too short,
+    /// `UnrecognizedChunkDateTime`, `UnrecognizedChunkSequence` or `UnrecognizedChunkType` if that
+    /// part cannot be parsed.
     pub fn from_name(
         site: impl Into<String>,
         volume: VolumeIndex,

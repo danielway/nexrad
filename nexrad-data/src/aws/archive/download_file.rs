@@ -5,6 +5,12 @@ use crate::volume::File;
 
 /// Download a data file specified by its metadata. Returns the downloaded file's encoded contents
 /// which may then need to be decompressed and decoded.
+///
+/// # Errors
+///
+/// Returns [`AwsError::S3ObjectNotFound`](crate::result::AwsError::S3ObjectNotFound) if the file
+/// does not exist, and another [`AwsError`](crate::result::AwsError) if the request fails or the
+/// response cannot be read.
 pub async fn download_file(identifier: &Identifier) -> crate::result::Result<File> {
     let key = format!(
         "{}/{}/{}",

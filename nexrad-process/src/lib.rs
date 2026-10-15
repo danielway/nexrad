@@ -69,6 +69,11 @@ pub trait SweepProcessor: Send + Sync {
     fn name(&self) -> &str;
 
     /// Process the input field, producing a new field with the same geometry.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the input does not suit the processor, for example when it holds a
+    /// different product or geometry than the processor requires.
     fn process(&self, input: &SweepField) -> Result<SweepField>;
 }
 
@@ -88,6 +93,11 @@ pub trait ScanDerivedProduct: Send + Sync {
     /// - `fields` — Sweep fields for the relevant product, one per elevation
     /// - `coordinate_system` — Radar coordinate system for geographic projection
     /// - `grid` — Geographic extent and dimensions of the output field
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the fields do not suit the product, for example when none are given or
+    /// they hold a different product than it requires.
     fn compute(
         &self,
         fields: &[SweepField],

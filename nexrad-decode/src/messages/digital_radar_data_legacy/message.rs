@@ -282,6 +282,11 @@ impl<'a> Message<'a> {
     /// Convert this message to a common model radial. This clones the underlying gate data;
     /// use [`into_radial`](Self::into_radial) to avoid the copy when the message is no longer
     /// needed.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Model`](crate::result::Error::Model) if the decoded values are invalid for
+    /// a model radial.
     #[cfg(feature = "model")]
     pub fn radial(&self) -> Result<nexrad_model::data::Radial> {
         Self::build_radial(
@@ -293,6 +298,10 @@ impl<'a> Message<'a> {
     }
 
     /// Convert this message into a common model radial, consuming the gate data without copying.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same errors as [`radial`](Self::radial).
     #[cfg(feature = "model")]
     pub fn into_radial(self) -> Result<nexrad_model::data::Radial> {
         use crate::result::Error;

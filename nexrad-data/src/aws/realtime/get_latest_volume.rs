@@ -28,6 +28,11 @@ pub struct LatestVolumeResult {
 /// This function performs a binary search to find the volume with the most recent upload time.
 ///
 /// The result's `volume` is `None` if none of the site's volumes contain any chunks.
+///
+/// # Errors
+///
+/// Returns an [`AwsError`](crate::result::AwsError) if a volume listing request fails or its
+/// response cannot be parsed.
 pub async fn get_latest_volume(site: &str) -> crate::result::Result<LatestVolumeResult> {
     let calls = AtomicUsize::new(0);
     let latest_volume = find_latest_volume(|volume| {
@@ -77,6 +82,11 @@ where
 /// This function does not judge whether the hint is too old to be useful. A very stale hint still
 /// works but costs one list call per volume walked; deciding when to skip the hint and call
 /// [`get_latest_volume`] directly is the caller's responsibility.
+///
+/// # Errors
+///
+/// Returns an [`AwsError`](crate::result::AwsError) if a volume listing request fails or its
+/// response cannot be parsed.
 pub async fn get_latest_volume_from_hint(
     site: &str,
     hint: VolumeIndex,

@@ -7,6 +7,13 @@ use crate::aws::s3::download_object;
 /// [upload time](ChunkIdentifier::upload_date_time) filled in from the object's metadata, the
 /// chunk itself, and `attempts: 1`, since this function makes a single attempt and does not
 /// retry.
+///
+/// # Errors
+///
+/// Returns an [`AwsError`](crate::result::AwsError) if the request fails or the object does not
+/// exist ([`AwsError::S3ObjectNotFound`](crate::result::AwsError::S3ObjectNotFound)), and
+/// [`AwsError::UnrecognizedChunkFormat`](crate::result::AwsError::UnrecognizedChunkFormat) if the
+/// data is not a chunk.
 pub async fn download_chunk(
     site: &str,
     chunk_id: &ChunkIdentifier,

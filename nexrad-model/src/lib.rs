@@ -47,7 +47,8 @@
 //!   Enables methods like `first_gate_range()` returning `Length` instead of raw km values.
 //!
 //! - `serde` - Serialization/deserialization support via [`serde`](https://docs.rs/serde).
-//!   All model types implement `Serialize` and `Deserialize`.
+//!   The data, geometry and site types implement `Serialize` and `Deserialize`; the builders,
+//!   `SiteEntry` and `Error` do not.
 //!
 //! - `chrono` - Date/time support via [`chrono`](https://docs.rs/chrono).
 //!   Enables `collection_time()` returning `DateTime<Utc>` instead of raw timestamps.

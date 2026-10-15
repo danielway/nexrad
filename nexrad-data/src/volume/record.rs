@@ -49,6 +49,12 @@ impl<'a> Record<'a> {
     }
 
     /// Decompresses this LDM record's data.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UncompressedData`](crate::result::Error::UncompressedData) if the record is
+    /// not compressed and [`Error::Io`](crate::result::Error::Io) if the bzip2 data cannot be
+    /// decompressed.
     pub fn decompress(&self) -> crate::result::Result<Record<'static>> {
         use crate::result::Error;
         use bzip2::read::BzDecoder;

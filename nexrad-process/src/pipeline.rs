@@ -65,6 +65,10 @@ impl SweepPipeline {
     /// Execute the pipeline, returning the final processed field.
     ///
     /// If the pipeline has no steps, the input is cloned and returned as-is.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error of the first step that fails.
     pub fn execute(&self, input: &SweepField) -> Result<SweepField> {
         if self.steps.is_empty() {
             return Ok(input.clone());

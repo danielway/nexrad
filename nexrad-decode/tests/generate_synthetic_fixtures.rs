@@ -49,7 +49,7 @@ fn build_single_segment_frame(message_type: u8, content: &[u8]) -> Vec<u8> {
 
 /// Build multi-segment frames from content that spans multiple segments.
 fn build_multi_segment_frames(message_type: u8, content: &[u8]) -> Vec<u8> {
-    let segment_count = (content.len() + CONTENT_SIZE - 1) / CONTENT_SIZE;
+    let segment_count = content.len().div_ceil(CONTENT_SIZE);
     let mut frames = Vec::with_capacity(segment_count * FRAME_SIZE);
 
     for seg_idx in 0..segment_count {

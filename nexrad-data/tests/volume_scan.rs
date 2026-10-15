@@ -273,7 +273,7 @@ fn test_scan_moment_values() {
     let values = reflectivity.values();
 
     // Should have the same number of values as gate count
-    assert_eq!(values.len(), reflectivity.gate_count() as usize);
+    assert_eq!(values.len(), reflectivity.gate_count());
 
     // Values should be reasonable (mix of actual values and special cases)
     let mut has_value = false;

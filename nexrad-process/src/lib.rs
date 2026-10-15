@@ -15,22 +15,32 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```
 //! use nexrad_process::{SweepPipeline, filter::ThresholdFilter};
 //! use nexrad_model::data::{SweepField, Product};
+//! # use nexrad_model::data::{MomentData, Radial, Sweep};
+//! # let reflectivity = MomentData::from_fixed_point(
+//! #     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
+//! # )?;
+//! # let radial = Radial::builder(0, 0.0, 1, 0.5).moment(reflectivity).build()?;
+//! # let sweep = Sweep::new(1, vec![radial])?;
 //!
 //! let field = SweepField::from_radials(sweep.radials(), Product::Reflectivity).unwrap();
 //! let filtered = SweepPipeline::new()
 //!     .then(ThresholdFilter::new(Some(5.0), None)?)
 //!     .execute(&field)?;
+//! # Ok::<(), nexrad_process::Error>(())
 //! ```
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(clippy::correctness)]
 #![warn(unnameable_types)]
 #![deny(missing_docs)]
+#![warn(missing_debug_implementations)]
 
 mod azimuth;
 /// Derived products computed from radar scans.
@@ -61,6 +71,11 @@ pub trait SweepProcessor: Send + Sync {
     fn name(&self) -> &str;
 
     /// Process the input field, producing a new field with the same geometry.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the input does not suit the processor, for example when it holds a
+    /// different product or geometry than the processor requires.
     fn process(&self, input: &SweepField) -> Result<SweepField>;
 }
 
@@ -80,6 +95,11 @@ pub trait ScanDerivedProduct: Send + Sync {
     /// - `fields` — Sweep fields for the relevant product, one per elevation
     /// - `coordinate_system` — Radar coordinate system for geographic projection
     /// - `grid` — Geographic extent and dimensions of the output field
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the fields do not suit the product, for example when none are given or
+    /// they hold a different product than it requires.
     fn compute(
         &self,
         fields: &[SweepField],

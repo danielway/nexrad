@@ -15,7 +15,7 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```
 //! use nexrad_model::data::{MomentValue, Product, Scan};
 //!
 //! fn process_scan(scan: &Scan) {
@@ -47,7 +47,8 @@
 //!   Enables methods like `first_gate_range()` returning `Length` instead of raw km values.
 //!
 //! - `serde` - Serialization/deserialization support via [`serde`](https://docs.rs/serde).
-//!   All model types implement `Serialize` and `Deserialize`.
+//!   The data, geometry and site types implement `Serialize` and `Deserialize`; the builders,
+//!   `SiteEntry` and `Error` do not.
 //!
 //! - `chrono` - Date/time support via [`chrono`](https://docs.rs/chrono).
 //!   Enables `collection_time()` returning `DateTime<Utc>` instead of raw timestamps.
@@ -73,12 +74,15 @@
 //! NEXRAD radar data. All I/O, parsing, and rendering concerns are handled by separate
 //! crates in the NEXRAD library suite.
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(clippy::correctness)]
 #![warn(unnameable_types)]
 #![deny(missing_docs)]
+#![warn(missing_debug_implementations)]
 
 mod binary_data;
 

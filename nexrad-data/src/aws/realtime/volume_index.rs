@@ -16,6 +16,8 @@ impl VolumeIndex {
     /// Creates a volume index, validating that it is in `1..=999`, the bucket's volume
     /// directories.
     ///
+    /// # Errors
+    ///
     /// Returns [`AwsError::InvalidVolumeIndex`] for any other value.
     pub fn new(index: usize) -> Result<Self> {
         if (Self::FIRST..=Self::LAST).contains(&index) {

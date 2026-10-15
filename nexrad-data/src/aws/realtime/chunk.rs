@@ -24,6 +24,12 @@ impl Chunk {
     /// 2. A compressed LDM record, or an "intermediate" or "end" chunk.
     ///
     /// The chunk type is determined by the data's format.
+    ///
+    /// # Errors
+    ///
+    /// Returns
+    /// [`AwsError::UnrecognizedChunkFormat`](crate::result::AwsError::UnrecognizedChunkFormat) if
+    /// the data is in neither format.
     pub fn new(data: Vec<u8>) -> crate::result::Result<Self> {
         // Check if the data begins with an Archive II volume header, indicating a "start" chunk
         if data.len() >= 3 && data.get(0..3) == Some(b"AR2".as_slice()) {

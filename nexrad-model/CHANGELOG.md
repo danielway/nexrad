@@ -167,6 +167,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Site` applies the same validation as their constructors and builders, and fails with the validation error's message
   for data they reject. Field `values` and `statuses` must each hold one entry per cell, and each `Radial` moment must
   be stored under its own product's key. (#189)
+- docs.rs shows the feature each feature-gated item requires. (#196)
+- The crates.io categories are `science` and `data-structures`; `parsing` is dropped. (#196)
+- The published crate leaves out the fixture tests that need files from outside it and the site registry's source
+  CSV. (#196)
 
 ### Removed
 

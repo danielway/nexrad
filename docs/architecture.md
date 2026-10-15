@@ -1,7 +1,7 @@
 # Architecture
 
 This document describes the design philosophy and structure of the NEXRAD Rust library suite, and the rules the six
-library crates follow from 1.0.0 onwards.
+library crates follow.
 
 ## Mono-Repo Structure
 
@@ -55,18 +55,15 @@ or native networking code.
 
 ### Layering Rules
 
-- **All conversion to model types lives in `nexrad-decode`**, behind its `model` feature:
-  `nexrad_decode::model::ScanBuilder` assembles messages into a `Scan`; `digital_radar_data::Message::into_radial`
-  and `radial` (and their `digital_radar_data_legacy` equivalents) build `Radial`s;
-  `volume_coverage_pattern::Message::to_model` builds a `VolumeCoveragePattern`; `digital_radar_data::Message::site`
-  builds a `Site`; and `DataBlockName::product` maps data block names to `Product`s.
+- **All conversion to model types lives in `nexrad-decode`**, behind its `model` feature, for example
+  `nexrad_decode::model::ScanBuilder`, which assembles messages into a `Scan`, and
+  `digital_radar_data::Message::into_radial`.
 - **`nexrad-data` orchestrates I/O and decompression only.** `volume::File::scan`, `volume::Record::radials` and
   `aws::realtime::assemble_volume` decompress records and hand their messages to `nexrad-decode`; they contain no
   protocol-to-model mapping of their own.
-- **The facade contains re-exports and I/O entry points only**: `load`, `load_file`, `download`, `download_latest`,
-  `download_at`, `list_scans`, `stream`, `stream_with`, `stream_scans` and `stream_scans_with`. Anything expressible as a method on a model type lives on the model type
-  (`Sweep::field`, `Scan::fields`, `Scan::first_field`, `Scan::coordinate_system`), and the static site registry lives
-  in `nexrad_model::meta::registry`.
+- **The facade contains re-exports and I/O entry points only** (`load`, `download`, `list_scans`, `stream` and their
+  variants). Anything expressible as a method on a model type lives on the model type (`Sweep::field`,
+  `Scan::coordinate_system`), and the static site registry lives in `nexrad_model::meta::registry`.
 
 ### Why nexrad-model and nexrad-decode Are Separate
 
@@ -78,9 +75,7 @@ The data model (`nexrad-model`) and the binary parser (`nexrad-decode`) are inte
 
 - **nexrad-decode** implements the NOAA ICD 2620002AA specification. Its types mirror the binary wire format (message
   headers, data block descriptors, etc.) and are primarily useful for developers working at the protocol level. When
-  the `model` feature is enabled, decoded messages can be converted to model types. All protocol-to-model conversion
-  lives here: `nexrad_decode::model::ScanBuilder` assembles messages into a `Scan`, and `nexrad-data` only decompresses
-  records and feeds their messages to it.
+  the `model` feature is enabled, decoded messages can be converted to model types.
 
 This split serves several purposes:
 
@@ -94,7 +89,7 @@ This split serves several purposes:
 ### Facade Pattern
 
 The `nexrad` crate re-exports all sub-crates (`nexrad::model`, `nexrad::decode`, `nexrad::data`, `nexrad::process`,
-`nexrad::render`) plus `nexrad::chrono`, and provides the top-level I/O entry points:
+`nexrad::render`) plus `nexrad::chrono` and `nexrad::futures_util`, and provides the top-level I/O entry points:
 
 ```rust
 // Through the facade (ergonomic)
@@ -118,15 +113,17 @@ Everything reachable through `pub` that is not `#[doc(hidden)]` is public API an
 stay evolvable but are needed by examples or by `nexrad-inspector` are made `#[doc(hidden)]` rather than public, and
 carry no stability guarantee.
 
-Each library crate sets `[package.metadata.docs.rs] all-features = true` so docs.rs shows feature-gated items, and
-enables `#![warn(unnameable_types)]` so a public type cannot leak through a private module path.
+Each library crate sets `[package.metadata.docs.rs] all-features = true` and `rustdoc-args = ["--cfg", "docsrs"]` so
+docs.rs shows feature-gated items with the features they require, enables `#![warn(unnameable_types)]` so a public
+type cannot leak through a private module path, and enables `#![warn(missing_debug_implementations)]` so every public
+type implements `Debug`.
 
 ### Versioning
 
-All six library crates release 1.0.0 together, bottom-up: `nexrad-model`, then `nexrad-decode`, `nexrad-process` and
-`nexrad-render`, then `nexrad-data`, then `nexrad`. Each crate is versioned independently, and each keeps a
-`CHANGELOG.md` in the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. `nexrad-inspector` and `xtask`
-are `publish = false`. See [releasing.md](releasing.md) for the release process.
+Each crate is versioned independently and keeps a `CHANGELOG.md` in the
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. Crates are released bottom-up: `nexrad-model`, then
+`nexrad-decode`, `nexrad-process` and `nexrad-render`, then `nexrad-data`, then `nexrad`. `nexrad-inspector` and
+`xtask` are `publish = false`.
 
 ### Dependency Exposure
 
@@ -136,11 +133,12 @@ appear in public signatures:
 | Crate | Where | Notes |
 |-------|-------|-------|
 | `std` | Everywhere | |
-| `chrono` | Timestamps and dates in model, decode, data and the facade | Re-exported from the facade as `nexrad::chrono` |
+| `chrono` | Timestamps and dates in model, decode, data and the facade | Re-exported from the facade as `nexrad::chrono` (feature `chrono`) |
 | `serde` | `Serialize`/`Deserialize` impls | Opt-in `serde` feature |
 | `uom` | Unit-typed accessors | Opt-in `uom` feature |
 | `image` | `nexrad-render` (`RgbaImage`, `Error::Image(ImageError)`) | Accepted coupling: `RgbaImage` stays in the API, `pub use image;` re-exports the crate, and an `image` major bump is a `nexrad-render` major bump. Only the `png` codec is enabled; consumers enable other codecs on their own `image` dependency |
 | `futures_core` | The `Stream` returned by `nexrad_data::aws::realtime::chunk_stream` and `nexrad::stream` | Return type only |
+| `futures_util` | The facade | Re-exported as `nexrad::futures_util` (feature `aws`) for `StreamExt` on the real-time streams; not in any signature |
 
 Not allowed in public signatures: `reqwest`, `bzip2`, `zerocopy` traits, `tokio`, `once_cell`. HTTP failures are boxed
 as `Box<dyn std::error::Error + Send + Sync>` inside `AwsError`, bzip2 failures surface as `Error::Io`, and no public
@@ -218,8 +216,8 @@ builds for WASM. Only `parallel` (rayon threads) is excluded from the `wasm` fea
 - `nexrad_data::Error::Decode`, `Model` and `Io` wrap the decode, model and I/O errors raised while reading data.
 - The facade's `From<nexrad_data::Error>` flattens those three into `nexrad::Error::Decode`, `nexrad::Error::Model` and
   `nexrad::Error::Io`, so each facade variant names the layer an error came from; every other data error
-  (decompression, record layout, AWS) becomes `nexrad::Error::Data`. `nexrad::Error::NoDataAvailable { site, date }`
-  exists only with the `aws` feature.
+  (decompression, record layout, AWS) becomes `nexrad::Error::Data`. `nexrad::Error::NoDataAvailable` and
+  `nexrad::Error::NoScanAt` exist only with the `aws` feature.
 
 ## Serialization
 
@@ -229,8 +227,7 @@ same validation as the constructors and builders. The representation is stable w
 
 ## Naming Conventions
 
-- **Acronyms are UpperCamelCase words**: `VcpNumber`, `RdaStatusData`, `AwsError`, `CfpStatus`,
-  `RpgVolumeCoveragePattern`.
+- **Acronyms are UpperCamelCase words**: `VcpNumber`, `AwsError`.
 - **Decoded-message accessors** in `nexrad-decode` follow the convention documented in its crate docs under "Accessor
   Naming": the stem is the ICD field name; `<stem>_raw()` exists only when the wire encoding differs from the decoded
   value; a decoded plain number is `<stem>_<unit>()` (`azimuth_angle_degrees()`, `unambiguous_range_km()`); a decoded
@@ -243,13 +240,11 @@ same validation as the constructors and builders. The representation is stable w
   feedhorn's height above ground level (AGL).
 - **Numeric types**: geographic coordinates and ranges are `f64`; gate values (and the angles stored alongside them on
   `Radial`, `Sweep` and `SweepField`) are `f32`; image dimensions are `u32`.
-- **Constructors**: types with invariants have private fields. `Radial`, `ElevationCut`, `VolumeCoveragePattern`,
-  `SweepField` and `Site` have builders (`Radial::builder`, ...). Constructors and builders whose type has invariants
-  validate them and return a `Result` (`RadialBuilder::build`, `SiteBuilder::build`, `SweepFieldBuilder::build`,
-  `MomentData::from_fixed_point`, `Sweep::new`, `CartesianField::new`, `VerticalField::new`); field indexing (`get`
-  and the row accessors) returns `Option`, and `set` returns a `Result`. `RetryPolicy` and `PollConfig` have
-  constructors (`RetryPolicy::default_download`, `RetryPolicy::default_discovery`, `PollConfig::new`) with `with_*`
-  setters and getters. Every `nexrad-process` processor with parameters has a validating `new` or builder.
+- **Constructors**: types with invariants have private fields, and their constructors and builders validate the
+  invariants and return a `Result` (`RadialBuilder::build`, `Sweep::new`); field indexing (`get` and the row
+  accessors) returns `Option`, and `set` returns a `Result`. Configuration types (`RetryPolicy`, `PollConfig`) have
+  constructors with `with_*` setters and getters. Every `nexrad-process` processor with parameters has a validating
+  `new` or builder.
 - **Lifetimes**: no public function returns a value with an unbounded output lifetime. `Record::decompress` returns
   `Record<'static>`, and the real-time `Chunk` has no lifetime parameter.
 
@@ -368,46 +363,30 @@ Both `ChunkIterator` and `chunk_stream` always consume a new volume from its Sta
 volume header and VCP) and then in sequence order, even when later chunks were published while they waited.
 
 The chunk timing model, the elevation-to-chunk mapper, retry state and scan timing projection are crate-private. Their
-results are exposed only through the `ChunkIterator` estimates above, so the timing heuristics can be refined in any
-release.
+results are exposed only through the `ChunkIterator` estimates above.
 
 ## Enum Stability
 
-Public enums that are expected to gain variants during 1.x are marked `#[non_exhaustive]`, so adding a variant is not a
-breaking change. Code outside the defining crate must include a wildcard (`_`) arm when matching on them; code inside
+Public enums that are expected to gain variants in minor releases are marked `#[non_exhaustive]`, so adding a variant
+is not a breaking change. Code outside the defining crate must include a wildcard (`_`) arm when matching on them; code inside
 the defining crate keeps exhaustive matches so the compiler flags every place a new variant must be handled.
 
-Non-exhaustive (new failure modes, ICD message types, products, and scan strategies are added over time):
+Non-exhaustive: every crate's `Error` enum and `nexrad_data::result::AwsError`, and enums over sets that grow with the
+ICD or the library, such as message types, products and volume coverage patterns (`MessageContents`, `Product`,
+`VcpNumber`) and render projections (`Projection`).
 
-- Every crate's `Error` enum (`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`,
-  `nexrad`) and `nexrad_data::result::AwsError`
-- `nexrad_decode::messages`: `MessageContents`, `MessageType`, `RedundantChannel`, `VcpNumber`,
-  `digital_radar_data::DataBlockName`
-- `nexrad_model::data`: `Product`, `VcpNumber`
-- `nexrad_render`: `Projection`
-
-Non-exhaustive structs and enum variants (fields may be added during 1.x, so code outside the defining crate cannot
-construct them with a literal and must use `..` in struct patterns):
+Non-exhaustive structs and enum variants (fields may be added in minor releases, so code outside the defining crate
+cannot construct them with a literal and must use `..` in struct patterns):
 
 - `nexrad_model::meta::registry::SiteEntry`
 - `nexrad_render`: the `Projection::Polar`, `Projection::Geographic` and `Projection::Vertical` variants, and
   `PointQuery`
 
-Exhaustive by design (variants are fixed by the NOAA ICD or by the crate's own format, and several are matched per gate
-or per radial in hot loops where an exhaustive match is clearer and lets callers rely on the compiler):
-
-- `nexrad_model::data`: `MomentValue`, `CfpStatus`, `GateStatus`, `RadialStatus`, `PulseWidth`, `WaveformType`,
-  `ChannelConfiguration`
-- `nexrad_decode::messages`: `MessageHeaders`, `digital_radar_data::RadialStatus`,
-  `volume_coverage_pattern::{PulseWidth, WaveformType, ChannelConfiguration, PatternType}`, and the small status and
-  code enums in the message modules
-- `nexrad_data::aws::realtime`: `ChunkType`, `Chunk`
-- `nexrad_render`: `Interpolation`, `ColorScale`
+Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue`,
+`GateStatus`, the status and code enums in the `nexrad-decode` message modules, `ChunkType` and `ColorScale`.
 
 Adding a variant to an exhaustive enum is a breaking change and is reserved for a major release.
 
 ## Versioning and Releases
 
-Each crate is versioned independently. Release tags follow the format `crate-name@x.y.z`, and each crate's
-`CHANGELOG.md` records its changes. See [releasing.md](releasing.md) for the full release process and dependency
-ordering.
+Release tags follow the format `crate-name@x.y.z`. See [releasing.md](releasing.md) for the release process.

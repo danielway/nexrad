@@ -1,4 +1,4 @@
-Cargo.lock
+**/fuzz/Cargo.lock
 target/
 **/*.rs.bk
 .idea/

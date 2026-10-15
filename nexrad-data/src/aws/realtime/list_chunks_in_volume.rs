@@ -7,6 +7,11 @@ use crate::aws::s3::list_all_objects;
 /// Volume numbers are reused after 999 while old chunks remain, so every listing page is read and
 /// only the chunks sharing the newest date-time prefix are returned. An empty result means the
 /// volume holds no chunks.
+///
+/// # Errors
+///
+/// Returns an [`AwsError`](crate::result::AwsError) if a listing request fails or its response
+/// cannot be parsed.
 pub async fn list_chunks_in_volume(
     site: &str,
     volume: VolumeIndex,

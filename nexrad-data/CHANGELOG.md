@@ -107,6 +107,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `volume::Record::messages()`, `Record::radials()`, `File::scan()`, `File::coverage_pattern_message()` and
   `aws::realtime::assemble_volume` fail with `Error::Decode` on the first message that cannot be decoded, following
   `nexrad-decode`'s strict `decode_messages`; they previously skipped such messages. (#190)
+- docs.rs shows the feature each feature-gated item requires. (#196)
+- The published crate leaves out the tests and benchmarks that need files from outside it, the fuzz targets and
+  the `trim_fixture` maintainer example. (#196)
+- The `aws` feature's build requirements (a C compiler, and NASM on Windows x86 targets) are documented. (#196)
 
 ### Removed
 

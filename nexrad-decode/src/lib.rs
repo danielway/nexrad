@@ -10,9 +10,10 @@
 //! decompressed Archive II record, into structured [`Message`] values. Decoding is strict: it
 //! returns the error for the first message that cannot be decoded, along with its offset.
 //!
-//! ```ignore
+//! ```no_run
 //! use nexrad_decode::{decode_messages, MessageContents};
 //!
+//! # fn run(decompressed_data: Vec<u8>) -> nexrad_decode::Result<()> {
 //! for message in decode_messages(&decompressed_data)? {
 //!     match message.contents() {
 //!         MessageContents::DigitalRadarData(data) => {
@@ -27,6 +28,8 @@
 //!         _ => {}
 //!     }
 //! }
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! [`iter_messages`] yields one `Result` per message instead, so a caller can keep the messages
@@ -106,12 +109,15 @@
 //! slices as input and returns structured data types. All I/O operations (reading files,
 //! downloading from AWS, decompression) are handled by the `nexrad-data` crate.
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(clippy::correctness)]
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
+#![warn(missing_debug_implementations)]
 #![warn(unnameable_types)]
 
 /// Wrapper type for binary data with debug formatting support.

@@ -16,11 +16,21 @@ use nexrad_model::data::{GateStatus, SweepField};
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
 /// use nexrad_process::filter::MedianFilter;
+/// use nexrad_process::SweepProcessor;
+/// # let field = nexrad_model::data::SweepField::builder("Reflectivity", "dBZ")
+/// #     .product(nexrad_model::data::Product::Reflectivity)
+/// #     .elevation_angle_degrees(0.5)
+/// #     .azimuth_angles_degrees((0..360).map(|a| a as f32).collect())
+/// #     .first_gate_range_km(2.0)
+/// #     .gate_interval_km(0.25)
+/// #     .gate_count(400)
+/// #     .build()?;
 ///
 /// let filter = MedianFilter::new(3, 3)?;
 /// let filtered = filter.process(&field)?;
+/// # Ok::<(), nexrad_process::Error>(())
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct MedianFilter {
@@ -150,11 +160,21 @@ impl SweepProcessor for MedianFilter {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
 /// use nexrad_process::filter::GaussianSmooth;
+/// use nexrad_process::SweepProcessor;
+/// # let field = nexrad_model::data::SweepField::builder("Reflectivity", "dBZ")
+/// #     .product(nexrad_model::data::Product::Reflectivity)
+/// #     .elevation_angle_degrees(0.5)
+/// #     .azimuth_angles_degrees((0..360).map(|a| a as f32).collect())
+/// #     .first_gate_range_km(2.0)
+/// #     .gate_interval_km(0.25)
+/// #     .gate_count(400)
+/// #     .build()?;
 ///
 /// let smoother = GaussianSmooth::new(1.0, 1.0)?;
 /// let smoothed = smoother.process(&field)?;
+/// # Ok::<(), nexrad_process::Error>(())
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct GaussianSmooth {

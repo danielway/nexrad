@@ -35,6 +35,8 @@ pub struct Identifier {
 impl Identifier {
     /// Parses and validates an archive object name such as `KTLX20230520_201643_V06`.
     ///
+    /// # Errors
+    ///
     /// Returns [`AwsError::InvalidIdentifier`] if the name does not follow the archive grammar
     /// described on [`Identifier`].
     pub fn parse(name: &str) -> Result<Self> {

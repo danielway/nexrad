@@ -16,6 +16,11 @@ pub enum ChunkType {
 
 impl ChunkType {
     /// Creates a new chunk type from an abbreviation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AwsError::UnrecognizedChunkType`](crate::result::AwsError::UnrecognizedChunkType)
+    /// if `c` is not `S`, `I` or `E`.
     pub fn from_abbreviation(c: char) -> Result<Self> {
         match c {
             'S' => Ok(ChunkType::Start),

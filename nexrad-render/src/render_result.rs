@@ -141,11 +141,24 @@ impl RenderResult {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```
     /// use nexrad_render::image::ImageFormat;
+    /// # use nexrad_model::data::Product;
+    /// # use nexrad_render::{default_scale, render_sweep, RenderOptions};
+    /// # let field = nexrad_model::data::SweepField::builder("Reflectivity", "dBZ")
+    /// #     .product(nexrad_model::data::Product::Reflectivity)
+    /// #     .elevation_angle_degrees(0.5)
+    /// #     .azimuth_angles_degrees((0..360).map(|a| a as f32).collect())
+    /// #     .first_gate_range_km(2.0)
+    /// #     .gate_interval_km(0.25)
+    /// #     .gate_count(400)
+    /// #     .build()?;
+    /// # let result = render_sweep(&field, &default_scale(Product::Reflectivity), &RenderOptions::new(64, 64))?;
     ///
     /// let mut png = Vec::new();
     /// result.write_to(&mut png, ImageFormat::Png)?;
+    /// # assert!(png.starts_with(b"\x89PNG"));
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn write_to(
         &self,

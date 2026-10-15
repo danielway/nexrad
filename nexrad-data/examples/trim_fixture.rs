@@ -131,7 +131,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 MessageContents::DigitalRadarDataLegacy(drd) => {
-                    let elev = drd.elevation_number() as u8;
+                    let elev = drd.elevation_number();
                     record_sweeps.insert(elev);
                     if target_sweeps.contains(&elev) {
                         has_target_sweep = true;
@@ -260,7 +260,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 verify_sweeps.insert(drd.header().elevation_number());
                             }
                             MessageContents::DigitalRadarDataLegacy(drd) => {
-                                verify_sweeps.insert(drd.elevation_number() as u8);
+                                verify_sweeps.insert(drd.elevation_number());
                             }
                             _ => {}
                         }

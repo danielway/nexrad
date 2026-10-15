@@ -119,6 +119,11 @@ impl ChunkIterator {
     /// - `start_chunk`: The Start chunk if it differs from `latest_chunk` (contains VCP metadata)
     ///
     /// This is shorthand for [`start_with(PollConfig::new(site))`](Self::start_with).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AwsError::LatestVolumeNotFound`] if the site has no real-time volume, and an
+    /// [`AwsError`] if a listing or download request fails or a chunk cannot be parsed.
     pub async fn start(site: &str) -> Result<ChunkIteratorInit> {
         Self::start_with(PollConfig::new(site)).await
     }
@@ -126,6 +131,10 @@ impl ChunkIterator {
     /// Starts a new chunk iterator with the given configuration.
     ///
     /// See [`start`](Self::start) for details on the return value.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same errors as [`start`](Self::start).
     pub async fn start_with(config: PollConfig) -> Result<ChunkIteratorInit> {
         let latest = get_latest_volume(config.site()).await?;
         let volume = latest.volume.ok_or(AwsError::LatestVolumeNotFound)?;
@@ -249,12 +258,14 @@ impl ChunkIterator {
 
     /// Attempts to fetch the next chunk, making a single attempt without sleeping or retrying.
     ///
-    /// Returns:
-    /// - `Ok(Some(chunk))` if a chunk was downloaded
-    /// - `Ok(None)` if the next chunk, or the next volume's Start chunk, is not available yet; poll
-    ///   again later, for example after [`time_until_next`](Self::time_until_next)
-    /// - `Err(...)` if a request failed; [`AwsError::is_transient`] tells whether polling again
-    ///   can succeed
+    /// Returns `Some(chunk)` if a chunk was downloaded, and `None` if the next chunk, or the next
+    /// volume's Start chunk, is not available yet; poll again later, for example after
+    /// [`time_until_next`](Self::time_until_next).
+    ///
+    /// # Errors
+    ///
+    /// Returns an [`AwsError`] if a request failed; [`AwsError::is_transient`] tells whether
+    /// polling again can succeed.
     pub async fn try_next(&mut self) -> Result<Option<DownloadedChunk>> {
         match &self.state {
             IteratorState::NeedVolumeStart(volume) => self.try_fetch_volume_start(*volume).await,

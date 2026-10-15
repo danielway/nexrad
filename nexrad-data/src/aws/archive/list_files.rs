@@ -52,6 +52,15 @@ impl Ord for ListedFile {
 ///
 /// Only volume files are returned: metadata objects ([`Identifier::is_metadata`]) and objects whose
 /// names do not follow the archive grammar are skipped rather than reported as errors.
+///
+/// # Errors
+///
+/// Returns [`AwsError::S3ListObjects`](crate::result::AwsError::S3ListObjects) if the listing
+/// request fails,
+/// [`AwsError::S3ListObjectsDecoding`](crate::result::AwsError::S3ListObjectsDecoding) if its
+/// response cannot be parsed, and
+/// [`AwsError::TruncatedListObjectsResponse`](crate::result::AwsError::TruncatedListObjectsResponse)
+/// if the listing is truncated. A date without data is not an error; it yields an empty list.
 pub async fn list_files(site: &str, date: NaiveDate) -> crate::result::Result<Vec<Identifier>> {
     let files = list_files_with_sizes(site, date).await?;
     Ok(files.into_iter().map(ListedFile::into_identifier).collect())
@@ -62,6 +71,10 @@ pub async fn list_files(site: &str, date: NaiveDate) -> crate::result::Result<Ve
 ///
 /// Only volume files are returned: metadata objects ([`Identifier::is_metadata`]) and objects whose
 /// names do not follow the archive grammar are skipped rather than reported as errors.
+///
+/// # Errors
+///
+/// Returns the same errors as [`list_files`].
 pub async fn list_files_with_sizes(
     site: &str,
     date: NaiveDate,
@@ -115,7 +128,7 @@ mod tests {
     #[test]
     fn listed_files_order_by_identifier_then_size() {
         let file = |name: &str, size| volume_file(name, size).unwrap();
-        let mut files = vec![
+        let mut files = [
             file("KDMX20220305_232324_V06", 5),
             file("KDMX20220305_120000_V06", 9),
             file("KDMX20220305_232324_V06", 3),

@@ -9,9 +9,24 @@ rust-version.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
+exclude = [
+    ".gitignore",
+    "benches/",
+    "fuzz/",
+    "examples/trim_fixture.rs",
+    "tests/error_handling.rs",
+    "tests/fixture_integration.rs",
+    "tests/volume_header.rs",
+    "tests/volume_records.rs",
+    "tests/volume_scan.rs",
+]
 
 [package.metadata.docs.rs]
 all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 
 [features]
 default = ["aws", "model"]

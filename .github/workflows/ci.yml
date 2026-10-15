@@ -38,7 +38,7 @@ jobs:
           components: clippy
 
       - name: Run Clippy
-        run: cargo clippy --all-features --workspace -- -D warnings
+        run: cargo clippy --all-features --workspace --all-targets -- -D warnings
 
   build:
     name: Build check

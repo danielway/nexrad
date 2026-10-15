@@ -8,10 +8,21 @@ license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 keywords.workspace = true
-categories.workspace = true
+categories = ["science", "data-structures"]
+exclude = [
+    "data/",
+    "tests/fixture_snapshots.rs",
+    "tests/scan_snapshot.rs",
+    "tests/snapshots/fixture_snapshots__*",
+    "tests/snapshots/scan_snapshot__*",
+]
 
 [package.metadata.docs.rs]
 all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 
 [features]
 serde = ["dep:serde"]

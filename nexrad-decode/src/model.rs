@@ -17,15 +17,18 @@ use nexrad_model::meta::Site;
 /// builders (for example, one per LDM record decoded in parallel) can be combined in order with
 /// [`merge`](Self::merge).
 ///
-/// ```ignore
+/// ```no_run
 /// use nexrad_decode::messages::decode_messages;
 /// use nexrad_decode::model::ScanBuilder;
 ///
+/// # fn run(records: Vec<Vec<u8>>) -> nexrad_decode::Result<()> {
 /// let mut builder = ScanBuilder::new();
-/// for record in records {
+/// for record in &records {
 ///     builder.add_messages(decode_messages(record)?)?;
 /// }
 /// let scan = builder.build()?;
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Debug, Default)]
 pub struct ScanBuilder {
@@ -45,6 +48,8 @@ impl ScanBuilder {
     /// Digital radar data messages (types 1 and 31) are converted to radials, and the first type
     /// 31 message carrying a volume data block records the scan's site. The first volume
     /// coverage pattern message is kept; later ones are ignored, as are all other message types.
+    ///
+    /// # Errors
     ///
     /// Returns an error if a radar data message cannot be converted to a radial or its site
     /// metadata is invalid.
@@ -70,6 +75,10 @@ impl ScanBuilder {
     }
 
     /// Adds each of the given messages in order. See [`add_message`](Self::add_message).
+    ///
+    /// # Errors
+    ///
+    /// Returns the error for the first message that [`add_message`](Self::add_message) rejects.
     pub fn add_messages<'a>(
         &mut self,
         messages: impl IntoIterator<Item = Message<'a>>,
@@ -93,6 +102,8 @@ impl ScanBuilder {
     }
 
     /// Builds the scan, grouping radials into sweeps by elevation.
+    ///
+    /// # Errors
     ///
     /// Returns [`Error::MissingCoveragePattern`] if no volume coverage pattern message was added.
     pub fn build(self) -> Result<Scan> {
@@ -144,7 +155,7 @@ mod tests {
         assert_eq!(model.number_of_elevation_cuts(), vcp.elevations().len());
 
         let first = &model.elevation_cuts()[0];
-        assert_eq!(first.elevation_angle_degrees(), 0.4833984375);
+        assert_eq!(first.elevation_angle_degrees(), 0.483_398_44);
         assert_eq!(
             first.channel_configuration(),
             nexrad_model::data::ChannelConfiguration::Sz2Phase

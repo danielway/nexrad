@@ -1,7 +1,7 @@
 [package]
 name = "nexrad"
 version = "1.0.0-rc.4"
-description = "Download and decode functions for NEXRAD radar data."
+description = "Load, download, decode, process and render NEXRAD weather radar data."
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -12,6 +12,10 @@ categories.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 
 [features]
 default = ["full"]

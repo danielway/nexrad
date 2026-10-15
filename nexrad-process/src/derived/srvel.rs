@@ -16,12 +16,22 @@ use nexrad_model::data::{GateStatus, Product, SweepField};
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
 /// use nexrad_process::derived::StormRelativeVelocity;
+/// use nexrad_process::SweepProcessor;
+/// # let velocity_field = nexrad_model::data::SweepField::builder("Velocity", "m/s")
+/// #     .product(nexrad_model::data::Product::Velocity)
+/// #     .elevation_angle_degrees(0.5)
+/// #     .azimuth_angles_degrees((0..360).map(|a| a as f32).collect())
+/// #     .first_gate_range_km(2.0)
+/// #     .gate_interval_km(0.25)
+/// #     .gate_count(400)
+/// #     .build()?;
 ///
 /// // Storm moving from 240° at 15 m/s
 /// let srv = StormRelativeVelocity::new(240.0, 15.0)?;
 /// let sr_velocity = srv.process(&velocity_field)?;
+/// # Ok::<(), nexrad_process::Error>(())
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct StormRelativeVelocity {

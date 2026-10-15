@@ -18,11 +18,19 @@ use serde::{Deserialize, Serialize};
 ///
 /// # Construction
 ///
-/// ```ignore
+/// ```
 /// use nexrad_model::data::{SweepField, Product};
+/// # use nexrad_model::data::{MomentData, Radial, Sweep};
+/// # let reflectivity = MomentData::from_fixed_point(
+/// #     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
+/// # )?;
+/// # let radial = Radial::builder(0, 0.0, 1, 0.5).moment(reflectivity).build()?;
+/// # let sweep = Sweep::new(1, vec![radial])?;
 ///
 /// let field = SweepField::from_radials(sweep.radials(), Product::Reflectivity)
 ///     .expect("reflectivity data present");
+/// # assert_eq!(field.gate_count(), 3);
+/// # Ok::<(), nexrad_model::result::Error>(())
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize))]

@@ -11,14 +11,23 @@ use std::fmt;
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
 /// use nexrad_process::{SweepPipeline, filter::ThresholdFilter};
+/// # let input_field = nexrad_model::data::SweepField::builder("Reflectivity", "dBZ")
+/// #     .product(nexrad_model::data::Product::Reflectivity)
+/// #     .elevation_angle_degrees(0.5)
+/// #     .azimuth_angles_degrees((0..360).map(|a| a as f32).collect())
+/// #     .first_gate_range_km(2.0)
+/// #     .gate_interval_km(0.25)
+/// #     .gate_count(400)
+/// #     .build()?;
 ///
 /// let pipeline = SweepPipeline::new()
 ///     .then(ThresholdFilter::new(Some(5.0), None)?)
 ///     .then(ThresholdFilter::new(None, Some(75.0))?);
 ///
 /// let output = pipeline.execute(&input_field)?;
+/// # Ok::<(), nexrad_process::Error>(())
 /// ```
 pub struct SweepPipeline {
     steps: Vec<Box<dyn SweepProcessor>>,
@@ -56,6 +65,10 @@ impl SweepPipeline {
     /// Execute the pipeline, returning the final processed field.
     ///
     /// If the pipeline has no steps, the input is cloned and returned as-is.
+    ///
+    /// # Errors
+    ///
+    /// Returns the error of the first step that fails.
     pub fn execute(&self, input: &SweepField) -> Result<SweepField> {
         if self.steps.is_empty() {
             return Ok(input.clone());

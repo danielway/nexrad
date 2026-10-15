@@ -229,6 +229,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Debug` output of decoded messages follows the renamed fields and variants. (#191)
 - `Error::Model`'s `Display` text is `decoded data is invalid for the model`, without the wrapped model error's
   message; the model error is its `source()`, so reporters that walk the source chain print it once. (#195)
+- docs.rs shows the feature each feature-gated item requires. (#196)
+- The published crate leaves out the tests and benchmarks that need files from outside it, and the fuzz targets. (#196)
 
 ### Removed
 

@@ -10,11 +10,11 @@
 //!
 //! # Working with Local Files
 //!
-//! ```ignore
+//! ```no_run
 //! use nexrad_data::volume::File;
 //!
 //! let data = std::fs::read("KTLX20130520_201643_V06.ar2v")?;
-//! let volume = File::new(data);
+//! let volume = File::new(data).decompress()?;
 //!
 //! // Access the volume header
 //! if let Some(header) = volume.header() {
@@ -22,11 +22,14 @@
 //! }
 //!
 //! // Process LDM records
-//! for record in volume.records()? {
-//!     let decompressed = record.decompress()?;
-//!     let messages = decompressed.messages()?;
+//! for mut record in volume.records()? {
+//!     if record.compressed() {
+//!         record = record.decompress()?;
+//!     }
+//!     let messages = record.messages()?;
 //!     // Process radar messages...
 //! }
+//! # Ok::<(), nexrad_data::Error>(())
 //! ```
 //!
 //! # Downloading from AWS
@@ -37,7 +40,9 @@
 //! - **Real-time data**: Live radar data with minimal latency, via `aws::realtime::chunk_stream`
 //!   (a stream) or `aws::realtime::ChunkIterator` (pull-based)
 //!
-//! ```ignore
+//! ```no_run
+//! # #[cfg(feature = "aws")]
+//! # async fn run() -> nexrad_data::Result<()> {
 //! use nexrad_data::aws::archive;
 //! use chrono::NaiveDate;
 //!
@@ -47,6 +52,8 @@
 //!
 //! // Download a specific file
 //! let file = archive::download_file(&files[0]).await?;
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! # Features
@@ -84,12 +91,15 @@
 //! the low-level binary parsing (`nexrad-decode`) and high-level data models
 //! (`nexrad-model`).
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(clippy::correctness)]
 #![warn(unnameable_types)]
 #![deny(missing_docs)]
+#![warn(missing_debug_implementations)]
 
 #[cfg(feature = "aws")]
 /// AWS S3 integration for downloading NEXRAD data from the cloud.

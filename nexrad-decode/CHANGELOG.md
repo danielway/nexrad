@@ -43,12 +43,12 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `messages::VcpNumber::{Vcp11, Vcp21, Vcp121, Vcp211, Vcp221}`, matching `nexrad_model::data::VcpNumber` variant for
   variant. (#188)
 - `iter_messages(data)` and `MessageIter`, which decode one message per step, yield a `Result` per message and stop
-  after the first error; `MessageIter::offset()` reports where decoding stopped. (#PRNUM)
+  after the first error; `MessageIter::offset()` reports where decoding stopped. (#190)
 - `decode_messages`, `iter_messages`, `Message`, `MessageContents`, `MessageIter` and `MessageType` are re-exported at
-  the crate root; the `messages` paths remain. (#PRNUM)
+  the crate root; the `messages` paths remain. (#190)
 - `Message::into_owned()`, `MessageContents::into_owned()` and `MessageHeaders::into_owned()`, which copy a decoded
-  message out of the input buffer as `Message<'static>`, and `MessageContents::message_type()`. (#PRNUM)
-- `Error::SegmentOutOfSequence`, returned when a segment of a multi-segment message is missing or out of order. (#PRNUM)
+  message out of the input buffer as `Message<'static>`, and `MessageContents::message_type()`. (#190)
+- `Error::SegmentOutOfSequence`, returned when a segment of a multi-segment message is missing or out of order. (#190)
 
 ### Changed
 
@@ -132,22 +132,22 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `decode_messages` is strict: it returns the error for the first message it cannot decode (a truncated message, a bad
   data block pointer, an unknown data block name, a missing segment) instead of logging it and skipping the message.
   A tail of fewer than 28 bytes ends decoding cleanly when every byte is zero (Archive II frames are zero-padded); any
-  other short tail is `Error::UnexpectedEof`. Use `iter_messages` to keep the messages before a failure. (#PRNUM)
+  other short tail is `Error::UnexpectedEof`. Use `iter_messages` to keep the messages before a failure. (#190)
 - `MessageContents::Other` is `Other { message_type, data }`, carrying the message's type and its undecoded payload.
   A clutter filter map (type 15) from a legacy (pre-ORDA) RDA uses the legacy notch width layout and decodes as
-  `Other`. (#PRNUM)
+  `Other`. (#190)
 - A fixed-segment frame with the unassigned message type 0, an unused slot in the Archive II metadata record, decodes
-  as its own `Other` message whatever its segment fields say. (#PRNUM)
+  as its own `Other` message whatever its segment fields say. (#190)
 - `Error` variants carry structured, input-relative detail: `UnexpectedEof { offset }`,
   `UnknownDataBlockType { block_type: [u8; 3], offset }` and `MessageMissingDate { message_type }`;
   `InvalidDataBlockPointer` and `DataSpansSegmentBoundary` report offsets into the input slice. `Error` implements
   `Clone` and `PartialEq`, `MissingCoveragePattern` requires the `model` feature, and messages no longer mention a
-  file. (#PRNUM)
+  file. (#190)
 - `digital_radar_data::DataBlock` no longer implements `Deref`; call `inner()` or `into_inner()` to reach the block.
-  (#PRNUM)
+  (#190)
 - `Debug` output of `digital_radar_data::DataBlock` gains the block's input `offset`, and that of
   `console_message::Message` and `loopback_test::Message` gains the `message_type` that records their direction.
-  (#PRNUM)
+  (#190)
 
 ### Removed
 
@@ -165,12 +165,12 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - With `uom`, `digital_radar_data::Header::azimuth_resolution_spacing() -> Angle`; use
   `azimuth_resolution_spacing_degrees()`. (#173)
 - The `sha2` and `hex` dependencies. (#162)
-- `Error::Decoding(String)` and `Error::InvalidMessageLength`, which nothing constructed. (#PRNUM)
+- `Error::Decoding(String)` and `Error::InvalidMessageLength`, which nothing constructed. (#190)
 - `rda_adaptation_data::Message::{read_integer4_at, read_real4_at, read_string_at, data_raw, total_size}`; use the
-  typed accessors. (#PRNUM)
+  typed accessors. (#190)
 - `digital_radar_data::GenericDataBlockHeader::reserved()`, `VolumeDataBlock::spare()` and `is_legacy()`, and
-  `RadialDataBlock::is_legacy()`; `lrtup_bytes()` distinguishes the block layouts. (#PRNUM)
-- The `log` dependency. (#PRNUM)
+  `RadialDataBlock::is_legacy()`; `lrtup_bytes()` distinguishes the block layouts. (#190)
+- The `log` dependency. (#190)
 
 ### Fixed
 
@@ -186,4 +186,4 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Multi-segment messages read each segment's full payload. The decoder sized payloads 12 bytes short, so clutter filter
   bypass maps (type 13) failed to decode and were dropped, clutter filter maps (type 15) read 350 azimuth segments
   instead of 360, and RDA adaptation data (type 18) fields beyond the first segment, such as the site name, were read
-  from the wrong offsets. (#PRNUM)
+  from the wrong offsets. (#190)

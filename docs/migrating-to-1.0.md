@@ -342,7 +342,7 @@ nexrad-decode = { version = "1.0", default-features = false, features = ["model"
 - New variant `Error::Model(nexrad_model::Error)` (feature `model`), returned when decoded values fail a model
   constructor's validation: moment data whose gate count does not match its encoded data, a radial with an out-of-range
   azimuth, or a site with an invalid identifier or location (#185).
-- Variants carry structured detail, with offsets into the slice you passed to the decoder (#PRNUM):
+- Variants carry structured detail, with offsets into the slice you passed to the decoder (#190):
 
   | 1.0.0-rc.3 | 1.0 |
   |---|---|
@@ -399,11 +399,11 @@ The renames you are most likely to hit:
 | `rda_status_data::Message::volume_coverage_pattern() -> Option<VolumeCoveragePatternNumber>` | `-> Option<VcpSelection>`; `number()` is a `VcpNumber`, `source()` replaces `local()`/`remote()` | #163 |
 | `volume_coverage_pattern::ElevationDataBlock::elevation_angle()` | `elevation_angle_degrees()` | #173 |
 | `summarize` module | Removed; iterate `decode_messages(..)` and match on `message.contents()` | #168 |
-| `MessageContents::Other` | `MessageContents::Other { message_type, data }`; match with `Other { .. }` | #PRNUM |
-| `block.volume_coverage_pattern()` on a `DataBlock` (through `Deref`) | `block.inner().volume_coverage_pattern()` | #PRNUM |
-| `rda_adaptation_data::Message::{read_integer4_at, read_real4_at, read_string_at, data_raw, total_size}` | Removed; use the typed accessors | #PRNUM |
-| `VolumeDataBlock::is_legacy()`, `RadialDataBlock::is_legacy()` | Removed; `lrtup_bytes()` is 44 for a legacy volume block and 20 for a legacy radial block | #PRNUM |
-| `VolumeDataBlock::spare()`, `GenericDataBlockHeader::reserved()` | Removed | #PRNUM |
+| `MessageContents::Other` | `MessageContents::Other { message_type, data }`; match with `Other { .. }` | #190 |
+| `block.volume_coverage_pattern()` on a `DataBlock` (through `Deref`) | `block.inner().volume_coverage_pattern()` | #190 |
+| `rda_adaptation_data::Message::{read_integer4_at, read_real4_at, read_string_at, data_raw, total_size}` | Removed; use the typed accessors | #190 |
+| `VolumeDataBlock::is_legacy()`, `RadialDataBlock::is_legacy()` | Removed; `lrtup_bytes()` is 44 for a legacy volume block and 20 for a legacy radial block | #190 |
+| `VolumeDataBlock::spare()`, `GenericDataBlockHeader::reserved()` | Removed | #190 |
 
 The full lists are in the [nexrad-decode appendix](#nexrad-decode-100-rc3-to-10).
 
@@ -436,7 +436,7 @@ Scan assembly moved into this crate (#169). If you assembled a `Scan` from decod
 
 #### Behaviour and type changes
 
-- **Decoding is strict** (#PRNUM). `decode_messages` returns the error for the first message it cannot decode (a
+- **Decoding is strict** (#190). `decode_messages` returns the error for the first message it cannot decode (a
   truncated message, a bad data block pointer, an unknown data block name, a missing segment); 1.0.0-rc.3 logged a
   warning and dropped the message, or stopped and returned what it had. A tail shorter than a message header (28 bytes)
   still ends decoding cleanly when every byte is zero. To keep the messages before a failure, iterate
@@ -457,21 +457,21 @@ Scan assembly moved into this crate (#169). If you assembled a `Scan` from decod
   }
   ```
 
-- **`MessageContents::Other` carries the message** (#PRNUM): `Other { message_type, data }` holds the type from the
+- **`MessageContents::Other` carries the message** (#190): `Other { message_type, data }` holds the type from the
   header and the undecoded payload, and `MessageContents::message_type()` names the type of any contents. Frames with
   the unassigned message type 0 (unused metadata record slots) are each an `Other` message, and a clutter filter map
   from a legacy (pre-ORDA) RDA, which uses the legacy notch width layout, decodes as `Other` rather than
   `ClutterFilterMap`.
-- **`DataBlock` no longer derefs to its block** (#PRNUM). Methods of the inner block are reached through `inner()` (or
+- **`DataBlock` no longer derefs to its block** (#190). Methods of the inner block are reached through `inner()` (or
   `into_inner()`): `m.volume_data_block().map(|b| b.inner().volume_coverage_pattern())`. `moment_data()` and
   `into_moment_data()` stay on the `DataBlock`.
-- **Multi-segment messages decode their full payload** (#PRNUM). Clutter filter bypass maps (type 13) that 1.0.0-rc.3
+- **Multi-segment messages decode their full payload** (#190). Clutter filter bypass maps (type 13) that 1.0.0-rc.3
   dropped now decode, clutter filter maps (type 15) have 360 azimuth segments instead of 350, and RDA adaptation data
   (type 18) fields beyond the first segment, such as `site_name()`, hold their real values.
 - **Owned messages.** `Message::into_owned()` (and `MessageContents::into_owned()`, `MessageHeaders::into_owned()`)
-  copies a decoded message out of the input buffer as `Message<'static>` (#PRNUM).
+  copies a decoded message out of the input buffer as `Message<'static>` (#190).
 - **Root re-exports.** `decode_messages`, `iter_messages`, `Message`, `MessageContents`, `MessageIter` and
-  `MessageType` are available at `nexrad_decode::`; the `messages::` paths still work (#PRNUM).
+  `MessageType` are available at `nexrad_decode::`; the `messages::` paths still work (#190).
 - **Two accessor names now mean something else.** `digital_radar_data::Header::azimuth_resolution_spacing()` used to be
   the `uom` angle and now returns the `AzimuthResolutionSpacing` enum (formerly `azimuth_resolution_spacing_type()`);
   use `azimuth_resolution_spacing_degrees()` for the number. `clutter_filter_map::RangeZone::end_range()` used to
@@ -587,7 +587,7 @@ are exposed through `ChunkIterator`:
 
 #### Behaviour and type changes
 
-- **Decoding errors propagate** (#PRNUM). `Record::messages()`, `Record::radials()`, `File::scan()`,
+- **Decoding errors propagate** (#190). `Record::messages()`, `Record::radials()`, `File::scan()`,
   `File::coverage_pattern_message()` and `assemble_volume` return `Error::Decode` with the first message that cannot be
   decoded, where 1.0.0-rc.7 skipped it. For a lenient decode of one record, pass `record.data()` to
   `nexrad_decode::iter_messages`.

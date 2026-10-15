@@ -87,7 +87,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
     Archive II volume header ICAO.
 - `volume::Record::messages()`, `Record::radials()`, `File::scan()`, `File::coverage_pattern_message()` and
   `aws::realtime::assemble_volume` fail with `Error::Decode` on the first message that cannot be decoded, following
-  `nexrad-decode`'s strict `decode_messages`; they previously skipped such messages. (#PRNUM)
+  `nexrad-decode`'s strict `decode_messages`; they previously skipped such messages. (#190)
 
 ### Removed
 

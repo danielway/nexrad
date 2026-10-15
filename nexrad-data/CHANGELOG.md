@@ -85,6 +85,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
     `assemble_volume` accepts type 1 messages too.
   - The scan's `Site::identifier` comes from the radar identifier in the type 31 message header instead of the
     Archive II volume header ICAO.
+- `volume::Record::messages()`, `Record::radials()`, `File::scan()`, `File::coverage_pattern_message()` and
+  `aws::realtime::assemble_volume` fail with `Error::Decode` on the first message that cannot be decoded, following
+  `nexrad-decode`'s strict `decode_messages`; they previously skipped such messages. (#PRNUM)
 
 ### Removed
 

@@ -342,6 +342,19 @@ nexrad-decode = { version = "1.0", default-features = false, features = ["model"
 - New variant `Error::Model(nexrad_model::Error)` (feature `model`), returned when decoded values fail a model
   constructor's validation: moment data whose gate count does not match its encoded data, a radial with an out-of-range
   azimuth, or a site with an invalid identifier or location (#185).
+- Variants carry structured detail, with offsets into the slice you passed to the decoder (#PRNUM):
+
+  | 1.0.0-rc.3 | 1.0 |
+  |---|---|
+  | `Error::UnexpectedEof` | `Error::UnexpectedEof { offset }`, the offset of the structure that runs past the end |
+  | `Error::UnknownDataBlockType { block_type: String }` | `{ block_type: [u8; 3], offset }` |
+  | `Error::MessageMissingDate` | `Error::MessageMissingDate { message_type }` |
+  | `Error::InvalidDataBlockPointer { bytes, position }`, `DataSpansSegmentBoundary { position }` | Same fields; `position` is an offset into the input slice |
+  | `Error::Decoding(String)`, `Error::InvalidMessageLength { .. }` | Removed (never constructed) |
+  | `Error::MissingCoveragePattern` | Requires the `model` feature |
+  | (new) | `Error::SegmentOutOfSequence { message_type, expected_segment, segment_count, offset }` |
+
+  `Error` implements `Clone` and `PartialEq`, so tests can compare errors with `assert_eq!`.
 
 #### Removed and renamed items
 
@@ -386,6 +399,11 @@ The renames you are most likely to hit:
 | `rda_status_data::Message::volume_coverage_pattern() -> Option<VolumeCoveragePatternNumber>` | `-> Option<VcpSelection>`; `number()` is a `VcpNumber`, `source()` replaces `local()`/`remote()` | #163 |
 | `volume_coverage_pattern::ElevationDataBlock::elevation_angle()` | `elevation_angle_degrees()` | #173 |
 | `summarize` module | Removed; iterate `decode_messages(..)` and match on `message.contents()` | #168 |
+| `MessageContents::Other` | `MessageContents::Other { message_type, data }`; match with `Other { .. }` | #PRNUM |
+| `block.volume_coverage_pattern()` on a `DataBlock` (through `Deref`) | `block.inner().volume_coverage_pattern()` | #PRNUM |
+| `rda_adaptation_data::Message::{read_integer4_at, read_real4_at, read_string_at, data_raw, total_size}` | Removed; use the typed accessors | #PRNUM |
+| `VolumeDataBlock::is_legacy()`, `RadialDataBlock::is_legacy()` | Removed; `lrtup_bytes()` is 44 for a legacy volume block and 20 for a legacy radial block | #PRNUM |
+| `VolumeDataBlock::spare()`, `GenericDataBlockHeader::reserved()` | Removed | #PRNUM |
 
 The full lists are in the [nexrad-decode appendix](#nexrad-decode-100-rc3-to-10).
 
@@ -403,7 +421,7 @@ for message in &messages {
             let h = m.header();
             println!("elevation {} azimuth {}", h.elevation_number(), h.azimuth_angle_degrees());
             if let Some(volume) = m.volume_data_block() {
-                println!("{}", volume.volume_coverage_pattern()); // prints "VCP 212"
+                println!("{}", volume.inner().volume_coverage_pattern()); // prints "VCP 212"
             }
         }
         MessageContents::RdaStatusData(s) => println!("{:?}", s.rda_status()),
@@ -418,6 +436,42 @@ Scan assembly moved into this crate (#169). If you assembled a `Scan` from decod
 
 #### Behaviour and type changes
 
+- **Decoding is strict** (#PRNUM). `decode_messages` returns the error for the first message it cannot decode (a
+  truncated message, a bad data block pointer, an unknown data block name, a missing segment); 1.0.0-rc.3 logged a
+  warning and dropped the message, or stopped and returned what it had. A tail shorter than a message header (28 bytes)
+  still ends decoding cleanly when every byte is zero. To keep the messages before a failure, iterate
+  `iter_messages`, which yields one `Result` per message and stops after the first error:
+
+  ```rust
+  // 1.0.0-rc.3: undecodable messages were skipped with a log warning
+  let messages = decode_messages(data)?;
+
+  // 1.0: the same lenient behaviour, with the failure reported
+  let mut messages = Vec::new();
+  let mut iter = nexrad_decode::iter_messages(data);
+  for result in iter.by_ref() {
+      match result {
+          Ok(message) => messages.push(message),
+          Err(error) => log::warn!("decoding stopped at offset {}: {error}", iter.offset()),
+      }
+  }
+  ```
+
+- **`MessageContents::Other` carries the message** (#PRNUM): `Other { message_type, data }` holds the type from the
+  header and the undecoded payload, and `MessageContents::message_type()` names the type of any contents. Frames with
+  the unassigned message type 0 (unused metadata record slots) are each an `Other` message, and a clutter filter map
+  from a legacy (pre-ORDA) RDA, which uses the legacy notch width layout, decodes as `Other` rather than
+  `ClutterFilterMap`.
+- **`DataBlock` no longer derefs to its block** (#PRNUM). Methods of the inner block are reached through `inner()` (or
+  `into_inner()`): `m.volume_data_block().map(|b| b.inner().volume_coverage_pattern())`. `moment_data()` and
+  `into_moment_data()` stay on the `DataBlock`.
+- **Multi-segment messages decode their full payload** (#PRNUM). Clutter filter bypass maps (type 13) that 1.0.0-rc.3
+  dropped now decode, clutter filter maps (type 15) have 360 azimuth segments instead of 350, and RDA adaptation data
+  (type 18) fields beyond the first segment, such as `site_name()`, hold their real values.
+- **Owned messages.** `Message::into_owned()` (and `MessageContents::into_owned()`, `MessageHeaders::into_owned()`)
+  copies a decoded message out of the input buffer as `Message<'static>` (#PRNUM).
+- **Root re-exports.** `decode_messages`, `iter_messages`, `Message`, `MessageContents`, `MessageIter` and
+  `MessageType` are available at `nexrad_decode::`; the `messages::` paths still work (#PRNUM).
 - **Two accessor names now mean something else.** `digital_radar_data::Header::azimuth_resolution_spacing()` used to be
   the `uom` angle and now returns the `AzimuthResolutionSpacing` enum (formerly `azimuth_resolution_spacing_type()`);
   use `azimuth_resolution_spacing_degrees()` for the number. `clutter_filter_map::RangeZone::end_range()` used to
@@ -533,6 +587,10 @@ are exposed through `ChunkIterator`:
 
 #### Behaviour and type changes
 
+- **Decoding errors propagate** (#PRNUM). `Record::messages()`, `Record::radials()`, `File::scan()`,
+  `File::coverage_pattern_message()` and `assemble_volume` return `Error::Decode` with the first message that cannot be
+  decoded, where 1.0.0-rc.7 skipped it. For a lenient decode of one record, pass `record.data()` to
+  `nexrad_decode::iter_messages`.
 - **`Record::decompress` returns `Record<'static>`** (#171). Code that named the output lifetime (`Record<'b>`) drops
   it.
 - **`DownloadedChunk`, `ChunkIteratorInit` and `LatestVolumeResult` are `#[non_exhaustive]`** (#167). You can still
@@ -1381,7 +1439,15 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `clutter_censor_zones::Message::regions() -> &[raw Region]` (public `Integer2`/`Code2` fields) | `-> &[clutter_censor_zones::Region<'a>]` with accessors and `OperatorSelectCode` |
 | `summarize` module (`messages`, `MessageSummary`, `MessageGroupSummary`, `VCPInfo`, `VCPElevationInfo`, `RDAStatusInfo`) | Removed |
 | `result::Error::Io(std::io::Error)`, `From<std::io::Error>` | Removed |
-| `result::Error` | `#[non_exhaustive]`; new `MissingCoveragePattern` and (feature `model`) `Model(nexrad_model::Error)` |
+| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `MissingCoveragePattern` (feature `model`), `SegmentOutOfSequence` and (feature `model`) `Model(nexrad_model::Error)` |
+| `result::Error::Decoding(String)`, `InvalidMessageLength { message_type, delta }` | Removed |
+| `result::Error::UnexpectedEof`, `MessageMissingDate` | `UnexpectedEof { offset }`, `MessageMissingDate { message_type }` |
+| `result::Error::UnknownDataBlockType { block_type: String }` | `UnknownDataBlockType { block_type: [u8; 3], offset }` |
+| `MessageContents::Other` | `MessageContents::Other { message_type: MessageType, data: Cow<'a, [u8]> }` |
+| `digital_radar_data::DataBlock<'a, T>: Deref<Target = T>` | No `Deref`; `inner()`, `into_inner()` |
+| `decode_messages(&[u8]) -> Result<Vec<Message>>`, skipping undecodable messages | Same signature, returns the first error; also at `nexrad_decode::decode_messages` |
+| (new) | `iter_messages(&[u8]) -> MessageIter`, `MessageIter::offset()`; root re-exports of `Message`, `MessageContents`, `MessageIter`, `MessageType` |
+| (new) | `Message::into_owned()`, `MessageContents::into_owned()`, `MessageContents::message_type()`, `MessageHeaders::into_owned()` |
 
 **Accessors**
 
@@ -1421,7 +1487,10 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `console_message::Message` | `message_size()` | `message_size_bytes()` |
 | `loopback_test::Message` | `message_size()` | `message_size_halfwords()` |
 | `rda_log_data::Message` | `compressed_size()`, `decompressed_size()` | `compressed_size_bytes()`, `decompressed_size_bytes()` |
-| `rda_adaptation_data::Message` | `raw_data()` | `data_raw()` |
+| `rda_adaptation_data::Message` | `raw_data()`, `read_integer4_at()`, `read_real4_at()`, `read_string_at()`, `total_size()` | Removed |
+| `digital_radar_data::VolumeDataBlock` | `is_legacy()`, `spare()` | Removed |
+| `digital_radar_data::RadialDataBlock` | `is_legacy()` | Removed |
+| `digital_radar_data::GenericDataBlockHeader` | `reserved()` | Removed |
 | `clutter_censor_zones::Region` | fields `start_range`, `stop_range`, `start_azimuth`, `stop_azimuth`, `elevation_segment_number`, `operator_select_code` | `start_range_km()`, `stop_range_km()`, `start_azimuth_degrees()`, `stop_azimuth_degrees()`, `elevation_segment_number()`, `operator_select_code()` / `operator_select_code_raw()` |
 
 The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) accessors keep their ICD mnemonic names.
@@ -1467,6 +1536,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `aws::realtime::{ChunkTimingModel, ChunkTimingStats, ChunkCharacteristics, ElevationChunkMapper, ChunkMetadata, ChunkProjection, ScanTimingProjection, RetryState}` | Removed |
 | `aws::realtime::{estimate_chunk_availability_time, estimate_chunk_processing_time, project_scan_timing, project_full_scan_timing}` | Removed |
 | (new) | `volume::File::coverage_pattern_message() -> Result<volume_coverage_pattern::Message<'static>>` |
+| `volume::Record::messages()`, `radials()`, `File::scan()`, `aws::realtime::assemble_volume` skipping undecodable messages | Fail with `Error::Decode` on the first one |
 | `aws::realtime::ChunkIterator::try_next()`, `chunk_stream(..)` at volume rollover: newest chunk of the next volume | The next volume's Start chunk, then each later chunk in sequence order |
 
 </details>

@@ -2,6 +2,7 @@ pub mod nexrad
 pub use nexrad::chrono
 pub use nexrad::data
 pub use nexrad::decode
+pub use nexrad::futures_util
 pub use nexrad::model
 pub use nexrad::process
 pub use nexrad::render
@@ -14,6 +15,9 @@ pub nexrad::result::Error::Model(nexrad_model::result::Error)
 pub nexrad::result::Error::NoDataAvailable
 pub nexrad::result::Error::NoDataAvailable::date: chrono::naive::date::NaiveDate
 pub nexrad::result::Error::NoDataAvailable::site: alloc::string::String
+pub nexrad::result::Error::NoScanAt
+pub nexrad::result::Error::NoScanAt::datetime: chrono::naive::datetime::NaiveDateTime
+pub nexrad::result::Error::NoScanAt::site: alloc::string::String
 pub nexrad::result::Error::Process(nexrad_process::result::Error)
 pub nexrad::result::Error::Render(nexrad_render::result::Error)
 impl core::convert::From<core::io::error::Error> for nexrad::result::Error
@@ -50,6 +54,9 @@ pub nexrad::Error::Model(nexrad_model::result::Error)
 pub nexrad::Error::NoDataAvailable
 pub nexrad::Error::NoDataAvailable::date: chrono::naive::date::NaiveDate
 pub nexrad::Error::NoDataAvailable::site: alloc::string::String
+pub nexrad::Error::NoScanAt
+pub nexrad::Error::NoScanAt::datetime: chrono::naive::datetime::NaiveDateTime
+pub nexrad::Error::NoScanAt::site: alloc::string::String
 pub nexrad::Error::Process(nexrad_process::result::Error)
 pub nexrad::Error::Render(nexrad_render::result::Error)
 impl core::convert::From<core::io::error::Error> for nexrad::result::Error
@@ -79,9 +86,12 @@ impl !core::panic::unwind_safe::RefUnwindSafe for nexrad::result::Error
 impl !core::panic::unwind_safe::UnwindSafe for nexrad::result::Error
 pub async fn nexrad::download(&nexrad_data::aws::archive::identifier::Identifier) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
 pub async fn nexrad::download_at(&str, chrono::naive::datetime::NaiveDateTime) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
-pub async fn nexrad::download_latest(&str, chrono::naive::date::NaiveDate) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
+pub async fn nexrad::download_latest(&str) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
 pub async fn nexrad::list_scans(&str, chrono::naive::date::NaiveDate) -> nexrad::result::Result<alloc::vec::Vec<nexrad_data::aws::archive::identifier::Identifier>>
-pub fn nexrad::load(&[u8]) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
+pub fn nexrad::load(alloc::vec::Vec<u8>) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
 pub fn nexrad::load_file<P: core::convert::AsRef<std::path::Path>>(P) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
 pub fn nexrad::stream<S, F>(&str, S) -> impl futures_core::stream::Stream<Item = nexrad::result::Result<nexrad_data::aws::realtime::chunk_iterator::DownloadedChunk>> where S: core::ops::function::Fn(core::time::Duration) -> F, F: core::future::future::Future<Output = ()>
+pub fn nexrad::stream_scans<S, F>(&str, S) -> impl futures_core::stream::Stream<Item = nexrad::result::Result<nexrad_model::data::scan::Scan>> where S: core::ops::function::Fn(core::time::Duration) -> F, F: core::future::future::Future<Output = ()>
+pub fn nexrad::stream_scans_with<S, F>(nexrad_data::aws::realtime::poll_config::PollConfig, S) -> impl futures_core::stream::Stream<Item = nexrad::result::Result<nexrad_model::data::scan::Scan>> where S: core::ops::function::Fn(core::time::Duration) -> F, F: core::future::future::Future<Output = ()>
+pub fn nexrad::stream_with<S, F>(nexrad_data::aws::realtime::poll_config::PollConfig, S) -> impl futures_core::stream::Stream<Item = nexrad::result::Result<nexrad_data::aws::realtime::chunk_iterator::DownloadedChunk>> where S: core::ops::function::Fn(core::time::Duration) -> F, F: core::future::future::Future<Output = ()>
 pub type nexrad::Result<T> = core::result::Result<T, nexrad::result::Error>

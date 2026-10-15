@@ -68,6 +68,16 @@ impl<'a> Record<'a> {
     }
 
     /// Decodes the NEXRAD level II messages contained in this LDM record.
+    ///
+    /// Decoding is strict, as in [`nexrad_decode::decode_messages`]: either every message in the
+    /// record decodes or the first decoding error is returned. To keep the messages before a
+    /// failure, pass [`data`](Self::data) to [`nexrad_decode::iter_messages`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::CompressedData`](crate::result::Error::CompressedData) if the record is
+    /// still compressed, or [`Error::Decode`](crate::result::Error::Decode) with the error for the
+    /// first message that cannot be decoded.
     pub fn messages(&self) -> crate::result::Result<Vec<nexrad_decode::messages::Message<'_>>> {
         use crate::result::Error;
         use nexrad_decode::messages::decode_messages;
@@ -83,9 +93,15 @@ impl<'a> Record<'a> {
     ///
     /// This extracts all digital radar data messages (both modern type 31 and legacy type 1)
     /// from the record and converts them into [`Radial`](nexrad_model::data::Radial) objects.
-    /// Non-radial messages are skipped.
+    /// Non-radial messages are ignored.
     ///
     /// The record must be decompressed before calling this method.
+    ///
+    /// # Errors
+    ///
+    /// Returns the errors of [`messages`](Self::messages), and
+    /// [`Error::Decode`](crate::result::Error::Decode) if a radar data message cannot be converted
+    /// to a radial.
     #[cfg(feature = "model")]
     pub fn radials(&self) -> crate::result::Result<Vec<nexrad_model::data::Radial>> {
         use nexrad_decode::messages::MessageContents;

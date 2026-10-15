@@ -45,11 +45,6 @@ impl<'a> VolumeDataBlock<'a> {
         }
     }
 
-    /// Returns true if this is a legacy format block (Build 19.0 and earlier).
-    pub fn is_legacy(&self) -> bool {
-        matches!(self.inner, VolumeDataBlockInner::Legacy(..))
-    }
-
     /// Convert this volume data block to an owned version with `'static` lifetime.
     pub fn into_owned(self) -> VolumeDataBlock<'static> {
         match self.inner {
@@ -186,17 +181,6 @@ impl<'a> VolumeDataBlock<'a> {
             VolumeDataBlockInner::Modern(inner) => {
                 Some(inner.zdr_bias_estimate_weighted_mean.get())
             }
-        }
-    }
-
-    /// Spare bytes.
-    ///
-    /// Returns `None` for legacy data (Build 19.0 and earlier) as this field
-    /// was added in Build 20.0.
-    pub fn spare(&self) -> Option<&[u8; 6]> {
-        match &self.inner {
-            VolumeDataBlockInner::Legacy(_) => None,
-            VolumeDataBlockInner::Modern(inner) => Some(&inner.spare.0),
         }
     }
 

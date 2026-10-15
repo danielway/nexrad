@@ -46,11 +46,6 @@ impl<'a> RadialDataBlock<'a> {
         }
     }
 
-    /// Returns true if this is a legacy format block (without calibration constants).
-    pub fn is_legacy(&self) -> bool {
-        matches!(self.inner, RadialDataBlockInner::Legacy(..))
-    }
-
     /// Convert this radial data block to an owned version with `'static` lifetime.
     pub fn into_owned(self) -> RadialDataBlock<'static> {
         match self.inner {

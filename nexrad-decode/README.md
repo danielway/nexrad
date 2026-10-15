@@ -25,7 +25,7 @@ for message in &messages {
                 data.header().azimuth_angle_degrees(), data.header().elevation_angle_degrees());
         }
         MessageContents::RdaVolumeCoveragePattern(vcp) => {
-            println!("VCP: {}", vcp.header().pattern_number());
+            println!("VCP: {}", vcp.header().vcp_number());
         }
         _ => {}
     }

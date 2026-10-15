@@ -53,13 +53,16 @@
 //!    `rda_status`, ...). Raw and decoded accessors for the same field share the stem.
 //! 2. When the wire encoding differs from the decoded value (a scaled integer, a code, a
 //!    bitfield, a byte array), `<stem>_raw()` returns the wire value. The decoded value is
-//!    `<stem>()` when it is an enum, struct, `bool`, `String` or date/time, and
-//!    `<stem>_<unit>()` when it is a plain number with a unit, e.g.
-//!    `unambiguous_range_raw()` and `unambiguous_range_km()`.
+//!    `<stem>()` when it is an enum, struct or date/time, and `<stem>_<unit>()` when it is a
+//!    plain number with a unit, e.g. `unambiguous_range_raw()` and `unambiguous_range_km()`,
+//!    or `vcp_number_raw()` and `vcp_number()`. A byte string is `<stem>_raw()` and
+//!    `<stem>() -> Option<&str>`, `None` when the bytes are not valid UTF-8
+//!    (`radar_identifier_raw()` and `radar_identifier()`). A field split across a date and a
+//!    time decodes to one `<stem>_date_time()` (`map_generation_date_time()`).
 //! 3. When the wire value already is the decoded value, there is no `_raw()` accessor. The
 //!    accessor is `<stem>_<unit>()` if the field has a unit (`azimuth_angle_degrees()`), and
-//!    the bare stem for dimensionless counts, numbers, versions and flags
-//!    (`azimuth_number()`, `data_block_count()`).
+//!    the bare stem for dimensionless numbers, versions and flags (`azimuth_number()`).
+//!    Counts are `<thing>_count()` (`data_block_count()`, `elevation_cut_count()`).
 //! 4. With the `uom` feature, `<stem>()` with no suffix returns an `f64` `uom` quantity
 //!    (`azimuth_angle()`, `unambiguous_range()`). Where the bare stem already names an enum
 //!    (`azimuth_resolution_spacing()`), there is no `uom` accessor.

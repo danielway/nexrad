@@ -48,8 +48,8 @@ impl<'a> Message<'a> {
     pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
         let header = reader.take_ref::<raw::Header>()?;
 
-        let num_surv = header.surveillance_gate_count.get() as usize;
-        let num_dopp = header.doppler_gate_count.get() as usize;
+        let surveillance_gate_count = header.surveillance_gate_count.get() as usize;
+        let doppler_gate_count = header.doppler_gate_count.get() as usize;
         let ref_ptr = header.reflectivity_pointer.get() as usize;
         let vel_ptr = header.velocity_pointer.get() as usize;
         let sw_ptr = header.spectrum_width_pointer.get() as usize;
@@ -58,22 +58,23 @@ impl<'a> Message<'a> {
         // Pointers are byte offsets from the start of the message body.
         let header_size = size_of::<raw::Header>();
 
-        let reflectivity_gates = if ref_ptr > 0 && num_surv > 0 && ref_ptr >= header_size {
-            // Skip any gap between header end and reflectivity data start
-            let gap = ref_ptr - header_size;
-            if gap > 0 {
-                reader.advance(gap);
-            }
-            let gates = reader.take_slice::<u8>(num_surv)?;
-            Some(Cow::Borrowed(gates))
-        } else {
-            None
-        };
+        let reflectivity_gates =
+            if ref_ptr > 0 && surveillance_gate_count > 0 && ref_ptr >= header_size {
+                // Skip any gap between header end and reflectivity data start
+                let gap = ref_ptr - header_size;
+                if gap > 0 {
+                    reader.advance(gap);
+                }
+                let gates = reader.take_slice::<u8>(surveillance_gate_count)?;
+                Some(Cow::Borrowed(gates))
+            } else {
+                None
+            };
 
-        let velocity_gates = if vel_ptr > 0 && num_dopp > 0 {
+        let velocity_gates = if vel_ptr > 0 && doppler_gate_count > 0 {
             // Calculate current position and skip to velocity data
-            let current_pos = if ref_ptr > 0 && num_surv > 0 {
-                ref_ptr + num_surv
+            let current_pos = if ref_ptr > 0 && surveillance_gate_count > 0 {
+                ref_ptr + surveillance_gate_count
             } else {
                 header_size
             };
@@ -81,18 +82,18 @@ impl<'a> Message<'a> {
             if gap > 0 {
                 reader.advance(gap);
             }
-            let gates = reader.take_slice::<u8>(num_dopp)?;
+            let gates = reader.take_slice::<u8>(doppler_gate_count)?;
             Some(Cow::Borrowed(gates))
         } else {
             None
         };
 
-        let spectrum_width_gates = if sw_ptr > 0 && num_dopp > 0 {
+        let spectrum_width_gates = if sw_ptr > 0 && doppler_gate_count > 0 {
             // Calculate current position and skip to spectrum width data
-            let current_pos = if vel_ptr > 0 && num_dopp > 0 {
-                vel_ptr + num_dopp
-            } else if ref_ptr > 0 && num_surv > 0 {
-                ref_ptr + num_surv
+            let current_pos = if vel_ptr > 0 && doppler_gate_count > 0 {
+                vel_ptr + doppler_gate_count
+            } else if ref_ptr > 0 && surveillance_gate_count > 0 {
+                ref_ptr + surveillance_gate_count
             } else {
                 header_size
             };
@@ -100,7 +101,7 @@ impl<'a> Message<'a> {
             if gap > 0 {
                 reader.advance(gap);
             }
-            let gates = reader.take_slice::<u8>(num_dopp)?;
+            let gates = reader.take_slice::<u8>(doppler_gate_count)?;
             Some(Cow::Borrowed(gates))
         } else {
             None
@@ -298,10 +299,10 @@ impl<'a> Message<'a> {
         use nexrad_model::data::{MomentData, Product, Radial};
 
         // Extract header values before moving gate data out of self.
-        let num_surv_gates = self.surveillance_gate_count();
+        let surveillance_gate_count = self.surveillance_gate_count();
         let surv_first_range = self.surveillance_first_gate_range_meters().unsigned_abs();
         let surv_interval = self.surveillance_gate_interval_meters();
-        let num_dopp_gates = self.doppler_gate_count();
+        let doppler_gate_count = self.doppler_gate_count();
         let dopp_first_range = self.doppler_first_gate_range_meters().unsigned_abs();
         let dopp_interval = self.doppler_gate_interval_meters();
         let vel_resolution = self.doppler_velocity_resolution_mps();
@@ -324,7 +325,7 @@ impl<'a> Message<'a> {
             .map(|gates| {
                 MomentData::from_fixed_point(
                     Product::Reflectivity,
-                    usize::from(num_surv_gates),
+                    usize::from(surveillance_gate_count),
                     surv_first_range,
                     surv_interval,
                     8,
@@ -341,7 +342,7 @@ impl<'a> Message<'a> {
                 let scale = if vel_resolution > 0.9 { 1.0 } else { 2.0 };
                 MomentData::from_fixed_point(
                     Product::Velocity,
-                    usize::from(num_dopp_gates),
+                    usize::from(doppler_gate_count),
                     dopp_first_range,
                     dopp_interval,
                     8,
@@ -357,7 +358,7 @@ impl<'a> Message<'a> {
             .map(|gates| {
                 MomentData::from_fixed_point(
                     Product::SpectrumWidth,
-                    usize::from(num_dopp_gates),
+                    usize::from(doppler_gate_count),
                     dopp_first_range,
                     dopp_interval,
                     8,

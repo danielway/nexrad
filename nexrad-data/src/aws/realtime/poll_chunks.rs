@@ -104,10 +104,11 @@ impl ChunkStreamState {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// use futures_util::StreamExt;
 /// use nexrad_data::aws::realtime::{chunk_stream, PollConfig};
 ///
+/// # async fn run() {
 /// let config = PollConfig::new("KDMX");
 /// let stream = chunk_stream(config, |d| tokio::time::sleep(d));
 /// let mut stream = std::pin::pin!(stream);
@@ -115,9 +116,10 @@ impl ChunkStreamState {
 /// while let Some(result) = stream.next().await {
 ///     match result {
 ///         Ok(chunk) => println!("Got chunk: {}", chunk.identifier.name()),
-///         Err(e) => eprintln!("Error: {:?}", e),
+///         Err(e) => eprintln!("Error: {e}"),
 ///     }
 /// }
+/// # }
 /// ```
 pub fn chunk_stream<S, F>(
     config: PollConfig,

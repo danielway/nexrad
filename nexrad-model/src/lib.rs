@@ -15,7 +15,7 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```
 //! use nexrad_model::data::{MomentValue, Product, Scan};
 //!
 //! fn process_scan(scan: &Scan) {

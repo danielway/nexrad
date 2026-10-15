@@ -22,12 +22,24 @@ use nexrad_model::geo::{GeoPoint, RadarCoordinateSystem};
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
 /// use nexrad_process::derived::CompositeReflectivity;
 /// use nexrad_process::{CartesianGrid, ScanDerivedProduct};
+/// # let site = nexrad_model::meta::Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
+/// # let coord_sys = nexrad_model::geo::RadarCoordinateSystem::new(&site);
+/// # let lowest_tilt = nexrad_model::data::SweepField::builder("Reflectivity", "dBZ")
+/// #     .product(nexrad_model::data::Product::Reflectivity)
+/// #     .elevation_angle_degrees(0.5)
+/// #     .azimuth_angles_degrees((0..360).map(|a| a as f32).collect())
+/// #     .first_gate_range_km(2.0)
+/// #     .gate_interval_km(0.25)
+/// #     .gate_count(400)
+/// #     .build()?;
+/// # let ref_fields = vec![lowest_tilt];
 ///
 /// let grid = CartesianGrid::new(coord_sys.sweep_extent(230.0), 800, 800)?;
 /// let field = CompositeReflectivity.compute(&ref_fields, &coord_sys, &grid)?;
+/// # Ok::<(), nexrad_process::Error>(())
 /// ```
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct CompositeReflectivity;

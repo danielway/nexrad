@@ -15,14 +15,21 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```
 //! use nexrad_process::{SweepPipeline, filter::ThresholdFilter};
 //! use nexrad_model::data::{SweepField, Product};
+//! # use nexrad_model::data::{MomentData, Radial, Sweep};
+//! # let reflectivity = MomentData::from_fixed_point(
+//! #     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
+//! # )?;
+//! # let radial = Radial::builder(0, 0.0, 1, 0.5).moment(reflectivity).build()?;
+//! # let sweep = Sweep::new(1, vec![radial])?;
 //!
 //! let field = SweepField::from_radials(sweep.radials(), Product::Reflectivity).unwrap();
 //! let filtered = SweepPipeline::new()
 //!     .then(ThresholdFilter::new(Some(5.0), None)?)
 //!     .execute(&field)?;
+//! # Ok::<(), nexrad_process::Error>(())
 //! ```
 
 #![cfg_attr(docsrs, feature(doc_cfg))]

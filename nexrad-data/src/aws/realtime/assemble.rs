@@ -23,13 +23,17 @@ use nexrad_decode::model::ScanBuilder;
 ///
 /// # Example
 ///
-/// ```ignore
-/// use nexrad_data::aws::realtime::{ChunkIterator, assemble_volume};
+/// ```no_run
+/// use nexrad_data::aws::realtime::{assemble_volume, ChunkIterator};
 ///
+/// # async fn run() -> nexrad_data::Result<()> {
 /// let init = ChunkIterator::start("KTLX").await?;
-/// let mut chunks = vec![init.latest_chunk];
-/// // ... collect more chunks ...
+/// // The Start chunk carries the volume coverage pattern, so it comes first
+/// let mut chunks: Vec<_> = init.start_chunk.into_iter().chain([init.latest_chunk]).collect();
+/// // ... collect the rest of the volume with `init.iterator.try_next()` ...
 /// let scan = assemble_volume(chunks.into_iter().map(|dc| dc.chunk))?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn assemble_volume(
     chunks: impl IntoIterator<Item = Chunk>,

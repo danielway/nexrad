@@ -22,9 +22,18 @@ use nexrad_model::geo::RadarCoordinateSystem;
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
 /// use nexrad_process::derived::VerticalCrossSection;
 /// use nexrad_model::data::{SweepField, Product};
+/// # use nexrad_model::data::{MomentData, Radial, Scan, Sweep, VcpNumber, VolumeCoveragePattern};
+/// # use nexrad_model::meta::Site;
+/// # let reflectivity = MomentData::from_fixed_point(
+/// #     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
+/// # )?;
+/// # let radial = Radial::builder(0, 200.0, 1, 0.5).moment(reflectivity).build()?;
+/// # let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+/// # let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
+/// # let scan = Scan::with_site(site, vcp, vec![Sweep::new(1, vec![radial])?]);
 ///
 /// // Extract reflectivity fields from all sweeps
 /// let ref_fields: Vec<SweepField> = scan.sweeps().iter()
@@ -40,12 +49,7 @@ use nexrad_model::geo::RadarCoordinateSystem;
 ///     .build()?;
 /// let coord_sys = scan.coordinate_system().unwrap();
 /// let vertical_field = vcs.compute(&ref_fields, &coord_sys)?;
-///
-/// // Render with nexrad-render
-/// use nexrad_render::{render_vertical, default_scale, RenderOptions};
-/// let scale = default_scale(Product::Reflectivity);
-/// let result = render_vertical(&vertical_field, &scale, &RenderOptions::new(1200, 600))?;
-/// result.save("vertical_cross_section.png")?;
+/// # Ok::<(), nexrad_process::Error>(())
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct VerticalCrossSection {

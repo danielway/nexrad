@@ -17,15 +17,18 @@ use nexrad_model::meta::Site;
 /// builders (for example, one per LDM record decoded in parallel) can be combined in order with
 /// [`merge`](Self::merge).
 ///
-/// ```ignore
+/// ```no_run
 /// use nexrad_decode::messages::decode_messages;
 /// use nexrad_decode::model::ScanBuilder;
 ///
+/// # fn run(records: Vec<Vec<u8>>) -> nexrad_decode::Result<()> {
 /// let mut builder = ScanBuilder::new();
-/// for record in records {
+/// for record in &records {
 ///     builder.add_messages(decode_messages(record)?)?;
 /// }
 /// let scan = builder.build()?;
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Debug, Default)]
 pub struct ScanBuilder {

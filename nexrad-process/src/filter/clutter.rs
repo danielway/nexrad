@@ -22,12 +22,26 @@ use nexrad_model::data::{GateStatus, Product, SweepField};
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// use nexrad_model::data::{Product, SweepField};
 /// use nexrad_process::filter::CorrelationCoefficientFilter;
+/// use nexrad_process::SweepProcessor;
+/// # use nexrad_model::data::{MomentData, Radial, Sweep};
+/// # let reflectivity = MomentData::from_fixed_point(
+/// #     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
+/// # )?;
+/// # let cc = MomentData::from_fixed_point(
+/// #     Product::CorrelationCoefficient, 3, 2000, 250, 8, 200.0, 0.0, vec![196, 150, 198],
+/// # )?;
+/// # let radial = Radial::builder(0, 0.0, 1, 0.5).moment(reflectivity).moment(cc).build()?;
+/// # let sweep = Sweep::new(1, vec![radial])?;
+/// # let radials = sweep.radials();
+/// # let reflectivity_field = SweepField::from_radials(radials, Product::Reflectivity).unwrap();
 ///
 /// let cc_field = SweepField::from_radials(radials, Product::CorrelationCoefficient).unwrap();
 /// let filter = CorrelationCoefficientFilter::new(0.90, cc_field)?;
 /// let cleaned = filter.process(&reflectivity_field)?;
+/// # Ok::<(), nexrad_process::Error>(())
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct CorrelationCoefficientFilter {

@@ -19,7 +19,9 @@
 //!
 //! Load radar data with a single function call:
 //!
-//! ```ignore
+//! ```no_run
+//! # #[cfg(feature = "data")]
+//! # fn run() -> nexrad::Result<()> {
 //! // Load from a local file
 //! let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
 //! println!("{}, {} sweeps",
@@ -34,14 +36,18 @@
 //!         }
 //!     }
 //! }
-//! # Ok::<(), nexrad::Error>(())
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! Or download directly from the NEXRAD archive on AWS (requires `aws` feature):
 //!
-//! ```ignore
+//! ```no_run
+//! # #[cfg(feature = "aws")]
+//! # async fn run() -> nexrad::Result<()> {
 //! let scan = nexrad::download_latest("KTLX").await?;
-//! # Ok::<(), nexrad::Error>(())
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! Real-time data arrives through `stream`, which yields chunks as they are published, and
@@ -173,11 +179,13 @@
 //!
 //! Work directly with Archive II files to access raw LDM records:
 //!
-//! ```ignore
+//! ```no_run
+//! # #[cfg(feature = "data")]
+//! # fn run() -> nexrad::Result<()> {
 //! use nexrad::data::volume::File;
 //!
 //! let data = std::fs::read("volume.ar2v")?;
-//! let file = File::new(data);
+//! let file = File::new(data).decompress()?;
 //!
 //! // Access raw records before decoding
 //! for record in file.records()? {
@@ -188,14 +196,17 @@
 //!
 //! // Or decode directly to a Scan
 //! let scan = file.scan()?;
-//! # Ok::<(), nexrad::Error>(())
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ### Binary Message Decoding with nexrad-decode
 //!
 //! Parse NEXRAD messages from raw (decompressed) bytes:
 //!
-//! ```ignore
+//! ```no_run
+//! # #[cfg(feature = "decode")]
+//! # fn run(message_bytes: &[u8]) -> nexrad::decode::Result<()> {
 //! use nexrad::decode::messages::{decode_messages, MessageContents};
 //!
 //! // After extracting decompressed message bytes from an Archive II LDM record
@@ -215,14 +226,17 @@
 //!         _ => {}
 //!     }
 //! }
-//! # Ok::<(), nexrad::decode::Error>(())
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! ### Rendering with nexrad-render
 //!
 //! Create visualizations from radar data:
 //!
-//! ```ignore
+//! ```no_run
+//! # #[cfg(all(feature = "render", feature = "data"))]
+//! # fn run() -> nexrad::Result<()> {
 //! use nexrad::model::data::Product;
 //! use nexrad::render::{default_scale, render_sweep, RenderOptions};
 //!
@@ -235,7 +249,8 @@
 //!
 //! let result = render_sweep(&field, &color_scale, &options)?;
 //! result.save("output.png")?;
-//! # Ok::<(), nexrad::Error>(())
+//! # Ok(())
+//! # }
 //! ```
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -262,7 +277,7 @@ pub use result::{Error, Result};
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// let data = std::fs::read("KTLX20230520_201643_V06.ar2v")?;
 /// let scan = nexrad::load(data)?;
 /// println!("VCP: {}, {} sweeps",
@@ -287,7 +302,7 @@ pub fn load(data: Vec<u8>) -> Result<model::data::Scan> {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
 /// println!("{}", scan.coverage_pattern_number());
 /// # Ok::<(), nexrad::Error>(())
@@ -309,9 +324,10 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// use nexrad::chrono::NaiveDate;
 ///
+/// # async fn run() -> nexrad::Result<()> {
 /// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
 /// let scans = nexrad::list_scans("KTLX", date).await?;
 ///
@@ -320,7 +336,8 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
 ///     let scan = nexrad::download(id).await?;
 ///     println!("{}", scan.coverage_pattern_number());
 /// }
-/// # Ok::<(), nexrad::Error>(())
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # Errors
@@ -344,10 +361,12 @@ pub async fn download(identifier: &data::aws::archive::Identifier) -> Result<mod
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # async fn run() -> nexrad::Result<()> {
 /// let scan = nexrad::download_latest("KTLX").await?;
 /// println!("{}", scan.coverage_pattern_number());
-/// # Ok::<(), nexrad::Error>(())
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # Errors
@@ -387,16 +406,18 @@ const MAX_VOLUME_DURATION: chrono::TimeDelta = chrono::TimeDelta::minutes(15);
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// use nexrad::chrono::NaiveDateTime;
 ///
+/// # async fn run() -> nexrad::Result<()> {
 /// // Download the scan that was being collected at 20:16:43 UTC
 /// let dt = NaiveDateTime::parse_from_str(
 ///     "2023-05-20 20:16:43",
 ///     "%Y-%m-%d %H:%M:%S"
 /// ).unwrap();
 /// let scan = nexrad::download_at("KTLX", dt).await?;
-/// # Ok::<(), nexrad::Error>(())
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # Errors
@@ -458,16 +479,18 @@ fn scan_at<'a>(
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// use nexrad::chrono::NaiveDate;
 ///
+/// # async fn run() -> nexrad::Result<()> {
 /// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
 /// let scans = nexrad::list_scans("KTLX", date).await?;
 /// println!("Found {} scans", scans.len());
 /// for id in &scans {
-///     println!("  {:?}", id);
+///     println!("  {id}");
 /// }
-/// # Ok::<(), nexrad::Error>(())
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # Errors
@@ -501,16 +524,18 @@ pub async fn list_scans(
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// use nexrad::futures_util::StreamExt;
 ///
+/// # async fn run() -> nexrad::Result<()> {
 /// let stream = nexrad::stream("KTLX", |d| tokio::time::sleep(d));
 /// let mut stream = std::pin::pin!(stream);
 /// while let Some(chunk) = stream.next().await {
 ///     let chunk = chunk?;
-///     println!("Received chunk: {:?}", chunk.identifier);
+///     println!("Received chunk: {}", chunk.identifier.name());
 /// }
-/// # Ok::<(), nexrad::Error>(())
+/// # Ok(())
+/// # }
 /// ```
 #[cfg(feature = "aws")]
 pub fn stream<S, F>(
@@ -538,11 +563,12 @@ where
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// use nexrad::data::aws::realtime::{PollConfig, RetryPolicy};
 /// use nexrad::futures_util::StreamExt;
 /// use std::time::Duration;
 ///
+/// # async fn run() -> nexrad::Result<()> {
 /// let config = PollConfig::new("KTLX").with_download_policy(
 ///     RetryPolicy::default_download().with_initial_delay(Duration::from_millis(500)),
 /// );
@@ -550,9 +576,10 @@ where
 /// let mut stream = std::pin::pin!(stream);
 /// while let Some(chunk) = stream.next().await {
 ///     let chunk = chunk?;
-///     println!("Received chunk: {:?}", chunk.identifier);
+///     println!("Received chunk: {}", chunk.identifier.name());
 /// }
-/// # Ok::<(), nexrad::Error>(())
+/// # Ok(())
+/// # }
 /// ```
 #[cfg(feature = "aws")]
 pub fn stream_with<S, F>(
@@ -588,16 +615,18 @@ where
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// use nexrad::futures_util::StreamExt;
 ///
+/// # async fn run() -> nexrad::Result<()> {
 /// let scans = nexrad::stream_scans("KTLX", |d| tokio::time::sleep(d));
 /// let mut scans = std::pin::pin!(scans);
 /// while let Some(scan) = scans.next().await {
 ///     let scan = scan?;
 ///     println!("{}, {} sweeps", scan.coverage_pattern_number(), scan.sweeps().len());
 /// }
-/// # Ok::<(), nexrad::Error>(())
+/// # Ok(())
+/// # }
 /// ```
 #[cfg(feature = "aws")]
 pub fn stream_scans<S, F>(
@@ -629,17 +658,19 @@ where
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// use nexrad::data::aws::realtime::PollConfig;
 /// use nexrad::futures_util::StreamExt;
 ///
+/// # async fn run() -> nexrad::Result<()> {
 /// let scans = nexrad::stream_scans_with(PollConfig::new("KTLX"), |d| tokio::time::sleep(d));
 /// let mut scans = std::pin::pin!(scans);
 /// while let Some(scan) = scans.next().await {
 ///     let scan = scan?;
 ///     println!("{}, {} sweeps", scan.coverage_pattern_number(), scan.sweeps().len());
 /// }
-/// # Ok::<(), nexrad::Error>(())
+/// # Ok(())
+/// # }
 /// ```
 #[cfg(feature = "aws")]
 pub fn stream_scans_with<S, F>(

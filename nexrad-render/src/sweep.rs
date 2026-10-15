@@ -39,9 +39,15 @@ use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
 /// use nexrad_model::data::Product;
 /// use nexrad_render::{default_scale, render_sweep, RenderOptions};
+/// # use nexrad_model::data::{MomentData, Radial, Sweep};
+/// # let reflectivity = MomentData::from_fixed_point(
+/// #     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
+/// # )?;
+/// # let radial = Radial::builder(0, 0.0, 1, 0.5).moment(reflectivity).build()?;
+/// # let sweep = Sweep::new(1, vec![radial])?;
 ///
 /// let field = sweep.field(Product::Reflectivity).unwrap();
 /// let scale = default_scale(Product::Reflectivity);
@@ -51,6 +57,7 @@ use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 /// let meta = result.metadata();
 /// // Polar renders support range/pixel conversions.
 /// let ring_px = meta.km_to_pixel_distance(100.0);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub fn render_sweep(
     field: &SweepField,

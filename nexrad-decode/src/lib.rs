@@ -10,9 +10,10 @@
 //! decompressed Archive II record, into structured [`Message`] values. Decoding is strict: it
 //! returns the error for the first message that cannot be decoded, along with its offset.
 //!
-//! ```ignore
+//! ```no_run
 //! use nexrad_decode::{decode_messages, MessageContents};
 //!
+//! # fn run(decompressed_data: Vec<u8>) -> nexrad_decode::Result<()> {
 //! for message in decode_messages(&decompressed_data)? {
 //!     match message.contents() {
 //!         MessageContents::DigitalRadarData(data) => {
@@ -27,6 +28,8 @@
 //!         _ => {}
 //!     }
 //! }
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! [`iter_messages`] yields one `Result` per message instead, so a caller can keep the messages

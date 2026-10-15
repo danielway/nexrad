@@ -116,9 +116,23 @@ impl StormCell {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
 /// use nexrad_process::detection::StormCellDetector;
-/// use nexrad_model::geo::RadarCoordinateSystem;
+/// # let site = nexrad_model::meta::Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
+/// # let coord_system = nexrad_model::geo::RadarCoordinateSystem::new(&site);
+/// # let mut reflectivity_field = nexrad_model::data::SweepField::builder("Reflectivity", "dBZ")
+/// #     .product(nexrad_model::data::Product::Reflectivity)
+/// #     .elevation_angle_degrees(0.5)
+/// #     .azimuth_angles_degrees((0..360).map(|a| a as f32).collect())
+/// #     .first_gate_range_km(2.0)
+/// #     .gate_interval_km(0.25)
+/// #     .gate_count(400)
+/// #     .build()?;
+/// # for azimuth in 40..50 {
+/// #     for gate in 100..120 {
+/// #         reflectivity_field.set(azimuth, gate, 50.0, nexrad_model::data::GateStatus::Valid)?;
+/// #     }
+/// # }
 ///
 /// let detector = StormCellDetector::new(35.0, 10)?;
 /// let cells = detector.detect(&reflectivity_field, &coord_system)?;
@@ -132,6 +146,8 @@ impl StormCell {
 ///         cell.area_km2(),
 ///     );
 /// }
+/// # assert_eq!(cells.len(), 1);
+/// # Ok::<(), nexrad_process::Error>(())
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct StormCellDetector {

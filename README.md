@@ -131,8 +131,14 @@ async fn main() -> nexrad::Result<()> {
     let scans = nexrad::list_scans("KTLX", date).await?;
     println!("Found {} scans", scans.len());
 
-    // Download the latest scan for the day
-    let scan = nexrad::download_latest("KTLX", date).await?;
+    // Download the last scan of that day
+    if let Some(id) = scans.last() {
+        let scan = nexrad::download(id).await?;
+        println!("{}", scan.coverage_pattern_number());
+    }
+
+    // Download the newest scan available now
+    let scan = nexrad::download_latest("KTLX").await?;
     println!("{}", scan.coverage_pattern_number());
 
     Ok(())
@@ -206,7 +212,7 @@ Run the included examples:
 cargo run -p nexrad --example decode_summary -- path/to/volume.ar2v
 
 # Download latest data from AWS
-cargo run -p nexrad --example download_latest --features aws -- KTLX 2023-05-20
+cargo run -p nexrad --example download_latest --features aws -- KTLX
 
 # Render reflectivity image
 cargo run -p nexrad --example render_reflectivity --features render -- path/to/volume.ar2v output.png

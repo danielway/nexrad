@@ -18,7 +18,8 @@
 //! - `Error::Process` wraps `nexrad_process` errors.
 //! - [`Error::Io`] wraps [`std::io::Error`], whether it comes from the facade itself (for
 //!   example `load_file`) or from `nexrad_data`.
-//! - `Error::NoDataAvailable` reports that an archive lookup found no matching file.
+//! - `Error::NoDataAvailable` reports that an archive lookup found no volume for a site and
+//!   date, and `Error::NoScanAt` that no volume overlaps a requested datetime.
 //!
 //! ## Automatic Conversion
 //!
@@ -49,7 +50,7 @@
 //! - `data` enables `Error::Data`
 //! - `render` enables `Error::Render`
 //! - `process` enables `Error::Process`
-//! - `aws` enables `Error::NoDataAvailable`
+//! - `aws` enables `Error::NoDataAvailable` and `Error::NoScanAt`
 //!
 //! [`Error::Io`] is always available. Features that build on others enable them too (for
 //! example, `data` also enables `decode` and `model`), so the flattened variants always exist
@@ -160,12 +161,12 @@ pub enum Error {
     #[error("I/O error")]
     Io(#[from] std::io::Error),
 
-    /// No data available for the requested site and date/time.
+    /// No archive volume is available for the requested site and date.
     ///
     /// This variant is available when the `aws` feature is enabled (default).
     ///
-    /// This error occurs when attempting to download archive data that doesn't exist,
-    /// such as requesting a date before radar operations began or a future date.
+    /// `download_latest` returns this error, carrying the current UTC date, when neither that
+    /// date nor the previous one has an archive volume for the site.
     #[cfg(feature = "aws")]
     #[error("no data available for site {site} on {date}")]
     NoDataAvailable {
@@ -173,6 +174,21 @@ pub enum Error {
         site: String,
         /// The requested date.
         date: chrono::NaiveDate,
+    },
+
+    /// No archive volume overlaps the requested site and datetime.
+    ///
+    /// This variant is available when the `aws` feature is enabled (default).
+    ///
+    /// `download_at` returns this error when no volume started within the window before the
+    /// requested datetime, for example because the radar was not operating then.
+    #[cfg(feature = "aws")]
+    #[error("no scan for site {site} overlaps {datetime}")]
+    NoScanAt {
+        /// The radar site identifier (e.g., "KTLX").
+        site: String,
+        /// The requested UTC datetime.
+        datetime: chrono::NaiveDateTime,
     },
 }
 

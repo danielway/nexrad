@@ -10,8 +10,8 @@
 //! - `nexrad-data` as `data` - Data access (local files, AWS S3)
 //! - `nexrad-process` as `process` - Radar data processing algorithms
 //! - `nexrad-render` as `render` - Visualization and rendering
-//! - `chrono` as `chrono` - Date and time types, re-exported because `download_latest`,
-//!   `download_at` and `list_scans` take them
+//! - `chrono` as `chrono` - Date and time types, re-exported because `download_at` and
+//!   `list_scans` take them
 //!
 //! ## Quick Start
 //!
@@ -38,10 +38,7 @@
 //! Or download directly from the NEXRAD archive on AWS (requires `aws` feature):
 //!
 //! ```ignore
-//! use nexrad::chrono::NaiveDate;
-//!
-//! let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
-//! let scan = nexrad::download_latest("KTLX", date).await?;
+//! let scan = nexrad::download_latest("KTLX").await?;
 //! # Ok::<(), nexrad::Error>(())
 //! ```
 //!
@@ -63,7 +60,7 @@
 //! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model` | bzip2 | Yes |
 //! | `render` | Visualization and rendering | `model` | image | Yes |
 //! | `process` | Radar data processing algorithms | `model` | | Yes |
-//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`) and real-time streaming (`stream`) | `data`, `chrono` | reqwest, futures-util | Yes |
+//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), and real-time streaming (`stream`) | `data`, `chrono` | reqwest, futures-util | Yes |
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
 //! | `serde` | Serialization support for model types | | serde | Yes |
 //! | `uom` | Type-safe units of measure | | uom | Yes |
@@ -261,7 +258,7 @@ pub use result::{Error, Result};
 ///
 /// ```ignore
 /// let data = std::fs::read("KTLX20230520_201643_V06.ar2v")?;
-/// let scan = nexrad::load(&data)?;
+/// let scan = nexrad::load(data)?;
 /// println!("VCP: {}, {} sweeps",
 ///     scan.coverage_pattern_number(),
 ///     scan.sweeps().len());
@@ -273,8 +270,8 @@ pub use result::{Error, Result};
 /// Returns an error if the data cannot be parsed as a valid Archive II file,
 /// decompression fails, or the messages cannot be decoded.
 #[cfg(feature = "data")]
-pub fn load(data: &[u8]) -> Result<model::data::Scan> {
-    let file = data::volume::File::new(data.to_vec()).decompress()?;
+pub fn load(data: Vec<u8>) -> Result<model::data::Scan> {
+    let file = data::volume::File::new(data).decompress()?;
     Ok(file.scan()?)
 }
 
@@ -295,8 +292,7 @@ pub fn load(data: &[u8]) -> Result<model::data::Scan> {
 /// Returns an error if the file cannot be read or parsed.
 #[cfg(feature = "data")]
 pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan> {
-    let data = std::fs::read(path)?;
-    load(&data)
+    load(std::fs::read(path)?)
 }
 
 /// Download a specific scan by its archive identifier.
@@ -323,7 +319,7 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
 ///
 /// # Errors
 ///
-/// Returns an error if the download, decompression, or decoding fails.
+/// Returns an error if the download fails, or if the file cannot be decompressed or decoded.
 #[cfg(feature = "aws")]
 pub async fn download(identifier: &data::aws::archive::Identifier) -> Result<model::data::Scan> {
     let file = data::aws::archive::download_file(identifier)
@@ -332,44 +328,56 @@ pub async fn download(identifier: &data::aws::archive::Identifier) -> Result<mod
     Ok(file.scan()?)
 }
 
-/// Download the most recent scan for a site on a given date.
+/// Download the newest archived scan for a site.
 ///
-/// Returns the last available archive volume file for the specified UTC date. This is useful
-/// when you want the most complete data available for a particular day.
+/// Lists the archive for the current UTC date and, when that date has no volumes yet, for the
+/// previous UTC date, then downloads the last volume found.
+///
+/// To download the last scan of a given date instead, call [`list_scans`] for that date and pass
+/// its last identifier to [`download`].
 ///
 /// # Example
 ///
 /// ```ignore
-/// use nexrad::chrono::NaiveDate;
-///
-/// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
-/// let scan = nexrad::download_latest("KTLX", date).await?;
+/// let scan = nexrad::download_latest("KTLX").await?;
 /// println!("{}", scan.coverage_pattern_number());
 /// # Ok::<(), nexrad::Error>(())
 /// ```
 ///
 /// # Errors
 ///
-/// Returns [`Error::NoDataAvailable`] if no archive files exist for the site/date,
-/// or a network/parsing error if download or decoding fails.
+/// Returns [`Error::NoDataAvailable`], carrying the current UTC date, if neither date has an
+/// archive volume. Otherwise returns an error if listing or downloading fails, or if the file
+/// cannot be decompressed or decoded.
 #[cfg(feature = "aws")]
-pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<model::data::Scan> {
-    let files = data::aws::archive::list_files(site, date).await?;
-    let file_id = files
-        .last()
-        .cloned()
-        .ok_or_else(|| Error::NoDataAvailable {
-            site: site.to_string(),
-            date,
-        })?;
-    download(&file_id).await
+pub async fn download_latest(site: &str) -> Result<model::data::Scan> {
+    let today = chrono::Utc::now().date_naive();
+    let mut files = data::aws::archive::list_files(site, today).await?;
+    if files.is_empty() {
+        if let Some(yesterday) = today.pred_opt() {
+            files = data::aws::archive::list_files(site, yesterday).await?;
+        }
+    }
+
+    let file_id = files.last().ok_or_else(|| Error::NoDataAvailable {
+        site: site.to_string(),
+        date: today,
+    })?;
+    download(file_id).await
 }
+
+/// How long after its start time an archive volume is taken to overlap a requested datetime in
+/// [`download_at`]. The longest routine volume coverage patterns (VCP 31 and 32) take about ten
+/// minutes.
+#[cfg(feature = "aws")]
+const MAX_VOLUME_DURATION: chrono::TimeDelta = chrono::TimeDelta::minutes(15);
 
 /// Download the scan that overlaps a specific datetime.
 ///
-/// Finds the archive file whose collection period contains the requested UTC datetime.
-/// Archive files typically span approximately 5 minutes of data collection, so this
-/// function returns the scan that was being collected at the specified time.
+/// Finds the archive volume whose collection period contains the requested UTC datetime: the
+/// last volume that started at or before it, which is on the previous UTC date when the datetime
+/// precedes the date's first volume. A volume overlaps the datetime when it started at most 15
+/// minutes before it.
 ///
 /// # Example
 ///
@@ -387,30 +395,59 @@ pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<mode
 ///
 /// # Errors
 ///
-/// Returns [`Error::NoDataAvailable`] if no archive files exist for the site/date
-/// or if no file overlaps the requested time.
+/// Returns [`Error::NoScanAt`] if no archive volume overlaps the requested datetime. Otherwise
+/// returns an error if listing or downloading fails, or if the file cannot be decompressed or
+/// decoded.
 #[cfg(feature = "aws")]
 pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<model::data::Scan> {
-    let files = data::aws::archive::list_files(site, datetime.date()).await?;
+    let date = datetime.date();
+    let day = data::aws::archive::list_files(site, date).await?;
 
-    // Find the archive file that would contain data at the requested time.
-    // Files are sorted chronologically; find the last one with start_time <= requested time.
-    let file_id = files
+    let needs_previous_day = last_started_by(&day, datetime).is_none();
+    let previous_day = match date.pred_opt() {
+        Some(previous) if needs_previous_day => {
+            data::aws::archive::list_files(site, previous).await?
+        }
+        _ => Vec::new(),
+    };
+
+    let file_id = scan_at(&day, &previous_day, datetime).ok_or_else(|| Error::NoScanAt {
+        site: site.to_string(),
+        datetime,
+    })?;
+    download(file_id).await
+}
+
+/// Returns the last of `files`, which are in chronological order, that started at or before
+/// `datetime`.
+#[cfg(feature = "aws")]
+fn last_started_by(
+    files: &[data::aws::archive::Identifier],
+    datetime: chrono::NaiveDateTime,
+) -> Option<&data::aws::archive::Identifier> {
+    files
         .iter()
-        .rfind(|f| f.date_time().time() <= datetime.time())
-        .cloned()
-        .ok_or_else(|| Error::NoDataAvailable {
-            site: site.to_string(),
-            date: datetime.date(),
-        })?;
+        .rfind(|file| file.date_time().naive_utc() <= datetime)
+}
 
-    download(&file_id).await
+/// Selects the volume overlapping `datetime` from the volumes of its date and of the previous
+/// date: the last one that started at or before `datetime`, provided it started no more than
+/// [`MAX_VOLUME_DURATION`] earlier.
+#[cfg(feature = "aws")]
+fn scan_at<'a>(
+    day: &'a [data::aws::archive::Identifier],
+    previous_day: &'a [data::aws::archive::Identifier],
+    datetime: chrono::NaiveDateTime,
+) -> Option<&'a data::aws::archive::Identifier> {
+    last_started_by(day, datetime)
+        .or_else(|| last_started_by(previous_day, datetime))
+        .filter(|file| datetime - file.date_time().naive_utc() <= MAX_VOLUME_DURATION)
 }
 
 /// List available scans for a site and date.
 ///
-/// Returns identifiers for all archive volume files available on the specified UTC date;
-/// metadata objects are not included.
+/// Returns identifiers for all archive volume files available on the specified UTC date, in
+/// chronological order; metadata objects are not included.
 /// These identifiers can be used to selectively download specific scans.
 ///
 /// # Example
@@ -426,6 +463,11 @@ pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<
 /// }
 /// # Ok::<(), nexrad::Error>(())
 /// ```
+///
+/// # Errors
+///
+/// Returns an error if the archive listing request fails or its response cannot be parsed. A
+/// date without data is not an error; it yields an empty list.
 #[cfg(feature = "aws")]
 pub async fn list_scans(
     site: &str,
@@ -501,7 +543,88 @@ pub use nexrad_render as render;
 #[cfg(feature = "process")]
 pub use nexrad_process as process;
 
-/// Re-export of `chrono`, because `download_latest`, `download_at` and `list_scans` take
-/// chrono types.
+/// Re-export of `chrono`, because `download_at` and `list_scans` take chrono types.
 #[cfg(feature = "chrono")]
 pub use chrono;
+
+#[cfg(all(test, feature = "aws"))]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDateTime;
+    use data::aws::archive::Identifier;
+
+    fn datetime(value: &str) -> NaiveDateTime {
+        NaiveDateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S").expect("valid datetime")
+    }
+
+    fn identifiers(names: &[&str]) -> Vec<Identifier> {
+        names
+            .iter()
+            .map(|name| Identifier::parse(name).expect("valid identifier"))
+            .collect()
+    }
+
+    fn selected<'a>(
+        day: &'a [Identifier],
+        previous_day: &'a [Identifier],
+        at: &str,
+    ) -> Option<&'a str> {
+        scan_at(day, previous_day, datetime(at)).map(Identifier::name)
+    }
+
+    #[test]
+    fn scan_at_selects_the_last_volume_started_by_the_datetime() {
+        let day = identifiers(&[
+            "KTLX20230520_200712_V06",
+            "KTLX20230520_201643_V06",
+            "KTLX20230520_202612_V06",
+        ]);
+
+        assert_eq!(
+            selected(&day, &[], "2023-05-20 20:20:00"),
+            Some("KTLX20230520_201643_V06")
+        );
+        assert_eq!(
+            selected(&day, &[], "2023-05-20 20:16:43"),
+            Some("KTLX20230520_201643_V06")
+        );
+    }
+
+    #[test]
+    fn scan_at_crosses_midnight() {
+        let previous_day = identifiers(&["KTLX20230519_234512_V06", "KTLX20230519_235502_V06"]);
+        let day = identifiers(&["KTLX20230520_000452_V06"]);
+
+        assert_eq!(
+            selected(&day, &previous_day, "2023-05-20 00:01:00"),
+            Some("KTLX20230519_235502_V06")
+        );
+        assert_eq!(
+            selected(&[], &previous_day, "2023-05-20 00:01:00"),
+            Some("KTLX20230519_235502_V06")
+        );
+    }
+
+    #[test]
+    fn scan_at_rejects_a_volume_started_too_long_before() {
+        let day = identifiers(&["KTLX20230520_200000_V06"]);
+
+        assert_eq!(
+            selected(&day, &[], "2023-05-20 20:15:00"),
+            Some("KTLX20230520_200000_V06")
+        );
+        assert_eq!(selected(&day, &[], "2023-05-20 20:15:01"), None);
+
+        let previous_day = identifiers(&["KTLX20230519_230000_V06"]);
+        assert_eq!(selected(&[], &previous_day, "2023-05-20 00:01:00"), None);
+    }
+
+    #[test]
+    fn scan_at_finds_nothing_before_the_first_volume() {
+        let day = identifiers(&["KTLX20230520_000452_V06"]);
+
+        assert_eq!(selected(&day, &[], "2023-05-20 00:01:00"), None);
+        assert_eq!(selected(&[], &[], "2023-05-20 00:01:00"), None);
+    }
+}

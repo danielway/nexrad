@@ -21,6 +21,23 @@ fn test_no_data_available_message() {
     );
 }
 
+#[cfg(feature = "aws")]
+#[test]
+fn test_no_scan_at_message() {
+    let datetime = nexrad::chrono::NaiveDate::from_ymd_opt(2023, 5, 20)
+        .and_then(|date| date.and_hms_opt(20, 16, 43))
+        .expect("valid datetime");
+    let err = nexrad::Error::NoScanAt {
+        site: "KTLX".to_string(),
+        datetime,
+    };
+
+    assert_eq!(
+        err.to_string(),
+        "no scan for site KTLX overlaps 2023-05-20 20:16:43"
+    );
+}
+
 #[cfg(feature = "model")]
 #[test]
 fn test_model_error_conversion() {
@@ -42,7 +59,10 @@ fn test_model_error_conversion() {
 
     // The message names the layer; the detail is in the source
     assert_eq!(unified_err.to_string(), "model error");
-    let source = unified_err.source().expect("model error source").to_string();
+    let source = unified_err
+        .source()
+        .expect("model error source")
+        .to_string();
     assert!(
         source.contains("elevation"),
         "Expected 'elevation' in source, got: {}",
@@ -85,7 +105,10 @@ fn test_decode_error_with_string_conversion() {
 
     // The message names the layer; the source preserves the detail
     assert_eq!(unified_err.to_string(), "decode error");
-    let source = unified_err.source().expect("decode error source").to_string();
+    let source = unified_err
+        .source()
+        .expect("decode error source")
+        .to_string();
     assert!(
         source.contains("XYZ") && source.contains("4096"),
         "Expected 'XYZ' and '4096' in source, got: {}",
@@ -339,7 +362,10 @@ fn test_process_error_conversion() {
 
     // The message names the layer; the source carries the parameter and reason
     assert_eq!(unified_err.to_string(), "process error");
-    let source = unified_err.source().expect("process error source").to_string();
+    let source = unified_err
+        .source()
+        .expect("process error source")
+        .to_string();
     assert!(
         source.contains("`threshold` must be finite"),
         "Expected the parameter and reason in source, got: {}",

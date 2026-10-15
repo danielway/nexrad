@@ -58,7 +58,9 @@ fn test_model_error_conversion() {
 #[test]
 fn test_decode_error_conversion() {
     // Create a decode error
-    let decode_err = nexrad_decode::result::Error::MessageMissingDate;
+    let decode_err = nexrad_decode::result::Error::MessageMissingDate {
+        message_type: nexrad_decode::MessageType::RdaDigitalRadarDataGenericFormat,
+    };
 
     // Convert to unified error
     let unified_err: nexrad::Error = decode_err.into();
@@ -82,8 +84,11 @@ fn test_decode_error_conversion() {
 #[cfg(feature = "decode")]
 #[test]
 fn test_decode_error_with_string_conversion() {
-    // Create a decode error with string detail
-    let decode_err = nexrad_decode::result::Error::Decoding("invalid magic number".to_string());
+    // Create a decode error with structured detail
+    let decode_err = nexrad_decode::result::Error::UnknownDataBlockType {
+        block_type: *b"XYZ",
+        offset: 4096,
+    };
 
     // Convert to unified error
     let unified_err: nexrad::Error = decode_err.into();
@@ -96,8 +101,8 @@ fn test_decode_error_with_string_conversion() {
         err_string
     );
     assert!(
-        err_string.contains("invalid magic number"),
-        "Expected 'invalid magic number' in message, got: {}",
+        err_string.contains("XYZ") && err_string.contains("4096"),
+        "Expected 'XYZ' and '4096' in message, got: {}",
         err_string
     );
 }
@@ -131,13 +136,13 @@ fn test_data_error_conversion() {
 #[test]
 fn test_decode_error_through_data_is_flattened() {
     // A decode error wrapped by nexrad-data surfaces as Error::Decode
-    let decode_err = nexrad_decode::result::Error::UnexpectedEof;
+    let decode_err = nexrad_decode::result::Error::UnexpectedEof { offset: 0 };
     let data_err: nexrad_data::result::Error = decode_err.into();
 
     let unified_err: nexrad::Error = data_err.into();
 
     match unified_err {
-        nexrad::Error::Decode(nexrad_decode::result::Error::UnexpectedEof) => {}
+        nexrad::Error::Decode(nexrad_decode::result::Error::UnexpectedEof { offset: 0 }) => {}
         ref other => panic!("Expected Error::Decode(UnexpectedEof), got: {:?}", other),
     }
 
@@ -202,7 +207,7 @@ fn test_io_error_through_data_is_flattened() {
 #[test]
 fn test_decode_error_through_data_keeps_source() {
     // Flattening must not lose the decode error as the source of the unified error
-    let decode_err = nexrad_decode::result::Error::Decoding("test error".to_string());
+    let decode_err = nexrad_decode::result::Error::UnexpectedEof { offset: 1234 };
     let data_err: nexrad_data::result::Error = decode_err.into();
 
     let unified_err: nexrad::Error = data_err.into();
@@ -212,8 +217,8 @@ fn test_decode_error_through_data_keeps_source() {
         .expect("Expected error source to be available");
     let source_string = source.to_string();
     assert!(
-        source_string.contains("test error"),
-        "Expected 'test error' in source, got: {}",
+        source_string.contains("1234"),
+        "Expected '1234' in source, got: {}",
         source_string
     );
 }
@@ -237,7 +242,7 @@ fn test_data_specific_error_keeps_source() {
 #[test]
 fn test_error_source_chain() {
     // Create a decode error
-    let decode_err = nexrad_decode::result::Error::Decoding("test error".to_string());
+    let decode_err = nexrad_decode::result::Error::UnexpectedEof { offset: 1234 };
 
     // Convert to unified error
     let unified_err: nexrad::Error = decode_err.into();
@@ -249,8 +254,8 @@ fn test_error_source_chain() {
     // Verify the source error message
     let source_string = source.unwrap().to_string();
     assert!(
-        source_string.contains("test error"),
-        "Expected 'test error' in source, got: {}",
+        source_string.contains("1234"),
+        "Expected '1234' in source, got: {}",
         source_string
     );
 }
@@ -311,7 +316,7 @@ fn test_all_features_enabled() {
     };
     let _: nexrad::Error = model_err.into();
 
-    let decode_err = nexrad_decode::result::Error::UnexpectedEof;
+    let decode_err = nexrad_decode::result::Error::UnexpectedEof { offset: 0 };
     let _: nexrad::Error = decode_err.into();
 
     let data_err = nexrad_data::result::Error::CompressedData;
@@ -334,7 +339,7 @@ fn test_all_features_including_render_and_process() {
     };
     let _: nexrad::Error = model_err.into();
 
-    let decode_err = nexrad_decode::result::Error::UnexpectedEof;
+    let decode_err = nexrad_decode::result::Error::UnexpectedEof { offset: 0 };
     let _: nexrad::Error = decode_err.into();
 
     let data_err = nexrad_data::result::Error::CompressedData;
@@ -392,7 +397,7 @@ fn test_result_type_alias() {
 fn test_question_mark_operator() {
     // Verify that the ? operator works with automatic conversion
     fn inner() -> nexrad_decode::result::Result<()> {
-        Err(nexrad_decode::result::Error::UnexpectedEof)
+        Err(nexrad_decode::result::Error::UnexpectedEof { offset: 0 })
     }
 
     fn outer() -> nexrad::Result<()> {

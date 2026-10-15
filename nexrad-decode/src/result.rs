@@ -1,55 +1,72 @@
 //! Result and error types for NEXRAD decoding operations.
 
+use crate::messages::MessageType;
 use thiserror::Error as ThisError;
 
 /// A specialized Result type for NEXRAD decoding operations.
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Errors that can occur during NEXRAD data decoding.
-#[derive(ThisError, Debug)]
+///
+/// Offsets are byte offsets into the slice passed to the decoding entry point.
+#[derive(ThisError, Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum Error {
-    /// Malformed input that does not match a more specific variant.
-    ///
-    /// This is the catch-all for decoding failures; the message describes
-    /// what was wrong with the input.
-    #[error("file decoding error: {0}")]
-    Decoding(String),
-    /// A message is missing required collection date/time fields.
-    #[error("message is missing collection date/time")]
-    MessageMissingDate,
-    /// Reached end of input data unexpectedly during parsing.
-    #[error("unexpected end of file to input data")]
-    UnexpectedEof,
-    /// Message length field is invalid for the message type.
-    #[error("invalid message length for type {message_type}: cannot rewind {delta} bytes")]
-    InvalidMessageLength {
-        /// The message type being parsed.
-        message_type: String,
-        /// The invalid byte offset.
-        delta: i32,
+    /// A radar data message lacks the collection date/time needed to convert it to a model
+    /// radial.
+    #[error("message type {} is missing its collection date/time", .message_type.number())]
+    MessageMissingDate {
+        /// The type of the message without a date/time.
+        message_type: MessageType,
     },
-    /// A data block pointer points outside valid message bounds.
-    #[error("invalid data block pointer: cannot rewind {bytes} bytes at position {position}")]
+    /// The input ended inside a structure being decoded.
+    #[error("unexpected end of input reading the structure at offset {offset}")]
+    UnexpectedEof {
+        /// Offset of the structure that extends past the end of the input.
+        offset: usize,
+    },
+    /// A data block pointer points before the end of the data already read.
+    #[error("invalid data block pointer: cannot rewind {bytes} bytes at offset {position}")]
     InvalidDataBlockPointer {
         /// Number of bytes the pointer tried to rewind.
         bytes: usize,
-        /// Current position in the data.
+        /// Offset of the read position when the pointer was followed.
         position: usize,
     },
-    /// Encountered an unrecognized data block type identifier.
-    #[error("unknown data block type: {block_type}")]
+    /// A digital radar data message contains a data block with an unrecognized name.
+    #[error(
+        "unknown data block name {:?} at offset {offset}",
+        String::from_utf8_lossy(.block_type)
+    )]
     UnknownDataBlockType {
-        /// The unrecognized block type identifier.
-        block_type: String,
+        /// The unrecognized data block name.
+        block_type: [u8; 3],
+        /// Offset of the data block's identifier.
+        offset: usize,
     },
-    /// A data structure spans across segment boundaries.
-    #[error("data structure spans segment boundary at position {position}")]
+    /// A data structure spans a segment boundary.
+    #[error("data structure spans segment boundary at offset {position}")]
     DataSpansSegmentBoundary {
-        /// Position where the boundary was crossed.
+        /// Offset of the structure that crosses the boundary.
         position: usize,
+    },
+    /// A segment of a multi-segment message is missing or out of order.
+    #[error(
+        "expected segment {expected_segment} of {segment_count} of message type {} at offset {offset}",
+        .message_type.number()
+    )]
+    SegmentOutOfSequence {
+        /// The type of the multi-segment message being assembled.
+        message_type: MessageType,
+        /// The segment number that was expected next.
+        expected_segment: u16,
+        /// The number of segments the message declares.
+        segment_count: u16,
+        /// Offset where the expected segment should begin.
+        offset: usize,
     },
     /// No volume coverage pattern message was found while assembling a scan.
+    #[cfg(feature = "model")]
     #[error("no volume coverage pattern message found")]
     MissingCoveragePattern,
     /// Decoded values were rejected by a [`nexrad_model`] constructor, such as moment data

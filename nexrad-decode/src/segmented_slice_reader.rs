@@ -14,6 +14,8 @@ use zerocopy::FromBytes;
 pub struct SegmentedSliceReader<'a, 'seg> {
     /// The segment payloads (body data, excluding headers).
     segments: &'seg [&'a [u8]],
+    /// The offset of each segment payload in the decoder's input, for error reporting.
+    offsets: &'seg [usize],
     /// Current segment index.
     current_segment: usize,
     /// Position within current segment.
@@ -21,10 +23,13 @@ pub struct SegmentedSliceReader<'a, 'seg> {
 }
 
 impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
-    /// Creates a new SegmentedSliceReader from a slice of segment payloads.
-    pub fn new(segments: &'seg [&'a [u8]]) -> Self {
+    /// Creates a new SegmentedSliceReader from a slice of segment payloads and the offset of
+    /// each payload in the decoder's input.
+    pub fn new(segments: &'seg [&'a [u8]], offsets: &'seg [usize]) -> Self {
+        debug_assert_eq!(segments.len(), offsets.len());
         Self {
             segments,
+            offsets,
             current_segment: 0,
             position_in_segment: 0,
         }
@@ -48,6 +53,17 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
             remaining += self.segments[i].len();
         }
         remaining
+    }
+
+    /// Returns the offset of the read position in the decoder's input.
+    fn input_offset(&self) -> usize {
+        match self.offsets.get(self.current_segment) {
+            Some(offset) => offset + self.position_in_segment,
+            None => match (self.offsets.last(), self.segments.last()) {
+                (Some(offset), Some(segment)) => offset + segment.len(),
+                _ => 0,
+            },
+        }
     }
 
     /// Returns the remaining unread bytes in the current segment.
@@ -81,7 +97,9 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
     /// fit in a single segment.
     pub fn read_bytes_owned(&mut self, count: usize) -> Result<Vec<u8>> {
         if self.remaining_total() < count {
-            return Err(Error::UnexpectedEof);
+            return Err(Error::UnexpectedEof {
+                offset: self.input_offset(),
+            });
         }
 
         let mut data = Vec::with_capacity(count);
@@ -129,12 +147,16 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
                 // Skip padding in current segment and move to next
                 self.advance_to_next_segment();
             } else {
-                return Err(Error::UnexpectedEof);
+                return Err(Error::UnexpectedEof {
+                    offset: self.input_offset(),
+                });
             }
         }
 
+        let offset = self.input_offset();
         let remaining = self.current_remaining();
-        let (v, rest) = T::ref_from_prefix(remaining).map_err(|_e| Error::UnexpectedEof)?;
+        let (v, rest) =
+            T::ref_from_prefix(remaining).map_err(|_e| Error::UnexpectedEof { offset })?;
         self.advance(remaining.len() - rest.len());
         Ok(v)
     }
@@ -156,13 +178,16 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
                 // Skip padding in current segment and move to next
                 self.advance_to_next_segment();
             } else {
-                return Err(Error::UnexpectedEof);
+                return Err(Error::UnexpectedEof {
+                    offset: self.input_offset(),
+                });
             }
         }
 
+        let offset = self.input_offset();
         let remaining = self.current_remaining();
         let (slice, rest) = <[T]>::ref_from_prefix_with_elems(remaining, count)
-            .map_err(|_e| Error::UnexpectedEof)?;
+            .map_err(|_e| Error::UnexpectedEof { offset })?;
         self.advance(remaining.len() - rest.len());
         Ok(slice)
     }
@@ -188,10 +213,12 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
             // Check if this is a boundary issue or just EOF
             if self.remaining_total() >= count {
                 return Err(Error::DataSpansSegmentBoundary {
-                    position: self.position(),
+                    position: self.input_offset(),
                 });
             } else {
-                return Err(Error::UnexpectedEof);
+                return Err(Error::UnexpectedEof {
+                    offset: self.input_offset(),
+                });
             }
         }
         let bytes = &remaining[..count];
@@ -213,7 +240,7 @@ mod tests {
     fn test_single_segment() {
         let data = [1u8, 2, 3, 4, 5, 6, 7, 8];
         let segments = [data.as_slice()];
-        let mut reader = SegmentedSliceReader::new(&segments);
+        let mut reader = SegmentedSliceReader::new(&segments, &[0]);
 
         assert_eq!(reader.position(), 0);
         assert_eq!(reader.remaining_total(), 8);
@@ -233,7 +260,7 @@ mod tests {
         let seg1 = [1u8, 2, 3, 4];
         let seg2 = [5u8, 6, 7, 8];
         let segments = [seg1.as_slice(), seg2.as_slice()];
-        let mut reader = SegmentedSliceReader::new(&segments);
+        let mut reader = SegmentedSliceReader::new(&segments, &[0, 4]);
 
         assert_eq!(reader.remaining_total(), 8);
 
@@ -255,7 +282,7 @@ mod tests {
         let seg1 = [1u8, 2, 3, 4];
         let seg2 = [5u8, 6, 7, 8];
         let segments = [seg1.as_slice(), seg2.as_slice()];
-        let mut reader = SegmentedSliceReader::new(&segments);
+        let mut reader = SegmentedSliceReader::new(&segments, &[0, 4]);
 
         reader.take_bytes(2).unwrap();
         reader.advance_to_next_segment();
@@ -272,24 +299,25 @@ mod tests {
         let seg1 = [1u8, 2];
         let seg2 = [3u8, 4];
         let segments = [seg1.as_slice(), seg2.as_slice()];
-        let mut reader = SegmentedSliceReader::new(&segments);
+        let mut reader = SegmentedSliceReader::new(&segments, &[10, 40]);
 
         // Try to read 4 bytes when only 2 are in current segment
-        let result = reader.take_bytes(4);
-        assert!(matches!(
+        reader.take_bytes(1).unwrap();
+        let result = reader.take_bytes(3);
+        assert_eq!(
             result,
-            Err(Error::DataSpansSegmentBoundary { .. })
-        ));
+            Err(Error::DataSpansSegmentBoundary { position: 11 })
+        );
     }
 
     #[test]
     fn test_eof_error() {
         let data = [1u8, 2];
         let segments = [data.as_slice()];
-        let mut reader = SegmentedSliceReader::new(&segments);
+        let mut reader = SegmentedSliceReader::new(&segments, &[28]);
 
         // Try to read more than available
         let result = reader.take_bytes(4);
-        assert!(matches!(result, Err(Error::UnexpectedEof)));
+        assert_eq!(result, Err(Error::UnexpectedEof { offset: 28 }));
     }
 }

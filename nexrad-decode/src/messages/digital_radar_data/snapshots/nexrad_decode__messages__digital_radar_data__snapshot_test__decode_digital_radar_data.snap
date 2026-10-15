@@ -70,6 +70,7 @@ Message {
                             ],
                         },
                     },
+                    offset: 100,
                     inner: VolumeDataBlock {
                         inner: Modern(
                             VolumeDataBlock {
@@ -121,6 +122,7 @@ Message {
                             ],
                         },
                     },
+                    offset: 152,
                     inner: ElevationDataBlock {
                         inner: ElevationDataBlock {
                             lrtup: 12,
@@ -142,6 +144,7 @@ Message {
                             ],
                         },
                     },
+                    offset: 164,
                     inner: RadialDataBlock {
                         inner: Modern(
                             RadialDataBlock {
@@ -170,6 +173,7 @@ Message {
                             ],
                         },
                     },
+                    offset: 192,
                     inner: GenericDataBlock {
                         header: GenericDataBlockHeader {
                             inner: GenericDataBlockHeader {
@@ -218,6 +222,7 @@ Message {
                             ],
                         },
                     },
+                    offset: 2052,
                     inner: GenericDataBlock {
                         header: GenericDataBlockHeader {
                             inner: GenericDataBlockHeader {
@@ -264,6 +269,7 @@ Message {
                             ],
                         },
                     },
+                    offset: 4464,
                     inner: GenericDataBlock {
                         header: GenericDataBlockHeader {
                             inner: GenericDataBlockHeader {
@@ -310,6 +316,7 @@ Message {
                             ],
                         },
                     },
+                    offset: 6876,
                     inner: GenericDataBlock {
                         header: GenericDataBlockHeader {
                             inner: GenericDataBlockHeader {
@@ -356,6 +363,7 @@ Message {
                             ],
                         },
                     },
+                    offset: 8096,
                     inner: GenericDataBlock {
                         header: GenericDataBlockHeader {
                             inner: GenericDataBlockHeader {

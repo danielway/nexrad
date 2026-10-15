@@ -73,7 +73,7 @@ CfmSummary {
         },
         ElevationSummary {
             segment_number: 4,
-            azimuth_count: 350,
+            azimuth_count: 360,
             first_azimuth_range_zones: [
                 (
                     1,

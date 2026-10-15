@@ -56,6 +56,16 @@ impl<'a> MessageHeaders<'a> {
     pub fn is_segmented(&self) -> bool {
         matches!(self, MessageHeaders::Multiple(_))
     }
+
+    /// Convert these headers to an owned version with `'static` lifetime.
+    pub fn into_owned(self) -> MessageHeaders<'static> {
+        match self {
+            MessageHeaders::Single(header) => MessageHeaders::Single(header.into_owned()),
+            MessageHeaders::Multiple(headers) => MessageHeaders::Multiple(
+                headers.into_iter().map(MessageHeader::into_owned).collect(),
+            ),
+        }
+    }
 }
 
 /// A decoded NEXRAD Level II message with its metadata header(s).
@@ -118,6 +128,17 @@ impl<'a> Message<'a> {
         self.contents
     }
 
+    /// Convert this message to an owned version with `'static` lifetime, copying any data
+    /// borrowed from the input.
+    pub fn into_owned(self) -> Message<'static> {
+        Message {
+            headers: self.headers.into_owned(),
+            contents: self.contents.into_owned(),
+            offset: self.offset,
+            size: self.size,
+        }
+    }
+
     /// The byte offset where this message starts in the source data.
     ///
     /// For segmented messages, this is the offset of the first segment.
@@ -139,11 +160,13 @@ impl<'a> Message<'a> {
 /// single-segment (e.g. RDA Status, VCP) and multi-segment (e.g. Clutter Filter Map).
 /// All use `SegmentedSliceReader` — for single-segment messages this is simply a
 /// one-element reader that behaves identically to a contiguous slice.
+///
+/// Returns `None` for message types this crate does not decode.
 pub(super) fn decode_fixed_segment_contents<'a>(
     reader: &mut SegmentedSliceReader<'a, '_>,
     message_type: MessageType,
-) -> Result<MessageContents<'a>> {
-    Ok(match message_type {
+) -> Result<Option<MessageContents<'a>>> {
+    Ok(Some(match message_type {
         MessageType::RdaStatusData => {
             let rda_status_message = rda_status_data::Message::parse(reader)?;
             MessageContents::RdaStatusData(Box::new(rda_status_message))
@@ -161,11 +184,11 @@ pub(super) fn decode_fixed_segment_contents<'a>(
             MessageContents::ClutterFilterMap(Box::new(clutter_filter_message))
         }
         MessageType::RdaConsoleMessage | MessageType::RpgConsoleMessage => {
-            let console_msg = console_message::Message::parse(reader)?;
+            let console_msg = console_message::Message::parse(reader, message_type)?;
             MessageContents::ConsoleMessage(Box::new(console_msg))
         }
         MessageType::RdaLoopBackTest | MessageType::RpgLoopBackTest => {
-            let loopback_msg = loopback_test::Message::parse(reader)?;
+            let loopback_msg = loopback_test::Message::parse(reader, message_type)?;
             MessageContents::LoopbackTest(Box::new(loopback_msg))
         }
         MessageType::RpgRequestForData => {
@@ -200,6 +223,6 @@ pub(super) fn decode_fixed_segment_contents<'a>(
             let legacy_msg = digital_radar_data_legacy::Message::parse(reader)?;
             MessageContents::DigitalRadarDataLegacy(Box::new(legacy_msg))
         }
-        _ => MessageContents::Other,
-    })
+        _ => return Ok(None),
+    }))
 }

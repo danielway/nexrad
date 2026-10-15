@@ -87,6 +87,7 @@ impl<'a> Message<'a> {
                 });
             }
 
+            let block_offset = reader.position();
             let block_id = reader.take_ref::<raw::DataBlockId>()?;
             let id = DataBlockId::new(block_id);
 
@@ -95,65 +96,87 @@ impl<'a> Message<'a> {
                     // VOL expanded from 44 to 52 bytes at Build 20.0 (ICD 2620002U).
                     if reader.peek_u16().is_some_and(|lrtup| lrtup <= 44) {
                         let block = reader.take_ref::<raw::VolumeDataBlockLegacy>()?;
-                        message.volume_data_block =
-                            Some(DataBlock::new(id, VolumeDataBlock::new_legacy(block)));
+                        message.volume_data_block = Some(DataBlock::new(
+                            id,
+                            block_offset,
+                            VolumeDataBlock::new_legacy(block),
+                        ));
                     } else {
                         let block = reader.take_ref::<raw::VolumeDataBlock>()?;
-                        message.volume_data_block =
-                            Some(DataBlock::new(id, VolumeDataBlock::new(block)));
+                        message.volume_data_block = Some(DataBlock::new(
+                            id,
+                            block_offset,
+                            VolumeDataBlock::new(block),
+                        ));
                     }
                 }
                 DataBlockName::Elevation => {
                     let elevation_block = reader.take_ref::<raw::ElevationDataBlock>()?;
-                    message.elevation_data_block =
-                        Some(DataBlock::new(id, ElevationDataBlock::new(elevation_block)));
+                    message.elevation_data_block = Some(DataBlock::new(
+                        id,
+                        block_offset,
+                        ElevationDataBlock::new(elevation_block),
+                    ));
                 }
                 DataBlockName::Radial => {
                     // RAD expanded from 20 to 28 bytes at Build 12.0 (ICD 2620002K).
                     if reader.peek_u16().is_some_and(|lrtup| lrtup <= 20) {
                         let block = reader.take_ref::<raw::RadialDataBlockLegacy>()?;
-                        message.radial_data_block =
-                            Some(DataBlock::new(id, RadialDataBlock::new_legacy(block)));
+                        message.radial_data_block = Some(DataBlock::new(
+                            id,
+                            block_offset,
+                            RadialDataBlock::new_legacy(block),
+                        ));
                     } else {
                         let block = reader.take_ref::<raw::RadialDataBlock>()?;
-                        message.radial_data_block =
-                            Some(DataBlock::new(id, RadialDataBlock::new(block)));
+                        message.radial_data_block = Some(DataBlock::new(
+                            id,
+                            block_offset,
+                            RadialDataBlock::new(block),
+                        ));
                     }
+                }
+                DataBlockName::Unknown(block_type) => {
+                    return Err(Error::UnknownDataBlockType {
+                        block_type,
+                        offset: block_offset,
+                    });
                 }
                 name => {
                     let generic_block = GenericDataBlock::parse(reader)?;
                     match name {
                         DataBlockName::Reflectivity => {
                             message.reflectivity_data_block =
-                                Some(DataBlock::new(id, generic_block));
+                                Some(DataBlock::new(id, block_offset, generic_block));
                         }
                         DataBlockName::Velocity => {
-                            message.velocity_data_block = Some(DataBlock::new(id, generic_block));
+                            message.velocity_data_block =
+                                Some(DataBlock::new(id, block_offset, generic_block));
                         }
                         DataBlockName::SpectrumWidth => {
                             message.spectrum_width_data_block =
-                                Some(DataBlock::new(id, generic_block));
+                                Some(DataBlock::new(id, block_offset, generic_block));
                         }
                         DataBlockName::DifferentialReflectivity => {
                             message.differential_reflectivity_data_block =
-                                Some(DataBlock::new(id, generic_block));
+                                Some(DataBlock::new(id, block_offset, generic_block));
                         }
                         DataBlockName::DifferentialPhase => {
                             message.differential_phase_data_block =
-                                Some(DataBlock::new(id, generic_block));
+                                Some(DataBlock::new(id, block_offset, generic_block));
                         }
                         DataBlockName::CorrelationCoefficient => {
                             message.correlation_coefficient_data_block =
-                                Some(DataBlock::new(id, generic_block));
+                                Some(DataBlock::new(id, block_offset, generic_block));
                         }
                         DataBlockName::ClutterFilterPower => {
                             message.clutter_filter_power_data_block =
-                                Some(DataBlock::new(id, generic_block));
+                                Some(DataBlock::new(id, block_offset, generic_block));
                         }
-                        _ => {
-                            // Unknown block type - skip for forward compatibility with newer formats
-                            log::warn!("Skipping unknown generic data block type: {:?}", block_id);
-                        }
+                        DataBlockName::Volume
+                        | DataBlockName::Elevation
+                        | DataBlockName::Radial
+                        | DataBlockName::Unknown(_) => {}
                     }
                 }
             }
@@ -323,7 +346,9 @@ impl<'a> Message<'a> {
         .collection_timestamp_millis(
             header
                 .date_time()
-                .ok_or(Error::MessageMissingDate)?
+                .ok_or(Error::MessageMissingDate {
+                    message_type: crate::messages::MessageType::RdaDigitalRadarDataGenericFormat,
+                })?
                 .timestamp_millis(),
         )
         .azimuth_spacing_degrees(header.azimuth_resolution_spacing_degrees())

@@ -277,7 +277,9 @@ impl<'a> Message<'a> {
         let radial_status: nexrad_model::data::RadialStatus = self.radial_status().into();
         let timestamp = self
             .date_time()
-            .ok_or(Error::MessageMissingDate)?
+            .ok_or(Error::MessageMissingDate {
+                message_type: crate::messages::MessageType::RdaDigitalRadarData,
+            })?
             .timestamp_millis();
         let azimuth_number = self.azimuth_number();
         let azimuth_angle = self.azimuth_angle_degrees();
@@ -418,7 +420,9 @@ impl<'a> Message<'a> {
 
         let timestamp = msg
             .date_time()
-            .ok_or(Error::MessageMissingDate)?
+            .ok_or(Error::MessageMissingDate {
+                message_type: crate::messages::MessageType::RdaDigitalRadarData,
+            })?
             .timestamp_millis();
 
         let mut builder = Radial::builder(

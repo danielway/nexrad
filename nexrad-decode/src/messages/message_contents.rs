@@ -2,8 +2,9 @@ use crate::messages::{
     clutter_censor_zones, clutter_filter_bypass_map, clutter_filter_map, console_message,
     digital_radar_data, digital_radar_data_legacy, loopback_test, performance_maintenance_data,
     rda_adaptation_data, rda_control_commands, rda_log_data, rda_prf_data, rda_status_data,
-    request_for_data, volume_coverage_pattern,
+    request_for_data, volume_coverage_pattern, MessageType,
 };
+use std::borrow::Cow;
 
 /// A decoded NEXRAD Level II message's contents.
 #[derive(Debug, Clone, PartialEq)]
@@ -72,6 +73,91 @@ pub enum MessageContents<'a> {
     /// calibration values, temperature alarm thresholds, and transmitter characteristics.
     RdaAdaptationData(Box<rda_adaptation_data::Message<'a>>),
 
-    /// Message type not recognized or not yet implemented.
-    Other,
+    /// A message of a type this crate does not decode, such as a reserved type or a type not
+    /// carried in Archive II data, with its undecoded payload.
+    Other {
+        /// The message's type, taken from its header.
+        message_type: MessageType,
+        /// The message's payload following the message header. For a multi-segment message,
+        /// this is each segment's payload concatenated in segment order.
+        data: Cow<'a, [u8]>,
+    },
+}
+
+impl MessageContents<'_> {
+    /// The type of the message these contents were decoded from.
+    pub fn message_type(&self) -> MessageType {
+        match self {
+            MessageContents::RdaStatusData(_) => MessageType::RdaStatusData,
+            MessageContents::PerformanceMaintenanceData(_) => {
+                MessageType::RdaPerformanceMaintenanceData
+            }
+            MessageContents::DigitalRadarDataLegacy(_) => MessageType::RdaDigitalRadarData,
+            MessageContents::DigitalRadarData(_) => MessageType::RdaDigitalRadarDataGenericFormat,
+            MessageContents::ClutterFilterMap(_) => MessageType::RdaClutterFilterMap,
+            MessageContents::VolumeCoveragePattern(_) => MessageType::RdaVolumeCoveragePattern,
+            MessageContents::ConsoleMessage(message) => message.message_type(),
+            MessageContents::LoopbackTest(message) => message.message_type(),
+            MessageContents::RequestForData(_) => MessageType::RpgRequestForData,
+            MessageContents::RdaControlCommands(_) => MessageType::RdaControlCommands,
+            MessageContents::ClutterCensorZones(_) => MessageType::RpgClutterCensorZones,
+            MessageContents::ClutterFilterBypassMap(_) => MessageType::RdaClutterFilterBypassMap,
+            MessageContents::RdaPrfData(_) => MessageType::RdaPrfData,
+            MessageContents::RdaLogData(_) => MessageType::RdaLogData,
+            MessageContents::RdaAdaptationData(_) => MessageType::RdaAdaptationData,
+            MessageContents::Other { message_type, .. } => *message_type,
+        }
+    }
+
+    /// Convert these contents to an owned version with `'static` lifetime, copying any data
+    /// borrowed from the input.
+    pub fn into_owned(self) -> MessageContents<'static> {
+        match self {
+            MessageContents::RdaStatusData(m) => {
+                MessageContents::RdaStatusData(Box::new(m.into_owned()))
+            }
+            MessageContents::PerformanceMaintenanceData(m) => {
+                MessageContents::PerformanceMaintenanceData(Box::new(m.into_owned()))
+            }
+            MessageContents::DigitalRadarDataLegacy(m) => {
+                MessageContents::DigitalRadarDataLegacy(Box::new(m.into_owned()))
+            }
+            MessageContents::DigitalRadarData(m) => {
+                MessageContents::DigitalRadarData(Box::new(m.into_owned()))
+            }
+            MessageContents::ClutterFilterMap(m) => {
+                MessageContents::ClutterFilterMap(Box::new(m.into_owned()))
+            }
+            MessageContents::VolumeCoveragePattern(m) => {
+                MessageContents::VolumeCoveragePattern(Box::new(m.into_owned()))
+            }
+            MessageContents::ConsoleMessage(m) => {
+                MessageContents::ConsoleMessage(Box::new(m.into_owned()))
+            }
+            MessageContents::LoopbackTest(m) => {
+                MessageContents::LoopbackTest(Box::new(m.into_owned()))
+            }
+            MessageContents::RequestForData(m) => {
+                MessageContents::RequestForData(Box::new(m.into_owned()))
+            }
+            MessageContents::RdaControlCommands(m) => {
+                MessageContents::RdaControlCommands(Box::new(m.into_owned()))
+            }
+            MessageContents::ClutterCensorZones(m) => {
+                MessageContents::ClutterCensorZones(Box::new(m.into_owned()))
+            }
+            MessageContents::ClutterFilterBypassMap(m) => {
+                MessageContents::ClutterFilterBypassMap(Box::new(m.into_owned()))
+            }
+            MessageContents::RdaPrfData(m) => MessageContents::RdaPrfData(Box::new(m.into_owned())),
+            MessageContents::RdaLogData(m) => MessageContents::RdaLogData(Box::new(m.into_owned())),
+            MessageContents::RdaAdaptationData(m) => {
+                MessageContents::RdaAdaptationData(Box::new(m.into_owned()))
+            }
+            MessageContents::Other { message_type, data } => MessageContents::Other {
+                message_type,
+                data: Cow::Owned(data.into_owned()),
+            },
+        }
+    }
 }

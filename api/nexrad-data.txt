@@ -1,12 +1,15 @@
 pub mod nexrad_data
 pub mod nexrad_data::aws
 pub mod nexrad_data::aws::archive
-pub struct nexrad_data::aws::archive::Identifier(_)
+pub struct nexrad_data::aws::archive::Identifier
 impl nexrad_data::aws::archive::Identifier
-pub fn nexrad_data::aws::archive::Identifier::date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
+pub fn nexrad_data::aws::archive::Identifier::date_time(&self) -> chrono::datetime::DateTime<chrono::offset::utc::Utc>
+pub fn nexrad_data::aws::archive::Identifier::is_gzip(&self) -> bool
+pub fn nexrad_data::aws::archive::Identifier::is_metadata(&self) -> bool
 pub fn nexrad_data::aws::archive::Identifier::name(&self) -> &str
-pub fn nexrad_data::aws::archive::Identifier::new(alloc::string::String) -> Self
-pub fn nexrad_data::aws::archive::Identifier::site(&self) -> core::option::Option<&str>
+pub fn nexrad_data::aws::archive::Identifier::parse(&str) -> nexrad_data::result::Result<Self>
+pub fn nexrad_data::aws::archive::Identifier::site(&self) -> &str
+pub fn nexrad_data::aws::archive::Identifier::version(&self) -> core::option::Option<&str>
 impl core::clone::Clone for nexrad_data::aws::archive::Identifier
 pub fn nexrad_data::aws::archive::Identifier::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_data::aws::archive::Identifier
@@ -16,9 +19,15 @@ impl core::cmp::PartialEq for nexrad_data::aws::archive::Identifier
 pub fn nexrad_data::aws::archive::Identifier::eq(&self, &Self) -> bool
 impl core::cmp::PartialOrd for nexrad_data::aws::archive::Identifier
 pub fn nexrad_data::aws::archive::Identifier::partial_cmp(&self, &Self) -> core::option::Option<core::cmp::Ordering>
+impl core::fmt::Debug for nexrad_data::aws::archive::Identifier
+pub fn nexrad_data::aws::archive::Identifier::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_data::aws::archive::Identifier
+pub fn nexrad_data::aws::archive::Identifier::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for nexrad_data::aws::archive::Identifier
-pub fn nexrad_data::aws::archive::Identifier::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::StructuralPartialEq for nexrad_data::aws::archive::Identifier
+pub fn nexrad_data::aws::archive::Identifier::hash<H: core::hash::Hasher>(&self, &mut H)
+impl core::str::traits::FromStr for nexrad_data::aws::archive::Identifier
+pub type nexrad_data::aws::archive::Identifier::Err = nexrad_data::result::Error
+pub fn nexrad_data::aws::archive::Identifier::from_str(&str) -> nexrad_data::result::Result<Self>
 impl core::marker::Freeze for nexrad_data::aws::archive::Identifier
 impl core::marker::Send for nexrad_data::aws::archive::Identifier
 impl core::marker::Sync for nexrad_data::aws::archive::Identifier
@@ -34,8 +43,14 @@ pub fn nexrad_data::aws::archive::ListedFile::size(&self) -> u64
 impl core::clone::Clone for nexrad_data::aws::archive::ListedFile
 pub fn nexrad_data::aws::archive::ListedFile::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_data::aws::archive::ListedFile
+impl core::cmp::Ord for nexrad_data::aws::archive::ListedFile
+pub fn nexrad_data::aws::archive::ListedFile::cmp(&self, &Self) -> core::cmp::Ordering
 impl core::cmp::PartialEq for nexrad_data::aws::archive::ListedFile
 pub fn nexrad_data::aws::archive::ListedFile::eq(&self, &Self) -> bool
+impl core::cmp::PartialOrd for nexrad_data::aws::archive::ListedFile
+pub fn nexrad_data::aws::archive::ListedFile::partial_cmp(&self, &Self) -> core::option::Option<core::cmp::Ordering>
+impl core::fmt::Debug for nexrad_data::aws::archive::ListedFile
+pub fn nexrad_data::aws::archive::ListedFile::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for nexrad_data::aws::archive::ListedFile
 pub fn nexrad_data::aws::archive::ListedFile::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::StructuralPartialEq for nexrad_data::aws::archive::ListedFile
@@ -246,7 +261,7 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_data::aws::realtime::RetryP
 pub struct nexrad_data::aws::realtime::VolumeIndex(_)
 impl nexrad_data::aws::realtime::VolumeIndex
 pub fn nexrad_data::aws::realtime::VolumeIndex::as_number(&self) -> usize
-pub fn nexrad_data::aws::realtime::VolumeIndex::new(usize) -> Self
+pub fn nexrad_data::aws::realtime::VolumeIndex::new(usize) -> nexrad_data::result::Result<Self>
 pub fn nexrad_data::aws::realtime::VolumeIndex::next(&self) -> Self
 impl core::clone::Clone for nexrad_data::aws::realtime::VolumeIndex
 pub fn nexrad_data::aws::realtime::VolumeIndex::clone(&self) -> Self
@@ -275,15 +290,21 @@ pub fn nexrad_data::aws::realtime::chunk_stream<S, F>(nexrad_data::aws::realtime
 pub async fn nexrad_data::aws::realtime::download_chunk(&str, &nexrad_data::aws::realtime::ChunkIdentifier) -> nexrad_data::result::Result<nexrad_data::aws::realtime::DownloadedChunk>
 pub async fn nexrad_data::aws::realtime::get_latest_volume(&str) -> nexrad_data::result::Result<nexrad_data::aws::realtime::LatestVolumeResult>
 pub async fn nexrad_data::aws::realtime::get_latest_volume_from_hint(&str, nexrad_data::aws::realtime::VolumeIndex) -> nexrad_data::result::Result<nexrad_data::aws::realtime::LatestVolumeResult>
-pub async fn nexrad_data::aws::realtime::list_chunks_in_volume(&str, nexrad_data::aws::realtime::VolumeIndex, usize) -> nexrad_data::result::Result<alloc::vec::Vec<nexrad_data::aws::realtime::ChunkIdentifier>>
+pub async fn nexrad_data::aws::realtime::list_chunks_in_volume(&str, nexrad_data::aws::realtime::VolumeIndex) -> nexrad_data::result::Result<alloc::vec::Vec<nexrad_data::aws::realtime::ChunkIdentifier>>
 pub mod nexrad_data::result
 #[non_exhaustive] pub enum nexrad_data::result::AwsError
-pub nexrad_data::result::AwsError::DateTime(alloc::string::String)
 pub nexrad_data::result::AwsError::ExpectedChunkNotFound
 pub nexrad_data::result::AwsError::FailedToDetermineNextChunk
-pub nexrad_data::result::AwsError::InvalidSiteIdentifier(alloc::string::String)
+pub nexrad_data::result::AwsError::HttpClient(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
+pub nexrad_data::result::AwsError::InvalidIdentifier
+pub nexrad_data::result::AwsError::InvalidIdentifier::name: alloc::string::String
+pub nexrad_data::result::AwsError::InvalidIdentifier::reason: &'static str
+pub nexrad_data::result::AwsError::InvalidVolumeIndex
+pub nexrad_data::result::AwsError::InvalidVolumeIndex::index: usize
 pub nexrad_data::result::AwsError::LatestVolumeNotFound
-pub nexrad_data::result::AwsError::S3GetObject(core::option::Option<alloc::string::String>)
+pub nexrad_data::result::AwsError::S3GetObject
+pub nexrad_data::result::AwsError::S3GetObject::body: core::option::Option<alloc::string::String>
+pub nexrad_data::result::AwsError::S3GetObject::status: u16
 pub nexrad_data::result::AwsError::S3GetObjectRequest(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
 pub nexrad_data::result::AwsError::S3ListObjects(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
 pub nexrad_data::result::AwsError::S3ListObjectsDecoding
@@ -428,12 +449,18 @@ impl<'a> core::marker::UnsafeUnpin for nexrad_data::volume::Record<'a>
 impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_data::volume::Record<'a>
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_data::volume::Record<'a>
 #[non_exhaustive] pub enum nexrad_data::AwsError
-pub nexrad_data::AwsError::DateTime(alloc::string::String)
 pub nexrad_data::AwsError::ExpectedChunkNotFound
 pub nexrad_data::AwsError::FailedToDetermineNextChunk
-pub nexrad_data::AwsError::InvalidSiteIdentifier(alloc::string::String)
+pub nexrad_data::AwsError::HttpClient(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
+pub nexrad_data::AwsError::InvalidIdentifier
+pub nexrad_data::AwsError::InvalidIdentifier::name: alloc::string::String
+pub nexrad_data::AwsError::InvalidIdentifier::reason: &'static str
+pub nexrad_data::AwsError::InvalidVolumeIndex
+pub nexrad_data::AwsError::InvalidVolumeIndex::index: usize
 pub nexrad_data::AwsError::LatestVolumeNotFound
-pub nexrad_data::AwsError::S3GetObject(core::option::Option<alloc::string::String>)
+pub nexrad_data::AwsError::S3GetObject
+pub nexrad_data::AwsError::S3GetObject::body: core::option::Option<alloc::string::String>
+pub nexrad_data::AwsError::S3GetObject::status: u16
 pub nexrad_data::AwsError::S3GetObjectRequest(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
 pub nexrad_data::AwsError::S3ListObjects(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
 pub nexrad_data::AwsError::S3ListObjectsDecoding

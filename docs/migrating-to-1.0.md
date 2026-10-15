@@ -400,7 +400,9 @@ The renames you are most likely to hit:
 | `rda_status_data::RDAStatus`, `RDABuildNumber`, `RMSControlStatus` | `RdaStatus`, `RdaBuildNumber`, `RmsControlStatus` | #160 |
 | `rda_status_data::Message::raw_<stem>()` | `<stem>_raw()` (`raw_rda_build_number()` → `build_number_raw()`) | #173 |
 | `rda_status_data::Message::volume_coverage_pattern() -> Option<VolumeCoveragePatternNumber>` | `vcp_number() -> Option<VcpSelection>`; `number()` is a `VcpNumber`, `source()` replaces `local()`/`remote()` | #163, #191 |
-| `volume_coverage_pattern::ElevationDataBlock::elevation_angle()` | `elevation_angle_degrees()` | #173 |
+| `volume_coverage_pattern::ElevationDataBlock::elevation_angle() -> f64`, `azimuth_rate()` | `elevation_angle_degrees() -> f32`, `azimuth_rate_degrees_per_second() -> f64` | #173, #191 |
+| `volume_coverage_pattern::WaveformType::{CS, CDW, CDWO, B, SPP}` | `ContiguousSurveillance`, `ContiguousDopplerWithAmbiguityResolution`, `ContiguousDopplerWithoutAmbiguityResolution`, `Batch`, `StaggeredPulsePair` | #160 |
+| `volume_coverage_pattern::ChannelConfiguration::SZ2Phase`, `UnknownPhase`; `WaveformType::Unknown` | `Sz2Phase`, `Unknown(u8)`; `Unknown(u8)` (match `Unknown(_)`) | #160, #191 |
 | `summarize` module | Removed; iterate `decode_messages(..)` and match on `message.contents()` | #168 |
 | `MessageContents::Other` | `MessageContents::Other { message_type, data }`; match with `Other { .. }` | #190 |
 | `block.volume_coverage_pattern()` on a `DataBlock` (through `Deref`) | `block.inner().vcp_number()` | #190, #191 |

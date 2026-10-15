@@ -82,6 +82,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Color::to_rgba8` clamps components to `0.0..=1.0` and rounds to the nearest byte instead of truncating. (#194)
 - The `image` dependency enables only its `png` feature; `save` and `write_to` support other formats once the consumer
   enables the matching feature on its own `image` dependency. (#194)
+- `Error::Image`'s `Display` text is `image error`, without the wrapped `image::ImageError`'s message; that error is
+  its `source()`, so reporters that walk the source chain print it once. (#NNN)
 
 ### Removed
 

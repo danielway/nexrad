@@ -82,6 +82,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `derived::VerticalCrossSection::compute` and `detection::StormCellDetector::detect` require every input field to
   hold `Product::Reflectivity`, returning `Error::UnexpectedProduct` otherwise. (#193)
 - `detection::StormCell::bounds()` returns a `nexrad_model::geo::GeoExtent` by value. (#193)
+- `Error::Model`'s `Display` text is `model error`, without the wrapped model error's message; the model error is its
+  `source()`, so reporters that walk the source chain print it once. (#NNN)
 
 ### Removed
 

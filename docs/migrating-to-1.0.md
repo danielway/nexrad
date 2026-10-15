@@ -64,7 +64,8 @@ incorrect: they used items that entered the prelude in 1.80, and their dependenc
 
 The `nexrad` crate is a facade. It re-exports the five sub-crates as `nexrad::model`, `nexrad::decode`, `nexrad::data`,
 `nexrad::process` and `nexrad::render`, and adds the I/O entry points `load`, `load_file`, `download`,
-`download_latest`, `download_at`, `list_scans` and `stream` plus a unified `nexrad::Error`.
+`download_latest`, `download_at`, `list_scans`, `stream`, `stream_with`, `stream_scans` and `stream_scans_with` plus a
+unified `nexrad::Error`.
 
 - **If you use the facade**, read the facade section for your baseline, then the sections of the sub-crates whose types
   you touch. Most facade users touch `nexrad::model` (scans, sweeps, radials) and often `nexrad::render`.
@@ -341,7 +342,8 @@ nexrad-decode = { version = "1.0", default-features = false, features = ["model"
 - New variant `Error::MissingCoveragePattern`, returned by `ScanBuilder::build` when no type 5 message was seen (#169).
 - New variant `Error::Model(nexrad_model::Error)` (feature `model`), returned when decoded values fail a model
   constructor's validation: moment data whose gate count does not match its encoded data, a radial with an out-of-range
-  azimuth, or a site with an invalid identifier or location (#185).
+  azimuth, or a site with an invalid identifier or location (#185). Its `Display` text is `decoded data is invalid for
+  the model`; the model error's message comes from its `source()` (#NNN).
 - Variants carry structured detail, with offsets into the slice you passed to the decoder (#190):
 
   | 1.0.0-rc.3 | 1.0 |
@@ -709,7 +711,8 @@ are exposed through `ChunkIterator`:
 `nexrad_process::Error` is `#[non_exhaustive]` and derives `Clone` and `PartialEq`. Invalid parameters are now
 reported by the constructors, so `Error::InvalidParameter` comes from `new` rather than from `process`. The new
 `Error::Model(nexrad_model::Error)` reports an output the model rejects, such as a `CompositeReflectivity::compute`
-extent outside valid latitudes and longitudes (#185).
+extent outside valid latitudes and longitudes (#185). Its `Display` text is `model error`; the model error's message
+comes from its `source()` (#NNN).
 
 The variants carry structured data instead of a `String` (#193):
 
@@ -795,7 +798,7 @@ let section = VerticalCrossSection::builder(200.0)
 | 1.0.0-rc.4 | 1.0 | PR |
 |---|---|---|
 | `Error::NoRadials` | `Error::EmptyField`, also returned for Cartesian or vertical fields with no rows or columns | #174 |
-| `Error::ImageSave(String)` | `Error::Image(image::ImageError)`; `source()` returns it | #174 |
+| `Error::ImageSave(String)` | `Error::Image(image::ImageError)`; `source()` returns it, and `Display` is `image error` without its message | #174, #NNN |
 | `Error::ProductNotFound` | Removed (only `render_radials` produced it) | #174 |
 | `Error::InvalidDimensions` | Unchanged; also returned for a zero width or height | #174 |
 | — | `Error::InvalidRange { min, max }` and `Error::InvalidTableSize { size }` from `ColorLookupTable::new` and an invalid `RenderOptions::with_value_range`; `Error::InvalidExtent` and `Error::MissingCoordinateSystem` from `render_sweep` with an extent | #194 |
@@ -925,10 +928,12 @@ match nexrad::load_file(path) {
 | `Error::Data(data::Error::Model(e))` | `Error::Model(e)` | #176 |
 | `Error::Data(data::Error::Io(e))` | `Error::Io(e)` | #176 |
 | `Error::NoDataAvailable { date: String, .. }` | `date: chrono::NaiveDate`, and the variant exists only with `aws` | #176 |
+| `Error::NoDataAvailable` from `download_at` | `Error::NoScanAt { site, datetime }` (feature `aws`) when no volume overlaps the datetime | #NNN |
 | `Error::MissingSiteMetadata` | Removed (only `coordinate_system_required` produced it) | #172 |
 
-`Display` text changes with the flattening: `data error: error decoding NEXRAD data` becomes
-`decode error: <decode message>`, and so on. Items from `stream` are flattened the same way.
+`Display` text changes with the flattening, and wrapping variants name only the layer: `data error: error decoding
+NEXRAD data` becomes `decode error`, and the decode error's message comes from the variant's `source()` (#176, #NNN).
+Walk the source chain to print the whole cause. Items from `stream` and `stream_scans` are flattened the same way.
 
 #### Removed and renamed items
 
@@ -943,8 +948,15 @@ match nexrad::load_file(path) {
 | `site(id)` | `nexrad::model::meta::registry::site_by_id(id)` | #172 |
 | `nearest_site(lat: f32, lon: f32)` | `nexrad::model::meta::registry::nearest_site(lat: f64, lon: f64)` | #164, #172 |
 | `download(identifier)` | `download(&identifier)` | #176 |
+| `load(&data)` | `load(data)`, taking the `Vec<u8>` by value | #NNN |
+| `download_latest(site, date)` | `download_latest(site)` for the newest archived volume; for the last volume of a date, `list_scans(site, date)` and `download` the last identifier | #NNN |
+| `download_at(site, datetime)` returning `Error::NoDataAvailable` | Returns `Error::NoScanAt { site, datetime }` when no volume started within 15 minutes before `datetime`; searches the previous UTC date when `datetime` precedes the date's first volume | #NNN |
+| `Error::Model`, `Decode`, `Data`, `Render`, `Process`, `Io` `Display` (`decode error: <message>`) | The layer name alone (`decode error`); the message comes from `source()` | #NNN |
 | `stream(site)` | `stream(site, \|d\| tokio::time::sleep(d))` | #161 |
+| (a `PollConfig` with `nexrad_data` directly) | `stream_with(config, sleep)` | #NNN |
+| (assembling chunks into scans yourself) | `stream_scans(site, sleep)`, `stream_scans_with(config, sleep)` | #NNN |
 | (your own `chrono` dependency) | `nexrad::chrono` (feature `chrono`, implied by `aws`) | #176 |
+| (your own `futures-util` dependency for `StreamExt`) | `nexrad::futures_util` (feature `aws`) | #NNN |
 
 ### Serialized data
 
@@ -1025,7 +1037,7 @@ Feature flags:
 
 | 0.0.3 item | 1.0 item |
 |---|---|
-| `decode::decode_file(&Vec<u8>) -> Result<model::DataFile>` | `nexrad::load(&[u8]) -> Result<Scan>` (decompresses as needed), or `nexrad_decode::messages::decode_messages(&[u8])` for decompressed message bytes |
+| `decode::decode_file(&Vec<u8>) -> Result<model::DataFile>` | `nexrad::load(Vec<u8>) -> Result<Scan>` (decompresses as needed), or `nexrad_decode::messages::decode_messages(&[u8])` for decompressed message bytes |
 | `decompress::decompress_file(&[u8]) -> Result<Vec<u8>>` | Not needed with `load`/`File::scan`; per record, `nexrad_data::volume::File::new(bytes).records()?` then `Record::decompress()` |
 | `file::is_compressed(&[u8])` | `nexrad_data::volume::Record::compressed()` per LDM record. (`File::compressed()` reports whole-file gzip compression, which 0.0.3 did not handle.) |
 | `download::list_files(&str, &NaiveDate) -> Result<Vec<FileMetadata>>` | `nexrad::list_scans(&str, NaiveDate) -> Result<Vec<Identifier>>` or `nexrad_data::aws::archive::list_files(&str, NaiveDate)` |
@@ -1129,7 +1141,7 @@ after the renames listed in the [release-candidate section](#nexrad-decode-from-
   and builds for `wasm32`.
 - **Real-time data is a stream.** The channel-based `poll_chunks` became `chunk_stream(config, sleep)`, a `Stream` of
   `DownloadedChunk`s with retry policies, and `assemble_volume` turns a volume's chunks into a `Scan`. The facade's
-  `nexrad::stream(site, sleep)` wraps it.
+  `nexrad::stream(site, sleep)` wraps it, and `nexrad::stream_scans(site, sleep)` yields the assembled scans.
 
 ## Worked examples
 
@@ -1345,11 +1357,11 @@ async fn main() -> nexrad::Result<()> {
 // let stream = nexrad_data::aws::realtime::chunk_stream(PollConfig::new("KDMX"));
 ```
 
-**1.0** (`nexrad` with `aws`; add `tokio` and `futures-util` to your own dependencies)
+**1.0** (`nexrad` with `aws`; add `tokio` to your own dependencies)
 
 ```rust
-use futures_util::StreamExt;
 use nexrad::chrono::NaiveDate;
+use nexrad::futures_util::StreamExt;
 
 #[tokio::main]
 async fn main() -> nexrad::Result<()> {
@@ -1361,7 +1373,7 @@ async fn main() -> nexrad::Result<()> {
         let scan = nexrad::download(id).await?; // by reference, no clone
         println!("{} sweeps", scan.sweeps().len());
     }
-    // Or in one call: nexrad::download_latest("KDMX", date).await?
+    // The newest archived volume, whatever the date: nexrad::download_latest("KDMX").await?
 
     // Real-time: pass the runtime's sleep function.
     let stream = nexrad::stream("KDMX", |d| tokio::time::sleep(d));
@@ -1370,6 +1382,7 @@ async fn main() -> nexrad::Result<()> {
         let chunk = chunk?;
         println!("{} ({} attempts)", chunk.identifier.name(), chunk.attempts);
     }
+    // Or one Scan per complete volume: nexrad::stream_scans("KDMX", |d| tokio::time::sleep(d))
     Ok(())
 }
 ```
@@ -1803,9 +1816,14 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `coordinate_system`, `coordinate_system_required` | `Scan::coordinate_system` |
 | `sites`, `site`, `nearest_site(f32, f32)` | `model::meta::registry::{sites, site_by_id, nearest_site(f64, f64)}` |
 | `download(Identifier)` | `download(&Identifier)` |
+| `load(&[u8])` | `load(Vec<u8>)` |
+| `download_latest(&str, NaiveDate)` | `download_latest(&str)`; for a given date, `list_scans` then `download` |
+| `download_at` miss: `Error::NoDataAvailable` | `Error::NoScanAt { site, datetime }`; the previous UTC date is searched too |
 | `stream(&str)` | `stream(&str, S) where S: Fn(Duration) -> F, F: Future<Output = ()>` |
+| (new) | `stream_with(PollConfig, S)`, `stream_scans(&str, S)`, `stream_scans_with(PollConfig, S)`, `futures_util` re-export |
 | `Error::MissingSiteMetadata` | Removed |
 | `Error::NoDataAvailable::date: String` | `date: chrono::NaiveDate`; variant requires `aws` |
+| `Error::{Model, Decode, Data, Render, Process, Io}` `Display` `"<layer> error: <message>"` | `"<layer> error"`; the message comes from `source()` |
 | `Error` | `#[non_exhaustive]` |
 | Features `aws-polling`, `tokio` | Removed; use `aws` |
 

@@ -3,7 +3,7 @@
 //! These tests verify that errors from all sub-crates properly convert to the
 //! unified `nexrad::Error` type through the `From` trait implementations.
 
-#[cfg(feature = "decode")]
+#[cfg(feature = "model")]
 use std::error::Error as StdError;
 
 #[cfg(feature = "aws")]
@@ -40,17 +40,13 @@ fn test_model_error_conversion() {
         _ => panic!("Expected Error::Model variant"),
     }
 
-    // Verify the error message contains context
-    let err_string = unified_err.to_string();
+    // The message names the layer; the detail is in the source
+    assert_eq!(unified_err.to_string(), "model error");
+    let source = unified_err.source().expect("model error source").to_string();
     assert!(
-        err_string.contains("model error"),
-        "Expected 'model error' in message, got: {}",
-        err_string
-    );
-    assert!(
-        err_string.contains("elevation"),
-        "Expected 'elevation' in message, got: {}",
-        err_string
+        source.contains("elevation"),
+        "Expected 'elevation' in source, got: {}",
+        source
     );
 }
 
@@ -72,13 +68,7 @@ fn test_decode_error_conversion() {
         _ => panic!("Expected Error::Decode variant"),
     }
 
-    // Verify the error message contains context
-    let err_string = unified_err.to_string();
-    assert!(
-        err_string.contains("decode error"),
-        "Expected 'decode error' in message, got: {}",
-        err_string
-    );
+    assert_eq!(unified_err.to_string(), "decode error");
 }
 
 #[cfg(feature = "decode")]
@@ -93,17 +83,13 @@ fn test_decode_error_with_string_conversion() {
     // Convert to unified error
     let unified_err: nexrad::Error = decode_err.into();
 
-    // Verify the error message preserves detail
-    let err_string = unified_err.to_string();
+    // The message names the layer; the source preserves the detail
+    assert_eq!(unified_err.to_string(), "decode error");
+    let source = unified_err.source().expect("decode error source").to_string();
     assert!(
-        err_string.contains("decode error"),
-        "Expected 'decode error' in message, got: {}",
-        err_string
-    );
-    assert!(
-        err_string.contains("XYZ") && err_string.contains("4096"),
-        "Expected 'XYZ' and '4096' in message, got: {}",
-        err_string
+        source.contains("XYZ") && source.contains("4096"),
+        "Expected 'XYZ' and '4096' in source, got: {}",
+        source
     );
 }
 
@@ -123,13 +109,7 @@ fn test_data_error_conversion() {
         _ => panic!("Expected Error::Data variant"),
     }
 
-    // Verify the error message contains context
-    let err_string = unified_err.to_string();
-    assert!(
-        err_string.contains("data error"),
-        "Expected 'data error' in message, got: {}",
-        err_string
-    );
+    assert_eq!(unified_err.to_string(), "data error");
 }
 
 #[cfg(feature = "data")]
@@ -146,12 +126,7 @@ fn test_decode_error_through_data_is_flattened() {
         ref other => panic!("Expected Error::Decode(UnexpectedEof), got: {:?}", other),
     }
 
-    let err_string = unified_err.to_string();
-    assert!(
-        err_string.contains("decode error"),
-        "Expected 'decode error' in message, got: {}",
-        err_string
-    );
+    assert_eq!(unified_err.to_string(), "decode error");
 }
 
 #[cfg(feature = "data")]
@@ -195,12 +170,9 @@ fn test_io_error_through_data_is_flattened() {
         other => panic!("Expected Error::Io, got: {:?}", other),
     }
 
-    let err_string = unified_err.to_string();
-    assert!(
-        err_string.contains("I/O error") && err_string.contains("access denied"),
-        "Expected 'I/O error' and 'access denied' in message, got: {}",
-        err_string
-    );
+    assert_eq!(unified_err.to_string(), "I/O error");
+    let source = unified_err.source().expect("I/O error source").to_string();
+    assert_eq!(source, "access denied");
 }
 
 #[cfg(feature = "data")]
@@ -295,13 +267,7 @@ fn test_render_error_conversion() {
         _ => panic!("Expected Error::Render variant"),
     }
 
-    // Verify the error message contains context
-    let err_string = unified_err.to_string();
-    assert!(
-        err_string.contains("render error"),
-        "Expected 'render error' in message, got: {}",
-        err_string
-    );
+    assert_eq!(unified_err.to_string(), "render error");
 }
 
 #[cfg(all(feature = "model", feature = "decode", feature = "data"))]
@@ -371,17 +337,13 @@ fn test_process_error_conversion() {
         _ => panic!("Expected Error::Process variant"),
     }
 
-    // Verify the error message contains context
-    let err_string = unified_err.to_string();
+    // The message names the layer; the source carries the parameter and reason
+    assert_eq!(unified_err.to_string(), "process error");
+    let source = unified_err.source().expect("process error source").to_string();
     assert!(
-        err_string.contains("process error"),
-        "Expected 'process error' in message, got: {}",
-        err_string
-    );
-    assert!(
-        err_string.contains("`threshold` must be finite"),
-        "Expected the parameter and reason in message, got: {}",
-        err_string
+        source.contains("`threshold` must be finite"),
+        "Expected the parameter and reason in source, got: {}",
+        source
     );
 }
 

@@ -57,7 +57,9 @@
 //!
 //! ## Error Source Chain
 //!
-//! Each wrapping variant reports the wrapped error as its [`std::error::Error::source`]:
+//! Each wrapping variant reports the wrapped error as its [`std::error::Error::source`], and its
+//! own `Display` text names only the layer (`decode error`), so walk the source chain for the
+//! details:
 //!
 //! ```no_run
 //! # #[cfg(feature = "data")]
@@ -66,8 +68,10 @@
 //!
 //! if let Err(err) = nexrad::load_file("volume.ar2") {
 //!     eprintln!("Error: {err}");
-//!     if let Some(source) = err.source() {
-//!         eprintln!("Caused by: {source}");
+//!     let mut source = err.source();
+//!     while let Some(cause) = source {
+//!         eprintln!("Caused by: {cause}");
+//!         source = cause.source();
 //!     }
 //! }
 //! # }
@@ -103,7 +107,7 @@ pub enum Error {
     /// such as mismatched elevation angles when combining sweeps. Model errors raised
     /// inside `nexrad_data` also surface here.
     #[cfg(feature = "model")]
-    #[error("model error: {0}")]
+    #[error("model error")]
     Model(#[from] nexrad_model::result::Error),
 
     /// Error from binary protocol decoding (nexrad-decode).
@@ -114,7 +118,7 @@ pub enum Error {
     /// such as truncated data, invalid message structures, or missing required fields like
     /// collection timestamps. Decode errors raised inside `nexrad_data` also surface here.
     #[cfg(feature = "decode")]
-    #[error("decode error: {0}")]
+    #[error("decode error")]
     Decode(#[from] nexrad_decode::result::Error),
 
     /// Error specific to data access (nexrad-data).
@@ -125,7 +129,7 @@ pub enum Error {
     /// handling and AWS S3 operations. Decode, model and I/O errors from `nexrad_data` are
     /// not wrapped here; they surface as `Error::Decode`, `Error::Model` and `Error::Io`.
     #[cfg(feature = "data")]
-    #[error("data error: {0}")]
+    #[error("data error")]
     Data(#[source] nexrad_data::result::Error),
 
     /// Error from rendering and visualization (nexrad-render).
@@ -135,7 +139,7 @@ pub enum Error {
     /// Render errors indicate issues with image rendering or failures in the underlying
     /// graphics backend.
     #[cfg(feature = "render")]
-    #[error("render error: {0}")]
+    #[error("render error")]
     Render(#[from] nexrad_render::result::Error),
 
     /// Error from radar data processing algorithms (nexrad-process).
@@ -145,7 +149,7 @@ pub enum Error {
     /// Process errors indicate issues with processing algorithms, such as invalid
     /// field geometry, missing required data, or invalid parameter values.
     #[cfg(feature = "process")]
-    #[error("process error: {0}")]
+    #[error("process error")]
     Process(#[from] nexrad_process::result::Error),
 
     /// I/O error.
@@ -153,7 +157,7 @@ pub enum Error {
     /// This variant wraps standard library I/O errors, both those raised by the facade
     /// itself (for example when `load_file` reads from disk) and those raised inside
     /// `nexrad_data`.
-    #[error("I/O error: {0}")]
+    #[error("I/O error")]
     Io(#[from] std::io::Error),
 
     /// No data available for the requested site and date/time.

@@ -192,11 +192,11 @@ impl<'a> Header<'a> {
 
     /// The azimuth indexing value in degrees (if keyed to constant angles).
     /// Returns `None` if no indexing (value is 0), otherwise the indexing angle in degrees.
-    pub fn azimuth_indexing_mode_degrees(&self) -> Option<f64> {
+    pub fn azimuth_indexing_mode_degrees(&self) -> Option<f32> {
         if self.inner.azimuth_indexing_mode == 0 {
             None
         } else {
-            Some(self.inner.azimuth_indexing_mode as f64 * 0.01)
+            Some(self.inner.azimuth_indexing_mode as f32 * 0.01)
         }
     }
 }

@@ -64,7 +64,7 @@ impl<'a> Message<'a> {
             .iter()
             .map(|elev| {
                 ElevationCut::builder(
-                    elev.elevation_angle_degrees() as f32,
+                    elev.elevation_angle_degrees(),
                     elev.waveform_type().into(),
                     elev.channel_configuration().into(),
                 )

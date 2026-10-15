@@ -163,8 +163,8 @@ impl<'a> ElevationDataBlock<'a> {
     }
 
     /// The elevation angle for this cut in degrees
-    pub fn elevation_angle_degrees(&self) -> f64 {
-        decode_angle(self.inner.elevation_angle)
+    pub fn elevation_angle_degrees(&self) -> f32 {
+        decode_angle(self.inner.elevation_angle) as f32
     }
 
     /// The channel configuration for this cut
@@ -218,23 +218,23 @@ impl<'a> ElevationDataBlock<'a> {
     }
 
     /// Sector 1 Azimuth Clockwise Edge Angle in degrees (denotes start angle)
-    pub fn sector_1_edge_angle_degrees(&self) -> f64 {
-        decode_angle(self.inner.sector_1_edge_angle)
+    pub fn sector_1_edge_angle_degrees(&self) -> f32 {
+        decode_angle(self.inner.sector_1_edge_angle) as f32
     }
 
     /// Sector 2 Azimuth Clockwise Edge Angle in degrees (denotes start angle)
-    pub fn sector_2_edge_angle_degrees(&self) -> f64 {
-        decode_angle(self.inner.sector_2_edge_angle)
+    pub fn sector_2_edge_angle_degrees(&self) -> f32 {
+        decode_angle(self.inner.sector_2_edge_angle) as f32
     }
 
     /// Sector 3 Azimuth Clockwise Edge Angle in degrees (denotes start angle)
-    pub fn sector_3_edge_angle_degrees(&self) -> f64 {
-        decode_angle(self.inner.sector_3_edge_angle)
+    pub fn sector_3_edge_angle_degrees(&self) -> f32 {
+        decode_angle(self.inner.sector_3_edge_angle) as f32
     }
 
     /// The correction added to the elevation angle for this cut in degrees
-    pub fn ebc_angle_degrees(&self) -> f64 {
-        decode_angle(self.inner.ebc_angle)
+    pub fn ebc_angle_degrees(&self) -> f32 {
+        decode_angle(self.inner.ebc_angle) as f32
     }
 
     /// Whether 0.5 degree azimuth super resolution is enabled

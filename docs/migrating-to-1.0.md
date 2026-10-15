@@ -89,7 +89,7 @@ crate root are identical.
 
 ### Changes that apply to every crate
 
-These four changes touch every crate. The per-crate sections below assume you have read them.
+These five changes touch every crate. The per-crate sections below assume you have read them.
 
 **1. `Error` and `Result` at every crate root.** Each crate re-exports its error types at the root:
 `nexrad_model::Error`, `nexrad_decode::Error`, `nexrad_data::Error` (plus `nexrad_data::AwsError` with `aws`),
@@ -133,6 +133,23 @@ serde, read [Serialized data](#serialized-data): these renames change the serial
 `tokio`, `futures`, `reqwest`, `rayon`, `xml` and `once_cell` are no longer feature names. Features are named for what
 they enable: `model`, `aws`, `parallel`, `uom`, `serde`, `chrono`. No crate depends on an async runtime any more; see
 [No Async Runtime Dependency](architecture.md#no-async-runtime-dependency).
+
+**5. Wrapping error variants display only their layer.** A variant that wraps another error (`nexrad::Error::{Model,
+Decode, Data, Render, Process, Io}`, `nexrad_data::Error::{Io, Decode, Model}`, `nexrad_decode::Error::Model`,
+`nexrad_process::Error::Model`, `nexrad_render::Error::Image`) has a `Display` text naming its layer (`decode error`)
+and returns the wrapped error from `source()`. `nexrad_data::Error::Aws` displays the `AwsError` itself. Walk the
+source chain to print the whole cause:
+
+```rust
+// err.to_string() is "decode error"; append each source's message
+let mut message = err.to_string();
+let mut source = std::error::Error::source(&err);
+while let Some(cause) = source {
+    message = format!("{message}: {cause}");
+    source = cause.source();
+}
+eprintln!("{message}");
+```
 
 ## Upgrading from a release candidate
 

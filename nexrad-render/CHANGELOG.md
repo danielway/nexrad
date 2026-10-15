@@ -24,21 +24,21 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `ColorLookupTable::new(&ColorScale, min, max, size)`. (#174)
 - `Error::EmptyField` and `Error::Image(image::ImageError)`. (#174)
 - `RenderOptions::with_value_range(min, max)` and `value_range()`: the range the color lookup table is built over.
-  (#NNN)
+  (#194)
 - `RenderOptions::with_status_color(GateStatus, Color)` and `status_color(GateStatus)`: how gates with a non-`Valid`
-  status are drawn (default: the background), for example purple for `GateStatus::RangeFolded`. (#NNN)
-- `RenderOptions` implements `PartialEq`. (#NNN)
+  status are drawn (default: the background), for example purple for `GateStatus::RangeFolded`. (#194)
+- `RenderOptions` implements `PartialEq`. (#194)
 - `ColorLookupTable::entries()` (the RGBA table, for example for a 1-D GPU texture), `min_value()`, `max_value()`,
-  `len()` and `is_empty()`. (#NNN)
+  `len()` and `is_empty()`. (#194)
 - `Color::from_rgba8`, `From<[u8; 4]> for Color`, `From<Color> for [u8; 4]` and `Default for Color`
-  (`Color::TRANSPARENT`). (#NNN)
-- `ColorScaleLevel` has public `value` and `color` fields, so `DiscreteColorScale::levels()` can drive a legend. (#NNN)
+  (`Color::TRANSPARENT`). (#194)
+- `ColorScaleLevel` has public `value` and `color` fields, so `DiscreteColorScale::levels()` can drive a legend. (#194)
 - `RenderMetadata::pixel_to_vertical`, `vertical_to_pixel`, `query_vertical(&VerticalField, x, y)` and
-  `query_cartesian(&CartesianField, x, y)`. (#NNN)
+  `query_cartesian(&CartesianField, x, y)`. (#194)
 - `RenderResult::write_to(&mut impl Write, image::ImageFormat)` encodes the image without touching the filesystem.
-  (#NNN)
+  (#194)
 - `Error::InvalidRange { min, max }`, `Error::InvalidTableSize { size }`, `Error::InvalidExtent` and
-  `Error::MissingCoordinateSystem`. (#NNN)
+  `Error::MissingCoordinateSystem`. (#194)
 
 ### Changed
 
@@ -71,18 +71,18 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - When a field has no valid data, `render_sweep` picks its color lookup range from the field's product
   (`Product::value_range`) before the reflectivity default. Rendered output does not change. (#174)
 - `ColorLookupTable::new` returns `Result<ColorLookupTable>`: `Error::InvalidRange` unless `min` and `max` are finite
-  with `min < max`, `Error::InvalidTableSize` for sizes below 2 (previously clamped to 2). (#NNN)
+  with `min < max`, `Error::InvalidTableSize` for sizes below 2 (previously clamped to 2). (#194)
 - `RenderOptions::with_background` takes a `Color` and `background()` returns `Option<Color>` (`None` when fully
-  transparent) instead of `[u8; 4]`. (#NNN)
+  transparent) instead of `[u8; 4]`. (#194)
 - `query_pixel`, `query_polar` and `query_geo` moved from `RenderResult` to `RenderMetadata`, with the same signatures.
-  (#NNN)
+  (#194)
 - Every renderer builds its color lookup table over `RenderOptions::value_range()` when set, else the field's product
-  range, else the field's valid-value range, else `-32..95`; `render_sweep` used the field's data range first. (#NNN)
+  range, else the field's valid-value range, else `-32..95`; `render_sweep` used the field's data range first. (#194)
 - `RenderOptions::with_extent` makes `render_sweep` draw the sweep onto a latitude/longitude grid covering that extent
-  (`Projection::Geographic`, requiring `with_coord_system`); `render_cartesian` and `render_vertical` ignore it. (#NNN)
-- `Color::to_rgba8` clamps components to `0.0..=1.0` and rounds to the nearest byte instead of truncating. (#NNN)
+  (`Projection::Geographic`, requiring `with_coord_system`); `render_cartesian` and `render_vertical` ignore it. (#194)
+- `Color::to_rgba8` clamps components to `0.0..=1.0` and rounds to the nearest byte instead of truncating. (#194)
 - The `image` dependency enables only its `png` feature; `save` and `write_to` support other formats once the consumer
-  enables the matching feature on its own `image` dependency. (#NNN)
+  enables the matching feature on its own `image` dependency. (#194)
 
 ### Removed
 
@@ -94,8 +94,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Error::ProductNotFound` (only `render_radials` produced it) and `Error::ImageSave(String)` (now
   `Error::Image`). (#174)
 - `RenderOptions::transparent()` and `bilinear()`; use `with_background(Color::TRANSPARENT)` and
-  `with_interpolation(Interpolation::Bilinear)`. (#NNN)
-- The `nexrad_render::Product` re-export; use `nexrad_model::data::Product`. (#NNN)
+  `with_interpolation(Interpolation::Bilinear)`. (#194)
+- The `nexrad_render::Product` re-export; use `nexrad_model::data::Product`. (#194)
 
 ### Fixed
 
@@ -104,8 +104,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `center_pixel`). (#174)
 - `ColorLookupTable::new` no longer divides by zero or produces NaN for sizes 0 and 1. (#174)
 - `ColorLookupTable::new` no longer maps every value to NaN for `min == max` or silently reverses for `min > max`.
-  (#NNN)
-- `RenderMetadata::geo_extent()` matches the pixels when `RenderOptions::with_extent` is set. (#NNN)
+  (#194)
+- `RenderMetadata::geo_extent()` matches the pixels when `RenderOptions::with_extent` is set. (#194)
 - `RenderResult::query_pixel`, `query_polar` and `query_geo` on a sector or partial sweep return `None` beyond the
   covered azimuths instead of the value at the far end across north, through the `SweepField::value_at_polar` fix.
   (#185)

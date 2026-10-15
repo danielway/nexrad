@@ -740,7 +740,7 @@ let composite = CompositeReflectivity.compute(&fields, &coords, &extent, (512, 5
 | `Error::ImageSave(String)` | `Error::Image(image::ImageError)`; `source()` returns it | #174 |
 | `Error::ProductNotFound` | Removed (only `render_radials` produced it) | #174 |
 | `Error::InvalidDimensions` | Unchanged; also returned for a zero width or height | #174 |
-| — | `Error::InvalidRange { min, max }` and `Error::InvalidTableSize { size }` from `ColorLookupTable::new` and an invalid `RenderOptions::with_value_range`; `Error::InvalidExtent` and `Error::MissingCoordinateSystem` from `render_sweep` with an extent | #NNN |
+| — | `Error::InvalidRange { min, max }` and `Error::InvalidTableSize { size }` from `ColorLookupTable::new` and an invalid `RenderOptions::with_value_range`; `Error::InvalidExtent` and `Error::MissingCoordinateSystem` from `render_sweep` with an extent | #194 |
 
 `nexrad_render::Error` is `#[non_exhaustive]` and, because `image::ImageError` is not, no longer implements
 `UnwindSafe`/`RefUnwindSafe`.
@@ -772,12 +772,12 @@ let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options
 | `RenderMetadata::{center_pixel, pixels_per_km, max_range_km, polar_to_pixel, pixel_distance_to_km, km_to_pixel_distance}` returning plain values | Return `Option`, `Some` only for polar renders | #174 |
 | `RenderMetadata::elevation_degrees() -> Option<f32>` | `RenderMetadata::elevation_angle_degrees() -> Option<f64>` | #164, #182 |
 | `PointQuery { polar, geo, value, status }` struct literal | Read `PointQuery` from `RenderMetadata::query_*`; it is `#[non_exhaustive]`, and `polar` is a `PolarPoint` with `azimuth_angle_degrees` and `elevation_angle_degrees` fields | #182 |
-| `ColorLookupTable::new(..) -> ColorLookupTable` | `ColorLookupTable::new(..) -> Result<ColorLookupTable>`; add `?` | #NNN |
-| `RenderOptions::transparent()` | `with_background(Color::TRANSPARENT)` | #NNN |
-| `RenderOptions::bilinear()` | `with_interpolation(Interpolation::Bilinear)` | #NNN |
-| `RenderOptions::with_background([u8; 4])`, `background() -> Option<[u8; 4]>` | `with_background(Color)` (`Color::from_rgba8(rgba)` or `rgba.into()`), `background() -> Option<Color>` (`None` when fully transparent) | #NNN |
-| `RenderResult::query_pixel`, `query_polar`, `query_geo` | `result.metadata().query_pixel(..)` and so on, same signatures | #NNN |
-| `nexrad_render::Product` | `nexrad_model::data::Product` (or `nexrad::model::data::Product`) | #NNN |
+| `ColorLookupTable::new(..) -> ColorLookupTable` | `ColorLookupTable::new(..) -> Result<ColorLookupTable>`; add `?` | #194 |
+| `RenderOptions::transparent()` | `with_background(Color::TRANSPARENT)` | #194 |
+| `RenderOptions::bilinear()` | `with_interpolation(Interpolation::Bilinear)` | #194 |
+| `RenderOptions::with_background([u8; 4])`, `background() -> Option<[u8; 4]>` | `with_background(Color)` (`Color::from_rgba8(rgba)` or `rgba.into()`), `background() -> Option<Color>` (`None` when fully transparent) | #194 |
+| `RenderResult::query_pixel`, `query_polar`, `query_geo` | `result.metadata().query_pixel(..)` and so on, same signatures | #194 |
+| `nexrad_render::Product` | `nexrad_model::data::Product` (or `nexrad::model::data::Product`) | #194 |
 
 #### Behaviour and type changes
 
@@ -791,23 +791,23 @@ let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options
 - **Polar angles are `f64`** (#164): `RenderMetadata::elevation_angle_degrees()`, `polar_to_pixel` and
   `RenderResult::query_polar` take or return `f64`.
 - **Image dimensions are `u32`** (#174). `RenderOptions::native_for` saturates at `u32::MAX`.
-- **`ColorLookupTable::new` validates its arguments** (#NNN): `min` and `max` must be finite with `min < max`
+- **`ColorLookupTable::new` validates its arguments** (#194): `min` and `max` must be finite with `min < max`
   (`Error::InvalidRange`; `min == max` used to map every value to NaN and `min > max` silently reversed the table) and
   `size` at least 2 (`Error::InvalidTableSize`).
-- **Colour range** (#NNN): every renderer builds its lookup table over `RenderOptions::value_range()` when set, else the
+- **Colour range** (#194): every renderer builds its lookup table over `RenderOptions::value_range()` when set, else the
   field's product range (`Product::value_range`), else the field's valid-value range, else `-32..95`. `render_sweep`
   used to span the field's own data range, and `render_cartesian`/`render_vertical` used the field's range. Colours of a
   sweep with a known product are now stable across sweeps; pin the old behaviour with
   `with_value_range(min, max)`.
-- **`Color::to_rgba8` rounds and clamps** (#NNN): components are clamped to `0.0..=1.0` and rounded to the nearest byte
+- **`Color::to_rgba8` rounds and clamps** (#194): components are clamped to `0.0..=1.0` and rounded to the nearest byte
   instead of truncated, so some built-in scale colours shift by one step (for example `0.6627` is now 169, not 168).
-- **`RenderOptions::with_extent` renders into the extent** (#NNN): `render_sweep` draws the sweep onto a
+- **`RenderOptions::with_extent` renders into the extent** (#194): `render_sweep` draws the sweep onto a
   latitude/longitude grid covering exactly that extent and reports `Projection::Geographic`; it needs
   `with_coord_system` (`Error::MissingCoordinateSystem` otherwise). It used to only copy the extent into the metadata
   while the image stayed radar-centred. `render_cartesian` and `render_vertical` ignore the option.
 - **Non-valid gates** are still drawn as the background by default; `RenderOptions::with_status_color(status, color)`
-  draws them in a colour, such as purple for `GateStatus::RangeFolded` (#NNN).
-- **`image` codecs are opt-in** (#NNN): `nexrad-render` depends on `image` with only the `png` feature.
+  draws them in a colour, such as purple for `GateStatus::RangeFolded` (#194).
+- **`image` codecs are opt-in** (#194): `nexrad-render` depends on `image` with only the `png` feature.
   `RenderResult::save` and the new `write_to` support other formats once you enable the matching feature on your own
   `image = { version = "0.25", default-features = false, features = ["jpeg"] }` dependency; without it, saving a
   `.jpg` fails with `Error::Image`.

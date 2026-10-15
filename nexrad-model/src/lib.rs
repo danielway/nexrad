@@ -73,6 +73,7 @@
 //! NEXRAD radar data. All I/O, parsing, and rendering concerns are handled by separate
 //! crates in the NEXRAD library suite.
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]

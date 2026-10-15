@@ -84,6 +84,7 @@
 //! the low-level binary parsing (`nexrad-decode`) and high-level data models
 //! (`nexrad-model`).
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]

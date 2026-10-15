@@ -106,6 +106,7 @@
 //! slices as input and returns structured data types. All I/O operations (reading files,
 //! downloading from AWS, decompression) are handled by the `nexrad-data` crate.
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]

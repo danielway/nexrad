@@ -68,6 +68,7 @@
 //! This crate can be used standalone or through the `nexrad` facade crate (re-exported
 //! via the `render` feature, which is enabled by default).
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]

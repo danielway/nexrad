@@ -43,7 +43,7 @@ impl RdaBuildNumber {
     /// for build 11.3.
     pub fn minor(self) -> u16 {
         let fraction = (self.hundredths() % 100) as u16;
-        if fraction % 10 == 0 {
+        if fraction.is_multiple_of(10) {
             fraction / 10
         } else {
             fraction
@@ -88,7 +88,7 @@ impl Hash for RdaBuildNumber {
 impl Display for RdaBuildNumber {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let fraction = self.hundredths() % 100;
-        if fraction % 10 == 0 {
+        if fraction.is_multiple_of(10) {
             write!(f, "{}.{}", self.major(), fraction / 10)
         } else {
             write!(f, "{}.{:02}", self.major(), fraction)

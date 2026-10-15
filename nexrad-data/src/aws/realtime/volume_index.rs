@@ -1,3 +1,5 @@
+use crate::result::{AwsError, Error, Result};
+
 /// A volume's index in the AWS real-time NEXRAD bucket. These indexes are rotated-through as chunks
 /// are accumulated and finally combined into full volumes to be archived. Indexes range over
 /// `1..=999`.
@@ -5,17 +7,22 @@
 pub struct VolumeIndex(usize);
 
 impl VolumeIndex {
-    /// Creates a new volume index with the specified value.
+    /// The first volume index.
+    const FIRST: usize = 1;
+
+    /// The last volume index.
+    const LAST: usize = 999;
+
+    /// Creates a volume index, validating that it is in `1..=999`, the bucket's volume
+    /// directories.
     ///
-    /// Valid indexes are `1..=999`, matching the bucket's volume directories. Passing a value
-    /// outside that range is a logic error: it panics in debug builds and produces an index that
-    /// names no volume in release builds.
-    pub fn new(index: usize) -> Self {
-        debug_assert!(
-            (1..=999).contains(&index),
-            "Volume index must be in 1..=999, got {index}"
-        );
-        Self(index)
+    /// Returns [`AwsError::InvalidVolumeIndex`] for any other value.
+    pub fn new(index: usize) -> Result<Self> {
+        if (Self::FIRST..=Self::LAST).contains(&index) {
+            Ok(Self(index))
+        } else {
+            Err(Error::Aws(AwsError::InvalidVolumeIndex { index }))
+        }
     }
 
     /// Returns the volume index as a number.
@@ -25,10 +32,10 @@ impl VolumeIndex {
 
     /// Returns the next volume index, wrapping from 999 back to 1.
     pub fn next(&self) -> Self {
-        if self.0 == 999 {
-            Self::new(1)
+        if self.0 >= Self::LAST {
+            Self(Self::FIRST)
         } else {
-            Self::new(self.0 + 1)
+            Self(self.0 + 1)
         }
     }
 }

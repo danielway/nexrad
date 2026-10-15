@@ -132,11 +132,6 @@ impl RetryState {
         self.attempt
     }
 
-    /// Returns true if more retry attempts are available.
-    pub(crate) fn should_retry(&self) -> bool {
-        self.attempt < self.policy.max_attempts
-    }
-
     /// Records an attempt and returns the delay before the next retry.
     ///
     /// Returns `Some(duration)` if another attempt should be made after waiting,
@@ -197,7 +192,6 @@ mod tests {
         let mut state = RetryState::new(policy);
 
         assert_eq!(state.attempt(), 0);
-        assert!(state.should_retry());
 
         // First attempt
         let delay = state.next_delay();
@@ -215,7 +209,6 @@ mod tests {
         assert_eq!(state.attempt(), 3);
 
         // No more attempts
-        assert!(!state.should_retry());
         let delay = state.next_delay();
         assert!(delay.is_none());
     }

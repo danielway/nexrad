@@ -515,7 +515,7 @@ fn test_chunk_timing_stats_clone() {
 fn chunk_at(sequence: usize, chunk_type: ChunkType) -> ChunkIdentifier {
     ChunkIdentifier::new(
         "KDMX".to_string(),
-        VolumeIndex::new(1),
+        VolumeIndex::new(1).unwrap(),
         NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
         sequence,
         chunk_type,
@@ -565,6 +565,19 @@ fn test_end_to_start_interval_is_inter_volume_gap() {
     let interval = ChunkTimingModel::estimate_chunk_interval_secs(end, start);
     assert!((interval - ChunkTimingModel::inter_volume_gap_secs()).abs() < 0.001);
     assert!((interval - ChunkTimingModel::start_to_first_intermediate_gap_secs()).abs() > 1.0);
+}
+
+#[test]
+fn test_estimate_chunk_processing_time_end_chunk_is_inter_volume_gap() {
+    use super::estimate_next_chunk_time::estimate_chunk_processing_time;
+
+    let vcp = get_test_vcp();
+    let mapper = ElevationChunkMapper::new(&vcp);
+
+    let end = chunk_at(mapper.final_sequence(), ChunkType::End);
+    let estimate = estimate_chunk_processing_time(&end, &vcp, &mapper, None);
+    let gap_ms = (ChunkTimingModel::inter_volume_gap_secs() * 1000.0) as i64;
+    assert_eq!(estimate, Some(Duration::milliseconds(gap_ms)));
 }
 
 #[test]
@@ -666,7 +679,7 @@ fn test_estimate_chunk_processing_time_without_stats_uses_physics_model() {
 
     let chunk = ChunkIdentifier::new(
         "KDMX".to_string(),
-        VolumeIndex::new(1),
+        VolumeIndex::new(1).unwrap(),
         NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
         2,
         ChunkType::Intermediate,
@@ -787,7 +800,7 @@ fn anchor_chunk(sequence: usize, chunk_type: ChunkType) -> ChunkIdentifier {
 
     ChunkIdentifier::new(
         "KDMX",
-        VolumeIndex::new(1),
+        VolumeIndex::new(1).unwrap(),
         NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
         sequence,
         chunk_type,
@@ -858,7 +871,7 @@ fn test_chunk_identifier_next_chunk_intermediate() {
     // Test non-final chunk progresses to next sequence
     let chunk_id = ChunkIdentifier::new(
         "KDMX".to_string(),
-        VolumeIndex::new(1),
+        VolumeIndex::new(1).unwrap(),
         NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
         2,
         ChunkType::Intermediate,
@@ -877,7 +890,7 @@ fn test_chunk_identifier_next_chunk_intermediate() {
     // Test final chunk progresses to next volume
     let chunk_id = ChunkIdentifier::new(
         "KDMX".to_string(),
-        VolumeIndex::new(1),
+        VolumeIndex::new(1).unwrap(),
         NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
         final_seq,
         ChunkType::End,
@@ -902,7 +915,7 @@ fn volume_chunk(
 ) -> ChunkIdentifier {
     ChunkIdentifier::new(
         "KDMX",
-        VolumeIndex::new(volume),
+        VolumeIndex::new(volume).unwrap(),
         NaiveDateTime::parse_from_str(stamp, "%Y%m%d_%H%M%S").unwrap(),
         sequence,
         chunk_type,
@@ -1004,7 +1017,7 @@ fn test_rollover_across_volume_number_wrap() {
 /// Builds a real-time Start chunk from the test archive volume's header and its LDM record at
 /// `record_index`. The archive's first record carries the metadata messages, including the VCP;
 /// later records carry only radials.
-fn start_chunk_from_test_volume(record_index: usize) -> Chunk {
+pub(super) fn start_chunk_from_test_volume(record_index: usize) -> Chunk {
     use crate::volume::{File, Header};
 
     let data = std::fs::read(TEST_NEXRAD_FILE).expect("read test volume");

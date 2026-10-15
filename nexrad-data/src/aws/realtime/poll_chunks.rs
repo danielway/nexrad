@@ -15,6 +15,7 @@ use chrono::{Duration, Utc};
 use futures_util::stream::Stream;
 use log::debug;
 use nexrad_decode::messages::volume_coverage_pattern;
+use std::collections::VecDeque;
 use std::future::Future;
 
 /// Internal state for the chunk stream.
@@ -27,9 +28,40 @@ struct ChunkStreamState {
     previous_chunk_time: Option<chrono::DateTime<Utc>>,
     download_policy: RetryPolicy,
     discovery_policy: RetryPolicy,
+    /// Chunks downloaded during startup that have not been yielded yet.
+    pending: VecDeque<DownloadedChunk>,
 }
 
 impl ChunkStreamState {
+    /// Builds the stream state from the chunks downloaded at startup: the volume's latest chunk
+    /// and, when that is not the Start chunk, the Start chunk fetched separately. The VCP comes
+    /// from whichever of them is the Start chunk. Both are queued to be yielded, the Start chunk
+    /// first, and the latest chunk becomes the current chunk with its upload time as the anchor
+    /// for the first recorded interval.
+    fn from_startup(
+        config: &PollConfig,
+        latest: DownloadedChunk,
+        start: Option<DownloadedChunk>,
+    ) -> Result<Self> {
+        let vcp = match &start.as_ref().unwrap_or(&latest).chunk {
+            Chunk::Start(file) => file.coverage_pattern_message()?,
+            Chunk::IntermediateOrEnd(_) => return Err(Error::MissingCoveragePattern),
+        };
+        let elevation_mapper = ElevationChunkMapper::new(&vcp);
+
+        Ok(Self {
+            site: config.site().to_string(),
+            current_chunk: latest.identifier.clone(),
+            elevation_mapper,
+            vcp,
+            timing_stats: ChunkTimingStats::new(),
+            previous_chunk_time: latest.identifier.upload_date_time(),
+            download_policy: config.download_policy().clone(),
+            discovery_policy: config.discovery_policy().clone(),
+            pending: start.into_iter().chain([latest]).collect(),
+        })
+    }
+
     /// Returns the estimated time at which the chunk following the current chunk becomes
     /// available for download.
     fn next_chunk_estimate(&self) -> Option<chrono::DateTime<Utc>> {
@@ -46,6 +78,15 @@ impl ChunkStreamState {
 ///
 /// This is the preferred API for consuming real-time NEXRAD data. It returns
 /// a [`Stream`] that yields chunks as they become available.
+///
+/// At startup the stream finds the latest volume and downloads its latest chunk, plus the volume's
+/// Start chunk when the latest chunk is not the Start chunk. It yields the Start chunk first (when
+/// it was fetched separately), then the latest chunk, then continues from the chunk after the
+/// latest. When joining mid-volume, the first volume is therefore partial: the chunks between the
+/// Start chunk and the latest chunk are not yielded.
+///
+/// The [`PollConfig`]'s download policy governs retries of each chunk download and its discovery
+/// policy governs retries while waiting for the next volume.
 ///
 /// The stream is runtime-agnostic: it waits between polls by calling the
 /// caller-supplied `sleep` function, which receives the duration to wait and
@@ -98,8 +139,11 @@ where
                 },
             };
 
-            // Fetch the next chunk
-            let result = fetch_next_chunk(&mut state, &mut sleep).await;
+            // Yield the startup chunks, then fetch the next chunk
+            let result = match state.pending.pop_front() {
+                Some(chunk) => Ok(chunk),
+                None => fetch_next_chunk(&mut state, &mut sleep).await,
+            };
             Some((result, (config, sleep, Some(state))))
         },
     )
@@ -119,38 +163,26 @@ async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
 
     let latest_chunk_id = get_latest_chunk(config.site(), latest_volume)
         .await?
-        .ok_or(AwsError::ExpectedChunkNotFound)?;
+        .ok_or(AwsError::LatestVolumeNotFound)?;
+    let latest = download_chunk(config.site(), &latest_chunk_id).await?;
 
-    let latest_chunk_id = download_chunk(config.site(), &latest_chunk_id)
-        .await?
-        .identifier;
-
-    // Get VCP from start chunk
-    let latest_metadata_id = latest_chunk_id.with_sequence(1, ChunkType::Start);
-    let latest_metadata = download_chunk(config.site(), &latest_metadata_id).await?;
-    let vcp = match &latest_metadata.chunk {
-        Chunk::Start(file) => file.coverage_pattern_message()?,
-        Chunk::IntermediateOrEnd(_) => return Err(Error::MissingCoveragePattern),
+    // Joined mid-volume: the Start chunk carries the VCP
+    let start = if latest.identifier.chunk_type() == ChunkType::Start {
+        None
+    } else {
+        let start_id = latest.identifier.with_sequence(1, ChunkType::Start);
+        Some(download_chunk(config.site(), &start_id).await?)
     };
-    let elevation_mapper = ElevationChunkMapper::new(&vcp);
 
+    let state = ChunkStreamState::from_startup(config, latest, start)?;
     debug!(
         "Stream initialized for {} at volume {} with VCP {}",
         config.site(),
         latest_volume.as_number(),
-        vcp.header().vcp_number_raw()
+        state.vcp.header().vcp_number_raw()
     );
 
-    Ok(ChunkStreamState {
-        site: config.site().to_string(),
-        current_chunk: latest_chunk_id,
-        elevation_mapper,
-        vcp,
-        timing_stats: ChunkTimingStats::new(),
-        previous_chunk_time: None,
-        download_policy: config.download_policy().clone(),
-        discovery_policy: config.discovery_policy().clone(),
-    })
+    Ok(state)
 }
 
 // The sleep function is passed as `&mut S` rather than `&S` so that the
@@ -277,13 +309,13 @@ async fn get_volume_start_or_error(
     volume: VolumeIndex,
     current: &ChunkIdentifier,
 ) -> Result<ChunkIdentifier> {
-    let chunks = list_chunks_in_volume(site, volume, 100).await?;
+    let chunks = list_chunks_in_volume(site, volume).await?;
     next_volume_start(Some(current), &chunks).ok_or(Error::Aws(AwsError::ExpectedChunkNotFound))
 }
 
 /// Queries for the latest chunk in the specified volume.
 async fn get_latest_chunk(site: &str, volume: VolumeIndex) -> Result<Option<ChunkIdentifier>> {
-    let chunks = list_chunks_in_volume(site, volume, 100).await?;
+    let chunks = list_chunks_in_volume(site, volume).await?;
     Ok(chunks.last().cloned())
 }
 
@@ -338,7 +370,7 @@ mod tests {
         let chunk_at = |sequence, upload| {
             ChunkIdentifier::new(
                 "KDMX",
-                VolumeIndex::new(1),
+                VolumeIndex::new(1).unwrap(),
                 NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
                 sequence,
                 ChunkType::Intermediate,
@@ -357,6 +389,7 @@ mod tests {
             previous_chunk_time: previous.upload_date_time(),
             download_policy: RetryPolicy::default_download(),
             discovery_policy: RetryPolicy::default_discovery(),
+            pending: VecDeque::new(),
         };
         let physics_estimate = state.next_chunk_estimate().unwrap();
         assert_ne!(physics_estimate, upload + Duration::seconds(7));
@@ -385,7 +418,7 @@ mod tests {
         let prefix = NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap();
         let start = ChunkIdentifier::new(
             "KDMX",
-            VolumeIndex::new(1),
+            VolumeIndex::new(1).unwrap(),
             prefix,
             1,
             ChunkType::Start,
@@ -393,7 +426,7 @@ mod tests {
         );
         let second = ChunkIdentifier::new(
             "KDMX",
-            VolumeIndex::new(1),
+            VolumeIndex::new(1).unwrap(),
             prefix,
             2,
             ChunkType::Intermediate,
@@ -409,6 +442,7 @@ mod tests {
             previous_chunk_time: start.upload_date_time(),
             download_policy: RetryPolicy::default_download(),
             discovery_policy: RetryPolicy::default_discovery(),
+            pending: VecDeque::new(),
         };
 
         let chunk = Chunk::IntermediateOrEnd(crate::volume::Record::new(vec![0; 8]));
@@ -427,6 +461,91 @@ mod tests {
             state.timing_stats.get_average_timing(&characteristics),
             None
         );
+    }
+
+    fn downloaded(identifier: ChunkIdentifier, chunk: Chunk) -> DownloadedChunk {
+        DownloadedChunk::new(identifier, chunk, 1)
+    }
+
+    fn startup_chunk(sequence: usize, chunk_type: ChunkType) -> ChunkIdentifier {
+        use chrono::{NaiveDateTime, TimeZone};
+
+        ChunkIdentifier::new(
+            "KDMX",
+            VolumeIndex::new(1).unwrap(),
+            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+            sequence,
+            chunk_type,
+            Some(
+                Utc.with_ymd_and_hms(2022, 3, 5, 23, 25, sequence as u32)
+                    .unwrap(),
+            ),
+        )
+    }
+
+    #[test]
+    fn startup_yields_start_then_latest_and_seeds_previous_time() {
+        use crate::aws::realtime::tests::{get_test_vcp, start_chunk_from_test_volume};
+
+        let start = startup_chunk(1, ChunkType::Start);
+        let latest = startup_chunk(12, ChunkType::Intermediate);
+        let mut state = ChunkStreamState::from_startup(
+            &PollConfig::new("KDMX"),
+            downloaded(
+                latest.clone(),
+                Chunk::IntermediateOrEnd(crate::volume::Record::new(vec![0; 8])),
+            ),
+            Some(downloaded(start.clone(), start_chunk_from_test_volume(0))),
+        )
+        .unwrap();
+
+        assert_eq!(state.vcp, get_test_vcp());
+        assert_eq!(state.current_chunk, latest);
+        assert_eq!(state.previous_chunk_time, latest.upload_date_time());
+        assert_eq!(
+            state.pending.pop_front().map(|chunk| chunk.identifier),
+            Some(start)
+        );
+        assert_eq!(
+            state.pending.pop_front().map(|chunk| chunk.identifier),
+            Some(latest)
+        );
+        assert!(state.pending.is_empty());
+    }
+
+    #[test]
+    fn startup_at_start_chunk_yields_it_once() {
+        let start = startup_chunk(1, ChunkType::Start);
+        let mut state = ChunkStreamState::from_startup(
+            &PollConfig::new("KDMX"),
+            downloaded(
+                start.clone(),
+                crate::aws::realtime::tests::start_chunk_from_test_volume(0),
+            ),
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(state.previous_chunk_time, start.upload_date_time());
+        assert_eq!(
+            state.pending.pop_front().map(|chunk| chunk.identifier),
+            Some(start)
+        );
+        assert!(state.pending.is_empty());
+    }
+
+    #[test]
+    fn startup_without_coverage_pattern_fails() {
+        let latest = startup_chunk(12, ChunkType::Intermediate);
+        let result = ChunkStreamState::from_startup(
+            &PollConfig::new("KDMX"),
+            downloaded(
+                latest,
+                Chunk::IntermediateOrEnd(crate::volume::Record::new(vec![0; 8])),
+            ),
+            None,
+        );
+        assert!(matches!(result, Err(Error::MissingCoveragePattern)));
     }
 
     #[test]

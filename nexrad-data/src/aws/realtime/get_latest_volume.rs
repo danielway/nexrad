@@ -32,12 +32,13 @@ pub async fn get_latest_volume(site: &str) -> crate::result::Result<LatestVolume
     let latest_volume = find_latest(VOLUME_COUNT - 1, |volume| {
         calls.fetch_add(1, Relaxed);
         async move {
-            let chunks = list_chunks_in_volume(site, VolumeIndex::new(volume + 1), 1).await?;
+            let chunks = list_chunks_in_volume(site, VolumeIndex::new(volume + 1)?).await?;
             Ok(chunks.first().and_then(|chunk| chunk.upload_date_time()))
         }
     })
-    .await
-    .map(|volume| volume.map(|index| VolumeIndex::new(index + 1)))?;
+    .await?
+    .map(|index| VolumeIndex::new(index + 1))
+    .transpose()?;
 
     Ok(LatestVolumeResult {
         volume: latest_volume,
@@ -100,7 +101,7 @@ async fn newest_upload_time(
     site: &str,
     volume: VolumeIndex,
 ) -> crate::result::Result<Option<DateTime<Utc>>> {
-    let chunks = list_chunks_in_volume(site, volume, usize::MAX).await?;
+    let chunks = list_chunks_in_volume(site, volume).await?;
     Ok(chunks.last().and_then(|chunk| chunk.upload_date_time()))
 }
 

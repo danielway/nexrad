@@ -97,7 +97,7 @@ async fn test_list_chunks_in_volume_basic() {
     let volume = latest.volume.unwrap();
 
     // List chunks in that volume
-    let chunks_result = realtime::list_chunks_in_volume(site, volume, 100).await;
+    let chunks_result = realtime::list_chunks_in_volume(site, volume).await;
     assert!(
         chunks_result.is_ok(),
         "Failed to list chunks: {:?}",
@@ -130,7 +130,7 @@ async fn test_list_chunks_in_volume_basic() {
 
 #[tokio::test]
 #[ignore = "requires AWS access"]
-async fn test_list_chunks_in_volume_with_limit() {
+async fn test_list_chunks_in_volume_single_generation() {
     let site = "KDMX";
 
     let latest_result = realtime::get_latest_volume(site).await;
@@ -140,15 +140,16 @@ async fn test_list_chunks_in_volume_with_limit() {
 
     let volume = latest.volume.unwrap();
 
-    // Request a limited number of chunks
-    let limit = 5;
-    let chunks_result = realtime::list_chunks_in_volume(site, volume, limit).await;
+    let chunks_result = realtime::list_chunks_in_volume(site, volume).await;
     assert!(chunks_result.is_ok());
 
+    // Every listed chunk belongs to the newest scan generation
     let chunks = chunks_result.unwrap();
-
-    // Should not exceed the limit
-    assert!(chunks.len() <= limit, "Returned more chunks than requested");
+    if let Some(first) = chunks.first() {
+        for chunk in &chunks {
+            assert_eq!(chunk.date_time_prefix(), first.date_time_prefix());
+        }
+    }
 }
 
 #[tokio::test]
@@ -158,9 +159,9 @@ async fn test_list_chunks_empty_volume() {
 
     // Try to list chunks from a volume that's likely empty
     // Volume 1 is often empty or very old
-    let empty_volume = VolumeIndex::new(500); // Pick a random volume that's likely empty
+    let empty_volume = VolumeIndex::new(500).unwrap(); // Pick a random volume that's likely empty
 
-    let chunks_result = realtime::list_chunks_in_volume(site, empty_volume, 10).await;
+    let chunks_result = realtime::list_chunks_in_volume(site, empty_volume).await;
     assert!(chunks_result.is_ok());
 
     let _chunks = chunks_result.unwrap();
@@ -182,7 +183,7 @@ async fn test_download_chunk_basic() {
     let volume = latest.volume.unwrap();
 
     // List chunks
-    let chunks_result = realtime::list_chunks_in_volume(site, volume, 10).await;
+    let chunks_result = realtime::list_chunks_in_volume(site, volume).await;
     assert!(chunks_result.is_ok());
     let chunks = chunks_result.unwrap();
 
@@ -240,7 +241,7 @@ async fn test_download_chunk_has_upload_time() {
 
     let volume = latest.volume.unwrap();
 
-    let chunks_result = realtime::list_chunks_in_volume(site, volume, 5).await;
+    let chunks_result = realtime::list_chunks_in_volume(site, volume).await;
     assert!(chunks_result.is_ok());
     let chunks = chunks_result.unwrap();
 
@@ -271,7 +272,7 @@ async fn test_download_nonexistent_chunk() {
     use chrono::NaiveDateTime;
     let nonexistent_chunk = ChunkIdentifier::new(
         site.to_string(),
-        VolumeIndex::new(999),
+        VolumeIndex::new(999).unwrap(),
         NaiveDateTime::parse_from_str("20990101_000000", "%Y%m%d_%H%M%S").unwrap(),
         1,
         ChunkType::Start,
@@ -300,7 +301,7 @@ async fn test_complete_workflow() {
     println!("Latest volume for {}: {}", site, volume.as_number());
 
     // Step 2: List chunks in that volume
-    let chunks_result = realtime::list_chunks_in_volume(site, volume, 10).await;
+    let chunks_result = realtime::list_chunks_in_volume(site, volume).await;
     assert!(chunks_result.is_ok());
     let chunks = chunks_result.unwrap();
 
@@ -345,7 +346,7 @@ async fn test_chunk_sequencing() {
 
     let volume = latest.volume.unwrap();
 
-    let chunks_result = realtime::list_chunks_in_volume(site, volume, 100).await;
+    let chunks_result = realtime::list_chunks_in_volume(site, volume).await;
     assert!(chunks_result.is_ok());
     let chunks = chunks_result.unwrap();
 
@@ -404,8 +405,8 @@ async fn test_multiple_sites_concurrently() {
 #[test]
 fn test_volume_index_boundaries() {
     // Test that VolumeIndex enforces proper boundaries
-    let vol_min = VolumeIndex::new(1);
-    let vol_max = VolumeIndex::new(999);
+    let vol_min = VolumeIndex::new(1).unwrap();
+    let vol_max = VolumeIndex::new(999).unwrap();
 
     assert_eq!(vol_min.as_number(), 1);
     assert_eq!(vol_max.as_number(), 999);
@@ -427,7 +428,7 @@ async fn test_download_intermediate_and_end_chunks() {
 
     let volume = latest.volume.unwrap();
 
-    let chunks_result = realtime::list_chunks_in_volume(site, volume, 100).await;
+    let chunks_result = realtime::list_chunks_in_volume(site, volume).await;
     assert!(chunks_result.is_ok());
     let chunks = chunks_result.unwrap();
 

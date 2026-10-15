@@ -228,7 +228,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   (#191)
 - `Debug` output of decoded messages follows the renamed fields and variants. (#191)
 - `Error::Model`'s `Display` text is `decoded data is invalid for the model`, without the wrapped model error's
-  message; the model error is its `source()`, so reporters that walk the source chain print it once. (#NNN)
+  message; the model error is its `source()`, so reporters that walk the source chain print it once. (#195)
 
 ### Removed
 

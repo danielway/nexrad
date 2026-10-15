@@ -18,14 +18,14 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `nexrad::chrono` re-exports `chrono` (feature `chrono`, implied by `aws`), so callers of `list_scans` and
   `download_at` do not need their own `chrono` dependency. (#176)
 - `stream_with(config, sleep)`, which takes a `nexrad::data::aws::realtime::PollConfig` to set the site and retry
-  policies; `stream(site, sleep)` is `stream_with(PollConfig::new(site), sleep)`. (#NNN)
+  policies; `stream(site, sleep)` is `stream_with(PollConfig::new(site), sleep)`. (#195)
 - `stream_scans(site, sleep)` and `stream_scans_with(config, sleep)`, which yield one `Scan` per complete real-time
   volume, assembled with `assemble_volume`. Chunks before the first Start chunk are skipped, an error from the chunk
-  stream is yielded and discards the partial volume, and only complete volumes are yielded. (#NNN)
+  stream is yielded and discards the partial volume, and only complete volumes are yielded. (#195)
 - `nexrad::futures_util` re-exports `futures_util` (feature `aws`), for `StreamExt::next` on the real-time streams.
-  (#NNN)
+  (#195)
 - `Error::NoScanAt { site, datetime }` (feature `aws`), returned by `download_at` when no archive volume overlaps the
-  requested datetime. (#NNN)
+  requested datetime. (#195)
 
 ### Changed
 
@@ -40,14 +40,14 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `|d| tokio::time::sleep(d)`) and no longer depends on tokio. (#161)
 - `download(identifier: Identifier)` → `download(identifier: &Identifier)`. (#176)
 - `load(data: &[u8])` → `load(data: Vec<u8>)`; it takes ownership of the bytes instead of copying them. `load_file` no
-  longer copies the file's contents a second time. (#NNN)
+  longer copies the file's contents a second time. (#195)
 - `download_latest(site, date)` → `download_latest(site)`, which downloads the newest archived volume: the last volume
   of the current UTC date, or of the previous UTC date when the current one has none yet. For the last volume of a
-  given date, call `list_scans(site, date)` and pass the last identifier to `download`. (#NNN)
+  given date, call `list_scans(site, date)` and pass the last identifier to `download`. (#195)
 - `download_at(site, datetime)` returns the volume whose collection overlaps `datetime`: the last volume that started
   at or before it, looking into the previous UTC date when `datetime` precedes the date's first volume, and only if it
   started at most 15 minutes earlier. A miss returns `Error::NoScanAt` instead of `Error::NoDataAvailable`, which it
-  used to return both for an empty date and for a time before the date's first volume. (#NNN)
+  used to return both for an empty date and for a time before the date's first volume. (#195)
 - `list_scans`, `download_latest` and `download_at` see archive volume files only, so `download_latest` can no longer
   pick an `_MDM` metadata object. (#192)
 - Errors from `nexrad-data` are flattened by layer (#176):
@@ -59,7 +59,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   a `String`; `Display` is unchanged. (#176)
 - The wrapping variants `Model`, `Decode`, `Data`, `Render`, `Process` and `Io` no longer repeat the wrapped error in
   their `Display` text, which is the layer name alone (`decode error`); the wrapped error is still their `source()`,
-  so reporters that walk the source chain print it once. (#NNN)
+  so reporters that walk the source chain print it once. (#195)
 
 ### Removed
 

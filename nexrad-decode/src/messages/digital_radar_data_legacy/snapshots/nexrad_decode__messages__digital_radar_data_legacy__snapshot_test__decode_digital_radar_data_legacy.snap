@@ -40,6 +40,8 @@ Message {
             radial_status: VolumeScanStart,
             vcp_number: Vcp32,
             unambiguous_range_km: 466.0,
+            nyquist_velocity_mps: 0.0,
+            atmospheric_attenuation_db_per_km: -0.012,
             calibration_constant_db: 23.274904,
             surveillance_gate_count: 460,
             doppler_gate_count: 0,

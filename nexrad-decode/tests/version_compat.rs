@@ -270,6 +270,48 @@ fn test_message_type1_field_values() {
     assert!(checked, "should have checked at least one Type 1 message");
 }
 
+/// Validates the Message Type 1 Nyquist velocity and atmospheric attenuation against the ICD
+/// ranges, and that Doppler radials carry the Nyquist velocity into the model.
+#[test]
+fn test_message_type1_nyquist_and_attenuation() {
+    let file = volume::File::new(KABR_2005.to_vec())
+        .decompress()
+        .expect("decompresses gzip file");
+    let records = file.records().expect("records");
+
+    let mut doppler_radials = 0;
+    for mut record in records {
+        if record.compressed() {
+            record = record.decompress().expect("decompresses record");
+        }
+
+        for message in decode_messages(record.data()).expect("decodes messages") {
+            let MessageContents::DigitalRadarDataLegacy(drd) = message.contents() else {
+                continue;
+            };
+
+            let attenuation = drd.atmospheric_attenuation_db_per_km();
+            // The Doppler-only cuts of split cuts leave the factor at 0.
+            assert!(
+                attenuation == 0.0 || (-0.02..=-0.002).contains(&attenuation),
+                "atmospheric attenuation {attenuation} dB/km out of range"
+            );
+
+            if drd.velocity_gates().is_some() {
+                let nyquist = drd.nyquist_velocity_mps();
+                assert!(
+                    (8.0..=35.61).contains(&nyquist),
+                    "Nyquist velocity {nyquist} m/s out of range"
+                );
+                let radial = drd.radial().expect("converts to radial");
+                assert_eq!(radial.nyquist_velocity_mps(), Some(nyquist));
+                doppler_radials += 1;
+            }
+        }
+    }
+    assert!(doppler_radials > 0, "should have checked a Doppler radial");
+}
+
 // -- Legacy format tests (gzip-compressed, CTM frames) --
 
 /// KTLX 2010-05-01: Legacy CTM format (V03), gzip-compressed on disk.

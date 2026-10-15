@@ -180,6 +180,37 @@ impl<'a> Message<'a> {
         self.header.unambiguous_range.get() as f32 / 10.0
     }
 
+    /// Nyquist velocity in hundredths of a m/s (raw scaled value). See
+    /// [`nyquist_velocity_mps()`](Self::nyquist_velocity_mps) for the decoded value.
+    pub fn nyquist_velocity_raw(&self) -> u16 {
+        self.header.nyquist_velocity.get()
+    }
+
+    /// Nyquist velocity, in m/s.
+    pub fn nyquist_velocity_mps(&self) -> f32 {
+        self.nyquist_velocity_raw() as f32 * 0.01
+    }
+
+    /// Nyquist velocity.
+    #[cfg(feature = "uom")]
+    pub fn nyquist_velocity(&self) -> uom::si::f64::Velocity {
+        uom::si::f64::Velocity::new::<uom::si::velocity::meter_per_second>(
+            self.nyquist_velocity_raw() as f64 * 0.01,
+        )
+    }
+
+    /// Atmospheric attenuation factor in thousandths of a dB/km (raw scaled value). See
+    /// [`atmospheric_attenuation_db_per_km()`](Self::atmospheric_attenuation_db_per_km) for the
+    /// decoded value.
+    pub fn atmospheric_attenuation_raw(&self) -> i16 {
+        self.header.atmospheric_attenuation.get()
+    }
+
+    /// Atmospheric attenuation factor, in dB/km.
+    pub fn atmospheric_attenuation_db_per_km(&self) -> f32 {
+        self.atmospheric_attenuation_raw() as f32 * 0.001
+    }
+
     /// System gain calibration constant in dB.
     pub fn calibration_constant_db(&self) -> f32 {
         self.header.calibration_constant.get()
@@ -286,6 +317,7 @@ impl<'a> Message<'a> {
         let elevation_number = self.elevation_number();
         let elevation_angle = self.elevation_angle_degrees();
         let unambiguous_range_km = self.unambiguous_range_km();
+        let nyquist_velocity_mps = self.nyquist_velocity_mps();
 
         let reflectivity = self
             .reflectivity_gates
@@ -345,6 +377,9 @@ impl<'a> Message<'a> {
         .collection_timestamp_millis(timestamp)
         .azimuth_spacing_degrees(1.0)
         .radial_status(radial_status);
+        if nyquist_velocity_mps > 0.0 {
+            builder = builder.nyquist_velocity_mps(nyquist_velocity_mps);
+        }
         if unambiguous_range_km > 0.0 {
             builder = builder.unambiguous_range_km(unambiguous_range_km);
         }
@@ -434,6 +469,9 @@ impl<'a> Message<'a> {
         .collection_timestamp_millis(timestamp)
         .azimuth_spacing_degrees(1.0)
         .radial_status(msg.radial_status().into());
+        if msg.nyquist_velocity_mps() > 0.0 {
+            builder = builder.nyquist_velocity_mps(msg.nyquist_velocity_mps());
+        }
         if msg.unambiguous_range_km() > 0.0 {
             builder = builder.unambiguous_range_km(msg.unambiguous_range_km());
         }
@@ -470,6 +508,11 @@ impl Debug for Message<'_> {
             .field("radial_status", &self.radial_status())
             .field("vcp_number", &self.vcp_number())
             .field("unambiguous_range_km", &self.unambiguous_range_km())
+            .field("nyquist_velocity_mps", &self.nyquist_velocity_mps())
+            .field(
+                "atmospheric_attenuation_db_per_km",
+                &self.atmospheric_attenuation_db_per_km(),
+            )
             .field("calibration_constant_db", &self.calibration_constant_db())
             .field("surveillance_gate_count", &self.surveillance_gate_count())
             .field("doppler_gate_count", &self.doppler_gate_count())

@@ -25,7 +25,7 @@ pub fn parse_clutter_filter_map(data: &[u8]) -> String {
 
     // Header
     output.push_str("--- Header ---\n");
-    if let Some(dt) = msg.date_time() {
+    if let Some(dt) = msg.map_generation_date_time() {
         output.push_str(&format!(
             "Generation Date/Time: {}\n",
             dt.format("%Y-%m-%d %H:%M UTC")
@@ -33,11 +33,11 @@ pub fn parse_clutter_filter_map(data: &[u8]) -> String {
     } else {
         output.push_str(&format!(
             "Generation Date: {} (days since epoch)\n",
-            msg.map_generation_date()
+            msg.map_generation_date_raw()
         ));
         output.push_str(&format!(
             "Generation Time: {} (minutes past midnight)\n",
-            msg.map_generation_time()
+            msg.map_generation_time_raw()
         ));
     }
     output.push_str(&format!(
@@ -99,7 +99,7 @@ pub fn parse_clutter_filter_map(data: &[u8]) -> String {
             if zones.len() > 1 {
                 output.push_str(&format!(
                     "  Az {:3}\u{00b0}: {} zones",
-                    az_seg.azimuth_segment(),
+                    az_seg.azimuth_segment_number(),
                     zones.len()
                 ));
                 // Show zone details inline

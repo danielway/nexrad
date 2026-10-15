@@ -25,7 +25,7 @@ pub fn parse_clutter_filter_bypass_map(data: &[u8]) -> String {
 
     // Header
     output.push_str("--- Header ---\n");
-    if let Some(dt) = msg.date_time() {
+    if let Some(dt) = msg.bypass_map_generation_date_time() {
         output.push_str(&format!(
             "Generation Date/Time: {}\n",
             dt.format("%Y-%m-%d %H:%M UTC")
@@ -33,16 +33,16 @@ pub fn parse_clutter_filter_bypass_map(data: &[u8]) -> String {
     } else {
         output.push_str(&format!(
             "Generation Date: {} (days since epoch)\n",
-            msg.bypass_map_generation_date()
+            msg.bypass_map_generation_date_raw()
         ));
         output.push_str(&format!(
             "Generation Time: {} (minutes past midnight)\n",
-            msg.bypass_map_generation_time()
+            msg.bypass_map_generation_time_raw()
         ));
     }
     output.push_str(&format!(
         "Number of Elevation Segments: {}\n",
-        msg.number_of_elevation_segments()
+        msg.elevation_segment_count()
     ));
 
     // Elevation segments with summary statistics
@@ -53,7 +53,10 @@ pub fn parse_clutter_filter_bypass_map(data: &[u8]) -> String {
     ));
 
     for (i, segment) in segments.iter().enumerate() {
-        output.push_str(&format!("\n[Segment {}]\n", segment.segment_number()));
+        output.push_str(&format!(
+            "\n[Segment {}]\n",
+            segment.elevation_segment_number()
+        ));
 
         // Compute summary statistics across 360 radials x 512 range bins
         let mut bypass_count = 0u32;

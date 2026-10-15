@@ -1,15 +1,17 @@
 use crate::messages::primitive_aliases::Code1;
 use std::fmt::Debug;
 
-/// Statuses:
+/// Spot blanking flags for a radial, elevation and volume scan.
+///
+/// Bits:
 ///   0 = None
 ///   1 = Radial
 ///   2 = Elevation
 ///   4 = Volume
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
-pub struct SpotBlankingStatus(Code1);
+pub struct SpotBlankingFlags(Code1);
 
-impl SpotBlankingStatus {
+impl SpotBlankingFlags {
     pub(crate) fn new(code: Code1) -> Self {
         Self(code)
     }

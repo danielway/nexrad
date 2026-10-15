@@ -244,8 +244,8 @@ fn test_message_type1_field_values() {
                 assert!(vcp > 0, "VCP number should be positive, got {vcp}");
 
                 // Gate counts should be reasonable
-                let surv = drd.num_surveillance_gates();
-                let dopp = drd.num_doppler_gates();
+                let surv = drd.surveillance_gate_count();
+                let dopp = drd.doppler_gate_count();
                 assert!(surv <= 460, "surveillance gates {surv} exceeds max 460");
                 assert!(dopp <= 920, "doppler gates {dopp} exceeds max 920");
                 assert!(
@@ -831,7 +831,7 @@ fn analyze_volume_first_vol_block(data: &[u8]) -> VolBlockAnalysis {
                     return VolBlockAnalysis {
                         is_legacy: inner.lrtup_bytes() <= 44,
                         lrtup: inner.lrtup_bytes(),
-                        zdr_bias: inner.zdr_bias_estimate_weighted_mean(),
+                        zdr_bias: inner.zdr_bias_estimate_weighted_mean_raw(),
                     };
                 }
             }

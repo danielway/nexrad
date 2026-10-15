@@ -28,8 +28,10 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
         .map(|dt| dt.format("%Y-%m-%d %H:%M:%S UTC").to_string())
         .unwrap_or_else(|| "Unknown".to_string());
 
-    let radar_id = header.radar_identifier();
-    let radar_id = radar_id.trim_end_matches('\0');
+    let radar_id = header
+        .radar_identifier()
+        .map(|id| id.trim_end_matches('\0'))
+        .unwrap_or("(invalid)");
 
     let mut output = String::new();
 
@@ -79,7 +81,7 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
             vol.site_height_meters(),
             vol.tower_height_meters()
         ));
-        output.push_str(&format!("VCP: {}\n", vol.volume_coverage_pattern()));
+        output.push_str(&format!("VCP: {}\n", vol.vcp_number()));
         output.push_str(&format!(
             "Calibration Constant: {:.2} dB\n",
             vol.calibration_constant_db()
@@ -347,10 +349,7 @@ fn render_block_header(
     header: &digital_radar_data::GenericDataBlockHeader,
 ) {
     output.push_str(&format!("\n--- {} ({}) ---\n", name, id));
-    output.push_str(&format!(
-        "Gates: {}\n",
-        header.number_of_data_moment_gates()
-    ));
+    output.push_str(&format!("Gates: {}\n", header.data_moment_gate_count()));
     output.push_str(&format!(
         "First Gate: {:.3} km\n",
         header.data_moment_range_km()

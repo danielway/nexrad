@@ -1,6 +1,6 @@
-/// An RDA alarm message definition to be referenced by an RDA status data message.
+/// An RDA alarm definition, identified by the alarm code an RDA status data message reports.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Message {
+pub struct Definition {
     code: u16,
     state: Option<State>,
     alarm_type: Option<AlarmType>,
@@ -9,7 +9,7 @@ pub struct Message {
     message: &'static str,
 }
 
-impl Message {
+impl Definition {
     pub(crate) fn new(
         code: u16,
         state: Option<State>,

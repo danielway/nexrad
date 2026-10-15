@@ -18,7 +18,7 @@
 //!         MessageContents::DigitalRadarData(data) => {
 //!             // Process radar data message
 //!         }
-//!         MessageContents::VolumeCoveragePattern(vcp) => {
+//!         MessageContents::RdaVolumeCoveragePattern(vcp) => {
 //!             // Process VCP information
 //!         }
 //!         MessageContents::Other { message_type, data } => {

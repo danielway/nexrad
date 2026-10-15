@@ -14,7 +14,7 @@ use uom::si::information::byte;
 
 /// Message and system configuration information appended to the beginning of all messages.
 ///
-/// Use [`segmented()`](Self::segmented) to determine the framing mode, and
+/// Use [`is_fixed_frame()`](Self::is_fixed_frame) to determine the framing mode, and
 /// [`message_size_bytes()`](Self::message_size_bytes) for the message size.
 ///
 /// This header's contents correspond to ICD 2620002AA section 3.2.4.1 Table II.
@@ -87,7 +87,7 @@ impl<'a> MessageHeader<'a> {
         self.raw.sequence_number.get()
     }
 
-    /// If this message is [segmented](Self::segmented), this indicates this message segment's
+    /// If this message is [fixed-frame](Self::is_fixed_frame), this indicates this message segment's
     /// size in bytes. Otherwise, this returns [None] and
     /// [`message_size_bytes()`](Self::message_size_bytes) should be used to determine the
     /// message's full size.
@@ -100,7 +100,7 @@ impl<'a> MessageHeader<'a> {
         }
     }
 
-    /// If this message is [segmented](Self::segmented), this indicates this message segment's
+    /// If this message is [fixed-frame](Self::is_fixed_frame), this indicates this message segment's
     /// size. Otherwise, this returns [None] and [`message_size()`](Self::message_size) should be
     /// used to determine the message's full size.
     #[cfg(feature = "uom")]
@@ -135,52 +135,52 @@ impl<'a> MessageHeader<'a> {
         )
     }
 
-    /// Whether this message uses fixed-segment framing (2432-byte frames).
+    /// Whether this message uses fixed-frame framing (2432-byte frames).
     ///
-    /// Segmented messages occupy one or more fixed-size frames. Variable-length messages
+    /// Fixed-frame messages occupy one or more fixed-size frames. Variable-length messages
     /// (where this returns `false`) carry their own size and are not padded to frame
     /// boundaries. Digital Radar Data (Type 31) is always variable-length.
-    pub fn segmented(&self) -> bool {
+    pub fn is_fixed_frame(&self) -> bool {
         // ICD Table II: segment_size == 0xFFFF indicates variable-length framing.
         //
         // Type 31 (Digital Radar Data) is also variable-length, but in practice its
         // segment_size field contains the actual content halfwords rather than the
         // ICD-specified 0xFFFF sentinel. We treat Type 31 as variable-length regardless.
         self.raw.segment_size < VARIABLE_LENGTH_MESSAGE_SIZE
-            && self.message_type() != MessageType::RdaDigitalRadarDataGenericFormat
+            && self.message_type() != MessageType::DigitalRadarData
     }
 
-    /// If the message is [segmented](Self::segmented), this indicates the number of segments in
+    /// If the message is [fixed-frame](Self::is_fixed_frame), this indicates the number of segments in
     /// the full message, otherwise this returns [None].
     /// [`message_size_bytes()`](Self::message_size_bytes) can be used to determine the message's
     /// full size.
     pub fn segment_count(&self) -> Option<u16> {
-        if self.segmented() {
+        if self.is_fixed_frame() {
             Some(self.raw.segment_count.get())
         } else {
             None
         }
     }
 
-    /// If the message is [segmented](Self::segmented), this indicates this segment's
+    /// If the message is [fixed-frame](Self::is_fixed_frame), this indicates this segment's
     /// number/sequence in the message, otherwise this returns [None].
     /// [`message_size_bytes()`](Self::message_size_bytes) can be used to determine the message's
     /// full size.
     pub fn segment_number(&self) -> Option<u16> {
-        if self.segmented() {
+        if self.is_fixed_frame() {
             Some(self.raw.segment_number.get())
         } else {
             None
         }
     }
 
-    /// The full size of the message in bytes. If the message is [segmented](Self::segmented)
+    /// The full size of the message in bytes. If the message is [fixed-frame](Self::is_fixed_frame)
     /// then this is the segment size, otherwise this is the full variable-length message size.
     ///
     /// For variable-length messages (segment size = 0xFFFF), the segment count and segment number
     /// fields are repurposed as a 32-bit message size in bytes per ICD Table II.
     ///
-    /// Note: this uses the raw segment size rather than [`segmented()`](Self::segmented)
+    /// Note: this uses the raw segment size rather than [`is_fixed_frame()`](Self::is_fixed_frame)
     /// because Type 31 messages store their halfword count in the segment size even though they
     /// use variable-length framing.
     pub fn message_size_bytes(&self) -> u32 {
@@ -197,7 +197,7 @@ impl<'a> MessageHeader<'a> {
         }
     }
 
-    /// The full size of the message. If the message is [segmented](Self::segmented) then this is
+    /// The full size of the message. If the message is [fixed-frame](Self::is_fixed_frame) then this is
     /// the segment size, otherwise this is the full variable-length message size.
     ///
     /// For variable-length messages (segment size = 0xFFFF), the segment count and segment number
@@ -243,7 +243,7 @@ mod tests {
         assert_eq!(header.message_type_raw(), 2);
         assert_eq!(header.message_type(), MessageType::RdaStatusData);
         assert_eq!(header.sequence_number(), 42);
-        assert!(header.segmented());
+        assert!(header.is_fixed_frame());
         assert_eq!(header.segment_count(), Some(1));
         assert_eq!(header.segment_number(), Some(1));
         assert_eq!(header.message_size_bytes(), 2432);

@@ -37,12 +37,13 @@ impl<'a> Message<'a> {
         self.header.message_size.get()
     }
 
-    /// The raw bytes of the console message text.
-    pub fn text_bytes(&self) -> &[u8] {
+    /// The raw bytes of the console message text. See [`text()`](Self::text) for the decoded
+    /// value.
+    pub fn text_raw(&self) -> &[u8] {
         &self.text_data
     }
 
-    /// The console message text as a UTF-8 string, if valid.
+    /// The console message text, or `None` if the bytes are not valid UTF-8.
     pub fn text(&self) -> Option<&str> {
         std::str::from_utf8(&self.text_data).ok()
     }

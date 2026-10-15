@@ -1,3 +1,5 @@
+use crate::messages::volume_coverage_pattern::WaveformType;
+
 /// PRF (Pulse Repetition Frequency) data for a single waveform type.
 ///
 /// Each waveform section contains a waveform type identifier followed by the set of PRF values
@@ -23,9 +25,16 @@ impl WaveformPrfData {
     }
 
     /// The waveform type code: 1 = Contiguous Surveillance, 2 = Contiguous Doppler with
-    /// Ambiguity Resolution, 5 = Staggered Pulse Pair.
-    pub fn waveform_type(&self) -> u16 {
+    /// Ambiguity Resolution, 5 = Staggered Pulse Pair (raw value). See
+    /// [`waveform_type()`](Self::waveform_type) for the decoded value.
+    pub fn waveform_type_raw(&self) -> u16 {
         self.waveform_type
+    }
+
+    /// The waveform type. A code that does not fit in a `u8` (only possible in malformed data)
+    /// is reported as [`WaveformType::Unknown(u8::MAX)`](WaveformType::Unknown).
+    pub fn waveform_type(&self) -> WaveformType {
+        WaveformType::from_raw(u8::try_from(self.waveform_type).unwrap_or(u8::MAX))
     }
 
     /// The raw PRF values as Integer4 values. Each value is scaled by 0.001 to get the PRF in Hz.

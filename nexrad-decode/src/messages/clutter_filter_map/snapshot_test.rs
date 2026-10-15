@@ -28,7 +28,7 @@ fn test_decode_clutter_filter_map() {
 
     assert_eq!(cfm_messages.len(), 1, "expected exactly one CFM message");
     let msg = cfm_messages[0];
-    assert!(msg.is_segmented(), "CFM should be a segmented message");
+    assert!(msg.is_multi_segment(), "CFM should be a segmented message");
 
     let cfm = match msg.contents() {
         crate::messages::MessageContents::ClutterFilterMap(cfm) => cfm,
@@ -55,8 +55,8 @@ fn test_decode_clutter_filter_map() {
     }
 
     let summary = CfmSummary {
-        map_generation_date: cfm.map_generation_date(),
-        map_generation_time: cfm.map_generation_time(),
+        map_generation_date: cfm.map_generation_date_raw(),
+        map_generation_time: cfm.map_generation_time_raw(),
         elevation_segment_count: cfm.elevation_segment_count(),
         elevations: cfm
             .elevation_segments()

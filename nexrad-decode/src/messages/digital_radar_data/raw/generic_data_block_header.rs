@@ -12,7 +12,7 @@ pub struct GenericDataBlockHeader {
     pub reserved: Integer4,
 
     /// Number of data moment gates for current radial, from 0 to 1840.
-    pub number_of_data_moment_gates: Integer2,
+    pub data_moment_gate_count: Integer2,
 
     /// Range to center of first range gate in 0.000-scaled kilometers.
     pub data_moment_range: ScaledInteger2,

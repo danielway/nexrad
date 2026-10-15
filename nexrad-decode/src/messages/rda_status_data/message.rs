@@ -8,6 +8,7 @@ use crate::messages::rda_status_data::{
     ScanDataFlags, SpotBlankingStatus, SuperResolutionStatus, TransitionPowerSourceStatus,
     VcpSelection,
 };
+use crate::messages::VcpNumber;
 use crate::result::Result;
 use crate::segmented_slice_reader::SegmentedSliceReader;
 use crate::util::get_datetime;
@@ -103,11 +104,12 @@ impl<'a> Message<'a> {
         self.inner.data_transmission_enabled.get()
     }
 
-    /// The radar's volume coverage pattern number.
+    /// The radar's volume coverage pattern number (raw value). See
+    /// [`vcp_number()`](Self::vcp_number) for the decoded value.
     ///
     /// The magnitude of the value identifies the pattern, and the sign indicates whether it was
     /// specified locally or remotely. Zero indicates no pattern.
-    pub fn volume_coverage_pattern_raw(&self) -> i16 {
+    pub fn vcp_number_raw(&self) -> i16 {
         self.inner.volume_coverage_pattern.get()
     }
 
@@ -223,24 +225,24 @@ impl<'a> Message<'a> {
 
     /// The bypass map generation date represented as a count of days since 1 January 1970 00:00 GMT.
     /// It is also referred-to as a "modified Julian date" where it is the Julian date - 2440586.5.
-    pub fn bypass_map_generation_date(&self) -> u16 {
+    pub fn bypass_map_generation_date_raw(&self) -> u16 {
         self.inner.bypass_map_generation_date.get()
     }
 
     /// The bypass map generation time in minutes past midnight, GMT.
-    pub fn bypass_map_generation_time(&self) -> u16 {
+    pub fn bypass_map_generation_time_raw(&self) -> u16 {
         self.inner.bypass_map_generation_time.get()
     }
 
     /// The clutter filter map generation date represented as a count of days since 1 January 1970
     /// 00:00 GMT. It is also referred-to as a "modified Julian date" where it is the
     /// Julian date - 2440586.5.
-    pub fn clutter_filter_map_generation_date(&self) -> u16 {
+    pub fn clutter_filter_map_generation_date_raw(&self) -> u16 {
         self.inner.clutter_filter_map_generation_date.get()
     }
 
     /// The clutter filter map generation time in minutes past midnight, GMT.
-    pub fn clutter_filter_map_generation_time(&self) -> u16 {
+    pub fn clutter_filter_map_generation_time_raw(&self) -> u16 {
         self.inner.clutter_filter_map_generation_time.get()
     }
 
@@ -295,9 +297,15 @@ impl<'a> Message<'a> {
         self.inner.signal_processor_options.get()
     }
 
-    /// The VCP number currently in use, downloaded from the RPG.
-    pub fn downloaded_pattern_number(&self) -> u16 {
+    /// The VCP number currently in use, downloaded from the RPG (raw value). See
+    /// [`downloaded_pattern_number()`](Self::downloaded_pattern_number) for the decoded value.
+    pub fn downloaded_pattern_number_raw(&self) -> u16 {
         self.inner.downloaded_pattern_number.get()
+    }
+
+    /// The VCP number currently in use, downloaded from the RPG.
+    pub fn downloaded_pattern_number(&self) -> VcpNumber {
+        VcpNumber::from_number(self.inner.downloaded_pattern_number.get())
     }
 
     /// Version of status message.
@@ -374,7 +382,7 @@ impl<'a> Message<'a> {
 
     /// The radar's active volume coverage pattern and whether it was specified locally or
     /// remotely, or `None` if no pattern is set.
-    pub fn volume_coverage_pattern(&self) -> Option<VcpSelection> {
+    pub fn vcp_number(&self) -> Option<VcpSelection> {
         VcpSelection::from_raw(self.inner.volume_coverage_pattern.get())
     }
 
@@ -512,13 +520,13 @@ impl<'a> Message<'a> {
         }
     }
 
-    /// The RDA system's alarm messages.
-    pub fn alarm_messages(&self) -> Vec<alarm::Message> {
+    /// The definitions of the RDA system's active alarms.
+    pub fn alarm_definitions(&self) -> Vec<alarm::Definition> {
         self.inner
             .alarm_codes
             .iter()
             .filter(|&code| *code != 0)
-            .filter_map(|&code| alarm::get_alarm_message(code.get()))
+            .filter_map(|&code| alarm::definition(code.get()))
             .collect()
     }
 

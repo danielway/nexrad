@@ -23,14 +23,16 @@ impl<'a> DataBlockId<'a> {
         }
     }
 
-    /// Data block type (raw byte), e.g. b'R'.
+    /// Data block type (raw byte), e.g. b'R'. See [`data_block_type()`](Self::data_block_type)
+    /// for the decoded value.
     pub fn data_block_type_raw(&self) -> u8 {
         self.inner.data_block_type
     }
 
-    /// Data block name (raw bytes), e.g. b"VOL".
-    pub fn data_name_raw(&self) -> &[u8; 3] {
-        &self.inner.data_name
+    /// Data block name (raw bytes), e.g. b"VOL". See [`data_block_name()`](Self::data_block_name)
+    /// for the decoded value.
+    pub fn data_block_name_raw(&self) -> &[u8; 3] {
+        &self.inner.data_block_name
     }
 
     /// Data block type category.
@@ -42,14 +44,9 @@ impl<'a> DataBlockId<'a> {
         }
     }
 
-    /// Data block type as a character, e.g. 'R'.
-    pub fn data_block_type_char(&self) -> char {
-        self.inner.data_block_type as char
-    }
-
     /// Data block name.
     pub fn data_block_name(&self) -> DataBlockName {
-        match &self.inner.data_name {
+        match &self.inner.data_block_name {
             b"VOL" => DataBlockName::Volume,
             b"ELV" => DataBlockName::Elevation,
             b"RAD" => DataBlockName::Radial,
@@ -63,25 +60,16 @@ impl<'a> DataBlockId<'a> {
             other => DataBlockName::Unknown(*other),
         }
     }
-
-    /// Data block name as a string, e.g. "VOL".
-    ///
-    /// The name is always 3 bytes of ASCII from the binary format. If the bytes are
-    /// not valid UTF-8 (e.g. from a malformed file), invalid sequences are replaced
-    /// with the Unicode replacement character.
-    pub fn data_block_name_str(&self) -> Cow<'_, str> {
-        String::from_utf8_lossy(&self.inner.data_name)
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn name_of(data_name: [u8; 3]) -> DataBlockName {
+    fn name_of(data_block_name: [u8; 3]) -> DataBlockName {
         let raw = raw::DataBlockId {
             data_block_type: b'D',
-            data_name,
+            data_block_name,
         };
         DataBlockId::new(&raw).data_block_name()
     }

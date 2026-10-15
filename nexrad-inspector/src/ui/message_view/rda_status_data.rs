@@ -74,7 +74,7 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
 
     // Volume Coverage Pattern Section
     output.push_str("\n--- Volume Coverage Pattern ---\n");
-    if let Some(vcp) = message.volume_coverage_pattern() {
+    if let Some(vcp) = message.vcp_number() {
         output.push_str(&format!(
             "VCP Number: {} ({})\n",
             vcp.number(),
@@ -191,7 +191,7 @@ pub fn parse_rda_status_data(data: &[u8]) -> String {
         format_alarm_summary(&alarm_summary)
     ));
 
-    let alarms = message.alarm_messages();
+    let alarms = message.alarm_definitions();
     if alarms.is_empty() {
         output.push_str("Active Alarms: None\n");
     } else {

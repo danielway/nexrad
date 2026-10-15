@@ -22,18 +22,16 @@ pub fn parse_rda_prf_data(data: &[u8]) -> String {
     let mut output = String::new();
 
     output.push_str("=== RDA PRF Data (Type 32) ===\n\n");
-    output.push_str(&format!(
-        "Number of Waveforms: {}\n",
-        msg.number_of_waveforms()
-    ));
+    output.push_str(&format!("Number of Waveforms: {}\n", msg.waveform_count()));
 
     let waveform_data = msg.waveform_prf_data();
     output.push_str(&format!("Waveform Entries: {}\n", waveform_data.len()));
 
     for (i, wf) in waveform_data.iter().enumerate() {
         output.push_str(&format!(
-            "\n--- Waveform {} (Type {}) ---\n",
+            "\n--- Waveform {} (Type {}: {:?}) ---\n",
             i + 1,
+            wf.waveform_type_raw(),
             wf.waveform_type()
         ));
 

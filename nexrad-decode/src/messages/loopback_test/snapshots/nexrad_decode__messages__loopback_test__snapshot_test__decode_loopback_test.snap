@@ -33,7 +33,7 @@ Message {
     ),
     contents: LoopbackTest(
         Message {
-            message_type: RdaLoopBackTest,
+            message_type: RdaLoopbackTest,
             header: Header {
                 message_size: 5,
             },

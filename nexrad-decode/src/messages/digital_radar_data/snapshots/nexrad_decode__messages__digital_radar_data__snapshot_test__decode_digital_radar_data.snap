@@ -63,7 +63,7 @@ Message {
                     id: DataBlockId {
                         inner: DataBlockId {
                             data_block_type: 82,
-                            data_name: [
+                            data_block_name: [
                                 86,
                                 79,
                                 76,
@@ -115,7 +115,7 @@ Message {
                     id: DataBlockId {
                         inner: DataBlockId {
                             data_block_type: 82,
-                            data_name: [
+                            data_block_name: [
                                 69,
                                 76,
                                 86,
@@ -137,7 +137,7 @@ Message {
                     id: DataBlockId {
                         inner: DataBlockId {
                             data_block_type: 82,
-                            data_name: [
+                            data_block_name: [
                                 82,
                                 65,
                                 68,
@@ -166,7 +166,7 @@ Message {
                     id: DataBlockId {
                         inner: DataBlockId {
                             data_block_type: 68,
-                            data_name: [
+                            data_block_name: [
                                 82,
                                 69,
                                 70,
@@ -178,7 +178,7 @@ Message {
                         header: GenericDataBlockHeader {
                             inner: GenericDataBlockHeader {
                                 reserved: 0,
-                                number_of_data_moment_gates: 1832,
+                                data_moment_gate_count: 1832,
                                 data_moment_range: 2125,
                                 data_moment_range_sample_interval: 250,
                                 tover: 50,
@@ -215,7 +215,7 @@ Message {
                     id: DataBlockId {
                         inner: DataBlockId {
                             data_block_type: 68,
-                            data_name: [
+                            data_block_name: [
                                 90,
                                 68,
                                 82,
@@ -227,7 +227,7 @@ Message {
                         header: GenericDataBlockHeader {
                             inner: GenericDataBlockHeader {
                                 reserved: 0,
-                                number_of_data_moment_gates: 1192,
+                                data_moment_gate_count: 1192,
                                 data_moment_range: 2125,
                                 data_moment_range_sample_interval: 250,
                                 tover: 50,
@@ -262,7 +262,7 @@ Message {
                     id: DataBlockId {
                         inner: DataBlockId {
                             data_block_type: 68,
-                            data_name: [
+                            data_block_name: [
                                 80,
                                 72,
                                 73,
@@ -274,7 +274,7 @@ Message {
                         header: GenericDataBlockHeader {
                             inner: GenericDataBlockHeader {
                                 reserved: 0,
-                                number_of_data_moment_gates: 1192,
+                                data_moment_gate_count: 1192,
                                 data_moment_range: 2125,
                                 data_moment_range_sample_interval: 250,
                                 tover: 50,
@@ -309,7 +309,7 @@ Message {
                     id: DataBlockId {
                         inner: DataBlockId {
                             data_block_type: 68,
-                            data_name: [
+                            data_block_name: [
                                 82,
                                 72,
                                 79,
@@ -321,7 +321,7 @@ Message {
                         header: GenericDataBlockHeader {
                             inner: GenericDataBlockHeader {
                                 reserved: 0,
-                                number_of_data_moment_gates: 1192,
+                                data_moment_gate_count: 1192,
                                 data_moment_range: 2125,
                                 data_moment_range_sample_interval: 250,
                                 tover: 50,
@@ -356,7 +356,7 @@ Message {
                     id: DataBlockId {
                         inner: DataBlockId {
                             data_block_type: 68,
-                            data_name: [
+                            data_block_name: [
                                 67,
                                 70,
                                 80,
@@ -368,7 +368,7 @@ Message {
                         header: GenericDataBlockHeader {
                             inner: GenericDataBlockHeader {
                                 reserved: 0,
-                                number_of_data_moment_gates: 1832,
+                                data_moment_gate_count: 1832,
                                 data_moment_range: 2125,
                                 data_moment_range_sample_interval: 250,
                                 tover: 50,

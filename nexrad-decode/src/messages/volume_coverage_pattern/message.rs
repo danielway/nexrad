@@ -21,7 +21,7 @@ impl<'a> Message<'a> {
     pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
         let raw_header = reader.take_ref::<raw::Header>()?;
 
-        let elevation_cuts = raw_header.number_of_elevation_cuts.get() as usize;
+        let elevation_cuts = raw_header.elevation_cut_count.get() as usize;
         let raw_elevations = reader.take_slice::<raw::ElevationDataBlock>(elevation_cuts)?;
 
         let header = Header::new(raw_header);
@@ -95,17 +95,17 @@ impl<'a> Message<'a> {
             })
             .collect();
 
-        VolumeCoveragePattern::builder(VcpNumber::from_number(header.pattern_number()))
+        VolumeCoveragePattern::builder(VcpNumber::from_number(header.vcp_number_raw()))
             .version(header.version())
             .doppler_velocity_resolution_mps(header.doppler_velocity_resolution_mps())
             .pulse_width(header.pulse_width().into())
             .sails_enabled(header.is_sails_vcp())
-            .sails_cut_count(header.number_of_sails_cuts())
+            .sails_cut_count(header.sails_cut_count())
             .mrle_enabled(header.is_mrle_vcp())
-            .mrle_cut_count(header.number_of_mrle_cuts())
+            .mrle_cut_count(header.mrle_cut_count())
             .mpda_enabled(header.is_mpda_vcp())
             .base_tilt_enabled(header.is_base_tilt_vcp())
-            .base_tilt_count(header.number_of_base_tilts())
+            .base_tilt_count(header.base_tilt_count())
             .sequence_active(header.vcp_sequencing_sequence_active())
             .truncated(header.vcp_sequencing_truncated())
             .elevation_cuts(elevation_cuts)

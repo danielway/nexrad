@@ -74,13 +74,13 @@ pub fn parse_digital_radar_data_legacy(data: &[u8]) -> String {
     output.push_str("\n--- Gate Configuration ---\n");
     output.push_str(&format!(
         "Surveillance Gates: {} (interval: {} m, first gate: {} m)\n",
-        msg.num_surveillance_gates(),
+        msg.surveillance_gate_count(),
         msg.surveillance_gate_interval_meters(),
         msg.surveillance_first_gate_range_meters()
     ));
     output.push_str(&format!(
         "Doppler Gates: {} (interval: {} m, first gate: {} m)\n",
-        msg.num_doppler_gates(),
+        msg.doppler_gate_count(),
         msg.doppler_gate_interval_meters(),
         msg.doppler_first_gate_range_meters()
     ));

@@ -53,7 +53,7 @@ impl<'a> MessageHeaders<'a> {
     }
 
     /// Returns true if this is a multi-segment message.
-    pub fn is_segmented(&self) -> bool {
+    pub fn is_multi_segment(&self) -> bool {
         matches!(self, MessageHeaders::Multiple(_))
     }
 
@@ -113,9 +113,9 @@ impl<'a> Message<'a> {
         &self.headers
     }
 
-    /// Whether this message spans multiple segments.
-    pub fn is_segmented(&self) -> bool {
-        self.headers.is_segmented()
+    /// Whether this message spans more than one segment.
+    pub fn is_multi_segment(&self) -> bool {
+        self.headers.is_multi_segment()
     }
 
     /// This message's contents.
@@ -142,14 +142,14 @@ impl<'a> Message<'a> {
     /// The byte offset where this message starts in the source data.
     ///
     /// For segmented messages, this is the offset of the first segment.
-    pub fn offset(&self) -> usize {
+    pub fn offset_bytes(&self) -> usize {
         self.offset
     }
 
     /// The total size of this message in bytes, including all headers.
     ///
     /// For segmented messages, this is the combined size of all segments.
-    pub fn size(&self) -> usize {
+    pub fn size_bytes(&self) -> usize {
         self.size
     }
 }
@@ -171,15 +171,15 @@ pub(super) fn decode_fixed_segment_contents<'a>(
             let rda_status_message = rda_status_data::Message::parse(reader)?;
             MessageContents::RdaStatusData(Box::new(rda_status_message))
         }
-        MessageType::RdaPerformanceMaintenanceData => {
+        MessageType::PerformanceMaintenanceData => {
             let perf_maint_message = performance_maintenance_data::Message::parse(reader)?;
             MessageContents::PerformanceMaintenanceData(Box::new(perf_maint_message))
         }
         MessageType::RdaVolumeCoveragePattern => {
             let volume_coverage_message = volume_coverage_pattern::Message::parse(reader)?;
-            MessageContents::VolumeCoveragePattern(Box::new(volume_coverage_message))
+            MessageContents::RdaVolumeCoveragePattern(Box::new(volume_coverage_message))
         }
-        MessageType::RdaClutterFilterMap => {
+        MessageType::ClutterFilterMap => {
             let clutter_filter_message = clutter_filter_map::Message::parse(reader)?;
             MessageContents::ClutterFilterMap(Box::new(clutter_filter_message))
         }
@@ -187,11 +187,11 @@ pub(super) fn decode_fixed_segment_contents<'a>(
             let console_msg = console_message::Message::parse(reader, message_type)?;
             MessageContents::ConsoleMessage(Box::new(console_msg))
         }
-        MessageType::RdaLoopBackTest | MessageType::RpgLoopBackTest => {
+        MessageType::RdaLoopbackTest | MessageType::RpgLoopbackTest => {
             let loopback_msg = loopback_test::Message::parse(reader, message_type)?;
             MessageContents::LoopbackTest(Box::new(loopback_msg))
         }
-        MessageType::RpgRequestForData => {
+        MessageType::RequestForData => {
             let request_msg = request_for_data::Message::parse(reader)?;
             MessageContents::RequestForData(Box::new(request_msg))
         }
@@ -199,11 +199,11 @@ pub(super) fn decode_fixed_segment_contents<'a>(
             let control_commands_msg = rda_control_commands::Message::parse(reader)?;
             MessageContents::RdaControlCommands(Box::new(control_commands_msg))
         }
-        MessageType::RpgClutterCensorZones => {
+        MessageType::ClutterCensorZones => {
             let clutter_censor_msg = clutter_censor_zones::Message::parse(reader)?;
             MessageContents::ClutterCensorZones(Box::new(clutter_censor_msg))
         }
-        MessageType::RdaClutterFilterBypassMap => {
+        MessageType::ClutterFilterBypassMap => {
             let bypass_map_msg = clutter_filter_bypass_map::Message::parse(reader)?;
             MessageContents::ClutterFilterBypassMap(Box::new(bypass_map_msg))
         }
@@ -219,7 +219,7 @@ pub(super) fn decode_fixed_segment_contents<'a>(
             let adaptation_msg = rda_adaptation_data::Message::parse(reader)?;
             MessageContents::RdaAdaptationData(Box::new(adaptation_msg))
         }
-        MessageType::RdaDigitalRadarData => {
+        MessageType::DigitalRadarDataLegacy => {
             let legacy_msg = digital_radar_data_legacy::Message::parse(reader)?;
             MessageContents::DigitalRadarDataLegacy(Box::new(legacy_msg))
         }

@@ -34,7 +34,7 @@ Message {
     contents: RdaPrfData(
         Message {
             header: Header {
-                number_of_waveforms: 3,
+                waveform_count: 3,
                 spare: 0,
             },
             waveform_prf_data: [

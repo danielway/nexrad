@@ -138,7 +138,7 @@ async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
         "Stream initialized for {} at volume {} with VCP {}",
         config.site(),
         latest_volume.as_number(),
-        vcp.header().pattern_number()
+        vcp.header().vcp_number_raw()
     );
 
     Ok(ChunkStreamState {
@@ -255,7 +255,7 @@ fn record_arrival(
                 Ok(vcp) => {
                     debug!(
                         "Updated VCP to {} from start chunk",
-                        vcp.header().pattern_number()
+                        vcp.header().vcp_number_raw()
                     );
                     state.elevation_mapper = ElevationChunkMapper::new(&vcp);
                     state.vcp = vcp;

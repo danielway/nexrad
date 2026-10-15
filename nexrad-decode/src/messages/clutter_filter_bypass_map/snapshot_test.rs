@@ -30,7 +30,7 @@ fn test_decode_clutter_filter_bypass_map() {
     );
     let msg = bpm_messages[0];
     assert!(
-        msg.is_segmented(),
+        msg.is_multi_segment(),
         "bypass map should be a segmented message"
     );
 
@@ -58,9 +58,9 @@ fn test_decode_clutter_filter_bypass_map() {
     }
 
     let summary = BypassMapSummary {
-        generation_date: bpm.bypass_map_generation_date(),
-        generation_time: bpm.bypass_map_generation_time(),
-        elevation_segment_count: bpm.number_of_elevation_segments(),
+        generation_date: bpm.bypass_map_generation_date_raw(),
+        generation_time: bpm.bypass_map_generation_time_raw(),
+        elevation_segment_count: bpm.elevation_segment_count(),
         elevations: bpm
             .elevation_segments()
             .iter()
@@ -68,7 +68,7 @@ fn test_decode_clutter_filter_bypass_map() {
                 let bins = elev.range_bins();
                 let radial_180_offset = 180 * 32 * 2;
                 ElevationSummary {
-                    segment_number: elev.segment_number(),
+                    segment_number: elev.elevation_segment_number(),
                     range_bin_bytes: bins.len(),
                     first_radial_first_halfword: (bins[0], bins[1]),
                     radial_180_first_halfword: (

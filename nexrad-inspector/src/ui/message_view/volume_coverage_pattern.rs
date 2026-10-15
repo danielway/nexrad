@@ -19,7 +19,7 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
     };
 
     let msg = match message.contents() {
-        MessageContents::VolumeCoveragePattern(vcp) => vcp,
+        MessageContents::RdaVolumeCoveragePattern(vcp) => vcp,
         _ => return parse_header_only(data),
     };
 
@@ -31,11 +31,11 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
 
     // Header Section
     output.push_str("--- Header ---\n");
-    output.push_str(&format!("Pattern Number: {}\n", header.pattern_number()));
+    output.push_str(&format!("Pattern Number: {}\n", header.vcp_number_raw()));
     output.push_str(&format!("Pattern Type: {:?}\n", header.pattern_type()));
     output.push_str(&format!(
         "Number of Elevation Cuts: {}\n",
-        header.number_of_elevation_cuts()
+        header.elevation_cut_count()
     ));
     output.push_str(&format!("Version: {}\n", header.version()));
     output.push_str(&format!(
@@ -80,7 +80,7 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
     ));
     output.push_str(&format!(
         "Number of Elevations: {}\n",
-        header.vcp_sequencing_number_of_elevations()
+        header.vcp_sequencing_elevation_count()
     ));
     output.push_str(&format!(
         "Max SAILS Cuts: {}\n",
@@ -92,12 +92,12 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
     output.push_str(&format!(
         "SAILS VCP: {} ({} cuts)\n",
         if header.is_sails_vcp() { "Yes" } else { "No" },
-        header.number_of_sails_cuts()
+        header.sails_cut_count()
     ));
     output.push_str(&format!(
         "MRLE VCP: {} ({} cuts)\n",
         if header.is_mrle_vcp() { "Yes" } else { "No" },
-        header.number_of_mrle_cuts()
+        header.mrle_cut_count()
     ));
     output.push_str(&format!(
         "MPDA VCP: {}\n",
@@ -110,7 +110,7 @@ pub fn parse_volume_coverage_pattern(data: &[u8]) -> String {
         } else {
             "No"
         },
-        header.number_of_base_tilts()
+        header.base_tilt_count()
     ));
 
     // Elevation Cuts

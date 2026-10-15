@@ -146,11 +146,11 @@ fn test_record_message_decoding() {
     // First message is a clutter filter map (now decoded as a single segmented message)
     assert_eq!(
         first_message.header().message_type(),
-        nexrad_decode::messages::MessageType::RdaClutterFilterMap
+        nexrad_decode::messages::MessageType::ClutterFilterMap
     );
     // Segmented message composed of 5 segments
     assert!(
-        first_message.is_segmented(),
+        first_message.is_multi_segment(),
         "should be a segmented message"
     );
     assert_eq!(
@@ -198,10 +198,10 @@ fn test_full_volume_record_decoding() {
 
         for message in &messages {
             match message.header().message_type() {
-                nexrad_decode::messages::MessageType::RdaDigitalRadarDataGenericFormat => {
+                nexrad_decode::messages::MessageType::DigitalRadarData => {
                     digital_radar_messages += 1
                 }
-                nexrad_decode::messages::MessageType::RdaClutterFilterMap => {
+                nexrad_decode::messages::MessageType::ClutterFilterMap => {
                     clutter_filter_messages += 1
                 }
                 nexrad_decode::messages::MessageType::RdaStatusData => status_messages += 1,

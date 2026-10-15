@@ -100,8 +100,8 @@ impl<'a> RadialDataBlock<'a> {
         }
     }
 
-    /// Radial flags to support RPG processing.
-    pub fn radial_flags(&self) -> u16 {
+    /// Radial flags to support RPG processing (raw bitfield).
+    pub fn radial_flags_raw(&self) -> u16 {
         match &self.inner {
             RadialDataBlockInner::Legacy(inner) => inner.radial_flags.get(),
             RadialDataBlockInner::Modern(inner) => inner.radial_flags.get(),

@@ -37,19 +37,21 @@ impl<'a> Message<'a> {
         self.header.version.get()
     }
 
-    /// The log file identifier as a string, with trailing null bytes and whitespace trimmed.
-    pub fn identifier(&self) -> &str {
+    /// The log file identifier (26 raw bytes). See [`identifier()`](Self::identifier) for the
+    /// decoded value.
+    pub fn identifier_raw(&self) -> &[u8; 26] {
+        &self.header.identifier
+    }
+
+    /// The log file identifier with trailing null bytes and spaces trimmed, or `None` if the
+    /// bytes are not valid UTF-8.
+    pub fn identifier(&self) -> Option<&str> {
         let bytes = &self.header.identifier;
         let end = bytes
             .iter()
             .rposition(|&b| b != 0 && b != b' ')
             .map_or(0, |i| i + 1);
-        std::str::from_utf8(&bytes[..end]).unwrap_or("")
-    }
-
-    /// The raw identifier bytes (26 bytes).
-    pub fn identifier_bytes(&self) -> &[u8; 26] {
-        &self.header.identifier
+        std::str::from_utf8(&bytes[..end]).ok()
     }
 
     /// Version number of the data payload (1-10000).
@@ -58,8 +60,8 @@ impl<'a> Message<'a> {
     }
 
     /// The compression type used for the log data: 0 = Uncompressed, 1 = GZIP,
-    /// 2 = BZIP2, 3 = ZIP.
-    pub fn compression_type(&self) -> u32 {
+    /// 2 = BZIP2, 3 = ZIP (raw code).
+    pub fn compression_type_raw(&self) -> u32 {
         self.header.compression_type.get()
     }
 

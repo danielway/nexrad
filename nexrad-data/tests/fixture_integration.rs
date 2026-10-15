@@ -112,7 +112,10 @@ fn test_station_id_consistency_all_fixtures() {
 
             for message in decode_messages(record.data()).expect("should decode") {
                 if let MessageContents::DigitalRadarData(drd) = message.contents() {
-                    let msg_site = drd.header().radar_identifier();
+                    let msg_site = drd
+                        .header()
+                        .radar_identifier()
+                        .expect("radar identifier is valid UTF-8");
                     let msg_site_trimmed = msg_site.trim_end_matches('\0');
                     assert_eq!(
                         msg_site_trimmed,
@@ -250,7 +253,7 @@ fn test_metadata_messages_present() {
             for message in decode_messages(record.data()).expect("should decode") {
                 match message.contents() {
                     MessageContents::RdaStatusData(_) => found_status = true,
-                    MessageContents::VolumeCoveragePattern(_) => found_vcp = true,
+                    MessageContents::RdaVolumeCoveragePattern(_) => found_vcp = true,
                     MessageContents::ClutterFilterMap(_) => found_clutter_map = true,
                     _ => {}
                 }

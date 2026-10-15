@@ -1,13 +1,13 @@
-use crate::messages::rda_status_data::alarm::{AlarmType, Device, Message, State};
+use crate::messages::rda_status_data::alarm::{AlarmType, Definition, Device, State};
 
-/// Retrieves the RDA alarm message definition for the given code.
-pub fn get_alarm_message(code: u16) -> Option<Message> {
+/// The RDA alarm definition for the given alarm code, or `None` if the ICD does not define it.
+pub fn definition(code: u16) -> Option<Definition> {
     match code {
-        0 => Some(Message::new(0, None, None, None, None, "NO ALARMS")),
-        1 => Some(Message::new(1, None, None, None, None, "RESERVED")),
-        2 => Some(Message::new(2, None, None, None, None, "RESERVED")),
-        3..=13 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        14 => Some(Message::new(
+        0 => Some(Definition::new(0, None, None, None, None, "NO ALARMS")),
+        1 => Some(Definition::new(1, None, None, None, None, "RESERVED")),
+        2 => Some(Definition::new(2, None, None, None, None, "RESERVED")),
+        3..=13 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        14 => Some(Definition::new(
             14,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -15,7 +15,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "ALTERNATE ROUTE TO RPG IN USE",
         )),
-        15 => Some(Message::new(
+        15 => Some(Definition::new(
             15,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -23,7 +23,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "ALTERNATE ROUTE TO RPG IS DOWN",
         )),
-        16 => Some(Message::new(
+        16 => Some(Definition::new(
             16,
             Some(State::Secondary),
             Some(AlarmType::FilteredOccurrence),
@@ -31,7 +31,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "SEND WIDEBAND STATUS TIMED OUT",
         )),
-        17 => Some(Message::new(
+        17 => Some(Definition::new(
             17,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -39,9 +39,9 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "NTP FAILURE",
         )),
-        18 => Some(Message::new(18, None, None, None, None, "SPARE")),
-        19 => Some(Message::new(19, None, None, None, None, "SPARE")),
-        20 => Some(Message::new(
+        18 => Some(Definition::new(18, None, None, None, None, "SPARE")),
+        19 => Some(Definition::new(19, None, None, None, None, "SPARE")),
+        20 => Some(Definition::new(
             20,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -49,10 +49,10 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RPG LINK - RED ALARM (NO RX)",
         )),
-        21 => Some(Message::new(21, None, None, None, None, "SPARE")),
-        22 => Some(Message::new(22, None, None, None, None, "SPARE")),
-        23 => Some(Message::new(23, None, None, None, None, "SPARE")),
-        24 => Some(Message::new(
+        21 => Some(Definition::new(21, None, None, None, None, "SPARE")),
+        22 => Some(Definition::new(22, None, None, None, None, "SPARE")),
+        23 => Some(Definition::new(23, None, None, None, None, "SPARE")),
+        24 => Some(Definition::new(
             24,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -60,7 +60,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SNMP TIME OUT: LAN SWITCH",
         )),
-        25 => Some(Message::new(
+        25 => Some(Definition::new(
             25,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -68,8 +68,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SNMP TIME OUT: ROUTER",
         )),
-        26 => Some(Message::new(26, None, None, None, None, "SPARE")),
-        27 => Some(Message::new(
+        26 => Some(Definition::new(26, None, None, None, None, "SPARE")),
+        27 => Some(Definition::new(
             27,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -77,9 +77,9 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SNMP TIME OUT: POWER ADMINISTRATOR",
         )),
-        28 => Some(Message::new(28, None, None, None, None, "SPARE")),
-        29 => Some(Message::new(29, None, None, None, None, "SPARE")),
-        30 => Some(Message::new(
+        28 => Some(Definition::new(28, None, None, None, None, "SPARE")),
+        29 => Some(Definition::new(29, None, None, None, None, "SPARE")),
+        30 => Some(Definition::new(
             30,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -87,7 +87,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SNMP TIME OUT: CONSOLE SERVER",
         )),
-        31 => Some(Message::new(
+        31 => Some(Definition::new(
             31,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -95,8 +95,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "LAN SWITCH PORT 1 FAIL",
         )),
-        32 => Some(Message::new(32, None, None, None, None, "SPARE")),
-        33 => Some(Message::new(
+        32 => Some(Definition::new(32, None, None, None, None, "SPARE")),
+        33 => Some(Definition::new(
             33,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -104,9 +104,9 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "LAN SWITCH PORT 3 FAIL",
         )),
-        34 => Some(Message::new(34, None, None, None, None, "SPARE")),
-        35 => Some(Message::new(35, None, None, None, None, "SPARE")),
-        36 => Some(Message::new(
+        34 => Some(Definition::new(34, None, None, None, None, "SPARE")),
+        35 => Some(Definition::new(35, None, None, None, None, "SPARE")),
+        36 => Some(Definition::new(
             36,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -114,7 +114,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "LAN SWITCH PORT 7 FAIL",
         )),
-        37 => Some(Message::new(
+        37 => Some(Definition::new(
             37,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -122,8 +122,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "LAN SWITCH PORT 12 FAIL",
         )),
-        38..=39 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        40 => Some(Message::new(
+        38..=39 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        40 => Some(Definition::new(
             40,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -131,8 +131,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "FILAMENT POWER SUPPLY OFF",
         )),
-        41..=42 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        43 => Some(Message::new(
+        41..=42 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        43 => Some(Definition::new(
             43,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -140,7 +140,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(3),
             "WAVEGUIDE SWITCH FAILURE",
         )),
-        44 => Some(Message::new(
+        44 => Some(Definition::new(
             44,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -148,7 +148,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "WAVEGUIDE/PFN TRANSFER INTERLOCK",
         )),
-        45 => Some(Message::new(
+        45 => Some(Definition::new(
             45,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -156,7 +156,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR IN MAINTENANCE MODE",
         )),
-        46 => Some(Message::new(
+        46 => Some(Definition::new(
             46,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -164,7 +164,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR UNAVAILABLE",
         )),
-        47 => Some(Message::new(
+        47 => Some(Definition::new(
             47,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -172,7 +172,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(3),
             "PFN/PW SWITCH FAILURE",
         )),
-        48 => Some(Message::new(
+        48 => Some(Definition::new(
             48,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -180,7 +180,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR +5VDC POWER SUPPLY 6 FAIL",
         )),
-        49 => Some(Message::new(
+        49 => Some(Definition::new(
             49,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -188,7 +188,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR +15VDC POWER SUPPLY 4 FAIL",
         )),
-        50 => Some(Message::new(
+        50 => Some(Definition::new(
             50,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -196,7 +196,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR +28VDC POWER SUPPLY 3 FAIL",
         )),
-        51 => Some(Message::new(
+        51 => Some(Definition::new(
             51,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -204,7 +204,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR -15VDC POWER SUPPLY 5 FAIL",
         )),
-        52 => Some(Message::new(
+        52 => Some(Definition::new(
             52,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -212,7 +212,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR +45VDC POWER SUPPLY 7 FAIL",
         )),
-        53 => Some(Message::new(
+        53 => Some(Definition::new(
             53,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -220,7 +220,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "FILAMENT POWER SUPPLY VOLTAGE FAIL",
         )),
-        54 => Some(Message::new(
+        54 => Some(Definition::new(
             54,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -228,7 +228,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VACUUM PUMP POWER SUPPLY VOLTAGE FAIL",
         )),
-        55 => Some(Message::new(
+        55 => Some(Definition::new(
             55,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -236,7 +236,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "FOCUS COIL POWER SUPPLY VOLTAGE FAIL",
         )),
-        56 => Some(Message::new(
+        56 => Some(Definition::new(
             56,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -244,7 +244,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "CIRCULATOR OVERTEMP",
         )),
-        57 => Some(Message::new(
+        57 => Some(Definition::new(
             57,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -252,7 +252,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SPECTRUM FILTER LOW PRESSURE",
         )),
-        58 => Some(Message::new(
+        58 => Some(Definition::new(
             58,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -260,7 +260,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "WAVEGUIDE ARC/VSWR",
         )),
-        59 => Some(Message::new(
+        59 => Some(Definition::new(
             59,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -268,7 +268,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR CABINET INTERLOCK OPEN",
         )),
-        60 => Some(Message::new(
+        60 => Some(Definition::new(
             60,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -276,7 +276,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR CABINET OVER TEMP",
         )),
-        61 => Some(Message::new(
+        61 => Some(Definition::new(
             61,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -284,7 +284,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR CABINET AIR FLOW FAIL",
         )),
-        62 => Some(Message::new(
+        62 => Some(Definition::new(
             62,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -292,8 +292,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR MAINTENANCE REQUIRED",
         )),
-        63 => Some(Message::new(63, None, None, None, None, "SPARE")),
-        64 => Some(Message::new(
+        63 => Some(Definition::new(63, None, None, None, None, "SPARE")),
+        64 => Some(Definition::new(
             64,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -301,7 +301,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "MODULATOR OVERLOAD",
         )),
-        65 => Some(Message::new(
+        65 => Some(Definition::new(
             65,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -309,7 +309,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "MODULATOR INVERSE CURRENT FAIL",
         )),
-        66 => Some(Message::new(
+        66 => Some(Definition::new(
             66,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -317,7 +317,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "MODULATOR SWITCH FAILURE",
         )),
-        67 => Some(Message::new(
+        67 => Some(Definition::new(
             67,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -325,7 +325,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR MAIN POWER OVER VOLTAGE",
         )),
-        68 => Some(Message::new(
+        68 => Some(Definition::new(
             68,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -333,7 +333,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CHARGING SYSTEM FAILURE",
         )),
-        69 => Some(Message::new(
+        69 => Some(Definition::new(
             69,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -341,7 +341,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CHARGING SYSTEM INVERSE CURRENT FAILURE",
         )),
-        70 => Some(Message::new(
+        70 => Some(Definition::new(
             70,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -349,8 +349,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "TRIGGER AMPLIFIER FAILURE",
         )),
-        71 => Some(Message::new(71, None, None, None, None, "SPARE")),
-        72 => Some(Message::new(
+        71 => Some(Definition::new(71, None, None, None, None, "SPARE")),
+        72 => Some(Definition::new(
             72,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -358,7 +358,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR OVER VOLTAGE",
         )),
-        73 => Some(Message::new(
+        73 => Some(Definition::new(
             73,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -366,7 +366,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR OVER CURRENT",
         )),
-        74 => Some(Message::new(
+        74 => Some(Definition::new(
             74,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -374,7 +374,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "FOCUS COIL CURRENT FAILURE",
         )),
-        75 => Some(Message::new(
+        75 => Some(Definition::new(
             75,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -382,7 +382,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "FOCUS COIL AIRFLOW FAILURE",
         )),
-        76 => Some(Message::new(
+        76 => Some(Definition::new(
             76,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -390,7 +390,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR OIL OVER TEMP",
         )),
-        77 => Some(Message::new(
+        77 => Some(Definition::new(
             77,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -398,7 +398,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "PRF LIMIT",
         )),
-        78 => Some(Message::new(
+        78 => Some(Definition::new(
             78,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -406,8 +406,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR OIL LEVEL LOW",
         )),
-        79 => Some(Message::new(79, None, None, None, None, "SPARE")),
-        80 => Some(Message::new(
+        79 => Some(Definition::new(79, None, None, None, None, "SPARE")),
+        80 => Some(Definition::new(
             80,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -415,7 +415,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "KLYSTRON OVER CURRENT",
         )),
-        81 => Some(Message::new(
+        81 => Some(Definition::new(
             81,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -423,7 +423,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "KLYSTRON FILAMENT CURRENT FAIL",
         )),
-        82 => Some(Message::new(
+        82 => Some(Definition::new(
             82,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -431,7 +431,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "KLYSTRON VACION CURRENT FAIL",
         )),
-        83 => Some(Message::new(
+        83 => Some(Definition::new(
             83,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -439,7 +439,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "KLYSTRON AIR OVER TEMP",
         )),
-        84 => Some(Message::new(
+        84 => Some(Definition::new(
             84,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -447,7 +447,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "KLYSTRON AIR FLOW FAILURE",
         )),
-        85 => Some(Message::new(
+        85 => Some(Definition::new(
             85,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -455,7 +455,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR PEAK POWER LOW",
         )),
-        86 => Some(Message::new(
+        86 => Some(Definition::new(
             86,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -463,7 +463,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR PEAK POWER HIGH",
         )),
-        87 => Some(Message::new(
+        87 => Some(Definition::new(
             87,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -471,7 +471,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR POWER METER ZERO OUT OF LIMIT",
         )),
-        88 => Some(Message::new(
+        88 => Some(Definition::new(
             88,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -479,8 +479,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR POWER BITE FAIL",
         )),
-        89..=92 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        93 => Some(Message::new(
+        89..=92 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        93 => Some(Definition::new(
             93,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -488,7 +488,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR MODULATOR SWITCH REQUIRES MAINT",
         )),
-        94 => Some(Message::new(
+        94 => Some(Definition::new(
             94,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -496,7 +496,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR POST CHARGE REG REQUIRES MAINT",
         )),
-        95 => Some(Message::new(
+        95 => Some(Definition::new(
             95,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -504,7 +504,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "WAVEGUIDE HUMIDITY/PRESSURE FAULT",
         )),
-        96 => Some(Message::new(
+        96 => Some(Definition::new(
             96,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -512,7 +512,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(3),
             "XMTR HV SWITCH FAILURE",
         )),
-        97 => Some(Message::new(
+        97 => Some(Definition::new(
             97,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -520,7 +520,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR RECYCLING",
         )),
-        98 => Some(Message::new(
+        98 => Some(Definition::new(
             98,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -528,7 +528,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR INOPERATIVE",
         )),
-        99 => Some(Message::new(
+        99 => Some(Definition::new(
             99,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -536,8 +536,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "XMTR/SPIP INTERFACE FAILURE",
         )),
-        100..=117 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        118 => Some(Message::new(
+        100..=117 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        118 => Some(Definition::new(
             118,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -545,8 +545,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "POWER ADMINISTRATOR OVERLOAD",
         )),
-        119 => Some(Message::new(119, None, None, None, None, "SPARE")),
-        120 => Some(Message::new(
+        119 => Some(Definition::new(119, None, None, None, None, "SPARE")),
+        120 => Some(Definition::new(
             120,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -554,7 +554,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AC UNIT#1 COMPRESSOR SHUTOFF",
         )),
-        121 => Some(Message::new(
+        121 => Some(Definition::new(
             121,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -562,7 +562,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AC UNIT#2 COMPRESSOR SHUTOFF",
         )),
-        122 => Some(Message::new(
+        122 => Some(Definition::new(
             122,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -570,8 +570,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "GENERATOR MAINTENANCE REQUIRED",
         )),
-        123 => Some(Message::new(123, None, None, None, None, "SPARE")),
-        124 => Some(Message::new(
+        123 => Some(Definition::new(123, None, None, None, None, "SPARE")),
+        124 => Some(Definition::new(
             124,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -579,7 +579,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "GEN STARTING BATTERY VOLTAGE LOW",
         )),
-        125 => Some(Message::new(
+        125 => Some(Definition::new(
             125,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -587,7 +587,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "GENERATOR ENGINE MALFUNCTION",
         )),
-        126 => Some(Message::new(
+        126 => Some(Definition::new(
             126,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -595,8 +595,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "TPS IS OFF-LINE",
         )),
-        127 => Some(Message::new(127, None, None, None, None, "SPARE")),
-        128 => Some(Message::new(
+        127 => Some(Definition::new(127, None, None, None, None, "SPARE")),
+        128 => Some(Definition::new(
             128,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -604,7 +604,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "GENERATOR AUTO/RUN/OFF SWITCH NOT AUTO",
         )),
-        129 => Some(Message::new(
+        129 => Some(Definition::new(
             129,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -612,7 +612,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "GENERATOR EXERCISE FAILURE",
         )),
-        130 => Some(Message::new(
+        130 => Some(Definition::new(
             130,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -620,7 +620,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AIRCRAFT HAZARD LIGHTING FAILURE",
         )),
-        131 => Some(Message::new(
+        131 => Some(Definition::new(
             131,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -628,8 +628,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "EQUIP SHELTER FIRE DETECTION SYSTEM FAULT",
         )),
-        132 => Some(Message::new(132, None, None, None, None, "SPARE")),
-        133 => Some(Message::new(
+        132 => Some(Definition::new(132, None, None, None, None, "SPARE")),
+        133 => Some(Definition::new(
             133,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -637,8 +637,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "FIRE/SMOKE IN EQUIP SHELTER",
         )),
-        134..=135 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        136 => Some(Message::new(
+        134..=135 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        136 => Some(Definition::new(
             136,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -646,7 +646,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "FIRE/SMOKE IN GENERATOR SHELTER",
         )),
-        137 => Some(Message::new(
+        137 => Some(Definition::new(
             137,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -654,8 +654,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "POWER SYSTEM MISMATCH",
         )),
-        138..=143 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        144 => Some(Message::new(
+        138..=143 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        144 => Some(Definition::new(
             144,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -663,7 +663,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "UNAUTHORIZED SITE ENTRY",
         )),
-        145 => Some(Message::new(
+        145 => Some(Definition::new(
             145,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -671,7 +671,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SECURITY SYSTEM EQUIPMENT FAILURE",
         )),
-        146 => Some(Message::new(
+        146 => Some(Definition::new(
             146,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -679,8 +679,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SECURITY SYSTEM DISABLED",
         )),
-        147..=150 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        151 => Some(Message::new(
+        147..=150 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        151 => Some(Definition::new(
             151,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -688,7 +688,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RADOME ACCESS HATCH OPEN",
         )),
-        152 => Some(Message::new(
+        152 => Some(Definition::new(
             152,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -696,7 +696,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AC UNIT#1 FILTER DIRTY",
         )),
-        153 => Some(Message::new(
+        153 => Some(Definition::new(
             153,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -704,7 +704,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AC UNIT#2 FILTER DIRTY",
         )),
-        154 => Some(Message::new(
+        154 => Some(Definition::new(
             154,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -712,7 +712,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR FILTER DIRTY",
         )),
-        155 => Some(Message::new(
+        155 => Some(Definition::new(
             155,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -720,7 +720,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "PMDC BOUNCING - RSP REBOOT INITIATED",
         )),
-        156 => Some(Message::new(
+        156 => Some(Definition::new(
             156,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -728,7 +728,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RPGC BOUNCING - RSP REBOOT INITIATED",
         )),
-        157 => Some(Message::new(
+        157 => Some(Definition::new(
             157,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -736,7 +736,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VCPC BOUNCING - RSP REBOOT INITIATED",
         )),
-        158 => Some(Message::new(
+        158 => Some(Definition::new(
             158,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -744,7 +744,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AMEC BOUNCING - RSP REBOOT INITIATED",
         )),
-        159 => Some(Message::new(
+        159 => Some(Definition::new(
             159,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -752,8 +752,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AMEC BOUNCING - RSP REBOOT INITIATED",
         )),
-        160..=169 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        170 => Some(Message::new(
+        160..=169 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        170 => Some(Definition::new(
             170,
             Some(State::Secondary),
             Some(AlarmType::FilteredOccurrence),
@@ -761,7 +761,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "EQUIPMENT SHELTER TEMP LOW",
         )),
-        171 => Some(Message::new(
+        171 => Some(Definition::new(
             171,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -769,7 +769,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "EQUIPMENT SHELTER TEMP EXTREME",
         )),
-        172 => Some(Message::new(
+        172 => Some(Definition::new(
             172,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -777,7 +777,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AC UNIT#1 DISCHARGE TEMP EXTREME",
         )),
-        173 => Some(Message::new(
+        173 => Some(Definition::new(
             173,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -785,7 +785,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "XMTR EXHAUST AIR TEMP EXTREME",
         )),
-        174 => Some(Message::new(
+        174 => Some(Definition::new(
             174,
             Some(State::Secondary),
             Some(AlarmType::FilteredOccurrence),
@@ -793,7 +793,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RADOME AIR TEMP EXTREME",
         )),
-        175 => Some(Message::new(
+        175 => Some(Definition::new(
             175,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -801,7 +801,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "GENERATOR SHELTER TEMP EXTREME",
         )),
-        176 => Some(Message::new(
+        176 => Some(Definition::new(
             176,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -809,7 +809,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "GENERATOR FUEL STORAGE TANK LEVEL LOW",
         )),
-        177 => Some(Message::new(
+        177 => Some(Definition::new(
             177,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -817,7 +817,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "COMMANDED POWER SWITCH FAILED",
         )),
-        178 => Some(Message::new(
+        178 => Some(Definition::new(
             178,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -825,8 +825,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "RECOMMEND SWITCH TO UTILITY POWER",
         )),
-        179..=180 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        181 => Some(Message::new(
+        179..=180 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        181 => Some(Definition::new(
             181,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -834,7 +834,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "PMDC FAILED - PMDC RESTART INITIATED",
         )),
-        182 => Some(Message::new(
+        182 => Some(Definition::new(
             182,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -842,7 +842,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RDAC FAILED - RSP REBOOT INITIATED",
         )),
-        183 => Some(Message::new(
+        183 => Some(Definition::new(
             183,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -850,7 +850,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "WDOG FAILED - RSP REBOOT INITIATED",
         )),
-        184 => Some(Message::new(
+        184 => Some(Definition::new(
             184,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -858,8 +858,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AC UNIT#2 DISCHARGE TEMP EXTREME",
         )),
-        185..=187 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        188 => Some(Message::new(
+        185..=187 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        188 => Some(Definition::new(
             188,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -867,7 +867,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "NMSC FAILED - NMSC RESTART INITIATED",
         )),
-        189 => Some(Message::new(
+        189 => Some(Definition::new(
             189,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -875,7 +875,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RPGC FAILED - RPGC RESTART INITIATED",
         )),
-        190 => Some(Message::new(
+        190 => Some(Definition::new(
             190,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -883,7 +883,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HCIS FAILED - HCIS RESTART INITIATED",
         )),
-        191 => Some(Message::new(
+        191 => Some(Definition::new(
             191,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -891,8 +891,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RMSS FAILED - RMSS RESTART INITIATED",
         )),
-        192 => Some(Message::new(192, None, None, None, None, "SPARE")),
-        193 => Some(Message::new(
+        192 => Some(Definition::new(192, None, None, None, None, "SPARE")),
+        193 => Some(Definition::new(
             193,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -900,7 +900,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "NMPC FAILED - NMPC RESTART INITIATED",
         )),
-        194 => Some(Message::new(
+        194 => Some(Definition::new(
             194,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -908,7 +908,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VCPC FAILED - VCPC RESTART INITIATED",
         )),
-        195 => Some(Message::new(
+        195 => Some(Definition::new(
             195,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -916,7 +916,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "DSPC FAILED - DSPC RESTART INITIATED",
         )),
-        196 => Some(Message::new(
+        196 => Some(Definition::new(
             196,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -924,7 +924,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CHNS FAILED - CHNS RESTART INITIATED",
         )),
-        197 => Some(Message::new(
+        197 => Some(Definition::new(
             197,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -932,8 +932,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RSTS FAILED - RSTS RESTART INITIATED",
         )),
-        198..=201 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        202 => Some(Message::new(
+        198..=201 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        202 => Some(Definition::new(
             202,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -941,8 +941,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AMEC FAILED - AMEC RESTART INITIATED",
         )),
-        203 => Some(Message::new(203, None, None, None, None, "SPARE")),
-        204 => Some(Message::new(
+        203 => Some(Definition::new(203, None, None, None, None, "SPARE")),
+        204 => Some(Definition::new(
             204,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -950,7 +950,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME COMMUNICATIONS ERROR",
         )),
-        205 => Some(Message::new(
+        205 => Some(Definition::new(
             205,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -958,7 +958,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "MULTIPLE AME COMM ERROR - RDA FORCED TO STBY",
         )),
-        206 => Some(Message::new(
+        206 => Some(Definition::new(
             206,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -966,7 +966,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(5),
             "TX DETECT ERROR AT AME",
         )),
-        207 => Some(Message::new(
+        207 => Some(Definition::new(
             207,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -974,7 +974,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME INTERNAL TEMPERATURE HIGH",
         )),
-        208 => Some(Message::new(
+        208 => Some(Definition::new(
             208,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -982,7 +982,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME INTERNAL TEMPERATURE LOW",
         )),
-        209 => Some(Message::new(
+        209 => Some(Definition::new(
             209,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -990,7 +990,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME RECEIVER MODULE TEMPERATURE HIGH",
         )),
-        210 => Some(Message::new(
+        210 => Some(Definition::new(
             210,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -998,7 +998,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME RECEIVER MODULE TEMPERATURE LOW",
         )),
-        211 => Some(Message::new(
+        211 => Some(Definition::new(
             211,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1006,7 +1006,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME BITE/CAL MODULE TEMPERATURE HIGH",
         )),
-        212 => Some(Message::new(
+        212 => Some(Definition::new(
             212,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1014,7 +1014,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME BITE/CAL MODULE TEMPERATURE LOW",
         )),
-        213 => Some(Message::new(
+        213 => Some(Definition::new(
             213,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1022,7 +1022,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME +3.3V PS VOLTAGE OUT OF TOLERANCE",
         )),
-        214 => Some(Message::new(
+        214 => Some(Definition::new(
             214,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1030,7 +1030,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME +5V PS VOLTAGE OUT OF TOLERANCE",
         )),
-        215 => Some(Message::new(
+        215 => Some(Definition::new(
             215,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1038,7 +1038,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME +6.5V PS VOLTAGE OUT OF TOLERANCE",
         )),
-        216 => Some(Message::new(
+        216 => Some(Definition::new(
             216,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1046,7 +1046,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME +15V PS VOLTAGE OUT OF TOLERANCE",
         )),
-        217 => Some(Message::new(
+        217 => Some(Definition::new(
             217,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1054,7 +1054,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME +48V PS VOLTAGE OUT OF TOLERANCE",
         )),
-        218 => Some(Message::new(
+        218 => Some(Definition::new(
             218,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1062,7 +1062,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "RF PALLET PHASE SHIFTER MOTOR TIMEOUT",
         )),
-        219 => Some(Message::new(
+        219 => Some(Definition::new(
             219,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1070,7 +1070,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME STALO POWER DEGRADED",
         )),
-        220 => Some(Message::new(
+        220 => Some(Definition::new(
             220,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1078,7 +1078,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME STALO POWER MAINTENANCE REQUIRED",
         )),
-        221 => Some(Message::new(
+        221 => Some(Definition::new(
             221,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1086,7 +1086,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL TR LIMITER DEGRADED",
         )),
-        222 => Some(Message::new(
+        222 => Some(Definition::new(
             222,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1094,7 +1094,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL TR LIMITER FAILED",
         )),
-        223 => Some(Message::new(
+        223 => Some(Definition::new(
             223,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1102,7 +1102,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL TR LIMITER DEGRADED",
         )),
-        224 => Some(Message::new(
+        224 => Some(Definition::new(
             224,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1110,7 +1110,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL TR LIMITER FAILED",
         )),
-        225 => Some(Message::new(
+        225 => Some(Definition::new(
             225,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1118,7 +1118,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME POWER SUPPLY TEMPERATURE DEGRADED",
         )),
-        226 => Some(Message::new(
+        226 => Some(Definition::new(
             226,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1126,7 +1126,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME POWER SUPPLY TEMPERATURE MAINT REQUIRED",
         )),
-        227 => Some(Message::new(
+        227 => Some(Definition::new(
             227,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1134,8 +1134,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME ADC CALIBRATION FAULT",
         )),
-        228..=231 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        232 => Some(Message::new(
+        228..=231 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        232 => Some(Definition::new(
             232,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1143,7 +1143,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL INPUT WAVEGUIDE SWITCH POSITION ERROR",
         )),
-        233 => Some(Message::new(
+        233 => Some(Definition::new(
             233,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1151,7 +1151,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL OUTPUT WAVEGUIDE SWITCH POSITION ERROR",
         )),
-        234 => Some(Message::new(
+        234 => Some(Definition::new(
             234,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1159,7 +1159,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL INPUT WAVEGUIDE SWITCH POSITION ERROR",
         )),
-        235 => Some(Message::new(
+        235 => Some(Definition::new(
             235,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1167,7 +1167,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL OUTPUT WAVEGUIDE SWITCH POSITION ERROR",
         )),
-        236 => Some(Message::new(
+        236 => Some(Definition::new(
             236,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1175,7 +1175,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME PELTIER CURRENT FAULT",
         )),
-        237 => Some(Message::new(
+        237 => Some(Definition::new(
             237,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1183,7 +1183,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME PELTIER INSIDE FAN CURRENT FAULT",
         )),
-        238 => Some(Message::new(
+        238 => Some(Definition::new(
             238,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1191,9 +1191,9 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AME PELTIER OUTSIDE FAN CURRENT FAULT",
         )),
-        239..=250 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        251 => Some(Message::new(251, None, None, None, None, "SPARE")),
-        252 => Some(Message::new(
+        239..=250 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        251 => Some(Definition::new(251, None, None, None, None, "SPARE")),
+        252 => Some(Definition::new(
             252,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -1201,7 +1201,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "EBC MAX CORRECTION APPLIED",
         )),
-        253 => Some(Message::new(
+        253 => Some(Definition::new(
             253,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1209,7 +1209,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SPIP +28V POWER SUPPLY FAIL",
         )),
-        254 => Some(Message::new(
+        254 => Some(Definition::new(
             254,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1217,7 +1217,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SPIP +15V POWER SUPPLY FAIL",
         )),
-        255 => Some(Message::new(
+        255 => Some(Definition::new(
             255,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1225,7 +1225,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SPIP +5V POWER SUPPLY FAIL",
         )),
-        256 => Some(Message::new(
+        256 => Some(Definition::new(
             256,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1233,7 +1233,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SPIP -15V POWER SUPPLY FAIL",
         )),
-        257 => Some(Message::new(
+        257 => Some(Definition::new(
             257,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1241,7 +1241,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SPIP DAQ POWER BUTTON OFF",
         )),
-        258 => Some(Message::new(
+        258 => Some(Definition::new(
             258,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1249,7 +1249,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SPIP PED POWER BUTTON OFF",
         )),
-        259 => Some(Message::new(
+        259 => Some(Definition::new(
             259,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1257,7 +1257,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SPIP CH2 DAQ POWER BUTTON OFF",
         )),
-        260 => Some(Message::new(
+        260 => Some(Definition::new(
             260,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1265,7 +1265,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SPIP CH2 PED POWER BUTTON OFF",
         )),
-        261 => Some(Message::new(
+        261 => Some(Definition::new(
             261,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1273,7 +1273,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION IN -DEAD LIMIT",
         )),
-        262 => Some(Message::new(
+        262 => Some(Definition::new(
             262,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1281,8 +1281,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION IN +DEAD LIMIT",
         )),
-        263..=299 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        300 => Some(Message::new(
+        263..=299 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        300 => Some(Definition::new(
             300,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1290,7 +1290,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION AMPLIFIER INHIBIT",
         )),
-        301 => Some(Message::new(
+        301 => Some(Definition::new(
             301,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1298,7 +1298,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION AMPLIFIER CURRENT LIMIT",
         )),
-        302 => Some(Message::new(
+        302 => Some(Definition::new(
             302,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1306,7 +1306,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION AMPLIFIER OVERTEMP",
         )),
-        303 => Some(Message::new(
+        303 => Some(Definition::new(
             303,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1314,7 +1314,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "PEDESTAL +150V OVER VOLTAGE",
         )),
-        304 => Some(Message::new(
+        304 => Some(Definition::new(
             304,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1322,7 +1322,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "PEDESTAL +150V UNDER VOLTAGE",
         )),
-        305 => Some(Message::new(
+        305 => Some(Definition::new(
             305,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1330,7 +1330,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION MOTOR OVERTEMP",
         )),
-        306 => Some(Message::new(
+        306 => Some(Definition::new(
             306,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1338,8 +1338,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION STOW PIN ENGAGED",
         )),
-        307..=309 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        310 => Some(Message::new(
+        307..=309 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        310 => Some(Definition::new(
             310,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1347,7 +1347,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION + NORMAL LIMIT",
         )),
-        311 => Some(Message::new(
+        311 => Some(Definition::new(
             311,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1355,8 +1355,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION - NORMAL LIMIT",
         )),
-        312 => Some(Message::new(312, None, None, None, None, "SPARE")),
-        313 => Some(Message::new(
+        312 => Some(Definition::new(312, None, None, None, None, "SPARE")),
+        313 => Some(Definition::new(
             313,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1364,7 +1364,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION ENCODER LIGHT FAILURE",
         )),
-        314 => Some(Message::new(
+        314 => Some(Definition::new(
             314,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1372,7 +1372,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION GEARBOX OIL LEVEL LOW",
         )),
-        315 => Some(Message::new(
+        315 => Some(Definition::new(
             315,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1380,7 +1380,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AZIMUTH AMPLIFIER INHIBIT",
         )),
-        316 => Some(Message::new(
+        316 => Some(Definition::new(
             316,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1388,7 +1388,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AZIMUTH AMPLIFIER CURRENT LIMIT",
         )),
-        317 => Some(Message::new(
+        317 => Some(Definition::new(
             317,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1396,8 +1396,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AZIMUTH AMPLIFIER OVERTEMP",
         )),
-        318..=319 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        320 => Some(Message::new(
+        318..=319 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        320 => Some(Definition::new(
             320,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1405,7 +1405,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AZIMUTH MOTOR OVERTEMP",
         )),
-        321 => Some(Message::new(
+        321 => Some(Definition::new(
             321,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1413,8 +1413,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AZIMUTH STOW PIN ENGAGED",
         )),
-        322..=323 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        324 => Some(Message::new(
+        322..=323 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        324 => Some(Definition::new(
             324,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1422,7 +1422,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AZIMUTH ENCODER LIGHT FAILURE",
         )),
-        325 => Some(Message::new(
+        325 => Some(Definition::new(
             325,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1430,7 +1430,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AZIMUTH GEARBOX OIL LEVEL LOW",
         )),
-        326 => Some(Message::new(
+        326 => Some(Definition::new(
             326,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1438,8 +1438,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "BULL GEAR OIL LEVEL LOW",
         )),
-        327 => Some(Message::new(327, None, None, None, None, "SPARE")),
-        328 => Some(Message::new(
+        327 => Some(Definition::new(327, None, None, None, None, "SPARE")),
+        328 => Some(Definition::new(
             328,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1447,7 +1447,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION HANDWHEEL ENGAGED",
         )),
-        329 => Some(Message::new(
+        329 => Some(Definition::new(
             329,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1456,8 +1456,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             "AZIMUTH HANDWHEEL ENGAGED",
         )),
         // note: appears to be error in ICD table since 333 is repeated
-        330..=332 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        333 => Some(Message::new(
+        330..=332 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        333 => Some(Definition::new(
             333,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1465,7 +1465,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "PEDESTAL +28V POWER SUPPLY FAIL",
         )),
-        334 => Some(Message::new(
+        334 => Some(Definition::new(
             334,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1473,7 +1473,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "AZIMUTH AMP POWER SUPPLY FAIL",
         )),
-        335 => Some(Message::new(
+        335 => Some(Definition::new(
             335,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1481,8 +1481,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "ELEVATION AMP POWER SUPPLY FAIL",
         )),
-        336 => Some(Message::new(336, None, None, None, None, "SPARE")),
-        337 => Some(Message::new(
+        336 => Some(Definition::new(336, None, None, None, None, "SPARE")),
+        337 => Some(Definition::new(
             337,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1490,8 +1490,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "PEDESTAL SAFE SWITCH OPEN",
         )),
-        338 => Some(Message::new(338, None, None, None, None, "SPARE")),
-        339 => Some(Message::new(
+        338 => Some(Definition::new(338, None, None, None, None, "SPARE")),
+        339 => Some(Definition::new(
             339,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1499,8 +1499,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "PEDESTAL UNABLE TO PARK",
         )),
-        340..=353 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        354 => Some(Message::new(
+        340..=353 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        354 => Some(Definition::new(
             354,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1508,7 +1508,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RCP SOFT ELEVATION +LIMIT",
         )),
-        355 => Some(Message::new(
+        355 => Some(Definition::new(
             355,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1516,7 +1516,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RCP SOFT ELEVATION -LIMIT",
         )),
-        356 => Some(Message::new(
+        356 => Some(Definition::new(
             356,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1524,7 +1524,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RCP IN CONTROL SHUTDOWN STATE",
         )),
-        357 => Some(Message::new(
+        357 => Some(Definition::new(
             357,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1532,7 +1532,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RCP AZ CONTROL UNRESPONSIVE",
         )),
-        358 => Some(Message::new(
+        358 => Some(Definition::new(
             358,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1540,8 +1540,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RCP EL CONTROL UNRESPONSIVE",
         )),
-        359 => Some(Message::new(359, None, None, None, None, "SPARE")),
-        360 => Some(Message::new(
+        359 => Some(Definition::new(359, None, None, None, None, "SPARE")),
+        360 => Some(Definition::new(
             360,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1549,7 +1549,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RF GEN FREQ SELECT OSCILLATOR FAIL",
         )),
-        361 => Some(Message::new(
+        361 => Some(Definition::new(
             361,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1557,7 +1557,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RF GEN RF/STALO FAIL",
         )),
-        362 => Some(Message::new(
+        362 => Some(Definition::new(
             362,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1565,7 +1565,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "RF GEN PHASE SHIFTED COHO FAIL",
         )),
-        363 => Some(Message::new(
+        363 => Some(Definition::new(
             363,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1573,7 +1573,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RF IFDR COHO INPUT MISSING",
         )),
-        364 => Some(Message::new(
+        364 => Some(Definition::new(
             364,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1581,7 +1581,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "RCVR +5V POWER SUPPLY 5 FAIL",
         )),
-        365 => Some(Message::new(
+        365 => Some(Definition::new(
             365,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1589,7 +1589,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "RCVR +/-18V POWER SUPPLY 1 FAIL",
         )),
-        366 => Some(Message::new(
+        366 => Some(Definition::new(
             366,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1597,7 +1597,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "RCVR -9V POWER SUPPLY 4 FAIL",
         )),
-        367 => Some(Message::new(
+        367 => Some(Definition::new(
             367,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1605,7 +1605,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "RCVR +9V POWER SUPPLY 6 FAIL",
         )),
-        368 => Some(Message::new(
+        368 => Some(Definition::new(
             368,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1613,7 +1613,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "SINGLE CHANNEL RDAIU +5V POWER SUPPLY 9 FAIL",
         )),
-        369 => Some(Message::new(
+        369 => Some(Definition::new(
             369,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1621,7 +1621,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(2),
             "COHO/CLOCK FAILURE",
         )),
-        370 => Some(Message::new(
+        370 => Some(Definition::new(
             370,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1629,7 +1629,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SIGNAL PROCESSOR TO IFDR COMMUNICATION FAILURE",
         )),
-        371 => Some(Message::new(
+        371 => Some(Definition::new(
             371,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1637,8 +1637,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(4),
             "MISSING BURST PULSE SIGNAL",
         )),
-        372..=380 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        381 => Some(Message::new(
+        372..=380 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        381 => Some(Definition::new(
             381,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1646,7 +1646,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SIGNAL PROCESSOR TRIGGER SEQUENCE TRUNCATED",
         )),
-        382 => Some(Message::new(
+        382 => Some(Definition::new(
             382,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1654,7 +1654,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SIGNAL PROCESSOR TRIGGER PATTERN ALTERED",
         )),
-        383 => Some(Message::new(
+        383 => Some(Definition::new(
             383,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1662,8 +1662,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SIGNAL PROCESSOR TRIGGER PERIOD ALTERED",
         )),
-        384..=386 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        387 => Some(Message::new(
+        384..=386 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        387 => Some(Definition::new(
             387,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1671,7 +1671,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SIGNAL PROCESSOR TRIGGER ERROR",
         )),
-        388 => Some(Message::new(
+        388 => Some(Definition::new(
             388,
             Some(State::Secondary),
             Some(AlarmType::FilteredOccurrence),
@@ -1679,7 +1679,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "SIGNAL PROCESSOR SELF CHECK FAILED",
         )),
-        389 => Some(Message::new(
+        389 => Some(Definition::new(
             389,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1687,8 +1687,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "IFDR TEST SWITCH POSITION ERROR",
         )),
-        390 => Some(Message::new(390, None, None, None, None, "SPARE")),
-        391 => Some(Message::new(
+        390 => Some(Definition::new(390, None, None, None, None, "SPARE")),
+        391 => Some(Definition::new(
             391,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -1696,7 +1696,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "RPG LOOP TEST TIMED OUT",
         )),
-        392 => Some(Message::new(
+        392 => Some(Definition::new(
             392,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -1704,7 +1704,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "RPG LOOP TEST VERIFICATION ERROR",
         )),
-        393 => Some(Message::new(
+        393 => Some(Definition::new(
             393,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -1712,7 +1712,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "INVALID REMOTE VCP RECEIVED",
         )),
-        394 => Some(Message::new(
+        394 => Some(Definition::new(
             394,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -1720,7 +1720,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "REMOTE VCP NOT DOWNLOADED",
         )),
-        395 => Some(Message::new(
+        395 => Some(Definition::new(
             395,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -1728,7 +1728,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "INVALID RPG COMMAND RECEIVED",
         )),
-        396 => Some(Message::new(
+        396 => Some(Definition::new(
             396,
             Some(State::Secondary),
             Some(AlarmType::FilteredOccurrence),
@@ -1736,8 +1736,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "RADIAL DATA LOST",
         )),
-        397 => Some(Message::new(397, None, None, None, None, "SPARE")),
-        398 => Some(Message::new(
+        397 => Some(Definition::new(397, None, None, None, None, "SPARE")),
+        398 => Some(Definition::new(
             398,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -1745,8 +1745,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "STANDBY FORCED BY INOP ALARM",
         )),
-        399..=400 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        401..=420 => Some(Message::new(
+        399..=400 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        401..=420 => Some(Definition::new(
             code,
             None,
             None,
@@ -1754,8 +1754,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "RESERVED FOR INTERNAL RDA USE",
         )),
-        421..=429 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        430 => Some(Message::new(
+        421..=429 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        430 => Some(Definition::new(
             430,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1763,7 +1763,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "BYPASS MAP FILE READ FAILED",
         )),
-        431 => Some(Message::new(
+        431 => Some(Definition::new(
             431,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1771,8 +1771,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "BYPASS MAP FILE WRITE FAILED",
         )),
-        432..=433 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        434 => Some(Message::new(
+        432..=433 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        434 => Some(Definition::new(
             434,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1780,7 +1780,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CLUTTER MAP FILE READ FAILED",
         )),
-        435 => Some(Message::new(
+        435 => Some(Definition::new(
             435,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1788,7 +1788,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CLUTTER MAP FILE WRITE FAILED",
         )),
-        436 => Some(Message::new(
+        436 => Some(Definition::new(
             436,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1796,7 +1796,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CLUTTER CENSOR FILE READ FAILED",
         )),
-        437 => Some(Message::new(
+        437 => Some(Definition::new(
             437,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1804,7 +1804,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CLUTTER CENSOR FILE WRITE FAILED",
         )),
-        438 => Some(Message::new(
+        438 => Some(Definition::new(
             438,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1812,7 +1812,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "STATE FILE READ FAILED",
         )),
-        439 => Some(Message::new(
+        439 => Some(Definition::new(
             439,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1820,7 +1820,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "STATE FILE WRITE FAILED",
         )),
-        440 => Some(Message::new(
+        440 => Some(Definition::new(
             440,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1828,7 +1828,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CURRENT ADAPTATION FILE READ FAILED",
         )),
-        441 => Some(Message::new(
+        441 => Some(Definition::new(
             441,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1836,7 +1836,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CURRENT ADAPTATION FILE WRITE FAILED",
         )),
-        442 => Some(Message::new(
+        442 => Some(Definition::new(
             442,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1844,8 +1844,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "BASELINE FILE READ FAILED",
         )),
-        443 => Some(Message::new(443, None, None, None, None, "SPARE")),
-        444 => Some(Message::new(
+        443 => Some(Definition::new(443, None, None, None, None, "SPARE")),
+        444 => Some(Definition::new(
             444,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -1853,8 +1853,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "CLUTTER MAP FILE GENERATION ERROR",
         )),
-        445 => Some(Message::new(445, None, None, None, None, "SPARE")),
-        446 => Some(Message::new(
+        445 => Some(Definition::new(445, None, None, None, None, "SPARE")),
+        446 => Some(Definition::new(
             446,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1862,7 +1862,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "TOO MANY LOG FILES - PLEASE REMOVE SOME",
         )),
-        447 => Some(Message::new(
+        447 => Some(Definition::new(
             447,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1870,7 +1870,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "DISK I/O ERROR",
         )),
-        448 => Some(Message::new(
+        448 => Some(Definition::new(
             448,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1878,7 +1878,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RSP SYSTEM HARD DRIVE ‘SMART’ FAILURE DETECTED",
         )),
-        449 => Some(Message::new(
+        449 => Some(Definition::new(
             449,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1886,7 +1886,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "REMOTE VCP FILE WRITE FAILED",
         )),
-        450 => Some(Message::new(
+        450 => Some(Definition::new(
             450,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1894,7 +1894,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "REMOTE VCP FILE READ FAILED",
         )),
-        451 => Some(Message::new(
+        451 => Some(Definition::new(
             451,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1902,7 +1902,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RSP DATA HARD DRIVE ‘SMART’ FAILURE DETECTED",
         )),
-        452 => Some(Message::new(
+        452 => Some(Definition::new(
             452,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1910,7 +1910,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RPG LINK INITIALIZATION ERROR",
         )),
-        453 => Some(Message::new(
+        453 => Some(Definition::new(
             453,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1918,7 +1918,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SPIP COMM ERROR",
         )),
-        454 => Some(Message::new(
+        454 => Some(Definition::new(
             454,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1926,7 +1926,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "MULTIPLE SIGNAL PROCESSOR COMMAND ERROR - RDA FORCED TO STBY",
         )),
-        455 => Some(Message::new(
+        455 => Some(Definition::new(
             455,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1934,7 +1934,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SIGNAL PROCESSOR COMMAND ERROR",
         )),
-        456 => Some(Message::new(
+        456 => Some(Definition::new(
             456,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -1942,7 +1942,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SIGNAL PROCESSOR LAUNCH ERROR",
         )),
-        457 => Some(Message::new(
+        457 => Some(Definition::new(
             457,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -1950,9 +1950,9 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "RSP COMPONENT OVERTEMP",
         )),
-        458 => Some(Message::new(458, None, None, None, None, "SPARE")),
-        459 => Some(Message::new(459, None, None, None, None, "SPARE")),
-        460 => Some(Message::new(
+        458 => Some(Definition::new(458, None, None, None, None, "SPARE")),
+        459 => Some(Definition::new(459, None, None, None, None, "SPARE")),
+        460 => Some(Definition::new(
             460,
             Some(State::Secondary),
             Some(AlarmType::FilteredOccurrence),
@@ -1960,9 +1960,9 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "HCI COMMUNICATION ERROR",
         )),
-        461 => Some(Message::new(461, None, None, None, None, "SPARE")),
-        462..=463 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        464 => Some(Message::new(
+        461 => Some(Definition::new(461, None, None, None, None, "SPARE")),
+        462..=463 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        464 => Some(Definition::new(
             464,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1970,8 +1970,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "REDUNDANT CHANNEL COMM ERROR",
         )),
-        465..=468 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        469 => Some(Message::new(
+        465..=468 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        469 => Some(Definition::new(
             469,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1979,7 +1979,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "INTERPANEL LINK FAILED",
         )),
-        470 => Some(Message::new(
+        470 => Some(Definition::new(
             470,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1987,7 +1987,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL NOISE LEVEL DEGRADED",
         )),
-        471 => Some(Message::new(
+        471 => Some(Definition::new(
             471,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -1995,7 +1995,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL NOISE TEMPERATURE DEGRADED",
         )),
-        472 => Some(Message::new(
+        472 => Some(Definition::new(
             472,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2003,7 +2003,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL NOISE LEVEL DEGRADED",
         )),
-        473 => Some(Message::new(
+        473 => Some(Definition::new(
             473,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2011,7 +2011,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL NOISE TEMPERATURE DEGRADED",
         )),
-        474 => Some(Message::new(
+        474 => Some(Definition::new(
             474,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2019,7 +2019,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL NOISE TEMPERATURE LOW",
         )),
-        475 => Some(Message::new(
+        475 => Some(Definition::new(
             475,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2027,8 +2027,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL NOISE TEMPERATURE LOW",
         )),
-        476 => Some(Message::new(476, None, None, None, None, "SPARE")),
-        477 => Some(Message::new(
+        476 => Some(Definition::new(476, None, None, None, None, "SPARE")),
+        477 => Some(Definition::new(
             477,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2036,7 +2036,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL POWER SENSE LOW",
         )),
-        478 => Some(Message::new(
+        478 => Some(Definition::new(
             478,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2044,7 +2044,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL POWER SENSE LOW",
         )),
-        479 => Some(Message::new(
+        479 => Some(Definition::new(
             479,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2052,7 +2052,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "SYSTEM DIFFERENTIAL REFLECTIVITY OFFSET DEGRADED",
         )),
-        480 => Some(Message::new(
+        480 => Some(Definition::new(
             480,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2060,7 +2060,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL GAIN CALIBRATION CONSTANT DEGRADED",
         )),
-        481 => Some(Message::new(
+        481 => Some(Definition::new(
             481,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2068,8 +2068,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL GAIN CALIBRATION CONSTANT DEGRADED",
         )),
-        482 => Some(Message::new(482, None, None, None, None, "SPARE")),
-        483 => Some(Message::new(
+        482 => Some(Definition::new(482, None, None, None, None, "SPARE")),
+        483 => Some(Definition::new(
             483,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2077,8 +2077,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VELOCITY/WIDTH CHECK DEGRADED",
         )),
-        484 => Some(Message::new(484, None, None, None, None, "SPARE")),
-        485 => Some(Message::new(
+        484 => Some(Definition::new(484, None, None, None, None, "SPARE")),
+        485 => Some(Definition::new(
             485,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2086,7 +2086,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL DYNAMIC RANGE DEGRADED",
         )),
-        486 => Some(Message::new(
+        486 => Some(Definition::new(
             486,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2094,8 +2094,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL CLUTTER REJECTION DEGRADED",
         )),
-        487..=489 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        490 => Some(Message::new(
+        487..=489 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        490 => Some(Definition::new(
             490,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2103,8 +2103,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL DYNAMIC RANGE DEGRADED",
         )),
-        491..=521 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        522 => Some(Message::new(
+        491..=521 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        522 => Some(Definition::new(
             522,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2112,7 +2112,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL LINEARITY SLOPE DEGRADED",
         )),
-        523 => Some(Message::new(
+        523 => Some(Definition::new(
             523,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2120,7 +2120,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL LINEARITY TEST SIGNAL DEGRADED",
         )),
-        524 => Some(Message::new(
+        524 => Some(Definition::new(
             524,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -2128,7 +2128,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "HORIZONTAL LINEARITY TEST SIGNAL - MAINT REQUIRED",
         )),
-        525 => Some(Message::new(
+        525 => Some(Definition::new(
             525,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2136,7 +2136,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL LINEARITY TEST SIGNAL DEGRADED",
         )),
-        526 => Some(Message::new(
+        526 => Some(Definition::new(
             526,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -2144,7 +2144,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL LINEARITY TEST SIGNAL - MAINT REQUIRED",
         )),
-        527 => Some(Message::new(
+        527 => Some(Definition::new(
             527,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2152,8 +2152,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "VERTICAL LINEARITY SLOPE DEGRADED",
         )),
-        528..=532 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        533 => Some(Message::new(
+        528..=532 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        533 => Some(Definition::new(
             533,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2161,8 +2161,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "KLYSTRON OUT TEST SIGNAL DEGRADED",
         )),
-        534..=542 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        543 => Some(Message::new(
+        534..=542 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        543 => Some(Definition::new(
             543,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2170,7 +2170,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "RPG COMMAND REJECTED",
         )),
-        544 => Some(Message::new(
+        544 => Some(Definition::new(
             544,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2178,7 +2178,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "RMS COMMAND REJECTED",
         )),
-        545 => Some(Message::new(
+        545 => Some(Definition::new(
             545,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2186,8 +2186,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "RDA COMMAND REJECTED",
         )),
-        546..=547 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        548 => Some(Message::new(
+        546..=547 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        548 => Some(Definition::new(
             548,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2195,7 +2195,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "RMS CONTROL COMMAND REJECTED INVALID COMMAND",
         )),
-        549 => Some(Message::new(
+        549 => Some(Definition::new(
             549,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2203,8 +2203,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "RMS CONTROL COMMAND REJECTED INVALID PARAMETER",
         )),
-        550..=552 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        553 => Some(Message::new(
+        550..=552 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        553 => Some(Definition::new(
             553,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2212,7 +2212,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "CHANNEL ALREADY CONTROLLING - CMD REJECTED",
         )),
-        554 => Some(Message::new(
+        554 => Some(Definition::new(
             554,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2220,7 +2220,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "CHANNEL ALREADY NON CONTROLLING - CMD REJECTED",
         )),
-        555 => Some(Message::new(
+        555 => Some(Definition::new(
             555,
             Some(State::MaintenanceRequired),
             Some(AlarmType::EdgeDetected),
@@ -2228,7 +2228,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CHANNEL CONTROL FAILURE - RDAIU SWITCH MISMATCH",
         )),
-        556 => Some(Message::new(
+        556 => Some(Definition::new(
             556,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2236,7 +2236,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "CHANNEL SWITCH TIMEOUT",
         )),
-        557 => Some(Message::new(
+        557 => Some(Definition::new(
             557,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2244,8 +2244,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "CHANNEL SWITCH FAILED",
         )),
-        558..=560 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        561 => Some(Message::new(
+        558..=560 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        561 => Some(Definition::new(
             561,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2253,7 +2253,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "INVALID CONTROL FOR CHANNEL SWITCH",
         )),
-        562 => Some(Message::new(
+        562 => Some(Definition::new(
             562,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2261,7 +2261,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "INVALID STATUS FOR CHANNEL SWITCH",
         )),
-        563 => Some(Message::new(
+        563 => Some(Definition::new(
             563,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2269,7 +2269,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "INVALID CHANNEL SWITCH - OTHER CHANNEL IN MAINTENANCE MODE",
         )),
-        564 => Some(Message::new(
+        564 => Some(Definition::new(
             564,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2277,7 +2277,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "INVALID CHANNEL SWITCH - CALIBRATION IN PROGRESS",
         )),
-        565 => Some(Message::new(
+        565 => Some(Definition::new(
             565,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -2285,7 +2285,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "ELEVATION HOUSING PS FAIL",
         )),
-        566 => Some(Message::new(
+        566 => Some(Definition::new(
             566,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -2293,8 +2293,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "AZIMUTH HOUSING PS PAIL",
         )),
-        567..=590 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        591 => Some(Message::new(
+        567..=590 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        591 => Some(Definition::new(
             591,
             Some(State::Inoperative),
             Some(AlarmType::EdgeDetected),
@@ -2302,7 +2302,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "MULTIPLE PROCESS FAILURE - FORCED TO STANDBY INOP",
         )),
-        592 => Some(Message::new(
+        592 => Some(Definition::new(
             592,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2310,7 +2310,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "SYSTEM STATUS MONITOR INITIALIZATION ERROR - REBOOT INITIATED",
         )),
-        593 => Some(Message::new(
+        593 => Some(Definition::new(
             593,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2318,8 +2318,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "SYSTEM STATE TRANSITION TIMEOUT",
         )),
-        594..=678 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        679 => Some(Message::new(
+        594..=678 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        679 => Some(Definition::new(
             679,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2327,8 +2327,8 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "INVALID CENSOR ZONE MESSAGE RECEIVED",
         )),
-        680..=697 => Some(Message::new(code, None, None, None, None, "SPARE")),
-        698 => Some(Message::new(
+        680..=697 => Some(Definition::new(code, None, None, None, None, "SPARE")),
+        698 => Some(Definition::new(
             698,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2336,7 +2336,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "CUT TRANSITION TIMEOUT",
         )),
-        699 => Some(Message::new(
+        699 => Some(Definition::new(
             699,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2344,7 +2344,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "CUT TIMEOUT-RESTART VCP INITIATED",
         )),
-        700 => Some(Message::new(
+        700 => Some(Definition::new(
             700,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2352,7 +2352,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "INIT SEQ TIMEOUT-REBOOT INITIATED",
         )),
-        701 => Some(Message::new(
+        701 => Some(Definition::new(
             701,
             Some(State::Secondary),
             Some(AlarmType::Occurrence),
@@ -2360,7 +2360,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             None,
             "PERF CHECK TIMEOUT-REBOOT INITIATED",
         )),
-        702 => Some(Message::new(
+        702 => Some(Definition::new(
             702,
             Some(State::MaintenanceMandatory),
             Some(AlarmType::EdgeDetected),
@@ -2368,7 +2368,7 @@ pub fn get_alarm_message(code: u16) -> Option<Message> {
             Some(1),
             "TRANSMIT BIAS DEGRADED",
         )),
-        703..=800 => Some(Message::new(code, None, None, None, None, "SPARE")),
+        703..=800 => Some(Definition::new(code, None, None, None, None, "SPARE")),
         _ => None,
     }
 }

@@ -26,7 +26,7 @@ impl<'a> Message<'a> {
     pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
         let header = reader.take_ref::<Header>()?;
 
-        let waveform_count = header.number_of_waveforms.get() as usize;
+        let waveform_count = header.waveform_count.get() as usize;
         let mut waveform_prf_data = Vec::with_capacity(waveform_count);
 
         for _ in 0..waveform_count {
@@ -49,8 +49,8 @@ impl<'a> Message<'a> {
     }
 
     /// The number of waveform types included in this message (1-5).
-    pub fn number_of_waveforms(&self) -> u16 {
-        self.header.number_of_waveforms.get()
+    pub fn waveform_count(&self) -> u16 {
+        self.header.waveform_count.get()
     }
 
     /// The PRF data for each waveform type included in this message.

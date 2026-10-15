@@ -1,5 +1,5 @@
 use super::raw;
-use super::{AzimuthResolutionSpacing, CompressionIndicator, RadialStatus, SpotBlankingStatus};
+use super::{AzimuthResolutionSpacing, CompressionIndicator, RadialStatus, SpotBlankingFlags};
 use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::borrow::Cow;
@@ -33,18 +33,21 @@ impl<'a> Header<'a> {
         }
     }
 
-    /// ICAO radar identifier (raw bytes).
+    /// ICAO radar identifier (raw bytes). See [`radar_identifier()`](Self::radar_identifier) for
+    /// the decoded value.
     pub fn radar_identifier_raw(&self) -> &[u8; 4] {
         &self.inner.radar_identifier
     }
 
-    /// Collection time in milliseconds past midnight, GMT.
-    pub fn time(&self) -> u32 {
+    /// Collection time in milliseconds past midnight, GMT (raw value). See
+    /// [`date_time()`](Self::date_time) for the decoded value.
+    pub fn time_raw(&self) -> u32 {
         self.inner.time.get()
     }
 
-    /// This message's date represented as a count of days since 1 January 1970 00:00 GMT.
-    pub fn date(&self) -> u16 {
+    /// This message's date represented as a count of days since 1 January 1970 00:00 GMT (raw
+    /// value). See [`date_time()`](Self::date_time) for the decoded value.
+    pub fn date_raw(&self) -> u16 {
         self.inner.date.get()
     }
 
@@ -110,9 +113,9 @@ impl<'a> Header<'a> {
         self.inner.data_block_count.get()
     }
 
-    /// ICAO radar identifier.
-    pub fn radar_identifier(&self) -> String {
-        String::from_utf8_lossy(&self.inner.radar_identifier).to_string()
+    /// ICAO radar identifier, or `None` if the bytes are not valid UTF-8.
+    pub fn radar_identifier(&self) -> Option<&str> {
+        std::str::from_utf8(&self.inner.radar_identifier).ok()
     }
 
     /// The collection date and time for this data.
@@ -157,8 +160,8 @@ impl<'a> Header<'a> {
     }
 
     /// The spot blanking status for the current radial, elevation, and volume scan.
-    pub fn radial_spot_blanking_status(&self) -> SpotBlankingStatus {
-        SpotBlankingStatus::new(self.inner.radial_spot_blanking_status)
+    pub fn radial_spot_blanking_status(&self) -> SpotBlankingFlags {
+        SpotBlankingFlags::new(self.inner.radial_spot_blanking_status)
     }
 
     /// The azimuth indexing value (if keyed to constant angles).

@@ -129,7 +129,7 @@ fn render_header_info(frame: &mut Frame, msg_info: &MessageInfo, area: Rect) {
                 "{} segments (indices {}, {} bytes total)",
                 msg_info.segment_count, index_range, msg_info.size
             )
-        } else if hdr.segmented() {
+        } else if hdr.is_fixed_frame() {
             // Single fixed-length segment
             format!("Fixed-length ({} bytes)", hdr.message_size_bytes())
         } else {
@@ -191,13 +191,13 @@ fn render_parsed_view(frame: &mut Frame, data: &[u8], scroll: usize, area: Rect)
 
     // Parse based on message type - delegate to specialized parsers
     let parsed_text = match msg_type {
-        MessageType::RdaDigitalRadarData => {
+        MessageType::DigitalRadarDataLegacy => {
             digital_radar_data_legacy::parse_digital_radar_data_legacy(data)
         }
         MessageType::RdaStatusData => {
             rda_status_data::parse_rda_status_data(&data[content_offset..])
         }
-        MessageType::RdaPerformanceMaintenanceData => {
+        MessageType::PerformanceMaintenanceData => {
             performance_maintenance_data::parse_performance_maintenance_data(data)
         }
         MessageType::RdaConsoleMessage | MessageType::RpgConsoleMessage => {
@@ -207,21 +207,17 @@ fn render_parsed_view(frame: &mut Frame, data: &[u8], scroll: usize, area: Rect)
             volume_coverage_pattern::parse_volume_coverage_pattern(data)
         }
         MessageType::RdaControlCommands => rda_control_commands::parse_rda_control_commands(data),
-        MessageType::RpgClutterCensorZones => {
-            clutter_censor_zones::parse_clutter_censor_zones(data)
-        }
-        MessageType::RpgRequestForData => request_for_data::parse_request_for_data(data),
-        MessageType::RdaLoopBackTest | MessageType::RpgLoopBackTest => {
+        MessageType::ClutterCensorZones => clutter_censor_zones::parse_clutter_censor_zones(data),
+        MessageType::RequestForData => request_for_data::parse_request_for_data(data),
+        MessageType::RdaLoopbackTest | MessageType::RpgLoopbackTest => {
             loopback_test::parse_loopback_test(data)
         }
-        MessageType::RdaClutterFilterBypassMap => {
+        MessageType::ClutterFilterBypassMap => {
             clutter_filter_bypass_map::parse_clutter_filter_bypass_map(data)
         }
-        MessageType::RdaClutterFilterMap => clutter_filter_map::parse_clutter_filter_map(data),
+        MessageType::ClutterFilterMap => clutter_filter_map::parse_clutter_filter_map(data),
         MessageType::RdaAdaptationData => rda_adaptation_data::parse_rda_adaptation_data(data),
-        MessageType::RdaDigitalRadarDataGenericFormat => {
-            digital_radar_data::parse_digital_radar_data(data)
-        }
+        MessageType::DigitalRadarData => digital_radar_data::parse_digital_radar_data(data),
         MessageType::RdaPrfData => rda_prf_data::parse_rda_prf_data(data),
         MessageType::RdaLogData => rda_log_data::parse_rda_log_data(data),
         _ => common::parse_common_header_only(&header),

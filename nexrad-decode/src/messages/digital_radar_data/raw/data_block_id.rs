@@ -9,5 +9,5 @@ pub struct DataBlockId {
     pub data_block_type: u8,
 
     /// Data block name, e.g. "VOL".
-    pub data_name: [u8; 3],
+    pub data_block_name: [u8; 3],
 }

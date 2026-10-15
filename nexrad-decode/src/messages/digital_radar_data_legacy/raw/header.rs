@@ -62,10 +62,10 @@ pub struct Header {
     pub doppler_gate_interval: Integer2,
 
     /// Number of surveillance (reflectivity) gates (0-460).
-    pub num_surveillance_gates: Integer2,
+    pub surveillance_gate_count: Integer2,
 
     /// Number of Doppler (velocity/spectrum width) gates (0-920).
-    pub num_doppler_gates: Integer2,
+    pub doppler_gate_count: Integer2,
 
     /// Sector number (1-3).
     pub sector_number: Integer2,

@@ -48,8 +48,8 @@ impl<'a> Message<'a> {
     pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
         let header = reader.take_ref::<raw::Header>()?;
 
-        let num_surv = header.num_surveillance_gates.get() as usize;
-        let num_dopp = header.num_doppler_gates.get() as usize;
+        let num_surv = header.surveillance_gate_count.get() as usize;
+        let num_dopp = header.doppler_gate_count.get() as usize;
         let ref_ptr = header.reflectivity_pointer.get() as usize;
         let vel_ptr = header.velocity_pointer.get() as usize;
         let sw_ptr = header.spectrum_width_pointer.get() as usize;
@@ -186,13 +186,13 @@ impl<'a> Message<'a> {
     }
 
     /// Number of surveillance (reflectivity) gates.
-    pub fn num_surveillance_gates(&self) -> u16 {
-        self.header.num_surveillance_gates.get()
+    pub fn surveillance_gate_count(&self) -> u16 {
+        self.header.surveillance_gate_count.get()
     }
 
     /// Number of Doppler (velocity/spectrum width) gates.
-    pub fn num_doppler_gates(&self) -> u16 {
-        self.header.num_doppler_gates.get()
+    pub fn doppler_gate_count(&self) -> u16 {
+        self.header.doppler_gate_count.get()
     }
 
     /// Surveillance gate spacing in meters.
@@ -267,10 +267,10 @@ impl<'a> Message<'a> {
         use nexrad_model::data::{MomentData, Product, Radial};
 
         // Extract header values before moving gate data out of self.
-        let num_surv_gates = self.num_surveillance_gates();
+        let num_surv_gates = self.surveillance_gate_count();
         let surv_first_range = self.surveillance_first_gate_range_meters().unsigned_abs();
         let surv_interval = self.surveillance_gate_interval_meters();
-        let num_dopp_gates = self.num_doppler_gates();
+        let num_dopp_gates = self.doppler_gate_count();
         let dopp_first_range = self.doppler_first_gate_range_meters().unsigned_abs();
         let dopp_interval = self.doppler_gate_interval_meters();
         let vel_resolution = self.doppler_velocity_resolution_mps();
@@ -278,7 +278,7 @@ impl<'a> Message<'a> {
         let timestamp = self
             .date_time()
             .ok_or(Error::MessageMissingDate {
-                message_type: crate::messages::MessageType::RdaDigitalRadarData,
+                message_type: crate::messages::MessageType::DigitalRadarDataLegacy,
             })?
             .timestamp_millis();
         let azimuth_number = self.azimuth_number();
@@ -372,7 +372,7 @@ impl<'a> Message<'a> {
             .map(|gates| {
                 MomentData::from_fixed_point(
                     Product::Reflectivity,
-                    usize::from(msg.num_surveillance_gates()),
+                    usize::from(msg.surveillance_gate_count()),
                     msg.surveillance_first_gate_range_meters().unsigned_abs(),
                     msg.surveillance_gate_interval_meters(),
                     8,
@@ -392,7 +392,7 @@ impl<'a> Message<'a> {
                 };
                 MomentData::from_fixed_point(
                     Product::Velocity,
-                    usize::from(msg.num_doppler_gates()),
+                    usize::from(msg.doppler_gate_count()),
                     msg.doppler_first_gate_range_meters().unsigned_abs(),
                     msg.doppler_gate_interval_meters(),
                     8,
@@ -407,7 +407,7 @@ impl<'a> Message<'a> {
             .map(|gates| {
                 MomentData::from_fixed_point(
                     Product::SpectrumWidth,
-                    usize::from(msg.num_doppler_gates()),
+                    usize::from(msg.doppler_gate_count()),
                     msg.doppler_first_gate_range_meters().unsigned_abs(),
                     msg.doppler_gate_interval_meters(),
                     8,
@@ -421,7 +421,7 @@ impl<'a> Message<'a> {
         let timestamp = msg
             .date_time()
             .ok_or(Error::MessageMissingDate {
-                message_type: crate::messages::MessageType::RdaDigitalRadarData,
+                message_type: crate::messages::MessageType::DigitalRadarDataLegacy,
             })?
             .timestamp_millis();
 
@@ -471,8 +471,8 @@ impl Debug for Message<'_> {
             .field("vcp_number", &self.vcp_number())
             .field("unambiguous_range_km", &self.unambiguous_range_km())
             .field("calibration_constant_db", &self.calibration_constant_db())
-            .field("num_surveillance_gates", &self.num_surveillance_gates())
-            .field("num_doppler_gates", &self.num_doppler_gates())
+            .field("surveillance_gate_count", &self.surveillance_gate_count())
+            .field("doppler_gate_count", &self.doppler_gate_count())
             .field(
                 "surveillance_gate_interval_meters",
                 &self.surveillance_gate_interval_meters(),

@@ -15,6 +15,20 @@ pub enum WaveformType {
     Unknown,
 }
 
+impl WaveformType {
+    /// Decode a waveform type code.
+    pub(crate) fn from_raw(code: u8) -> Self {
+        match code {
+            1 => WaveformType::ContiguousSurveillance,
+            2 => WaveformType::ContiguousDopplerWithAmbiguityResolution,
+            3 => WaveformType::ContiguousDopplerWithoutAmbiguityResolution,
+            4 => WaveformType::Batch,
+            5 => WaveformType::StaggeredPulsePair,
+            _ => WaveformType::Unknown,
+        }
+    }
+}
+
 #[cfg(feature = "model")]
 impl From<WaveformType> for nexrad_model::data::WaveformType {
     fn from(value: WaveformType) -> Self {

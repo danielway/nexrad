@@ -136,7 +136,7 @@ fn decode_volume(site: &str, file_name: &str, file: &volume::File) -> Result<Dec
                         build_number = Some(status.build_number());
                     }
                 }
-                MessageContents::VolumeCoveragePattern(_) => {
+                MessageContents::RdaVolumeCoveragePattern(_) => {
                     vcp_count += 1;
                 }
                 MessageContents::DigitalRadarData(radar_data) => {

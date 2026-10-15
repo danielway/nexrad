@@ -207,7 +207,7 @@
 //!             println!("Azimuth: {} deg", header.azimuth_angle_degrees());
 //!             println!("Elevation: {} deg", header.elevation_angle_degrees());
 //!         }
-//!         MessageContents::VolumeCoveragePattern(v) => {
+//!         MessageContents::RdaVolumeCoveragePattern(v) => {
 //!             println!("VCP: {}", v.header().pattern_number());
 //!         }
 //!         _ => {}

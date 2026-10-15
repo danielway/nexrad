@@ -30,7 +30,8 @@ use nexrad::process::filter::{
 };
 use nexrad::process::{ScanDerivedProduct, SweepPipeline, SweepProcessor};
 use nexrad::render::{
-    default_scale, render_cartesian, render_sweep, render_vertical, Projection, RenderOptions,
+    default_scale, render_cartesian, render_sweep, render_vertical, Color, Projection,
+    RenderOptions,
 };
 
 /// Full 23-sweep scan downloaded from AWS via `download_scan` example.
@@ -531,7 +532,7 @@ fn main() -> nexrad::Result<()> {
     }
 
     // Query center pixel
-    if let Some(query) = result.query_pixel(
+    if let Some(query) = meta.query_pixel(
         &ref_field,
         compare_size as f64 / 2.0,
         compare_size as f64 / 2.0,
@@ -547,7 +548,7 @@ fn main() -> nexrad::Result<()> {
     }
 
     // Query at a specific polar coordinate (100 km north)
-    if let Some(query) = result.query_polar(&ref_field, 0.0, 100.0) {
+    if let Some(query) = meta.query_polar(&ref_field, 0.0, 100.0) {
         println!(
             "  Query at 0 deg / 100 km: value={:.1}, status={:?}",
             query.value, query.status,
@@ -559,7 +560,7 @@ fn main() -> nexrad::Result<()> {
         latitude: coord_sys.latitude(),
         longitude: coord_sys.longitude(),
     };
-    if let Some(query) = result.query_geo(&ref_field, &site_point) {
+    if let Some(query) = meta.query_geo(&ref_field, &site_point) {
         println!(
             "  Query at radar site ({:.4}, {:.4}): value={:.1}, status={:?}",
             site_point.latitude, site_point.longitude, query.value, query.status,
@@ -576,7 +577,8 @@ fn main() -> nexrad::Result<()> {
     println!("\n=== Section 9: Transparent Background ===");
 
     {
-        let transparent_options = RenderOptions::native_for(&ref_field).transparent();
+        let transparent_options =
+            RenderOptions::native_for(&ref_field).with_background(Color::TRANSPARENT);
         let result = render_sweep(&ref_field, &ref_scale, &transparent_options)?;
         let path = format!("{}/09_transparent_bg.png", OUTPUT_DIR);
         result.save(&path)?;

@@ -129,6 +129,7 @@ fn render_sweep_reports_polar_projection() {
     assert!(meta.geo_extent().is_none());
 
     let query = result
+        .metadata()
         .query_polar(&field, 90.0, 10.0)
         .expect("point is inside the field");
     assert_eq!(query.status, GateStatus::Valid);
@@ -186,7 +187,7 @@ fn render_vertical_reports_vertical_projection() {
 fn filtered_gates_render_as_background() {
     const BACKGROUND: [u8; 4] = [1, 2, 3, 255];
     let scale = default_scale(Product::Reflectivity);
-    let options = RenderOptions::new(100, 100).with_background(BACKGROUND);
+    let options = RenderOptions::new(100, 100).with_background(BACKGROUND.into());
     let all_background =
         |image: &nexrad_render::RgbaImage| image.pixels().all(|p| p.0 == BACKGROUND);
 
@@ -200,6 +201,7 @@ fn filtered_gates_render_as_background() {
     assert!(all_background(result.image()));
 
     let query = result
+        .metadata()
         .query_pixel(&sweep, 70.0, 50.0)
         .expect("pixel is inside the field");
     assert_eq!(query.status, GateStatus::Filtered);

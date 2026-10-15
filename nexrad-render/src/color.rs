@@ -5,47 +5,55 @@
 //! specific colors based on threshold levels. For rendering, the scale is
 //! converted to a [`ColorLookupTable`] which provides O(1) color lookups.
 
-use crate::Product;
+use crate::{Error, Result};
+use nexrad_model::data::Product;
 
-/// An RGBA color with components in the range 0.0 to 1.0.
+/// An RGBA color with components in the range `0.0..=1.0`.
 ///
-/// This type is used for defining color scales. Colors are converted to
-/// 8-bit RGBA values during rendering.
+/// This type is used for defining color scales and render backgrounds. Colors are
+/// converted to 8-bit RGBA values during rendering. The default color is
+/// [`Color::TRANSPARENT`].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Color {
-    /// Red component (0.0 to 1.0)
+    /// Red component, `0.0..=1.0`.
     pub r: f64,
-    /// Green component (0.0 to 1.0)
+    /// Green component, `0.0..=1.0`.
     pub g: f64,
-    /// Blue component (0.0 to 1.0)
+    /// Blue component, `0.0..=1.0`.
     pub b: f64,
-    /// Alpha component (0.0 to 1.0)
+    /// Alpha component, `0.0..=1.0` (0 is fully transparent).
     pub a: f64,
 }
 
 impl Color {
     /// Creates a new color from RGB components (alpha defaults to 1.0).
     ///
-    /// Components should be in the range 0.0 to 1.0.
+    /// Components should be in the range `0.0..=1.0`.
     pub const fn rgb(r: f64, g: f64, b: f64) -> Self {
         Self { r, g, b, a: 1.0 }
     }
 
     /// Creates a new color from RGBA components.
     ///
-    /// Components should be in the range 0.0 to 1.0.
+    /// Components should be in the range `0.0..=1.0`.
     pub const fn rgba(r: f64, g: f64, b: f64, a: f64) -> Self {
         Self { r, g, b, a }
     }
 
+    /// Creates a color from 8-bit RGBA values, mapping `0..=255` to `0.0..=1.0`.
+    ///
+    /// [`to_rgba8`](Self::to_rgba8) converts it back to the same bytes.
+    pub fn from_rgba8(rgba: [u8; 4]) -> Self {
+        let [r, g, b, a] = rgba.map(|c| f64::from(c) / 255.0);
+        Self { r, g, b, a }
+    }
+
     /// Converts the color to 8-bit RGBA values.
+    ///
+    /// Each component is clamped to `0.0..=1.0` and rounded to the nearest byte value;
+    /// a NaN component becomes 0.
     pub fn to_rgba8(&self) -> [u8; 4] {
-        [
-            (self.r * 255.0) as u8,
-            (self.g * 255.0) as u8,
-            (self.b * 255.0) as u8,
-            (self.a * 255.0) as u8,
-        ]
+        [self.r, self.g, self.b, self.a].map(|c| (c.clamp(0.0, 1.0) * 255.0).round() as u8)
     }
 
     /// Black color.
@@ -58,6 +66,27 @@ impl Color {
     pub const TRANSPARENT: Color = Color::rgba(0.0, 0.0, 0.0, 0.0);
 }
 
+impl Default for Color {
+    /// [`Color::TRANSPARENT`].
+    fn default() -> Self {
+        Self::TRANSPARENT
+    }
+}
+
+impl From<[u8; 4]> for Color {
+    /// See [`Color::from_rgba8`].
+    fn from(rgba: [u8; 4]) -> Self {
+        Self::from_rgba8(rgba)
+    }
+}
+
+impl From<Color> for [u8; 4] {
+    /// See [`Color::to_rgba8`].
+    fn from(color: Color) -> Self {
+        color.to_rgba8()
+    }
+}
+
 /// A single level in a discrete color scale.
 ///
 /// Represents a threshold value and its associated color. Values at or above
@@ -65,8 +94,10 @@ impl Color {
 /// this color.
 #[derive(Debug, Clone)]
 pub struct ColorScaleLevel {
-    value: f32,
-    color: Color,
+    /// The threshold value.
+    pub value: f32,
+    /// The color for values at or above this threshold.
+    pub color: Color,
 }
 
 impl ColorScaleLevel {
@@ -132,7 +163,8 @@ impl DiscreteColorScale {
         color
     }
 
-    /// Returns the levels in this color scale (sorted highest to lowest).
+    /// Returns the levels in this color scale (sorted highest to lowest), for
+    /// example to draw a legend.
     pub fn levels(&self) -> &[ColorScaleLevel] {
         &self.levels
     }
@@ -280,13 +312,18 @@ impl From<ContinuousColorScale> for ColorScale {
 /// # Example
 ///
 /// ```
-/// use nexrad_render::{default_scale, ColorLookupTable, Product};
+/// use nexrad_model::data::Product;
+/// use nexrad_render::{default_scale, ColorLookupTable};
 ///
 /// let scale = default_scale(Product::Reflectivity);
-/// let lut = ColorLookupTable::new(&scale, -32.0, 95.0, 256);
+/// let lut = ColorLookupTable::new(&scale, -32.0, 95.0, 256)?;
 ///
 /// // O(1) lookup returning [R, G, B, A] bytes
 /// let color = lut.color(45.0);
+///
+/// // The raw table, e.g. for uploading as a 1-D GPU texture
+/// assert_eq!(lut.entries().len(), lut.len());
+/// # Ok::<(), nexrad_render::Error>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct ColorLookupTable {
@@ -294,8 +331,8 @@ pub struct ColorLookupTable {
     table: Vec<[u8; 4]>,
     /// Minimum value in the mapped range.
     min_value: f32,
-    /// Value range (max - min).
-    range: f32,
+    /// Maximum value in the mapped range.
+    max_value: f32,
 }
 
 impl ColorLookupTable {
@@ -304,40 +341,78 @@ impl ColorLookupTable {
     /// # Arguments
     ///
     /// * `scale` - The color scale to sample from (discrete or continuous)
-    /// * `min_value` - The minimum value to map
-    /// * `max_value` - The maximum value to map
-    /// * `size` - The number of entries in the lookup table (256 recommended);
-    ///   values below 2 are raised to 2 so the table always spans both ends of
-    ///   the range
+    /// * `min` - The value mapped to the first entry
+    /// * `max` - The value mapped to the last entry
+    /// * `size` - The number of entries in the lookup table (256 recommended)
     ///
-    /// Values outside the min/max range will be clamped to the nearest entry.
-    pub fn new(scale: &ColorScale, min_value: f32, max_value: f32, size: usize) -> Self {
-        let size = size.max(2);
-        let range = max_value - min_value;
-        let mut table = Vec::with_capacity(size);
-
-        for i in 0..size {
-            let value = min_value + (i as f32 / (size - 1) as f32) * range;
-            let color = scale.color(value);
-            table.push(color.to_rgba8());
+    /// Entry `i` holds the scale's color at `min + i / (size - 1) * (max - min)`.
+    /// Values outside the `min..=max` range are clamped to the nearest entry.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidRange`] unless `min` and `max` are finite and
+    /// `min < max`, and [`Error::InvalidTableSize`] if `size` is below 2.
+    pub fn new(scale: &ColorScale, min: f32, max: f32, size: usize) -> Result<Self> {
+        if !(min.is_finite() && max.is_finite() && min < max) {
+            return Err(Error::InvalidRange { min, max });
+        }
+        if size < 2 {
+            return Err(Error::InvalidTableSize { size });
         }
 
-        Self {
+        let range = max - min;
+        let table = (0..size)
+            .map(|i| {
+                let value = min + (i as f32 / (size - 1) as f32) * range;
+                scale.color(value).to_rgba8()
+            })
+            .collect();
+
+        Ok(Self {
             table,
-            min_value,
-            range,
-        }
+            min_value: min,
+            max_value: max,
+        })
     }
 
     /// Returns the RGBA color for the given value.
     ///
-    /// This is an O(1) operation using direct array indexing.
+    /// This is an O(1) operation using direct array indexing. Values outside the
+    /// table's range map to the first or last entry; NaN maps to the first entry.
     #[inline]
     pub fn color(&self, value: f32) -> [u8; 4] {
-        let normalized = (value - self.min_value) / self.range;
+        let normalized = (value - self.min_value) / (self.max_value - self.min_value);
         let index = (normalized * (self.table.len() - 1) as f32) as usize;
         let index = index.min(self.table.len() - 1);
         self.table[index]
+    }
+
+    /// The table's RGBA entries, from [`min_value`](Self::min_value) to
+    /// [`max_value`](Self::max_value) in equal steps.
+    ///
+    /// Suitable for uploading as a 1-D texture to apply the scale on a GPU.
+    pub fn entries(&self) -> &[[u8; 4]] {
+        &self.table
+    }
+
+    /// The value mapped to the first entry.
+    pub fn min_value(&self) -> f32 {
+        self.min_value
+    }
+
+    /// The value mapped to the last entry.
+    pub fn max_value(&self) -> f32 {
+        self.max_value
+    }
+
+    /// The number of entries in the table (always at least 2).
+    pub fn len(&self) -> usize {
+        self.table.len()
+    }
+
+    /// Always `false`: a table has at least 2 entries.
+    pub fn is_empty(&self) -> bool {
+        self.table.is_empty()
     }
 }
 
@@ -578,7 +653,8 @@ pub fn clutter_filter_power_scale() -> DiscreteColorScale {
 /// # Example
 ///
 /// ```
-/// use nexrad_render::{default_scale, Product};
+/// use nexrad_model::data::Product;
+/// use nexrad_render::default_scale;
 ///
 /// let scale = default_scale(Product::Reflectivity);
 /// // Pass to render_sweep, render_cartesian or render_vertical,

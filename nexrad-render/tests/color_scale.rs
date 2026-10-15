@@ -5,7 +5,7 @@ use nexrad_render::{
     clutter_filter_power_scale, correlation_coefficient_scale, default_scale,
     differential_phase_scale, differential_reflectivity_scale, nws_reflectivity_scale,
     spectrum_width_scale, velocity_scale, Color, ColorLookupTable, ColorScaleLevel,
-    DiscreteColorScale,
+    DiscreteColorScale, Error,
 };
 
 #[test]
@@ -290,24 +290,121 @@ fn test_default_scale_all_products() {
     }
 }
 
+// Tests for Color
+
+#[test]
+fn test_color_to_rgba8_rounds_to_nearest() {
+    // 0.5 * 255 = 127.5 rounds up; 0.2 * 255 = 51.000..01 stays at 51
+    assert_eq!(
+        Color::rgba(0.5, 0.2, 0.999, 0.001).to_rgba8(),
+        [128, 51, 255, 0]
+    );
+    // 0.6627 * 255 = 168.99 rounds to 169 instead of truncating to 168
+    assert_eq!(Color::rgb(0.6627, 0.0, 1.0).to_rgba8(), [169, 0, 255, 255]);
+}
+
+#[test]
+fn test_color_to_rgba8_clamps() {
+    assert_eq!(
+        Color::rgba(-0.5, 1.5, 2.0, -1.0).to_rgba8(),
+        [0, 255, 255, 0]
+    );
+    assert_eq!(
+        Color::rgba(f64::NAN, 0.0, 0.0, 1.0).to_rgba8(),
+        [0, 0, 0, 255]
+    );
+}
+
+#[test]
+fn test_color_from_rgba8_round_trips() {
+    for byte in 0..=255u8 {
+        let rgba = [byte, 255 - byte, byte / 2, 255];
+        assert_eq!(Color::from_rgba8(rgba).to_rgba8(), rgba);
+        assert_eq!(<[u8; 4]>::from(Color::from(rgba)), rgba);
+    }
+    assert_eq!(
+        Color::from_rgba8([255, 0, 0, 255]),
+        Color::rgb(1.0, 0.0, 0.0)
+    );
+}
+
+#[test]
+fn test_color_default_is_transparent() {
+    assert_eq!(Color::default(), Color::TRANSPARENT);
+}
+
+#[test]
+fn test_color_scale_level_fields() {
+    let scale = DiscreteColorScale::new(vec![
+        ColorScaleLevel::new(0.0, Color::BLACK),
+        ColorScaleLevel::new(30.0, Color::WHITE),
+    ]);
+    let legend: Vec<(f32, Color)> = scale
+        .levels()
+        .iter()
+        .map(|level| (level.value, level.color))
+        .collect();
+    assert_eq!(legend, vec![(30.0, Color::WHITE), (0.0, Color::BLACK)]);
+}
+
 // Tests for ColorLookupTable
 
 #[test]
 fn test_lookup_table_matches_scale_at_range_ends() {
     let scale = default_scale(Product::Reflectivity);
-    let lut = ColorLookupTable::new(&scale, -32.0, 95.0, 256);
+    let lut = ColorLookupTable::new(&scale, -32.0, 95.0, 256).unwrap();
 
     assert_eq!(lut.color(-32.0), scale.color(-32.0).to_rgba8());
     assert_eq!(lut.color(95.0), scale.color(95.0).to_rgba8());
 }
 
 #[test]
-fn test_lookup_table_tiny_sizes_are_clamped() {
+fn test_lookup_table_accessors() {
     let scale = default_scale(Product::Reflectivity);
 
-    for size in [0, 1, 2] {
-        let lut = ColorLookupTable::new(&scale, 0.0, 70.0, size);
-        assert_eq!(lut.color(0.0), scale.color(0.0).to_rgba8());
-        assert_eq!(lut.color(70.0), scale.color(70.0).to_rgba8());
+    for size in [2, 17, 256] {
+        let lut = ColorLookupTable::new(&scale, 0.0, 70.0, size).unwrap();
+        assert_eq!(lut.len(), size);
+        assert!(!lut.is_empty());
+        assert_eq!(lut.entries().len(), lut.len());
+        assert_eq!(lut.min_value(), 0.0);
+        assert_eq!(lut.max_value(), 70.0);
+        assert_eq!(lut.entries()[0], scale.color(0.0).to_rgba8());
+        assert_eq!(lut.entries()[size - 1], scale.color(70.0).to_rgba8());
+        assert_eq!(lut.color(0.0), lut.entries()[0]);
+        assert_eq!(lut.color(70.0), lut.entries()[size - 1]);
+    }
+}
+
+#[test]
+fn test_lookup_table_rejects_invalid_ranges() {
+    let scale = default_scale(Product::Reflectivity);
+
+    for (min, max) in [
+        (10.0, 10.0),
+        (20.0, 10.0),
+        (f32::NAN, 10.0),
+        (0.0, f32::INFINITY),
+        (f32::NEG_INFINITY, 0.0),
+    ] {
+        assert!(
+            matches!(
+                ColorLookupTable::new(&scale, min, max, 256),
+                Err(Error::InvalidRange { .. })
+            ),
+            "{min}..{max} should be rejected"
+        );
+    }
+}
+
+#[test]
+fn test_lookup_table_rejects_tiny_sizes() {
+    let scale = default_scale(Product::Reflectivity);
+
+    for size in [0, 1] {
+        assert!(matches!(
+            ColorLookupTable::new(&scale, 0.0, 70.0, size),
+            Err(Error::InvalidTableSize { size: s }) if s == size
+        ));
     }
 }

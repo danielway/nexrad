@@ -16,6 +16,31 @@ pub enum Error {
     /// buffer).
     #[error("invalid image dimensions")]
     InvalidDimensions,
+    /// A value range was not finite and ordered (`min < max`), for example the range
+    /// passed to [`ColorLookupTable::new`](crate::ColorLookupTable::new) or
+    /// [`RenderOptions::with_value_range`](crate::RenderOptions::with_value_range).
+    #[error("invalid value range {min}..{max}: must be finite with min < max")]
+    InvalidRange {
+        /// The lower bound that was given.
+        min: f32,
+        /// The upper bound that was given.
+        max: f32,
+    },
+    /// A color lookup table was requested with fewer than 2 entries.
+    #[error("invalid color lookup table size {size}: must be at least 2")]
+    InvalidTableSize {
+        /// The size that was given.
+        size: usize,
+    },
+    /// A geographic extent was not finite and ordered (`min < max` in both latitude
+    /// and longitude).
+    #[error("invalid geographic extent: must be finite with min < max")]
+    InvalidExtent,
+    /// A sweep was rendered into a geographic extent without a radar coordinate system
+    /// to place it; set one with
+    /// [`RenderOptions::with_coord_system`](crate::RenderOptions::with_coord_system).
+    #[error("rendering into a geographic extent requires a coordinate system")]
+    MissingCoordinateSystem,
     /// An error from the [`image`] crate, such as failing to encode or save an image.
     #[error("image error: {0}")]
     Image(#[from] image::ImageError),

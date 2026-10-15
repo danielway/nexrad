@@ -84,7 +84,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   enables the matching feature on its own `image` dependency. (#194)
 - `Error::Image`'s `Display` text is `image error`, without the wrapped `image::ImageError`'s message; that error is
   its `source()`, so reporters that walk the source chain print it once. (#195)
-- The published crate leaves out the benchmark, which needs files from outside it.
+- The published crate leaves out the benchmark, which needs files from outside it. (#196)
 
 ### Removed
 

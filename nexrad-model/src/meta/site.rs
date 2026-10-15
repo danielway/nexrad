@@ -9,8 +9,9 @@ use uom::si::{f64::Length, length::meter};
 
 /// A radar site's metadata including a variety of infrequently-changing properties.
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Site {
+    #[cfg_attr(feature = "serde", serde(serialize_with = "serialize_identifier"))]
     identifier: [u8; 4],
     latitude: f64,
     longitude: f64,
@@ -143,6 +144,49 @@ impl SiteBuilder {
         }
         Ok(self.site)
     }
+}
+
+/// Deserializes through [`Site::builder`], so the identifier and location are validated.
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Site {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        let repr = SiteRepr::deserialize(deserializer)?;
+        let identifier = <[u8; 4]>::try_from(repr.identifier.as_bytes()).map_err(|_| {
+            serde::de::Error::custom(format_args!(
+                "site identifier {:?} is not four characters",
+                repr.identifier
+            ))
+        })?;
+        Site::builder(identifier, repr.latitude, repr.longitude)
+            .site_elevation_meters(repr.site_elevation_meters)
+            .feedhorn_height_meters(repr.feedhorn_height_meters)
+            .build()
+            .map_err(serde::de::Error::custom)
+    }
+}
+
+/// The serialized form of [`Site`], validated before it becomes one.
+#[cfg(feature = "serde")]
+#[derive(Deserialize)]
+#[serde(rename = "Site")]
+struct SiteRepr {
+    identifier: String,
+    latitude: f64,
+    longitude: f64,
+    site_elevation_meters: i16,
+    feedhorn_height_meters: u16,
+}
+
+/// Serializes a site identifier as the string [`Site::identifier`] returns.
+#[cfg(feature = "serde")]
+fn serialize_identifier<S: serde::Serializer>(
+    identifier: &[u8; 4],
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error> {
+    let identifier = std::str::from_utf8(identifier).map_err(serde::ser::Error::custom)?;
+    serializer.serialize_str(identifier)
 }
 
 impl Display for Site {

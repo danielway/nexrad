@@ -305,7 +305,7 @@ impl core::marker::StructuralPartialEq for nexrad_model::data::CartesianField
 impl serde_core::ser::Serialize for nexrad_model::data::CartesianField
 pub fn nexrad_model::data::CartesianField::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
 impl<'de> serde_core::de::Deserialize<'de> for nexrad_model::data::CartesianField
-pub fn nexrad_model::data::CartesianField::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+pub fn nexrad_model::data::CartesianField::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
 impl core::marker::Freeze for nexrad_model::data::CartesianField
 impl core::marker::Send for nexrad_model::data::CartesianField
 impl core::marker::Sync for nexrad_model::data::CartesianField
@@ -417,7 +417,7 @@ impl core::marker::StructuralPartialEq for nexrad_model::data::MomentData
 impl serde_core::ser::Serialize for nexrad_model::data::MomentData
 pub fn nexrad_model::data::MomentData::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
 impl<'de> serde_core::de::Deserialize<'de> for nexrad_model::data::MomentData
-pub fn nexrad_model::data::MomentData::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+pub fn nexrad_model::data::MomentData::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
 impl core::marker::Freeze for nexrad_model::data::MomentData
 impl core::marker::Send for nexrad_model::data::MomentData
 impl core::marker::Sync for nexrad_model::data::MomentData
@@ -461,7 +461,7 @@ impl core::marker::StructuralPartialEq for nexrad_model::data::Radial
 impl serde_core::ser::Serialize for nexrad_model::data::Radial
 pub fn nexrad_model::data::Radial::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
 impl<'de> serde_core::de::Deserialize<'de> for nexrad_model::data::Radial
-pub fn nexrad_model::data::Radial::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+pub fn nexrad_model::data::Radial::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
 impl core::marker::Freeze for nexrad_model::data::Radial
 impl core::marker::Send for nexrad_model::data::Radial
 impl core::marker::Sync for nexrad_model::data::Radial
@@ -547,7 +547,7 @@ impl core::marker::StructuralPartialEq for nexrad_model::data::Sweep
 impl serde_core::ser::Serialize for nexrad_model::data::Sweep
 pub fn nexrad_model::data::Sweep::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
 impl<'de> serde_core::de::Deserialize<'de> for nexrad_model::data::Sweep
-pub fn nexrad_model::data::Sweep::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+pub fn nexrad_model::data::Sweep::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
 impl core::marker::Freeze for nexrad_model::data::Sweep
 impl core::marker::Send for nexrad_model::data::Sweep
 impl core::marker::Sync for nexrad_model::data::Sweep
@@ -592,7 +592,7 @@ impl core::marker::StructuralPartialEq for nexrad_model::data::SweepField
 impl serde_core::ser::Serialize for nexrad_model::data::SweepField
 pub fn nexrad_model::data::SweepField::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
 impl<'de> serde_core::de::Deserialize<'de> for nexrad_model::data::SweepField
-pub fn nexrad_model::data::SweepField::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+pub fn nexrad_model::data::SweepField::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
 impl core::marker::Freeze for nexrad_model::data::SweepField
 impl core::marker::Send for nexrad_model::data::SweepField
 impl core::marker::Sync for nexrad_model::data::SweepField
@@ -646,7 +646,7 @@ impl core::marker::StructuralPartialEq for nexrad_model::data::VerticalField
 impl serde_core::ser::Serialize for nexrad_model::data::VerticalField
 pub fn nexrad_model::data::VerticalField::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
 impl<'de> serde_core::de::Deserialize<'de> for nexrad_model::data::VerticalField
-pub fn nexrad_model::data::VerticalField::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+pub fn nexrad_model::data::VerticalField::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
 impl core::marker::Freeze for nexrad_model::data::VerticalField
 impl core::marker::Send for nexrad_model::data::VerticalField
 impl core::marker::Sync for nexrad_model::data::VerticalField
@@ -893,7 +893,7 @@ impl core::marker::StructuralPartialEq for nexrad_model::meta::Site
 impl serde_core::ser::Serialize for nexrad_model::meta::Site
 pub fn nexrad_model::meta::Site::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
 impl<'de> serde_core::de::Deserialize<'de> for nexrad_model::meta::Site
-pub fn nexrad_model::meta::Site::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
+pub fn nexrad_model::meta::Site::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
 impl core::marker::Freeze for nexrad_model::meta::Site
 impl core::marker::Send for nexrad_model::meta::Site
 impl core::marker::Sync for nexrad_model::meta::Site

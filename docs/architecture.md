@@ -221,6 +221,12 @@ builds for WASM. Only `parallel` (rayon threads) is excluded from the `wasm` fea
   (decompression, record layout, AWS) becomes `nexrad::Error::Data`. `nexrad::Error::NoDataAvailable { site, date }`
   exists only with the `aws` feature.
 
+## Serialization
+
+With the `serde` feature, `nexrad-model` types serialize with field names equal to their accessor names, enum variants
+as their PascalCase names, `VcpNumber` as its number and raw gate bytes as a byte string. Deserialization applies the
+same validation as the constructors and builders. The representation is stable within a major version.
+
 ## Naming Conventions
 
 - **Acronyms are UpperCamelCase words**: `VcpNumber`, `RdaStatusData`, `AwsError`, `CfpStatus`,

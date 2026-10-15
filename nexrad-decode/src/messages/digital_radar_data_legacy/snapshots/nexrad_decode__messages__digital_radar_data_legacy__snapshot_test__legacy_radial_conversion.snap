@@ -18,12 +18,12 @@ Radial {
         MomentData {
             product: Reflectivity,
             gate_count: 460,
-            first_gate_range: 0,
-            gate_interval: 1000,
+            first_gate_range_meters: 0,
+            gate_interval_meters: 1000,
             data_word_size: 8,
             scale: 2.0,
             offset: 66.0,
-            values: BinaryData {
+            raw_values: BinaryData {
                 len: 460,
                 fnv1a: 0x1bab780211b61a6f,
                 head: [

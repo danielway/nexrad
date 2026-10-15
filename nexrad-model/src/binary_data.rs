@@ -7,15 +7,10 @@
 use std::fmt::{self, Debug, Formatter};
 use std::ops::{Deref, DerefMut};
 
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-
 /// A wrapper for binary data that provides a concise Debug implementation showing size, a
 /// 64-bit FNV-1a fingerprint, and a sample of head/tail bytes instead of the full binary content.
 #[repr(transparent)]
 #[derive(Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(transparent))]
 pub struct BinaryData<T>(pub T);
 
 impl<T> BinaryData<T> {
@@ -83,6 +78,55 @@ impl<T: AsRef<[u8]>> AsRef<[u8]> for BinaryData<T> {
 impl<T> From<T> for BinaryData<T> {
     fn from(data: T) -> Self {
         Self(data)
+    }
+}
+
+/// Serializes the wrapped bytes as a byte string, which compact formats encode as a length
+/// prefix followed by the raw bytes.
+#[cfg(feature = "serde")]
+impl<T: AsRef<[u8]>> serde::Serialize for BinaryData<T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_bytes(self.0.as_ref())
+    }
+}
+
+/// Deserializes a byte string, or a sequence of integers for formats without a bytes type such
+/// as JSON.
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for BinaryData<Vec<u8>> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer
+            .deserialize_byte_buf(BytesVisitor)
+            .map(BinaryData)
+    }
+}
+
+/// Visits a byte string or a sequence of bytes.
+#[cfg(feature = "serde")]
+struct BytesVisitor;
+
+#[cfg(feature = "serde")]
+impl<'de> serde::de::Visitor<'de> for BytesVisitor {
+    type Value = Vec<u8>;
+
+    fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+        formatter.write_str("a byte string or a sequence of bytes")
+    }
+
+    fn visit_bytes<E: serde::de::Error>(self, bytes: &[u8]) -> Result<Self::Value, E> {
+        Ok(bytes.to_vec())
+    }
+
+    fn visit_byte_buf<E: serde::de::Error>(self, bytes: Vec<u8>) -> Result<Self::Value, E> {
+        Ok(bytes)
+    }
+
+    fn visit_seq<A: serde::de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+        let mut bytes = Vec::with_capacity(seq.size_hint().unwrap_or(0).min(1 << 20));
+        while let Some(byte) = seq.next_element::<u8>()? {
+            bytes.push(byte);
+        }
+        Ok(bytes)
     }
 }
 

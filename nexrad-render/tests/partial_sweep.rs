@@ -82,7 +82,7 @@ fn test_partial_sweep_leaves_gaps_as_background() {
     let radials = create_partial_sweep(0.0, 90.0, 1.0, 100);
 
     let background = [0, 0, 0, 255]; // Black background
-    let options = RenderOptions::new(200, 200).with_background(background);
+    let options = RenderOptions::new(200, 200).with_background(background.into());
 
     let image = render(&radials, &options);
 
@@ -132,7 +132,7 @@ fn test_full_sweep_covers_all_azimuths() {
     let radials = create_partial_sweep(0.0, 360.0, 1.0, 100);
 
     let background = [0, 0, 0, 255];
-    let options = RenderOptions::new(200, 200).with_background(background);
+    let options = RenderOptions::new(200, 200).with_background(background.into());
 
     let image = render(&radials, &options);
 
@@ -161,7 +161,7 @@ fn test_partial_sweep_gap_detection_multiple_sectors() {
     let radials = create_partial_sweep(45.0, 135.0, 1.0, 100);
 
     let background = [128, 128, 128, 255]; // Gray background for visibility
-    let options = RenderOptions::new(200, 200).with_background(background);
+    let options = RenderOptions::new(200, 200).with_background(background.into());
 
     let image = render(&radials, &options);
 

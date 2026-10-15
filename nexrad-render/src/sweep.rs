@@ -1,10 +1,12 @@
 //! Rendering of polar sweep data.
 
+use crate::options::Palette;
 use crate::{
-    ColorLookupTable, ColorScale, Error, Interpolation, Projection, RenderMetadata, RenderOptions,
-    RenderResult, Result, RgbaImage,
+    ColorScale, Error, Interpolation, Projection, RenderMetadata, RenderOptions, RenderResult,
+    Result, RgbaImage,
 };
 use nexrad_model::data::{GateStatus, SweepField};
+use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 
 /// Renders a [`SweepField`] (polar grid) to an image with metadata.
 ///
@@ -13,21 +15,33 @@ use nexrad_model::data::{GateStatus, SweepField};
 /// a [`RenderResult`] that includes both the rendered image and metadata for
 /// geographic placement and data inspection.
 ///
+/// Without an [extent](RenderOptions::with_extent) the image is a radar-centred plan
+/// view with north up, scaled so the field's maximum range touches the edges of the
+/// longer image side ([`Projection::Polar`]). With an extent the sweep is drawn onto
+/// a latitude/longitude grid covering exactly that extent
+/// ([`Projection::Geographic`]): each pixel centre is mapped to the polar point a beam
+/// at the sweep's elevation passes over, using the options' coordinate system.
+///
 /// # Arguments
 ///
 /// * `field` - The sweep field to render
 /// * `color_scale` - Color scale to apply (discrete or continuous)
-/// * `options` - Rendering options (size, background, extent, coordinate system)
+/// * `options` - Rendering options (size, background, extent, coordinate system,
+///   interpolation, value range, status colors)
 ///
 /// # Errors
 ///
-/// Returns [`Error::InvalidDimensions`] if either output dimension is zero and
-/// [`Error::EmptyField`] if the field has no radials.
+/// Returns [`Error::InvalidDimensions`] if either output dimension is zero,
+/// [`Error::EmptyField`] if the field has no radials, [`Error::InvalidRange`] if the
+/// options' value range is invalid, and, when an extent is set,
+/// [`Error::MissingCoordinateSystem`] without a coordinate system and
+/// [`Error::InvalidExtent`] if the extent is not finite and ordered.
 ///
 /// # Example
 ///
 /// ```ignore
-/// use nexrad_render::{default_scale, render_sweep, Product, RenderOptions};
+/// use nexrad_model::data::Product;
+/// use nexrad_render::{default_scale, render_sweep, RenderOptions};
 ///
 /// let field = sweep.field(Product::Reflectivity).unwrap();
 /// let scale = default_scale(Product::Reflectivity);
@@ -43,30 +57,81 @@ pub fn render_sweep(
     color_scale: &ColorScale,
     options: &RenderOptions,
 ) -> Result<RenderResult> {
-    let (image_width, image_height) = options.size;
     let mut buffer = options.background_buffer()?;
-    let (width, height) = (image_width as usize, image_height as usize);
 
     if field.azimuth_count() == 0 {
         return Err(Error::EmptyField);
     }
+
+    let palette = options.palette(color_scale, field.product(), field.value_range())?;
+
+    match options.extent {
+        Some(extent) => {
+            let coord_system = options
+                .coord_system
+                .as_ref()
+                .ok_or(Error::MissingCoordinateSystem)?;
+            render_geographic(field, &palette, options, extent, coord_system, &mut buffer)?;
+            finish(
+                buffer,
+                options,
+                Projection::Geographic { extent },
+                Some(extent),
+            )
+        }
+        None => {
+            let projection = render_polar(field, &palette, options, &mut buffer);
+            let geo_extent = options
+                .coord_system
+                .as_ref()
+                .map(|cs| cs.sweep_extent(field.max_range_km()));
+            finish(buffer, options, projection, geo_extent)
+        }
+    }
+}
+
+/// Wraps a filled buffer and its projection into a [`RenderResult`].
+fn finish(
+    buffer: Vec<u8>,
+    options: &RenderOptions,
+    projection: Projection,
+    geo_extent: Option<GeoExtent>,
+) -> Result<RenderResult> {
+    let (width, height) = options.size;
+    let image = RgbaImage::from_raw(width, height, buffer).ok_or(Error::InvalidDimensions)?;
+    let metadata = RenderMetadata::new(
+        width,
+        height,
+        projection,
+        geo_extent,
+        options.coord_system.clone(),
+    );
+    Ok(RenderResult::new(image, metadata))
+}
+
+/// Writes `color` to pixel `(x, y)` of a row-major RGBA buffer `width` pixels wide.
+#[inline]
+fn put_pixel(buffer: &mut [u8], width: usize, x: usize, y: usize, color: [u8; 4]) {
+    let pixel_index = (y * width + x) * 4;
+    buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
+}
+
+/// Renders the sweep as a radar-centred plan view and returns its projection.
+fn render_polar(
+    field: &SweepField,
+    palette: &Palette,
+    options: &RenderOptions,
+    buffer: &mut [u8],
+) -> Projection {
+    let (width, height) = (options.size.0 as usize, options.size.1 as usize);
 
     let first_gate_km = field.first_gate_range_km();
     let gate_interval_km = field.gate_interval_km();
     let gate_count = field.gate_count();
     let radar_range_km = field.max_range_km();
 
-    // Build LUT from the field's value range, falling back to the product's
-    // typical range when the field holds no valid data.
-    let (min_val, max_val) = field
-        .value_range()
-        .or_else(|| field.product().map(|product| product.value_range()))
-        .unwrap_or((-32.0, 95.0));
-    let lut = ColorLookupTable::new(color_scale, min_val, max_val, 256);
-
     // Calculate max azimuth gap for partial sweep support
-    let azimuth_spacing = field.azimuth_spacing_degrees();
-    let max_azimuth_gap = azimuth_spacing * 1.5;
+    let max_azimuth_gap = field.azimuth_spacing_degrees() * 1.5;
 
     let center_x = width as f64 / 2.0;
     let center_y = height as f64 / 2.0;
@@ -96,9 +161,7 @@ pub fn render_sweep(
                 if let Some(val) =
                     sample_sweep_bilinear(field, azimuth_deg, distance_km, max_azimuth_gap)
                 {
-                    let color = lut.color(val);
-                    let pixel_index = (y * width + x) * 4;
-                    buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
+                    put_pixel(buffer, width, x, y, palette.value_color(val));
                     continue;
                 }
             }
@@ -119,39 +182,91 @@ pub fn render_sweep(
             let Some((val, status)) = field.get(radial_idx, gate_index) else {
                 continue;
             };
-            if status == GateStatus::Valid {
-                let color = lut.color(val);
-                let pixel_index = (y * width + x) * 4;
-                buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
+            if let Some(color) = palette.gate_color(val, status) {
+                put_pixel(buffer, width, x, y, color);
             }
         }
     }
 
-    let image =
-        RgbaImage::from_raw(image_width, image_height, buffer).ok_or(Error::InvalidDimensions)?;
-
-    let geo_extent = options.extent.or_else(|| {
-        options
-            .coord_system
-            .as_ref()
-            .map(|cs| cs.sweep_extent(radar_range_km))
-    });
-
-    let projection = Projection::Polar {
+    Projection::Polar {
         center_pixel: (center_x, center_y),
         pixels_per_km: scale_factor,
         max_range_km: radar_range_km,
         elevation_angle_degrees: f64::from(field.elevation_angle_degrees()),
-    };
-    let metadata = RenderMetadata::new(
-        image_width,
-        image_height,
-        projection,
-        geo_extent,
-        options.coord_system.clone(),
-    );
+    }
+}
 
-    Ok(RenderResult::new(image, metadata))
+/// Renders the sweep onto a latitude/longitude grid covering `extent`.
+///
+/// Each pixel centre is converted to geographic coordinates (linear in latitude and
+/// longitude, matching [`RenderMetadata::pixel_to_geo`]) and then to the polar point
+/// a beam at the sweep's elevation passes over.
+fn render_geographic(
+    field: &SweepField,
+    palette: &Palette,
+    options: &RenderOptions,
+    extent: GeoExtent,
+    coord_system: &RadarCoordinateSystem,
+    buffer: &mut [u8],
+) -> Result<()> {
+    let GeoExtent { min, max } = extent;
+    let ordered = |low: f64, high: f64| low.is_finite() && high.is_finite() && low < high;
+    if !(ordered(min.latitude, max.latitude) && ordered(min.longitude, max.longitude)) {
+        return Err(Error::InvalidExtent);
+    }
+
+    let (width, height) = (options.size.0 as usize, options.size.1 as usize);
+    let elevation = f64::from(field.elevation_angle_degrees());
+    let first_gate_km = field.first_gate_range_km();
+    let max_range_km = field.max_range_km();
+    let max_azimuth_gap = field.azimuth_spacing_degrees() * 1.5;
+    let use_bilinear = options.interpolation == Interpolation::Bilinear;
+
+    let lat_span = max.latitude - min.latitude;
+    let lon_span = max.longitude - min.longitude;
+    let longitudes: Vec<f64> = (0..width)
+        .map(|x| min.longitude + (x as f64 + 0.5) / width as f64 * lon_span)
+        .collect();
+
+    for y in 0..height {
+        let latitude = max.latitude - (y as f64 + 0.5) / height as f64 * lat_span;
+
+        for (x, &longitude) in longitudes.iter().enumerate() {
+            let polar = coord_system.geo_to_polar(
+                GeoPoint {
+                    latitude,
+                    longitude,
+                },
+                elevation,
+            );
+            let range_km = polar.range_km;
+            if !(range_km >= first_gate_km && range_km < max_range_km) {
+                continue;
+            }
+
+            if use_bilinear {
+                if let Some(val) = sample_sweep_bilinear(
+                    field,
+                    polar.azimuth_angle_degrees as f32,
+                    range_km,
+                    max_azimuth_gap,
+                ) {
+                    put_pixel(buffer, width, x, y, palette.value_color(val));
+                    continue;
+                }
+            }
+
+            let Some((val, status)) = field.value_at_polar(polar.azimuth_angle_degrees, range_km)
+            else {
+                continue;
+            };
+            if let Some(color) = palette.gate_color(val, status) {
+                put_pixel(buffer, width, x, y, color);
+            }
+        }
+    }
+
+    Ok(())
 }
 
 /// Find the index in sorted_azimuths closest to the given azimuth and return

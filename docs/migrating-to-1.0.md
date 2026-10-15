@@ -798,6 +798,7 @@ let section = VerticalCrossSection::builder(200.0)
 | `Error::ImageSave(String)` | `Error::Image(image::ImageError)`; `source()` returns it | #174 |
 | `Error::ProductNotFound` | Removed (only `render_radials` produced it) | #174 |
 | `Error::InvalidDimensions` | Unchanged; also returned for a zero width or height | #174 |
+| — | `Error::InvalidRange { min, max }` and `Error::InvalidTableSize { size }` from `ColorLookupTable::new` and an invalid `RenderOptions::with_value_range`; `Error::InvalidExtent` and `Error::MissingCoordinateSystem` from `render_sweep` with an extent | #194 |
 
 `nexrad_render::Error` is `#[non_exhaustive]` and, because `image::ImageError` is not, no longer implements
 `UnwindSafe`/`RefUnwindSafe`.
@@ -828,7 +829,13 @@ let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options
 | `RenderResult::new(..)` | Crate-private | #174 |
 | `RenderMetadata::{center_pixel, pixels_per_km, max_range_km, polar_to_pixel, pixel_distance_to_km, km_to_pixel_distance}` returning plain values | Return `Option`, `Some` only for polar renders | #174 |
 | `RenderMetadata::elevation_degrees() -> Option<f32>` | `RenderMetadata::elevation_angle_degrees() -> Option<f64>` | #164, #182 |
-| `PointQuery { polar, geo, value, status }` struct literal | Read `PointQuery` from `RenderResult::query_*`; it is `#[non_exhaustive]`, and `polar` is a `PolarPoint` with `azimuth_angle_degrees` and `elevation_angle_degrees` fields | #182 |
+| `PointQuery { polar, geo, value, status }` struct literal | Read `PointQuery` from `RenderMetadata::query_*`; it is `#[non_exhaustive]`, and `polar` is a `PolarPoint` with `azimuth_angle_degrees` and `elevation_angle_degrees` fields | #182 |
+| `ColorLookupTable::new(..) -> ColorLookupTable` | `ColorLookupTable::new(..) -> Result<ColorLookupTable>`; add `?` | #194 |
+| `RenderOptions::transparent()` | `with_background(Color::TRANSPARENT)` | #194 |
+| `RenderOptions::bilinear()` | `with_interpolation(Interpolation::Bilinear)` | #194 |
+| `RenderOptions::with_background([u8; 4])`, `background() -> Option<[u8; 4]>` | `with_background(Color)` (`Color::from_rgba8(rgba)` or `rgba.into()`), `background() -> Option<Color>` (`None` when fully transparent) | #194 |
+| `RenderResult::query_pixel`, `query_polar`, `query_geo` | `result.metadata().query_pixel(..)` and so on, same signatures | #194 |
+| `nexrad_render::Product` | `nexrad_model::data::Product` (or `nexrad::model::data::Product`) | #194 |
 
 #### Behaviour and type changes
 
@@ -842,15 +849,31 @@ let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options
 - **Polar angles are `f64`** (#164): `RenderMetadata::elevation_angle_degrees()`, `polar_to_pixel` and
   `RenderResult::query_polar` take or return `f64`.
 - **Image dimensions are `u32`** (#174). `RenderOptions::native_for` saturates at `u32::MAX`.
-- **`ColorLookupTable::new` clamps sizes below 2 to 2**; the old constructors divided by zero or produced NaN.
-- **Colour range for `render_sweep`** is unchanged: the lookup table spans the field's data range
-  (`SweepField::value_range`). For a field with no valid gates it now falls back to the product's range before the
-  reflectivity default; the image is the same because no gate is coloured.
-- **`RenderOptions::with_extent`** is unchanged: for `render_sweep` it sets the extent reported by
-  `RenderMetadata::geo_extent()`, while the image itself stays centred on the radar and scaled to the field's maximum
-  range.
+- **`ColorLookupTable::new` validates its arguments** (#194): `min` and `max` must be finite with `min < max`
+  (`Error::InvalidRange`; `min == max` used to map every value to NaN and `min > max` silently reversed the table) and
+  `size` at least 2 (`Error::InvalidTableSize`).
+- **Colour range** (#194): every renderer builds its lookup table over `RenderOptions::value_range()` when set, else the
+  field's product range (`Product::value_range`), else the field's valid-value range, else `-32..95`. `render_sweep`
+  used to span the field's own data range, and `render_cartesian`/`render_vertical` used the field's range. Colours of a
+  sweep with a known product are now stable across sweeps; pin the old behaviour with
+  `with_value_range(min, max)`.
+- **Discrete colours are exact** (#194): `ColorLookupTable::color` returns a discrete scale's own colour for every
+  value in range, so values on a threshold (20 dBZ, 30 dBZ, ...) no longer take the colour of the level below.
+  `entries()` is still the scale sampled at evenly spaced values.
+- **`Color::to_rgba8` rounds and clamps** (#194): components are clamped to `0.0..=1.0` and rounded to the nearest byte
+  instead of truncated, so some built-in scale colours shift by one step (for example `0.6627` is now 169, not 168).
+- **`RenderOptions::with_extent` renders into the extent** (#194): `render_sweep` draws the sweep onto a
+  latitude/longitude grid covering exactly that extent and reports `Projection::Geographic`; it needs
+  `with_coord_system` (`Error::MissingCoordinateSystem` otherwise). It used to only copy the extent into the metadata
+  while the image stayed radar-centred. `render_cartesian` and `render_vertical` ignore the option.
+- **Non-valid gates** are still drawn as the background by default; `RenderOptions::with_status_color(status, color)`
+  draws them in a colour, such as purple for `GateStatus::RangeFolded` (#194).
+- **`image` codecs are opt-in** (#194): `nexrad-render` depends on `image` with only the `png` feature.
+  `RenderResult::save` and the new `write_to` support other formats once you enable the matching feature on your own
+  `image = { version = "0.25", default-features = false, features = ["jpeg"] }` dependency; without it, saving a
+  `.jpg` fails with `Error::Image`.
 - `nexrad_render::image` re-exports the `image` crate, so you can name `image::ImageError` without your own dependency.
-- **Queries on a sector sweep** (`RenderResult::query_pixel`, `query_polar`, `query_geo`) return `None` beyond the
+- **Queries on a sector sweep** (`RenderMetadata::query_pixel`, `query_polar`, `query_geo`) return `None` beyond the
   covered azimuths instead of the far end's value across north (#185). `Error::EmptyField` is no longer reachable for
   Cartesian or vertical fields built with `new`, which rejects zero dimensions.
 
@@ -1747,10 +1770,17 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `render_radials_default(&[Radial], Product, &RenderOptions) -> Result<RgbaImage>` | Removed; `render_sweep` with `default_scale` |
 | `default_color_scale(Product) -> ColorScale` | Removed; `default_scale` |
 | `default_scale(Product) -> DiscreteColorScale` | `default_scale(Product) -> ColorScale` |
-| `ColorLookupTable::from_scale(&DiscreteColorScale, f32, f32, usize)`, `from_color_scale(&ColorScale, f32, f32, usize)` | `ColorLookupTable::new(&ColorScale, f32, f32, usize)` |
+| `ColorLookupTable::from_scale(&DiscreteColorScale, f32, f32, usize)`, `from_color_scale(&ColorScale, f32, f32, usize)` | `ColorLookupTable::new(&ColorScale, f32, f32, usize) -> Result<ColorLookupTable>` |
+| `ColorScaleLevel` private fields | `pub value: f32`, `pub color: Color` |
+| `Color::to_rgba8` truncating | Rounds to nearest, clamps to `0.0..=1.0` |
 | `RenderOptions::new(usize, usize)`, `size() -> (usize, usize)` | `new(u32, u32)`, `size() -> (u32, u32)` |
+| `RenderOptions::transparent()`, `bilinear()` | Removed; `with_background(Color::TRANSPARENT)`, `with_interpolation(Interpolation::Bilinear)` |
+| `RenderOptions::with_background([u8; 4])`, `background() -> Option<[u8; 4]>` | `with_background(Color)`, `background() -> Option<Color>` |
 | `RenderResult::new(RgbaImage, RenderMetadata)` | Crate-private |
-| `RenderResult::query_polar(&SweepField, f32, f64)` | `query_polar(&SweepField, f64, f64)` |
+| `RenderResult::query_pixel(&SweepField, f64, f64)`, `query_geo(&SweepField, &GeoPoint)` | `RenderMetadata::query_pixel`, `RenderMetadata::query_geo` |
+| `RenderResult::query_polar(&SweepField, f32, f64)` | `RenderMetadata::query_polar(&SweepField, f64, f64)` |
+| `nexrad_render::Product` (re-export) | Removed; `nexrad_model::data::Product` |
+| `image` dependency with default features | `image` with only `png`; enable other codecs on your own `image` dependency |
 | `RenderMetadata::center_pixel() -> (f64, f64)` | `-> Option<(f64, f64)>` |
 | `RenderMetadata::{pixels_per_km, max_range_km}() -> f64` | `-> Option<f64>` |
 | `RenderMetadata::{pixel_distance_to_km, km_to_pixel_distance}(f64) -> f64` | `-> Option<f64>` |

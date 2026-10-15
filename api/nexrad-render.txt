@@ -1,5 +1,4 @@
 pub mod nexrad_render
-pub use nexrad_render::Product
 pub use nexrad_render::RgbaImage
 pub use nexrad_render::image
 pub mod nexrad_render::result
@@ -7,6 +6,13 @@ pub mod nexrad_render::result
 pub nexrad_render::result::Error::EmptyField
 pub nexrad_render::result::Error::Image(image::error::ImageError)
 pub nexrad_render::result::Error::InvalidDimensions
+pub nexrad_render::result::Error::InvalidExtent
+pub nexrad_render::result::Error::InvalidRange
+pub nexrad_render::result::Error::InvalidRange::max: f32
+pub nexrad_render::result::Error::InvalidRange::min: f32
+pub nexrad_render::result::Error::InvalidTableSize
+pub nexrad_render::result::Error::InvalidTableSize::size: usize
+pub nexrad_render::result::Error::MissingCoordinateSystem
 impl core::convert::From<image::error::ImageError> for nexrad_render::result::Error
 pub fn nexrad_render::result::Error::from(image::error::ImageError) -> Self
 impl core::error::Error for nexrad_render::result::Error
@@ -47,6 +53,13 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_render::ColorScale
 pub nexrad_render::Error::EmptyField
 pub nexrad_render::Error::Image(image::error::ImageError)
 pub nexrad_render::Error::InvalidDimensions
+pub nexrad_render::Error::InvalidExtent
+pub nexrad_render::Error::InvalidRange
+pub nexrad_render::Error::InvalidRange::max: f32
+pub nexrad_render::Error::InvalidRange::min: f32
+pub nexrad_render::Error::InvalidTableSize
+pub nexrad_render::Error::InvalidTableSize::size: usize
+pub nexrad_render::Error::MissingCoordinateSystem
 impl core::convert::From<image::error::ImageError> for nexrad_render::result::Error
 pub fn nexrad_render::result::Error::from(image::error::ImageError) -> Self
 impl core::error::Error for nexrad_render::result::Error
@@ -117,6 +130,7 @@ impl nexrad_render::Color
 pub const nexrad_render::Color::BLACK: nexrad_render::Color
 pub const nexrad_render::Color::TRANSPARENT: nexrad_render::Color
 pub const nexrad_render::Color::WHITE: nexrad_render::Color
+pub fn nexrad_render::Color::from_rgba8([u8; 4]) -> Self
 pub const fn nexrad_render::Color::rgb(f64, f64, f64) -> Self
 pub const fn nexrad_render::Color::rgba(f64, f64, f64, f64) -> Self
 pub fn nexrad_render::Color::to_rgba8(&self) -> [u8; 4]
@@ -124,6 +138,12 @@ impl core::clone::Clone for nexrad_render::Color
 pub fn nexrad_render::Color::clone(&self) -> Self
 impl core::cmp::PartialEq for nexrad_render::Color
 pub fn nexrad_render::Color::eq(&self, &Self) -> bool
+impl core::convert::From<[u8; 4]> for nexrad_render::Color
+pub fn nexrad_render::Color::from([u8; 4]) -> Self
+impl core::convert::From<nexrad_render::Color> for [u8; 4]
+pub fn [u8; 4]::from(nexrad_render::Color) -> Self
+impl core::default::Default for nexrad_render::Color
+pub fn nexrad_render::Color::default() -> Self
 impl core::fmt::Debug for nexrad_render::Color
 pub fn nexrad_render::Color::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for nexrad_render::Color
@@ -138,7 +158,12 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_render::Color
 pub struct nexrad_render::ColorLookupTable
 impl nexrad_render::ColorLookupTable
 pub fn nexrad_render::ColorLookupTable::color(&self, f32) -> [u8; 4]
-pub fn nexrad_render::ColorLookupTable::new(&nexrad_render::ColorScale, f32, f32, usize) -> Self
+pub fn nexrad_render::ColorLookupTable::entries(&self) -> &[[u8; 4]]
+pub fn nexrad_render::ColorLookupTable::is_empty(&self) -> bool
+pub fn nexrad_render::ColorLookupTable::len(&self) -> usize
+pub fn nexrad_render::ColorLookupTable::max_value(&self) -> f32
+pub fn nexrad_render::ColorLookupTable::min_value(&self) -> f32
+pub fn nexrad_render::ColorLookupTable::new(&nexrad_render::ColorScale, f32, f32, usize) -> nexrad_render::result::Result<Self>
 impl core::clone::Clone for nexrad_render::ColorLookupTable
 pub fn nexrad_render::ColorLookupTable::clone(&self) -> Self
 impl core::fmt::Debug for nexrad_render::ColorLookupTable
@@ -151,6 +176,8 @@ impl core::marker::UnsafeUnpin for nexrad_render::ColorLookupTable
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_render::ColorLookupTable
 impl core::panic::unwind_safe::UnwindSafe for nexrad_render::ColorLookupTable
 pub struct nexrad_render::ColorScaleLevel
+pub nexrad_render::ColorScaleLevel::color: nexrad_render::Color
+pub nexrad_render::ColorScaleLevel::value: f32
 impl nexrad_render::ColorScaleLevel
 pub fn nexrad_render::ColorScaleLevel::new(f32, nexrad_render::Color) -> Self
 impl core::clone::Clone for nexrad_render::ColorScaleLevel
@@ -245,9 +272,16 @@ pub fn nexrad_render::RenderMetadata::max_range_km(&self) -> core::option::Optio
 pub fn nexrad_render::RenderMetadata::pixel_distance_to_km(&self, f64) -> core::option::Option<f64>
 pub fn nexrad_render::RenderMetadata::pixel_to_geo(&self, f64, f64) -> core::option::Option<nexrad_model::geo::GeoPoint3D>
 pub fn nexrad_render::RenderMetadata::pixel_to_polar(&self, f64, f64) -> core::option::Option<nexrad_model::geo::PolarPoint>
+pub fn nexrad_render::RenderMetadata::pixel_to_vertical(&self, f64, f64) -> core::option::Option<(f64, f64)>
 pub fn nexrad_render::RenderMetadata::pixels_per_km(&self) -> core::option::Option<f64>
 pub fn nexrad_render::RenderMetadata::polar_to_pixel(&self, f64, f64) -> core::option::Option<(f64, f64)>
 pub fn nexrad_render::RenderMetadata::projection(&self) -> &nexrad_render::Projection
+pub fn nexrad_render::RenderMetadata::query_cartesian(&self, &nexrad_model::data::field::CartesianField, f64, f64) -> core::option::Option<(f32, nexrad_model::data::moment::GateStatus)>
+pub fn nexrad_render::RenderMetadata::query_geo(&self, &nexrad_model::data::field::SweepField, &nexrad_model::geo::GeoPoint) -> core::option::Option<nexrad_render::PointQuery>
+pub fn nexrad_render::RenderMetadata::query_pixel(&self, &nexrad_model::data::field::SweepField, f64, f64) -> core::option::Option<nexrad_render::PointQuery>
+pub fn nexrad_render::RenderMetadata::query_polar(&self, &nexrad_model::data::field::SweepField, f64, f64) -> core::option::Option<nexrad_render::PointQuery>
+pub fn nexrad_render::RenderMetadata::query_vertical(&self, &nexrad_model::data::field::VerticalField, f64, f64) -> core::option::Option<(f32, nexrad_model::data::moment::GateStatus)>
+pub fn nexrad_render::RenderMetadata::vertical_to_pixel(&self, f64, f64) -> core::option::Option<(f64, f64)>
 pub fn nexrad_render::RenderMetadata::width(&self) -> u32
 impl core::clone::Clone for nexrad_render::RenderMetadata
 pub fn nexrad_render::RenderMetadata::clone(&self) -> Self
@@ -262,23 +296,28 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_render::RenderMetadata
 impl core::panic::unwind_safe::UnwindSafe for nexrad_render::RenderMetadata
 pub struct nexrad_render::RenderOptions
 impl nexrad_render::RenderOptions
-pub fn nexrad_render::RenderOptions::background(&self) -> core::option::Option<[u8; 4]>
-pub fn nexrad_render::RenderOptions::bilinear(self) -> Self
+pub fn nexrad_render::RenderOptions::background(&self) -> core::option::Option<nexrad_render::Color>
 pub fn nexrad_render::RenderOptions::coord_system(&self) -> core::option::Option<&nexrad_model::geo::RadarCoordinateSystem>
 pub fn nexrad_render::RenderOptions::extent(&self) -> core::option::Option<&nexrad_model::geo::GeoExtent>
 pub fn nexrad_render::RenderOptions::interpolation(&self) -> nexrad_render::Interpolation
 pub fn nexrad_render::RenderOptions::native_for(&nexrad_model::data::field::SweepField) -> Self
 pub fn nexrad_render::RenderOptions::new(u32, u32) -> Self
 pub fn nexrad_render::RenderOptions::size(&self) -> (u32, u32)
-pub fn nexrad_render::RenderOptions::transparent(self) -> Self
-pub fn nexrad_render::RenderOptions::with_background(self, [u8; 4]) -> Self
+pub fn nexrad_render::RenderOptions::status_color(&self, nexrad_model::data::moment::GateStatus) -> core::option::Option<nexrad_render::Color>
+pub fn nexrad_render::RenderOptions::value_range(&self) -> core::option::Option<(f32, f32)>
+pub fn nexrad_render::RenderOptions::with_background(self, nexrad_render::Color) -> Self
 pub fn nexrad_render::RenderOptions::with_coord_system(self, nexrad_model::geo::RadarCoordinateSystem) -> Self
 pub fn nexrad_render::RenderOptions::with_extent(self, nexrad_model::geo::GeoExtent) -> Self
 pub fn nexrad_render::RenderOptions::with_interpolation(self, nexrad_render::Interpolation) -> Self
+pub fn nexrad_render::RenderOptions::with_status_color(self, nexrad_model::data::moment::GateStatus, nexrad_render::Color) -> Self
+pub fn nexrad_render::RenderOptions::with_value_range(self, f32, f32) -> Self
 impl core::clone::Clone for nexrad_render::RenderOptions
 pub fn nexrad_render::RenderOptions::clone(&self) -> Self
+impl core::cmp::PartialEq for nexrad_render::RenderOptions
+pub fn nexrad_render::RenderOptions::eq(&self, &Self) -> bool
 impl core::fmt::Debug for nexrad_render::RenderOptions
 pub fn nexrad_render::RenderOptions::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::StructuralPartialEq for nexrad_render::RenderOptions
 impl core::marker::Freeze for nexrad_render::RenderOptions
 impl core::marker::Send for nexrad_render::RenderOptions
 impl core::marker::Sync for nexrad_render::RenderOptions
@@ -291,10 +330,8 @@ impl nexrad_render::RenderResult
 pub fn nexrad_render::RenderResult::image(&self) -> &image::images::buffer::RgbaImage
 pub fn nexrad_render::RenderResult::into_image(self) -> image::images::buffer::RgbaImage
 pub fn nexrad_render::RenderResult::metadata(&self) -> &nexrad_render::RenderMetadata
-pub fn nexrad_render::RenderResult::query_geo(&self, &nexrad_model::data::field::SweepField, &nexrad_model::geo::GeoPoint) -> core::option::Option<nexrad_render::PointQuery>
-pub fn nexrad_render::RenderResult::query_pixel(&self, &nexrad_model::data::field::SweepField, f64, f64) -> core::option::Option<nexrad_render::PointQuery>
-pub fn nexrad_render::RenderResult::query_polar(&self, &nexrad_model::data::field::SweepField, f64, f64) -> core::option::Option<nexrad_render::PointQuery>
 pub fn nexrad_render::RenderResult::save<P: core::convert::AsRef<std::path::Path>>(&self, P) -> nexrad_render::result::Result<()>
+pub fn nexrad_render::RenderResult::write_to(&self, &mut impl core::io::write::Write, image::io::format::ImageFormat) -> nexrad_render::result::Result<()>
 impl core::fmt::Debug for nexrad_render::RenderResult
 pub fn nexrad_render::RenderResult::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for nexrad_render::RenderResult

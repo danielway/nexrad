@@ -11,7 +11,8 @@
 //!
 //! ```no_run
 //! use nexrad_model::data::Sweep;
-//! use nexrad_render::{default_scale, render_sweep, Product, RenderOptions};
+//! use nexrad_model::data::Product;
+//! use nexrad_render::{default_scale, render_sweep, RenderOptions};
 //!
 //! fn render(sweep: &Sweep) -> nexrad_render::Result<()> {
 //!     let Some(field) = sweep.field(Product::Reflectivity) else {
@@ -43,6 +44,10 @@
 //! matching version without a separate dependency. A major version bump of `image`
 //! is therefore a major version bump of `nexrad-render`.
 //!
+//! Only the `image` PNG codec is enabled. [`RenderResult::save`] and
+//! [`RenderResult::write_to`] support other formats once the consumer enables the
+//! matching feature on its own `image` dependency (Cargo unifies the features).
+//!
 //! # Crate Boundaries
 //!
 //! This crate provides **visualization and rendering** with the following responsibilities
@@ -72,7 +77,6 @@
 
 pub use image;
 pub use image::RgbaImage;
-pub use nexrad_model::data::Product;
 
 mod color;
 pub use crate::color::*;

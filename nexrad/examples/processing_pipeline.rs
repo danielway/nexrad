@@ -103,7 +103,10 @@ fn main() -> nexrad::Result<()> {
 
     // Query a specific pixel
     let center = (meta.width() as f64 / 2.0, meta.height() as f64 / 2.0);
-    if let Some(query) = result.query_pixel(&field, center.0 + 100.0, center.1) {
+    if let Some(query) = result
+        .metadata()
+        .query_pixel(&field, center.0 + 100.0, center.1)
+    {
         println!(
             "\nPoint query at pixel ({:.0}, {:.0}):",
             center.0 + 100.0,

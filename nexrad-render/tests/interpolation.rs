@@ -65,7 +65,8 @@ fn test_bilinear_sweep_produces_different_output() {
     let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
 
     let nearest_opts = RenderOptions::new(200, 200);
-    let bilinear_opts = RenderOptions::new(200, 200).bilinear();
+    let bilinear_opts =
+        RenderOptions::new(200, 200).with_interpolation(nexrad_render::Interpolation::Bilinear);
 
     let nearest_result = render_sweep(&field, &scale, &nearest_opts).expect("nearest renders");
     let bilinear_result = render_sweep(&field, &scale, &bilinear_opts).expect("bilinear renders");
@@ -102,8 +103,8 @@ fn test_bilinear_sweep_preserves_gap_detection() {
 
     let background = [128, 128, 128, 255];
     let options = RenderOptions::new(200, 200)
-        .with_background(background)
-        .bilinear();
+        .with_background(background.into())
+        .with_interpolation(nexrad_render::Interpolation::Bilinear);
 
     let result = render_sweep(&field, &scale, &options).expect("renders");
     let image = result.image();
@@ -144,8 +145,8 @@ fn test_bilinear_fallback_at_invalid_gates() {
     let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
     let background = [0, 0, 0, 255];
     let options = RenderOptions::new(200, 200)
-        .with_background(background)
-        .bilinear();
+        .with_background(background.into())
+        .with_interpolation(nexrad_render::Interpolation::Bilinear);
 
     // Should render without panicking — bilinear gracefully falls back to nearest-neighbor
     let result = render_sweep(&field, &scale, &options);
@@ -214,7 +215,8 @@ fn test_bilinear_cartesian_smooth() {
     let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
 
     let nearest_opts = RenderOptions::new(16, 16);
-    let bilinear_opts = RenderOptions::new(16, 16).bilinear();
+    let bilinear_opts =
+        RenderOptions::new(16, 16).with_interpolation(nexrad_render::Interpolation::Bilinear);
 
     let nearest_result = render_cartesian(&field, &scale, &nearest_opts).expect("nearest renders");
     let bilinear_result =
@@ -258,7 +260,8 @@ fn test_bilinear_cartesian_with_nodata_border() {
     field.set(2, 2, 50.0, GateStatus::Valid).unwrap();
 
     let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
-    let options = RenderOptions::new(16, 16).bilinear();
+    let options =
+        RenderOptions::new(16, 16).with_interpolation(nexrad_render::Interpolation::Bilinear);
 
     // Should render without panicking — bilinear falls back to nearest at NoData borders
     let result = render_cartesian(&field, &scale, &options);
@@ -284,7 +287,8 @@ fn test_bilinear_vertical_smooth() {
     let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
 
     let nearest_opts = RenderOptions::new(16, 16);
-    let bilinear_opts = RenderOptions::new(16, 16).bilinear();
+    let bilinear_opts =
+        RenderOptions::new(16, 16).with_interpolation(nexrad_render::Interpolation::Bilinear);
 
     let nearest_result = render_vertical(&field, &scale, &nearest_opts).expect("nearest renders");
     let bilinear_result =

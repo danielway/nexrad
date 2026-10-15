@@ -16,7 +16,7 @@ all-features = true
 [dependencies]
 thiserror = { workspace = true }
 nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model" }
-image = "0.25"
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 [dev-dependencies]
 nexrad-decode = { version = "1.0.0-rc.3", path = "../nexrad-decode" }

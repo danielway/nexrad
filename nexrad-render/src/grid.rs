@@ -1,8 +1,9 @@
 //! Rendering of gridded (Cartesian and vertical cross-section) data.
 
+use crate::options::Palette;
 use crate::{
-    ColorLookupTable, ColorScale, Error, Interpolation, Projection, RenderMetadata, RenderOptions,
-    RenderResult, Result, RgbaImage,
+    ColorScale, Error, Interpolation, Projection, RenderMetadata, RenderOptions, RenderResult,
+    Result, RgbaImage,
 };
 use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 
@@ -15,7 +16,8 @@ use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 ///
 /// * `field` - The Cartesian field to render
 /// * `color_scale` - Color scale to apply
-/// * `options` - Rendering options (size, background)
+/// * `options` - Rendering options (size, background, interpolation, value range, status
+///   colors); the extent option is ignored because the field carries its own extent
 ///
 /// # Errors
 ///
@@ -43,12 +45,12 @@ pub fn render_cartesian(
     color_scale: &ColorScale,
     options: &RenderOptions,
 ) -> Result<RenderResult> {
+    let palette = options.palette(color_scale, None, field.value_range())?;
     let image = render_grid(
         field.width(),
         field.height(),
-        field.value_range(),
         |row, col| field.get(row, col),
-        color_scale,
+        &palette,
         options,
     )?;
 
@@ -73,7 +75,8 @@ pub fn render_cartesian(
 ///
 /// * `field` - The vertical field to render
 /// * `color_scale` - Color scale to apply
-/// * `options` - Rendering options (size, background)
+/// * `options` - Rendering options (size, background, interpolation, value range, status
+///   colors); the extent option is ignored because the field carries its own extent
 ///
 /// # Errors
 ///
@@ -104,12 +107,12 @@ pub fn render_vertical(
     color_scale: &ColorScale,
     options: &RenderOptions,
 ) -> Result<RenderResult> {
+    let palette = options.palette(color_scale, None, field.value_range())?;
     let image = render_grid(
         field.width(),
         field.height(),
-        field.value_range(),
         |row, col| field.get(row, col),
-        color_scale,
+        &palette,
         options,
     )?;
 
@@ -133,9 +136,8 @@ pub fn render_vertical(
 fn render_grid(
     field_width: usize,
     field_height: usize,
-    value_range: Option<(f32, f32)>,
     get: impl Fn(usize, usize) -> Option<(f32, GateStatus)>,
-    color_scale: &ColorScale,
+    palette: &Palette,
     options: &RenderOptions,
 ) -> Result<RgbaImage> {
     let (image_width, image_height) = options.size;
@@ -145,10 +147,6 @@ fn render_grid(
     if field_width == 0 || field_height == 0 {
         return Err(Error::EmptyField);
     }
-
-    // Build LUT
-    let (min_val, max_val) = value_range.unwrap_or((-32.0, 95.0));
-    let lut = ColorLookupTable::new(color_scale, min_val, max_val, 256);
 
     // Map output pixels to field cells
     let use_bilinear = options.interpolation == Interpolation::Bilinear;
@@ -166,7 +164,7 @@ fn render_grid(
             // Try bilinear interpolation first, then fall back to nearest-neighbor
             if use_bilinear {
                 if let Some(val) = sample_grid_bilinear(row_f, col_f, max_row, max_col, &get) {
-                    let color = lut.color(val);
+                    let color = palette.value_color(val);
                     let pixel_index = (y * width + x) * 4;
                     buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
                     continue;
@@ -182,8 +180,7 @@ fn render_grid(
             let Some((val, status)) = get(field_row, field_col) else {
                 continue;
             };
-            if status == GateStatus::Valid {
-                let color = lut.color(val);
+            if let Some(color) = palette.gate_color(val, status) {
                 let pixel_index = (y * width + x) * 4;
                 buffer[pixel_index..pixel_index + 4].copy_from_slice(&color);
             }

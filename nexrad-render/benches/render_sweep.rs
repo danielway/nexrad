@@ -51,7 +51,8 @@ fn benchmark_render_sweep(c: &mut Criterion) {
     });
 
     group.bench_function("bilinear_800x800", |b| {
-        let options = RenderOptions::new(800, 800).bilinear();
+        let options =
+            RenderOptions::new(800, 800).with_interpolation(nexrad_render::Interpolation::Bilinear);
         b.iter(|| {
             render_sweep(black_box(&field), &color_scale, &options).expect("renders successfully")
         })

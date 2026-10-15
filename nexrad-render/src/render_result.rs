@@ -4,8 +4,9 @@
 //! application needs to accurately place it on a map, draw overlays, and inspect data values.
 
 use crate::RgbaImage;
-use nexrad_model::data::{GateStatus, SweepField};
+use nexrad_model::data::{CartesianField, GateStatus, SweepField, VerticalField};
 use nexrad_model::geo::{GeoExtent, GeoPoint, GeoPoint3D, PolarPoint, RadarCoordinateSystem};
+use std::io::{Cursor, Write};
 use std::path::Path;
 
 /// The result of a render operation.
@@ -21,8 +22,9 @@ pub struct RenderResult {
 
 /// How image pixels map to the coordinate space of the rendered data.
 ///
-/// Each render entry point produces a different projection: [`render_sweep`](crate::render_sweep)
-/// produces [`Polar`](Projection::Polar), [`render_cartesian`](crate::render_cartesian) produces
+/// [`render_sweep`](crate::render_sweep) produces [`Polar`](Projection::Polar), or
+/// [`Geographic`](Projection::Geographic) when the options set an extent;
+/// [`render_cartesian`](crate::render_cartesian) produces
 /// [`Geographic`](Projection::Geographic) and [`render_vertical`](crate::render_vertical)
 /// produces [`Vertical`](Projection::Vertical).
 #[derive(Debug, Clone, PartialEq)]
@@ -109,71 +111,54 @@ impl RenderResult {
 
     /// Save the rendered image to a file.
     ///
-    /// The output format is inferred from the file extension (e.g., `.png`, `.jpg`).
-    /// This is a convenience wrapper around [`image::RgbaImage::save`].
+    /// The output format is inferred from the file extension and must be one whose
+    /// [`image`] codec is compiled in. This crate enables only the `png` feature of
+    /// `image`; for other formats (`.jpg`, `.webp`, ...) enable the matching feature
+    /// on your own `image` dependency (for example
+    /// `image = { version = "0.25", default-features = false, features = ["jpeg"] }`),
+    /// which Cargo's feature unification makes available here.
     ///
     /// # Errors
     ///
-    /// Returns an error if the file cannot be written or the format is unsupported.
+    /// Returns [`Error::Image`](crate::Error::Image) if the file cannot be written or
+    /// the format is unsupported.
     pub fn save<P: AsRef<Path>>(&self, path: P) -> crate::result::Result<()> {
         self.image.save(path)?;
         Ok(())
     }
 
-    /// Query the data value at a pixel coordinate.
+    /// Encode the rendered image in `format` and write it to `writer`, without touching
+    /// the filesystem.
     ///
-    /// Uses the metadata's pixel-to-polar conversion and then looks up the value
-    /// in the provided field. Returns `None` if the image does not use a
-    /// [`Polar`](Projection::Polar) projection or the pixel is outside the rendered area.
-    pub fn query_pixel(&self, field: &SweepField, x: f64, y: f64) -> Option<PointQuery> {
-        let polar = self.metadata.pixel_to_polar(x, y)?;
-        self.build_query(field, polar)
-    }
-
-    /// Query the data value at a polar coordinate.
+    /// As with [`save`](Self::save), the format's [`image`] codec must be compiled in:
+    /// [`ImageFormat::Png`](image::ImageFormat::Png) always is, other formats need the
+    /// matching feature enabled on your own `image` dependency.
     ///
-    /// Returns `None` if the image does not use a [`Polar`](Projection::Polar)
-    /// projection or the point is outside the field.
-    pub fn query_polar(
+    /// # Errors
+    ///
+    /// Returns [`Error::Image`](crate::Error::Image) if the format is unsupported or
+    /// encoding or writing fails.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// use nexrad_render::image::ImageFormat;
+    ///
+    /// let mut png = Vec::new();
+    /// result.write_to(&mut png, ImageFormat::Png)?;
+    /// ```
+    pub fn write_to(
         &self,
-        field: &SweepField,
-        azimuth_angle_degrees: f64,
-        range_km: f64,
-    ) -> Option<PointQuery> {
-        let polar = PolarPoint {
-            azimuth_angle_degrees,
-            range_km,
-            elevation_angle_degrees: self.metadata.elevation_angle_degrees()?,
-        };
-        self.build_query(field, polar)
-    }
-
-    /// Query the data value at a geographic coordinate.
-    ///
-    /// Requires a [`Polar`](Projection::Polar) projection and a coordinate system in
-    /// the metadata. Returns `None` otherwise, or if the point is outside the field.
-    pub fn query_geo(&self, field: &SweepField, point: &GeoPoint) -> Option<PointQuery> {
-        let elevation = self.metadata.elevation_angle_degrees()?;
-        let coord_system = self.metadata.coord_system.as_ref()?;
-        let polar = coord_system.geo_to_polar(*point, elevation);
-        self.build_query(field, polar)
-    }
-
-    fn build_query(&self, field: &SweepField, polar: PolarPoint) -> Option<PointQuery> {
-        let (value, status) = field.value_at_polar(polar.azimuth_angle_degrees, polar.range_km)?;
-
-        let geo = self
-            .metadata
-            .coord_system
-            .as_ref()
-            .map(|cs| cs.polar_to_geo(polar));
-
-        Some(PointQuery {
-            polar,
-            geo,
-            value,
-            status,
-        })
+        writer: &mut impl Write,
+        format: image::ImageFormat,
+    ) -> crate::result::Result<()> {
+        // Some encoders need to seek, so encode into memory first.
+        let mut encoded = Cursor::new(Vec::new());
+        self.image.write_to(&mut encoded, format)?;
+        writer
+            .write_all(encoded.get_ref())
+            .map_err(image::ImageError::IoError)?;
+        Ok(())
     }
 }
 
@@ -249,10 +234,11 @@ impl RenderMetadata {
 
     /// Geographic extent of the rendered area.
     ///
-    /// For [`Projection::Polar`] this is the extent from the render options, or the
-    /// sweep's extent computed from the coordinate system; `None` if neither was
-    /// provided. For [`Projection::Geographic`] it is the field's extent. For
-    /// [`Projection::Vertical`] it is always `None`.
+    /// For [`Projection::Polar`] this is the sweep's extent computed from the
+    /// coordinate system, or `None` without one. For [`Projection::Geographic`] it is
+    /// the extent the image covers: the render options' extent for a sweep, the
+    /// field's extent for a Cartesian field. For [`Projection::Vertical`] it is always
+    /// `None`.
     pub fn geo_extent(&self) -> Option<&GeoExtent> {
         self.geo_extent.as_ref()
     }
@@ -369,6 +355,175 @@ impl RenderMetadata {
             }
             Projection::Vertical { .. } => None,
         }
+    }
+
+    /// Convert a pixel coordinate to `(distance_km, altitude_meters)`.
+    ///
+    /// Returns `None` if the image does not use a [`Vertical`](Projection::Vertical)
+    /// projection or the pixel is outside the image.
+    pub fn pixel_to_vertical(&self, x: f64, y: f64) -> Option<(f64, f64)> {
+        let Projection::Vertical {
+            distance_range_km: (d_min, d_max),
+            altitude_range_meters: (a_min, a_max),
+        } = self.projection
+        else {
+            return None;
+        };
+        let width = f64::from(self.width);
+        let height = f64::from(self.height);
+        if !(0.0..=width).contains(&x) || !(0.0..=height).contains(&y) {
+            return None;
+        }
+        Some((
+            d_min + x / width * (d_max - d_min),
+            a_max - y / height * (a_max - a_min),
+        ))
+    }
+
+    /// Convert a distance/altitude coordinate to a pixel coordinate.
+    ///
+    /// Returns `None` if the image does not use a [`Vertical`](Projection::Vertical)
+    /// projection. Coordinates outside the cross-section map to pixels outside the
+    /// image.
+    pub fn vertical_to_pixel(&self, distance_km: f64, altitude_meters: f64) -> Option<(f64, f64)> {
+        let Projection::Vertical {
+            distance_range_km: (d_min, d_max),
+            altitude_range_meters: (a_min, a_max),
+        } = self.projection
+        else {
+            return None;
+        };
+        Some((
+            (distance_km - d_min) / (d_max - d_min) * f64::from(self.width),
+            (a_max - altitude_meters) / (a_max - a_min) * f64::from(self.height),
+        ))
+    }
+
+    /// Query the sweep value at a pixel coordinate.
+    ///
+    /// `field` must be the field that was rendered with
+    /// [`render_sweep`](crate::render_sweep); the metadata cannot check this. For
+    /// [`Projection::Polar`] the pixel is mapped through
+    /// [`pixel_to_polar`](Self::pixel_to_polar); for [`Projection::Geographic`] (a sweep
+    /// rendered into an extent) through [`pixel_to_geo`](Self::pixel_to_geo) and the
+    /// coordinate system. Returns `None` for other projections, without the needed
+    /// coordinate system, or when the pixel is outside the field.
+    pub fn query_pixel(&self, field: &SweepField, x: f64, y: f64) -> Option<PointQuery> {
+        match self.projection {
+            Projection::Polar { .. } => {
+                let polar = self.pixel_to_polar(x, y)?;
+                self.build_query(field, polar)
+            }
+            Projection::Geographic { .. } => {
+                let point = self.pixel_to_geo(x, y)?;
+                self.query_geo(
+                    field,
+                    &GeoPoint {
+                        latitude: point.latitude,
+                        longitude: point.longitude,
+                    },
+                )
+            }
+            Projection::Vertical { .. } => None,
+        }
+    }
+
+    /// Query the sweep value at a polar coordinate.
+    ///
+    /// `field` must be the field that was rendered with
+    /// [`render_sweep`](crate::render_sweep). Returns `None` if the image is not a
+    /// sweep render ([`Projection::Polar`], or [`Projection::Geographic`] with a
+    /// coordinate system) or the point is outside the field.
+    pub fn query_polar(
+        &self,
+        field: &SweepField,
+        azimuth_angle_degrees: f64,
+        range_km: f64,
+    ) -> Option<PointQuery> {
+        let polar = PolarPoint {
+            azimuth_angle_degrees,
+            range_km,
+            elevation_angle_degrees: self.sweep_elevation(field)?,
+        };
+        self.build_query(field, polar)
+    }
+
+    /// Query the sweep value at a geographic coordinate.
+    ///
+    /// `field` must be the field that was rendered with
+    /// [`render_sweep`](crate::render_sweep). Requires a coordinate system and a
+    /// [`Polar`](Projection::Polar) or [`Geographic`](Projection::Geographic)
+    /// projection. Returns `None` otherwise, or if the point is outside the field.
+    pub fn query_geo(&self, field: &SweepField, point: &GeoPoint) -> Option<PointQuery> {
+        let elevation = self.sweep_elevation(field)?;
+        let coord_system = self.coord_system.as_ref()?;
+        let polar = coord_system.geo_to_polar(*point, elevation);
+        self.build_query(field, polar)
+    }
+
+    /// Query the value of a Cartesian field at a pixel coordinate.
+    ///
+    /// `field` must be the field that was rendered with
+    /// [`render_cartesian`](crate::render_cartesian). The pixel is mapped through
+    /// [`pixel_to_geo`](Self::pixel_to_geo) and looked up with
+    /// [`CartesianField::value_at_geo`]. Returns `None` if the pixel has no geographic
+    /// position or is outside the field.
+    pub fn query_cartesian(
+        &self,
+        field: &CartesianField,
+        x: f64,
+        y: f64,
+    ) -> Option<(f32, GateStatus)> {
+        let point = self.pixel_to_geo(x, y)?;
+        field.value_at_geo(GeoPoint {
+            latitude: point.latitude,
+            longitude: point.longitude,
+        })
+    }
+
+    /// Query the value of a vertical field at a pixel coordinate.
+    ///
+    /// `field` must be the field that was rendered with
+    /// [`render_vertical`](crate::render_vertical). The pixel is mapped through
+    /// [`pixel_to_vertical`](Self::pixel_to_vertical) and looked up with
+    /// [`VerticalField::value_at`]. Returns `None` if the image does not use a
+    /// [`Vertical`](Projection::Vertical) projection or the pixel is outside the field.
+    pub fn query_vertical(
+        &self,
+        field: &VerticalField,
+        x: f64,
+        y: f64,
+    ) -> Option<(f32, GateStatus)> {
+        let (distance_km, altitude_meters) = self.pixel_to_vertical(x, y)?;
+        field.value_at(distance_km, altitude_meters)
+    }
+
+    /// The elevation angle of a sweep render: the projection's for a polar image, the
+    /// field's for a geographic image with a coordinate system.
+    fn sweep_elevation(&self, field: &SweepField) -> Option<f64> {
+        match self.projection {
+            Projection::Polar {
+                elevation_angle_degrees,
+                ..
+            } => Some(elevation_angle_degrees),
+            Projection::Geographic { .. } if self.coord_system.is_some() => {
+                Some(f64::from(field.elevation_angle_degrees()))
+            }
+            Projection::Geographic { .. } | Projection::Vertical { .. } => None,
+        }
+    }
+
+    fn build_query(&self, field: &SweepField, polar: PolarPoint) -> Option<PointQuery> {
+        let (value, status) = field.value_at_polar(polar.azimuth_angle_degrees, polar.range_km)?;
+
+        let geo = self.coord_system.as_ref().map(|cs| cs.polar_to_geo(polar));
+
+        Some(PointQuery {
+            polar,
+            geo,
+            value,
+            status,
+        })
     }
 
     /// Get the range in km for a given pixel distance from the radar.
@@ -530,6 +685,32 @@ mod tests {
         assert!(meta.geo_to_pixel(&point()).is_none());
         assert!(meta.pixel_distance_to_km(10.0).is_none());
         assert!(meta.km_to_pixel_distance(10.0).is_none());
+    }
+
+    #[test]
+    fn vertical_pixel_mapping_round_trips() {
+        let meta = vertical();
+        assert_pixel(meta.pixel_to_vertical(0.0, 0.0), 0.0, 18_000.0);
+        assert_pixel(meta.pixel_to_vertical(600.0, 300.0), 230.0, 0.0);
+        assert_pixel(meta.pixel_to_vertical(300.0, 100.0), 115.0, 12_000.0);
+        assert_pixel(meta.vertical_to_pixel(115.0, 12_000.0), 300.0, 100.0);
+
+        let (x, y) = (123.0, 45.0);
+        let Some((distance, altitude)) = meta.pixel_to_vertical(x, y) else {
+            panic!("pixel is inside the image");
+        };
+        assert_pixel(meta.vertical_to_pixel(distance, altitude), x, y);
+
+        assert!(meta.pixel_to_vertical(-1.0, 10.0).is_none());
+        assert!(meta.pixel_to_vertical(10.0, 301.0).is_none());
+    }
+
+    #[test]
+    fn non_vertical_has_no_vertical_conversions() {
+        for meta in [geographic(), polar()] {
+            assert!(meta.pixel_to_vertical(10.0, 10.0).is_none());
+            assert!(meta.vertical_to_pixel(10.0, 1_000.0).is_none());
+        }
     }
 
     #[test]

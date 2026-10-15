@@ -144,7 +144,8 @@ async fn main() -> nexrad::Result<()> {
 With the `render` feature, create PNG images from radar data:
 
 ```rust,ignore
-use nexrad::render::{default_scale, render_sweep, Product, RenderOptions};
+use nexrad::model::data::Product;
+use nexrad::render::{default_scale, render_sweep, RenderOptions};
 
 fn main() -> nexrad::Result<()> {
     let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;

@@ -10,4 +10,4 @@ mod vertical;
 
 pub use composite::CompositeReflectivity;
 pub use srvel::StormRelativeVelocity;
-pub use vertical::VerticalCrossSection;
+pub use vertical::{VerticalCrossSection, VerticalCrossSectionBuilder};

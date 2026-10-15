@@ -5,11 +5,13 @@ use nexrad_model::data::{GateStatus, SweepField};
 /// Median filter in an azimuth x range kernel.
 ///
 /// Replaces each valid gate value with the median of the valid values in its
-/// neighborhood. The kernel size is specified as the number of gates in each
-/// dimension (must be odd). Gates that are not [`GateStatus::Valid`] (including
+/// neighborhood. The kernel size is specified as a number of radials in azimuth and
+/// a number of gates in range (each must be odd). Gates that are not [`GateStatus::Valid`] (including
 /// [`GateStatus::Filtered`]) are excluded from the median computation and left unchanged.
 ///
-/// The azimuth dimension wraps around 360 degrees.
+/// The azimuth dimension wraps across north only when the field covers the full circle (the
+/// gap between its last and first azimuths is at most twice the azimuth spacing); the edges of
+/// a sector are boundaries.
 ///
 /// # Example
 ///
@@ -21,45 +23,47 @@ use nexrad_model::data::{GateStatus, SweepField};
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct MedianFilter {
-    /// Kernel width in the azimuth dimension (odd, >= 1).
-    azimuth_kernel: usize,
-    /// Kernel width in the range dimension (odd, >= 1).
-    range_kernel: usize,
+    /// Kernel width in the azimuth dimension, in radials (odd, >= 1).
+    azimuth_kernel_radials: usize,
+    /// Kernel width in the range dimension, in gates (odd, >= 1).
+    range_kernel_gates: usize,
 }
 
 impl MedianFilter {
-    /// Create a median filter with the given kernel size in gates.
+    /// Create a median filter with a kernel of `azimuth_kernel_radials` radials by
+    /// `range_kernel_gates` gates.
     ///
     /// A 1x1 kernel is valid and leaves the field unchanged.
     ///
     /// # Errors
     ///
     /// Returns [`Error::InvalidParameter`] if either kernel size is zero or even.
-    pub fn new(azimuth_kernel: usize, range_kernel: usize) -> Result<Self> {
-        if azimuth_kernel == 0 || range_kernel == 0 {
-            return Err(Error::InvalidParameter(
-                "kernel sizes must be >= 1".to_string(),
-            ));
-        }
-        if azimuth_kernel.is_multiple_of(2) || range_kernel.is_multiple_of(2) {
-            return Err(Error::InvalidParameter(
-                "kernel sizes must be odd".to_string(),
-            ));
+    pub fn new(azimuth_kernel_radials: usize, range_kernel_gates: usize) -> Result<Self> {
+        for (parameter, size) in [
+            ("azimuth_kernel_radials", azimuth_kernel_radials),
+            ("range_kernel_gates", range_kernel_gates),
+        ] {
+            if size == 0 || size.is_multiple_of(2) {
+                return Err(Error::InvalidParameter {
+                    parameter,
+                    reason: "must be odd and at least 1",
+                });
+            }
         }
         Ok(Self {
-            azimuth_kernel,
-            range_kernel,
+            azimuth_kernel_radials,
+            range_kernel_gates,
         })
     }
 
-    /// Kernel width in the azimuth dimension, in gates.
-    pub fn azimuth_kernel(&self) -> usize {
-        self.azimuth_kernel
+    /// Kernel width in the azimuth dimension, in radials.
+    pub fn azimuth_kernel_radials(&self) -> usize {
+        self.azimuth_kernel_radials
     }
 
     /// Kernel width in the range dimension, in gates.
-    pub fn range_kernel(&self) -> usize {
-        self.range_kernel
+    pub fn range_kernel_gates(&self) -> usize {
+        self.range_kernel_gates
     }
 }
 
@@ -70,17 +74,19 @@ impl SweepProcessor for MedianFilter {
 
     fn process(&self, input: &SweepField) -> Result<SweepField> {
         // 1x1 kernel is a no-op
-        if self.azimuth_kernel == 1 && self.range_kernel == 1 {
+        if self.azimuth_kernel_radials == 1 && self.range_kernel_gates == 1 {
             return Ok(input.clone());
         }
 
         let az_count = input.azimuth_count();
         let gate_count = input.gate_count();
-        let az_half = self.azimuth_kernel / 2;
-        let range_half = self.range_kernel / 2;
+        let az_half = self.azimuth_kernel_radials / 2;
+        let range_half = self.range_kernel_gates / 2;
 
+        let wraps = covers_full_circle(input);
         let mut output = input.clone();
-        let mut neighborhood = Vec::with_capacity(self.azimuth_kernel * self.range_kernel);
+        let mut neighborhood =
+            Vec::with_capacity(self.azimuth_kernel_radials * self.range_kernel_gates);
 
         for az_idx in 0..az_count {
             for gate_idx in 0..gate_count {
@@ -93,12 +99,14 @@ impl SweepProcessor for MedianFilter {
 
                 neighborhood.clear();
 
-                for daz in 0..self.azimuth_kernel {
+                for daz in 0..self.azimuth_kernel_radials {
                     let az_offset = daz as isize - az_half as isize;
-                    let neighbor_az =
-                        ((az_idx as isize + az_offset).rem_euclid(az_count as isize)) as usize;
+                    let Some(neighbor_az) = neighbor_azimuth(az_idx, az_offset, az_count, wraps)
+                    else {
+                        continue;
+                    };
 
-                    for dr in 0..self.range_kernel {
+                    for dr in 0..self.range_kernel_gates {
                         let range_offset = dr as isize - range_half as isize;
                         let neighbor_gate = gate_idx as isize + range_offset;
 
@@ -135,7 +143,9 @@ impl SweepProcessor for MedianFilter {
 /// gates contribute to the weighted average; gates that are not [`GateStatus::Valid`]
 /// (including [`GateStatus::Filtered`]) are left unchanged.
 ///
-/// The azimuth dimension wraps around 360 degrees.
+/// The azimuth dimension wraps across north only when the field covers the full circle (the
+/// gap between its last and first azimuths is at most twice the azimuth spacing); the edges of
+/// a sector are boundaries.
 ///
 /// # Example
 ///
@@ -147,39 +157,45 @@ impl SweepProcessor for MedianFilter {
 /// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct GaussianSmooth {
-    /// Standard deviation in the azimuth dimension (in gate units).
-    sigma_azimuth: f32,
-    /// Standard deviation in the range dimension (in gate units).
-    sigma_range: f32,
+    /// Standard deviation in the azimuth dimension, in radials.
+    sigma_azimuth_radials: f32,
+    /// Standard deviation in the range dimension, in gates.
+    sigma_range_gates: f32,
 }
 
 impl GaussianSmooth {
-    /// Create a Gaussian smoother with the given standard deviations in gate units.
+    /// Create a Gaussian smoother with standard deviations of `sigma_azimuth_radials` radials
+    /// in azimuth and `sigma_range_gates` gates in range.
     ///
     /// # Errors
     ///
     /// Returns [`Error::InvalidParameter`] if either sigma is not a finite positive number.
-    pub fn new(sigma_azimuth: f32, sigma_range: f32) -> Result<Self> {
-        let valid = |sigma: f32| sigma.is_finite() && sigma > 0.0;
-        if !valid(sigma_azimuth) || !valid(sigma_range) {
-            return Err(Error::InvalidParameter(
-                "sigma values must be finite and positive".to_string(),
-            ));
+    pub fn new(sigma_azimuth_radials: f32, sigma_range_gates: f32) -> Result<Self> {
+        for (parameter, sigma) in [
+            ("sigma_azimuth_radials", sigma_azimuth_radials),
+            ("sigma_range_gates", sigma_range_gates),
+        ] {
+            if !(sigma.is_finite() && sigma > 0.0) {
+                return Err(Error::InvalidParameter {
+                    parameter,
+                    reason: "must be finite and greater than zero",
+                });
+            }
         }
         Ok(Self {
-            sigma_azimuth,
-            sigma_range,
+            sigma_azimuth_radials,
+            sigma_range_gates,
         })
     }
 
-    /// Standard deviation in the azimuth dimension, in gate units.
-    pub fn sigma_azimuth(&self) -> f32 {
-        self.sigma_azimuth
+    /// Standard deviation in the azimuth dimension, in radials.
+    pub fn sigma_azimuth_radials(&self) -> f32 {
+        self.sigma_azimuth_radials
     }
 
-    /// Standard deviation in the range dimension, in gate units.
-    pub fn sigma_range(&self) -> f32 {
-        self.sigma_range
+    /// Standard deviation in the range dimension, in gates.
+    pub fn sigma_range_gates(&self) -> f32 {
+        self.sigma_range_gates
     }
 }
 
@@ -193,9 +209,10 @@ impl SweepProcessor for GaussianSmooth {
         let gate_count = input.gate_count();
 
         // Kernel radius: 3 sigma, clamped to reasonable size
-        let az_radius = (self.sigma_azimuth * 3.0).ceil() as usize;
-        let range_radius = (self.sigma_range * 3.0).ceil() as usize;
+        let az_radius = (self.sigma_azimuth_radials * 3.0).ceil() as usize;
+        let range_radius = (self.sigma_range_gates * 3.0).ceil() as usize;
 
+        let wraps = covers_full_circle(input);
         let mut output = input.clone();
 
         for az_idx in 0..az_count {
@@ -212,8 +229,10 @@ impl SweepProcessor for GaussianSmooth {
 
                 for daz in 0..=(2 * az_radius) {
                     let az_offset = daz as isize - az_radius as isize;
-                    let neighbor_az =
-                        ((az_idx as isize + az_offset).rem_euclid(az_count as isize)) as usize;
+                    let Some(neighbor_az) = neighbor_azimuth(az_idx, az_offset, az_count, wraps)
+                    else {
+                        continue;
+                    };
 
                     for dr in 0..=(2 * range_radius) {
                         let range_offset = dr as isize - range_radius as isize;
@@ -233,8 +252,8 @@ impl SweepProcessor for GaussianSmooth {
                         let az_dist = az_offset as f32;
                         let r_dist = range_offset as f32;
                         let weight = (-0.5
-                            * ((az_dist / self.sigma_azimuth).powi(2)
-                                + (r_dist / self.sigma_range).powi(2)))
+                            * ((az_dist / self.sigma_azimuth_radials).powi(2)
+                                + (r_dist / self.sigma_range_gates).powi(2)))
                         .exp() as f64;
 
                         weighted_sum += val as f64 * weight;
@@ -254,6 +273,28 @@ impl SweepProcessor for GaussianSmooth {
         }
 
         Ok(output)
+    }
+}
+
+/// Whether `field`'s azimuths cover the full circle: the gap across north between the last
+/// and first azimuths is at most twice the azimuth spacing.
+fn covers_full_circle(field: &SweepField) -> bool {
+    let angles = field.azimuth_angles_degrees();
+    let (Some(&first), Some(&last)) = (angles.first(), angles.last()) else {
+        return false;
+    };
+    let wrap_gap = 360.0 - (f64::from(last) - f64::from(first));
+    wrap_gap <= 2.0 * f64::from(field.azimuth_spacing_degrees())
+}
+
+/// The azimuth index `offset` rows from `az_idx`, wrapping across north when `wraps` and
+/// `None` past a sector edge otherwise.
+fn neighbor_azimuth(az_idx: usize, offset: isize, az_count: usize, wraps: bool) -> Option<usize> {
+    let neighbor = az_idx as isize + offset;
+    if wraps {
+        Some(neighbor.rem_euclid(az_count as isize) as usize)
+    } else {
+        usize::try_from(neighbor).ok().filter(|&n| n < az_count)
     }
 }
 
@@ -428,5 +469,87 @@ mod tests {
         assert!(GaussianSmooth::new(1.0, -1.0).is_err());
         assert!(GaussianSmooth::new(f32::NAN, 1.0).is_err());
         assert!(GaussianSmooth::new(1.0, f32::INFINITY).is_err());
+    }
+
+    /// A one-gate field with `azimuth_count` one-degree radials from north, all valid at 30.0.
+    fn make_azimuth_field(azimuth_count: usize) -> SweepField {
+        let mut field = SweepField::builder("Test", "dBZ")
+            .azimuth_angles_degrees((0..azimuth_count).map(|az| az as f32).collect())
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(1)
+            .build()
+            .expect("valid geometry");
+        for az in 0..azimuth_count {
+            field.set(az, 0, 30.0, GateStatus::Valid).unwrap();
+        }
+        field
+    }
+
+    #[test]
+    fn test_full_circle_rule() {
+        assert!(covers_full_circle(&make_azimuth_field(360)));
+        // A two-radial gap across north still counts as the full circle.
+        assert!(covers_full_circle(&make_azimuth_field(359)));
+        assert!(!covers_full_circle(&make_azimuth_field(358)));
+        assert!(!covers_full_circle(&make_azimuth_field(90)));
+    }
+
+    #[test]
+    fn test_gaussian_smooth_sector_does_not_wrap() -> Result<()> {
+        let smoother = GaussianSmooth::new(1.0, 1.0)?;
+
+        // A 90-degree sector: the last radial (89 degrees) is not a neighbour of the first.
+        let mut sector = make_azimuth_field(90);
+        sector.set(89, 0, 100.0, GateStatus::Valid).unwrap();
+        let result = smoother.process(&sector)?;
+        assert_eq!(result.get(0, 0), Some((30.0, GateStatus::Valid)));
+
+        // Across north in a full circle, 359 degrees is a neighbour of 0 degrees.
+        let mut circle = make_azimuth_field(360);
+        circle.set(359, 0, 100.0, GateStatus::Valid).unwrap();
+        let (value, _) = smoother.process(&circle)?.get(0, 0).unwrap();
+        assert!(
+            value > 30.0,
+            "expected the wrapped neighbour to contribute, got {value}"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_median_filter_sector_does_not_wrap() -> Result<()> {
+        let filter = MedianFilter::new(3, 1)?;
+
+        // At radial 0 the sector neighbourhood is {10, 20}; wrapping would add 0 from radial 89.
+        let mut sector = make_azimuth_field(90);
+        sector.set(0, 0, 10.0, GateStatus::Valid).unwrap();
+        sector.set(1, 0, 20.0, GateStatus::Valid).unwrap();
+        sector.set(89, 0, 0.0, GateStatus::Valid).unwrap();
+        assert_eq!(
+            filter.process(&sector)?.get(0, 0),
+            Some((20.0, GateStatus::Valid))
+        );
+
+        let mut circle = make_azimuth_field(360);
+        circle.set(0, 0, 10.0, GateStatus::Valid).unwrap();
+        circle.set(1, 0, 20.0, GateStatus::Valid).unwrap();
+        circle.set(359, 0, 0.0, GateStatus::Valid).unwrap();
+        assert_eq!(
+            filter.process(&circle)?.get(0, 0),
+            Some((10.0, GateStatus::Valid))
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_parameter_getters() -> Result<()> {
+        let median = MedianFilter::new(3, 5)?;
+        assert_eq!(median.azimuth_kernel_radials(), 3);
+        assert_eq!(median.range_kernel_gates(), 5);
+
+        let gaussian = GaussianSmooth::new(1.5, 2.5)?;
+        assert_eq!(gaussian.sigma_azimuth_radials(), 1.5);
+        assert_eq!(gaussian.sigma_range_gates(), 2.5);
+        Ok(())
     }
 }

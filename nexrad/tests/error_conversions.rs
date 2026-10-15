@@ -348,7 +348,7 @@ fn test_all_features_including_render_and_process() {
     let render_err = nexrad_render::result::Error::InvalidDimensions;
     let _: nexrad::Error = render_err.into();
 
-    let process_err = nexrad_process::result::Error::MissingData("test".to_string());
+    let process_err = nexrad_process::result::Error::MissingData { what: "test" };
     let _: nexrad::Error = process_err.into();
 }
 
@@ -356,7 +356,10 @@ fn test_all_features_including_render_and_process() {
 #[test]
 fn test_process_error_conversion() {
     // Create a process error
-    let process_err = nexrad_process::result::Error::InvalidParameter("bad threshold".to_string());
+    let process_err = nexrad_process::result::Error::InvalidParameter {
+        parameter: "threshold",
+        reason: "must be finite",
+    };
 
     // Convert to unified error
     let unified_err: nexrad::Error = process_err.into();
@@ -376,8 +379,8 @@ fn test_process_error_conversion() {
         err_string
     );
     assert!(
-        err_string.contains("bad threshold"),
-        "Expected 'bad threshold' in message, got: {}",
+        err_string.contains("`threshold` must be finite"),
+        "Expected the parameter and reason in message, got: {}",
         err_string
     );
 }

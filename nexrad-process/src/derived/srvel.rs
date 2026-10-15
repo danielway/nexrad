@@ -1,12 +1,14 @@
-use crate::result::{Error, Result};
+use crate::result::{check_finite, check_product, Error, Result};
 use crate::SweepProcessor;
-use nexrad_model::data::{GateStatus, SweepField};
+use nexrad_model::data::{GateStatus, Product, SweepField};
 
 /// Storm-relative velocity — subtracts a storm motion vector from radial velocity.
 ///
 /// This makes it easier to identify rotation signatures (mesocyclones) in storm
-/// systems by removing the bulk storm motion. The input field should contain
-/// radial velocity data.
+/// systems by removing the bulk storm motion. The input field must hold
+/// [`Product::Velocity`]. The output field has the same geometry, is labelled
+/// "Storm-Relative Velocity" with unit "m/s", and has no [`product`](SweepField::product),
+/// since it is derived rather than a Level II moment.
 ///
 /// The storm motion is specified as a direction (degrees from north) and speed (m/s).
 /// The component of the storm motion along each gate's radial direction is subtracted
@@ -35,22 +37,42 @@ impl StormRelativeVelocity {
     /// # Parameters
     ///
     /// - `storm_direction_degrees` — Direction the storm is moving FROM, in degrees
-    ///   clockwise from north (0-360).
+    ///   clockwise from north, in `0.0..360.0`.
     /// - `storm_speed_mps` — Storm movement speed in m/s.
     ///
     /// # Errors
     ///
-    /// Returns an error if speed is negative.
+    /// Returns [`Error::InvalidParameter`] if the direction is not finite or outside
+    /// `0.0..360.0`, or the speed is not finite or is negative.
     pub fn new(storm_direction_degrees: f32, storm_speed_mps: f32) -> Result<Self> {
+        check_finite("storm_direction_degrees", storm_direction_degrees)?;
+        if !(0.0..360.0).contains(&storm_direction_degrees) {
+            return Err(Error::InvalidParameter {
+                parameter: "storm_direction_degrees",
+                reason: "must be in 0.0..360.0",
+            });
+        }
+        check_finite("storm_speed_mps", storm_speed_mps)?;
         if storm_speed_mps < 0.0 {
-            return Err(Error::InvalidParameter(
-                "storm speed must be non-negative".to_string(),
-            ));
+            return Err(Error::InvalidParameter {
+                parameter: "storm_speed_mps",
+                reason: "must not be negative",
+            });
         }
         Ok(Self {
             storm_direction_degrees,
             storm_speed_mps,
         })
+    }
+
+    /// Direction the storm is moving FROM, in degrees clockwise from north.
+    pub fn storm_direction_degrees(&self) -> f32 {
+        self.storm_direction_degrees
+    }
+
+    /// Storm movement speed in m/s.
+    pub fn storm_speed_mps(&self) -> f32 {
+        self.storm_speed_mps
     }
 }
 
@@ -59,8 +81,20 @@ impl SweepProcessor for StormRelativeVelocity {
         "StormRelativeVelocity"
     }
 
+    /// # Errors
+    ///
+    /// Returns [`Error::UnexpectedProduct`] if `input` does not hold [`Product::Velocity`].
     fn process(&self, input: &SweepField) -> Result<SweepField> {
-        let mut output = input.clone();
+        check_product(input, Product::Velocity)?;
+
+        let mut output = SweepField::builder("Storm-Relative Velocity", Product::Velocity.unit())
+            .elevation_angle_degrees(input.elevation_angle_degrees())
+            .azimuth_angles_degrees(input.azimuth_angles_degrees().to_vec())
+            .azimuth_spacing_degrees(input.azimuth_spacing_degrees())
+            .first_gate_range_km(input.first_gate_range_km())
+            .gate_interval_km(input.gate_interval_km())
+            .gate_count(input.gate_count())
+            .build()?;
 
         // Convert storm direction to radians (meteorological convention: FROM direction)
         // The storm motion vector points in the direction the storm is moving TO.
@@ -80,18 +114,27 @@ impl SweepProcessor for StormRelativeVelocity {
             // Component of storm motion along this radial
             let storm_radial_component = storm_u * radial_u + storm_v * radial_v;
 
-            let (Some(statuses), Some(values)) = (
-                input.radial_statuses(az_idx),
-                output.radial_values_mut(az_idx),
-            ) else {
+            let (Some(values), Some(statuses)) =
+                (input.radial_values(az_idx), input.radial_statuses(az_idx))
+            else {
+                continue;
+            };
+            if let Some(output_statuses) = output.radial_statuses_mut(az_idx) {
+                output_statuses.copy_from_slice(statuses);
+            }
+            let Some(output_values) = output.radial_values_mut(az_idx) else {
                 continue;
             };
 
             // Subtract the storm motion component from valid gates
-            for (value, status) in values.iter_mut().zip(statuses) {
-                if *status == GateStatus::Valid {
-                    *value -= storm_radial_component;
-                }
+            for ((output_value, value), status) in
+                output_values.iter_mut().zip(values).zip(statuses)
+            {
+                *output_value = if *status == GateStatus::Valid {
+                    value - storm_radial_component
+                } else {
+                    *value
+                };
             }
         }
 
@@ -108,6 +151,7 @@ mod tests {
         let gate_count = 5;
 
         let mut field = SweepField::builder("Velocity", "m/s")
+            .product(Product::Velocity)
             .elevation_angle_degrees(0.5)
             .azimuth_angles_degrees(azimuths)
             .first_gate_range_km(2.0)
@@ -200,7 +244,58 @@ mod tests {
     }
 
     #[test]
-    fn test_srv_negative_speed_error() {
-        assert!(StormRelativeVelocity::new(0.0, -5.0).is_err());
+    fn test_srv_parameter_validation() {
+        let rejected =
+            |direction: f32, speed: f32| match StormRelativeVelocity::new(direction, speed) {
+                Err(Error::InvalidParameter { parameter, .. }) => parameter,
+                other => panic!("expected InvalidParameter, got {other:?}"),
+            };
+        assert_eq!(rejected(0.0, -5.0), "storm_speed_mps");
+        assert_eq!(rejected(0.0, f32::NAN), "storm_speed_mps");
+        assert_eq!(rejected(0.0, f32::INFINITY), "storm_speed_mps");
+        assert_eq!(rejected(f32::NAN, 5.0), "storm_direction_degrees");
+        assert_eq!(rejected(360.0, 5.0), "storm_direction_degrees");
+        assert_eq!(rejected(-1.0, 5.0), "storm_direction_degrees");
+
+        let srv = StormRelativeVelocity::new(359.5, 0.0).unwrap();
+        assert_eq!(srv.storm_direction_degrees(), 359.5);
+        assert_eq!(srv.storm_speed_mps(), 0.0);
+    }
+
+    #[test]
+    fn test_srv_output_label_and_product() -> Result<()> {
+        let field = make_velocity_field();
+        let result = StormRelativeVelocity::new(180.0, 10.0)?.process(&field)?;
+
+        assert_eq!(result.label(), "Storm-Relative Velocity");
+        assert_eq!(result.unit(), "m/s");
+        assert_eq!(result.product(), None);
+        assert_eq!(
+            result.azimuth_angles_degrees(),
+            field.azimuth_angles_degrees()
+        );
+        assert_eq!(result.gate_count(), field.gate_count());
+        assert_eq!(result.first_gate_range_km(), field.first_gate_range_km());
+        assert_eq!(result.gate_interval_km(), field.gate_interval_km());
+        Ok(())
+    }
+
+    #[test]
+    fn test_srv_requires_velocity() {
+        let srv = StormRelativeVelocity::new(180.0, 10.0).unwrap();
+        let reflectivity = SweepField::builder("Reflectivity", "dBZ")
+            .product(Product::Reflectivity)
+            .azimuth_angles_degrees(vec![0.0, 1.0])
+            .gate_interval_km(0.25)
+            .gate_count(4)
+            .build()
+            .unwrap();
+        assert_eq!(
+            srv.process(&reflectivity),
+            Err(Error::UnexpectedProduct {
+                expected: Product::Velocity,
+                actual: Some(Product::Reflectivity),
+            })
+        );
     }
 }

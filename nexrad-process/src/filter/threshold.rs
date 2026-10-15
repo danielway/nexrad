@@ -34,16 +34,20 @@ impl ThresholdFilter {
     ///
     /// Returns [`Error::InvalidParameter`] if either bound is NaN or if `min > max`.
     pub fn new(min: Option<f32>, max: Option<f32>) -> Result<Self> {
-        if min.is_some_and(f32::is_nan) || max.is_some_and(f32::is_nan) {
-            return Err(Error::InvalidParameter(
-                "threshold bounds must not be NaN".to_string(),
-            ));
+        for (parameter, bound) in [("min", min), ("max", max)] {
+            if bound.is_some_and(f32::is_nan) {
+                return Err(Error::InvalidParameter {
+                    parameter,
+                    reason: "must not be NaN",
+                });
+            }
         }
         if let (Some(lo), Some(hi)) = (min, max) {
             if lo > hi {
-                return Err(Error::InvalidParameter(format!(
-                    "threshold min ({lo}) must not exceed max ({hi})"
-                )));
+                return Err(Error::InvalidParameter {
+                    parameter: "min",
+                    reason: "must not exceed max",
+                });
             }
         }
         Ok(Self { min, max })

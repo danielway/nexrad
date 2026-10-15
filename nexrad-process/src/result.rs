@@ -53,7 +53,7 @@ pub enum Error {
 
     /// A model constructor or accessor rejected the output geometry, such as a composite
     /// extent outside valid latitudes and longitudes.
-    #[error("model error: {0}")]
+    #[error("model error")]
     Model(#[from] nexrad_model::result::Error),
 }
 

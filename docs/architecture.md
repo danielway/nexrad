@@ -64,7 +64,7 @@ or native networking code.
   `aws::realtime::assemble_volume` decompress records and hand their messages to `nexrad-decode`; they contain no
   protocol-to-model mapping of their own.
 - **The facade contains re-exports and I/O entry points only**: `load`, `load_file`, `download`, `download_latest`,
-  `download_at`, `list_scans` and `stream`. Anything expressible as a method on a model type lives on the model type
+  `download_at`, `list_scans`, `stream`, `stream_with`, `stream_scans` and `stream_scans_with`. Anything expressible as a method on a model type lives on the model type
   (`Sweep::field`, `Scan::fields`, `Scan::first_field`, `Scan::coordinate_system`), and the static site registry lives
   in `nexrad_model::meta::registry`.
 

@@ -10,8 +10,10 @@
 //! - `nexrad-data` as `data` - Data access (local files, AWS S3)
 //! - `nexrad-process` as `process` - Radar data processing algorithms
 //! - `nexrad-render` as `render` - Visualization and rendering
-//! - `chrono` as `chrono` - Date and time types, re-exported because `download_latest`,
-//!   `download_at` and `list_scans` take them
+//! - `chrono` as `chrono` - Date and time types, re-exported because `download_at` and
+//!   `list_scans` take them
+//! - `futures_util` as `futures_util` (with `aws`) - Stream utilities, re-exported because the
+//!   real-time functions return a `Stream`, whose `StreamExt::next` lives there
 //!
 //! ## Quick Start
 //!
@@ -38,12 +40,12 @@
 //! Or download directly from the NEXRAD archive on AWS (requires `aws` feature):
 //!
 //! ```ignore
-//! use nexrad::chrono::NaiveDate;
-//!
-//! let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
-//! let scan = nexrad::download_latest("KTLX", date).await?;
+//! let scan = nexrad::download_latest("KTLX").await?;
 //! # Ok::<(), nexrad::Error>(())
 //! ```
+//!
+//! Real-time data arrives through `stream`, which yields chunks as they are published, and
+//! `stream_scans`, which yields one `Scan` per completed volume.
 //!
 //! Helpers that need only model types are methods on those types: `Sweep::field`,
 //! `Scan::fields` and `Scan::first_field` extract `SweepField`s, and
@@ -63,7 +65,7 @@
 //! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model` | bzip2 | Yes |
 //! | `render` | Visualization and rendering | `model` | image | Yes |
 //! | `process` | Radar data processing algorithms | `model` | | Yes |
-//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`) and real-time streaming (`stream`) | `data`, `chrono` | reqwest, futures-util | Yes |
+//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) and the `futures_util` re-export | `data`, `chrono` | reqwest, futures-util | Yes |
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
 //! | `serde` | Serialization support for model types | | serde | Yes |
 //! | `uom` | Type-safe units of measure | | uom | Yes |
@@ -261,7 +263,7 @@ pub use result::{Error, Result};
 ///
 /// ```ignore
 /// let data = std::fs::read("KTLX20230520_201643_V06.ar2v")?;
-/// let scan = nexrad::load(&data)?;
+/// let scan = nexrad::load(data)?;
 /// println!("VCP: {}, {} sweeps",
 ///     scan.coverage_pattern_number(),
 ///     scan.sweeps().len());
@@ -273,8 +275,8 @@ pub use result::{Error, Result};
 /// Returns an error if the data cannot be parsed as a valid Archive II file,
 /// decompression fails, or the messages cannot be decoded.
 #[cfg(feature = "data")]
-pub fn load(data: &[u8]) -> Result<model::data::Scan> {
-    let file = data::volume::File::new(data.to_vec()).decompress()?;
+pub fn load(data: Vec<u8>) -> Result<model::data::Scan> {
+    let file = data::volume::File::new(data).decompress()?;
     Ok(file.scan()?)
 }
 
@@ -295,8 +297,7 @@ pub fn load(data: &[u8]) -> Result<model::data::Scan> {
 /// Returns an error if the file cannot be read or parsed.
 #[cfg(feature = "data")]
 pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan> {
-    let data = std::fs::read(path)?;
-    load(&data)
+    load(std::fs::read(path)?)
 }
 
 /// Download a specific scan by its archive identifier.
@@ -323,7 +324,7 @@ pub fn load_file<P: AsRef<std::path::Path>>(path: P) -> Result<model::data::Scan
 ///
 /// # Errors
 ///
-/// Returns an error if the download, decompression, or decoding fails.
+/// Returns an error if the download fails, or if the file cannot be decompressed or decoded.
 #[cfg(feature = "aws")]
 pub async fn download(identifier: &data::aws::archive::Identifier) -> Result<model::data::Scan> {
     let file = data::aws::archive::download_file(identifier)
@@ -332,44 +333,56 @@ pub async fn download(identifier: &data::aws::archive::Identifier) -> Result<mod
     Ok(file.scan()?)
 }
 
-/// Download the most recent scan for a site on a given date.
+/// Download the newest archived scan for a site.
 ///
-/// Returns the last available archive volume file for the specified UTC date. This is useful
-/// when you want the most complete data available for a particular day.
+/// Lists the archive for the current UTC date and, when that date has no volumes yet, for the
+/// previous UTC date, then downloads the last volume found.
+///
+/// To download the last scan of a given date instead, call [`list_scans`] for that date and pass
+/// its last identifier to [`download`].
 ///
 /// # Example
 ///
 /// ```ignore
-/// use nexrad::chrono::NaiveDate;
-///
-/// let date = NaiveDate::from_ymd_opt(2023, 5, 20).unwrap();
-/// let scan = nexrad::download_latest("KTLX", date).await?;
+/// let scan = nexrad::download_latest("KTLX").await?;
 /// println!("{}", scan.coverage_pattern_number());
 /// # Ok::<(), nexrad::Error>(())
 /// ```
 ///
 /// # Errors
 ///
-/// Returns [`Error::NoDataAvailable`] if no archive files exist for the site/date,
-/// or a network/parsing error if download or decoding fails.
+/// Returns [`Error::NoDataAvailable`], carrying the current UTC date, if neither date has an
+/// archive volume. Otherwise returns an error if listing or downloading fails, or if the file
+/// cannot be decompressed or decoded.
 #[cfg(feature = "aws")]
-pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<model::data::Scan> {
-    let files = data::aws::archive::list_files(site, date).await?;
-    let file_id = files
-        .last()
-        .cloned()
-        .ok_or_else(|| Error::NoDataAvailable {
-            site: site.to_string(),
-            date,
-        })?;
-    download(&file_id).await
+pub async fn download_latest(site: &str) -> Result<model::data::Scan> {
+    let today = chrono::Utc::now().date_naive();
+    let mut files = data::aws::archive::list_files(site, today).await?;
+    if files.is_empty() {
+        if let Some(yesterday) = today.pred_opt() {
+            files = data::aws::archive::list_files(site, yesterday).await?;
+        }
+    }
+
+    let file_id = files.last().ok_or_else(|| Error::NoDataAvailable {
+        site: site.to_string(),
+        date: today,
+    })?;
+    download(file_id).await
 }
+
+/// How long after its start time an archive volume is taken to overlap a requested datetime in
+/// [`download_at`]. The longest routine volume coverage patterns (VCP 31 and 32) take about ten
+/// minutes.
+#[cfg(feature = "aws")]
+const MAX_VOLUME_DURATION: chrono::TimeDelta = chrono::TimeDelta::minutes(15);
 
 /// Download the scan that overlaps a specific datetime.
 ///
-/// Finds the archive file whose collection period contains the requested UTC datetime.
-/// Archive files typically span approximately 5 minutes of data collection, so this
-/// function returns the scan that was being collected at the specified time.
+/// Finds the archive volume whose collection period contains the requested UTC datetime: the
+/// last volume that started at or before it, which is on the previous UTC date when the datetime
+/// precedes the date's first volume. A volume overlaps the datetime when it started at most 15
+/// minutes before it.
 ///
 /// # Example
 ///
@@ -387,30 +400,59 @@ pub async fn download_latest(site: &str, date: chrono::NaiveDate) -> Result<mode
 ///
 /// # Errors
 ///
-/// Returns [`Error::NoDataAvailable`] if no archive files exist for the site/date
-/// or if no file overlaps the requested time.
+/// Returns [`Error::NoScanAt`] if no archive volume overlaps the requested datetime. Otherwise
+/// returns an error if listing or downloading fails, or if the file cannot be decompressed or
+/// decoded.
 #[cfg(feature = "aws")]
 pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<model::data::Scan> {
-    let files = data::aws::archive::list_files(site, datetime.date()).await?;
+    let date = datetime.date();
+    let day = data::aws::archive::list_files(site, date).await?;
 
-    // Find the archive file that would contain data at the requested time.
-    // Files are sorted chronologically; find the last one with start_time <= requested time.
-    let file_id = files
+    let needs_previous_day = last_started_by(&day, datetime).is_none();
+    let previous_day = match date.pred_opt() {
+        Some(previous) if needs_previous_day => {
+            data::aws::archive::list_files(site, previous).await?
+        }
+        _ => Vec::new(),
+    };
+
+    let file_id = scan_at(&day, &previous_day, datetime).ok_or_else(|| Error::NoScanAt {
+        site: site.to_string(),
+        datetime,
+    })?;
+    download(file_id).await
+}
+
+/// Returns the last of `files`, which are in chronological order, that started at or before
+/// `datetime`.
+#[cfg(feature = "aws")]
+fn last_started_by(
+    files: &[data::aws::archive::Identifier],
+    datetime: chrono::NaiveDateTime,
+) -> Option<&data::aws::archive::Identifier> {
+    files
         .iter()
-        .rfind(|f| f.date_time().time() <= datetime.time())
-        .cloned()
-        .ok_or_else(|| Error::NoDataAvailable {
-            site: site.to_string(),
-            date: datetime.date(),
-        })?;
+        .rfind(|file| file.date_time().naive_utc() <= datetime)
+}
 
-    download(&file_id).await
+/// Selects the volume overlapping `datetime` from the volumes of its date and of the previous
+/// date: the last one that started at or before `datetime`, provided it started no more than
+/// [`MAX_VOLUME_DURATION`] earlier.
+#[cfg(feature = "aws")]
+fn scan_at<'a>(
+    day: &'a [data::aws::archive::Identifier],
+    previous_day: &'a [data::aws::archive::Identifier],
+    datetime: chrono::NaiveDateTime,
+) -> Option<&'a data::aws::archive::Identifier> {
+    last_started_by(day, datetime)
+        .or_else(|| last_started_by(previous_day, datetime))
+        .filter(|file| datetime - file.date_time().naive_utc() <= MAX_VOLUME_DURATION)
 }
 
 /// List available scans for a site and date.
 ///
-/// Returns identifiers for all archive volume files available on the specified UTC date;
-/// metadata objects are not included.
+/// Returns identifiers for all archive volume files available on the specified UTC date, in
+/// chronological order; metadata objects are not included.
 /// These identifiers can be used to selectively download specific scans.
 ///
 /// # Example
@@ -426,6 +468,11 @@ pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<
 /// }
 /// # Ok::<(), nexrad::Error>(())
 /// ```
+///
+/// # Errors
+///
+/// Returns an error if the archive listing request fails or its response cannot be parsed. A
+/// date without data is not an error; it yields an empty list.
 #[cfg(feature = "aws")]
 pub async fn list_scans(
     site: &str,
@@ -442,7 +489,8 @@ pub async fn list_scans(
 ///
 /// Returns a [`Stream`](futures_util::stream::Stream) that yields chunks as they become available
 /// from NOAA's real-time NEXRAD data feed. This is a convenience wrapper around
-/// [`data::aws::realtime::chunk_stream`] with default retry policies.
+/// [`data::aws::realtime::chunk_stream`] with default retry policies; [`stream_with`] takes a
+/// custom configuration.
 ///
 /// The stream is runtime-agnostic: `sleep` is called with each duration the
 /// stream needs to wait and must return a future that completes after that
@@ -453,7 +501,7 @@ pub async fn list_scans(
 /// # Example
 ///
 /// ```ignore
-/// use futures_util::StreamExt;
+/// use nexrad::futures_util::StreamExt;
 ///
 /// let stream = nexrad::stream("KTLX", |d| tokio::time::sleep(d));
 /// let mut stream = std::pin::pin!(stream);
@@ -472,9 +520,208 @@ where
     S: Fn(std::time::Duration) -> F,
     F: std::future::Future<Output = ()>,
 {
+    stream_with(data::aws::realtime::PollConfig::new(site), sleep)
+}
+
+/// Stream real-time radar data chunks with a custom configuration.
+///
+/// Like [`stream`], but takes a [`PollConfig`](data::aws::realtime::PollConfig), which names the
+/// site and sets the download and discovery retry policies. This is a wrapper around
+/// [`data::aws::realtime::chunk_stream`].
+///
+/// The stream is runtime-agnostic: `sleep` is called with each duration the
+/// stream needs to wait and must return a future that completes after that
+/// duration. With tokio, pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a
+/// timer crate such as `gloo-timers` provides an equivalent sleep future. The
+/// stream is `Send` whenever `S` and `F` are `Send`.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::data::aws::realtime::{PollConfig, RetryPolicy};
+/// use nexrad::futures_util::StreamExt;
+/// use std::time::Duration;
+///
+/// let config = PollConfig::new("KTLX").with_download_policy(
+///     RetryPolicy::default_download().with_initial_delay(Duration::from_millis(500)),
+/// );
+/// let stream = nexrad::stream_with(config, |d| tokio::time::sleep(d));
+/// let mut stream = std::pin::pin!(stream);
+/// while let Some(chunk) = stream.next().await {
+///     let chunk = chunk?;
+///     println!("Received chunk: {:?}", chunk.identifier);
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "aws")]
+pub fn stream_with<S, F>(
+    config: data::aws::realtime::PollConfig,
+    sleep: S,
+) -> impl futures_util::stream::Stream<Item = Result<data::aws::realtime::DownloadedChunk>>
+where
+    S: Fn(std::time::Duration) -> F,
+    F: std::future::Future<Output = ()>,
+{
     use futures_util::StreamExt;
-    let config = data::aws::realtime::PollConfig::new(site);
     data::aws::realtime::chunk_stream(config, sleep).map(|r| r.map_err(Error::from))
+}
+
+/// Stream complete real-time radar scans for a site.
+///
+/// Returns a [`Stream`](futures_util::stream::Stream) that yields one
+/// [`Scan`](model::data::Scan) per volume from NOAA's real-time NEXRAD data feed. It receives
+/// chunks as [`stream`] does, with default retry policies, and assembles each volume with
+/// [`data::aws::realtime::assemble_volume`] once its End chunk arrives; [`stream_scans_with`]
+/// takes a custom configuration.
+///
+/// Chunks received before the first Start chunk are skipped, so the volume in progress when the
+/// stream starts is not yielded. An error from the chunk stream is yielded as an error item and
+/// the partial volume is discarded; the next Start chunk begins a new one. Only complete volumes
+/// are yielded.
+///
+/// The stream is runtime-agnostic: `sleep` is called with each duration the
+/// stream needs to wait and must return a future that completes after that
+/// duration. With tokio, pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a
+/// timer crate such as `gloo-timers` provides an equivalent sleep future. The
+/// stream is `Send` whenever `S` and `F` are `Send`.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::futures_util::StreamExt;
+///
+/// let scans = nexrad::stream_scans("KTLX", |d| tokio::time::sleep(d));
+/// let mut scans = std::pin::pin!(scans);
+/// while let Some(scan) = scans.next().await {
+///     let scan = scan?;
+///     println!("{}, {} sweeps", scan.coverage_pattern_number(), scan.sweeps().len());
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "aws")]
+pub fn stream_scans<S, F>(
+    site: &str,
+    sleep: S,
+) -> impl futures_util::stream::Stream<Item = Result<model::data::Scan>>
+where
+    S: Fn(std::time::Duration) -> F,
+    F: std::future::Future<Output = ()>,
+{
+    stream_scans_with(data::aws::realtime::PollConfig::new(site), sleep)
+}
+
+/// Stream complete real-time radar scans with a custom configuration.
+///
+/// Like [`stream_scans`], but takes a [`PollConfig`](data::aws::realtime::PollConfig), which
+/// names the site and sets the download and discovery retry policies.
+///
+/// Chunks received before the first Start chunk are skipped, so the volume in progress when the
+/// stream starts is not yielded. An error from the chunk stream is yielded as an error item and
+/// the partial volume is discarded; the next Start chunk begins a new one. Only complete volumes
+/// are yielded.
+///
+/// The stream is runtime-agnostic: `sleep` is called with each duration the
+/// stream needs to wait and must return a future that completes after that
+/// duration. With tokio, pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a
+/// timer crate such as `gloo-timers` provides an equivalent sleep future. The
+/// stream is `Send` whenever `S` and `F` are `Send`.
+///
+/// # Example
+///
+/// ```ignore
+/// use nexrad::data::aws::realtime::PollConfig;
+/// use nexrad::futures_util::StreamExt;
+///
+/// let scans = nexrad::stream_scans_with(PollConfig::new("KTLX"), |d| tokio::time::sleep(d));
+/// let mut scans = std::pin::pin!(scans);
+/// while let Some(scan) = scans.next().await {
+///     let scan = scan?;
+///     println!("{}, {} sweeps", scan.coverage_pattern_number(), scan.sweeps().len());
+/// }
+/// # Ok::<(), nexrad::Error>(())
+/// ```
+#[cfg(feature = "aws")]
+pub fn stream_scans_with<S, F>(
+    config: data::aws::realtime::PollConfig,
+    sleep: S,
+) -> impl futures_util::stream::Stream<Item = Result<model::data::Scan>>
+where
+    S: Fn(std::time::Duration) -> F,
+    F: std::future::Future<Output = ()>,
+{
+    use futures_util::StreamExt;
+    let mut volume = VolumeAccumulator::default();
+    stream_with(config, sleep).filter_map(move |item| {
+        let scan = volume.accept(item).map(|chunks| {
+            chunks.and_then(|chunks| Ok(data::aws::realtime::assemble_volume(chunks)?))
+        });
+        futures_util::future::ready(scan)
+    })
+}
+
+/// Collects the chunks of one real-time volume, from its Start chunk through its End chunk.
+#[cfg(feature = "aws")]
+#[derive(Default)]
+struct VolumeAccumulator {
+    /// The chunks of the volume in progress, in sequence order.
+    chunks: Vec<data::aws::realtime::Chunk>,
+    /// The scan time and sequence number of the last chunk added to `chunks`, or `None` when no
+    /// volume is in progress.
+    last: Option<(chrono::NaiveDateTime, usize)>,
+}
+
+#[cfg(feature = "aws")]
+impl VolumeAccumulator {
+    /// Takes the next item from the chunk stream. Returns the volume's chunks once its End chunk
+    /// completes it, the error when the item is an error, and `None` otherwise.
+    ///
+    /// A Start chunk begins a new volume, replacing any partial one. Any other chunk is added
+    /// only when it directly follows the last chunk added, in the same volume; otherwise the
+    /// partial volume is discarded, as it is on an error.
+    fn accept(
+        &mut self,
+        item: Result<data::aws::realtime::DownloadedChunk>,
+    ) -> Option<Result<Vec<data::aws::realtime::Chunk>>> {
+        use data::aws::realtime::ChunkType;
+
+        let downloaded = match item {
+            Ok(downloaded) => downloaded,
+            Err(error) => {
+                self.discard();
+                return Some(Err(error));
+            }
+        };
+
+        let identifier = &downloaded.identifier;
+        let chunk_type = identifier.chunk_type();
+        let position = (*identifier.date_time_prefix(), identifier.sequence());
+        if chunk_type == ChunkType::Start {
+            self.chunks.clear();
+        } else {
+            let follows = self
+                .last
+                .is_some_and(|(scan_time, sequence)| (scan_time, sequence + 1) == position);
+            if !follows {
+                self.discard();
+                return None;
+            }
+        }
+
+        self.chunks.push(downloaded.chunk);
+        if chunk_type == ChunkType::End {
+            self.last = None;
+            Some(Ok(std::mem::take(&mut self.chunks)))
+        } else {
+            self.last = Some(position);
+            None
+        }
+    }
+
+    /// Drops the volume in progress.
+    fn discard(&mut self) {
+        self.chunks.clear();
+        self.last = None;
+    }
 }
 
 // ============================================================================
@@ -501,7 +748,221 @@ pub use nexrad_render as render;
 #[cfg(feature = "process")]
 pub use nexrad_process as process;
 
-/// Re-export of `chrono`, because `download_latest`, `download_at` and `list_scans` take
-/// chrono types.
+/// Re-export of `chrono`, because `download_at` and `list_scans` take chrono types.
 #[cfg(feature = "chrono")]
 pub use chrono;
+
+/// Re-export of `futures_util`, because the real-time functions return a `Stream`, whose
+/// `StreamExt::next` lives there.
+#[cfg(feature = "aws")]
+pub use futures_util;
+
+#[cfg(all(test, feature = "aws"))]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDateTime;
+    use data::aws::archive::Identifier;
+    use data::aws::realtime::{Chunk, ChunkIdentifier, ChunkType, DownloadedChunk, VolumeIndex};
+
+    fn datetime(value: &str) -> NaiveDateTime {
+        NaiveDateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S").expect("valid datetime")
+    }
+
+    fn identifiers(names: &[&str]) -> Vec<Identifier> {
+        names
+            .iter()
+            .map(|name| Identifier::parse(name).expect("valid identifier"))
+            .collect()
+    }
+
+    fn selected<'a>(
+        day: &'a [Identifier],
+        previous_day: &'a [Identifier],
+        at: &str,
+    ) -> Option<&'a str> {
+        scan_at(day, previous_day, datetime(at)).map(Identifier::name)
+    }
+
+    #[test]
+    fn scan_at_selects_the_last_volume_started_by_the_datetime() {
+        let day = identifiers(&[
+            "KTLX20230520_200712_V06",
+            "KTLX20230520_201643_V06",
+            "KTLX20230520_202612_V06",
+        ]);
+
+        assert_eq!(
+            selected(&day, &[], "2023-05-20 20:20:00"),
+            Some("KTLX20230520_201643_V06")
+        );
+        assert_eq!(
+            selected(&day, &[], "2023-05-20 20:16:43"),
+            Some("KTLX20230520_201643_V06")
+        );
+    }
+
+    #[test]
+    fn scan_at_crosses_midnight() {
+        let previous_day = identifiers(&["KTLX20230519_234512_V06", "KTLX20230519_235502_V06"]);
+        let day = identifiers(&["KTLX20230520_000452_V06"]);
+
+        assert_eq!(
+            selected(&day, &previous_day, "2023-05-20 00:01:00"),
+            Some("KTLX20230519_235502_V06")
+        );
+        assert_eq!(
+            selected(&[], &previous_day, "2023-05-20 00:01:00"),
+            Some("KTLX20230519_235502_V06")
+        );
+    }
+
+    #[test]
+    fn scan_at_rejects_a_volume_started_too_long_before() {
+        let day = identifiers(&["KTLX20230520_200000_V06"]);
+
+        assert_eq!(
+            selected(&day, &[], "2023-05-20 20:15:00"),
+            Some("KTLX20230520_200000_V06")
+        );
+        assert_eq!(selected(&day, &[], "2023-05-20 20:15:01"), None);
+
+        let previous_day = identifiers(&["KTLX20230519_230000_V06"]);
+        assert_eq!(selected(&[], &previous_day, "2023-05-20 00:01:00"), None);
+    }
+
+    #[test]
+    fn scan_at_finds_nothing_before_the_first_volume() {
+        let day = identifiers(&["KTLX20230520_000452_V06"]);
+
+        assert_eq!(selected(&day, &[], "2023-05-20 00:01:00"), None);
+        assert_eq!(selected(&[], &[], "2023-05-20 00:01:00"), None);
+    }
+
+    fn chunk(scan_time: &str, sequence: usize, chunk_type: ChunkType) -> Result<DownloadedChunk> {
+        let identifier = ChunkIdentifier::new(
+            "KTLX",
+            VolumeIndex::new(1).expect("valid volume index"),
+            datetime(scan_time),
+            sequence,
+            chunk_type,
+            None,
+        );
+        let data = match chunk_type {
+            ChunkType::Start => b"AR2V0006.".to_vec(),
+            _ => b"\0\0\0\0BZh9".to_vec(),
+        };
+        let chunk = Chunk::new(data).expect("recognized chunk format");
+        Ok(DownloadedChunk::new(identifier, chunk, 1))
+    }
+
+    fn error() -> Result<DownloadedChunk> {
+        Err(Error::Io(std::io::Error::other("connection reset")))
+    }
+
+    /// Feeds `items` to a new accumulator and returns, per item, `None` when nothing was
+    /// yielded, `Some(Ok(n))` for a volume of `n` chunks and `Some(Err(()))` for an error.
+    fn accept_all(
+        items: impl IntoIterator<Item = Result<DownloadedChunk>>,
+    ) -> Vec<Option<std::result::Result<usize, ()>>> {
+        let mut volume = VolumeAccumulator::default();
+        items
+            .into_iter()
+            .map(|item| {
+                volume
+                    .accept(item)
+                    .map(|chunks| chunks.map(|chunks| chunks.len()).map_err(|_| ()))
+            })
+            .collect()
+    }
+
+    const VOLUME: &str = "2023-05-20 20:16:43";
+    const NEXT_VOLUME: &str = "2023-05-20 20:21:30";
+
+    #[test]
+    fn accumulator_yields_a_complete_volume() {
+        let results = accept_all([
+            chunk(VOLUME, 1, ChunkType::Start),
+            chunk(VOLUME, 2, ChunkType::Intermediate),
+            chunk(VOLUME, 3, ChunkType::End),
+        ]);
+
+        assert_eq!(results, [None, None, Some(Ok(3))]);
+    }
+
+    #[test]
+    fn accumulator_skips_chunks_before_the_first_start() {
+        let results = accept_all([
+            chunk(VOLUME, 5, ChunkType::Intermediate),
+            chunk(VOLUME, 6, ChunkType::End),
+            chunk(NEXT_VOLUME, 1, ChunkType::Start),
+            chunk(NEXT_VOLUME, 2, ChunkType::End),
+        ]);
+
+        assert_eq!(results, [None, None, None, Some(Ok(2))]);
+    }
+
+    #[test]
+    fn accumulator_discards_a_volume_missing_a_chunk() {
+        // The chunk stream joins mid-volume by yielding the Start chunk and then the latest one.
+        let results = accept_all([
+            chunk(VOLUME, 1, ChunkType::Start),
+            chunk(VOLUME, 7, ChunkType::Intermediate),
+            chunk(VOLUME, 8, ChunkType::End),
+            chunk(NEXT_VOLUME, 1, ChunkType::Start),
+            chunk(NEXT_VOLUME, 2, ChunkType::Intermediate),
+            chunk(NEXT_VOLUME, 3, ChunkType::End),
+        ]);
+
+        assert_eq!(results, [None, None, None, None, None, Some(Ok(3))]);
+    }
+
+    #[test]
+    fn accumulator_forwards_errors_and_discards_the_partial_volume() {
+        let results = accept_all([
+            chunk(VOLUME, 1, ChunkType::Start),
+            chunk(VOLUME, 2, ChunkType::Intermediate),
+            error(),
+            chunk(VOLUME, 3, ChunkType::End),
+            chunk(NEXT_VOLUME, 1, ChunkType::Start),
+            chunk(NEXT_VOLUME, 2, ChunkType::End),
+        ]);
+
+        assert_eq!(
+            results,
+            [None, None, Some(Err(())), None, None, Some(Ok(2))]
+        );
+    }
+
+    #[test]
+    fn accumulator_restarts_on_a_new_start_chunk() {
+        let results = accept_all([
+            chunk(VOLUME, 1, ChunkType::Start),
+            chunk(VOLUME, 2, ChunkType::Intermediate),
+            chunk(NEXT_VOLUME, 1, ChunkType::Start),
+            chunk(NEXT_VOLUME, 2, ChunkType::Intermediate),
+            chunk(NEXT_VOLUME, 3, ChunkType::End),
+        ]);
+
+        assert_eq!(results, [None, None, None, None, Some(Ok(3))]);
+    }
+
+    #[test]
+    fn streams_are_send_with_a_send_sleep() {
+        fn assert_send<T: Send>(_: &T) {}
+
+        let sleep = |_: std::time::Duration| async {};
+        assert_send(&stream("KTLX", sleep));
+        assert_send(&stream_scans("KTLX", sleep));
+    }
+
+    #[test]
+    fn accumulator_rejects_a_chunk_from_another_volume() {
+        let results = accept_all([
+            chunk(VOLUME, 1, ChunkType::Start),
+            chunk(NEXT_VOLUME, 2, ChunkType::End),
+        ]);
+
+        assert_eq!(results, [None, None]);
+    }
+}

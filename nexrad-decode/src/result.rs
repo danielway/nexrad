@@ -67,6 +67,6 @@ pub enum Error {
     /// whose gate count does not match its encoded data or a radial with an out-of-range
     /// azimuth.
     #[cfg(feature = "model")]
-    #[error("decoded data is invalid for the model: {0}")]
+    #[error("decoded data is invalid for the model")]
     Model(#[from] nexrad_model::result::Error),
 }

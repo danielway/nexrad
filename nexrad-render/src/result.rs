@@ -42,6 +42,6 @@ pub enum Error {
     #[error("rendering into a geographic extent requires a coordinate system")]
     MissingCoordinateSystem,
     /// An error from the [`image`] crate, such as failing to encode or save an image.
-    #[error("image error: {0}")]
+    #[error("image error")]
     Image(#[from] image::ImageError),
 }

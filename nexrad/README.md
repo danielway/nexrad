@@ -33,7 +33,7 @@ for sweep in scan.sweeps() {
 
 | Function | Description |
 |----------|-------------|
-| `load(data)` | Load from raw Archive II bytes |
+| `load(data)` | Load from raw Archive II bytes, taking ownership of the `Vec<u8>` |
 | `load_file(path)` | Load from a file path |
 
 ### AWS Downloads (requires `aws` feature)
@@ -42,14 +42,17 @@ for sweep in scan.sweeps() {
 |----------|-------------|
 | `list_scans(site, date)` | List available scans for a site and date |
 | `download(&identifier)` | Download a specific scan by archive identifier (taken by reference, as returned by `list_scans`) |
-| `download_latest(site, date)` | Download the most recent scan for a date |
-| `download_at(site, datetime)` | Download the scan overlapping a specific time |
+| `download_latest(site)` | Download the newest archived scan (for the last scan of a given date, `list_scans` then `download`) |
+| `download_at(site, datetime)` | Download the scan overlapping a specific UTC time, which may have started on the previous date |
 
 ### Real-Time Streaming (requires `aws` feature)
 
 | Function | Description |
 |----------|-------------|
 | `stream(site, sleep)` | Stream live radar data chunks as a `Stream`, waiting via the supplied sleep function (e.g. `\|d\| tokio::time::sleep(d)`) |
+| `stream_with(config, sleep)` | `stream` with a `PollConfig` that sets the retry policies |
+| `stream_scans(site, sleep)` | Stream one `Scan` per complete live volume |
+| `stream_scans_with(config, sleep)` | `stream_scans` with a `PollConfig` |
 
 ## Re-exported Crates
 
@@ -62,8 +65,9 @@ Access sub-crate APIs through module re-exports:
 - `nexrad::render` — Visualization (`render_sweep`, color scales, `RenderOptions`)
 
 `nexrad::chrono` re-exports `chrono` (with the `chrono` feature, implied by `aws`) because
-`list_scans`, `download_latest` and `download_at` take `NaiveDate`/`NaiveDateTime`, so you
-don't need a separate `chrono` dependency to call them.
+`list_scans` and `download_at` take `NaiveDate`/`NaiveDateTime`, so you don't need a separate
+`chrono` dependency to call them. `nexrad::futures_util` re-exports `futures_util` (with `aws`)
+for `StreamExt::next` on the real-time streams.
 
 Helpers that only need model types live on those types: `sweep.field(product)`,
 `scan.fields(product)` and `scan.first_field(product)` extract `SweepField`s,
@@ -77,8 +81,10 @@ All top-level functions return `nexrad::Result<T>`, and every sub-crate error co
 `nexrad::Error` with `?`. Each variant names the layer an error came from: decode, model and
 I/O errors raised inside `nexrad-data` surface as `Error::Decode`, `Error::Model` and
 `Error::Io`, while `Error::Data` is reserved for data-access failures such as decompression,
-archive layout and AWS errors. `Error::NoDataAvailable` (with `aws`) reports that no archive
-file matched the requested site and date.
+archive layout and AWS errors. With `aws`, `Error::NoDataAvailable` reports that
+`download_latest` found no archive volume for the site, and `Error::NoScanAt` that no volume
+overlaps the datetime passed to `download_at`. Wrapping variants name only the layer in their
+`Display` text; the wrapped error is their `source()`.
 
 ## Features
 

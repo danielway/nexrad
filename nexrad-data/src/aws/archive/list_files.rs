@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn listed_files_order_by_identifier_then_size() {
         let file = |name: &str, size| volume_file(name, size).unwrap();
-        let mut files = vec![
+        let mut files = [
             file("KDMX20220305_232324_V06", 5),
             file("KDMX20220305_120000_V06", 9),
             file("KDMX20220305_232324_V06", 3),

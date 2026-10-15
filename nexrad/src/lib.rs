@@ -257,9 +257,11 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(clippy::correctness)]
 #![warn(unnameable_types)]
 #![deny(missing_docs)]
+#![warn(missing_debug_implementations)]
 
 /// Unified error types for the NEXRAD facade crate.
 pub mod result;
@@ -790,7 +792,6 @@ pub use chrono;
 pub use futures_util;
 
 #[cfg(all(test, feature = "aws"))]
-#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     use chrono::NaiveDateTime;

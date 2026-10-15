@@ -155,7 +155,7 @@ mod tests {
         assert_eq!(model.number_of_elevation_cuts(), vcp.elevations().len());
 
         let first = &model.elevation_cuts()[0];
-        assert_eq!(first.elevation_angle_degrees(), 0.4833984375);
+        assert_eq!(first.elevation_angle_degrees(), 0.483_398_44);
         assert_eq!(
             first.channel_configuration(),
             nexrad_model::data::ChannelConfiguration::Sz2Phase

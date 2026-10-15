@@ -158,7 +158,7 @@ fn display_round_trips_through_parse() {
 
 #[test]
 fn ordering_is_chronological_within_a_site() {
-    let mut identifiers = vec![
+    let mut identifiers = [
         parse("KDMX20220306_120000_V06"),
         parse("KDMX20220305_130000_V06"),
         parse("KDMX20220305_120000_V06"),

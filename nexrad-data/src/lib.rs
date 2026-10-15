@@ -95,9 +95,11 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(clippy::correctness)]
 #![warn(unnameable_types)]
 #![deny(missing_docs)]
+#![warn(missing_debug_implementations)]
 
 #[cfg(feature = "aws")]
 /// AWS S3 integration for downloading NEXRAD data from the cloud.

@@ -351,7 +351,7 @@ fn test_elevation_angles_valid() {
                 let elevation = first_radial.elevation_angle_degrees();
                 // NEXRAD elevation range is approximately -1 to 60 degrees
                 assert!(
-                    elevation >= -2.0 && elevation <= 65.0,
+                    (-2.0..=65.0).contains(&elevation),
                     "Fixture {} sweep {} has invalid elevation: {}",
                     fixture.id,
                     sweep_idx,
@@ -373,7 +373,7 @@ fn test_azimuth_angles_valid() {
             for (radial_idx, radial) in sweep.radials().iter().enumerate() {
                 let azimuth = radial.azimuth_angle_degrees();
                 assert!(
-                    azimuth >= 0.0 && azimuth < 360.0,
+                    (0.0..360.0).contains(&azimuth),
                     "Fixture {} sweep {} radial {} has invalid azimuth: {}",
                     fixture.id,
                     sweep_idx,

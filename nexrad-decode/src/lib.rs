@@ -113,9 +113,11 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![warn(clippy::correctness)]
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
+#![warn(missing_debug_implementations)]
 #![warn(unnameable_types)]
 
 /// Wrapper type for binary data with debug formatting support.

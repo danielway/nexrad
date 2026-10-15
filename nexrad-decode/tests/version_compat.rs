@@ -56,7 +56,7 @@ fn analyze_volume(data: &[u8]) -> VolumeAnalysis {
                     total_radials += 1;
 
                     if let Some(vol_block) = radar_data.volume_data_block() {
-                        if vol_block.inner().is_legacy() {
+                        if vol_block.inner().lrtup_bytes() <= 44 {
                             legacy_vol_count += 1;
                         } else {
                             modern_vol_count += 1;
@@ -64,7 +64,7 @@ fn analyze_volume(data: &[u8]) -> VolumeAnalysis {
                     }
 
                     if let Some(rad_block) = radar_data.radial_data_block() {
-                        if rad_block.inner().is_legacy() {
+                        if rad_block.inner().lrtup_bytes() <= 20 {
                             legacy_rad_count += 1;
                         } else {
                             modern_rad_count += 1;
@@ -829,7 +829,7 @@ fn analyze_volume_first_vol_block(data: &[u8]) -> VolBlockAnalysis {
                 if let Some(vol_block) = radar_data.volume_data_block() {
                     let inner = vol_block.inner();
                     return VolBlockAnalysis {
-                        is_legacy: inner.is_legacy(),
+                        is_legacy: inner.lrtup_bytes() <= 44,
                         lrtup: inner.lrtup_bytes(),
                         zdr_bias: inner.zdr_bias_estimate_weighted_mean(),
                     };

@@ -119,8 +119,7 @@ stay evolvable but are needed by examples or by `nexrad-inspector` are made `#[d
 carry no stability guarantee.
 
 Each library crate sets `[package.metadata.docs.rs] all-features = true` so docs.rs shows feature-gated items, and
-enables `#![warn(unnameable_types)]` so a public type cannot leak through a private module path (`nexrad-decode` does
-not enable the lint yet).
+enables `#![warn(unnameable_types)]` so a public type cannot leak through a private module path.
 
 ### Versioning
 

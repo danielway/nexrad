@@ -36,10 +36,13 @@ impl<'a> MessageHeader<'a> {
     /// Parse a message header from the first [`SIZE`](Self::SIZE) bytes of `bytes`, borrowing
     /// from the input. Any bytes after the header are ignored.
     ///
-    /// Returns [`Error::UnexpectedEof`] if `bytes` is shorter than [`SIZE`](Self::SIZE).
+    /// # Errors
+    ///
+    /// Returns [`Error::UnexpectedEof`] with offset 0 if `bytes` is shorter than
+    /// [`SIZE`](Self::SIZE).
     pub fn parse(bytes: &'a [u8]) -> Result<MessageHeader<'a>> {
-        let (raw, _rest) =
-            raw::MessageHeader::ref_from_prefix(bytes).map_err(|_| Error::UnexpectedEof)?;
+        let (raw, _rest) = raw::MessageHeader::ref_from_prefix(bytes)
+            .map_err(|_| Error::UnexpectedEof { offset: 0 })?;
         Ok(Self::from_raw(raw))
     }
 
@@ -260,7 +263,7 @@ mod tests {
         let bytes = header_bytes();
         assert!(matches!(
             MessageHeader::parse(&bytes[..MessageHeader::SIZE - 1]),
-            Err(Error::UnexpectedEof)
+            Err(Error::UnexpectedEof { offset: 0 })
         ));
     }
 

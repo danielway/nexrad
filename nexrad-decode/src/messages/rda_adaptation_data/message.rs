@@ -1122,47 +1122,6 @@ impl<'a> Message<'a> {
         read_real4(&self.data, 9044 - 44)
     }
 
-    // -----------------------------------------------------------------------
-    // Raw data access
-    // -----------------------------------------------------------------------
-
-    /// Returns the total number of bytes in the adaptation data (header + data).
-    pub fn total_size(&self) -> usize {
-        44 + self.data.len()
-    }
-
-    /// Returns the raw data bytes after the 44-byte header.
-    pub fn data_raw(&self) -> &[u8] {
-        &self.data
-    }
-
-    /// Read a Raw Real*4 (big-endian f32) at a given absolute ICD byte offset.
-    /// Returns None if the offset is out of bounds or within the header (< 44).
-    pub fn read_real4_at(&self, icd_byte_offset: usize) -> Option<f32> {
-        if icd_byte_offset < 44 {
-            return None;
-        }
-        read_real4(&self.data, icd_byte_offset - 44)
-    }
-
-    /// Read a Raw Integer*4 (big-endian u32) at a given absolute ICD byte offset.
-    /// Returns None if the offset is out of bounds or within the header (< 44).
-    pub fn read_integer4_at(&self, icd_byte_offset: usize) -> Option<u32> {
-        if icd_byte_offset < 44 {
-            return None;
-        }
-        read_integer4(&self.data, icd_byte_offset - 44)
-    }
-
-    /// Read a null-terminated string at a given absolute ICD byte offset with specified length.
-    /// Returns None if the offset is out of bounds or within the header (< 44).
-    pub fn read_string_at(&self, icd_byte_offset: usize, len: usize) -> Option<String> {
-        if icd_byte_offset < 44 {
-            return None;
-        }
-        read_string(&self.data, icd_byte_offset - 44, len)
-    }
-
     /// Convert this message to an owned version with `'static` lifetime.
     pub fn into_owned(self) -> Message<'static> {
         Message {

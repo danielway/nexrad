@@ -18,7 +18,8 @@ use nexrad_decode::model::ScanBuilder;
 /// Returns an error if:
 /// - No start chunk is found, so no volume coverage pattern was seen
 ///   ([`Error::MissingCoveragePattern`](crate::result::Error::MissingCoveragePattern))
-/// - Decompression or message decoding fails for any chunk
+/// - Decompression fails for any chunk, or any message in a chunk cannot be decoded
+///   ([`Error::Decode`](crate::result::Error::Decode), carrying the first decoding error)
 ///
 /// # Example
 ///

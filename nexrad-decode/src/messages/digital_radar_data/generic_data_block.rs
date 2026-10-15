@@ -59,7 +59,8 @@ impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
     fn product(&self) -> Result<nexrad_model::data::Product> {
         self.id().data_block_name().product().ok_or_else(|| {
             crate::result::Error::UnknownDataBlockType {
-                block_type: self.id().data_block_name_str().into_owned(),
+                block_type: *self.id().data_name_raw(),
+                offset: self.offset(),
             }
         })
     }
@@ -75,7 +76,7 @@ impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
     /// `PHI`, `RHO`, `CFP`), or [`Error::Model`](crate::result::Error::Model) if the block's
     /// encoding parameters are inconsistent with its data.
     pub fn moment_data(&self) -> Result<nexrad_model::data::MomentData> {
-        let header = self.header();
+        let header = self.inner().header();
         Ok(nexrad_model::data::MomentData::from_fixed_point(
             self.product()?,
             usize::from(header.number_of_data_moment_gates()),
@@ -84,7 +85,7 @@ impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
             header.data_word_size_raw(),
             header.scale(),
             header.offset(),
-            self.encoded_values().to_vec(),
+            self.inner().encoded_values().to_vec(),
         )?)
     }
 

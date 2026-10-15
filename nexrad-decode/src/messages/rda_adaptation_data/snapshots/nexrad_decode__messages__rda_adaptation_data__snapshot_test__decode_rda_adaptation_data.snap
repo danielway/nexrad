@@ -24,7 +24,9 @@ AdaptationSummary {
     site_longitude: Some(
         -93.72286944442325,
     ),
-    site_name: None,
+    site_name: Some(
+        "KDMX",
+    ),
     antenna_gain: Some(
         44.6,
     ),

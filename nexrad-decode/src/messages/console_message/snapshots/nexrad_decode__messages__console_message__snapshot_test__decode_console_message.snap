@@ -33,6 +33,7 @@ Message {
     ),
     contents: ConsoleMessage(
         Message {
+            message_type: RdaConsoleMessage,
             header: Header {
                 message_size: 15,
             },

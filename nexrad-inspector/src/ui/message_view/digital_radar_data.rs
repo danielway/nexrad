@@ -67,7 +67,7 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
     ));
 
     // Volume Data Block
-    if let Some(vol) = msg.volume_data_block() {
+    if let Some(vol) = msg.volume_data_block().map(|block| block.inner()) {
         output.push_str("\n--- Volume Data Block ---\n");
         output.push_str(&format!(
             "Location: {:.4}\u{00b0}, {:.4}\u{00b0}\n",
@@ -109,7 +109,7 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
     }
 
     // Radial Data Block
-    if let Some(rad) = msg.radial_data_block() {
+    if let Some(rad) = msg.radial_data_block().map(|block| block.inner()) {
         output.push_str("\n--- Radial Data Block ---\n");
         output.push_str(&format!(
             "Unambiguous Range: {:.1} km\n",
@@ -136,7 +136,7 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
     }
 
     // Elevation Data Block
-    if let Some(elv) = msg.elevation_data_block() {
+    if let Some(elv) = msg.elevation_data_block().map(|block| block.inner()) {
         output.push_str("\n--- Elevation Data Block ---\n");
         output.push_str(&format!(
             "Atmospheric Attenuation: {:.4} dB/km\n",
@@ -177,7 +177,13 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
     for (id, name, block_opt) in moment_blocks {
         if let Some(block) = block_opt {
             if let Ok(moment) = block.moment_data() {
-                render_moment_block(&mut output, id, name, block.header(), &moment.values());
+                render_moment_block(
+                    &mut output,
+                    id,
+                    name,
+                    block.inner().header(),
+                    &moment.values(),
+                );
             }
         }
     }
@@ -185,7 +191,7 @@ pub fn parse_digital_radar_data(data: &[u8]) -> String {
     // CFP decodes raw values 0-7 as status codes rather than threshold/folded markers
     if let Some(block) = msg.clutter_filter_power_data_block() {
         if let Ok(moment) = block.moment_data() {
-            render_cfp_block(&mut output, block.header(), &moment.values());
+            render_cfp_block(&mut output, block.inner().header(), &moment.values());
         }
     }
 

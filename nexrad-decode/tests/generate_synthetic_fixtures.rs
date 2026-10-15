@@ -57,8 +57,8 @@ fn build_multi_segment_frames(message_type: u8, content: &[u8]) -> Vec<u8> {
         let remaining = content.len() - offset;
         let payload_size = remaining.min(CONTENT_SIZE);
 
-        // segment_size includes the header
-        let segment_size_halfwords = ((HEADER_SIZE + payload_size) / 2) as u16;
+        // segment_size counts the message header and payload, but not the 12 leading bytes
+        let segment_size_halfwords = ((HEADER_SIZE - 12 + payload_size) / 2) as u16;
         let header = build_header(
             message_type,
             segment_size_halfwords,
@@ -271,14 +271,15 @@ fn generate_all_synthetic_fixtures() {
                     filename,
                     msg.header().message_type(),
                     match msg.contents() {
-                        nexrad_decode::messages::MessageContents::Other => "Other (UNEXPECTED)",
+                        nexrad_decode::messages::MessageContents::Other { .. } =>
+                            "Other (UNEXPECTED)",
                         _ => "decoded OK",
                     }
                 );
                 assert!(
                     !matches!(
                         msg.contents(),
-                        nexrad_decode::messages::MessageContents::Other
+                        nexrad_decode::messages::MessageContents::Other { .. }
                     ),
                     "{filename} decoded as Other instead of specific type"
                 );

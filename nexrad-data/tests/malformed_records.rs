@@ -1,7 +1,7 @@
 //! Negative tests for malformed record handling.
 //!
-//! These tests verify that record splitting and decompression functions
-//! gracefully handle invalid, truncated, and corrupted input data.
+//! These tests verify that record splitting, decompression, and message decoding report
+//! invalid, truncated, and corrupted input data as errors.
 //!
 //! Record splitting is exercised through `volume::File::records`, with the malformed record bytes
 //! placed after a synthetic 24-byte Archive II volume header. Offsets and byte counts reported by
@@ -212,6 +212,29 @@ fn test_record_messages_compressed_data() {
         Error::CompressedData => {}
         other => panic!("Expected CompressedData, got: {:?}", other),
     }
+}
+
+#[test]
+fn test_record_messages_corrupt_message() {
+    // An empty metadata frame followed by a variable-length message (segment size 0xFFFF) whose
+    // declared size runs past the end of the record.
+    let mut data = vec![0u8; 2432];
+    data.extend_from_slice(&[0xFF; 100]);
+    let record = Record::new(data);
+    assert!(!record.compressed());
+
+    match record.messages() {
+        Err(Error::Decode(nexrad_decode::result::Error::UnexpectedEof { offset })) => {
+            assert_eq!(offset, 2432);
+        }
+        other => panic!("Expected Decode(UnexpectedEof), got: {:?}", other),
+    }
+
+    // The messages before the corrupt one are still available through the lenient iterator.
+    let mut iter = nexrad_decode::iter_messages(record.data());
+    assert!(matches!(iter.next(), Some(Ok(_))));
+    assert!(matches!(iter.next(), Some(Err(_))));
+    assert_eq!(iter.offset(), 2432);
 }
 
 #[test]

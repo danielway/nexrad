@@ -119,9 +119,14 @@ impl File {
     /// Decodes this volume file into a common model scan containing sweeps and radials with moment
     /// data.
     ///
-    /// Both modern (message type 31) and legacy (message type 1) radials are included. Returns
-    /// [`Error::MissingCoveragePattern`](crate::result::Error::MissingCoveragePattern) if the
-    /// volume has no volume coverage pattern message.
+    /// Both modern (message type 31) and legacy (message type 1) radials are included.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingCoveragePattern`](crate::result::Error::MissingCoveragePattern) if
+    /// the volume has no volume coverage pattern message, and propagates record splitting and
+    /// decompression errors. Any message that cannot be decoded or converted fails the whole scan
+    /// with [`Error::Decode`](crate::result::Error::Decode) carrying the first such error.
     #[cfg(feature = "model")]
     pub fn scan(&self) -> crate::result::Result<nexrad_model::data::Scan> {
         use nexrad_decode::model::ScanBuilder;

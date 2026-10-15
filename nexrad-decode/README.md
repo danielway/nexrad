@@ -9,10 +9,12 @@ NOAA's WSR-88D Interface Control Document for the RDA/RPG "ICD 2620002AA".
 
 ## Usage
 
-The main entry point is `messages::decode_messages`, which parses decompressed binary data into structured messages:
+The main entry point is `decode_messages`, which parses decompressed binary data into structured messages. Decoding is
+strict: it returns the error for the first message that cannot be decoded. `iter_messages` yields one `Result` per
+message instead, for callers that want the messages before a failure.
 
 ```rust,ignore
-use nexrad_decode::messages::{decode_messages, MessageContents};
+use nexrad_decode::{decode_messages, MessageContents};
 
 let messages = decode_messages(&decompressed_data)?;
 
@@ -70,8 +72,9 @@ Builders filled independently (for example, one per record decoded in parallel) 
 | 32 | RDA PRF Data | `RdaPrfData` |
 | 33 | RDA Log Data | `RdaLogData` |
 
-Other message types (including reserved and unknown type numbers) decode as `MessageContents::Other`; the header's
-`message_type()` still identifies them. `MessageContents`, `MessageType` and `Error` are `#[non_exhaustive]`.
+Other message types (including reserved and unknown type numbers) decode as `MessageContents::Other`, which carries
+the message type and the undecoded payload. A clutter filter map (type 15) from a legacy (pre-ORDA) RDA uses a
+different layout and also decodes as `Other`. `MessageContents`, `MessageType` and `Error` are `#[non_exhaustive]`.
 
 ## Accessor Naming
 

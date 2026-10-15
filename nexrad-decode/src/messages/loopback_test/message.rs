@@ -1,4 +1,5 @@
 use crate::messages::loopback_test::raw;
+use crate::messages::MessageType;
 use crate::result::Result;
 use crate::segmented_slice_reader::SegmentedSliceReader;
 use std::borrow::Cow;
@@ -11,12 +12,16 @@ use std::fmt::Debug;
 /// message and expects to receive a matching type 11 message back from the RDA.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Message<'a> {
+    message_type: MessageType,
     header: Cow<'a, raw::Header>,
     bit_pattern_data: Cow<'a, [u8]>,
 }
 
 impl<'a> Message<'a> {
-    pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
+    pub(crate) fn parse(
+        reader: &mut SegmentedSliceReader<'a, '_>,
+        message_type: MessageType,
+    ) -> Result<Self> {
         let header = reader.take_ref::<raw::Header>()?;
 
         // message_size is in halfwords. Halfword 1 is the size field itself, so the bit pattern
@@ -26,6 +31,7 @@ impl<'a> Message<'a> {
         let bit_pattern_data = reader.take_slice::<u8>(pattern_bytes)?;
 
         Ok(Self {
+            message_type,
             header: Cow::Borrowed(header),
             bit_pattern_data: Cow::Borrowed(bit_pattern_data),
         })
@@ -41,9 +47,15 @@ impl<'a> Message<'a> {
         &self.bit_pattern_data
     }
 
+    /// The message type this message was decoded from, which records its direction.
+    pub(crate) fn message_type(&self) -> MessageType {
+        self.message_type
+    }
+
     /// Convert this message to an owned version with `'static` lifetime.
     pub fn into_owned(self) -> Message<'static> {
         Message {
+            message_type: self.message_type,
             header: Cow::Owned(self.header.into_owned()),
             bit_pattern_data: Cow::Owned(self.bit_pattern_data.into_owned()),
         }

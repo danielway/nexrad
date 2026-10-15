@@ -1,4 +1,5 @@
 use crate::messages::console_message::raw;
+use crate::messages::MessageType;
 use crate::result::Result;
 use crate::segmented_slice_reader::SegmentedSliceReader;
 use std::borrow::Cow;
@@ -10,17 +11,22 @@ use std::fmt::Debug;
 /// bytes. Type 4 messages originate from the RDA and type 10 messages originate from the RPG.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Message<'a> {
+    message_type: MessageType,
     header: Cow<'a, raw::Header>,
     text_data: Cow<'a, [u8]>,
 }
 
 impl<'a> Message<'a> {
-    pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
+    pub(crate) fn parse(
+        reader: &mut SegmentedSliceReader<'a, '_>,
+        message_type: MessageType,
+    ) -> Result<Self> {
         let header = reader.take_ref::<raw::Header>()?;
         let size = header.message_size.get() as usize;
         let text_data = reader.take_slice::<u8>(size)?;
 
         Ok(Self {
+            message_type,
             header: Cow::Borrowed(header),
             text_data: Cow::Borrowed(text_data),
         })
@@ -41,9 +47,15 @@ impl<'a> Message<'a> {
         std::str::from_utf8(&self.text_data).ok()
     }
 
+    /// The message type this message was decoded from, which records its direction.
+    pub(crate) fn message_type(&self) -> MessageType {
+        self.message_type
+    }
+
     /// Convert this message to an owned version with `'static` lifetime.
     pub fn into_owned(self) -> Message<'static> {
         Message {
+            message_type: self.message_type,
             header: Cow::Owned(self.header.into_owned()),
             text_data: Cow::Owned(self.text_data.into_owned()),
         }

@@ -11,9 +11,9 @@ pub struct SliceReader<'a> {
 }
 
 impl<'a> SliceReader<'a> {
-    /// Creates a new SliceReader starting at position 0.
-    pub fn new(data: &'a [u8]) -> Self {
-        Self { data, pos: 0 }
+    /// Creates a SliceReader starting at `pos`.
+    pub fn at(data: &'a [u8], pos: usize) -> Self {
+        Self { data, pos }
     }
 
     /// Returns the current byte position in the slice.
@@ -36,23 +36,6 @@ impl<'a> SliceReader<'a> {
         self.pos += n;
     }
 
-    /// Try to skip forward to `target` byte position.
-    ///
-    /// Returns `true` if the reader was advanced (or was already at/past `target`).
-    /// Returns `false` if `target` is beyond the end of the data.
-    pub fn try_skip_to(&mut self, target: usize) -> bool {
-        if target <= self.pos {
-            return true;
-        }
-        let skip = target - self.pos;
-        if skip <= self.remaining().len() {
-            self.advance(skip);
-            true
-        } else {
-            false
-        }
-    }
-
     /// Peeks at the next two bytes as a big-endian u16 without advancing.
     pub fn peek_u16(&self) -> Option<u16> {
         let r = self.remaining();
@@ -65,7 +48,8 @@ impl<'a> SliceReader<'a> {
         T: zerocopy::FromBytes + zerocopy::KnownLayout + zerocopy::Immutable,
     {
         let remaining = self.remaining();
-        let (v, rest) = T::ref_from_prefix(remaining).map_err(|_e| Error::UnexpectedEof)?;
+        let (v, rest) = T::ref_from_prefix(remaining)
+            .map_err(|_e| Error::UnexpectedEof { offset: self.pos })?;
         self.advance(remaining.len() - rest.len());
         Ok(v)
     }
@@ -74,7 +58,7 @@ impl<'a> SliceReader<'a> {
     pub(crate) fn take_bytes(&mut self, count: usize) -> Result<&'a [u8]> {
         let remaining = self.remaining();
         if remaining.len() < count {
-            return Err(Error::UnexpectedEof);
+            return Err(Error::UnexpectedEof { offset: self.pos });
         }
         let bytes = &remaining[..count];
         self.advance(count);

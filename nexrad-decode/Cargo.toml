@@ -21,7 +21,6 @@ model = ["dep:nexrad-model"]
 uom = ["dep:uom"]
 
 [dependencies]
-log = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true }
 nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model", optional = true }
@@ -31,6 +30,7 @@ zerocopy = { workspace = true }
 [dev-dependencies]
 clap = { workspace = true }
 env_logger = { workspace = true }
+log = { workspace = true }
 tokio = { workspace = true }
 insta = { workspace = true }
 nexrad-data = { version = "1.0.0-rc.7", path = "../nexrad-data" }

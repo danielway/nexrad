@@ -30,11 +30,6 @@ impl<'a> GenericDataBlockHeader<'a> {
         }
     }
 
-    /// Reserved.
-    pub fn reserved(&self) -> u32 {
-        self.inner.reserved.get()
-    }
-
     /// Number of data moment gates for current radial, from 0 to 1840.
     pub fn number_of_data_moment_gates(&self) -> u16 {
         self.inner.number_of_data_moment_gates.get()

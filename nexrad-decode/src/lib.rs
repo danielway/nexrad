@@ -6,15 +6,14 @@
 //!
 //! # Overview
 //!
-//! The main entry point is [`messages::decode_messages`], which parses binary data
-//! into structured [`messages::Message`] objects:
+//! The main entry point is [`decode_messages`], which parses a sequence of messages, such as a
+//! decompressed Archive II record, into structured [`Message`] values. Decoding is strict: it
+//! returns the error for the first message that cannot be decoded, along with its offset.
 //!
 //! ```ignore
-//! use nexrad_decode::messages::{decode_messages, MessageContents};
+//! use nexrad_decode::{decode_messages, MessageContents};
 //!
-//! let messages = decode_messages(&decompressed_data)?;
-//!
-//! for message in &messages {
+//! for message in decode_messages(&decompressed_data)? {
 //!     match message.contents() {
 //!         MessageContents::DigitalRadarData(data) => {
 //!             // Process radar data message
@@ -22,10 +21,16 @@
 //!         MessageContents::VolumeCoveragePattern(vcp) => {
 //!             // Process VCP information
 //!         }
+//!         MessageContents::Other { message_type, data } => {
+//!             // A message type this crate does not decode, with its raw payload
+//!         }
 //!         _ => {}
 //!     }
 //! }
 //! ```
+//!
+//! [`iter_messages`] yields one `Result` per message instead, so a caller can keep the messages
+//! decoded before a failure.
 //!
 //! With the `model` feature, `model::ScanBuilder` assembles decoded messages into a
 //! `nexrad_model::data::Scan`, converting radar data messages to radials and taking the
@@ -71,7 +76,8 @@
 //!
 //! # Module Organization
 //!
-//! - [`messages`] - Message parsing and type definitions
+//! - [`messages`] - Message parsing and type definitions (the entry points and core message
+//!   types are re-exported at the root)
 //! - [`result`] - Error and result types ([`Error`] and [`Result`] are re-exported at the root)
 //!
 //! # Crate Boundaries
@@ -103,11 +109,15 @@
 #![warn(clippy::correctness)]
 #![allow(clippy::too_many_arguments)]
 #![deny(missing_docs)]
+#![warn(unnameable_types)]
 
 /// Wrapper type for binary data with debug formatting support.
 pub(crate) mod binary_data;
 /// Message parsing and type definitions for NEXRAD Level II data.
 pub mod messages;
+pub use messages::{
+    decode_messages, iter_messages, Message, MessageContents, MessageIter, MessageType,
+};
 #[cfg(feature = "model")]
 pub mod model;
 /// Result and error types for decoding operations.

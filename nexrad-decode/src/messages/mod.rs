@@ -36,191 +36,300 @@ pub use vcp_number::VcpNumber;
 use crate::result::{Error, Result};
 use crate::segmented_slice_reader::SegmentedSliceReader;
 use crate::slice_reader::SliceReader;
-use log::{trace, warn};
+use std::borrow::Cow;
+use std::iter::FusedIterator;
 
 /// Size of a single fixed-length message frame (header + content + padding).
 const SEGMENT_FRAME_SIZE: usize = 2432;
 
-/// Decode a series of NEXRAD Level II messages from a reader.
-///
-/// Segmented messages (like Clutter Filter Map) are accumulated and returned
-/// as a single logical message with multiple headers. Segments are assumed to
-/// appear consecutively in the input.
-pub fn decode_messages<'a>(input: &'a [u8]) -> Result<Vec<Message<'a>>> {
-    trace!("Decoding messages");
+/// Size of the leading bytes of [`MessageHeader`] that precede the ICD message header. The
+/// message size a header declares counts the ICD header and the payload, but not these bytes.
+const PRE_HEADER_SIZE: usize = 12;
 
-    let mut reader = SliceReader::new(input);
-    let mut messages = Vec::new();
-    let mut accumulator = SegmentAccumulator::new();
-
-    while reader.remaining().len() >= MessageHeader::SIZE {
-        let offset = reader.position();
-
-        let header = match reader.take_ref::<raw::MessageHeader>() {
-            Ok(h) => MessageHeader::from_raw(h),
-            Err(_) => break,
-        };
-
-        // Variable-length messages
-        if !header.segmented() {
-            match decode_variable_length_message(&mut reader, header.clone(), offset) {
-                Ok(msg) => messages.push(msg),
-                Err(e) => {
-                    if matches!(e, Error::UnexpectedEof) {
-                        break;
-                    }
-                    warn!(
-                        "Failed to parse variable-length message (type {:?}) at offset {}: {:?}",
-                        header.message_type(),
-                        offset,
-                        e
-                    );
-                    if !reader.try_skip_to(offset + header.message_size_bytes() as usize) {
-                        break;
-                    }
-                }
-            }
-            continue;
-        }
-
-        // Fixed-segment messages
-        let segment_num = header.segment_number().unwrap_or(1);
-        let segment_count = header.segment_count().unwrap_or(1);
-
-        // Multi-segment messages: extract only the declared payload size so that
-        // SegmentedSliceReader's auto-skip logic correctly detects segment boundaries.
-        // Single-segment messages: use the full frame content area as payload so
-        // parsers can read structs that extend beyond the declared message_size.
-        let payload = if segment_count > 1 {
-            let payload_size =
-                (header.message_size_bytes() as usize).saturating_sub(MessageHeader::SIZE);
-            let payload = match reader.take_bytes(payload_size) {
-                Ok(p) => p,
-                Err(_) => break,
-            };
-            let consumed = MessageHeader::SIZE + payload_size;
-            if consumed < SEGMENT_FRAME_SIZE {
-                reader.advance(SEGMENT_FRAME_SIZE - consumed);
-            }
-            payload
-        } else {
-            let content_size = SEGMENT_FRAME_SIZE - MessageHeader::SIZE;
-            match reader.take_bytes(content_size) {
-                Ok(p) => p,
-                Err(_) => break,
-            }
-        };
-
-        trace!(
-            "Fixed-segment message: type={:?}, segment={}/{}",
-            header.message_type(),
-            segment_num,
-            segment_count
-        );
-
-        // For continuation segments of a multi-segment message, verify the
-        // accumulator is active. For first segments (or single-segment messages),
-        // start a fresh accumulation.
-        if segment_count > 1 && segment_num != 1 {
-            if !accumulator.is_active() {
-                warn!(
-                    "Segment {} arrived without preceding segment 1, skipping",
-                    segment_num
-                );
-                continue;
-            }
-        } else {
-            if accumulator.is_active() {
-                warn!(
-                    "Discarding incomplete segmented message: got {}/{} segments",
-                    accumulator.headers.len(),
-                    accumulator.expected_count
-                );
-            }
-            accumulator.start(offset, segment_count);
-        }
-
-        if accumulator.push(header, payload) {
-            match build_fixed_segment_message(
-                &accumulator.headers,
-                &accumulator.payloads,
-                accumulator.first_offset,
-            ) {
-                Ok(msg) => {
-                    messages.push(msg);
-                }
-                Err(e) => {
-                    warn!(
-                        "Failed to parse fixed-segment message (type {:?}) at offset {}: {:?}",
-                        accumulator.headers[0].message_type(),
-                        accumulator.first_offset,
-                        e
-                    );
-                }
-            }
-            accumulator.clear();
-        }
-    }
-
-    if accumulator.is_active() {
-        warn!(
-            "Incomplete segmented message: got {}/{} segments",
-            accumulator.headers.len(),
-            accumulator.expected_count
-        );
-    }
-
-    let bytes_remaining = input.len().saturating_sub(reader.position());
-    if bytes_remaining > 0 {
-        warn!(
-            "Bytes remaining after decoding all messages: {}",
-            bytes_remaining
-        );
-    }
-
-    Ok(messages)
+/// The size of the payload following the header, from the message size the header declares.
+fn declared_payload_size(header: &MessageHeader<'_>) -> usize {
+    (header.message_size_bytes() as usize).saturating_sub(MessageHeader::SIZE - PRE_HEADER_SIZE)
 }
 
-/// Build a `Message` from one or more fixed-segment payloads.
+/// Decode every NEXRAD Level II message in `data`, a sequence of messages such as one
+/// decompressed Archive II record.
 ///
-/// Constructs a `SegmentedSliceReader` over the payloads and dispatches to
-/// `decode_fixed_segment_contents`.
-fn build_fixed_segment_message<'a>(
-    headers: &[MessageHeader<'a>],
-    payloads: &[&'a [u8]],
+/// Decoding is strict: the result is either every message in `data` or the error for the first
+/// message that cannot be decoded. Use [`iter_messages`] to keep the messages before a failure.
+///
+/// Segmented messages (like Clutter Filter Map) are returned as a single logical message with
+/// one header per segment; their segments must appear consecutively and in order.
+///
+/// Archive II frames are zero-padded, so when fewer bytes remain than a message header needs
+/// and all of them are zero, decoding ends cleanly.
+///
+/// # Errors
+///
+/// Returns the error for the first message that cannot be decoded:
+///
+/// - [`Error::UnexpectedEof`] if the input ends inside a message, or a tail shorter than a
+///   message header contains a non-zero byte.
+/// - [`Error::SegmentOutOfSequence`] if a segment of a multi-segment message is missing or out of
+///   order.
+/// - [`Error::InvalidDataBlockPointer`] or [`Error::UnknownDataBlockType`] if a digital radar
+///   data message's data blocks cannot be located or identified.
+pub fn decode_messages(data: &[u8]) -> Result<Vec<Message<'_>>> {
+    iter_messages(data).collect()
+}
+
+/// Iterate over the NEXRAD Level II messages in `data`, decoding one message per step.
+///
+/// Each item is either a decoded message or the error for the message at the current offset,
+/// following the same rules as [`decode_messages`]. After an error the iterator is finished,
+/// since a message that cannot be decoded gives no reliable offset for the next one. Collecting
+/// the iterator into a `Result<Vec<_>>` is equivalent to [`decode_messages`]; keeping the
+/// messages before an error decodes leniently:
+///
+/// ```
+/// use nexrad_decode::iter_messages;
+///
+/// # let data: &[u8] = &[];
+/// let mut messages = Vec::new();
+/// let mut iter = iter_messages(data);
+/// while let Some(result) = iter.next() {
+///     match result {
+///         Ok(message) => messages.push(message),
+///         Err(error) => eprintln!("stopped at offset {}: {error}", iter.offset()),
+///     }
+/// }
+/// ```
+pub fn iter_messages(data: &[u8]) -> MessageIter<'_> {
+    MessageIter {
+        data,
+        offset: 0,
+        finished: false,
+    }
+}
+
+/// An iterator over the messages in a byte slice, created by [`iter_messages`].
+///
+/// Yields `Ok` for each decoded message and at most one `Err`, after which it is finished.
+#[derive(Debug, Clone)]
+pub struct MessageIter<'a> {
+    data: &'a [u8],
+    offset: usize,
+    finished: bool,
+}
+
+impl<'a> MessageIter<'a> {
+    /// The number of bytes consumed so far: the offset of the next message to decode.
+    ///
+    /// After the iterator returns an error, this is the offset of the message that could not be
+    /// decoded. After it finishes cleanly, this is the length of the input.
+    pub fn offset(&self) -> usize {
+        self.offset
+    }
+
+    /// Decode the message at the current offset, returning `None` at a clean end of input.
+    fn decode_next(&mut self) -> Option<Result<Message<'a>>> {
+        let remaining = self.data.get(self.offset..).unwrap_or_default();
+        if remaining.len() < MessageHeader::SIZE {
+            if remaining.iter().all(|&byte| byte == 0) {
+                self.offset = self.data.len();
+                return None;
+            }
+            return Some(Err(Error::UnexpectedEof {
+                offset: self.offset,
+            }));
+        }
+
+        let mut reader = SliceReader::at(self.data, self.offset);
+        let result = decode_message(&mut reader);
+        if result.is_ok() {
+            self.offset = reader.position();
+        }
+        Some(result)
+    }
+}
+
+impl<'a> Iterator for MessageIter<'a> {
+    type Item = Result<Message<'a>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.finished {
+            return None;
+        }
+
+        let item = self.decode_next();
+        if !matches!(item, Some(Ok(_))) {
+            self.finished = true;
+        }
+        item
+    }
+}
+
+impl FusedIterator for MessageIter<'_> {}
+
+/// Decode the message starting at the reader's position, leaving the reader after it.
+fn decode_message<'a>(reader: &mut SliceReader<'a>) -> Result<Message<'a>> {
+    let offset = reader.position();
+    let header = MessageHeader::from_raw(reader.take_ref::<raw::MessageHeader>()?);
+
+    if header.segmented() {
+        decode_segmented_message(reader, header, offset)
+    } else {
+        decode_variable_length_message(reader, header, offset)
+    }
+}
+
+/// Decode a fixed-segment message, reading its continuation segments from the reader.
+fn decode_segmented_message<'a>(
+    reader: &mut SliceReader<'a>,
+    header: MessageHeader<'a>,
     offset: usize,
 ) -> Result<Message<'a>> {
-    let message_type = headers[0].message_type();
+    let message_type = header.message_type();
 
-    let mut segmented_reader = SegmentedSliceReader::new(payloads);
-    let contents = message::decode_fixed_segment_contents(&mut segmented_reader, message_type)?;
-
-    let total_size = headers.len() * SEGMENT_FRAME_SIZE;
-
-    let message_headers = if headers.len() == 1 {
-        MessageHeaders::Single(headers[0].clone())
+    // Message type 0 is not assigned by the ICD. Frames carrying it are unused slots in the
+    // Archive II metadata record, and some sites leave stale segment fields in them, so each
+    // one is a message of its own.
+    let segment_count = if message_type == MessageType::Unknown(0) {
+        1
     } else {
-        MessageHeaders::Multiple(headers.to_vec())
+        header.segment_count().unwrap_or(1)
+    };
+    let segment_number = header.segment_number().unwrap_or(1);
+
+    if segment_count > 1 && segment_number != 1 {
+        return Err(Error::SegmentOutOfSequence {
+            message_type,
+            expected_segment: 1,
+            segment_count,
+            offset,
+        });
+    }
+
+    let mut payloads = vec![take_segment_payload(
+        reader,
+        &header,
+        segment_count,
+        offset,
+    )?];
+    let mut payload_offsets = vec![offset + MessageHeader::SIZE];
+    let mut headers = vec![header];
+
+    while headers.len() < usize::from(segment_count) {
+        let segment_offset = reader.position();
+        let expected_segment = headers.len() as u16 + 1;
+
+        let segment_header = MessageHeader::from_raw(reader.take_ref::<raw::MessageHeader>()?);
+        if segment_header.message_type() != message_type
+            || segment_header.segment_number() != Some(expected_segment)
+        {
+            return Err(Error::SegmentOutOfSequence {
+                message_type,
+                expected_segment,
+                segment_count,
+                offset: segment_offset,
+            });
+        }
+
+        payloads.push(take_segment_payload(
+            reader,
+            &segment_header,
+            segment_count,
+            segment_offset,
+        )?);
+        payload_offsets.push(segment_offset + MessageHeader::SIZE);
+        headers.push(segment_header);
+    }
+
+    // A legacy (pre-ORDA) RDA sends a clutter filter notch width map as message type 15, whose
+    // layout differs from the ORDA clutter filter map this crate decodes.
+    let undecoded = message_type == MessageType::RdaClutterFilterMap
+        && matches!(
+            headers[0].redundant_channel(),
+            RedundantChannel::LegacySingleChannel
+                | RedundantChannel::LegacyRedundantChannel1
+                | RedundantChannel::LegacyRedundantChannel2
+        );
+
+    let mut segmented_reader = SegmentedSliceReader::new(&payloads, &payload_offsets);
+    let decoded = if undecoded {
+        None
+    } else {
+        message::decode_fixed_segment_contents(&mut segmented_reader, message_type)?
+    };
+    let contents = match decoded {
+        Some(contents) => contents,
+        None => {
+            let data = match payloads.as_slice() {
+                [payload] => {
+                    let declared = declared_payload_size(&headers[0]);
+                    Cow::Borrowed(&payload[..declared.min(payload.len())])
+                }
+                payloads => Cow::Owned(payloads.concat()),
+            };
+            MessageContents::Other { message_type, data }
+        }
     };
 
-    Ok(Message::new(message_headers, contents, offset, total_size))
+    let message_headers = if headers.len() == 1 {
+        MessageHeaders::Single(headers.swap_remove(0))
+    } else {
+        MessageHeaders::Multiple(headers)
+    };
+
+    Ok(Message::new(
+        message_headers,
+        contents,
+        offset,
+        reader.position() - offset,
+    ))
 }
 
-/// Parse a variable-length message (e.g. Type 31 Digital Radar Data).
+/// Take the payload of the segment whose header was just read, advancing the reader past the
+/// segment's frame.
+///
+/// A segment of a multi-segment message carries its declared payload size, padded to the frame
+/// size. A single-segment message's payload is the frame's full content area, so parsers can
+/// read structures that extend beyond the declared message size.
+fn take_segment_payload<'a>(
+    reader: &mut SliceReader<'a>,
+    header: &MessageHeader<'a>,
+    segment_count: u16,
+    frame_offset: usize,
+) -> Result<&'a [u8]> {
+    let content_size = SEGMENT_FRAME_SIZE - MessageHeader::SIZE;
+    let eof = |_| Error::UnexpectedEof {
+        offset: frame_offset,
+    };
+
+    if segment_count > 1 {
+        let payload_size = declared_payload_size(header);
+        let body = reader
+            .take_bytes(payload_size.max(content_size))
+            .map_err(eof)?;
+        Ok(&body[..payload_size])
+    } else {
+        reader.take_bytes(content_size).map_err(eof)
+    }
+}
+
+/// Decode a variable-length message (e.g. Type 31 Digital Radar Data).
 fn decode_variable_length_message<'a>(
     reader: &mut SliceReader<'a>,
     header: MessageHeader<'a>,
     offset: usize,
 ) -> Result<Message<'a>> {
-    let contents = if header.message_type() == MessageType::RdaDigitalRadarDataGenericFormat {
+    let message_type = header.message_type();
+    let contents = if message_type == MessageType::RdaDigitalRadarDataGenericFormat {
         let radar_data_message = digital_radar_data::Message::parse(reader)?;
         MessageContents::DigitalRadarData(Box::new(radar_data_message))
     } else {
-        // Unknown variable-length message type — skip its payload
-        let payload_size =
-            (header.message_size_bytes() as usize).saturating_sub(MessageHeader::SIZE);
-        reader.advance(payload_size);
-        MessageContents::Other
+        let payload_size = declared_payload_size(&header);
+        let data = reader
+            .take_bytes(payload_size)
+            .map_err(|_| Error::UnexpectedEof { offset })?;
+        MessageContents::Other {
+            message_type,
+            data: Cow::Borrowed(data),
+        }
     };
 
     let size = reader.position() - offset;
@@ -230,49 +339,4 @@ fn decode_variable_length_message<'a>(
         offset,
         size,
     ))
-}
-
-/// Accumulates segments for an in-progress multi-segment message.
-struct SegmentAccumulator<'a> {
-    headers: Vec<MessageHeader<'a>>,
-    payloads: Vec<&'a [u8]>,
-    first_offset: usize,
-    expected_count: u16,
-}
-
-impl<'a> SegmentAccumulator<'a> {
-    fn new() -> Self {
-        Self {
-            headers: Vec::new(),
-            payloads: Vec::new(),
-            first_offset: 0,
-            expected_count: 0,
-        }
-    }
-
-    /// Start accumulating a new message, clearing any previous state.
-    fn start(&mut self, offset: usize, expected_count: u16) {
-        self.headers.clear();
-        self.payloads.clear();
-        self.first_offset = offset;
-        self.expected_count = expected_count;
-    }
-
-    /// Add a segment. Returns `true` if the message is now complete.
-    fn push(&mut self, header: MessageHeader<'a>, payload: &'a [u8]) -> bool {
-        self.headers.push(header);
-        self.payloads.push(payload);
-        self.headers.len() as u16 >= self.expected_count
-    }
-
-    /// Whether there is an in-progress accumulation.
-    fn is_active(&self) -> bool {
-        !self.headers.is_empty()
-    }
-
-    /// Clear accumulated state.
-    fn clear(&mut self) {
-        self.headers.clear();
-        self.payloads.clear();
-    }
 }

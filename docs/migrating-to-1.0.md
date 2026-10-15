@@ -183,7 +183,7 @@ let site = Site::builder(*b"KDMX", 41.7312, -93.7229)
     .build()?; // validates the identifier and location
 ```
 
-Constructors that have invariants to check return `Result`, and field indexing returns `Option` ({PR}):
+Constructors that have invariants to check return `Result`, and field indexing returns `Option` (#185):
 
 ```rust
 // 1.0.0-rc.2
@@ -240,20 +240,20 @@ let Some(row) = field.radial_values(azimuth_idx) else { return Ok(()) };
 | `VolumeCoveragePattern::doppler_velocity_resolution()` | `VolumeCoveragePattern::doppler_velocity_resolution_mps()` | #182 |
 | `VolumeCoveragePattern::{sails_cuts, mrle_cuts}()` | `VolumeCoveragePattern::{sails_cut_count, mrle_cut_count}()` | #182 |
 | `geo::PolarPoint::{azimuth_degrees, elevation_degrees}` | `geo::PolarPoint::{azimuth_angle_degrees, elevation_angle_degrees}` | #182 |
-| `VcpNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `VcpNumber::{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}` | Same names as `nexrad_decode::messages::VcpNumber`; see the table below. #188 |
+| `VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `VcpNumber::{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}` | Same names as `nexrad_decode::messages::VcpNumber`; see the table below. #188 |
 
 `VcpNumber` variants are named by pattern number (#188), as in `nexrad-decode`:
 
 | 1.0.0-rc.2 | 1.0 |
 |---|---|
-| `VcpNumber::Precipitation12` | `VcpNumber::Vcp12` |
-| `VcpNumber::ClearAirLongPulse31` | `VcpNumber::Vcp31` |
-| `VcpNumber::ClearAirShortPulse32` | `VcpNumber::Vcp32` |
-| `VcpNumber::ClearAir35` | `VcpNumber::Vcp35` |
-| `VcpNumber::PrecipitationMpda112` | `VcpNumber::Vcp112` |
-| `VcpNumber::PrecipitationSz2_212` | `VcpNumber::Vcp212` |
-| `VcpNumber::GeneralSurveillance215` | `VcpNumber::Vcp215` |
-| `VcpNumber::Unknown(11)`, `Unknown(21)`, `Unknown(121)`, `Unknown(211)`, `Unknown(221)` | `VcpNumber::Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` |
+| `VCPNumber::Precipitation12` | `VcpNumber::Vcp12` |
+| `VCPNumber::ClearAirLongPulse31` | `VcpNumber::Vcp31` |
+| `VCPNumber::ClearAirShortPulse32` | `VcpNumber::Vcp32` |
+| `VCPNumber::ClearAir35` | `VcpNumber::Vcp35` |
+| `VCPNumber::PrecipitationMpda112` | `VcpNumber::Vcp112` |
+| `VCPNumber::PrecipitationSz2_212` | `VcpNumber::Vcp212` |
+| `VCPNumber::GeneralSurveillance215` | `VcpNumber::Vcp215` |
+| `VCPNumber::Unknown(11)`, `Unknown(21)`, `Unknown(121)`, `Unknown(211)`, `Unknown(221)` | `VcpNumber::Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` |
 
 #### Behaviour and type changes
 
@@ -404,7 +404,7 @@ The renames you are most likely to hit:
 | `summarize` module | Removed; iterate `decode_messages(..)` and match on `message.contents()` | #168 |
 | `MessageContents::Other` | `MessageContents::Other { message_type, data }`; match with `Other { .. }` | #190 |
 | `block.volume_coverage_pattern()` on a `DataBlock` (through `Deref`) | `block.inner().vcp_number()` | #190, #191 |
-| `rda_adaptation_data::Message::{read_integer4_at, read_real4_at, read_string_at, data_raw, total_size}` | Removed; use the typed accessors | #190 |
+| `rda_adaptation_data::Message::{raw_data, read_integer4_at, read_real4_at, read_string_at, total_size}` | Removed; use the typed accessors | #190 |
 | `VolumeDataBlock::is_legacy()`, `RadialDataBlock::is_legacy()` | Removed; `lrtup_bytes()` is 44 for a legacy volume block and 20 for a legacy radial block | #190 |
 | `VolumeDataBlock::spare()`, `GenericDataBlockHeader::reserved()` | Removed | #190 |
 
@@ -646,7 +646,8 @@ are exposed through `ChunkIterator`:
 | `RetryPolicy::with_initial_delay(chrono::Duration)` / `with_max_delay(..)` | Take `std::time::Duration` | #167 |
 | `ChunkIdentifier::new("KDMX".into(), ..)` | `ChunkIdentifier::new("KDMX", ..)` (`impl Into<String>`) | #167 |
 | `estimate_chunk_availability_time` | `ChunkIterator::next_expected_time()` / `time_until_next()` | #167 |
-| `ChunkTimingModel`, `ChunkTimingStats`, `ChunkCharacteristics`, `ElevationChunkMapper`, `ChunkMetadata`, `estimate_chunk_processing_time`, `project_scan_timing`, `project_full_scan_timing`, `ScanTimingProjection`, `ChunkProjection`, `RetryState`, `NextChunk`, `ChunkIdentifier::next_chunk` | No public replacement; `ChunkIterator` and `chunk_stream` handle sequencing, retries and timing | #167 |
+| `ChunkTimingModel`, `ChunkTimingStats`, `ChunkCharacteristics`, `ElevationChunkMapper`, `ChunkMetadata`, `estimate_chunk_processing_time`, `project_scan_timing`, `project_full_scan_timing`, `ScanTimingProjection`, `ChunkProjection`, `RetryState`, `NextChunk` | No public replacement; `ChunkIterator` and `chunk_stream` handle sequencing, retries and timing | #167 |
+| `ChunkIdentifier::next_chunk(&mapper)` | No public replacement; `id.with_sequence(sequence, chunk_type)` names another chunk of the same volume when you know its sequence and type | #167 |
 | `volume::split_compressed_records(bytes)` | `volume::File::new(bytes).records()?` | #171 |
 | `volume::Header::{tape_filename, extension_number, icao_of_radar}() -> Option<String>` | `-> Option<&str>` | #171 |
 | `volume::File::header() -> Option<&Header>`, zerocopy traits on `volume::Header`, `size_of::<Header>()` | `header() -> Option<Header>` (by value), no zerocopy traits, `Header::SIZE` | #181 |
@@ -1493,7 +1494,7 @@ items that replace nothing are in the CHANGELOGs.
 | 1.0.0-rc.2 | 1.0 |
 |---|---|
 | `BinaryData<T>` (and its impls) | Not public |
-| `data::VCPNumber` (variants unchanged) | `data::VcpNumber`, `#[non_exhaustive]` |
+| `data::VCPNumber` | `data::VcpNumber`, `#[non_exhaustive]`, variants named by pattern number (below) |
 | `data::CFPStatus` (variants unchanged) | `data::CfpStatus` |
 | `data::CFPMomentData` (`from_fixed_point`, `iter`, `values`, `DataMoment` impl) | `data::MomentData` with `Product::ClutterFilterPower` |
 | `data::CFPMomentValue::{Status, Value}` | `data::MomentValue::{CfpStatus, Value}` |
@@ -1511,7 +1512,7 @@ items that replace nothing are in the CHANGELOGs.
 | `data::Radial::{azimuth, azimuth_spacing, elevation_angle}() -> uom::si::f32::Angle` | `-> uom::si::f64::Angle` |
 | `data::Sweep::elevation_angle() -> Option<uom::si::f32::Angle>` | `-> Option<uom::si::f64::Angle>` |
 | `data::Scan::coverage_pattern_number() -> VCPNumber` | `-> VcpNumber` |
-| `data::VcpNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}`; adds `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` |
+| `data::VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}`; adds `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` |
 | `data::Radial` (no PRF context) | Adds `nyquist_velocity_mps()`, `unambiguous_range_km() -> Option<f32>` (with `uom`, `nyquist_velocity()`, `unambiguous_range()`); `RadialBuilder::{nyquist_velocity_mps, unambiguous_range_km}` |
 | `data::Scan` | Adds `elevation_cut(&Sweep) -> Option<&ElevationCut>`, `sweeps_with_waveform(WaveformType) -> impl Iterator<Item = &Sweep>` |
 | `data::ElevationCut::new(f64, ChannelConfiguration, WaveformType, ..)` (22 arguments) | `ElevationCut::builder(f32, WaveformType, ChannelConfiguration)` → `ElevationCutBuilder` |
@@ -1596,7 +1597,7 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `rda_status_data::CommandAcknowledgement::RemoteVCPReceived` | `RemoteVcpReceived` |
 | `rda_status_data::TransitionPowerSourceStatus::OK`, `Unknown`, `Other(u16)` | `Ok`, `Unknown(u16)` (code 4 is `Unknown(4)`) |
 | `rda_status_data::SpotBlankingStatus::Other(u8)` | `Unknown(u16)` |
-| `rda_status_data::RdaBuildNumber::{Build12_0, .., Build24_0, Unknown(f32)}`, `as_float()`, `is_known()` | `RdaBuildNumber` newtype: `from_raw(u16)`, `raw()`, `major()`, `minor()`, `Display`, `Ord` |
+| `rda_status_data::RDABuildNumber::{Build12_0, .., Build24_0, Unknown(f32)}`, `as_float()`, `is_known()` | `RdaBuildNumber` newtype: `from_raw(u16)`, `raw()`, `major()`, `minor()`, `Display`, `Ord` |
 | `rda_status_data::alarm::Message`, `alarm::get_alarm_message(u16)` | `alarm::Definition`, `alarm::definition(u16)` |
 | `rda_status_data::VolumeCoveragePatternNumber` (`number() -> i16`, `local()`, `remote()`) | `VcpSelection` (`number() -> VcpNumber`, `source() -> VcpSource`) |
 | `volume_coverage_pattern::ChannelConfiguration::SZ2Phase`, `UnknownPhase` | `Sz2Phase`, `Unknown(u8)` |
@@ -1625,6 +1626,7 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `digital_radar_data::Header` | `azimuth_angle_raw()`, `elevation_angle_raw()`, `radial_length_raw()` | `azimuth_angle_degrees()`, `elevation_angle_degrees()`, `radial_length_bytes()` |
 | `digital_radar_data::Header` | `azimuth_resolution_spacing_type() -> AzimuthResolutionSpacing` | `azimuth_resolution_spacing() -> AzimuthResolutionSpacing` |
 | `digital_radar_data::Header` | `azimuth_resolution_spacing() -> Angle` (uom) | `azimuth_resolution_spacing_degrees() -> f32` |
+| `digital_radar_data::Header` | `azimuth_indexing_mode_degrees() -> Option<f64>` | `-> Option<f32>` |
 | `digital_radar_data::VolumeDataBlock` | `lrtup_raw()`, `latitude_raw()`, `longitude_raw()`, `site_height_raw()`, `tower_height_raw()` | `lrtup_bytes()`, `latitude_degrees()`, `longitude_degrees()`, `site_height_meters()`, `tower_height_meters()` |
 | `digital_radar_data::VolumeDataBlock` | `calibration_constant()`, `system_differential_reflectivity()` | `calibration_constant_db()`, `system_differential_reflectivity_db()` |
 | `digital_radar_data::VolumeDataBlock` | `horizontal_shv_tx_power_raw()`, `vertical_shv_tx_power_raw()` | `horizontal_shv_tx_power_kw()`, `vertical_shv_tx_power_kw()` |
@@ -1708,8 +1710,8 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `aws::archive::download_file(Identifier)` | `download_file(&Identifier)` |
 | `aws::archive::Identifier::new(String) -> Identifier` | `Identifier::parse(&str) -> Result<Identifier>`, `impl FromStr` |
 | `aws::archive::Identifier::{site() -> Option<&str>, date_time() -> Option<DateTime<Utc>>}` | `site() -> &str`, `date_time() -> DateTime<Utc>` |
-| (new) | `aws::archive::Identifier::{version, is_metadata, is_gzip}()`, `Display`, `Debug`; `ListedFile`: `Debug`, `Ord` |
-| `aws::archive::{list_files, list_files_with_sizes}` returning every object | Volume files only |
+| (new) | `aws::archive::Identifier::{version, is_metadata, is_gzip}()`, `Display`, `Debug`; `aws::archive::list_files_with_sizes`, `ListedFile` |
+| `aws::archive::list_files` returning every object | Volume files only |
 | `aws::realtime::VolumeIndex::new(usize) -> VolumeIndex` | `new(usize) -> Result<VolumeIndex>` |
 | `aws::realtime::list_chunks_in_volume(&str, VolumeIndex, usize)` | `list_chunks_in_volume(&str, VolumeIndex)` |
 | `AwsError::S3GetObject(Option<String>)` | `S3GetObject { status: u16, body: Option<String> }` |
@@ -1724,7 +1726,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `aws::realtime::chunk_stream(PollConfig)` | `chunk_stream(PollConfig, S) where S: Fn(Duration) -> F, F: Future<Output = ()>` |
 | `aws::realtime::download_chunk<'a>(&str, &ChunkIdentifier) -> Result<(ChunkIdentifier, Chunk<'a>)>` | `download_chunk(&str, &ChunkIdentifier) -> Result<DownloadedChunk>` |
 | `aws::realtime::ChunkIdentifier::new(String, ..)`, `from_name(String, VolumeIndex, String, ..)` | `new(impl Into<String>, ..)`, `from_name(impl Into<String>, VolumeIndex, impl Into<String>, ..)` |
-| `aws::realtime::ChunkIdentifier::next_chunk(&ElevationChunkMapper)`, `NextChunk::{Sequence, Volume}` | Removed |
+| `aws::realtime::ChunkIdentifier::next_chunk(&ElevationChunkMapper)`, `NextChunk::{Sequence, Volume}` | Removed; `ChunkIdentifier::with_sequence(usize, ChunkType)` names a sibling chunk |
 | `aws::realtime::ChunkIterator::start_with_policies(&str, RetryPolicy, RetryPolicy)` | `start_with(PollConfig)` |
 | `aws::realtime::ChunkIterator::from_chunk(&str, ChunkIdentifier, RetryPolicy, RetryPolicy)` | `from_chunk(PollConfig, ChunkIdentifier)` |
 | `aws::realtime::ChunkIterator::{download_policy, discovery_policy}()` | `config().download_policy()`, `config().discovery_policy()` |
@@ -1801,7 +1803,8 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `RenderMetadata::elevation_degrees() -> Option<f32>` | `elevation_angle_degrees() -> Option<f64>` |
 | `PointQuery` | `#[non_exhaustive]` |
 | `result::Error::{NoRadials, ImageSave(String), ProductNotFound}` | `EmptyField`, `Image(image::ImageError)`, removed |
-| `result::Error` | `#[non_exhaustive]` |
+| `result::Error` | `#[non_exhaustive]`; new `InvalidRange { min, max }`, `InvalidTableSize { size }`, `InvalidExtent`, `MissingCoordinateSystem` |
+| `result::Error`: `UnwindSafe`, `RefUnwindSafe` | Neither (`image::ImageError` is not) |
 
 </details>
 

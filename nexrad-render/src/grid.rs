@@ -27,11 +27,11 @@ use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 /// ```ignore
 /// use nexrad_render::{render_cartesian, default_scale, RenderOptions};
 /// use nexrad_model::data::Product;
-/// use nexrad_process::{ScanDerivedProduct, derived::CompositeReflectivity};
+/// use nexrad_process::{CartesianGrid, ScanDerivedProduct, derived::CompositeReflectivity};
 ///
 /// // Compute composite reflectivity from all elevation tilts
-/// let cref = CompositeReflectivity;
-/// let cartesian = cref.compute(&ref_fields, &coord_sys, &extent, (800, 800))?;
+/// let grid = CartesianGrid::new(coord_sys.sweep_extent(230.0), 800, 800)?;
+/// let cartesian = CompositeReflectivity.compute(&ref_fields, &coord_sys, &grid)?;
 ///
 /// // Render the cartesian field
 /// let scale = default_scale(Product::Reflectivity);
@@ -88,7 +88,10 @@ pub fn render_cartesian(
 /// use nexrad_process::derived::VerticalCrossSection;
 ///
 /// // Create a vertical cross-section at 200° azimuth
-/// let vcs = VerticalCrossSection::new(200.0, 230.0, 18000.0, 600, 300)?;
+/// let vcs = VerticalCrossSection::builder(200.0)
+///     .max_range_km(230.0)
+///     .max_altitude_meters(18000.0)
+///     .build()?;
 /// let vertical = vcs.compute(&ref_fields, &coord_sys)?;
 ///
 /// // Render the vertical field

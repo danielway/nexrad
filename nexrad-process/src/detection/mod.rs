@@ -6,4 +6,4 @@
 
 mod cell;
 
-pub use cell::{StormCell, StormCellBounds, StormCellDetector};
+pub use cell::{StormCell, StormCellDetector};

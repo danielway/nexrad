@@ -10,8 +10,8 @@
 //! Two processing traits cover different scopes:
 //!
 //! - [`SweepProcessor`] — single-sweep algorithms (filtering, smoothing)
-//! - [`ScanDerivedProduct`] — produces a [`CartesianField`] from the sweeps of a full
-//!   scan (e.g. [`derived::CompositeReflectivity`])
+//! - [`ScanDerivedProduct`] — produces a [`CartesianField`] on a [`CartesianGrid`] from
+//!   the sweeps of a full scan (e.g. [`derived::CompositeReflectivity`])
 //!
 //! # Example
 //!
@@ -32,28 +32,31 @@
 #![warn(unnameable_types)]
 #![deny(missing_docs)]
 
+mod azimuth;
 /// Derived products computed from radar scans.
 pub mod derived;
 /// Storm cell detection algorithms.
 pub mod detection;
 /// Filtering algorithms for sweep field data.
 pub mod filter;
-/// Composable processing pipelines.
-pub mod pipeline;
+mod grid;
+mod pipeline;
 /// Result and error types for processing operations.
 pub mod result;
 
+pub use grid::CartesianGrid;
 pub use pipeline::SweepPipeline;
 pub use result::{Error, Result};
 
 use nexrad_model::data::{CartesianField, SweepField};
-use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
+use nexrad_model::geo::RadarCoordinateSystem;
 
 /// Transforms one [`SweepField`] into another.
 ///
 /// This is the primary processing trait for single-sweep algorithms such as
-/// filtering, smoothing, and clutter removal.
-pub trait SweepProcessor {
+/// filtering, smoothing, and clutter removal. Processors are `Send + Sync`, so a
+/// [`SweepPipeline`] can be shared across threads.
+pub trait SweepProcessor: Send + Sync {
     /// A human-readable name for this processor.
     fn name(&self) -> &str;
 
@@ -66,7 +69,7 @@ pub trait SweepProcessor {
 /// This trait is for derived products that combine data from multiple elevations
 /// into a single geographic surface, such as composite reflectivity, echo tops,
 /// and vertically integrated liquid (VIL).
-pub trait ScanDerivedProduct {
+pub trait ScanDerivedProduct: Send + Sync {
     /// A human-readable name for this product.
     fn name(&self) -> &str;
 
@@ -75,14 +78,12 @@ pub trait ScanDerivedProduct {
     /// # Parameters
     ///
     /// - `fields` — Sweep fields for the relevant product, one per elevation
-    /// - `coord_system` — Radar coordinate system for geographic projection
-    /// - `output_extent` — Geographic extent of the output grid
-    /// - `output_resolution` — (width, height) of the output grid in cells
+    /// - `coordinate_system` — Radar coordinate system for geographic projection
+    /// - `grid` — Geographic extent and dimensions of the output field
     fn compute(
         &self,
         fields: &[SweepField],
-        coord_system: &RadarCoordinateSystem,
-        output_extent: &GeoExtent,
-        output_resolution: (usize, usize),
+        coordinate_system: &RadarCoordinateSystem,
+        grid: &CartesianGrid,
     ) -> Result<CartesianField>;
 }

@@ -706,10 +706,19 @@ are exposed through `ChunkIterator`:
 
 #### Error handling
 
-`nexrad_process::Error` is `#[non_exhaustive]`. Invalid parameters are now reported by the constructors, so
-`Error::InvalidParameter` comes from `new` rather than from `process`. The new `Error::Model(nexrad_model::Error)`
-reports an output the model rejects, such as a `CompositeReflectivity::compute` extent outside valid latitudes and
-longitudes (#185).
+`nexrad_process::Error` is `#[non_exhaustive]` and derives `Clone` and `PartialEq`. Invalid parameters are now
+reported by the constructors, so `Error::InvalidParameter` comes from `new` rather than from `process`. The new
+`Error::Model(nexrad_model::Error)` reports an output the model rejects, such as a `CompositeReflectivity::compute`
+extent outside valid latitudes and longitudes (#185).
+
+The variants carry structured data instead of a `String` (#193):
+
+| 1.0.0-rc.1 | 1.0 |
+|---|---|
+| `InvalidParameter(String)` | `InvalidParameter { parameter: &'static str, reason: &'static str }` |
+| `InvalidGeometry(String)` | `InvalidGeometry { parameter: &'static str, reason: &'static str }`; a CC field whose geometry differs from the input is `GeometryMismatch { parameter: &'static str }` |
+| `MissingData(String)` | `MissingData { what: &'static str }` |
+| (none) | `UnexpectedProduct { expected: Product, actual: Option<Product> }` for an input holding the wrong product |
 
 #### Removed and renamed items
 
@@ -720,26 +729,37 @@ let pipeline = SweepPipeline::new()
     .then(MedianFilter { azimuth_kernel: 3, range_kernel: 3 })
     .then(GaussianSmooth { sigma_azimuth: 1.0, sigma_range: 1.0 });
 let composite = CompositeReflectivity.compute(&scan, &fields, &coords, &extent, (512, 512))?;
+let section = VerticalCrossSection::new(200.0, 230.0, 18000.0, 600, 300)?;
 
 // 1.0
 let pipeline = SweepPipeline::new()
     .then(ThresholdFilter::new(Some(5.0), None)?)
     .then(MedianFilter::new(3, 3)?)
     .then(GaussianSmooth::new(1.0, 1.0)?);
-let composite = CompositeReflectivity.compute(&fields, &coords, &extent, (512, 512))?;
+let grid = CartesianGrid::new(extent, 512, 512)?;
+let composite = CompositeReflectivity.compute(&fields, &coords, &grid)?;
+let section = VerticalCrossSection::builder(200.0)
+    .max_range_km(230.0)
+    .max_altitude_meters(18000.0)
+    .width(600)
+    .height(300)
+    .build()?;
 ```
 
 | 1.0.0-rc.1 | 1.0 | PR |
 |---|---|---|
 | `ThresholdFilter { min, max }` | `ThresholdFilter::new(min, max)?`; read with `min()`, `max()` | #175 |
-| `MedianFilter { azimuth_kernel, range_kernel }` | `MedianFilter::new(azimuth_kernel, range_kernel)?`; getters | #175 |
-| `GaussianSmooth { sigma_azimuth, sigma_range }` | `GaussianSmooth::new(sigma_azimuth, sigma_range)?`; getters | #175 |
-| `ScanDerivedProduct::compute(&self, scan, fields, coords, extent, resolution)` | `compute(&self, fields, coords, extent, resolution)` | Drop the `scan` argument in calls and in your own impls. #175 |
+| `MedianFilter { azimuth_kernel, range_kernel }` | `MedianFilter::new(azimuth_kernel_radials, range_kernel_gates)?`; read with `azimuth_kernel_radials()`, `range_kernel_gates()` | #175, #193 |
+| `GaussianSmooth { sigma_azimuth, sigma_range }` | `GaussianSmooth::new(sigma_azimuth_radials, sigma_range_gates)?`; read with `sigma_azimuth_radials()`, `sigma_range_gates()` | #175, #193 |
+| `ScanDerivedProduct::compute(&self, scan, fields, coords, extent, resolution)` | `compute(&self, fields, coordinate_system, &CartesianGrid::new(extent, width, height)?)` | Drop the `scan` argument and pass a `CartesianGrid`, in calls and in your own impls, which must also be `Send + Sync`. #175, #193 |
+| `SweepProcessor` implementations | Must be `Send + Sync` | #193 |
+| `nexrad_process::pipeline::SweepPipeline` | `nexrad_process::SweepPipeline` | #193 |
 | `ScanProcessor` trait | Removed (no implementations); use a free function or your own trait | #175 |
-| `VerticalCrossSection::new(azimuth_degrees: f32, max_range_km, max_altitude_m, ..)` | `new(azimuth_angle_degrees: f64, max_range_km, max_altitude_meters, ..)`; only the type of the first argument affects callers | #164, #182 |
+| `VerticalCrossSection::new(azimuth_degrees: f32, max_range_km, max_altitude_m, width, height)` | `VerticalCrossSection::builder(azimuth_angle_degrees: f64).max_range_km(..).max_altitude_meters(..).width(..).height(..).build()?`; getters for each | #164, #182, #193 |
 | `VerticalCrossSection::compute(&fields)` | `compute(&fields, &coordinate_system)`, for example with `scan.coordinate_system()` | The vertical axis is altitude above mean sea level, including the antenna height, and the horizontal axis is ground range. #188 |
 | `StormCell::elevation_degrees()` | `StormCell::elevation_angle_degrees()` | #182 |
 | `StormCell::max_reflectivity_azimuth_degrees()` | `StormCell::max_reflectivity_azimuth_angle_degrees()` | #182 |
+| `StormCell::bounds() -> &StormCellBounds`; `min_latitude()` and so on | `bounds() -> GeoExtent`; `bounds().min.latitude` and so on | #193 |
 
 #### Behaviour and type changes
 
@@ -752,6 +772,21 @@ let composite = CompositeReflectivity.compute(&fields, &coords, &extent, (512, 5
   skip them, as they do `NoData`.
 - The processors now implement `Debug`, `Clone` and `PartialEq` (and `CompositeReflectivity` also `Copy` and
   `Default`).
+- **Inputs are checked by product** (#193). Build fields with `SweepField::from_radials` (or set
+  `SweepFieldBuilder::product`): `CompositeReflectivity::compute` needs `Product::Reflectivity` fields,
+  `CorrelationCoefficientFilter::new` a `Product::CorrelationCoefficient` field, `StormRelativeVelocity` a
+  `Product::Velocity` input, and `VerticalCrossSection::compute` and `StormCellDetector::detect` `Product::Reflectivity`
+  fields. Its output is labelled "Storm-Relative Velocity" with no product, so it no longer
+  passes as a velocity moment.
+- Every floating-point parameter must be finite (#193). `StormRelativeVelocity::new` also requires a direction in
+  `0.0..360.0`, `VerticalCrossSection`'s builder an azimuth in `0.0..360.0`, and `CorrelationCoefficientFilter::new`
+  a threshold in `0.0..=1.0`.
+- `CorrelationCoefficientFilter` requires the input and the CC field to share azimuth angles, first gate range and
+  gate interval, returning `Error::GeometryMismatch` otherwise (#193). Gate counts may differ.
+- `StormCell::centroid()` is weighted by linear reflectivity factor rather than dBZ, which moves it toward the most
+  intense gates (#193).
+- `MedianFilter`, `GaussianSmooth` and `StormCellDetector` no longer wrap a sector field's azimuths across north
+  (#193).
 
 ### nexrad-render from 1.0.0-rc.4
 
@@ -1679,16 +1714,25 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | 1.0.0-rc.1 | 1.0 |
 |---|---|
 | `ScanProcessor` trait (`name`, `process_scan`) | Removed |
-| `ScanDerivedProduct::compute(&self, &Scan, &[SweepField], &RadarCoordinateSystem, &GeoExtent, (usize, usize))` | `compute(&self, &[SweepField], &RadarCoordinateSystem, &GeoExtent, (usize, usize))` (also `CompositeReflectivity::compute`) |
+| `ScanDerivedProduct::compute(&self, &Scan, &[SweepField], &RadarCoordinateSystem, &GeoExtent, (usize, usize))` | `compute(&self, &[SweepField], &RadarCoordinateSystem, &CartesianGrid)` (also `CompositeReflectivity::compute`) |
+| `trait SweepProcessor`, `trait ScanDerivedProduct` | `trait SweepProcessor: Send + Sync`, `trait ScanDerivedProduct: Send + Sync` |
+| (none) | `CartesianGrid::new(GeoExtent, usize, usize) -> Result<Self>`, `extent()`, `width()`, `height()` |
+| `pipeline::SweepPipeline` | `SweepPipeline` only; adds `len()`, `is_empty()`, `steps()` |
 | `filter::ThresholdFilter::{min, max}` fields | `ThresholdFilter::new(Option<f32>, Option<f32>) -> Result<Self>`, `min()`, `max()` |
-| `filter::MedianFilter::{azimuth_kernel, range_kernel}` fields | `MedianFilter::new(usize, usize) -> Result<Self>`, getters |
-| `filter::GaussianSmooth::{sigma_azimuth, sigma_range}` fields | `GaussianSmooth::new(f32, f32) -> Result<Self>`, getters |
-| `derived::VerticalCrossSection::new(f32, f64, f64, usize, usize)` | `new(f64, f64, f64, usize, usize)` |
+| `filter::MedianFilter::{azimuth_kernel, range_kernel}` fields | `MedianFilter::new(usize, usize) -> Result<Self>`, `azimuth_kernel_radials()`, `range_kernel_gates()` |
+| `filter::GaussianSmooth::{sigma_azimuth, sigma_range}` fields | `GaussianSmooth::new(f32, f32) -> Result<Self>`, `sigma_azimuth_radials()`, `sigma_range_gates()` |
+| `filter::CorrelationCoefficientFilter::new(f32, SweepField) -> Result<Self>` | Same signature; adds `threshold()`, `correlation_coefficient()` |
+| `derived::StormRelativeVelocity::new(f32, f32) -> Result<Self>` | Same signature; adds `storm_direction_degrees()`, `storm_speed_mps()` |
+| `derived::VerticalCrossSection::new(f32, f64, f64, usize, usize)` | `VerticalCrossSection::builder(f64) -> VerticalCrossSectionBuilder`, setters `max_range_km(f64)`, `max_altitude_meters(f64)`, `width(usize)`, `height(usize)`, `build() -> Result<VerticalCrossSection>`; getters for all five |
 | `derived::VerticalCrossSection::compute(&self, &[SweepField])` | `compute(&self, &[SweepField], &RadarCoordinateSystem)` |
 | `detection::StormCell::elevation_degrees() -> f32` | `elevation_angle_degrees() -> f32` |
 | `detection::StormCell::max_reflectivity_azimuth_degrees() -> f32` | `max_reflectivity_azimuth_angle_degrees() -> f32` |
+| `detection::StormCell::bounds() -> &StormCellBounds` | `bounds() -> GeoExtent` |
+| `detection::StormCellBounds` | Removed; use `nexrad_model::geo::GeoExtent` |
+| `detection::StormCellDetector::new(f32, usize) -> Result<Self>` | Same signature; adds `reflectivity_threshold_dbz()`, `min_gate_count()` |
 | `filter::{ThresholdFilter, CorrelationCoefficientFilter}` mask gates as `(0.0, GateStatus::NoData)` | Mask gates as `(value, GateStatus::Filtered)` |
-| `result::Error` | `#[non_exhaustive]`; new `Model(nexrad_model::Error)` |
+| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `Model(nexrad_model::Error)`, `GeometryMismatch { parameter }`, `UnexpectedProduct { expected, actual }` |
+| `result::Error::{InvalidParameter, InvalidGeometry, MissingData}(String)` | `InvalidParameter { parameter, reason }`, `InvalidGeometry { parameter, reason }`, `MissingData { what }` |
 
 </details>
 

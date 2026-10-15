@@ -1,5 +1,5 @@
-use crate::result::{Error, Result};
-use nexrad_model::data::{GateStatus, SweepField, VerticalField};
+use crate::result::{check_product, Error, Result};
+use nexrad_model::data::{GateStatus, Product, SweepField, VerticalField};
 use nexrad_model::geo::RadarCoordinateSystem;
 
 /// Vertical cross-section (RHI-style) — assembles a range-height display from
@@ -32,7 +32,12 @@ use nexrad_model::geo::RadarCoordinateSystem;
 ///     .collect();
 ///
 /// // Create a cross-section at 200° azimuth, 0-230 km range, 0-18 km altitude
-/// let vcs = VerticalCrossSection::new(200.0, 230.0, 18000.0, 600, 300)?;
+/// let vcs = VerticalCrossSection::builder(200.0)
+///     .max_range_km(230.0)
+///     .max_altitude_meters(18000.0)
+///     .width(600)
+///     .height(300)
+///     .build()?;
 /// let coord_sys = scan.coordinate_system().unwrap();
 /// let vertical_field = vcs.compute(&ref_fields, &coord_sys)?;
 ///
@@ -57,48 +62,43 @@ pub struct VerticalCrossSection {
 }
 
 impl VerticalCrossSection {
-    /// Create a new vertical cross-section builder.
+    /// Start building a cross-section along `azimuth_angle_degrees`, in degrees clockwise
+    /// from north.
     ///
-    /// # Parameters
-    ///
-    /// - `azimuth_angle_degrees` — target azimuth (0-360 degrees)
-    /// - `max_range_km` — horizontal extent in km of ground range
-    /// - `max_altitude_meters` — vertical extent in meters above mean sea level
-    /// - `width` — number of horizontal bins (columns)
-    /// - `height` — number of vertical bins (rows)
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if any parameter is non-positive.
-    pub fn new(
-        azimuth_angle_degrees: f64,
-        max_range_km: f64,
-        max_altitude_meters: f64,
-        width: usize,
-        height: usize,
-    ) -> Result<Self> {
-        if max_range_km <= 0.0 {
-            return Err(Error::InvalidParameter(
-                "max_range_km must be positive".to_string(),
-            ));
-        }
-        if max_altitude_meters <= 0.0 {
-            return Err(Error::InvalidParameter(
-                "max_altitude_meters must be positive".to_string(),
-            ));
-        }
-        if width == 0 || height == 0 {
-            return Err(Error::InvalidParameter(
-                "output dimensions must be > 0".to_string(),
-            ));
-        }
-        Ok(Self {
+    /// The other parameters default to those of [`VerticalCrossSectionBuilder`].
+    pub fn builder(azimuth_angle_degrees: f64) -> VerticalCrossSectionBuilder {
+        VerticalCrossSectionBuilder {
             azimuth_angle_degrees,
-            max_range_km,
-            max_altitude_meters,
-            width,
-            height,
-        })
+            max_range_km: 230.0,
+            max_altitude_meters: 18_000.0,
+            width: 600,
+            height: 300,
+        }
+    }
+
+    /// Target azimuth in degrees clockwise from north.
+    pub fn azimuth_angle_degrees(&self) -> f64 {
+        self.azimuth_angle_degrees
+    }
+
+    /// Horizontal extent in km of ground range.
+    pub fn max_range_km(&self) -> f64 {
+        self.max_range_km
+    }
+
+    /// Vertical extent in meters above mean sea level.
+    pub fn max_altitude_meters(&self) -> f64 {
+        self.max_altitude_meters
+    }
+
+    /// Number of horizontal bins (columns) in the output.
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    /// Number of vertical bins (rows) in the output.
+    pub fn height(&self) -> usize {
+        self.height
     }
 
     /// Compute the vertical cross-section from sweep fields at multiple elevations.
@@ -110,14 +110,20 @@ impl VerticalCrossSection {
     ///
     /// # Errors
     ///
-    /// Returns an error if no fields are provided.
+    /// Returns [`Error::MissingData`] if no fields are provided and
+    /// [`Error::UnexpectedProduct`] if any field does not hold [`Product::Reflectivity`].
     pub fn compute(
         &self,
         fields: &[SweepField],
         coordinate_system: &RadarCoordinateSystem,
     ) -> Result<VerticalField> {
         if fields.is_empty() {
-            return Err(Error::MissingData("no sweep fields provided".to_string()));
+            return Err(Error::MissingData {
+                what: "no sweep fields provided",
+            });
+        }
+        for field in fields {
+            check_product(field, Product::Reflectivity)?;
         }
 
         let label = format!("{} RHI", fields[0].label());
@@ -177,10 +183,108 @@ impl VerticalCrossSection {
     }
 }
 
+/// Builder for a [`VerticalCrossSection`], created by [`VerticalCrossSection::builder`].
+///
+/// Defaults: a 230 km ground range, an 18 000 m altitude, and a 600 x 300 output grid.
+#[derive(Debug, Clone, PartialEq)]
+#[must_use]
+pub struct VerticalCrossSectionBuilder {
+    azimuth_angle_degrees: f64,
+    max_range_km: f64,
+    max_altitude_meters: f64,
+    width: usize,
+    height: usize,
+}
+
+impl VerticalCrossSectionBuilder {
+    /// Set the horizontal extent in km of ground range; must be finite and positive.
+    pub fn max_range_km(mut self, max_range_km: f64) -> Self {
+        self.max_range_km = max_range_km;
+        self
+    }
+
+    /// Set the vertical extent in meters above mean sea level; must be finite and positive.
+    pub fn max_altitude_meters(mut self, max_altitude_meters: f64) -> Self {
+        self.max_altitude_meters = max_altitude_meters;
+        self
+    }
+
+    /// Set the number of horizontal bins (columns); must be greater than zero.
+    pub fn width(mut self, width: usize) -> Self {
+        self.width = width;
+        self
+    }
+
+    /// Set the number of vertical bins (rows); must be greater than zero.
+    pub fn height(mut self, height: usize) -> Self {
+        self.height = height;
+        self
+    }
+
+    /// Build the [`VerticalCrossSection`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidParameter`] if the azimuth is not finite or outside
+    /// `0.0..360.0`, either extent is not finite and positive, or either dimension is zero.
+    pub fn build(self) -> Result<VerticalCrossSection> {
+        if !(self.azimuth_angle_degrees.is_finite()
+            && (0.0..360.0).contains(&self.azimuth_angle_degrees))
+        {
+            return Err(Error::InvalidParameter {
+                parameter: "azimuth_angle_degrees",
+                reason: "must be finite and in 0.0..360.0",
+            });
+        }
+        let positive = |parameter: &'static str, value: f64| {
+            if value.is_finite() && value > 0.0 {
+                Ok(())
+            } else {
+                Err(Error::InvalidParameter {
+                    parameter,
+                    reason: "must be finite and greater than zero",
+                })
+            }
+        };
+        positive("max_range_km", self.max_range_km)?;
+        positive("max_altitude_meters", self.max_altitude_meters)?;
+        for (parameter, value) in [("width", self.width), ("height", self.height)] {
+            if value == 0 {
+                return Err(Error::InvalidParameter {
+                    parameter,
+                    reason: "must be greater than zero",
+                });
+            }
+        }
+        Ok(VerticalCrossSection {
+            azimuth_angle_degrees: self.azimuth_angle_degrees,
+            max_range_km: self.max_range_km,
+            max_altitude_meters: self.max_altitude_meters,
+            width: self.width,
+            height: self.height,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use nexrad_model::meta::Site;
+
+    fn section(
+        azimuth: f64,
+        max_range_km: f64,
+        max_altitude_meters: f64,
+        width: usize,
+        height: usize,
+    ) -> Result<VerticalCrossSection> {
+        VerticalCrossSection::builder(azimuth)
+            .max_range_km(max_range_km)
+            .max_altitude_meters(max_altitude_meters)
+            .width(width)
+            .height(height)
+            .build()
+    }
 
     fn coordinate_system() -> RadarCoordinateSystem {
         let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
@@ -197,6 +301,7 @@ mod tests {
 
         let gate_count = 100;
         let mut field = SweepField::builder("Reflectivity", "dBZ")
+            .product(Product::Reflectivity)
             .elevation_angle_degrees(elevation)
             .azimuth_angles_degrees(azimuths)
             .first_gate_range_km(2.0)
@@ -218,7 +323,7 @@ mod tests {
     fn test_vertical_basic() {
         let fields = vec![make_uniform_field(0.5, 30.0), make_uniform_field(3.5, 40.0)];
 
-        let vcs = VerticalCrossSection::new(180.0, 25.0, 5000.0, 50, 25).unwrap();
+        let vcs = section(180.0, 25.0, 5000.0, 50, 25).unwrap();
         let result = vcs.compute(&fields, &coordinate_system()).unwrap();
 
         assert_eq!(result.width(), 50);
@@ -241,7 +346,7 @@ mod tests {
     fn test_vertical_takes_max() {
         let fields = vec![make_uniform_field(0.5, 20.0), make_uniform_field(0.5, 40.0)];
 
-        let vcs = VerticalCrossSection::new(180.0, 25.0, 5000.0, 50, 25).unwrap();
+        let vcs = section(180.0, 25.0, 5000.0, 50, 25).unwrap();
         let result = vcs.compute(&fields, &coordinate_system()).unwrap();
 
         // Overlapping beams should take the max value
@@ -263,7 +368,7 @@ mod tests {
                 filtered.set(az, gate, 60.0, GateStatus::Filtered).unwrap();
             }
         }
-        let vcs = VerticalCrossSection::new(180.0, 25.0, 5000.0, 50, 25).unwrap();
+        let vcs = section(180.0, 25.0, 5000.0, 50, 25).unwrap();
 
         // Alongside a valid tilt, only the valid values appear.
         let result = vcs
@@ -295,15 +400,83 @@ mod tests {
 
     #[test]
     fn test_vertical_empty_fields_error() {
-        let vcs = VerticalCrossSection::new(180.0, 25.0, 5000.0, 50, 25).unwrap();
+        let vcs = section(180.0, 25.0, 5000.0, 50, 25).unwrap();
         assert!(vcs.compute(&[], &coordinate_system()).is_err());
     }
 
     #[test]
+    fn test_vertical_requires_reflectivity() {
+        let vcs = section(180.0, 25.0, 5000.0, 50, 25).unwrap();
+        let velocity = SweepField::builder("Velocity", "m/s")
+            .product(Product::Velocity)
+            .azimuth_angles_degrees(vec![0.0, 1.0])
+            .gate_interval_km(0.25)
+            .gate_count(4)
+            .build()
+            .unwrap();
+        assert_eq!(
+            vcs.compute(
+                &[make_uniform_field(0.5, 30.0), velocity],
+                &coordinate_system()
+            ),
+            Err(Error::UnexpectedProduct {
+                expected: Product::Reflectivity,
+                actual: Some(Product::Velocity),
+            })
+        );
+    }
+
+    #[test]
+    fn test_vertical_builder_and_getters() -> Result<()> {
+        let vcs = section(200.0, 100.0, 12_000.0, 40, 20)?;
+        assert_eq!(vcs.azimuth_angle_degrees(), 200.0);
+        assert_eq!(vcs.max_range_km(), 100.0);
+        assert_eq!(vcs.max_altitude_meters(), 12_000.0);
+        assert_eq!(vcs.width(), 40);
+        assert_eq!(vcs.height(), 20);
+
+        let defaults = VerticalCrossSection::builder(0.0).build()?;
+        assert_eq!(defaults.max_range_km(), 230.0);
+        assert_eq!(defaults.max_altitude_meters(), 18_000.0);
+        assert_eq!((defaults.width(), defaults.height()), (600, 300));
+        Ok(())
+    }
+
+    #[test]
     fn test_vertical_invalid_params() {
-        assert!(VerticalCrossSection::new(180.0, 0.0, 5000.0, 50, 25).is_err());
-        assert!(VerticalCrossSection::new(180.0, 25.0, 0.0, 50, 25).is_err());
-        assert!(VerticalCrossSection::new(180.0, 25.0, 5000.0, 0, 25).is_err());
-        assert!(VerticalCrossSection::new(180.0, 25.0, 5000.0, 50, 0).is_err());
+        let rejected = |result: Result<VerticalCrossSection>| match result {
+            Err(Error::InvalidParameter { parameter, .. }) => parameter,
+            other => panic!("expected InvalidParameter, got {other:?}"),
+        };
+        assert_eq!(
+            rejected(section(f64::NAN, 25.0, 5000.0, 50, 25)),
+            "azimuth_angle_degrees"
+        );
+        assert_eq!(
+            rejected(section(360.0, 25.0, 5000.0, 50, 25)),
+            "azimuth_angle_degrees"
+        );
+        assert_eq!(
+            rejected(section(-0.5, 25.0, 5000.0, 50, 25)),
+            "azimuth_angle_degrees"
+        );
+        assert_eq!(
+            rejected(section(180.0, 0.0, 5000.0, 50, 25)),
+            "max_range_km"
+        );
+        assert_eq!(
+            rejected(section(180.0, f64::INFINITY, 5000.0, 50, 25)),
+            "max_range_km"
+        );
+        assert_eq!(
+            rejected(section(180.0, 25.0, 0.0, 50, 25)),
+            "max_altitude_meters"
+        );
+        assert_eq!(
+            rejected(section(180.0, 25.0, f64::NAN, 50, 25)),
+            "max_altitude_meters"
+        );
+        assert_eq!(rejected(section(180.0, 25.0, 5000.0, 0, 25)), "width");
+        assert_eq!(rejected(section(180.0, 25.0, 5000.0, 50, 0)), "height");
     }
 }

@@ -28,7 +28,7 @@ use nexrad::process::derived::{
 use nexrad::process::filter::{
     CorrelationCoefficientFilter, GaussianSmooth, MedianFilter, ThresholdFilter,
 };
-use nexrad::process::{ScanDerivedProduct, SweepPipeline, SweepProcessor};
+use nexrad::process::{CartesianGrid, ScanDerivedProduct, SweepPipeline, SweepProcessor};
 use nexrad::render::{
     default_scale, render_cartesian, render_sweep, render_vertical, Projection, RenderOptions,
 };
@@ -403,8 +403,8 @@ fn main() -> nexrad::Result<()> {
         let cref = CompositeReflectivity;
 
         // Full-range composite at native resolution
-        let composite =
-            cref.compute(&ref_fields, &coord_sys, &extent, (native_size, native_size))?;
+        let grid = CartesianGrid::new(extent, native_size, native_size)?;
+        let composite = cref.compute(&ref_fields, &coord_sys, &grid)?;
 
         let result = render_cartesian(&composite, &ref_scale, &native_options)?;
 
@@ -423,12 +423,8 @@ fn main() -> nexrad::Result<()> {
 
         // Zoomed composite (half range for more detail)
         let zoom_extent = coord_sys.sweep_extent(max_range / 2.0);
-        let composite_zoom = cref.compute(
-            &ref_fields,
-            &coord_sys,
-            &zoom_extent,
-            (native_size, native_size),
-        )?;
+        let zoom_grid = CartesianGrid::new(zoom_extent, native_size, native_size)?;
+        let composite_zoom = cref.compute(&ref_fields, &coord_sys, &zoom_grid)?;
 
         let result = render_cartesian(&composite_zoom, &ref_scale, &native_options)?;
         let path = format!("{}/06b_composite_zoomed.png", OUTPUT_DIR);
@@ -465,7 +461,12 @@ fn main() -> nexrad::Result<()> {
 
         // 7a. Cross-section through the storm line (~200 deg azimuth)
         let az1 = 200.0_f64;
-        let vcs1 = VerticalCrossSection::new(az1, 230.0, 18000.0, 600, 300)?;
+        let vcs1 = VerticalCrossSection::builder(az1)
+            .max_range_km(230.0)
+            .max_altitude_meters(18000.0)
+            .width(600)
+            .height(300)
+            .build()?;
         let vert1 = vcs1.compute(&ref_fields, &coord_sys)?;
         let result = render_vertical(&vert1, &ref_scale, &vert_options)?;
         let path = format!("{}/07a_vertical_az{:.0}.png", OUTPUT_DIR, az1);
@@ -477,7 +478,12 @@ fn main() -> nexrad::Result<()> {
 
         // 7b. Another azimuth for comparison
         let az2 = 315.0_f64;
-        let vcs2 = VerticalCrossSection::new(az2, 230.0, 18000.0, 600, 300)?;
+        let vcs2 = VerticalCrossSection::builder(az2)
+            .max_range_km(230.0)
+            .max_altitude_meters(18000.0)
+            .width(600)
+            .height(300)
+            .build()?;
         let vert2 = vcs2.compute(&ref_fields, &coord_sys)?;
         let result = render_vertical(&vert2, &ref_scale, &vert_options)?;
         let path = format!("{}/07b_vertical_az{:.0}.png", OUTPUT_DIR, az2);
@@ -486,7 +492,12 @@ fn main() -> nexrad::Result<()> {
 
         // 7c. Zoomed vertical (close-range, lower altitude for detail)
         let az3 = 200.0_f64;
-        let vcs3 = VerticalCrossSection::new(az3, 100.0, 12000.0, 600, 300)?;
+        let vcs3 = VerticalCrossSection::builder(az3)
+            .max_range_km(100.0)
+            .max_altitude_meters(12000.0)
+            .width(600)
+            .height(300)
+            .build()?;
         let vert3 = vcs3.compute(&ref_fields, &coord_sys)?;
         let result = render_vertical(&vert3, &ref_scale, &vert_options)?;
         let path = format!("{}/07c_vertical_az{:.0}_zoomed.png", OUTPUT_DIR, az3);

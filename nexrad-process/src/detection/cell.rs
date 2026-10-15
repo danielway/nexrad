@@ -1,43 +1,9 @@
 use std::collections::VecDeque;
 
-use crate::result::{Error, Result};
-use nexrad_model::data::{GateStatus, SweepField};
-use nexrad_model::geo::{GeoPoint, PolarPoint, RadarCoordinateSystem};
-
-/// Geographic bounding box of a storm cell.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct StormCellBounds {
-    /// Minimum latitude (southern edge).
-    min_latitude: f64,
-    /// Maximum latitude (northern edge).
-    max_latitude: f64,
-    /// Minimum longitude (western edge).
-    min_longitude: f64,
-    /// Maximum longitude (eastern edge).
-    max_longitude: f64,
-}
-
-impl StormCellBounds {
-    /// Minimum latitude (southern edge).
-    pub fn min_latitude(&self) -> f64 {
-        self.min_latitude
-    }
-
-    /// Maximum latitude (northern edge).
-    pub fn max_latitude(&self) -> f64 {
-        self.max_latitude
-    }
-
-    /// Minimum longitude (western edge).
-    pub fn min_longitude(&self) -> f64 {
-        self.min_longitude
-    }
-
-    /// Maximum longitude (eastern edge).
-    pub fn max_longitude(&self) -> f64 {
-        self.max_longitude
-    }
-}
+use crate::azimuth::{covers_full_circle, neighbor_azimuth};
+use crate::result::{check_finite, check_product, Error, Result};
+use nexrad_model::data::{GateStatus, Product, SweepField};
+use nexrad_model::geo::{GeoExtent, GeoPoint, PolarPoint, RadarCoordinateSystem};
 
 /// A detected storm cell identified by connected-component analysis on a
 /// reflectivity sweep field.
@@ -49,8 +15,8 @@ impl StormCellBounds {
 pub struct StormCell {
     /// Unique identifier for this cell within the detection run (0-based).
     id: u32,
-    /// Geographic centroid of the cell, computed as the reflectivity-weighted
-    /// mean of all gate positions.
+    /// Geographic centroid of the cell, computed as the mean of all gate positions
+    /// weighted by linear reflectivity factor.
     centroid: GeoPoint,
     /// Maximum reflectivity value (dBZ) observed in this cell.
     max_reflectivity_dbz: f32,
@@ -61,7 +27,7 @@ pub struct StormCell {
     /// Approximate area of the cell in square kilometers.
     area_km2: f64,
     /// Geographic bounding box of the cell.
-    bounds: StormCellBounds,
+    bounds: GeoExtent,
     /// Elevation angle of the sweep this cell was detected on (degrees).
     elevation_angle_degrees: f32,
     /// Azimuth of the gate with maximum reflectivity (degrees).
@@ -79,7 +45,11 @@ impl StormCell {
         self.id
     }
 
-    /// Geographic centroid of the cell (reflectivity-weighted).
+    /// Geographic centroid of the cell.
+    ///
+    /// Gate positions are weighted by linear reflectivity factor, `10^(dBZ / 10)`, so the
+    /// centroid leans toward the most intense echoes and every gate has a positive weight
+    /// whatever the detection threshold.
     pub fn centroid(&self) -> GeoPoint {
         self.centroid
     }
@@ -104,9 +74,9 @@ impl StormCell {
         self.area_km2
     }
 
-    /// Geographic bounding box.
-    pub fn bounds(&self) -> &StormCellBounds {
-        &self.bounds
+    /// Geographic bounding box of the cell's gate centers.
+    pub fn bounds(&self) -> GeoExtent {
+        self.bounds
     }
 
     /// Elevation angle of the source sweep in degrees.
@@ -138,8 +108,9 @@ impl StormCell {
 ///    its status is `Valid` and its value >= `reflectivity_threshold_dbz`.
 /// 2. Perform flood-fill connected-component labeling on the above-threshold
 ///    gates. Two gates are connected if they are adjacent in azimuth or range
-///    (4-connectivity). Azimuth wraps: the last azimuth index is adjacent to
-///    the first.
+///    (4-connectivity). When the field covers the full circle (the gap across
+///    north is at most twice the azimuth spacing), the last azimuth index is
+///    adjacent to the first; a sector's edges are not adjacent.
 /// 3. Filter out components with fewer than `min_gate_count` gates.
 /// 4. For each remaining component, compute cell properties.
 ///
@@ -183,12 +154,15 @@ impl StormCellDetector {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::InvalidParameter`] if `min_gate_count` is zero.
+    /// Returns [`Error::InvalidParameter`] if `reflectivity_threshold_dbz` is not finite or
+    /// `min_gate_count` is zero.
     pub fn new(reflectivity_threshold_dbz: f32, min_gate_count: usize) -> Result<Self> {
+        check_finite("reflectivity_threshold_dbz", reflectivity_threshold_dbz)?;
         if min_gate_count == 0 {
-            return Err(Error::InvalidParameter(
-                "min_gate_count must be >= 1".to_string(),
-            ));
+            return Err(Error::InvalidParameter {
+                parameter: "min_gate_count",
+                reason: "must be greater than zero",
+            });
         }
         Ok(Self {
             reflectivity_threshold_dbz,
@@ -196,11 +170,21 @@ impl StormCellDetector {
         })
     }
 
+    /// Minimum reflectivity in dBZ for a gate to be part of a cell.
+    pub fn reflectivity_threshold_dbz(&self) -> f32 {
+        self.reflectivity_threshold_dbz
+    }
+
+    /// Minimum number of contiguous gates for a region to be reported as a cell.
+    pub fn min_gate_count(&self) -> usize {
+        self.min_gate_count
+    }
+
     /// Detect storm cells in the given reflectivity sweep field.
     ///
     /// # Parameters
     ///
-    /// - `field` — A reflectivity sweep field (dBZ values).
+    /// - `field` — A sweep field holding [`Product::Reflectivity`] (dBZ values).
     /// - `coord_system` — The radar coordinate system for computing geographic
     ///   positions.
     ///
@@ -211,23 +195,31 @@ impl StormCellDetector {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::InvalidGeometry`] if the field has zero azimuths or
-    /// zero gates.
+    /// Returns [`Error::UnexpectedProduct`] if the field does not hold
+    /// [`Product::Reflectivity`] and [`Error::InvalidGeometry`] if it has zero
+    /// azimuths or zero gates.
     pub fn detect(
         &self,
         field: &SweepField,
         coord_system: &RadarCoordinateSystem,
     ) -> Result<Vec<StormCell>> {
+        check_product(field, Product::Reflectivity)?;
+
         let az_count = field.azimuth_count();
         let num_gates = field.gate_count();
+        let wraps = covers_full_circle(field);
 
         if az_count == 0 {
-            return Err(Error::InvalidGeometry(
-                "field has zero azimuths".to_string(),
-            ));
+            return Err(Error::InvalidGeometry {
+                parameter: "azimuth_count",
+                reason: "must be greater than zero",
+            });
         }
         if num_gates == 0 {
-            return Err(Error::InvalidGeometry("field has zero gates".to_string()));
+            return Err(Error::InvalidGeometry {
+                parameter: "gate_count",
+                reason: "must be greater than zero",
+            });
         }
 
         let total = az_count * num_gates;
@@ -263,17 +255,16 @@ impl StormCellDetector {
                 while let Some((az, gate)) = queue.pop_front() {
                     component.push((az, gate));
 
-                    // 4-connected neighbors: azimuth ± 1 (wrapping), range ± 1 (clamped)
-                    let az_prev = if az == 0 { az_count - 1 } else { az - 1 };
-                    let az_next = if az == az_count - 1 { 0 } else { az + 1 };
-
-                    let neighbors: [(usize, usize); 2] = [(az_prev, gate), (az_next, gate)];
-
-                    for &(n_az, n_gate) in &neighbors {
-                        let n_idx = n_az * num_gates + n_gate;
+                    // 4-connected neighbors: azimuth ± 1 (wrapping only across a full
+                    // circle), range ± 1 (clamped)
+                    for offset in [-1, 1] {
+                        let Some(n_az) = neighbor_azimuth(az, offset, az_count, wraps) else {
+                            continue;
+                        };
+                        let n_idx = n_az * num_gates + gate;
                         if above_threshold[n_idx] && !visited[n_idx] {
                             visited[n_idx] = true;
-                            queue.push_back((n_az, n_gate));
+                            queue.push_back((n_az, gate));
                         }
                     }
 
@@ -371,8 +362,9 @@ impl StormCellDetector {
                 elevation_angle_degrees: field.elevation_angle_degrees() as f64,
             });
 
-            // Reflectivity-weighted centroid
-            let weight = val as f64;
+            // Centroid weighted by linear reflectivity factor (mm^6/m^3), which is positive
+            // for any dBZ value.
+            let weight = 10f64.powf(f64::from(val) / 10.0);
             weighted_lat_sum += geo.latitude * weight;
             weighted_lon_sum += geo.longitude * weight;
             weight_sum += weight;
@@ -408,11 +400,15 @@ impl StormCellDetector {
             mean_reflectivity_dbz: (sum_dbz / component.len() as f64) as f32,
             gate_count: component.len(),
             area_km2: total_area_km2,
-            bounds: StormCellBounds {
-                min_latitude: min_lat,
-                max_latitude: max_lat,
-                min_longitude: min_lon,
-                max_longitude: max_lon,
+            bounds: GeoExtent {
+                min: GeoPoint {
+                    latitude: min_lat,
+                    longitude: min_lon,
+                },
+                max: GeoPoint {
+                    latitude: max_lat,
+                    longitude: max_lon,
+                },
             },
             elevation_angle_degrees: field.elevation_angle_degrees(),
             max_reflectivity_azimuth_angle_degrees: max_dbz_az,
@@ -442,6 +438,7 @@ mod tests {
     fn make_empty_field(gate_count: usize) -> SweepField {
         let azimuths: Vec<f32> = (0..360).map(|i| i as f32).collect();
         SweepField::builder("Reflectivity", "dBZ")
+            .product(Product::Reflectivity)
             .elevation_angle_degrees(0.5)
             .azimuth_angles_degrees(azimuths)
             .first_gate_range_km(2.0)
@@ -556,9 +553,159 @@ mod tests {
     }
 
     #[test]
+    fn test_sector_edges_not_joined() -> Result<()> {
+        let cs = test_coord_system();
+        let mut field = SweepField::builder("Reflectivity", "dBZ")
+            .product(Product::Reflectivity)
+            .elevation_angle_degrees(0.5)
+            .azimuth_angles_degrees((0..90).map(|az| az as f32).collect())
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(100)
+            .build()?;
+
+        // Gates on both edges of a 90-degree sector: radials 88, 89 and 0, 1.
+        for az in [88, 89, 0, 1] {
+            field.set(az, 30, 40.0, GateStatus::Valid)?;
+        }
+
+        let cells = StormCellDetector::new(35.0, 1)?.detect(&field, &cs)?;
+        assert_eq!(cells.len(), 2);
+        for cell in &cells {
+            assert_eq!(cell.gate_count(), 2);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_detect_requires_reflectivity() {
+        let cs = test_coord_system();
+        let velocity = SweepField::builder("Velocity", "m/s")
+            .product(Product::Velocity)
+            .azimuth_angles_degrees(vec![0.0, 1.0])
+            .gate_interval_km(0.25)
+            .gate_count(4)
+            .build()
+            .unwrap();
+        let detector = StormCellDetector::new(35.0, 1).unwrap();
+        assert_eq!(
+            detector.detect(&velocity, &cs),
+            Err(Error::UnexpectedProduct {
+                expected: Product::Reflectivity,
+                actual: Some(Product::Velocity),
+            })
+        );
+    }
+
+    #[test]
     fn test_invalid_min_gate_count_zero() {
         let result = StormCellDetector::new(35.0, 0);
-        assert!(result.is_err());
+        assert!(matches!(
+            result,
+            Err(Error::InvalidParameter {
+                parameter: "min_gate_count",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn test_invalid_threshold_not_finite() {
+        for threshold in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert!(matches!(
+                StormCellDetector::new(threshold, 5),
+                Err(Error::InvalidParameter {
+                    parameter: "reflectivity_threshold_dbz",
+                    ..
+                })
+            ));
+        }
+    }
+
+    #[test]
+    fn test_detector_getters() -> Result<()> {
+        let detector = StormCellDetector::new(-5.0, 7)?;
+        assert_eq!(detector.reflectivity_threshold_dbz(), -5.0);
+        assert_eq!(detector.min_gate_count(), 7);
+        Ok(())
+    }
+
+    #[test]
+    fn test_bounds_contain_centroid() -> Result<()> {
+        let cs = test_coord_system();
+        let mut field = make_empty_field(100);
+        for az in 10..15 {
+            for gate in 20..25 {
+                field.set(az, gate, 40.0, GateStatus::Valid)?;
+            }
+        }
+
+        let cells = StormCellDetector::new(35.0, 5)?.detect(&field, &cs)?;
+        let bounds = cells[0].bounds();
+        let centroid = cells[0].centroid();
+        assert!(bounds.min.latitude < bounds.max.latitude);
+        assert!(bounds.min.longitude < bounds.max.longitude);
+        assert!((bounds.min.latitude..=bounds.max.latitude).contains(&centroid.latitude));
+        assert!((bounds.min.longitude..=bounds.max.longitude).contains(&centroid.longitude));
+        Ok(())
+    }
+
+    #[test]
+    fn test_centroid_with_zero_dbz_threshold() -> Result<()> {
+        let cs = test_coord_system();
+        let mut field = make_empty_field(100);
+
+        // A radial run at exactly 0 dBZ: raw-dBZ weights would all be zero.
+        for gate in 40..46 {
+            field.set(90, gate, 0.0, GateStatus::Valid)?;
+        }
+
+        let cells = StormCellDetector::new(0.0, 3)?.detect(&field, &cs)?;
+        assert_eq!(cells.len(), 1);
+        let centroid = cells[0].centroid();
+        assert!(centroid.latitude.is_finite() && centroid.longitude.is_finite());
+
+        // Equal weights put the centroid at the geometric middle of the run.
+        let polar = cs.geo_to_polar(centroid, cells[0].elevation_angle_degrees() as f64);
+        let mid_range = field.first_gate_range_km() + 42.5 * field.gate_interval_km();
+        assert!(
+            (polar.range_km - mid_range).abs() < 0.01,
+            "centroid range {:.3} should be at the run's middle {:.3}",
+            polar.range_km,
+            mid_range
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_centroid_with_negative_dbz_leans_to_stronger_echo() -> Result<()> {
+        let cs = test_coord_system();
+        let mut field = make_empty_field(100);
+
+        // Weak near end at -10 dBZ, stronger far end at 0 dBZ. Raw-dBZ weights would give the
+        // 0 dBZ gates no weight and put the centroid on the weaker end.
+        for gate in 40..43 {
+            field.set(90, gate, -10.0, GateStatus::Valid)?;
+        }
+        for gate in 43..46 {
+            field.set(90, gate, 0.0, GateStatus::Valid)?;
+        }
+
+        let cells = StormCellDetector::new(-15.0, 3)?.detect(&field, &cs)?;
+        assert_eq!(cells.len(), 1);
+        let polar = cs.geo_to_polar(
+            cells[0].centroid(),
+            cells[0].elevation_angle_degrees() as f64,
+        );
+        let first = field.first_gate_range_km();
+        let interval = field.gate_interval_km();
+        let mid_range = first + 42.5 * interval;
+        assert!(
+            polar.range_km > mid_range,
+            "centroid should lean to the 0 dBZ end"
+        );
+        assert!(polar.range_km <= first + 45.0 * interval + 0.01);
+        Ok(())
     }
 
     #[test]

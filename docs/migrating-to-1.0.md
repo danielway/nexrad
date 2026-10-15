@@ -799,6 +799,9 @@ let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options
   used to span the field's own data range, and `render_cartesian`/`render_vertical` used the field's range. Colours of a
   sweep with a known product are now stable across sweeps; pin the old behaviour with
   `with_value_range(min, max)`.
+- **Discrete colours are exact** (#194): `ColorLookupTable::color` returns a discrete scale's own colour for every
+  value in range, so values on a threshold (20 dBZ, 30 dBZ, ...) no longer take the colour of the level below.
+  `entries()` is still the scale sampled at evenly spaced values.
 - **`Color::to_rgba8` rounds and clamps** (#194): components are clamped to `0.0..=1.0` and rounded to the nearest byte
   instead of truncated, so some built-in scale colours shift by one step (for example `0.6627` is now 169, not 168).
 - **`RenderOptions::with_extent` renders into the extent** (#194): `render_sweep` draws the sweep onto a

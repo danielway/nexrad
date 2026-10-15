@@ -32,6 +32,7 @@
 #![warn(unnameable_types)]
 #![deny(missing_docs)]
 
+mod azimuth;
 /// Derived products computed from radar scans.
 pub mod derived;
 /// Storm cell detection algorithms.

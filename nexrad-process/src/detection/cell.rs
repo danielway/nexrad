@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
 
-use crate::result::{check_finite, Error, Result};
-use nexrad_model::data::{GateStatus, SweepField};
+use crate::azimuth::{covers_full_circle, neighbor_azimuth};
+use crate::result::{check_finite, check_product, Error, Result};
+use nexrad_model::data::{GateStatus, Product, SweepField};
 use nexrad_model::geo::{GeoExtent, GeoPoint, PolarPoint, RadarCoordinateSystem};
 
 /// A detected storm cell identified by connected-component analysis on a
@@ -107,8 +108,9 @@ impl StormCell {
 ///    its status is `Valid` and its value >= `reflectivity_threshold_dbz`.
 /// 2. Perform flood-fill connected-component labeling on the above-threshold
 ///    gates. Two gates are connected if they are adjacent in azimuth or range
-///    (4-connectivity). Azimuth wraps: the last azimuth index is adjacent to
-///    the first.
+///    (4-connectivity). When the field covers the full circle (the gap across
+///    north is at most twice the azimuth spacing), the last azimuth index is
+///    adjacent to the first; a sector's edges are not adjacent.
 /// 3. Filter out components with fewer than `min_gate_count` gates.
 /// 4. For each remaining component, compute cell properties.
 ///
@@ -182,7 +184,7 @@ impl StormCellDetector {
     ///
     /// # Parameters
     ///
-    /// - `field` — A reflectivity sweep field (dBZ values).
+    /// - `field` — A sweep field holding [`Product::Reflectivity`] (dBZ values).
     /// - `coord_system` — The radar coordinate system for computing geographic
     ///   positions.
     ///
@@ -193,15 +195,19 @@ impl StormCellDetector {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::InvalidGeometry`] if the field has zero azimuths or
-    /// zero gates.
+    /// Returns [`Error::UnexpectedProduct`] if the field does not hold
+    /// [`Product::Reflectivity`] and [`Error::InvalidGeometry`] if it has zero
+    /// azimuths or zero gates.
     pub fn detect(
         &self,
         field: &SweepField,
         coord_system: &RadarCoordinateSystem,
     ) -> Result<Vec<StormCell>> {
+        check_product(field, Product::Reflectivity)?;
+
         let az_count = field.azimuth_count();
         let num_gates = field.gate_count();
+        let wraps = covers_full_circle(field);
 
         if az_count == 0 {
             return Err(Error::InvalidGeometry {
@@ -249,17 +255,16 @@ impl StormCellDetector {
                 while let Some((az, gate)) = queue.pop_front() {
                     component.push((az, gate));
 
-                    // 4-connected neighbors: azimuth ± 1 (wrapping), range ± 1 (clamped)
-                    let az_prev = if az == 0 { az_count - 1 } else { az - 1 };
-                    let az_next = if az == az_count - 1 { 0 } else { az + 1 };
-
-                    let neighbors: [(usize, usize); 2] = [(az_prev, gate), (az_next, gate)];
-
-                    for &(n_az, n_gate) in &neighbors {
-                        let n_idx = n_az * num_gates + n_gate;
+                    // 4-connected neighbors: azimuth ± 1 (wrapping only across a full
+                    // circle), range ± 1 (clamped)
+                    for offset in [-1, 1] {
+                        let Some(n_az) = neighbor_azimuth(az, offset, az_count, wraps) else {
+                            continue;
+                        };
+                        let n_idx = n_az * num_gates + gate;
                         if above_threshold[n_idx] && !visited[n_idx] {
                             visited[n_idx] = true;
-                            queue.push_back((n_az, n_gate));
+                            queue.push_back((n_az, gate));
                         }
                     }
 
@@ -433,6 +438,7 @@ mod tests {
     fn make_empty_field(gate_count: usize) -> SweepField {
         let azimuths: Vec<f32> = (0..360).map(|i| i as f32).collect();
         SweepField::builder("Reflectivity", "dBZ")
+            .product(Product::Reflectivity)
             .elevation_angle_degrees(0.5)
             .azimuth_angles_degrees(azimuths)
             .first_gate_range_km(2.0)
@@ -544,6 +550,51 @@ mod tests {
         // Should be a single cell, not two
         assert_eq!(cells.len(), 1);
         assert_eq!(cells[0].gate_count(), 5);
+    }
+
+    #[test]
+    fn test_sector_edges_not_joined() -> Result<()> {
+        let cs = test_coord_system();
+        let mut field = SweepField::builder("Reflectivity", "dBZ")
+            .product(Product::Reflectivity)
+            .elevation_angle_degrees(0.5)
+            .azimuth_angles_degrees((0..90).map(|az| az as f32).collect())
+            .first_gate_range_km(2.0)
+            .gate_interval_km(0.25)
+            .gate_count(100)
+            .build()?;
+
+        // Gates on both edges of a 90-degree sector: radials 88, 89 and 0, 1.
+        for az in [88, 89, 0, 1] {
+            field.set(az, 30, 40.0, GateStatus::Valid)?;
+        }
+
+        let cells = StormCellDetector::new(35.0, 1)?.detect(&field, &cs)?;
+        assert_eq!(cells.len(), 2);
+        for cell in &cells {
+            assert_eq!(cell.gate_count(), 2);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_detect_requires_reflectivity() {
+        let cs = test_coord_system();
+        let velocity = SweepField::builder("Velocity", "m/s")
+            .product(Product::Velocity)
+            .azimuth_angles_degrees(vec![0.0, 1.0])
+            .gate_interval_km(0.25)
+            .gate_count(4)
+            .build()
+            .unwrap();
+        let detector = StormCellDetector::new(35.0, 1).unwrap();
+        assert_eq!(
+            detector.detect(&velocity, &cs),
+            Err(Error::UnexpectedProduct {
+                expected: Product::Reflectivity,
+                actual: Some(Product::Velocity),
+            })
+        );
     }
 
     #[test]

@@ -1,5 +1,5 @@
-use crate::result::{Error, Result};
-use nexrad_model::data::{GateStatus, SweepField, VerticalField};
+use crate::result::{check_product, Error, Result};
+use nexrad_model::data::{GateStatus, Product, SweepField, VerticalField};
 use nexrad_model::geo::RadarCoordinateSystem;
 
 /// Vertical cross-section (RHI-style) — assembles a range-height display from
@@ -110,7 +110,8 @@ impl VerticalCrossSection {
     ///
     /// # Errors
     ///
-    /// Returns an error if no fields are provided.
+    /// Returns [`Error::MissingData`] if no fields are provided and
+    /// [`Error::UnexpectedProduct`] if any field does not hold [`Product::Reflectivity`].
     pub fn compute(
         &self,
         fields: &[SweepField],
@@ -120,6 +121,9 @@ impl VerticalCrossSection {
             return Err(Error::MissingData {
                 what: "no sweep fields provided",
             });
+        }
+        for field in fields {
+            check_product(field, Product::Reflectivity)?;
         }
 
         let label = format!("{} RHI", fields[0].label());
@@ -297,6 +301,7 @@ mod tests {
 
         let gate_count = 100;
         let mut field = SweepField::builder("Reflectivity", "dBZ")
+            .product(Product::Reflectivity)
             .elevation_angle_degrees(elevation)
             .azimuth_angles_degrees(azimuths)
             .first_gate_range_km(2.0)
@@ -397,6 +402,28 @@ mod tests {
     fn test_vertical_empty_fields_error() {
         let vcs = section(180.0, 25.0, 5000.0, 50, 25).unwrap();
         assert!(vcs.compute(&[], &coordinate_system()).is_err());
+    }
+
+    #[test]
+    fn test_vertical_requires_reflectivity() {
+        let vcs = section(180.0, 25.0, 5000.0, 50, 25).unwrap();
+        let velocity = SweepField::builder("Velocity", "m/s")
+            .product(Product::Velocity)
+            .azimuth_angles_degrees(vec![0.0, 1.0])
+            .gate_interval_km(0.25)
+            .gate_count(4)
+            .build()
+            .unwrap();
+        assert_eq!(
+            vcs.compute(
+                &[make_uniform_field(0.5, 30.0), velocity],
+                &coordinate_system()
+            ),
+            Err(Error::UnexpectedProduct {
+                expected: Product::Reflectivity,
+                actual: Some(Product::Velocity),
+            })
+        );
     }
 
     #[test]

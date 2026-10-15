@@ -347,7 +347,7 @@ impl<'a> Message<'a> {
             header
                 .date_time()
                 .ok_or(Error::MessageMissingDate {
-                    message_type: crate::messages::MessageType::RdaDigitalRadarDataGenericFormat,
+                    message_type: crate::messages::MessageType::DigitalRadarData,
                 })?
                 .timestamp_millis(),
         )

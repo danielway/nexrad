@@ -6,13 +6,13 @@
 #[non_exhaustive]
 pub enum MessageType {
     /// Message type 1. Replaced by message type 31.
-    RdaDigitalRadarData,
+    DigitalRadarDataLegacy,
 
     /// Message type 2. Metadata.
     RdaStatusData,
 
     /// Message type 3. Metadata.
-    RdaPerformanceMaintenanceData,
+    PerformanceMaintenanceData,
 
     /// Message type 4. Console message from RDA.
     RdaConsoleMessage,
@@ -27,31 +27,31 @@ pub enum MessageType {
     RpgVolumeCoveragePattern,
 
     /// Message type 8. Clutter censor zones from RPG.
-    RpgClutterCensorZones,
+    ClutterCensorZones,
 
     /// Message type 9. Data request from RPG.
-    RpgRequestForData,
+    RequestForData,
 
     /// Message type 10. Console message from RPG.
     RpgConsoleMessage,
 
     /// Message type 11. Loopback test from RDA.
-    RdaLoopBackTest,
+    RdaLoopbackTest,
 
     /// Message type 12. Loopback test from RPG.
-    RpgLoopBackTest,
+    RpgLoopbackTest,
 
     /// Message type 13. No longer sent.
-    RdaClutterFilterBypassMap,
+    ClutterFilterBypassMap,
 
     /// Message type 15. Metadata.
-    RdaClutterFilterMap,
+    ClutterFilterMap,
 
     /// Message type 18. Metadata.
     RdaAdaptationData,
 
     /// Message type 31. Generic format digital radar data (primary data format).
-    RdaDigitalRadarDataGenericFormat,
+    DigitalRadarData,
 
     /// Message type 32. PRF data from RDA.
     RdaPrfData,
@@ -78,22 +78,22 @@ impl MessageType {
     /// the ICD does not define map to [`MessageType::Unknown`].
     pub fn from_number(number: u8) -> Self {
         match number {
-            1 => MessageType::RdaDigitalRadarData,
+            1 => MessageType::DigitalRadarDataLegacy,
             2 => MessageType::RdaStatusData,
-            3 => MessageType::RdaPerformanceMaintenanceData,
+            3 => MessageType::PerformanceMaintenanceData,
             4 => MessageType::RdaConsoleMessage,
             5 => MessageType::RdaVolumeCoveragePattern,
             6 => MessageType::RdaControlCommands,
             7 => MessageType::RpgVolumeCoveragePattern,
-            8 => MessageType::RpgClutterCensorZones,
-            9 => MessageType::RpgRequestForData,
+            8 => MessageType::ClutterCensorZones,
+            9 => MessageType::RequestForData,
             10 => MessageType::RpgConsoleMessage,
-            11 => MessageType::RdaLoopBackTest,
-            12 => MessageType::RpgLoopBackTest,
-            13 => MessageType::RdaClutterFilterBypassMap,
-            15 => MessageType::RdaClutterFilterMap,
+            11 => MessageType::RdaLoopbackTest,
+            12 => MessageType::RpgLoopbackTest,
+            13 => MessageType::ClutterFilterBypassMap,
+            15 => MessageType::ClutterFilterMap,
             18 => MessageType::RdaAdaptationData,
-            31 => MessageType::RdaDigitalRadarDataGenericFormat,
+            31 => MessageType::DigitalRadarData,
             32 => MessageType::RdaPrfData,
             33 => MessageType::RdaLogData,
             14 | 16 | 17 | 20..=26 | 29 => MessageType::Reserved(number),
@@ -104,22 +104,22 @@ impl MessageType {
     /// The message type number as it appears in the message header.
     pub fn number(self) -> u8 {
         match self {
-            MessageType::RdaDigitalRadarData => 1,
+            MessageType::DigitalRadarDataLegacy => 1,
             MessageType::RdaStatusData => 2,
-            MessageType::RdaPerformanceMaintenanceData => 3,
+            MessageType::PerformanceMaintenanceData => 3,
             MessageType::RdaConsoleMessage => 4,
             MessageType::RdaVolumeCoveragePattern => 5,
             MessageType::RdaControlCommands => 6,
             MessageType::RpgVolumeCoveragePattern => 7,
-            MessageType::RpgClutterCensorZones => 8,
-            MessageType::RpgRequestForData => 9,
+            MessageType::ClutterCensorZones => 8,
+            MessageType::RequestForData => 9,
             MessageType::RpgConsoleMessage => 10,
-            MessageType::RdaLoopBackTest => 11,
-            MessageType::RpgLoopBackTest => 12,
-            MessageType::RdaClutterFilterBypassMap => 13,
-            MessageType::RdaClutterFilterMap => 15,
+            MessageType::RdaLoopbackTest => 11,
+            MessageType::RpgLoopbackTest => 12,
+            MessageType::ClutterFilterBypassMap => 13,
+            MessageType::ClutterFilterMap => 15,
             MessageType::RdaAdaptationData => 18,
-            MessageType::RdaDigitalRadarDataGenericFormat => 31,
+            MessageType::DigitalRadarData => 31,
             MessageType::RdaPrfData => 32,
             MessageType::RdaLogData => 33,
             MessageType::Reserved(number) | MessageType::Unknown(number) => number,

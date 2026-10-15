@@ -51,7 +51,7 @@ impl<'a> ElevationDataBlock<'a> {
     /// Bit 1: 1/4 km reflectivity
     /// Bit 2: Doppler to 300 km
     /// Bit 3: Dual polarization to 300 km
-    pub fn super_resolution_control(&self) -> u8 {
+    pub fn super_resolution_control_raw(&self) -> u8 {
         self.inner.super_resolution_control
     }
 
@@ -123,7 +123,7 @@ impl<'a> ElevationDataBlock<'a> {
     /// Bit 8:    Spare
     /// Bit 9:    MPDA Cut
     /// Bit 10:   BASE TILT Cut
-    pub fn supplemental_data(&self) -> u16 {
+    pub fn supplemental_data_raw(&self) -> u16 {
         self.inner.supplemental_data.get()
     }
 
@@ -163,8 +163,8 @@ impl<'a> ElevationDataBlock<'a> {
     }
 
     /// The elevation angle for this cut in degrees
-    pub fn elevation_angle_degrees(&self) -> f64 {
-        decode_angle(self.inner.elevation_angle)
+    pub fn elevation_angle_degrees(&self) -> f32 {
+        decode_angle(self.inner.elevation_angle) as f32
     }
 
     /// The channel configuration for this cut
@@ -173,20 +173,13 @@ impl<'a> ElevationDataBlock<'a> {
             0 => ChannelConfiguration::ConstantPhase,
             1 => ChannelConfiguration::RandomPhase,
             2 => ChannelConfiguration::Sz2Phase,
-            _ => ChannelConfiguration::UnknownPhase,
+            other => ChannelConfiguration::Unknown(other),
         }
     }
 
     /// The waveform type for this cut
     pub fn waveform_type(&self) -> WaveformType {
-        match self.inner.waveform_type {
-            1 => WaveformType::ContiguousSurveillance,
-            2 => WaveformType::ContiguousDopplerWithAmbiguityResolution,
-            3 => WaveformType::ContiguousDopplerWithoutAmbiguityResolution,
-            4 => WaveformType::Batch,
-            5 => WaveformType::StaggeredPulsePair,
-            _ => WaveformType::Unknown,
-        }
+        WaveformType::from_raw(self.inner.waveform_type)
     }
 
     /// The azimuth rate of the cut in degrees/second
@@ -225,23 +218,23 @@ impl<'a> ElevationDataBlock<'a> {
     }
 
     /// Sector 1 Azimuth Clockwise Edge Angle in degrees (denotes start angle)
-    pub fn sector_1_edge_angle_degrees(&self) -> f64 {
-        decode_angle(self.inner.sector_1_edge_angle)
+    pub fn sector_1_edge_angle_degrees(&self) -> f32 {
+        decode_angle(self.inner.sector_1_edge_angle) as f32
     }
 
     /// Sector 2 Azimuth Clockwise Edge Angle in degrees (denotes start angle)
-    pub fn sector_2_edge_angle_degrees(&self) -> f64 {
-        decode_angle(self.inner.sector_2_edge_angle)
+    pub fn sector_2_edge_angle_degrees(&self) -> f32 {
+        decode_angle(self.inner.sector_2_edge_angle) as f32
     }
 
     /// Sector 3 Azimuth Clockwise Edge Angle in degrees (denotes start angle)
-    pub fn sector_3_edge_angle_degrees(&self) -> f64 {
-        decode_angle(self.inner.sector_3_edge_angle)
+    pub fn sector_3_edge_angle_degrees(&self) -> f32 {
+        decode_angle(self.inner.sector_3_edge_angle) as f32
     }
 
     /// The correction added to the elevation angle for this cut in degrees
-    pub fn ebc_angle_degrees(&self) -> f64 {
-        decode_angle(self.inner.ebc_angle)
+    pub fn ebc_angle_degrees(&self) -> f32 {
+        decode_angle(self.inner.ebc_angle) as f32
     }
 
     /// Whether 0.5 degree azimuth super resolution is enabled

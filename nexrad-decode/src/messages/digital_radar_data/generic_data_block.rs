@@ -21,8 +21,7 @@ impl<'a> GenericDataBlock<'a> {
         let raw_header = reader.take_ref::<raw::GenericDataBlockHeader>()?;
 
         let word_size_bytes = raw_header.data_word_size as usize / 8;
-        let encoded_data_size =
-            raw_header.number_of_data_moment_gates.get() as usize * word_size_bytes;
+        let encoded_data_size = raw_header.data_moment_gate_count.get() as usize * word_size_bytes;
 
         let encoded_data = reader.take_bytes(encoded_data_size)?;
 
@@ -59,7 +58,7 @@ impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
     fn product(&self) -> Result<nexrad_model::data::Product> {
         self.id().data_block_name().product().ok_or_else(|| {
             crate::result::Error::UnknownDataBlockType {
-                block_type: *self.id().data_name_raw(),
+                block_type: *self.id().data_block_name_raw(),
                 offset: self.offset(),
             }
         })
@@ -79,7 +78,7 @@ impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
         let header = self.inner().header();
         Ok(nexrad_model::data::MomentData::from_fixed_point(
             self.product()?,
-            usize::from(header.number_of_data_moment_gates()),
+            usize::from(header.data_moment_gate_count()),
             header.data_moment_range_raw(),
             header.data_moment_range_sample_interval_raw(),
             header.data_word_size_raw(),
@@ -104,7 +103,7 @@ impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
         let block = self.into_inner();
         Ok(nexrad_model::data::MomentData::from_fixed_point(
             product,
-            usize::from(block.header.number_of_data_moment_gates()),
+            usize::from(block.header.data_moment_gate_count()),
             block.header.data_moment_range_raw(),
             block.header.data_moment_range_sample_interval_raw(),
             block.header.data_word_size_raw(),

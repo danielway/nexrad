@@ -13,7 +13,7 @@
 
 use nexrad_data::volume;
 use nexrad_decode::messages::rda_status_data::RdaBuildNumber;
-use nexrad_decode::messages::{decode_messages, MessageContents};
+use nexrad_decode::messages::{decode_messages, MessageContents, MessageType, RedundantChannel};
 
 /// Helper: decode a volume file and extract analysis data.
 fn analyze_volume(data: &[u8]) -> VolumeAnalysis {
@@ -244,8 +244,8 @@ fn test_message_type1_field_values() {
                 assert!(vcp > 0, "VCP number should be positive, got {vcp}");
 
                 // Gate counts should be reasonable
-                let surv = drd.num_surveillance_gates();
-                let dopp = drd.num_doppler_gates();
+                let surv = drd.surveillance_gate_count();
+                let dopp = drd.doppler_gate_count();
                 assert!(surv <= 460, "surveillance gates {surv} exceeds max 460");
                 assert!(dopp <= 920, "doppler gates {dopp} exceeds max 920");
                 assert!(
@@ -268,6 +268,98 @@ fn test_message_type1_field_values() {
         }
     }
     assert!(checked, "should have checked at least one Type 1 message");
+}
+
+/// A legacy (pre-ORDA) RDA's clutter filter bypass map (type 13) and clutter filter map (type 15)
+/// use layouts the ORDA decoders do not read, so both decode as `Other` with their payloads.
+#[test]
+fn test_legacy_clutter_maps_decode_as_other() {
+    let file = volume::File::new(KABR_2005.to_vec())
+        .decompress()
+        .expect("decompresses gzip file");
+
+    let mut found = Vec::new();
+    for mut record in file.records().expect("records") {
+        if record.compressed() {
+            record = record.decompress().expect("decompresses record");
+        }
+
+        for message in decode_messages(record.data()).expect("decodes messages") {
+            let message_type = message.header().message_type();
+            if !matches!(
+                message_type,
+                MessageType::ClutterFilterBypassMap | MessageType::ClutterFilterMap
+            ) {
+                continue;
+            }
+
+            assert_eq!(
+                message.header().redundant_channel(),
+                RedundantChannel::LegacySingleChannel
+            );
+            match message.contents() {
+                MessageContents::Other {
+                    message_type: other_type,
+                    data,
+                } => {
+                    assert_eq!(*other_type, message_type);
+                    found.push((message_type, message.headers().count(), data.len()));
+                }
+                other => panic!("expected Other for legacy {message_type:?}, got {other:?}"),
+            }
+        }
+    }
+
+    found.sort();
+    assert_eq!(
+        found,
+        [
+            (MessageType::ClutterFilterBypassMap, 34, 81392),
+            (MessageType::ClutterFilterMap, 14, 32772),
+        ]
+    );
+}
+
+/// Validates the Message Type 1 Nyquist velocity and atmospheric attenuation against the ICD
+/// ranges, and that Doppler radials carry the Nyquist velocity into the model.
+#[test]
+fn test_message_type1_nyquist_and_attenuation() {
+    let file = volume::File::new(KABR_2005.to_vec())
+        .decompress()
+        .expect("decompresses gzip file");
+    let records = file.records().expect("records");
+
+    let mut doppler_radials = 0;
+    for mut record in records {
+        if record.compressed() {
+            record = record.decompress().expect("decompresses record");
+        }
+
+        for message in decode_messages(record.data()).expect("decodes messages") {
+            let MessageContents::DigitalRadarDataLegacy(drd) = message.contents() else {
+                continue;
+            };
+
+            let attenuation = drd.atmospheric_attenuation_db_per_km();
+            // The Doppler-only cuts of split cuts leave the factor at 0.
+            assert!(
+                attenuation == 0.0 || (-0.02..=-0.002).contains(&attenuation),
+                "atmospheric attenuation {attenuation} dB/km out of range"
+            );
+
+            if drd.velocity_gates().is_some() {
+                let nyquist = drd.nyquist_velocity_mps();
+                assert!(
+                    (8.0..=35.61).contains(&nyquist),
+                    "Nyquist velocity {nyquist} m/s out of range"
+                );
+                let radial = drd.radial().expect("converts to radial");
+                assert_eq!(radial.nyquist_velocity_mps(), Some(nyquist));
+                doppler_radials += 1;
+            }
+        }
+    }
+    assert!(doppler_radials > 0, "should have checked a Doppler radial");
 }
 
 // -- Legacy format tests (gzip-compressed, CTM frames) --
@@ -594,9 +686,8 @@ fn test_transition_era_kcrp_2022() {
 /// Validates that build number decoding is consistent across all available test volumes.
 /// This test extracts the raw build number field and verifies:
 /// 1. The scaling factor (÷100 vs ÷10) produces a reasonable build number
-/// 2. The decoded build number is a known variant
-/// 3. The build number is consistent with the file's date
-/// 4. The VOL block format detected matches the build number's expectation
+/// 2. The build number is consistent with the file's date
+/// 3. The VOL block format detected matches the build number's expectation
 #[test]
 fn test_build_number_consistency_all_volumes() {
     struct TestCase {
@@ -700,7 +791,10 @@ fn test_build_number_consistency_all_volumes() {
         let build = analysis
             .build_number
             .unwrap_or_else(|| panic!("{}: should have build number", tc.name));
-        let build_float = build.as_float();
+        let build_float: f32 = build
+            .to_string()
+            .parse()
+            .expect("build displays as a number");
 
         // Verify build number is in expected range for this file's date
         assert!(
@@ -712,18 +806,6 @@ fn test_build_number_consistency_all_volumes() {
             tc.min_expected_build,
             tc.max_expected_build
         );
-
-        // Verify build number is a known variant (not Unknown) for builds >= 12.0.
-        // Older builds (e.g. 11.3) predate our enum and are expected to be Unknown.
-        if build_float >= 12.0 {
-            assert!(
-                build.is_known(),
-                "{}: build number should be known, got {:?} (raw: {:?})",
-                tc.name,
-                build,
-                analysis.raw_build_value
-            );
-        }
 
         // Verify VOL block format matches build number expectation
         assert_eq!(
@@ -831,7 +913,7 @@ fn analyze_volume_first_vol_block(data: &[u8]) -> VolBlockAnalysis {
                     return VolBlockAnalysis {
                         is_legacy: inner.lrtup_bytes() <= 44,
                         lrtup: inner.lrtup_bytes(),
-                        zdr_bias: inner.zdr_bias_estimate_weighted_mean(),
+                        zdr_bias: inner.zdr_bias_estimate_weighted_mean_raw(),
                     };
                 }
             }
@@ -926,42 +1008,22 @@ fn test_rad_block_format_across_eras() {
 /// known raw values.
 #[test]
 fn test_build_number_scaling() {
-    // Build 19.0: raw value 190 (190/100 = 1.9 < 2.0, so 190/10 = 19.0)
-    assert_eq!(
-        RdaBuildNumber::from_raw(190),
-        RdaBuildNumber::Build19_0,
-        "raw 190 should decode to Build 19.0"
-    );
-
-    // Build 20.0: raw value 200 (200/100 = 2.0, not > 2.0, so 200/10 = 20.0)
-    assert_eq!(
-        RdaBuildNumber::from_raw(200),
-        RdaBuildNumber::Build20_0,
-        "raw 200 should decode to Build 20.0"
-    );
-
-    // Build 21.0: raw value 2100 (2100/100 = 21.0 > 2.0, so 2100/100 = 21.0)
-    assert_eq!(
-        RdaBuildNumber::from_raw(2100),
-        RdaBuildNumber::Build21_0,
-        "raw 2100 should decode to Build 21.0"
-    );
-
-    // Build 24.0: raw value 2400 (2400/100 = 24.0 > 2.0, so 2400/100 = 24.0)
-    assert_eq!(
-        RdaBuildNumber::from_raw(2400),
-        RdaBuildNumber::Build24_0,
-        "raw 2400 should decode to Build 24.0"
-    );
-
-    // Build 12.0: raw value 120 (120/100 = 1.2 < 2.0, so 120/10 = 12.0)
-    assert_eq!(
-        RdaBuildNumber::from_raw(120),
-        RdaBuildNumber::Build12_0,
-        "raw 120 should decode to Build 12.0"
-    );
+    // Values of 200 or less are divided by 10, larger values by 100.
+    for (raw, expected) in [
+        (120, "12.0"),
+        (190, "19.0"),
+        (200, "20.0"),
+        (2100, "21.0"),
+        (2400, "24.0"),
+    ] {
+        assert_eq!(
+            RdaBuildNumber::from_raw(raw).to_string(),
+            expected,
+            "raw {raw} should decode to build {expected}"
+        );
+    }
 
     // Verify legacy boundary
-    assert!(RdaBuildNumber::Build19_0.uses_legacy_volume_data_block());
-    assert!(!RdaBuildNumber::Build20_0.uses_legacy_volume_data_block());
+    assert!(RdaBuildNumber::from_raw(190).uses_legacy_volume_data_block());
+    assert!(!RdaBuildNumber::from_raw(200).uses_legacy_volume_data_block());
 }

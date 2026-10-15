@@ -155,8 +155,8 @@ impl<'a> VolumeDataBlock<'a> {
     }
 
     /// Identifies the volume coverage pattern in use (raw value). See
-    /// [`volume_coverage_pattern()`](Self::volume_coverage_pattern) for the decoded value.
-    pub fn volume_coverage_pattern_raw(&self) -> u16 {
+    /// [`vcp_number()`](Self::vcp_number) for the decoded value.
+    pub fn vcp_number_raw(&self) -> u16 {
         match &self.inner {
             VolumeDataBlockInner::Legacy(inner) => inner.volume_coverage_pattern_number.get(),
             VolumeDataBlockInner::Modern(inner) => inner.volume_coverage_pattern_number.get(),
@@ -171,16 +171,30 @@ impl<'a> VolumeDataBlock<'a> {
         }
     }
 
-    /// RPG weighted mean ZDR bias estimate in dB.
+    /// RPG weighted mean ZDR bias estimate (raw coded value, encoded like the ZDR data moment
+    /// with 0 meaning not available). See
+    /// [`zdr_bias_estimate_weighted_mean_db()`](Self::zdr_bias_estimate_weighted_mean_db) for the
+    /// decoded value.
     ///
     /// Returns `None` for legacy data (Build 19.0 and earlier) as this field
     /// was added in Build 20.0.
-    pub fn zdr_bias_estimate_weighted_mean(&self) -> Option<u16> {
+    pub fn zdr_bias_estimate_weighted_mean_raw(&self) -> Option<u16> {
         match &self.inner {
             VolumeDataBlockInner::Legacy(_) => None,
             VolumeDataBlockInner::Modern(inner) => {
                 Some(inner.zdr_bias_estimate_weighted_mean.get())
             }
+        }
+    }
+
+    /// RPG weighted mean ZDR bias estimate in dB, decoded as `(raw - 418) / 32`.
+    ///
+    /// Returns `None` for legacy data (Build 19.0 and earlier), which lacks this field, and when
+    /// the coded value is 0 (not available).
+    pub fn zdr_bias_estimate_weighted_mean_db(&self) -> Option<f32> {
+        match self.zdr_bias_estimate_weighted_mean_raw()? {
+            0 => None,
+            raw => Some((raw as f32 - 418.0) / 32.0),
         }
     }
 
@@ -233,8 +247,8 @@ impl<'a> VolumeDataBlock<'a> {
     }
 
     /// Identifies the volume coverage pattern in use.
-    pub fn volume_coverage_pattern(&self) -> VcpNumber {
-        VcpNumber::from_number(self.volume_coverage_pattern_raw())
+    pub fn vcp_number(&self) -> VcpNumber {
+        VcpNumber::from_number(self.vcp_number_raw())
     }
 
     /// Processing option flags.
@@ -243,7 +257,7 @@ impl<'a> VolumeDataBlock<'a> {
         match processing_status {
             0 => ProcessingStatus::RxrNoise,
             1 => ProcessingStatus::Cbt,
-            _ => ProcessingStatus::Other(processing_status),
+            _ => ProcessingStatus::Unknown(processing_status),
         }
     }
 }

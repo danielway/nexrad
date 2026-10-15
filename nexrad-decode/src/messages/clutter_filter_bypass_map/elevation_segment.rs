@@ -18,7 +18,7 @@ pub const RANGE_BIN_BYTES_PER_SEGMENT: usize = RADIALS_PER_SEGMENT * HALFWORDS_P
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ElevationSegment<'a> {
     /// The segment number for this elevation segment.
-    segment_number: u16,
+    elevation_segment_number: u16,
 
     /// Raw range bin data: 360 radials * 32 halfwords * 2 bytes = 23040 bytes.
     /// Each halfword contains 16 range bin flags as individual bits.
@@ -27,16 +27,16 @@ pub struct ElevationSegment<'a> {
 
 impl<'a> ElevationSegment<'a> {
     /// Creates a new elevation segment with owned range bin data.
-    pub(crate) fn from_owned(segment_number: u16, range_bins: Vec<u8>) -> Self {
+    pub(crate) fn from_owned(elevation_segment_number: u16, range_bins: Vec<u8>) -> Self {
         ElevationSegment {
-            segment_number,
+            elevation_segment_number,
             range_bins: Cow::Owned(range_bins),
         }
     }
 
-    /// The segment number for this elevation segment.
-    pub fn segment_number(&self) -> u16 {
-        self.segment_number
+    /// This elevation segment's number.
+    pub fn elevation_segment_number(&self) -> u16 {
+        self.elevation_segment_number
     }
 
     /// The raw range bin data as a byte slice. This contains 360 radials * 32 halfwords * 2 bytes
@@ -77,7 +77,7 @@ impl<'a> ElevationSegment<'a> {
     /// Convert this segment to an owned version with `'static` lifetime.
     pub fn into_owned(self) -> ElevationSegment<'static> {
         ElevationSegment {
-            segment_number: self.segment_number,
+            elevation_segment_number: self.elevation_segment_number,
             range_bins: Cow::Owned(self.range_bins.into_owned()),
         }
     }

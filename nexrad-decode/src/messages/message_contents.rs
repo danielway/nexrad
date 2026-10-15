@@ -38,7 +38,7 @@ pub enum MessageContents<'a> {
 
     /// Message type 5 "Volume Coverage Pattern" provides details about the volume
     /// coverage pattern being used, including detailed settings for each elevation.
-    VolumeCoveragePattern(Box<volume_coverage_pattern::Message<'a>>),
+    RdaVolumeCoveragePattern(Box<volume_coverage_pattern::Message<'a>>),
 
     /// Message types 4 and 10 "Console Message" carry free-form text between the RDA and RPG.
     ConsoleMessage(Box<console_message::Message<'a>>),
@@ -90,18 +90,18 @@ impl MessageContents<'_> {
         match self {
             MessageContents::RdaStatusData(_) => MessageType::RdaStatusData,
             MessageContents::PerformanceMaintenanceData(_) => {
-                MessageType::RdaPerformanceMaintenanceData
+                MessageType::PerformanceMaintenanceData
             }
-            MessageContents::DigitalRadarDataLegacy(_) => MessageType::RdaDigitalRadarData,
-            MessageContents::DigitalRadarData(_) => MessageType::RdaDigitalRadarDataGenericFormat,
-            MessageContents::ClutterFilterMap(_) => MessageType::RdaClutterFilterMap,
-            MessageContents::VolumeCoveragePattern(_) => MessageType::RdaVolumeCoveragePattern,
+            MessageContents::DigitalRadarDataLegacy(_) => MessageType::DigitalRadarDataLegacy,
+            MessageContents::DigitalRadarData(_) => MessageType::DigitalRadarData,
+            MessageContents::ClutterFilterMap(_) => MessageType::ClutterFilterMap,
+            MessageContents::RdaVolumeCoveragePattern(_) => MessageType::RdaVolumeCoveragePattern,
             MessageContents::ConsoleMessage(message) => message.message_type(),
             MessageContents::LoopbackTest(message) => message.message_type(),
-            MessageContents::RequestForData(_) => MessageType::RpgRequestForData,
+            MessageContents::RequestForData(_) => MessageType::RequestForData,
             MessageContents::RdaControlCommands(_) => MessageType::RdaControlCommands,
-            MessageContents::ClutterCensorZones(_) => MessageType::RpgClutterCensorZones,
-            MessageContents::ClutterFilterBypassMap(_) => MessageType::RdaClutterFilterBypassMap,
+            MessageContents::ClutterCensorZones(_) => MessageType::ClutterCensorZones,
+            MessageContents::ClutterFilterBypassMap(_) => MessageType::ClutterFilterBypassMap,
             MessageContents::RdaPrfData(_) => MessageType::RdaPrfData,
             MessageContents::RdaLogData(_) => MessageType::RdaLogData,
             MessageContents::RdaAdaptationData(_) => MessageType::RdaAdaptationData,
@@ -128,8 +128,8 @@ impl MessageContents<'_> {
             MessageContents::ClutterFilterMap(m) => {
                 MessageContents::ClutterFilterMap(Box::new(m.into_owned()))
             }
-            MessageContents::VolumeCoveragePattern(m) => {
-                MessageContents::VolumeCoveragePattern(Box::new(m.into_owned()))
+            MessageContents::RdaVolumeCoveragePattern(m) => {
+                MessageContents::RdaVolumeCoveragePattern(Box::new(m.into_owned()))
             }
             MessageContents::ConsoleMessage(m) => {
                 MessageContents::ConsoleMessage(Box::new(m.into_owned()))

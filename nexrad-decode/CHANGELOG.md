@@ -17,7 +17,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   the defining module. (#158)
 - `messages::VcpNumber`, one VCP number enum for every message type. (#163)
 - `rda_status_data::VcpSelection` and `rda_status_data::VcpSource`, returned by
-  `rda_status_data::Message::volume_coverage_pattern()`. (#163)
+  `rda_status_data::Message::vcp_number()`. (#163)
 - `MessageHeader::parse(bytes)`, `MessageHeader::SIZE`, `MessageHeader::into_owned()` and accessors for every header
   field (`segment_size_raw`, `redundant_channel_raw`, `message_type_raw`, `sequence_number`, `date_time`,
   `segment_count`, `segment_number`, `message_size_bytes`, `segment_size_bytes`). (#166, #173)
@@ -49,6 +49,16 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Message::into_owned()`, `MessageContents::into_owned()` and `MessageHeaders::into_owned()`, which copy a decoded
   message out of the input buffer as `Message<'static>`, and `MessageContents::message_type()`. (#190)
 - `Error::SegmentOutOfSequence`, returned when a segment of a multi-segment message is missing or out of order. (#190)
+- Decoded forms beside the raw accessors renamed below: `rda_status_data::Message::downloaded_pattern_number() ->
+  VcpNumber`, `rda_prf_data::WaveformPrfData::waveform_type() -> volume_coverage_pattern::WaveformType`,
+  `volume_coverage_pattern::Header::vcp_number() -> VcpNumber`, and
+  `VolumeDataBlock::zdr_bias_estimate_weighted_mean_db() -> Option<f32>` (`(raw - 418) / 32`, `None` for legacy
+  blocks and the "not available" code 0). (#191)
+- `digital_radar_data_legacy::Message::nyquist_velocity_raw()`, `nyquist_velocity_mps()`,
+  `atmospheric_attenuation_raw()` and `atmospheric_attenuation_db_per_km()`, and with `uom` `nyquist_velocity()`:
+  the type 1 Nyquist velocity and atmospheric attenuation factor at message bytes 60–63, which were read as
+  spare. (#191)
+- `rda_status_data::RdaBuildNumber::{raw, major, minor}` and `Display` (`"24.0"`). (#191)
 
 ### Changed
 
@@ -70,10 +80,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   - `ChannelConfiguration::SZ2Phase` → `Sz2Phase`, and the `WaveformType` variants `CS`, `CDW`, `CDWO`, `B`, `SPP` →
     `ContiguousSurveillance`, `ContiguousDopplerWithAmbiguityResolution`,
     `ContiguousDopplerWithoutAmbiguityResolution`, `Batch`, `StaggeredPulsePair`.
-- `digital_radar_data::VolumeDataBlock::volume_coverage_pattern()` returns `VcpNumber`. (#163)
+- `digital_radar_data::VolumeDataBlock::vcp_number()` returns `VcpNumber`. (#163)
 - VCP 32 decodes as `VcpNumber::Vcp32`; the old `digital_radar_data::VolumeCoveragePattern` had no variant for it and
   returned `Unknown(32)`. (#163)
-- `rda_status_data::Message::volume_coverage_pattern()` returns `Option<VcpSelection>`: `number()` returns `VcpNumber`
+- `rda_status_data::Message::vcp_number()` returns `Option<VcpSelection>`: `number()` returns `VcpNumber`
   instead of `i16`, and `source()` replaces `local()`/`remote()`. (#163)
 - `MessageHeader` is now `MessageHeader<'a>` with private fields read through accessors: `segment_size` →
   `segment_size_raw()`, `redundant_channel` → `redundant_channel_raw()` or `redundant_channel()`, `message_type` →
@@ -100,7 +110,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
     `azimuth_resolution_spacing()`.
   - `digital_radar_data::VolumeDataBlock`: `*_raw()` and unsuffixed numeric accessors gain unit suffixes
     (`latitude_degrees()`, `site_height_meters()`, `calibration_constant_db()`, `horizontal_shv_tx_power_kw()`, ...);
-    `volume_coverage_pattern_number()` → `volume_coverage_pattern_raw()`.
+    `volume_coverage_pattern_number()` → `vcp_number_raw()`.
   - `digital_radar_data::RadialDataBlock` and `ElevationDataBlock`: `lrtup_raw()` → `lrtup_bytes()`, and noise,
     calibration and attenuation accessors gain `_dbm`, `_db` and `_db_per_km` suffixes.
   - `digital_radar_data_legacy::Message`: angles, gate ranges, intervals and resolutions gain unit suffixes;
@@ -148,6 +158,75 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Debug` output of `digital_radar_data::DataBlock` gains the block's input `offset`, and that of
   `console_message::Message` and `loopback_test::Message` gains the `message_type` that records their direction.
   (#190)
+- The accessor naming convention applies across the crate (see "Accessor Naming" in the crate docs) (#191):
+  - Wire encodings take `_raw` and decoded forms the bare stem: `digital_radar_data::Header::date()`/`time()` →
+    `date_raw()`/`time_raw()`; `clutter_filter_map::Message::map_generation_date()`/`map_generation_time()` →
+    `*_raw()` and `date_time()` → `map_generation_date_time()`;
+    `clutter_filter_bypass_map::Message::bypass_map_generation_date()`/`bypass_map_generation_time()` → `*_raw()` and
+    `date_time()` → `bypass_map_generation_date_time()`; `rda_status_data::Message::bypass_map_generation_date()`,
+    `bypass_map_generation_time()`, `clutter_filter_map_generation_date()` and `clutter_filter_map_generation_time()`
+    → `*_raw()`.
+  - Bitfields take `_raw`: `volume_coverage_pattern::ElevationDataBlock::supplemental_data()` and
+    `super_resolution_control()`, `volume_coverage_pattern::Header::vcp_sequencing()` and `vcp_supplemental_data()`,
+    and `digital_radar_data::RadialDataBlock::radial_flags()` → `*_raw()`.
+  - Codes take `_raw`: `VolumeDataBlock::zdr_bias_estimate_weighted_mean()` →
+    `zdr_bias_estimate_weighted_mean_raw()`, `rda_status_data::Message::downloaded_pattern_number() -> u16` →
+    `downloaded_pattern_number_raw()`, `rda_prf_data::WaveformPrfData::waveform_type() -> u16` →
+    `waveform_type_raw()`, `rda_log_data::Message::compression_type()` → `compression_type_raw()`.
+  - One stem for the VCP number: `VolumeDataBlock::volume_coverage_pattern_raw()`/`volume_coverage_pattern()` and
+    `rda_status_data::Message::volume_coverage_pattern_raw()`/`volume_coverage_pattern()` →
+    `vcp_number_raw()`/`vcp_number()`; `volume_coverage_pattern::Header::pattern_number()` → `vcp_number_raw()`.
+  - `digital_radar_data::DataBlockId::data_name_raw()` → `data_block_name_raw()`.
+  - `digital_radar_data::ElevationDataBlock::atmos_raw()`/`atmos_db_per_km()` →
+    `atmospheric_attenuation_raw()`/`atmospheric_attenuation_db_per_km()`, matching the type 1 accessors.
+  - Segment numbers: `clutter_filter_map::AzimuthSegment::azimuth_segment()` → `azimuth_segment_number()`,
+    `clutter_filter_bypass_map::ElevationSegment::segment_number()` → `elevation_segment_number()`.
+  - Counts are `<thing>_count()`: `clutter_filter_bypass_map::Message::number_of_elevation_segments()` →
+    `elevation_segment_count()`, `rda_prf_data::Message::number_of_waveforms()` → `waveform_count()`,
+    `volume_coverage_pattern::Header::number_of_elevation_cuts()` → `elevation_cut_count()`,
+    `number_of_sails_cuts()` → `sails_cut_count()`, `number_of_mrle_cuts()` → `mrle_cut_count()`,
+    `number_of_base_tilts()` → `base_tilt_count()`, `vcp_sequencing_number_of_elevations()` →
+    `vcp_sequencing_elevation_count()`, `GenericDataBlockHeader::number_of_data_moment_gates()` →
+    `data_moment_gate_count()`, and `digital_radar_data_legacy::Message::num_surveillance_gates()`/
+    `num_doppler_gates()` → `surveillance_gate_count()`/`doppler_gate_count()`.
+  - `MessageHeader::segmented()` → `is_fixed_frame()`; `Message::is_segmented()` and
+    `MessageHeaders::is_segmented()` → `is_multi_segment()`; `Message::offset()`/`size()` →
+    `offset_bytes()`/`size_bytes()`.
+  - Byte strings are `<stem>_raw()` and `<stem>() -> Option<&str>` (`None` when not valid UTF-8):
+    `digital_radar_data::Header::radar_identifier()` returns `Option<&str>` instead of `String`;
+    `console_message::Message::text_bytes()` → `text_raw()`; `rda_log_data::Message::identifier_bytes()` →
+    `identifier_raw()`, and `identifier()` returns `Option<&str>` instead of `""` for invalid bytes.
+  - `rda_status_data::alarm::Message` → `alarm::Definition`, `alarm::get_alarm_message(code)` →
+    `alarm::definition(code)`, and `rda_status_data::Message::alarm_messages()` → `alarm_definitions()`.
+  - `digital_radar_data::SpotBlankingStatus` (the radial bitfield) → `SpotBlankingFlags`.
+  - `MessageType` variants match their `MessageContents` variants: `RdaDigitalRadarDataGenericFormat` →
+    `DigitalRadarData`, `RdaDigitalRadarData` → `DigitalRadarDataLegacy`, `RdaPerformanceMaintenanceData` →
+    `PerformanceMaintenanceData`, `RpgClutterCensorZones` → `ClutterCensorZones`, `RpgRequestForData` →
+    `RequestForData`, `RdaClutterFilterBypassMap` → `ClutterFilterBypassMap`, `RdaClutterFilterMap` →
+    `ClutterFilterMap`, `RdaLoopBackTest`/`RpgLoopBackTest` → `RdaLoopbackTest`/`RpgLoopbackTest`; and
+    `MessageContents::VolumeCoveragePattern` → `RdaVolumeCoveragePattern`, matching `MessageType`, which keeps
+    `RdaVolumeCoveragePattern` (type 5) apart from `RpgVolumeCoveragePattern` (type 7). (#191)
+- Code enums carry an unlisted wire value in one `Unknown(<wire type>)` variant:
+  `digital_radar_data::CompressionIndicator::FutureUse` → `Unknown(u8)`; `ProcessingStatus::Other(u16)` →
+  `Unknown(u16)`; `volume_coverage_pattern::{WaveformType, PulseWidth, ChannelConfiguration}::Unknown`/`UnknownPhase`
+  → `Unknown(u8)` and `PatternType::Unknown` → `Unknown(u16)`; `rda_status_data::SpotBlankingStatus::Other(u8)` →
+  `Unknown(u16)`, which no longer truncates the wire value; and `rda_status_data::TransitionPowerSourceStatus::Unknown`
+  and `Other(u16)` → `Unknown(u16)`, with the ICD's "unknown" code 4 decoding as `Unknown(4)`. (#191)
+- `rda_status_data::RdaBuildNumber` is a newtype over the raw wire value instead of an enum of known builds
+  (`Build12_0` .. `Build24_0`, `Unknown(f32)`): `from_raw(u16)` (now `const`), `raw()`, `major()`, `minor()` and
+  `Display`; it is `Eq`, `Ord` and `Hash`, comparing by build. Build numbers below 12.0 or above 24.0 are no longer
+  `Unknown`. (#191)
+- `volume_coverage_pattern::ElevationDataBlock::{elevation_angle_degrees, sector_1_edge_angle_degrees,
+  sector_2_edge_angle_degrees, sector_3_edge_angle_degrees, ebc_angle_degrees}` and
+  `digital_radar_data::Header::azimuth_indexing_mode_degrees` return `f32` instead of `f64`, matching the model.
+  (#191)
+- `digital_radar_data_legacy::Message::radial`/`into_radial` set the model radial's Nyquist velocity from the header
+  (left `None` when zero), and its `Debug` output gains `nyquist_velocity_mps` and
+  `atmospheric_attenuation_db_per_km`. (#191)
+- A clutter filter bypass map (type 13) from a legacy (pre-ORDA) RDA uses a layout the ORDA decoder does not read and
+  decodes as `Other`, as the legacy type 15 map does; it used to decode as an empty map with zero elevation segments.
+  (#191)
+- `Debug` output of decoded messages follows the renamed fields and variants. (#191)
 
 ### Removed
 
@@ -172,6 +251,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `digital_radar_data::GenericDataBlockHeader::reserved()`, `VolumeDataBlock::spare()` and `is_legacy()`, and
   `RadialDataBlock::is_legacy()`; `lrtup_bytes()` distinguishes the block layouts. (#190)
 - The `log` dependency. (#190)
+- `digital_radar_data::DataBlockId::data_block_name_str()`; use `data_block_name()` or `data_block_name_raw()`. (#191)
+- `digital_radar_data::DataBlockId::data_block_type_char()`; use `data_block_type()` or `data_block_type_raw()`.
+  (#191)
+- `rda_status_data::RdaBuildNumber::as_float()` and `is_known()`; use `major()`, `minor()` or `Display`. (#191)
 
 ### Fixed
 

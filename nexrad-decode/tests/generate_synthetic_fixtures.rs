@@ -190,7 +190,7 @@ fn generate_clutter_filter_bypass_map() -> Vec<u8> {
     // Header (6 bytes)
     content.extend_from_slice(&20089u16.to_be_bytes()); // bypass_map_generation_date
     content.extend_from_slice(&720u16.to_be_bytes()); // bypass_map_generation_time (minutes)
-    content.extend_from_slice(&1u16.to_be_bytes()); // number_of_elevation_segments
+    content.extend_from_slice(&1u16.to_be_bytes()); // elevation_segment_count
 
     // Elevation segment 1
     content.extend_from_slice(&1u16.to_be_bytes()); // elevation_segment_number

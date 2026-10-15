@@ -34,7 +34,7 @@ pub fn parse_console_message(data: &[u8]) -> String {
             output.push('\n');
         }
         None => {
-            let bytes = msg.text_bytes();
+            let bytes = msg.text_raw();
             output.push_str(&format!("(Non-UTF8 text, {} bytes)\n", bytes.len()));
             // Show hex dump of first 256 bytes
             for (i, chunk) in bytes.chunks(16).take(16).enumerate() {

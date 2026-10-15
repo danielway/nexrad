@@ -107,7 +107,7 @@ impl File {
             }
 
             for message in record.messages()? {
-                if let MessageContents::VolumeCoveragePattern(vcp) = message.contents() {
+                if let MessageContents::RdaVolumeCoveragePattern(vcp) = message.contents() {
                     return Ok(vcp.clone().into_owned());
                 }
             }

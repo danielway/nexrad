@@ -61,8 +61,8 @@ fn extract_message_fixtures() {
                     continue;
                 }
 
-                let offset = message.offset();
-                let size = message.size();
+                let offset = message.offset_bytes();
+                let size = message.size_bytes();
                 if offset + size <= raw_data.len() {
                     let frame_bytes = &raw_data[offset..offset + size];
                     extracted.insert(type_id, frame_bytes.to_vec());

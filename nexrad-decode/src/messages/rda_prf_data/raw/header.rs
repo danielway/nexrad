@@ -9,7 +9,7 @@ use zerocopy::{FromBytes, Immutable, KnownLayout};
 #[derive(Clone, PartialEq, Eq, Hash, Debug, FromBytes, Immutable, KnownLayout)]
 pub struct Header {
     /// The number of waveform types included in this message (1-5).
-    pub number_of_waveforms: Integer2,
+    pub waveform_count: Integer2,
 
     /// Spare halfword, reserved for future use.
     pub spare: Integer2,

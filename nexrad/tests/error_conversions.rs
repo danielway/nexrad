@@ -59,7 +59,7 @@ fn test_model_error_conversion() {
 fn test_decode_error_conversion() {
     // Create a decode error
     let decode_err = nexrad_decode::result::Error::MessageMissingDate {
-        message_type: nexrad_decode::MessageType::RdaDigitalRadarDataGenericFormat,
+        message_type: nexrad_decode::MessageType::DigitalRadarData,
     };
 
     // Convert to unified error

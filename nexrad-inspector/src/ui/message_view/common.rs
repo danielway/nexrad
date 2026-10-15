@@ -19,7 +19,7 @@ pub fn parse_common_header_only(header: &MessageHeader<'_>) -> String {
          Date/Time: {}\n\
          Redundant Channel: {:?}\n\
          Segment Size: {} half-words\n\
-         Segmented: {}\n\
+         Fixed Frame: {}\n\
          Message Size: {} bytes\n\n\
          (No additional parsing available for this message type)",
         header.message_type_raw(),
@@ -28,7 +28,7 @@ pub fn parse_common_header_only(header: &MessageHeader<'_>) -> String {
         datetime,
         channel,
         header.segment_size_raw(),
-        header.segmented(),
+        header.is_fixed_frame(),
         header.message_size_bytes()
     )
 }

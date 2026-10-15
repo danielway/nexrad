@@ -99,7 +99,7 @@ impl ElevationChunkMapper {
                     chunks_in_sweep: elevation_chunk_count,
                     is_first_in_sweep: chunk_idx == 0,
                     azimuth_rate_dps: azimuth_rate,
-                    elevation_angle_deg: elevation_angle,
+                    elevation_angle_deg: f64::from(elevation_angle),
                     is_start_chunk: false,
                 });
             }

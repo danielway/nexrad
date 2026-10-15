@@ -17,5 +17,5 @@ pub struct Header {
     pub bypass_map_generation_time: Integer2,
 
     /// The number of elevation segments defined in this bypass map. There may be 1 to 5.
-    pub number_of_elevation_segments: Integer2,
+    pub elevation_segment_count: Integer2,
 }

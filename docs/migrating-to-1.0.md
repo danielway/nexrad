@@ -366,7 +366,8 @@ Accessors on decoded messages follow one rule (#173; see [Naming Conventions](ar
   `calibration_constant_db()`, `site_height_meters()`, `message_size_halfwords()`.
 - `<stem>_raw()` returns the wire encoding, only where it differs from the decoded value. The old `raw_<stem>()` prefix
   form is gone.
-- A decoded enum or struct takes the bare stem: `radial_status()`, `build_number()`.
+- A decoded enum or struct takes the bare stem: `radial_status()`, `build_number()`, `vcp_number()`.
+- Counts are `<thing>_count()`, and a byte string is `<stem>_raw()` beside `<stem>() -> Option<&str>`.
 - With the `uom` feature, the bare stem returns a `uom` quantity: `azimuth_angle()`, `end_range()`.
 - Type and variant names use UpperCamelCase acronyms: `VcpNumber`, `RdaStatus`, `Sz2Phase`.
 
@@ -381,29 +382,74 @@ The renames you are most likely to hit:
 | `MessageHeader::rda_redundant_channel()` | `redundant_channel()` | #173 |
 | `message_type as u8` | `message_type.number()`; `MessageType::from_number(u8)` | #166 |
 | `MessageType::{Spare1, Reserved1..5, ReservedFAARMSOnly1..5}` | `MessageType::Reserved(u8)` | #166 |
-| `MessageType::RDA*` / `RPG*`, `MessageContents::RDA*` | `Rda*` / `Rpg*` (`RDAStatusData` → `RdaStatusData`, `RDAPRFData` → `RdaPrfData`) | #160 |
+| `MessageType::RDA*` / `RPG*`, `MessageContents::RDA*` | `Rda*` / `Rpg*` (`RDAStatusData` → `RdaStatusData`, `RDAPRFData` → `RdaPrfData`), with the `MessageType` names that differed from `MessageContents` renamed to match (see the next table) | #160, #191 |
 | `digital_radar_data::Header::azimuth_angle_raw()` | `azimuth_angle_degrees()` | #173 |
 | `digital_radar_data::Header::elevation_angle_raw()` | `elevation_angle_degrees()` | #173 |
 | `digital_radar_data::Header::radial_length_raw()` | `radial_length_bytes()` | #173 |
 | `digital_radar_data::Header::azimuth_resolution_spacing_type()` | `azimuth_resolution_spacing()` (see below) | #173 |
 | `VolumeDataBlock::latitude_raw()` / `longitude_raw()` | `latitude_degrees()` / `longitude_degrees()` | #173 |
 | `VolumeDataBlock::site_height_raw()` / `tower_height_raw()` | `site_height_meters()` / `tower_height_meters()` | #173 |
-| `VolumeDataBlock::volume_coverage_pattern() -> digital_radar_data::VolumeCoveragePattern` | `-> messages::VcpNumber` | #163 |
-| `VolumeDataBlock::volume_coverage_pattern_number()` | `volume_coverage_pattern_raw()` | #173 |
+| `VolumeDataBlock::volume_coverage_pattern() -> digital_radar_data::VolumeCoveragePattern` | `vcp_number() -> messages::VcpNumber` | #163, #191 |
+| `VolumeDataBlock::volume_coverage_pattern_number()` | `vcp_number_raw()` | #173, #191 |
 | `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, ..}` | `messages::VcpNumber::{Vcp12, Vcp31, Vcp32, ..}` | #160, #163 |
 | `GenericDataBlock::moment_data()` / `into_moment_data()` | Call them on the `DataBlock` wrapper: `m.reflectivity_data_block().map(\|b\| b.moment_data())`; they return `Result<MomentData>` | #170 |
 | `GenericDataBlock::cfp_moment_data()` / `into_cfp_moment_data()` | `moment_data()` / `into_moment_data()` on the CFP block's `DataBlock` | #170 |
 | `digital_radar_data::Message::site() -> Option<Site>` | `site()? -> Option<Site>` (returns `Result<Option<Site>>`) | #185 |
 | `rda_status_data::RDAStatus`, `RDABuildNumber`, `RMSControlStatus` | `RdaStatus`, `RdaBuildNumber`, `RmsControlStatus` | #160 |
 | `rda_status_data::Message::raw_<stem>()` | `<stem>_raw()` (`raw_rda_build_number()` → `build_number_raw()`) | #173 |
-| `rda_status_data::Message::volume_coverage_pattern() -> Option<VolumeCoveragePatternNumber>` | `-> Option<VcpSelection>`; `number()` is a `VcpNumber`, `source()` replaces `local()`/`remote()` | #163 |
+| `rda_status_data::Message::volume_coverage_pattern() -> Option<VolumeCoveragePatternNumber>` | `vcp_number() -> Option<VcpSelection>`; `number()` is a `VcpNumber`, `source()` replaces `local()`/`remote()` | #163, #191 |
 | `volume_coverage_pattern::ElevationDataBlock::elevation_angle()` | `elevation_angle_degrees()` | #173 |
 | `summarize` module | Removed; iterate `decode_messages(..)` and match on `message.contents()` | #168 |
 | `MessageContents::Other` | `MessageContents::Other { message_type, data }`; match with `Other { .. }` | #190 |
-| `block.volume_coverage_pattern()` on a `DataBlock` (through `Deref`) | `block.inner().volume_coverage_pattern()` | #190 |
+| `block.volume_coverage_pattern()` on a `DataBlock` (through `Deref`) | `block.inner().vcp_number()` | #190, #191 |
 | `rda_adaptation_data::Message::{read_integer4_at, read_real4_at, read_string_at, data_raw, total_size}` | Removed; use the typed accessors | #190 |
 | `VolumeDataBlock::is_legacy()`, `RadialDataBlock::is_legacy()` | Removed; `lrtup_bytes()` is 44 for a legacy volume block and 20 for a legacy radial block | #190 |
 | `VolumeDataBlock::spare()`, `GenericDataBlockHeader::reserved()` | Removed | #190 |
+
+These accessors and variants were also renamed to follow the same rule (#191):
+
+| 1.0.0-rc.3 | 1.0 |
+|---|---|
+| `digital_radar_data::Header::date()` / `time()` | `date_raw()` / `time_raw()`; `date_time()` is the decoded value |
+| `clutter_filter_map::Message::map_generation_date()` / `map_generation_time()` / `date_time()` | `map_generation_date_raw()` / `map_generation_time_raw()` / `map_generation_date_time()` |
+| `clutter_filter_bypass_map::Message::bypass_map_generation_date()` / `bypass_map_generation_time()` / `date_time()` | `bypass_map_generation_date_raw()` / `bypass_map_generation_time_raw()` / `bypass_map_generation_date_time()` |
+| `rda_status_data::Message::bypass_map_generation_date()`, `bypass_map_generation_time()`, `clutter_filter_map_generation_date()`, `clutter_filter_map_generation_time()` | The same names with `_raw`; the `*_date_time()` accessors are unchanged |
+| `volume_coverage_pattern::ElevationDataBlock::supplemental_data()` / `super_resolution_control()` | `supplemental_data_raw()` / `super_resolution_control_raw()` |
+| `volume_coverage_pattern::Header::vcp_sequencing()` / `vcp_supplemental_data()` | `vcp_sequencing_raw()` / `vcp_supplemental_data_raw()` |
+| `digital_radar_data::RadialDataBlock::radial_flags()` | `radial_flags_raw()` |
+| `VolumeDataBlock::zdr_bias_estimate_weighted_mean() -> Option<u16>` | `zdr_bias_estimate_weighted_mean_raw()`; decoded `zdr_bias_estimate_weighted_mean_db() -> Option<f32>` |
+| `rda_status_data::Message::downloaded_pattern_number() -> u16` | `downloaded_pattern_number_raw()`; `downloaded_pattern_number() -> VcpNumber` |
+| `rda_prf_data::WaveformPrfData::waveform_type() -> u16` | `waveform_type_raw()`; `waveform_type() -> volume_coverage_pattern::WaveformType` |
+| `rda_log_data::Message::compression_type()` | `compression_type_raw()` |
+| `rda_status_data::Message::raw_volume_coverage_pattern()` | `vcp_number_raw()` |
+| `volume_coverage_pattern::Header::pattern_number()` | `vcp_number_raw()`; `vcp_number() -> VcpNumber` |
+| `digital_radar_data::DataBlockId::data_name_raw()` | `data_block_name_raw()` |
+| `digital_radar_data::ElevationDataBlock::atmos_raw()` / `atmos()` | `atmospheric_attenuation_raw()` / `atmospheric_attenuation_db_per_km()` |
+| `digital_radar_data::DataBlockId::data_block_name_str()` | Removed; use `data_block_name()` or `data_block_name_raw()` |
+| `digital_radar_data::DataBlockId::data_block_type_char()` | Removed; use `data_block_type()` or `data_block_type_raw()` |
+| `clutter_filter_map::AzimuthSegment::azimuth_segment()` | `azimuth_segment_number()` |
+| `clutter_filter_bypass_map::ElevationSegment::segment_number()` | `elevation_segment_number()` |
+| `clutter_filter_bypass_map::Message::number_of_elevation_segments()` | `elevation_segment_count()` |
+| `rda_prf_data::Message::number_of_waveforms()` | `waveform_count()` |
+| `volume_coverage_pattern::Header::number_of_elevation_cuts()`, `number_of_sails_cuts()`, `number_of_mrle_cuts()`, `number_of_base_tilts()`, `vcp_sequencing_number_of_elevations()` | `elevation_cut_count()`, `sails_cut_count()`, `mrle_cut_count()`, `base_tilt_count()`, `vcp_sequencing_elevation_count()` |
+| `digital_radar_data::GenericDataBlockHeader::number_of_data_moment_gates()` | `data_moment_gate_count()` |
+| `digital_radar_data_legacy::Message::num_surveillance_gates()` / `num_doppler_gates()` | `surveillance_gate_count()` / `doppler_gate_count()` |
+| `MessageHeader::segmented()` | `is_fixed_frame()` |
+| `Message::is_segmented()`, `MessageHeaders::is_segmented()` | `is_multi_segment()` |
+| `Message::offset()` / `size()` | `offset_bytes()` / `size_bytes()` |
+| `digital_radar_data::Header::radar_identifier() -> String` | `-> Option<&str>` (`None` when not valid UTF-8) |
+| `console_message::Message::text_bytes()` | `text_raw()` |
+| `rda_log_data::Message::identifier() -> &str` (`""` when invalid), `identifier_bytes()` | `identifier() -> Option<&str>`, `identifier_raw()` |
+| `rda_status_data::alarm::Message`, `alarm::get_alarm_message(code)` | `alarm::Definition`, `alarm::definition(code)` |
+| `rda_status_data::Message::alarm_messages()` | `alarm_definitions()` |
+| `digital_radar_data::SpotBlankingStatus` | `SpotBlankingFlags` (`rda_status_data::SpotBlankingStatus` keeps its name) |
+| `MessageType::RDADigitalRadarDataGenericFormat` | `MessageType::DigitalRadarData` |
+| `MessageType::RDADigitalRadarData` | `MessageType::DigitalRadarDataLegacy` |
+| `MessageType::RDAPerformanceMaintenanceData` | `MessageType::PerformanceMaintenanceData` |
+| `MessageType::RPGClutterCensorZones`, `RPGRequestForData` | `MessageType::ClutterCensorZones`, `RequestForData` |
+| `MessageType::RDAClutterFilterBypassMap`, `RDAClutterFilterMap` | `MessageType::ClutterFilterBypassMap`, `ClutterFilterMap` |
+| `MessageType::RDALoopBackTest`, `RPGLoopBackTest` | `MessageType::RdaLoopbackTest`, `RpgLoopbackTest` |
+| `MessageContents::VolumeCoveragePattern` | `MessageContents::RdaVolumeCoveragePattern` (`MessageType` keeps `RdaVolumeCoveragePattern` and `RpgVolumeCoveragePattern` apart) |
 
 The full lists are in the [nexrad-decode appendix](#nexrad-decode-100-rc3-to-10).
 
@@ -421,7 +467,7 @@ for message in &messages {
             let h = m.header();
             println!("elevation {} azimuth {}", h.elevation_number(), h.azimuth_angle_degrees());
             if let Some(volume) = m.volume_data_block() {
-                println!("{}", volume.inner().volume_coverage_pattern()); // prints "VCP 212"
+                println!("{}", volume.inner().vcp_number()); // prints "VCP 212"
             }
         }
         MessageContents::RdaStatusData(s) => println!("{:?}", s.rda_status()),
@@ -463,7 +509,7 @@ Scan assembly moved into this crate (#169). If you assembled a `Scan` from decod
   from a legacy (pre-ORDA) RDA, which uses the legacy notch width layout, decodes as `Other` rather than
   `ClutterFilterMap`.
 - **`DataBlock` no longer derefs to its block** (#190). Methods of the inner block are reached through `inner()` (or
-  `into_inner()`): `m.volume_data_block().map(|b| b.inner().volume_coverage_pattern())`. `moment_data()` and
+  `into_inner()`): `m.volume_data_block().map(|b| b.inner().vcp_number())`. `moment_data()` and
   `into_moment_data()` stay on the `DataBlock`.
 - **Multi-segment messages decode their full payload** (#190). Clutter filter bypass maps (type 13) that 1.0.0-rc.3
   dropped now decode, clutter filter maps (type 15) have 360 azimuth segments instead of 350, and RDA adaptation data
@@ -494,6 +540,23 @@ Scan assembly moved into this crate (#169). If you assembled a `Scan` from decod
   `IntermediateRadialData` (#173). `digital_radar_data_legacy::Message::elevation_number()` returns `u8`, and
   `radial_status()` and `vcp_number()` return decoded enums, with the codes in `radial_status_raw()` and
   `vcp_number_raw()`.
+- **Code enums have one fallback** (#191). A status or code enum carries a value the ICD does not list in
+  `Unknown(<wire type>)`: `CompressionIndicator::FutureUse` is `Unknown(u8)`, `ProcessingStatus::Other` and
+  `rda_status_data::SpotBlankingStatus::Other` are `Unknown`, `TransitionPowerSourceStatus::Unknown` and `Other` merge
+  into `Unknown(u16)` (the ICD's "unknown" code 4 is `Unknown(4)`), and the `volume_coverage_pattern` enums
+  `WaveformType`, `PulseWidth` and `ChannelConfiguration` (`UnknownPhase`) carry `Unknown(u8)`, `PatternType`
+  `Unknown(u16)`. Match `Unknown(_)` where you matched the unit variant.
+- **`RdaBuildNumber` is a number, not an enum** (#191). `RdaBuildNumber::from_raw(u16)` wraps the wire value;
+  `major()`, `minor()`, `raw()` and `Display` (`"24.0"`) replace the `Build12_0` .. `Build24_0` variants,
+  `as_float()` and `is_known()`, and builds compare in build order (`build >= RdaBuildNumber::from_raw(2000)`).
+- **VCP and azimuth indexing angles are `f32`** (#191). `volume_coverage_pattern::ElevationDataBlock`'s elevation,
+  sector edge and EBC angles and `digital_radar_data::Header::azimuth_indexing_mode_degrees()` return `f32`, matching
+  `nexrad_model`; `azimuth_rate_degrees_per_second()` stays `f64`.
+- **Legacy radials carry their Nyquist velocity** (#191). `digital_radar_data_legacy::Message` exposes the type 1
+  Nyquist velocity and atmospheric attenuation factor, and its `radial()`/`into_radial()` set the model radial's
+  Nyquist velocity (left `None` when zero, as on surveillance cuts).
+- **Legacy clutter filter bypass maps decode as `Other`** (#191). A type 13 map from a legacy (pre-ORDA) RDA used
+  to decode as an empty `ClutterFilterBypassMap`; like the legacy type 15 map it is now `Other` with its payload.
 - **`MessageType` ordering.** It is no longer `#[repr(u8)]`, and its derived `Ord` puts `Reserved(_)` after
   `RdaLogData`. Compare `number()` to order by wire number.
 - **Lifetimes.** `MessageHeaders::primary()`/`iter()` and `Message::header()` borrow from `self` rather than from the
@@ -1415,8 +1478,12 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 
 | 1.0.0-rc.3 | 1.0 |
 |---|---|
-| `MessageType::RDADigitalRadarData`, `RDAStatusData`, `RDAPerformanceMaintenanceData`, `RDAConsoleMessage`, `RDAVolumeCoveragePattern`, `RDAControlCommands`, `RDALoopBackTest`, `RDAClutterFilterBypassMap`, `RDAClutterFilterMap`, `RDAAdaptationData`, `RDAPRFData`, `RDALogData`, `RDADigitalRadarDataGenericFormat` | `Rda...` (`RdaPrfData` for `RDAPRFData`) |
-| `MessageType::RPGVolumeCoveragePattern`, `RPGClutterCensorZones`, `RPGRequestForData`, `RPGConsoleMessage`, `RPGLoopBackTest` | `Rpg...` |
+| `MessageType::RDAStatusData`, `RDAConsoleMessage`, `RDAVolumeCoveragePattern`, `RDAControlCommands`, `RDAAdaptationData`, `RDAPRFData`, `RDALogData` | `Rda...` (`RdaPrfData` for `RDAPRFData`) |
+| `MessageType::RDADigitalRadarDataGenericFormat`, `RDADigitalRadarData`, `RDAPerformanceMaintenanceData`, `RDAClutterFilterBypassMap`, `RDAClutterFilterMap` | `DigitalRadarData`, `DigitalRadarDataLegacy`, `PerformanceMaintenanceData`, `ClutterFilterBypassMap`, `ClutterFilterMap` |
+| `MessageType::RPGVolumeCoveragePattern`, `RPGConsoleMessage` | `RpgVolumeCoveragePattern`, `RpgConsoleMessage` |
+| `MessageType::RPGClutterCensorZones`, `RPGRequestForData` | `ClutterCensorZones`, `RequestForData` |
+| `MessageType::RDALoopBackTest`, `RPGLoopBackTest` | `RdaLoopbackTest`, `RpgLoopbackTest` |
+| `MessageContents::VolumeCoveragePattern` | `RdaVolumeCoveragePattern` |
 | `MessageType::Spare1` (14), `ReservedFAARMSOnly1..5` (16, 17, 24, 25, 26), `Reserved1..5` (20–23, 29) | `MessageType::Reserved(u8)` holding the type number |
 | `MessageType` with `#[repr(u8)]` discriminants | No discriminants; `number()`, `from_number(u8)`; `#[non_exhaustive]` |
 | `MessageContents::RDAStatusData`, `RDAControlCommands`, `RDAPRFData`, `RDALogData`, `RDAAdaptationData` | `RdaStatusData`, `RdaControlCommands`, `RdaPrfData`, `RdaLogData`, `RdaAdaptationData`; `#[non_exhaustive]` |
@@ -1425,17 +1492,22 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `MessageHeaders::Single(&'a MessageHeader)`, `Multiple(Vec<&'a MessageHeader>)` | `Single(MessageHeader<'a>)`, `Multiple(Vec<MessageHeader<'a>>)` |
 | `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, VCP35, VCP112, VCP212, VCP215, Unknown}` | `VcpNumber::{Vcp11, Vcp12, Vcp21, Vcp31, Vcp32, Vcp35, Vcp112, Vcp121, Vcp211, Vcp212, Vcp215, Vcp221, Unknown}` |
 | `digital_radar_data::DataMomentPointer`, `DataMomentPointerType`, `DataMomentGenericPointerType` | Removed |
-| `digital_radar_data::CompressionIndicator::CompressedBZIP2`, `CompressedZLIB` | `CompressedBzip2`, `CompressedZlib` |
-| `digital_radar_data::ProcessingStatus::RxRNoise`, `CBT` | `RxrNoise`, `Cbt` |
+| `digital_radar_data::CompressionIndicator::CompressedBZIP2`, `CompressedZLIB`, `FutureUse` | `CompressedBzip2`, `CompressedZlib`, `Unknown(u8)` |
+| `digital_radar_data::ProcessingStatus::RxRNoise`, `CBT`, `Other(u16)` | `RxrNoise`, `Cbt`, `Unknown(u16)` |
+| `digital_radar_data::SpotBlankingStatus` | `SpotBlankingFlags` |
 | `digital_radar_data::RadialStatus::ElevationStartVCPFinal` | `ElevationStartVcpFinal` |
 | `digital_radar_data::DataBlockName` | `#[non_exhaustive]` |
 | `rda_status_data::RDAStatus`, `RDABuildNumber`, `RMSControlStatus` | `RdaStatus`, `RdaBuildNumber`, `RmsControlStatus` |
 | `rda_status_data::RMSControlStatus::{NonRMS, RMSInControl, RDAInControl}` | `RmsControlStatus::{NonRms, RmsInControl, RdaInControl}` |
 | `rda_status_data::CommandAcknowledgement::RemoteVCPReceived` | `RemoteVcpReceived` |
-| `rda_status_data::TransitionPowerSourceStatus::OK` | `Ok` |
+| `rda_status_data::TransitionPowerSourceStatus::OK`, `Unknown`, `Other(u16)` | `Ok`, `Unknown(u16)` (code 4 is `Unknown(4)`) |
+| `rda_status_data::SpotBlankingStatus::Other(u8)` | `Unknown(u16)` |
+| `rda_status_data::RdaBuildNumber::{Build12_0, .., Build24_0, Unknown(f32)}`, `as_float()`, `is_known()` | `RdaBuildNumber` newtype: `from_raw(u16)`, `raw()`, `major()`, `minor()`, `Display`, `Ord` |
+| `rda_status_data::alarm::Message`, `alarm::get_alarm_message(u16)` | `alarm::Definition`, `alarm::definition(u16)` |
 | `rda_status_data::VolumeCoveragePatternNumber` (`number() -> i16`, `local()`, `remote()`) | `VcpSelection` (`number() -> VcpNumber`, `source() -> VcpSource`) |
-| `volume_coverage_pattern::ChannelConfiguration::SZ2Phase` | `Sz2Phase` |
-| `volume_coverage_pattern::WaveformType::{CS, CDW, CDWO, B, SPP}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair}` |
+| `volume_coverage_pattern::ChannelConfiguration::SZ2Phase`, `UnknownPhase` | `Sz2Phase`, `Unknown(u8)` |
+| `volume_coverage_pattern::PulseWidth::Unknown`, `PatternType::Unknown` | `PulseWidth::Unknown(u8)`, `PatternType::Unknown(u16)` |
+| `volume_coverage_pattern::WaveformType::{CS, CDW, CDWO, B, SPP, Unknown}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair, Unknown(u8)}` |
 | `clutter_censor_zones::Message::regions() -> &[raw Region]` (public `Integer2`/`Code2` fields) | `-> &[clutter_censor_zones::Region<'a>]` with accessors and `OperatorSelectCode` |
 | `summarize` module (`messages`, `MessageSummary`, `MessageGroupSummary`, `VCPInfo`, `VCPElevationInfo`, `RDAStatusInfo`) | Removed |
 | `result::Error::Io(std::io::Error)`, `From<std::io::Error>` | Removed |
@@ -1463,11 +1535,12 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `digital_radar_data::VolumeDataBlock` | `calibration_constant()`, `system_differential_reflectivity()` | `calibration_constant_db()`, `system_differential_reflectivity_db()` |
 | `digital_radar_data::VolumeDataBlock` | `horizontal_shv_tx_power_raw()`, `vertical_shv_tx_power_raw()` | `horizontal_shv_tx_power_kw()`, `vertical_shv_tx_power_kw()` |
 | `digital_radar_data::VolumeDataBlock` | `initial_system_differential_phase_raw()` | `initial_system_differential_phase_degrees()` |
-| `digital_radar_data::VolumeDataBlock` | `volume_coverage_pattern() -> VolumeCoveragePattern`, `volume_coverage_pattern_number()` | `volume_coverage_pattern() -> VcpNumber`, `volume_coverage_pattern_raw()` |
+| `digital_radar_data::VolumeDataBlock` | `volume_coverage_pattern() -> VolumeCoveragePattern`, `volume_coverage_pattern_number()` | `vcp_number() -> VcpNumber`, `vcp_number_raw()` |
+| `digital_radar_data::VolumeDataBlock` | `zdr_bias_estimate_weighted_mean()` | `zdr_bias_estimate_weighted_mean_raw()`, `zdr_bias_estimate_weighted_mean_db()` |
 | `digital_radar_data::RadialDataBlock` | `lrtup_raw()`, `horizontal_channel_noise_level()`, `vertical_channel_noise_level()` | `lrtup_bytes()`, `horizontal_channel_noise_level_dbm()`, `vertical_channel_noise_level_dbm()` |
 | `digital_radar_data::RadialDataBlock` | `horizontal_channel_calibration_constant()`, `vertical_channel_calibration_constant()` | `horizontal_channel_calibration_constant_db()`, `vertical_channel_calibration_constant_db()` |
 | `digital_radar_data::RadialDataBlock` | (none) | `unambiguous_range_km()`, `nyquist_velocity_mps()` |
-| `digital_radar_data::ElevationDataBlock` | `lrtup_raw()`, `calibration_constant()`, `atmos()` | `lrtup_bytes()`, `calibration_constant_db()`, `atmos_db_per_km()` |
+| `digital_radar_data::ElevationDataBlock` | `lrtup_raw()`, `calibration_constant()`, `atmos_raw()`, `atmos()` | `lrtup_bytes()`, `calibration_constant_db()`, `atmospheric_attenuation_raw()`, `atmospheric_attenuation_db_per_km()` |
 | `digital_radar_data::GenericDataBlockHeader` | (none) | `tover_db()`, `snr_threshold_db()`, `moment_size_bytes()` |
 | `digital_radar_data::GenericDataBlock` | `moment_data()`, `into_moment_data()`, `cfp_moment_data()`, `into_cfp_moment_data()` | `DataBlock<'a, GenericDataBlock<'a>>::moment_data() -> Result<MomentData>`, `into_moment_data()` |
 | `digital_radar_data::Message` | `site() -> Option<Site>` | `site() -> Result<Option<Site>>` |
@@ -1480,8 +1553,31 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `volume_coverage_pattern::ElevationDataBlock` | `reflectivity_threshold()`, `velocity_threshold()`, `spectrum_width_threshold()`, `differential_reflectivity_threshold()`, `differential_phase_threshold()`, `correlation_coefficient_threshold()` | `..._threshold_db()` |
 | `clutter_filter_map::RangeZone` | `raw_op_code()`, `end_range() -> u16`, `end_range_uom()` | `op_code_raw()`, `end_range_km() -> u16`, `end_range()` (uom) |
 | `request_for_data::Message` | `raw_data_request_type()` | `data_request_type_raw()` |
-| `rda_status_data::Message` | `raw_rda_status()`, `raw_operability_status()`, `raw_control_status()`, `raw_auxiliary_power_generator_state()`, `raw_horizontal_reflectivity_calibration_correction()`, `raw_data_transmission_enabled()`, `raw_volume_coverage_pattern()`, `raw_rda_control_authorization()`, `raw_operational_mode()`, `raw_super_resolution_status()`, `raw_clutter_mitigation_decision_status()`, `raw_rda_scan_and_data_flags()`, `raw_rda_alarm_summary()`, `raw_command_acknowledgement()`, `raw_channel_control_status()`, `raw_spot_blanking_status()`, `raw_vertical_reflectivity_calibration_correction()`, `raw_transition_power_source_status()`, `raw_rms_control_status()`, `raw_performance_check_status()`, `raw_alarm_codes()`, `raw_signal_processor_options()` | The same stems with a `_raw` suffix (`rda_status_raw()`, ..., `signal_processor_options_raw()`) |
+| `rda_status_data::Message` | `raw_rda_status()`, `raw_operability_status()`, `raw_control_status()`, `raw_auxiliary_power_generator_state()`, `raw_horizontal_reflectivity_calibration_correction()`, `raw_data_transmission_enabled()`, `raw_rda_control_authorization()`, `raw_operational_mode()`, `raw_super_resolution_status()`, `raw_clutter_mitigation_decision_status()`, `raw_rda_scan_and_data_flags()`, `raw_rda_alarm_summary()`, `raw_command_acknowledgement()`, `raw_channel_control_status()`, `raw_spot_blanking_status()`, `raw_vertical_reflectivity_calibration_correction()`, `raw_transition_power_source_status()`, `raw_rms_control_status()`, `raw_performance_check_status()`, `raw_alarm_codes()`, `raw_signal_processor_options()` | The same stems with a `_raw` suffix (`rda_status_raw()`, ..., `signal_processor_options_raw()`) |
 | `rda_status_data::Message` | `raw_rda_build_number()` | `build_number_raw()` |
+| `rda_status_data::Message` | `raw_volume_coverage_pattern()`, `volume_coverage_pattern()` | `vcp_number_raw()`, `vcp_number()` |
+| `rda_status_data::Message` | `bypass_map_generation_date()`, `bypass_map_generation_time()`, `clutter_filter_map_generation_date()`, `clutter_filter_map_generation_time()` | `..._raw()` |
+| `rda_status_data::Message` | `downloaded_pattern_number() -> u16` | `downloaded_pattern_number_raw()`, `downloaded_pattern_number() -> VcpNumber` |
+| `rda_status_data::Message` | `alarm_messages()` | `alarm_definitions()` |
+| `digital_radar_data::Header` | `date()`, `time()`, `radar_identifier() -> String` | `date_raw()`, `time_raw()`, `radar_identifier() -> Option<&str>` |
+| `digital_radar_data::DataBlockId` | `data_name_raw()`, `data_block_name_str()`, `data_block_type_char()` | `data_block_name_raw()`; the other two removed |
+| `digital_radar_data::RadialDataBlock` | `radial_flags()` | `radial_flags_raw()` |
+| `digital_radar_data::GenericDataBlockHeader` | `number_of_data_moment_gates()` | `data_moment_gate_count()` |
+| `digital_radar_data_legacy::Message` | `num_surveillance_gates()`, `num_doppler_gates()` | `surveillance_gate_count()`, `doppler_gate_count()` |
+| `digital_radar_data_legacy::Message` | (none) | `nyquist_velocity_raw()`, `nyquist_velocity_mps()`, `atmospheric_attenuation_raw()`, `atmospheric_attenuation_db_per_km()`, `nyquist_velocity()` (uom) |
+| `volume_coverage_pattern::Header` | `pattern_number()`, `number_of_elevation_cuts()`, `number_of_sails_cuts()`, `number_of_mrle_cuts()`, `number_of_base_tilts()` | `vcp_number_raw()` + `vcp_number()`, `elevation_cut_count()`, `sails_cut_count()`, `mrle_cut_count()`, `base_tilt_count()` |
+| `volume_coverage_pattern::Header` | `vcp_sequencing()`, `vcp_supplemental_data()`, `vcp_sequencing_number_of_elevations()` | `vcp_sequencing_raw()`, `vcp_supplemental_data_raw()`, `vcp_sequencing_elevation_count()` |
+| `volume_coverage_pattern::ElevationDataBlock` | `supplemental_data()`, `super_resolution_control()`; angles as `f64` | `supplemental_data_raw()`, `super_resolution_control_raw()`; angles as `f32` |
+| `clutter_filter_map::Message` | `map_generation_date()`, `map_generation_time()`, `date_time()` | `map_generation_date_raw()`, `map_generation_time_raw()`, `map_generation_date_time()` |
+| `clutter_filter_map::AzimuthSegment` | `azimuth_segment()` | `azimuth_segment_number()` |
+| `clutter_filter_bypass_map::Message` | `bypass_map_generation_date()`, `bypass_map_generation_time()`, `date_time()`, `number_of_elevation_segments()` | `bypass_map_generation_date_raw()`, `bypass_map_generation_time_raw()`, `bypass_map_generation_date_time()`, `elevation_segment_count()` |
+| `clutter_filter_bypass_map::ElevationSegment` | `segment_number()` | `elevation_segment_number()` |
+| `rda_prf_data::Message` | `number_of_waveforms()` | `waveform_count()` |
+| `rda_prf_data::WaveformPrfData` | `waveform_type() -> u16` | `waveform_type_raw()`, `waveform_type() -> WaveformType` |
+| `rda_log_data::Message` | `identifier() -> &str`, `identifier_bytes()`, `compression_type()` | `identifier() -> Option<&str>`, `identifier_raw()`, `compression_type_raw()` |
+| `console_message::Message` | `text_bytes()` | `text_raw()` |
+| `MessageHeader` | `segmented()` | `is_fixed_frame()` |
+| `Message`, `MessageHeaders` | `is_segmented()`; `Message::offset()`, `size()` | `is_multi_segment()`; `offset_bytes()`, `size_bytes()` |
 | `rda_status_data::Message` | `average_transmitter_power()`, `horizontal_reflectivity_calibration_correction()` | `average_transmitter_power_watts()`, `horizontal_reflectivity_calibration_correction_db()` |
 | `rda_status_data::Message` | (none) | `vertical_reflectivity_calibration_correction_db()` |
 | `console_message::Message` | `message_size()` | `message_size_bytes()` |

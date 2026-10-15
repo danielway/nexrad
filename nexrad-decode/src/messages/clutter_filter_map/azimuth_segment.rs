@@ -13,7 +13,7 @@ pub struct AzimuthSegment<'a> {
 
     /// This azimuth segment's number from 0 to 359. Each azimuth segment subtends a range of 1
     /// degree, e.g.: 0 degrees <= azimuth segment 0 < 1 degree.
-    azimuth_segment: u16,
+    azimuth_segment_number: u16,
 
     /// The range zones defined in this azimuth segment.
     range_zones: Vec<RangeZone<'a>>,
@@ -34,7 +34,7 @@ impl<'a> AzimuthSegment<'a> {
 
         Ok(AzimuthSegment {
             header: Cow::Borrowed(header),
-            azimuth_segment: segment_number,
+            azimuth_segment_number: segment_number,
             range_zones,
         })
     }
@@ -46,8 +46,8 @@ impl<'a> AzimuthSegment<'a> {
 
     /// This azimuth segment's number from 0 to 359. Each azimuth segment subtends a range of 1
     /// degree, e.g.: 0 degrees <= azimuth segment 0 < 1 degree.
-    pub fn azimuth_segment(&self) -> u16 {
-        self.azimuth_segment
+    pub fn azimuth_segment_number(&self) -> u16 {
+        self.azimuth_segment_number
     }
 
     /// The range zones defined in this azimuth segment.
@@ -59,7 +59,7 @@ impl<'a> AzimuthSegment<'a> {
     pub fn into_owned(self) -> AzimuthSegment<'static> {
         AzimuthSegment {
             header: Cow::Owned(self.header.into_owned()),
-            azimuth_segment: self.azimuth_segment,
+            azimuth_segment_number: self.azimuth_segment_number,
             range_zones: self
                 .range_zones
                 .into_iter()

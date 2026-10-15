@@ -77,9 +77,9 @@ pub mod nexrad_decode::messages::clutter_filter_bypass_map
 pub struct nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>
 impl<'a> nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>
 pub fn nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>::bypass_flag(&self, usize, usize) -> core::option::Option<bool>
+pub fn nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>::elevation_segment_number(&self) -> u16
 pub fn nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>::into_owned(self) -> nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'static>
 pub fn nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>::range_bins(&self) -> &[u8]
-pub fn nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>::segment_number(&self) -> u16
 impl<'a> core::clone::Clone for nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>
 pub fn nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>::clone(&self) -> Self
 impl<'a> core::cmp::Eq for nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>
@@ -99,12 +99,12 @@ impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::cl
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>
 pub struct nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>
 impl<'a> nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>
-pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::bypass_map_generation_date(&self) -> u16
-pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::bypass_map_generation_time(&self) -> u16
-pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
+pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::bypass_map_generation_date_raw(&self) -> u16
+pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::bypass_map_generation_date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
+pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::bypass_map_generation_time_raw(&self) -> u16
+pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::elevation_segment_count(&self) -> u16
 pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::elevation_segments(&self) -> &[nexrad_decode::messages::clutter_filter_bypass_map::ElevationSegment<'a>]
 pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::into_owned(self) -> nexrad_decode::messages::clutter_filter_bypass_map::Message<'static>
-pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::number_of_elevation_segments(&self) -> u16
 impl<'a> core::clone::Clone for nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>
 pub fn nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>::clone(&self) -> Self
 impl<'a> core::cmp::Eq for nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>
@@ -148,7 +148,7 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::clutte
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::clutter_filter_map::OpCode
 pub struct nexrad_decode::messages::clutter_filter_map::AzimuthSegment<'a>
 impl<'a> nexrad_decode::messages::clutter_filter_map::AzimuthSegment<'a>
-pub fn nexrad_decode::messages::clutter_filter_map::AzimuthSegment<'a>::azimuth_segment(&self) -> u16
+pub fn nexrad_decode::messages::clutter_filter_map::AzimuthSegment<'a>::azimuth_segment_number(&self) -> u16
 pub fn nexrad_decode::messages::clutter_filter_map::AzimuthSegment<'a>::into_owned(self) -> nexrad_decode::messages::clutter_filter_map::AzimuthSegment<'static>
 pub fn nexrad_decode::messages::clutter_filter_map::AzimuthSegment<'a>::range_zone_count(&self) -> u16
 pub fn nexrad_decode::messages::clutter_filter_map::AzimuthSegment<'a>::range_zones(&self) -> &[nexrad_decode::messages::clutter_filter_map::RangeZone<'a>]
@@ -193,12 +193,12 @@ impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::cl
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::clutter_filter_map::ElevationSegment<'a>
 pub struct nexrad_decode::messages::clutter_filter_map::Message<'a>
 impl<'a> nexrad_decode::messages::clutter_filter_map::Message<'a>
-pub fn nexrad_decode::messages::clutter_filter_map::Message<'a>::date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
 pub fn nexrad_decode::messages::clutter_filter_map::Message<'a>::elevation_segment_count(&self) -> u16
 pub fn nexrad_decode::messages::clutter_filter_map::Message<'a>::elevation_segments(&self) -> &[nexrad_decode::messages::clutter_filter_map::ElevationSegment<'a>]
 pub fn nexrad_decode::messages::clutter_filter_map::Message<'a>::into_owned(self) -> nexrad_decode::messages::clutter_filter_map::Message<'static>
-pub fn nexrad_decode::messages::clutter_filter_map::Message<'a>::map_generation_date(&self) -> u16
-pub fn nexrad_decode::messages::clutter_filter_map::Message<'a>::map_generation_time(&self) -> u16
+pub fn nexrad_decode::messages::clutter_filter_map::Message<'a>::map_generation_date_raw(&self) -> u16
+pub fn nexrad_decode::messages::clutter_filter_map::Message<'a>::map_generation_date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
+pub fn nexrad_decode::messages::clutter_filter_map::Message<'a>::map_generation_time_raw(&self) -> u16
 impl<'a> core::clone::Clone for nexrad_decode::messages::clutter_filter_map::Message<'a>
 pub fn nexrad_decode::messages::clutter_filter_map::Message<'a>::clone(&self) -> Self
 impl<'a> core::cmp::Eq for nexrad_decode::messages::clutter_filter_map::Message<'a>
@@ -246,7 +246,7 @@ impl<'a> nexrad_decode::messages::console_message::Message<'a>
 pub fn nexrad_decode::messages::console_message::Message<'a>::into_owned(self) -> nexrad_decode::messages::console_message::Message<'static>
 pub fn nexrad_decode::messages::console_message::Message<'a>::message_size_bytes(&self) -> u16
 pub fn nexrad_decode::messages::console_message::Message<'a>::text(&self) -> core::option::Option<&str>
-pub fn nexrad_decode::messages::console_message::Message<'a>::text_bytes(&self) -> &[u8]
+pub fn nexrad_decode::messages::console_message::Message<'a>::text_raw(&self) -> &[u8]
 impl<'a> core::clone::Clone for nexrad_decode::messages::console_message::Message<'a>
 pub fn nexrad_decode::messages::console_message::Message<'a>::clone(&self) -> Self
 impl<'a> core::cmp::Eq for nexrad_decode::messages::console_message::Message<'a>
@@ -290,8 +290,8 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_r
 pub enum nexrad_decode::messages::digital_radar_data::CompressionIndicator
 pub nexrad_decode::messages::digital_radar_data::CompressionIndicator::CompressedBzip2
 pub nexrad_decode::messages::digital_radar_data::CompressionIndicator::CompressedZlib
-pub nexrad_decode::messages::digital_radar_data::CompressionIndicator::FutureUse
 pub nexrad_decode::messages::digital_radar_data::CompressionIndicator::Uncompressed
+pub nexrad_decode::messages::digital_radar_data::CompressionIndicator::Unknown(u8)
 impl core::clone::Clone for nexrad_decode::messages::digital_radar_data::CompressionIndicator
 pub fn nexrad_decode::messages::digital_radar_data::CompressionIndicator::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::digital_radar_data::CompressionIndicator
@@ -412,8 +412,8 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::digita
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::DataWordSize
 pub enum nexrad_decode::messages::digital_radar_data::ProcessingStatus
 pub nexrad_decode::messages::digital_radar_data::ProcessingStatus::Cbt
-pub nexrad_decode::messages::digital_radar_data::ProcessingStatus::Other(u16)
 pub nexrad_decode::messages::digital_radar_data::ProcessingStatus::RxrNoise
+pub nexrad_decode::messages::digital_radar_data::ProcessingStatus::Unknown(u16)
 impl core::clone::Clone for nexrad_decode::messages::digital_radar_data::ProcessingStatus
 pub fn nexrad_decode::messages::digital_radar_data::ProcessingStatus::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::digital_radar_data::ProcessingStatus
@@ -486,11 +486,9 @@ impl<'a, T> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::di
 pub struct nexrad_decode::messages::digital_radar_data::DataBlockId<'a>
 impl<'a> nexrad_decode::messages::digital_radar_data::DataBlockId<'a>
 pub fn nexrad_decode::messages::digital_radar_data::DataBlockId<'a>::data_block_name(&self) -> nexrad_decode::messages::digital_radar_data::DataBlockName
-pub fn nexrad_decode::messages::digital_radar_data::DataBlockId<'a>::data_block_name_str(&self) -> alloc::borrow::Cow<'_, str>
+pub fn nexrad_decode::messages::digital_radar_data::DataBlockId<'a>::data_block_name_raw(&self) -> &[u8; 3]
 pub fn nexrad_decode::messages::digital_radar_data::DataBlockId<'a>::data_block_type(&self) -> nexrad_decode::messages::digital_radar_data::DataBlockType
-pub fn nexrad_decode::messages::digital_radar_data::DataBlockId<'a>::data_block_type_char(&self) -> char
 pub fn nexrad_decode::messages::digital_radar_data::DataBlockId<'a>::data_block_type_raw(&self) -> u8
-pub fn nexrad_decode::messages::digital_radar_data::DataBlockId<'a>::data_name_raw(&self) -> &[u8; 3]
 pub fn nexrad_decode::messages::digital_radar_data::DataBlockId<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::DataBlockId<'static>
 impl<'a> core::clone::Clone for nexrad_decode::messages::digital_radar_data::DataBlockId<'a>
 pub fn nexrad_decode::messages::digital_radar_data::DataBlockId<'a>::clone(&self) -> Self
@@ -511,8 +509,8 @@ impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::di
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::DataBlockId<'a>
 pub struct nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>
 impl<'a> nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>
-pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::atmos_db_per_km(&self) -> f32
-pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::atmos_raw(&self) -> i16
+pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::atmospheric_attenuation_db_per_km(&self) -> f32
+pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::atmospheric_attenuation_raw(&self) -> i16
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::calibration_constant_db(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'static>
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::lrtup(&self) -> uom::si::f64::Information
@@ -554,6 +552,7 @@ pub struct nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'
 impl<'a> nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::control_flags(&self) -> nexrad_decode::messages::digital_radar_data::ControlFlags
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::control_flags_raw(&self) -> u8
+pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_gate_count(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_range(&self) -> uom::si::f64::Length
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_range_km(&self) -> f64
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_range_raw(&self) -> u16
@@ -565,7 +564,6 @@ pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'static>
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::moment_size(&self) -> uom::si::f64::Information
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::moment_size_bytes(&self) -> u32
-pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::number_of_data_moment_gates(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::offset(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::scale(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::snr_threshold_db(&self) -> f32
@@ -591,7 +589,7 @@ impl<'a> nexrad_decode::messages::digital_radar_data::Header<'a>
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_angle(&self) -> uom::si::f64::Angle
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_angle_degrees(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_indexing_mode(&self) -> core::option::Option<uom::si::f64::Angle>
-pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_indexing_mode_degrees(&self) -> core::option::Option<f64>
+pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_indexing_mode_degrees(&self) -> core::option::Option<f32>
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_indexing_mode_raw(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_number(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_resolution_spacing(&self) -> nexrad_decode::messages::digital_radar_data::AzimuthResolutionSpacing
@@ -601,21 +599,21 @@ pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::compression_indi
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::compression_indicator_raw(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::cut_sector_number(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::data_block_count(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::date(&self) -> u16
+pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::date_raw(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::elevation_angle(&self) -> uom::si::f64::Angle
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::elevation_angle_degrees(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::elevation_number(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::Header<'static>
-pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radar_identifier(&self) -> alloc::string::String
+pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radar_identifier(&self) -> core::option::Option<&str>
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radar_identifier_raw(&self) -> &[u8; 4]
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_length(&self) -> uom::si::f64::Information
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_length_bytes(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_spot_blanking_status(&self) -> nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
+pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_spot_blanking_status(&self) -> nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_spot_blanking_status_raw(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_status(&self) -> nexrad_decode::messages::digital_radar_data::RadialStatus
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_status_raw(&self) -> u8
-pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::time(&self) -> u32
+pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::time_raw(&self) -> u32
 impl<'a> core::clone::Clone for nexrad_decode::messages::digital_radar_data::Header<'a>
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::clone(&self) -> Self
 impl<'a> core::cmp::PartialEq for nexrad_decode::messages::digital_radar_data::Header<'a>
@@ -672,7 +670,7 @@ pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::lrtup_b
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::nyquist_velocity(&self) -> uom::si::f64::Velocity
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::nyquist_velocity_mps(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::nyquist_velocity_raw(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::radial_flags(&self) -> u16
+pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::radial_flags_raw(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::unambiguous_range(&self) -> uom::si::f64::Length
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::unambiguous_range_km(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::unambiguous_range_raw(&self) -> u16
@@ -692,29 +690,29 @@ impl<'a> core::marker::Unpin for nexrad_decode::messages::digital_radar_data::Ra
 impl<'a> core::marker::UnsafeUnpin for nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>
 impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>
-pub struct nexrad_decode::messages::digital_radar_data::SpotBlankingStatus(_)
-impl nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingStatus::elevation(&self) -> bool
-pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingStatus::none(&self) -> bool
-pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingStatus::radial(&self) -> bool
-pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingStatus::volume(&self) -> bool
-impl core::clone::Clone for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingStatus::clone(&self) -> Self
-impl core::cmp::Eq for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-impl core::cmp::PartialEq for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingStatus::eq(&self, &Self) -> bool
-impl core::fmt::Debug for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::StructuralPartialEq for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-impl core::marker::Freeze for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-impl core::marker::Send for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-impl core::marker::Sync for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-impl core::marker::Unpin for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-impl core::marker::UnsafeUnpin for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
-impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::SpotBlankingStatus
+pub struct nexrad_decode::messages::digital_radar_data::SpotBlankingFlags(_)
+impl nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingFlags::elevation(&self) -> bool
+pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingFlags::none(&self) -> bool
+pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingFlags::radial(&self) -> bool
+pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingFlags::volume(&self) -> bool
+impl core::clone::Clone for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingFlags::clone(&self) -> Self
+impl core::cmp::Eq for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+impl core::cmp::PartialEq for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingFlags::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingFlags::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+pub fn nexrad_decode::messages::digital_radar_data::SpotBlankingFlags::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+impl core::marker::Freeze for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+impl core::marker::Send for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+impl core::marker::Sync for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+impl core::marker::Unpin for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+impl core::marker::UnsafeUnpin for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
+impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
 pub struct nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>
 impl<'a> nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::calibration_constant_db(&self) -> f32
@@ -738,11 +736,12 @@ pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::site_he
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::system_differential_reflectivity_db(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::tower_height(&self) -> uom::si::f64::Length
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::tower_height_meters(&self) -> u16
+pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::vcp_number(&self) -> nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::vcp_number_raw(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::vertical_shv_tx_power(&self) -> uom::si::f64::Power
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::vertical_shv_tx_power_kw(&self) -> f32
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::volume_coverage_pattern(&self) -> nexrad_decode::messages::VcpNumber
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::volume_coverage_pattern_raw(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::zdr_bias_estimate_weighted_mean(&self) -> core::option::Option<u16>
+pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::zdr_bias_estimate_weighted_mean_db(&self) -> core::option::Option<f32>
+pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::zdr_bias_estimate_weighted_mean_raw(&self) -> core::option::Option<u16>
 impl<'a> core::clone::Clone for nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::clone(&self) -> Self
 impl<'a> core::cmp::PartialEq for nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>
@@ -760,25 +759,30 @@ impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digit
 pub mod nexrad_decode::messages::digital_radar_data_legacy
 pub struct nexrad_decode::messages::digital_radar_data_legacy::Message<'a>
 impl<'a> nexrad_decode::messages::digital_radar_data_legacy::Message<'a>
+pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::atmospheric_attenuation_db_per_km(&self) -> f32
+pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::atmospheric_attenuation_raw(&self) -> i16
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::azimuth_angle_degrees(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::azimuth_number(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::calibration_constant_db(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::doppler_first_gate_range_meters(&self) -> i16
+pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::doppler_gate_count(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::doppler_gate_interval_meters(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::doppler_velocity_resolution_mps(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::elevation_angle_degrees(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::elevation_number(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data_legacy::Message<'static>
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::into_radial(self) -> nexrad_decode::result::Result<nexrad_model::data::radial::Radial>
-pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::num_doppler_gates(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::num_surveillance_gates(&self) -> u16
+pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::nyquist_velocity(&self) -> uom::si::f64::Velocity
+pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::nyquist_velocity_mps(&self) -> f32
+pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::nyquist_velocity_raw(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::radial(&self) -> nexrad_decode::result::Result<nexrad_model::data::radial::Radial>
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::radial_status(&self) -> nexrad_decode::messages::digital_radar_data::RadialStatus
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::radial_status_raw(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::reflectivity_gates(&self) -> core::option::Option<&[u8]>
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::spectrum_width_gates(&self) -> core::option::Option<&[u8]>
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::surveillance_first_gate_range_meters(&self) -> i16
+pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::surveillance_gate_count(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::surveillance_gate_interval_meters(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::unambiguous_range_km(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::vcp_number(&self) -> nexrad_decode::messages::VcpNumber
@@ -1309,12 +1313,12 @@ pub mod nexrad_decode::messages::rda_log_data
 pub struct nexrad_decode::messages::rda_log_data::Message<'a>
 impl<'a> nexrad_decode::messages::rda_log_data::Message<'a>
 pub fn nexrad_decode::messages::rda_log_data::Message<'a>::compressed_size_bytes(&self) -> u32
-pub fn nexrad_decode::messages::rda_log_data::Message<'a>::compression_type(&self) -> u32
+pub fn nexrad_decode::messages::rda_log_data::Message<'a>::compression_type_raw(&self) -> u32
 pub fn nexrad_decode::messages::rda_log_data::Message<'a>::data(&self) -> &[u8]
 pub fn nexrad_decode::messages::rda_log_data::Message<'a>::data_version(&self) -> u32
 pub fn nexrad_decode::messages::rda_log_data::Message<'a>::decompressed_size_bytes(&self) -> u32
-pub fn nexrad_decode::messages::rda_log_data::Message<'a>::identifier(&self) -> &str
-pub fn nexrad_decode::messages::rda_log_data::Message<'a>::identifier_bytes(&self) -> &[u8; 26]
+pub fn nexrad_decode::messages::rda_log_data::Message<'a>::identifier(&self) -> core::option::Option<&str>
+pub fn nexrad_decode::messages::rda_log_data::Message<'a>::identifier_raw(&self) -> &[u8; 26]
 pub fn nexrad_decode::messages::rda_log_data::Message<'a>::into_owned(self) -> nexrad_decode::messages::rda_log_data::Message<'static>
 pub fn nexrad_decode::messages::rda_log_data::Message<'a>::version(&self) -> u32
 impl<'a> core::clone::Clone for nexrad_decode::messages::rda_log_data::Message<'a>
@@ -1338,7 +1342,7 @@ pub mod nexrad_decode::messages::rda_prf_data
 pub struct nexrad_decode::messages::rda_prf_data::Message<'a>
 impl<'a> nexrad_decode::messages::rda_prf_data::Message<'a>
 pub fn nexrad_decode::messages::rda_prf_data::Message<'a>::into_owned(self) -> nexrad_decode::messages::rda_prf_data::Message<'static>
-pub fn nexrad_decode::messages::rda_prf_data::Message<'a>::number_of_waveforms(&self) -> u16
+pub fn nexrad_decode::messages::rda_prf_data::Message<'a>::waveform_count(&self) -> u16
 pub fn nexrad_decode::messages::rda_prf_data::Message<'a>::waveform_prf_data(&self) -> &[nexrad_decode::messages::rda_prf_data::WaveformPrfData]
 impl<'a> core::clone::Clone for nexrad_decode::messages::rda_prf_data::Message<'a>
 pub fn nexrad_decode::messages::rda_prf_data::Message<'a>::clone(&self) -> Self
@@ -1361,7 +1365,8 @@ pub struct nexrad_decode::messages::rda_prf_data::WaveformPrfData
 impl nexrad_decode::messages::rda_prf_data::WaveformPrfData
 pub fn nexrad_decode::messages::rda_prf_data::WaveformPrfData::prf_count(&self) -> usize
 pub fn nexrad_decode::messages::rda_prf_data::WaveformPrfData::prf_values(&self) -> &[u32]
-pub fn nexrad_decode::messages::rda_prf_data::WaveformPrfData::waveform_type(&self) -> u16
+pub fn nexrad_decode::messages::rda_prf_data::WaveformPrfData::waveform_type(&self) -> nexrad_decode::messages::volume_coverage_pattern::WaveformType
+pub fn nexrad_decode::messages::rda_prf_data::WaveformPrfData::waveform_type_raw(&self) -> u16
 impl core::clone::Clone for nexrad_decode::messages::rda_prf_data::WaveformPrfData
 pub fn nexrad_decode::messages::rda_prf_data::WaveformPrfData::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::rda_prf_data::WaveformPrfData
@@ -1452,31 +1457,31 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::alarm::St
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::alarm::State
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::alarm::State
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::alarm::State
-pub struct nexrad_decode::messages::rda_status_data::alarm::Message
-impl nexrad_decode::messages::rda_status_data::alarm::Message
-pub fn nexrad_decode::messages::rda_status_data::alarm::Message::alarm_type(&self) -> core::option::Option<nexrad_decode::messages::rda_status_data::alarm::AlarmType>
-pub fn nexrad_decode::messages::rda_status_data::alarm::Message::code(&self) -> u16
-pub fn nexrad_decode::messages::rda_status_data::alarm::Message::device(&self) -> core::option::Option<nexrad_decode::messages::rda_status_data::alarm::Device>
-pub fn nexrad_decode::messages::rda_status_data::alarm::Message::message(&self) -> &'static str
-pub fn nexrad_decode::messages::rda_status_data::alarm::Message::sample(&self) -> core::option::Option<u8>
-pub fn nexrad_decode::messages::rda_status_data::alarm::Message::state(&self) -> core::option::Option<nexrad_decode::messages::rda_status_data::alarm::State>
-impl core::clone::Clone for nexrad_decode::messages::rda_status_data::alarm::Message
-pub fn nexrad_decode::messages::rda_status_data::alarm::Message::clone(&self) -> Self
-impl core::cmp::Eq for nexrad_decode::messages::rda_status_data::alarm::Message
-impl core::cmp::PartialEq for nexrad_decode::messages::rda_status_data::alarm::Message
-pub fn nexrad_decode::messages::rda_status_data::alarm::Message::eq(&self, &Self) -> bool
-impl core::fmt::Debug for nexrad_decode::messages::rda_status_data::alarm::Message
-pub fn nexrad_decode::messages::rda_status_data::alarm::Message::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for nexrad_decode::messages::rda_status_data::alarm::Message
-pub fn nexrad_decode::messages::rda_status_data::alarm::Message::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::StructuralPartialEq for nexrad_decode::messages::rda_status_data::alarm::Message
-impl core::marker::Freeze for nexrad_decode::messages::rda_status_data::alarm::Message
-impl core::marker::Send for nexrad_decode::messages::rda_status_data::alarm::Message
-impl core::marker::Sync for nexrad_decode::messages::rda_status_data::alarm::Message
-impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::alarm::Message
-impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::alarm::Message
-impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::alarm::Message
-impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::alarm::Message
+pub struct nexrad_decode::messages::rda_status_data::alarm::Definition
+impl nexrad_decode::messages::rda_status_data::alarm::Definition
+pub fn nexrad_decode::messages::rda_status_data::alarm::Definition::alarm_type(&self) -> core::option::Option<nexrad_decode::messages::rda_status_data::alarm::AlarmType>
+pub fn nexrad_decode::messages::rda_status_data::alarm::Definition::code(&self) -> u16
+pub fn nexrad_decode::messages::rda_status_data::alarm::Definition::device(&self) -> core::option::Option<nexrad_decode::messages::rda_status_data::alarm::Device>
+pub fn nexrad_decode::messages::rda_status_data::alarm::Definition::message(&self) -> &'static str
+pub fn nexrad_decode::messages::rda_status_data::alarm::Definition::sample(&self) -> core::option::Option<u8>
+pub fn nexrad_decode::messages::rda_status_data::alarm::Definition::state(&self) -> core::option::Option<nexrad_decode::messages::rda_status_data::alarm::State>
+impl core::clone::Clone for nexrad_decode::messages::rda_status_data::alarm::Definition
+pub fn nexrad_decode::messages::rda_status_data::alarm::Definition::clone(&self) -> Self
+impl core::cmp::Eq for nexrad_decode::messages::rda_status_data::alarm::Definition
+impl core::cmp::PartialEq for nexrad_decode::messages::rda_status_data::alarm::Definition
+pub fn nexrad_decode::messages::rda_status_data::alarm::Definition::eq(&self, &Self) -> bool
+impl core::fmt::Debug for nexrad_decode::messages::rda_status_data::alarm::Definition
+pub fn nexrad_decode::messages::rda_status_data::alarm::Definition::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for nexrad_decode::messages::rda_status_data::alarm::Definition
+pub fn nexrad_decode::messages::rda_status_data::alarm::Definition::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::StructuralPartialEq for nexrad_decode::messages::rda_status_data::alarm::Definition
+impl core::marker::Freeze for nexrad_decode::messages::rda_status_data::alarm::Definition
+impl core::marker::Send for nexrad_decode::messages::rda_status_data::alarm::Definition
+impl core::marker::Sync for nexrad_decode::messages::rda_status_data::alarm::Definition
+impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::alarm::Definition
+impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::alarm::Definition
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::alarm::Definition
+impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::alarm::Definition
 pub struct nexrad_decode::messages::rda_status_data::alarm::Summary(_)
 impl nexrad_decode::messages::rda_status_data::alarm::Summary
 pub fn nexrad_decode::messages::rda_status_data::alarm::Summary::communication(&self) -> bool
@@ -1504,7 +1509,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::alarm::Su
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::alarm::Summary
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::alarm::Summary
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::alarm::Summary
-pub fn nexrad_decode::messages::rda_status_data::alarm::get_alarm_message(u16) -> core::option::Option<nexrad_decode::messages::rda_status_data::alarm::Message>
+pub fn nexrad_decode::messages::rda_status_data::alarm::definition(u16) -> core::option::Option<nexrad_decode::messages::rda_status_data::alarm::Definition>
 pub enum nexrad_decode::messages::rda_status_data::AuxiliaryPowerGeneratorState
 pub nexrad_decode::messages::rda_status_data::AuxiliaryPowerGeneratorState::CommandedSwitchover
 pub nexrad_decode::messages::rda_status_data::AuxiliaryPowerGeneratorState::GeneratorOn
@@ -1690,43 +1695,6 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::Performan
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::PerformanceCheckStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::PerformanceCheckStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::PerformanceCheckStatus
-pub enum nexrad_decode::messages::rda_status_data::RdaBuildNumber
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build12_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build13_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build14_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build15_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build16_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build17_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build18_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build19_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build20_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build21_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build22_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build23_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Build24_0
-pub nexrad_decode::messages::rda_status_data::RdaBuildNumber::Unknown(f32)
-impl nexrad_decode::messages::rda_status_data::RdaBuildNumber
-pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::as_float(&self) -> f32
-pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::from_raw(u16) -> Self
-pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::is_known(&self) -> bool
-pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::uses_legacy_volume_data_block(&self) -> bool
-impl core::clone::Clone for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::clone(&self) -> Self
-impl core::cmp::PartialEq for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::eq(&self, &Self) -> bool
-impl core::cmp::PartialOrd for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::partial_cmp(&self, &Self) -> core::option::Option<core::cmp::Ordering>
-impl core::fmt::Debug for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-impl core::marker::StructuralPartialEq for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-impl core::marker::Freeze for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-impl core::marker::Send for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-impl core::marker::Sync for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::RdaBuildNumber
-impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::RdaBuildNumber
 pub enum nexrad_decode::messages::rda_status_data::RdaStatus
 pub nexrad_decode::messages::rda_status_data::RdaStatus::Operate
 pub nexrad_decode::messages::rda_status_data::RdaStatus::Restart
@@ -1779,7 +1747,7 @@ pub enum nexrad_decode::messages::rda_status_data::SpotBlankingStatus
 pub nexrad_decode::messages::rda_status_data::SpotBlankingStatus::Disabled
 pub nexrad_decode::messages::rda_status_data::SpotBlankingStatus::Enabled
 pub nexrad_decode::messages::rda_status_data::SpotBlankingStatus::NotInstalled
-pub nexrad_decode::messages::rda_status_data::SpotBlankingStatus::Other(u8)
+pub nexrad_decode::messages::rda_status_data::SpotBlankingStatus::Unknown(u16)
 impl core::clone::Clone for nexrad_decode::messages::rda_status_data::SpotBlankingStatus
 pub fn nexrad_decode::messages::rda_status_data::SpotBlankingStatus::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::rda_status_data::SpotBlankingStatus
@@ -1824,8 +1792,7 @@ pub enum nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus
 pub nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus::NotInstalled
 pub nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus::Off
 pub nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus::Ok
-pub nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus::Other(u16)
-pub nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus::Unknown
+pub nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus::Unknown(u16)
 impl core::clone::Clone for nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus
 pub fn nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus
@@ -1891,19 +1858,19 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_statu
 pub struct nexrad_decode::messages::rda_status_data::Message<'a>
 impl<'a> nexrad_decode::messages::rda_status_data::Message<'a>
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::alarm_codes_raw(&self) -> [u16; 14]
-pub fn nexrad_decode::messages::rda_status_data::Message<'a>::alarm_messages(&self) -> alloc::vec::Vec<nexrad_decode::messages::rda_status_data::alarm::Message>
+pub fn nexrad_decode::messages::rda_status_data::Message<'a>::alarm_definitions(&self) -> alloc::vec::Vec<nexrad_decode::messages::rda_status_data::alarm::Definition>
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::auxiliary_power_generator_state(&self) -> nexrad_decode::messages::rda_status_data::AuxiliaryPowerGeneratorState
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::auxiliary_power_generator_state_raw(&self) -> u16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::average_transmitter_power_watts(&self) -> u16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::build_number(&self) -> nexrad_decode::messages::rda_status_data::RdaBuildNumber
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::build_number_raw(&self) -> u16
-pub fn nexrad_decode::messages::rda_status_data::Message<'a>::bypass_map_generation_date(&self) -> u16
+pub fn nexrad_decode::messages::rda_status_data::Message<'a>::bypass_map_generation_date_raw(&self) -> u16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::bypass_map_generation_date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
-pub fn nexrad_decode::messages::rda_status_data::Message<'a>::bypass_map_generation_time(&self) -> u16
+pub fn nexrad_decode::messages::rda_status_data::Message<'a>::bypass_map_generation_time_raw(&self) -> u16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::channel_control_status_raw(&self) -> u16
-pub fn nexrad_decode::messages::rda_status_data::Message<'a>::clutter_filter_map_generation_date(&self) -> u16
+pub fn nexrad_decode::messages::rda_status_data::Message<'a>::clutter_filter_map_generation_date_raw(&self) -> u16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::clutter_filter_map_generation_date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
-pub fn nexrad_decode::messages::rda_status_data::Message<'a>::clutter_filter_map_generation_time(&self) -> u16
+pub fn nexrad_decode::messages::rda_status_data::Message<'a>::clutter_filter_map_generation_time_raw(&self) -> u16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::clutter_mitigation_decision_status(&self) -> nexrad_decode::messages::rda_status_data::ClutterMitigationDecisionStatus
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::clutter_mitigation_decision_status_raw(&self) -> u16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::command_acknowledgement(&self) -> core::option::Option<nexrad_decode::messages::rda_status_data::CommandAcknowledgement>
@@ -1913,7 +1880,8 @@ pub fn nexrad_decode::messages::rda_status_data::Message<'a>::control_status_raw
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::controlling_channel(&self) -> bool
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::data_transmission_enabled(&self) -> nexrad_decode::messages::rda_status_data::DataTransmissionEnabled
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::data_transmission_enabled_raw(&self) -> u16
-pub fn nexrad_decode::messages::rda_status_data::Message<'a>::downloaded_pattern_number(&self) -> u16
+pub fn nexrad_decode::messages::rda_status_data::Message<'a>::downloaded_pattern_number(&self) -> nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::rda_status_data::Message<'a>::downloaded_pattern_number_raw(&self) -> u16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::horizontal_reflectivity_calibration_correction_db(&self) -> f32
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::horizontal_reflectivity_calibration_correction_raw(&self) -> u16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::into_owned(self) -> nexrad_decode::messages::rda_status_data::Message<'static>
@@ -1941,10 +1909,10 @@ pub fn nexrad_decode::messages::rda_status_data::Message<'a>::super_resolution_s
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::super_resolution_status_raw(&self) -> u16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::transition_power_source_status(&self) -> nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::transition_power_source_status_raw(&self) -> u16
+pub fn nexrad_decode::messages::rda_status_data::Message<'a>::vcp_number(&self) -> core::option::Option<nexrad_decode::messages::rda_status_data::VcpSelection>
+pub fn nexrad_decode::messages::rda_status_data::Message<'a>::vcp_number_raw(&self) -> i16
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::vertical_reflectivity_calibration_correction_db(&self) -> f32
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::vertical_reflectivity_calibration_correction_raw(&self) -> u16
-pub fn nexrad_decode::messages::rda_status_data::Message<'a>::volume_coverage_pattern(&self) -> core::option::Option<nexrad_decode::messages::rda_status_data::VcpSelection>
-pub fn nexrad_decode::messages::rda_status_data::Message<'a>::volume_coverage_pattern_raw(&self) -> i16
 impl<'a> core::clone::Clone for nexrad_decode::messages::rda_status_data::Message<'a>
 pub fn nexrad_decode::messages::rda_status_data::Message<'a>::clone(&self) -> Self
 impl<'a> core::cmp::Eq for nexrad_decode::messages::rda_status_data::Message<'a>
@@ -1962,6 +1930,36 @@ impl<'a> core::marker::Unpin for nexrad_decode::messages::rda_status_data::Messa
 impl<'a> core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::Message<'a>
 impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::Message<'a>
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::Message<'a>
+pub struct nexrad_decode::messages::rda_status_data::RdaBuildNumber(_)
+impl nexrad_decode::messages::rda_status_data::RdaBuildNumber
+pub const fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::from_raw(u16) -> Self
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::major(self) -> u16
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::minor(self) -> u16
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::raw(self) -> u16
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::uses_legacy_volume_data_block(&self) -> bool
+impl core::clone::Clone for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::clone(&self) -> Self
+impl core::cmp::Eq for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+impl core::cmp::Ord for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::cmp(&self, &Self) -> core::cmp::Ordering
+impl core::cmp::PartialEq for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::eq(&self, &Self) -> bool
+impl core::cmp::PartialOrd for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::partial_cmp(&self, &Self) -> core::option::Option<core::cmp::Ordering>
+impl core::fmt::Debug for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+pub fn nexrad_decode::messages::rda_status_data::RdaBuildNumber::hash<H: core::hash::Hasher>(&self, &mut H)
+impl core::marker::Copy for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+impl core::marker::Freeze for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+impl core::marker::Send for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+impl core::marker::Sync for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::RdaBuildNumber
+impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::RdaBuildNumber
 pub struct nexrad_decode::messages::rda_status_data::ScanDataFlags(_)
 impl nexrad_decode::messages::rda_status_data::ScanDataFlags
 pub fn nexrad_decode::messages::rda_status_data::ScanDataFlags::avset_enabled(&self) -> bool
@@ -2040,7 +2038,7 @@ pub enum nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::ConstantPhase
 pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::RandomPhase
 pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::Sz2Phase
-pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::UnknownPhase
+pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::Unknown(u8)
 impl core::clone::Clone for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
@@ -2063,7 +2061,7 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::volume
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 pub enum nexrad_decode::messages::volume_coverage_pattern::PatternType
 pub nexrad_decode::messages::volume_coverage_pattern::PatternType::Constant
-pub nexrad_decode::messages::volume_coverage_pattern::PatternType::Unknown
+pub nexrad_decode::messages::volume_coverage_pattern::PatternType::Unknown(u16)
 impl core::clone::Clone for nexrad_decode::messages::volume_coverage_pattern::PatternType
 pub fn nexrad_decode::messages::volume_coverage_pattern::PatternType::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::volume_coverage_pattern::PatternType
@@ -2085,7 +2083,7 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::volume_co
 pub enum nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 pub nexrad_decode::messages::volume_coverage_pattern::PulseWidth::Long
 pub nexrad_decode::messages::volume_coverage_pattern::PulseWidth::Short
-pub nexrad_decode::messages::volume_coverage_pattern::PulseWidth::Unknown
+pub nexrad_decode::messages::volume_coverage_pattern::PulseWidth::Unknown(u8)
 impl core::clone::Clone for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
@@ -2112,7 +2110,7 @@ pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::ContiguousDo
 pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::ContiguousDopplerWithoutAmbiguityResolution
 pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::ContiguousSurveillance
 pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::StaggeredPulsePair
-pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::Unknown
+pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::Unknown(u8)
 impl core::clone::Clone for nexrad_decode::messages::volume_coverage_pattern::WaveformType
 pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::volume_coverage_pattern::WaveformType
@@ -2145,9 +2143,9 @@ pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>:
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::differential_phase_threshold_raw(&self) -> i16
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::differential_reflectivity_threshold_db(&self) -> f32
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::differential_reflectivity_threshold_raw(&self) -> i16
-pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::ebc_angle_degrees(&self) -> f64
+pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::ebc_angle_degrees(&self) -> f32
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::ebc_angle_raw(&self) -> u16
-pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::elevation_angle_degrees(&self) -> f64
+pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::elevation_angle_degrees(&self) -> f32
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::elevation_angle_raw(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::into_owned(self) -> nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'static>
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::is_base_tilt_cut(&self) -> bool
@@ -2160,24 +2158,24 @@ pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>:
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sails_sequence_number(&self) -> u8
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_1_doppler_prf_number(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_1_doppler_prf_pulse_count_radial(&self) -> u16
-pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_1_edge_angle_degrees(&self) -> f64
+pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_1_edge_angle_degrees(&self) -> f32
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_1_edge_angle_raw(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_2_doppler_prf_number(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_2_doppler_prf_pulse_count_radial(&self) -> u16
-pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_2_edge_angle_degrees(&self) -> f64
+pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_2_edge_angle_degrees(&self) -> f32
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_2_edge_angle_raw(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_3_doppler_prf_number(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_3_doppler_prf_pulse_count_radial(&self) -> u16
-pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_3_edge_angle_degrees(&self) -> f64
+pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_3_edge_angle_degrees(&self) -> f32
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::sector_3_edge_angle_raw(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::spectrum_width_threshold_db(&self) -> f32
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::spectrum_width_threshold_raw(&self) -> i16
-pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::super_resolution_control(&self) -> u8
+pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::super_resolution_control_raw(&self) -> u8
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::super_resolution_doppler_to_300km(&self) -> bool
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::super_resolution_dual_pol_to_300km(&self) -> bool
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::super_resolution_half_degree_azimuth(&self) -> bool
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::super_resolution_quarter_km_reflectivity(&self) -> bool
-pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::supplemental_data(&self) -> u16
+pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::supplemental_data_raw(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::surveillance_prf_number(&self) -> u8
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::surveillance_prf_pulse_count_radial(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>::velocity_threshold_db(&self) -> f32
@@ -2200,30 +2198,31 @@ impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::vo
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>
 pub struct nexrad_decode::messages::volume_coverage_pattern::Header<'a>
 impl<'a> nexrad_decode::messages::volume_coverage_pattern::Header<'a>
+pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::base_tilt_count(&self) -> u8
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::clutter_map_group_number(&self) -> u8
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::doppler_velocity_resolution_mps(&self) -> f32
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::doppler_velocity_resolution_raw(&self) -> u8
+pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::elevation_cut_count(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::into_owned(self) -> nexrad_decode::messages::volume_coverage_pattern::Header<'static>
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::is_base_tilt_vcp(&self) -> bool
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::is_mpda_vcp(&self) -> bool
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::is_mrle_vcp(&self) -> bool
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::is_sails_vcp(&self) -> bool
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::message_size_halfwords(&self) -> u16
-pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::number_of_base_tilts(&self) -> u8
-pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::number_of_elevation_cuts(&self) -> u16
-pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::number_of_mrle_cuts(&self) -> u8
-pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::number_of_sails_cuts(&self) -> u8
-pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::pattern_number(&self) -> u16
+pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::mrle_cut_count(&self) -> u8
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::pattern_type(&self) -> nexrad_decode::messages::volume_coverage_pattern::PatternType
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::pattern_type_raw(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::pulse_width(&self) -> nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::pulse_width_raw(&self) -> u8
-pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_sequencing(&self) -> u16
+pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::sails_cut_count(&self) -> u8
+pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_number(&self) -> nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_number_raw(&self) -> u16
+pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_sequencing_elevation_count(&self) -> u8
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_sequencing_max_sails_cuts(&self) -> u8
-pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_sequencing_number_of_elevations(&self) -> u8
+pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_sequencing_raw(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_sequencing_sequence_active(&self) -> bool
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_sequencing_truncated(&self) -> bool
-pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_supplemental_data(&self) -> u16
+pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::vcp_supplemental_data_raw(&self) -> u16
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::version(&self) -> u8
 impl<'a> core::clone::Clone for nexrad_decode::messages::volume_coverage_pattern::Header<'a>
 pub fn nexrad_decode::messages::volume_coverage_pattern::Header<'a>::clone(&self) -> Self
@@ -2276,8 +2275,8 @@ pub nexrad_decode::messages::MessageContents::RdaControlCommands(alloc::boxed::B
 pub nexrad_decode::messages::MessageContents::RdaLogData(alloc::boxed::Box<nexrad_decode::messages::rda_log_data::Message<'a>>)
 pub nexrad_decode::messages::MessageContents::RdaPrfData(alloc::boxed::Box<nexrad_decode::messages::rda_prf_data::Message<'a>>)
 pub nexrad_decode::messages::MessageContents::RdaStatusData(alloc::boxed::Box<nexrad_decode::messages::rda_status_data::Message<'a>>)
+pub nexrad_decode::messages::MessageContents::RdaVolumeCoveragePattern(alloc::boxed::Box<nexrad_decode::messages::volume_coverage_pattern::Message<'a>>)
 pub nexrad_decode::messages::MessageContents::RequestForData(alloc::boxed::Box<nexrad_decode::messages::request_for_data::Message<'a>>)
-pub nexrad_decode::messages::MessageContents::VolumeCoveragePattern(alloc::boxed::Box<nexrad_decode::messages::volume_coverage_pattern::Message<'a>>)
 impl nexrad_decode::MessageContents<'_>
 pub fn nexrad_decode::MessageContents<'_>::into_owned(self) -> nexrad_decode::MessageContents<'static>
 pub fn nexrad_decode::MessageContents<'_>::message_type(&self) -> nexrad_decode::MessageType
@@ -2301,7 +2300,7 @@ pub nexrad_decode::messages::MessageHeaders::Single(nexrad_decode::messages::Mes
 impl<'a> nexrad_decode::messages::MessageHeaders<'a>
 pub fn nexrad_decode::messages::MessageHeaders<'a>::count(&self) -> usize
 pub fn nexrad_decode::messages::MessageHeaders<'a>::into_owned(self) -> nexrad_decode::messages::MessageHeaders<'static>
-pub fn nexrad_decode::messages::MessageHeaders<'a>::is_segmented(&self) -> bool
+pub fn nexrad_decode::messages::MessageHeaders<'a>::is_multi_segment(&self) -> bool
 pub fn nexrad_decode::messages::MessageHeaders<'a>::iter(&self) -> impl core::iter::traits::iterator::Iterator<Item = &nexrad_decode::messages::MessageHeader<'a>> + '_
 pub fn nexrad_decode::messages::MessageHeaders<'a>::primary(&self) -> &nexrad_decode::messages::MessageHeader<'a>
 impl<'a> core::clone::Clone for nexrad_decode::messages::MessageHeaders<'a>
@@ -2319,24 +2318,24 @@ impl<'a> core::marker::UnsafeUnpin for nexrad_decode::messages::MessageHeaders<'
 impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::MessageHeaders<'a>
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::MessageHeaders<'a>
 #[non_exhaustive] pub enum nexrad_decode::messages::MessageType
+pub nexrad_decode::messages::MessageType::ClutterCensorZones
+pub nexrad_decode::messages::MessageType::ClutterFilterBypassMap
+pub nexrad_decode::messages::MessageType::ClutterFilterMap
+pub nexrad_decode::messages::MessageType::DigitalRadarData
+pub nexrad_decode::messages::MessageType::DigitalRadarDataLegacy
+pub nexrad_decode::messages::MessageType::PerformanceMaintenanceData
 pub nexrad_decode::messages::MessageType::RdaAdaptationData
-pub nexrad_decode::messages::MessageType::RdaClutterFilterBypassMap
-pub nexrad_decode::messages::MessageType::RdaClutterFilterMap
 pub nexrad_decode::messages::MessageType::RdaConsoleMessage
 pub nexrad_decode::messages::MessageType::RdaControlCommands
-pub nexrad_decode::messages::MessageType::RdaDigitalRadarData
-pub nexrad_decode::messages::MessageType::RdaDigitalRadarDataGenericFormat
 pub nexrad_decode::messages::MessageType::RdaLogData
-pub nexrad_decode::messages::MessageType::RdaLoopBackTest
-pub nexrad_decode::messages::MessageType::RdaPerformanceMaintenanceData
+pub nexrad_decode::messages::MessageType::RdaLoopbackTest
 pub nexrad_decode::messages::MessageType::RdaPrfData
 pub nexrad_decode::messages::MessageType::RdaStatusData
 pub nexrad_decode::messages::MessageType::RdaVolumeCoveragePattern
+pub nexrad_decode::messages::MessageType::RequestForData
 pub nexrad_decode::messages::MessageType::Reserved(u8)
-pub nexrad_decode::messages::MessageType::RpgClutterCensorZones
 pub nexrad_decode::messages::MessageType::RpgConsoleMessage
-pub nexrad_decode::messages::MessageType::RpgLoopBackTest
-pub nexrad_decode::messages::MessageType::RpgRequestForData
+pub nexrad_decode::messages::MessageType::RpgLoopbackTest
 pub nexrad_decode::messages::MessageType::RpgVolumeCoveragePattern
 pub nexrad_decode::messages::MessageType::Unknown(u8)
 impl nexrad_decode::MessageType
@@ -2438,9 +2437,9 @@ pub fn nexrad_decode::Message<'a>::header(&self) -> &nexrad_decode::messages::Me
 pub fn nexrad_decode::Message<'a>::headers(&self) -> &nexrad_decode::messages::MessageHeaders<'a>
 pub fn nexrad_decode::Message<'a>::into_contents(self) -> nexrad_decode::MessageContents<'a>
 pub fn nexrad_decode::Message<'a>::into_owned(self) -> nexrad_decode::Message<'static>
-pub fn nexrad_decode::Message<'a>::is_segmented(&self) -> bool
-pub fn nexrad_decode::Message<'a>::offset(&self) -> usize
-pub fn nexrad_decode::Message<'a>::size(&self) -> usize
+pub fn nexrad_decode::Message<'a>::is_multi_segment(&self) -> bool
+pub fn nexrad_decode::Message<'a>::offset_bytes(&self) -> usize
+pub fn nexrad_decode::Message<'a>::size_bytes(&self) -> usize
 impl<'a> core::clone::Clone for nexrad_decode::Message<'a>
 pub fn nexrad_decode::Message<'a>::clone(&self) -> Self
 impl<'a> core::cmp::PartialEq for nexrad_decode::Message<'a>
@@ -2460,6 +2459,7 @@ impl<'a> nexrad_decode::messages::MessageHeader<'a>
 pub const nexrad_decode::messages::MessageHeader<'a>::SIZE: usize
 pub fn nexrad_decode::messages::MessageHeader<'a>::date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
 pub fn nexrad_decode::messages::MessageHeader<'a>::into_owned(self) -> nexrad_decode::messages::MessageHeader<'static>
+pub fn nexrad_decode::messages::MessageHeader<'a>::is_fixed_frame(&self) -> bool
 pub fn nexrad_decode::messages::MessageHeader<'a>::message_size(&self) -> uom::si::f64::Information
 pub fn nexrad_decode::messages::MessageHeader<'a>::message_size_bytes(&self) -> u32
 pub fn nexrad_decode::messages::MessageHeader<'a>::message_type(&self) -> nexrad_decode::MessageType
@@ -2472,7 +2472,6 @@ pub fn nexrad_decode::messages::MessageHeader<'a>::segment_number(&self) -> core
 pub fn nexrad_decode::messages::MessageHeader<'a>::segment_size(&self) -> core::option::Option<uom::si::f64::Information>
 pub fn nexrad_decode::messages::MessageHeader<'a>::segment_size_bytes(&self) -> core::option::Option<u32>
 pub fn nexrad_decode::messages::MessageHeader<'a>::segment_size_raw(&self) -> u16
-pub fn nexrad_decode::messages::MessageHeader<'a>::segmented(&self) -> bool
 pub fn nexrad_decode::messages::MessageHeader<'a>::sequence_number(&self) -> u16
 impl core::fmt::Debug for nexrad_decode::messages::MessageHeader<'_>
 pub fn nexrad_decode::messages::MessageHeader<'_>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
@@ -2625,8 +2624,8 @@ pub nexrad_decode::MessageContents::RdaControlCommands(alloc::boxed::Box<nexrad_
 pub nexrad_decode::MessageContents::RdaLogData(alloc::boxed::Box<nexrad_decode::messages::rda_log_data::Message<'a>>)
 pub nexrad_decode::MessageContents::RdaPrfData(alloc::boxed::Box<nexrad_decode::messages::rda_prf_data::Message<'a>>)
 pub nexrad_decode::MessageContents::RdaStatusData(alloc::boxed::Box<nexrad_decode::messages::rda_status_data::Message<'a>>)
+pub nexrad_decode::MessageContents::RdaVolumeCoveragePattern(alloc::boxed::Box<nexrad_decode::messages::volume_coverage_pattern::Message<'a>>)
 pub nexrad_decode::MessageContents::RequestForData(alloc::boxed::Box<nexrad_decode::messages::request_for_data::Message<'a>>)
-pub nexrad_decode::MessageContents::VolumeCoveragePattern(alloc::boxed::Box<nexrad_decode::messages::volume_coverage_pattern::Message<'a>>)
 impl nexrad_decode::MessageContents<'_>
 pub fn nexrad_decode::MessageContents<'_>::into_owned(self) -> nexrad_decode::MessageContents<'static>
 pub fn nexrad_decode::MessageContents<'_>::message_type(&self) -> nexrad_decode::MessageType
@@ -2645,24 +2644,24 @@ impl<'a> core::marker::UnsafeUnpin for nexrad_decode::MessageContents<'a>
 impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::MessageContents<'a>
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::MessageContents<'a>
 #[non_exhaustive] pub enum nexrad_decode::MessageType
+pub nexrad_decode::MessageType::ClutterCensorZones
+pub nexrad_decode::MessageType::ClutterFilterBypassMap
+pub nexrad_decode::MessageType::ClutterFilterMap
+pub nexrad_decode::MessageType::DigitalRadarData
+pub nexrad_decode::MessageType::DigitalRadarDataLegacy
+pub nexrad_decode::MessageType::PerformanceMaintenanceData
 pub nexrad_decode::MessageType::RdaAdaptationData
-pub nexrad_decode::MessageType::RdaClutterFilterBypassMap
-pub nexrad_decode::MessageType::RdaClutterFilterMap
 pub nexrad_decode::MessageType::RdaConsoleMessage
 pub nexrad_decode::MessageType::RdaControlCommands
-pub nexrad_decode::MessageType::RdaDigitalRadarData
-pub nexrad_decode::MessageType::RdaDigitalRadarDataGenericFormat
 pub nexrad_decode::MessageType::RdaLogData
-pub nexrad_decode::MessageType::RdaLoopBackTest
-pub nexrad_decode::MessageType::RdaPerformanceMaintenanceData
+pub nexrad_decode::MessageType::RdaLoopbackTest
 pub nexrad_decode::MessageType::RdaPrfData
 pub nexrad_decode::MessageType::RdaStatusData
 pub nexrad_decode::MessageType::RdaVolumeCoveragePattern
+pub nexrad_decode::MessageType::RequestForData
 pub nexrad_decode::MessageType::Reserved(u8)
-pub nexrad_decode::MessageType::RpgClutterCensorZones
 pub nexrad_decode::MessageType::RpgConsoleMessage
-pub nexrad_decode::MessageType::RpgLoopBackTest
-pub nexrad_decode::MessageType::RpgRequestForData
+pub nexrad_decode::MessageType::RpgLoopbackTest
 pub nexrad_decode::MessageType::RpgVolumeCoveragePattern
 pub nexrad_decode::MessageType::Unknown(u8)
 impl nexrad_decode::MessageType
@@ -2697,9 +2696,9 @@ pub fn nexrad_decode::Message<'a>::header(&self) -> &nexrad_decode::messages::Me
 pub fn nexrad_decode::Message<'a>::headers(&self) -> &nexrad_decode::messages::MessageHeaders<'a>
 pub fn nexrad_decode::Message<'a>::into_contents(self) -> nexrad_decode::MessageContents<'a>
 pub fn nexrad_decode::Message<'a>::into_owned(self) -> nexrad_decode::Message<'static>
-pub fn nexrad_decode::Message<'a>::is_segmented(&self) -> bool
-pub fn nexrad_decode::Message<'a>::offset(&self) -> usize
-pub fn nexrad_decode::Message<'a>::size(&self) -> usize
+pub fn nexrad_decode::Message<'a>::is_multi_segment(&self) -> bool
+pub fn nexrad_decode::Message<'a>::offset_bytes(&self) -> usize
+pub fn nexrad_decode::Message<'a>::size_bytes(&self) -> usize
 impl<'a> core::clone::Clone for nexrad_decode::Message<'a>
 pub fn nexrad_decode::Message<'a>::clone(&self) -> Self
 impl<'a> core::cmp::PartialEq for nexrad_decode::Message<'a>

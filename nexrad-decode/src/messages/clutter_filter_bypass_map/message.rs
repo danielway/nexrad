@@ -33,7 +33,7 @@ impl<'a> Message<'a> {
     pub(crate) fn parse(reader: &mut SegmentedSliceReader<'a, '_>) -> Result<Self> {
         let header = reader.take_ref::<Header>()?;
 
-        let segment_count = header.number_of_elevation_segments.get() as usize;
+        let segment_count = header.elevation_segment_count.get() as usize;
         let mut elevation_segments = Vec::with_capacity(segment_count);
 
         for _ in 0..segment_count {
@@ -54,24 +54,28 @@ impl<'a> Message<'a> {
 
     /// The date the bypass map was generated represented as a count of days since 1 January 1970
     /// 00:00 GMT. It is also referred-to as a "modified Julian date" where it is the Julian
-    /// date - 2440586.5.
-    pub fn bypass_map_generation_date(&self) -> u16 {
+    /// date - 2440586.5. See
+    /// [`bypass_map_generation_date_time()`](Self::bypass_map_generation_date_time) for the decoded
+    /// value.
+    pub fn bypass_map_generation_date_raw(&self) -> u16 {
         self.header.bypass_map_generation_date.get()
     }
 
-    /// The time the bypass map was generated in minutes past midnight, GMT.
-    pub fn bypass_map_generation_time(&self) -> u16 {
+    /// The time the bypass map was generated in minutes past midnight, GMT. See
+    /// [`bypass_map_generation_date_time()`](Self::bypass_map_generation_date_time) for the decoded
+    /// value.
+    pub fn bypass_map_generation_time_raw(&self) -> u16 {
         self.header.bypass_map_generation_time.get()
     }
 
     /// The number of elevation segments defined in this clutter filter bypass map. There may be
     /// 1 to 5 segments.
-    pub fn number_of_elevation_segments(&self) -> u16 {
-        self.header.number_of_elevation_segments.get()
+    pub fn elevation_segment_count(&self) -> u16 {
+        self.header.elevation_segment_count.get()
     }
 
     /// The date and time the clutter filter bypass map was generated.
-    pub fn date_time(&self) -> Option<DateTime<Utc>> {
+    pub fn bypass_map_generation_date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(
             self.header.bypass_map_generation_date.get(),
             Duration::minutes(self.header.bypass_map_generation_time.get() as i64),

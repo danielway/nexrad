@@ -62,7 +62,7 @@ pub fn parse_rda_adaptation_data(data: &[u8]) -> String {
     let mut output = String::new();
 
     output.push_str("=== RDA Adaptation Data (Type 18) ===\n\n");
-    output.push_str(&format!("Message Size: {} bytes\n", message.size()));
+    output.push_str(&format!("Message Size: {} bytes\n", message.size_bytes()));
 
     // Identity
     output.push_str("\n--- Identity ---\n");

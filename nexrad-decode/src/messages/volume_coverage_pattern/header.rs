@@ -1,5 +1,6 @@
 use super::raw;
 use super::{PatternType, PulseWidth};
+use crate::messages::VcpNumber;
 use std::borrow::Cow;
 
 /// The volume coverage pattern header block
@@ -33,14 +34,20 @@ impl<'a> Header<'a> {
         self.inner.pattern_type.get()
     }
 
-    /// Volume Coverage Pattern Number
-    pub fn pattern_number(&self) -> u16 {
+    /// Volume coverage pattern number (raw value). See [`vcp_number()`](Self::vcp_number) for the
+    /// decoded value.
+    pub fn vcp_number_raw(&self) -> u16 {
         self.inner.pattern_number.get()
     }
 
+    /// Volume coverage pattern number.
+    pub fn vcp_number(&self) -> VcpNumber {
+        VcpNumber::from_number(self.inner.pattern_number.get())
+    }
+
     /// Number of elevation cuts in the complete volume scan
-    pub fn number_of_elevation_cuts(&self) -> u16 {
-        self.inner.number_of_elevation_cuts.get()
+    pub fn elevation_cut_count(&self) -> u16 {
+        self.inner.elevation_cut_count.get()
     }
 
     /// Volume Coverage Pattern Version Number
@@ -74,7 +81,7 @@ impl<'a> Header<'a> {
     /// Bits 5-6: Maximum SAILS Cuts
     /// Bit  13:  Sequence Active
     /// Bit  14:  Truncated VCP
-    pub fn vcp_sequencing(&self) -> u16 {
+    pub fn vcp_sequencing_raw(&self) -> u16 {
         self.inner.vcp_sequencing.get()
     }
 
@@ -87,7 +94,7 @@ impl<'a> Header<'a> {
     /// Bit  11:    MPDA VCP
     /// Bit  12:    BASE TILT VCP
     /// Bits 13-15: Number of BASE TILTS
-    pub fn vcp_supplemental_data(&self) -> u16 {
+    pub fn vcp_supplemental_data_raw(&self) -> u16 {
         self.inner.vcp_supplemental_data.get()
     }
 
@@ -95,7 +102,7 @@ impl<'a> Header<'a> {
     pub fn pattern_type(&self) -> PatternType {
         match self.inner.pattern_type.get() {
             2 => PatternType::Constant,
-            _ => PatternType::Unknown,
+            other => PatternType::Unknown(other),
         }
     }
 
@@ -113,12 +120,12 @@ impl<'a> Header<'a> {
         match self.inner.pulse_width {
             2 => PulseWidth::Short,
             4 => PulseWidth::Long,
-            _ => PulseWidth::Unknown,
+            other => PulseWidth::Unknown(other),
         }
     }
 
     /// Number of elevations from VCP sequencing
-    pub fn vcp_sequencing_number_of_elevations(&self) -> u8 {
+    pub fn vcp_sequencing_elevation_count(&self) -> u8 {
         (self.inner.vcp_sequencing.get() & 0x1F) as u8
     }
 
@@ -143,7 +150,7 @@ impl<'a> Header<'a> {
     }
 
     /// Number of SAILS cuts
-    pub fn number_of_sails_cuts(&self) -> u8 {
+    pub fn sails_cut_count(&self) -> u8 {
         ((self.inner.vcp_supplemental_data.get() >> 1) & 0x07) as u8
     }
 
@@ -153,7 +160,7 @@ impl<'a> Header<'a> {
     }
 
     /// Number of MRLE cuts
-    pub fn number_of_mrle_cuts(&self) -> u8 {
+    pub fn mrle_cut_count(&self) -> u8 {
         ((self.inner.vcp_supplemental_data.get() >> 5) & 0x07) as u8
     }
 
@@ -168,7 +175,7 @@ impl<'a> Header<'a> {
     }
 
     /// Number of BASE TILTS
-    pub fn number_of_base_tilts(&self) -> u8 {
+    pub fn base_tilt_count(&self) -> u8 {
         ((self.inner.vcp_supplemental_data.get() >> 13) & 0x07) as u8
     }
 }

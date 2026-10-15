@@ -14,8 +14,8 @@ use nexrad_decode::messages::rda_status_data::RdaBuildNumber;
 use nexrad_decode::messages::{decode_messages, MessageContents};
 
 /// Maximum RDA build number the library is known to support.
-/// Update this when a new build version is added to the RdaBuildNumber enum.
-const MAX_SUPPORTED_BUILD: RdaBuildNumber = RdaBuildNumber::Build24_0;
+/// Update this when the library is verified against a new build.
+const MAX_SUPPORTED_BUILD: RdaBuildNumber = RdaBuildNumber::from_raw(2400);
 
 /// Sites to test against live data.
 const TEST_SITES: &[&str] = &[
@@ -52,13 +52,13 @@ struct DecodeResult {
 
 impl DecodeResult {
     fn print_report(&self) {
-        let build_ok = self.build_number.is_known() && self.build_number <= MAX_SUPPORTED_BUILD;
+        let build_ok = self.build_number <= MAX_SUPPORTED_BUILD;
         let build_status = if build_ok { "PASS" } else { "FAIL" };
 
         println!("=== Decode Results for {} ===", self.site);
         println!("File: {}", self.file_name);
         println!(
-            "Build Number: {:?} (max supported: {:?}) - {}",
+            "Build Number: {} (max supported: {}) - {}",
             self.build_number, MAX_SUPPORTED_BUILD, build_status
         );
         println!("RDA Status Messages: {}", self.rda_status_count);
@@ -136,7 +136,7 @@ fn decode_volume(site: &str, file_name: &str, file: &volume::File) -> Result<Dec
                         build_number = Some(status.build_number());
                     }
                 }
-                MessageContents::VolumeCoveragePattern(_) => {
+                MessageContents::RdaVolumeCoveragePattern(_) => {
                     vcp_count += 1;
                 }
                 MessageContents::DigitalRadarData(radar_data) => {
@@ -174,14 +174,9 @@ fn validation_failures(result: &DecodeResult) -> Vec<String> {
     let mut failures = Vec::new();
 
     // Build number check
-    if !result.build_number.is_known() {
+    if result.build_number > MAX_SUPPORTED_BUILD {
         failures.push(format!(
-            "Unknown build number: {:?}. Add a new variant to RdaBuildNumber.",
-            result.build_number
-        ));
-    } else if result.build_number > MAX_SUPPORTED_BUILD {
-        failures.push(format!(
-            "Build {:?} exceeds MAX_SUPPORTED_BUILD ({:?}). \
+            "Build {} exceeds MAX_SUPPORTED_BUILD ({}). \
              Update MAX_SUPPORTED_BUILD in live_decode.rs if this is expected.",
             result.build_number, MAX_SUPPORTED_BUILD
         ));
@@ -220,16 +215,10 @@ fn validation_failures(result: &DecodeResult) -> Vec<String> {
 /// surface prominently in the workflow UI. Only build issues get annotations
 /// since they signal that the library itself needs updating.
 fn emit_build_annotations(site: &str, result: &DecodeResult) {
-    if !result.build_number.is_known() {
-        println!(
-            "::error file=nexrad-data/tests/live_decode.rs,title=Unknown Build::\
-             Site {} reported unknown build {:?}. Add new variant to RdaBuildNumber enum.",
-            site, result.build_number
-        );
-    } else if result.build_number > MAX_SUPPORTED_BUILD {
+    if result.build_number > MAX_SUPPORTED_BUILD {
         println!(
             "::error file=nexrad-data/tests/live_decode.rs,title=Build Exceeds Max::\
-             Site {} build {:?} exceeds MAX_SUPPORTED_BUILD {:?}. Update the constant.",
+             Site {} build {} exceeds MAX_SUPPORTED_BUILD {}. Update the constant.",
             site, result.build_number, MAX_SUPPORTED_BUILD
         );
     }

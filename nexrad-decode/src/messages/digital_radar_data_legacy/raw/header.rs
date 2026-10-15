@@ -62,10 +62,10 @@ pub struct Header {
     pub doppler_gate_interval: Integer2,
 
     /// Number of surveillance (reflectivity) gates (0-460).
-    pub num_surveillance_gates: Integer2,
+    pub surveillance_gate_count: Integer2,
 
     /// Number of Doppler (velocity/spectrum width) gates (0-920).
-    pub num_doppler_gates: Integer2,
+    pub doppler_gate_count: Integer2,
 
     /// Sector number (1-3).
     pub sector_number: Integer2,
@@ -93,6 +93,15 @@ pub struct Header {
     /// Volume Coverage Pattern number.
     pub vcp_number: Integer2,
 
-    /// Spare bytes (ICD halfwords 24-50, 27 halfwords = 54 bytes).
-    pub spare: BinaryData<[u8; 54]>,
+    /// Spare bytes (message bytes 46-59).
+    pub spare_1: BinaryData<[u8; 14]>,
+
+    /// Nyquist velocity in hundredths of a m/s (message bytes 60-61).
+    pub nyquist_velocity: Integer2,
+
+    /// Atmospheric attenuation factor in thousandths of a dB/km (message bytes 62-63).
+    pub atmospheric_attenuation: SInteger2,
+
+    /// Threshold parameter, radial spot blanking status and spare bytes (message bytes 64-99).
+    pub spare_2: BinaryData<[u8; 36]>,
 }

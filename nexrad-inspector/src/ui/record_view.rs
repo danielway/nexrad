@@ -76,7 +76,7 @@ fn render_message_list(frame: &mut Frame, app: &mut App, area: Rect) {
                 // For single messages, show "var" for variable-length or "1" for fixed
                 let segment_str = if msg.segment_count > 1 {
                     format!("{} segments", msg.segment_count)
-                } else if hdr.segmented() {
+                } else if hdr.is_fixed_frame() {
                     "1".to_string()
                 } else {
                     format!("var ({}B)", hdr.message_size_bytes())
@@ -139,23 +139,23 @@ fn render_message_list(frame: &mut Frame, app: &mut App, area: Rect) {
 
 fn format_message_type(msg_type: &MessageType) -> &'static str {
     match msg_type {
-        MessageType::RdaDigitalRadarData => "RDA Digital Radar",
+        MessageType::DigitalRadarDataLegacy => "RDA Digital Radar",
         MessageType::RdaStatusData => "RDA Status",
-        MessageType::RdaPerformanceMaintenanceData => "RDA Perf/Maint",
+        MessageType::PerformanceMaintenanceData => "RDA Perf/Maint",
         MessageType::RdaConsoleMessage => "RDA Console",
         MessageType::RdaVolumeCoveragePattern => "RDA VCP",
         MessageType::RdaControlCommands => "RDA Control",
         MessageType::RpgVolumeCoveragePattern => "RPG VCP",
-        MessageType::RpgClutterCensorZones => "RPG Clutter",
-        MessageType::RpgRequestForData => "RPG Request",
+        MessageType::ClutterCensorZones => "RPG Clutter",
+        MessageType::RequestForData => "RPG Request",
         MessageType::RpgConsoleMessage => "RPG Console",
-        MessageType::RdaLoopBackTest => "RDA Loopback",
-        MessageType::RpgLoopBackTest => "RPG Loopback",
-        MessageType::RdaClutterFilterBypassMap => "RDA Clutter Bypass",
-        MessageType::RdaClutterFilterMap => "RDA Clutter Map",
+        MessageType::RdaLoopbackTest => "RDA Loopback",
+        MessageType::RpgLoopbackTest => "RPG Loopback",
+        MessageType::ClutterFilterBypassMap => "RDA Clutter Bypass",
+        MessageType::ClutterFilterMap => "RDA Clutter Map",
         MessageType::RdaAdaptationData => "RDA Adaptation",
         MessageType::Reserved(_) => "Reserved",
-        MessageType::RdaDigitalRadarDataGenericFormat => "Digital Radar Data",
+        MessageType::DigitalRadarData => "Digital Radar Data",
         MessageType::RdaPrfData => "RDA PRF",
         MessageType::RdaLogData => "RDA Log",
         MessageType::Unknown(_) => "Unknown",

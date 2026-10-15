@@ -5,8 +5,8 @@ pub enum PulseWidth {
     Short,
     /// Long pulse width for extended range.
     Long,
-    /// Unknown pulse width value.
-    Unknown,
+    /// A pulse width code the ICD does not define, carrying the raw value.
+    Unknown(u8),
 }
 
 #[cfg(feature = "model")]
@@ -15,7 +15,7 @@ impl From<PulseWidth> for nexrad_model::data::PulseWidth {
         match value {
             PulseWidth::Short => Self::Short,
             PulseWidth::Long => Self::Long,
-            PulseWidth::Unknown => Self::Unknown,
+            PulseWidth::Unknown(_) => Self::Unknown,
         }
     }
 }

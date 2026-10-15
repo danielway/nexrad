@@ -17,7 +17,7 @@ pub struct Header {
     pub pattern_number: Integer2,
 
     /// Number of elevation cuts in the complete volume scan
-    pub number_of_elevation_cuts: Integer2,
+    pub elevation_cut_count: Integer2,
 
     /// Volume Coverage Pattern Version Number
     pub version: Integer1,

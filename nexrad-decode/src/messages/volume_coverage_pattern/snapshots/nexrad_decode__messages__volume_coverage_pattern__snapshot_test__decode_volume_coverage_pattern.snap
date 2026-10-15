@@ -31,14 +31,14 @@ Message {
             segment_number: 1,
         },
     ),
-    contents: VolumeCoveragePattern(
+    contents: RdaVolumeCoveragePattern(
         Message {
             header: Header {
                 inner: Header {
                     message_size: 540,
                     pattern_type: 2,
                     pattern_number: 212,
-                    number_of_elevation_cuts: 23,
+                    elevation_cut_count: 23,
                     version: 1,
                     clutter_map_group_number: 1,
                     doppler_velocity_resolution: 2,

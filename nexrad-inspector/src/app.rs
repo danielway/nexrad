@@ -614,8 +614,8 @@ impl App {
                 .iter()
                 .enumerate()
                 .map(|(index, msg)| {
-                    let offset = msg.offset();
-                    let size = msg.size();
+                    let offset = msg.offset_bytes();
+                    let size = msg.size_bytes();
                     let segment_count = msg.headers().count();
 
                     // Generate raw indices for this message (before segment combining)
@@ -993,8 +993,7 @@ impl App {
             if let Some(header) = Self::get_message_header(&msg.data) {
                 let msg_type = header.message_type();
                 match msg_type {
-                    MessageType::RdaDigitalRadarData
-                    | MessageType::RdaDigitalRadarDataGenericFormat => {
+                    MessageType::DigitalRadarDataLegacy | MessageType::DigitalRadarData => {
                         radar_data_count += 1;
                     }
                     _ => {
@@ -1052,8 +1051,7 @@ impl App {
                 let msg_type = header.message_type();
                 if matches!(
                     msg_type,
-                    MessageType::RdaDigitalRadarData
-                        | MessageType::RdaDigitalRadarDataGenericFormat
+                    MessageType::DigitalRadarDataLegacy | MessageType::DigitalRadarData
                 ) {
                     // Parse the message to get detailed radar data
                     if let Ok(parsed_messages) = decode_messages(&msg.data) {
@@ -1144,18 +1142,18 @@ impl App {
             .iter()
             .map(|t| match t {
                 MessageType::RdaStatusData => "Status",
-                MessageType::RdaPerformanceMaintenanceData => "Perf/Maint",
+                MessageType::PerformanceMaintenanceData => "Perf/Maint",
                 MessageType::RdaConsoleMessage => "RDA Console",
                 MessageType::RdaVolumeCoveragePattern => "RDA VCP",
                 MessageType::RdaControlCommands => "Control",
                 MessageType::RpgVolumeCoveragePattern => "RPG VCP",
-                MessageType::RpgClutterCensorZones => "Clutter Zones",
-                MessageType::RpgRequestForData => "Request",
+                MessageType::ClutterCensorZones => "Clutter Zones",
+                MessageType::RequestForData => "Request",
                 MessageType::RpgConsoleMessage => "RPG Console",
-                MessageType::RdaLoopBackTest => "RDA Loopback",
-                MessageType::RpgLoopBackTest => "RPG Loopback",
-                MessageType::RdaClutterFilterBypassMap => "Clutter Bypass",
-                MessageType::RdaClutterFilterMap => "Clutter Map",
+                MessageType::RdaLoopbackTest => "RDA Loopback",
+                MessageType::RpgLoopbackTest => "RPG Loopback",
+                MessageType::ClutterFilterBypassMap => "Clutter Bypass",
+                MessageType::ClutterFilterMap => "Clutter Map",
                 MessageType::RdaAdaptationData => "Adaptation",
                 MessageType::RdaPrfData => "PRF",
                 MessageType::RdaLogData => "Log",

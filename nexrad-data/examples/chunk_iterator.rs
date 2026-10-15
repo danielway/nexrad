@@ -64,7 +64,7 @@ async fn main() -> Result<()> {
     if let Some(vcp) = iterator.vcp() {
         info!(
             "Volume Coverage Pattern: VCP{} ({} elevations)",
-            vcp.header().pattern_number(),
+            vcp.header().vcp_number_raw(),
             vcp.elevations().len()
         );
     }

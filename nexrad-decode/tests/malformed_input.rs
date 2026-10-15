@@ -199,8 +199,8 @@ fn test_into_owned_outlives_input() {
     let MessageContents::DigitalRadarData(radar_data) = owned[1].contents() else {
         panic!("expected digital radar data");
     };
-    assert_eq!(owned[1].offset(), RDA_STATUS.len());
-    assert_eq!(radar_data.header().radar_identifier(), "KDMX");
+    assert_eq!(owned[1].offset_bytes(), RDA_STATUS.len());
+    assert_eq!(radar_data.header().radar_identifier(), Some("KDMX"));
     let reflectivity = radar_data
         .reflectivity_data_block()
         .expect("reflectivity block");
@@ -244,7 +244,7 @@ fn test_other_carries_type_and_payload_of_variable_length_message() {
 
     let messages = decode_messages(&message).expect("decodes");
     assert_eq!(messages.len(), 1);
-    assert_eq!(messages[0].size(), message.len());
+    assert_eq!(messages[0].size_bytes(), message.len());
     assert_eq!(
         messages[0].contents(),
         &MessageContents::Other {

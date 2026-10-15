@@ -170,7 +170,7 @@ fn decode_message<'a>(reader: &mut SliceReader<'a>) -> Result<Message<'a>> {
     let offset = reader.position();
     let header = MessageHeader::from_raw(reader.take_ref::<raw::MessageHeader>()?);
 
-    if header.segmented() {
+    if header.is_fixed_frame() {
         decode_segmented_message(reader, header, offset)
     } else {
         decode_variable_length_message(reader, header, offset)
@@ -239,15 +239,18 @@ fn decode_segmented_message<'a>(
         headers.push(segment_header);
     }
 
-    // A legacy (pre-ORDA) RDA sends a clutter filter notch width map as message type 15, whose
-    // layout differs from the ORDA clutter filter map this crate decodes.
-    let undecoded = message_type == MessageType::RdaClutterFilterMap
-        && matches!(
-            headers[0].redundant_channel(),
-            RedundantChannel::LegacySingleChannel
-                | RedundantChannel::LegacyRedundantChannel1
-                | RedundantChannel::LegacyRedundantChannel2
-        );
+    // A legacy (pre-ORDA) RDA sends a clutter filter notch width map as message type 15 and a
+    // clutter filter bypass map as message type 13 in layouts that differ from the ORDA messages
+    // this crate decodes.
+    let undecoded = matches!(
+        message_type,
+        MessageType::ClutterFilterMap | MessageType::ClutterFilterBypassMap
+    ) && matches!(
+        headers[0].redundant_channel(),
+        RedundantChannel::LegacySingleChannel
+            | RedundantChannel::LegacyRedundantChannel1
+            | RedundantChannel::LegacyRedundantChannel2
+    );
 
     let mut segmented_reader = SegmentedSliceReader::new(&payloads, &payload_offsets);
     let decoded = if undecoded {
@@ -318,7 +321,7 @@ fn decode_variable_length_message<'a>(
     offset: usize,
 ) -> Result<Message<'a>> {
     let message_type = header.message_type();
-    let contents = if message_type == MessageType::RdaDigitalRadarDataGenericFormat {
+    let contents = if message_type == MessageType::DigitalRadarData {
         let radar_data_message = digital_radar_data::Message::parse(reader)?;
         MessageContents::DigitalRadarData(Box::new(radar_data_message))
     } else {

@@ -25,10 +25,13 @@ pub fn parse_rda_log_data(data: &[u8]) -> String {
 
     output.push_str("--- Header ---\n");
     output.push_str(&format!("Version: {}\n", msg.version()));
-    output.push_str(&format!("Identifier: {}\n", msg.identifier()));
+    output.push_str(&format!(
+        "Identifier: {}\n",
+        msg.identifier().unwrap_or("(invalid)")
+    ));
     output.push_str(&format!("Data Version: {}\n", msg.data_version()));
 
-    let comp_type = msg.compression_type();
+    let comp_type = msg.compression_type_raw();
     output.push_str(&format!(
         "Compression: {} ({})\n",
         comp_type,

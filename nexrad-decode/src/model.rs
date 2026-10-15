@@ -59,7 +59,9 @@ impl ScanBuilder {
             MessageContents::DigitalRadarDataLegacy(message) => {
                 self.radials.push(message.into_radial()?);
             }
-            MessageContents::VolumeCoveragePattern(message) if self.coverage_pattern.is_none() => {
+            MessageContents::RdaVolumeCoveragePattern(message)
+                if self.coverage_pattern.is_none() =>
+            {
                 self.coverage_pattern = Some(message.to_model());
             }
             _ => {}
@@ -129,7 +131,7 @@ mod tests {
     #[test]
     fn vcp_to_model() {
         let message = single_message(VCP_DATA);
-        let MessageContents::VolumeCoveragePattern(vcp) = message.contents() else {
+        let MessageContents::RdaVolumeCoveragePattern(vcp) = message.contents() else {
             panic!("expected a volume coverage pattern message");
         };
 

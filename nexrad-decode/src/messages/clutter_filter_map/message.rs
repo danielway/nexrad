@@ -46,13 +46,15 @@ impl<'a> Message<'a> {
 
     /// The date the clutter filter map was generated represented as a count of days since 1 January
     /// 1970 00:00 GMT. It is also referred-to as a "modified Julian date" where it is the Julian
-    /// date - 2440586.5.
-    pub fn map_generation_date(&self) -> u16 {
+    /// date - 2440586.5. See [`map_generation_date_time()`](Self::map_generation_date_time) for the
+    /// decoded value.
+    pub fn map_generation_date_raw(&self) -> u16 {
         self.header.map_generation_date.get()
     }
 
-    /// The time the clutter filter map was generated in minutes past midnight, GMT.
-    pub fn map_generation_time(&self) -> u16 {
+    /// The time the clutter filter map was generated in minutes past midnight, GMT. See
+    /// [`map_generation_date_time()`](Self::map_generation_date_time) for the decoded value.
+    pub fn map_generation_time_raw(&self) -> u16 {
         self.header.map_generation_time.get()
     }
 
@@ -63,7 +65,7 @@ impl<'a> Message<'a> {
     }
 
     /// The date and time the clutter filter map was generated.
-    pub fn date_time(&self) -> Option<DateTime<Utc>> {
+    pub fn map_generation_date_time(&self) -> Option<DateTime<Utc>> {
         get_datetime(
             self.header.map_generation_date.get(),
             Duration::minutes(self.header.map_generation_time.get() as i64),

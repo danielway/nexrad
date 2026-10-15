@@ -30,8 +30,8 @@ pub use processing_status::ProcessingStatus;
 mod radial_status;
 pub use radial_status::RadialStatus;
 
-mod spot_blanking_status;
-pub use spot_blanking_status::SpotBlankingStatus;
+mod spot_blanking_flags;
+pub use spot_blanking_flags::SpotBlankingFlags;
 
 mod data_block_id;
 pub use data_block_id::DataBlockId;

@@ -31,8 +31,8 @@ impl<'a> GenericDataBlockHeader<'a> {
     }
 
     /// Number of data moment gates for current radial, from 0 to 1840.
-    pub fn number_of_data_moment_gates(&self) -> u16 {
-        self.inner.number_of_data_moment_gates.get()
+    pub fn data_moment_gate_count(&self) -> u16 {
+        self.inner.data_moment_gate_count.get()
     }
 
     /// Range to center of first range gate in 0.000-scaled kilometers (raw value).
@@ -134,7 +134,7 @@ impl<'a> GenericDataBlockHeader<'a> {
     /// Size of the data moment block, in bytes (gate count times word size in bits, divided by
     /// 8).
     pub fn moment_size_bytes(&self) -> u32 {
-        self.inner.number_of_data_moment_gates.get() as u32 * self.inner.data_word_size as u32 / 8
+        self.inner.data_moment_gate_count.get() as u32 * self.inner.data_word_size as u32 / 8
     }
 
     /// Size of the data moment block.

@@ -29,7 +29,7 @@ fn test_decode_rda_adaptation_data() {
     );
     let msg = adap_messages[0];
     assert!(
-        msg.is_segmented(),
+        msg.is_multi_segment(),
         "adaptation data should be a segmented message"
     );
 

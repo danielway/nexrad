@@ -24,8 +24,8 @@ for message in &messages {
             println!("Azimuth: {:.1}°, Elevation: {:.1}°",
                 data.header().azimuth_angle_degrees(), data.header().elevation_angle_degrees());
         }
-        MessageContents::VolumeCoveragePattern(vcp) => {
-            println!("VCP: {}", vcp.header().pattern_number());
+        MessageContents::RdaVolumeCoveragePattern(vcp) => {
+            println!("VCP: {}", vcp.header().vcp_number());
         }
         _ => {}
     }

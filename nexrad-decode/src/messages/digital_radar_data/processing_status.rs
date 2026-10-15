@@ -5,6 +5,6 @@ pub enum ProcessingStatus {
     RxrNoise,
     /// Clutter Bypass Thresholding (CBT) processing.
     Cbt,
-    /// Other processing status value.
-    Other(u16),
+    /// A processing status value the ICD does not define, carrying the raw value.
+    Unknown(u16),
 }

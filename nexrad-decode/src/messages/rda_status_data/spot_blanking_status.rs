@@ -7,6 +7,6 @@ pub enum SpotBlankingStatus {
     Enabled,
     /// Spot blanking is disabled.
     Disabled,
-    /// Unknown spot blanking status value for forward compatibility.
-    Other(u8),
+    /// A spot blanking status value the ICD does not define, carrying the raw value.
+    Unknown(u16),
 }

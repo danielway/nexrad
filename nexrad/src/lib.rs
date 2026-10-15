@@ -79,6 +79,9 @@
 //! | `wasm` | All WASM-compatible features | `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, `chrono` | | Yes |
 //! | `full` | Enable all features (default) | `wasm`, `parallel` | | No |
 //!
+//! The `aws` feature's TLS stack (rustls with the `aws-lc-rs` crypto provider) compiles C code,
+//! which needs a C compiler and, on Windows x86 targets, NASM.
+//!
 //! ### Common Configurations
 //!
 //! ```toml

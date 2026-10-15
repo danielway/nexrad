@@ -70,7 +70,9 @@ and LDM records' NEXRAD messages via `nexrad-decode` is always available. The fo
 groupings of dependencies/behavior:
 
 - `aws` (default) - Enables accessing archive and real-time NEXRAD data from AWS Open Data, including
-  `realtime::chunk_stream`, an async stream that polls for new real-time chunks. WASM-compatible.
+  `realtime::chunk_stream`, an async stream that polls for new real-time chunks. WASM-compatible. Its TLS stack
+  (rustls with the `aws-lc-rs` crypto provider) compiles C code, which needs a C compiler and, on Windows x86 targets,
+  NASM.
 - `model` (default) - Provides mappings to a common radar data model, particularly for mapping `volume::File` into a
   `Scan`.
 - `parallel` - Parallelize LDM record decompression and decoding using Rayon.

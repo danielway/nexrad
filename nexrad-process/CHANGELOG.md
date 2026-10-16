@@ -13,16 +13,19 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 
 ### Added
 
-- Validating constructors `filter::ThresholdFilter::new(min, max)`, `filter::MedianFilter::new(azimuth_kernel,
-  range_kernel)` and `filter::GaussianSmooth::new(sigma_azimuth, sigma_range)`, each returning
+- Validating constructors `filter::ThresholdFilter::new(min, max)`,
+  `filter::MedianFilter::new(azimuth_kernel_radials, range_kernel_gates)` and
+  `filter::GaussianSmooth::new(sigma_azimuth_radials, sigma_range_gates)`, each returning
   `Err(Error::InvalidParameter)` for invalid parameters, with getters for every parameter (`min()`, `max()`,
-  `azimuth_kernel()`, `range_kernel()`, `sigma_azimuth()`, `sigma_range()`). (#175)
+  `azimuth_kernel_radials()`, `range_kernel_gates()`, `sigma_azimuth_radials()`, `sigma_range_gates()`); kernels are
+  in radials and gates. (#175, #193)
 - `Debug`, `Clone` and `PartialEq` for `ThresholdFilter`, `MedianFilter`, `GaussianSmooth`,
   `CorrelationCoefficientFilter`, `StormRelativeVelocity`, `VerticalCrossSection` and `StormCellDetector`;
   `Debug`, `Clone`, `Copy`, `Default` and `PartialEq` for `CompositeReflectivity`; and `Debug` for `SweepPipeline`.
   (#175)
 - `Error::Model(nexrad_model::Error)`, returned when a model constructor rejects an output, such as a
-  `CompositeReflectivity::compute` extent outside valid latitudes and longitudes. (#185)
+  `CompositeReflectivity::compute` extent outside valid latitudes and longitudes. Its `Display` text is
+  `model error`; the model error is its `source()`. (#185, #195)
 - `CartesianGrid`, the validated output grid of a `ScanDerivedProduct`: `CartesianGrid::new(extent, width, height)`
   applies the `CartesianField::new` rules, with `extent()`, `width()` and `height()` getters. (#193)
 - `SweepPipeline::len()`, `is_empty()` and `steps()`, which iterates the steps as `&dyn SweepProcessor`. (#193)
@@ -35,10 +38,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 
 - The minimum supported Rust version is now 1.88 (it was declared as 1.75, which was already incorrect). (#157)
 - `Error` is `#[non_exhaustive]`; matches on it outside this crate need a wildcard arm. (#155)
-- `derived::VerticalCrossSection::new` takes `azimuth_degrees: f64`. (#164)
-- `ScanDerivedProduct::compute` no longer takes a `&Scan` first argument: it is now
-  `compute(&self, fields, coord_system, output_extent, output_resolution)`. Drop the argument at call sites and in
-  implementations. (#175)
+- `ScanDerivedProduct::compute(&self, scan, fields, coord_system, output_extent, output_resolution)` →
+  `compute(&self, fields, coordinate_system, grid: &CartesianGrid)`: the `&Scan` argument is dropped and a
+  `CartesianGrid` replaces the `&GeoExtent` and `(usize, usize)` resolution, at call sites and in implementations
+  (also `CompositeReflectivity::compute`). (#175, #193)
 - `ThresholdFilter`, `MedianFilter` and `GaussianSmooth` have private fields: replace struct literals such as
   `ThresholdFilter { min: Some(5.0), max: None }` with `ThresholdFilter::new(Some(5.0), None)?`, and field reads with
   the getters. (#175)
@@ -48,8 +51,6 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Angle accessors use the `nexrad-model` stems: `detection::StormCell::elevation_degrees()` →
   `elevation_angle_degrees()` and `max_reflectivity_azimuth_degrees()` → `max_reflectivity_azimuth_angle_degrees()`.
   (#182)
-- `derived::VerticalCrossSection::new` parameters are named `azimuth_angle_degrees` and `max_altitude_meters`
-  (formerly `azimuth_degrees` and `max_altitude_m`); the types are unchanged. (#182)
 - `ThresholdFilter` and `CorrelationCoefficientFilter` mark the gates they remove `GateStatus::Filtered` and keep their
   values, instead of setting `GateStatus::NoData` with `0.0`. The other processors use only `Valid` gates, so they
   pass `Filtered` gates through unchanged (smoothing, storm-relative velocity) or skip them (composite reflectivity,
@@ -59,14 +60,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   is ground range and the vertical axis is altitude above mean sea level, including the antenna height. (#188)
 - `SweepProcessor` and `ScanDerivedProduct` require `Send + Sync`, so `SweepPipeline` and boxed processors can be
   shared across threads. (#193)
-- `ScanDerivedProduct::compute(&self, fields, coordinate_system, grid: &CartesianGrid)` takes a `CartesianGrid`
-  instead of an `&GeoExtent` and a `(usize, usize)` resolution. (#193)
-- `derived::VerticalCrossSection::new(f64, f64, f64, usize, usize)` is replaced by
-  `VerticalCrossSection::builder(azimuth_angle_degrees)` with `max_range_km`, `max_altitude_meters`, `width` and
-  `height` setters (defaulting to 230 km, 18 000 m, 600 and 300) and a validating `build()`. (#193)
-- `filter::GaussianSmooth` sigmas are in radials and gates: `sigma_azimuth()` → `sigma_azimuth_radials()` and
-  `sigma_range()` → `sigma_range_gates()`. `filter::MedianFilter` kernels likewise: `azimuth_kernel()` →
-  `azimuth_kernel_radials()` and `range_kernel()` → `range_kernel_gates()`. (#193)
+- `derived::VerticalCrossSection::new(azimuth_degrees: f32, max_range_km, max_altitude_m, width, height)` is replaced
+  by `VerticalCrossSection::builder(azimuth_angle_degrees: f64)` with `max_range_km`, `max_altitude_meters`, `width`
+  and `height` setters (defaulting to 230 km, 18 000 m, 600 and 300) and a validating `build()`. (#164, #182, #193)
 - `Error` derives `Clone` and `PartialEq` and carries structured data: `InvalidParameter`, `InvalidGeometry` and
   `MissingData` are struct variants with `&'static str` fields instead of `String` payloads, and the new
   `GeometryMismatch { parameter }` and `UnexpectedProduct { expected, actual }` report mismatched inputs. (#193)
@@ -82,8 +78,6 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `derived::VerticalCrossSection::compute` and `detection::StormCellDetector::detect` require every input field to
   hold `Product::Reflectivity`, returning `Error::UnexpectedProduct` otherwise. (#193)
 - `detection::StormCell::bounds()` returns a `nexrad_model::geo::GeoExtent` by value. (#193)
-- `Error::Model`'s `Display` text is `model error`, without the wrapped model error's message; the model error is its
-  `source()`, so reporters that walk the source chain print it once. (#195)
 
 ### Removed
 

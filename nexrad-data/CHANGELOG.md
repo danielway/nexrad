@@ -24,11 +24,11 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   owned `nexrad_decode` message and returns `Error::MissingCoveragePattern` when the file has none. Use it on a
   real-time `Chunk::Start`'s file to read the volume's VCP. (#183)
 - `aws::archive::list_files_with_sizes(site, date)`, which returns each volume file's `ListedFile` (its `Identifier`
-  and compressed size in bytes) from the same listing request `list_files` makes. File size tracks how much echo a
-  volume holds, so it works as a cheap storm-activity signal without downloading anything. (#186)
+  and compressed size in bytes) from the same listing request `list_files` makes, skipping the same objects. File size
+  tracks how much echo a volume holds, so it works as a cheap storm-activity signal without downloading anything.
+  `ListedFile` implements `Debug` and `PartialOrd`/`Ord`, ordering by identifier and then size. (#186, #192)
 - `aws::archive::Identifier::version()` (the `Vnn` suffix), `is_metadata()` (`_MDM` objects) and `is_gzip()` (`.gz`
   objects), plus `FromStr`, `Display` (the name) and `Debug`. (#192)
-- `aws::archive::ListedFile` implements `Debug` and `PartialOrd`/`Ord`, ordering by identifier and then size. (#192)
 - `AwsError::InvalidIdentifier { name, reason }`, `AwsError::InvalidVolumeIndex { index }` and
   `AwsError::HttpClient(Box<dyn std::error::Error + Send + Sync>)`; none is transient. (#192)
 
@@ -43,9 +43,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
     and `xml` are no longer features. Use `aws`, `model` or `parallel`.
   - `nexrad-decode`'s default features are no longer enabled through this crate, so its `uom` feature is no longer
     turned on transitively.
-- Acronyms in names follow UpperCamelCase: `AWSError` → `AwsError`, `Error::AWS` → `Error::Aws`. (#160)
-- `AwsError` moved from `nexrad_data::result::aws::AwsError` to `nexrad_data::result::AwsError` (the `result::aws`
-  module is removed); `nexrad_data::AwsError` also works. (#171)
+- `nexrad_data::result::aws::AWSError` → `nexrad_data::result::AwsError` (the `result::aws` module is removed;
+  `nexrad_data::AwsError` also works), and `Error::AWS` → `Error::Aws`. (#160, #171)
 - `AwsError::S3ListObjects`, `S3GetObjectRequest` and `S3Streaming` hold a
   `Box<dyn std::error::Error + Send + Sync + 'static>` instead of a `reqwest::Error`; `source()` returns it. (#171)
 - `Error` and `AwsError` no longer implement `UnwindSafe`/`RefUnwindSafe`, because the boxed error sources do not;
@@ -77,8 +76,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Option<&Header>`, and `Header::SIZE` replaces `size_of::<Header>()` for the header length. (#181)
 - `aws::archive::list_files(site, date: NaiveDate)` takes the date by value, and
   `aws::archive::download_file(identifier: &Identifier)` takes the identifier by reference. (#171)
-- `aws::realtime::list_chunks_in_volume` reads every listing page and returns only the chunks of the newest scan in a
-  reused volume directory, sorted by sequence. `ChunkIterator` waits instead of moving into a next volume that still holds an older scan. (#149)
+- `aws::realtime::list_chunks_in_volume(site, volume, max_keys)` → `list_chunks_in_volume(site, volume)`, which
+  reads every listing page and returns every chunk of the newest scan in a reused volume directory, sorted by
+  sequence. `ChunkIterator` waits instead of moving into a next volume that still holds an older scan. (#149, #192)
 - `aws::realtime::ChunkIterator` and `chunk_stream` consume each new volume from its Start chunk: at rollover they
   yield sequence 1 (the volume header and VCP) and then every later chunk in sequence order, instead of jumping to the
   newest chunk already published in the next volume. Every volume's chunks can now be passed to `assemble_volume`, and
@@ -87,12 +87,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   archive name grammar (`SSSSYYYYMMDD_HHMMSS[_Vnn][_MDM][.gz]`, UTC) and returns `AwsError::InvalidIdentifier` for
   other names. `site()` returns `&str` and `date_time()` returns `DateTime<Utc>` instead of `Option`s. Equality,
   ordering and hashing use the name only. (#192)
-- `aws::archive::list_files` and `list_files_with_sizes` return volume files only, skipping `_MDM` metadata objects and
-  objects whose names do not parse. (#192)
+- `aws::archive::list_files` returns volume files only, skipping `_MDM` metadata objects and objects whose names do
+  not parse. (#192)
 - `aws::realtime::VolumeIndex::new(index)` returns `Result<VolumeIndex>` and rejects indexes outside `1..=999` with
   `AwsError::InvalidVolumeIndex`. (#192)
-- `aws::realtime::list_chunks_in_volume(site, volume, max_keys)` → `list_chunks_in_volume(site, volume)`; it always
-  returns every chunk of the newest scan. (#192)
 - `aws::realtime::chunk_stream` yields the chunks it downloads at startup: the volume's Start chunk when joining
   mid-volume, then the latest chunk, then the chunks after it. (#192)
 - `aws::realtime::ChunkIterator::try_next` makes a single attempt per call, including at volume rollover, and returns

@@ -81,10 +81,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `SweepField::new_empty(..)` is replaced by `SweepField::builder(label, unit)` with setters. `build()` returns
   `Result<SweepField>` and validates the geometry (see below); `new_empty` did no validation. (#165)
 - Clutter filter power is a `MomentData` like every other moment: `Radial::clutter_filter_power()` returns
-  `Option<&MomentData>`, and `CfpMomentValue::Status(s)` / `CfpMomentValue::Value(v)` become
-  `MomentValue::CfpStatus(s)` / `MomentValue::Value(v)`. (#170)
-- The methods of the removed `DataMoment` trait are inherent methods on `MomentData` with the same names and
-  signatures; remove `use nexrad_model::data::DataMoment` imports. (#170)
+  `Option<&MomentData>`. (#170)
 - `MomentData::from_fixed_point` takes the `Product` as a new first parameter. (#170)
 - `RadialBuilder::moment(data)` stores a moment under `data.product()`; it replaces the per-product setters
   (`reflectivity`, `velocity`, ..., `clutter_filter_power`). (#170)
@@ -115,7 +112,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   crate. (#182)
 - `Debug` output changed: renamed types and variants print their new names (#160); binary blobs print
   `fnv1a: 0x<16 hex digits>` instead of `sha256: "<hex>"` (#162); `Radial`/`MomentData` no longer nest an
-  `inner: MomentDataBlock { .. }` and show a `product` field (#170).
+  `inner: MomentDataBlock { .. }` and show a `product` field (#170); `MomentData` shows the fields renamed for
+  serde (#189).
 - Field indexing is checked; no public model API panics on an out-of-range index (#185):
   - `SweepField::get`, `CartesianField::get` and `VerticalField::get` return `Option<(f32, GateStatus)>`, checking the
     row and column against their own dimensions (`get(0, width + 3)` used to read row 1 silently).
@@ -136,8 +134,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   - `SiteBuilder::build` requires a four-character ASCII alphanumeric identifier and a finite latitude in `-90..=90`
     and longitude in `-180..=180`.
   - `meta::registry::SiteEntry::to_site` returns `Result<Site>`; every registry entry is valid.
-- `SweepFieldBuilder::build` returns `Error::InvalidGeometry` (which replaces `InvalidSweepGeometry(String)`) unless
-  the azimuths are non-empty, finite, in `0.0..360.0` and strictly ascending, the gate count is non-zero, the gate
+- `SweepFieldBuilder::build` returns `Error::InvalidGeometry` unless the azimuths are non-empty, finite, in `0.0..360.0` and strictly ascending, the gate count is non-zero, the gate
   interval and azimuth spacing are finite and positive, the first gate range is finite and not negative, and the
   elevation angle is finite. (#185)
 - `Site::identifier()` returns `&str` (it returned `&[u8; 4]`). (#185)
@@ -156,7 +153,6 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   - `MomentData`: `first_gate_range` → `first_gate_range_meters`, `gate_interval` → `gate_interval_meters`, `values`
     → `raw_values`.
   - `SweepField`, `CartesianField` and `VerticalField`: `status` → `statuses`.
-  - The `Debug` output of `MomentData` shows the renamed fields.
 - With `serde`, `MomentData`'s raw gate bytes serialize as a byte string instead of a sequence of integers. Formats
   without a bytes type, such as JSON, still write an array of integers, and both forms deserialize. (#189)
 - With `serde`, `Site`'s `identifier` serializes as the four-character string `identifier()` returns (`"KTLX"`)
@@ -176,9 +172,11 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 
 - `BinaryData` is no longer public; it appeared in no public signature. The `sha2` and `hex` dependencies are
   dropped. (#162)
-- `CfpMomentData` and `CfpMomentValue` (formerly `CFPMomentData`/`CFPMomentValue`); use `MomentData` with
-  `Product::ClutterFilterPower` and `MomentValue::CfpStatus`. (#170)
-- The `DataMoment` trait; its methods are inherent on `MomentData`. (#170)
+- `CFPMomentData` and `CFPMomentValue`; use `MomentData` with `Product::ClutterFilterPower`, whose values are
+  `MomentValue::CfpStatus(s)` and `MomentValue::Value(v)` where they were `CFPMomentValue::Status(s)` and
+  `CFPMomentValue::Value(v)`. (#170)
+- The `DataMoment` trait; its methods are inherent methods on `MomentData` with the same names and signatures, so
+  remove `use nexrad_model::data::DataMoment` imports. (#170)
 - `Product::moment_data(&Radial)` and `Product::cfp_moment_data(&Radial)`; use `radial.moment(product)`. (#170)
 - `Site::identifier_string()`; `Site::identifier()` returns `&str`. (#185)
 

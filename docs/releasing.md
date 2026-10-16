@@ -97,23 +97,37 @@ nexrad-data        │              │
 When releasing multiple crates, follow this order:
 
 1. **nexrad-model** - foundation crate, no internal dependencies
-2. **nexrad-decode**, **nexrad-process**, and **nexrad-render** - all depend only on nexrad-model (can be released in parallel)
+2. **nexrad-decode**, then **nexrad-process**, then **nexrad-render** - all depend on nexrad-model; publish each before
+   bumping the next
 3. **nexrad-data** - depends on nexrad-decode and nexrad-model
 4. **nexrad** - facade crate, depends on all others
 
 ### The 1.0.0 Release
 
-All six library crates release 1.0.0 together, in the order above: `nexrad-model`, then `nexrad-decode`,
-`nexrad-process` and `nexrad-render`, then `nexrad-data`, then `nexrad`. Run the pre-release checklist for each crate
-before its bump (use the `major` version type, or `custom` with `1.0.0`), and publish each crate before bumping the
-next layer so its dependents can resolve it from crates.io.
+All six library crates release 1.0.0 together. On the day of release:
 
-After `nexrad` 1.0.0 is published, remove `continue-on-error: true` from the `Semver checks` job in
-`.github/workflows/ci.yml` so semver violations against the 1.0.0 releases fail CI.
+- [ ] In one PR to `main`, rename each crate's `## [Unreleased]` heading to `## [1.0.0] - YYYY-MM-DD` (the release
+      day) and add an empty `## [Unreleased]` above it.
+- [ ] Release the crates one at a time in this order: `nexrad-model`, `nexrad-decode`, `nexrad-process`,
+      `nexrad-render`, `nexrad-data`, `nexrad`. For each crate:
+  - [ ] Run the [pre-release checklist](#pre-release-checklist).
+  - [ ] Run the Release Bump workflow with the `custom` version type and `1.0.0`. The `major` version type would
+        produce `2.0.0`.
+  - [ ] Check the bump commit. It sets the crate's `version` to `1.0.0` and rewrites to `"1.0.0"` every workspace
+        `dependencies` and `dev-dependencies` entry on the crate that has both a `version` and a `path` (for example
+        `nexrad-render`'s dev-dependency on `nexrad-process` and the facade's dependencies on all five crates), and
+        it updates the committed `Cargo.lock`. Path-only dependencies (`nexrad-inspector`, `xtask`) stay as they are.
+        No requirement needs a manual edit.
+  - [ ] Publish the draft release with the crate's `## [1.0.0]` CHANGELOG section as its notes, and wait for the
+        Publish Crate workflow to finish before bumping the next crate.
+- [ ] After `nexrad` 1.0.0 is published, remove `continue-on-error: true` and the comment above it from the
+      `Semver checks` job in `.github/workflows/ci.yml`, so semver violations against the 1.0.0 releases fail CI.
+- [ ] Confirm `cargo run -p xtask -- public-api --check` passes on `main` after the last bump commit. The baselines
+      under `api/` and `api/README.md` record no versions and need no change.
 
 ### Automatic Dependency Updates
 
-The Release Bump workflow uses `cargo release`, which automatically updates version requirements in all dependent crates within the workspace and commits those changes. For example, releasing `nexrad-model@1.0.0-rc.1` will also update the `nexrad-model` version in `nexrad-decode/Cargo.toml`, `nexrad-render/Cargo.toml`, etc.
+The Release Bump workflow uses `cargo release`, which updates the version requirement of every workspace dependency and dev-dependency on the released crate that has both a `version` and a `path`, updates `Cargo.lock`, and commits those changes with the version bump. For example, releasing `nexrad-model@1.0.0` also updates the `nexrad-model` requirement in `nexrad-decode/Cargo.toml`, `nexrad-render/Cargo.toml`, `nexrad/Cargo.toml`, etc. Path-only dependencies are not touched.
 
 You still need to release crates in dependency order because each crate must be published to crates.io before its dependents can be released.
 

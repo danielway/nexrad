@@ -11,8 +11,8 @@ keywords.workspace = true
 categories.workspace = true
 exclude = [
     ".gitignore",
-    "benches/",
-    "fuzz/",
+    "/benches/",
+    "/fuzz/",
     "examples/trim_fixture.rs",
     "tests/error_handling.rs",
     "tests/fixture_integration.rs",

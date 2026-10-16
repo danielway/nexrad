@@ -106,20 +106,13 @@ When releasing multiple crates, follow this order:
 
 All six library crates release 1.0.0 together. On the day of release:
 
-- [ ] In one PR to `main`, rename each crate's `## [Unreleased]` heading to `## [1.0.0] - YYYY-MM-DD` (the release
-      day) and add an empty `## [Unreleased]` above it.
-- [ ] Release the crates one at a time in this order: `nexrad-model`, `nexrad-decode`, `nexrad-process`,
-      `nexrad-render`, `nexrad-data`, `nexrad`. For each crate:
-  - [ ] Run the [pre-release checklist](#pre-release-checklist).
-  - [ ] Run the Release Bump workflow with the `custom` version type and `1.0.0`. The `major` version type would
-        produce `2.0.0`.
-  - [ ] Check the bump commit. It sets the crate's `version` to `1.0.0` and rewrites to `"1.0.0"` every workspace
-        `dependencies` and `dev-dependencies` entry on the crate that has both a `version` and a `path` (for example
-        `nexrad-render`'s dev-dependency on `nexrad-process` and the facade's dependencies on all five crates), and
-        it updates the committed `Cargo.lock`. Path-only dependencies (`nexrad-inspector`, `xtask`) stay as they are.
-        No requirement needs a manual edit.
-  - [ ] Publish the draft release with the crate's `## [1.0.0]` CHANGELOG section as its notes, and wait for the
-        Publish Crate workflow to finish before bumping the next crate.
+- [ ] In one PR to `main`, finalize every crate's CHANGELOG as the first [pre-release checklist](#pre-release-checklist)
+      item describes, with `1.0.0` as the version.
+- [ ] Release the crates one at a time in [release order](#release-order). For each crate, run the rest of the
+      pre-release checklist and the [release steps](#release-steps), choosing the `custom` version type and `1.0.0`
+      (`major` would produce `2.0.0`). Check that the bump commit makes the changes
+      [Automatic Dependency Updates](#automatic-dependency-updates) describes; no requirement needs a manual edit.
+      Wait for the Publish Crate workflow to finish before bumping the next crate.
 - [ ] After `nexrad` 1.0.0 is published, remove `continue-on-error: true` and the comment above it from the
       `Semver checks` job in `.github/workflows/ci.yml`, so semver violations against the 1.0.0 releases fail CI.
 - [ ] Confirm `cargo run -p xtask -- public-api --check` passes on `main` after the last bump commit. The baselines
@@ -127,9 +120,14 @@ All six library crates release 1.0.0 together. On the day of release:
 
 ### Automatic Dependency Updates
 
-The Release Bump workflow uses `cargo release`, which updates the version requirement of every workspace dependency and dev-dependency on the released crate that has both a `version` and a `path`, updates `Cargo.lock`, and commits those changes with the version bump. For example, releasing `nexrad-model@1.0.0` also updates the `nexrad-model` requirement in `nexrad-decode/Cargo.toml`, `nexrad-render/Cargo.toml`, `nexrad/Cargo.toml`, etc. Path-only dependencies are not touched.
+The Release Bump workflow uses `cargo release`, which sets the crate's version, updates the version requirement of
+every workspace dependency and dev-dependency on the released crate that has both a `version` and a `path` (for
+example `nexrad-render`'s dev-dependency on `nexrad-process` and the facade's dependencies on all five crates), updates
+`Cargo.lock`, and commits those changes with the version bump. Path-only dependencies (`nexrad-inspector`, `xtask`)
+are not touched.
 
-You still need to release crates in dependency order because each crate must be published to crates.io before its dependents can be released.
+You still need to release crates in dependency order because each crate must be published to crates.io before its
+dependents can be released.
 
 ## Troubleshooting
 
@@ -141,7 +139,5 @@ You still need to release crates in dependency order because each crate must be 
 
 ## Notes
 
-- Each crate is versioned independently
-- Release tags must follow the format `crate-name@x.y.z`
 - Release candidates are marked as pre-releases on GitHub
 - The publish workflow will only run when a release is published (not drafted)

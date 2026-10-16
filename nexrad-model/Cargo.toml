@@ -10,7 +10,7 @@ repository.workspace = true
 keywords.workspace = true
 categories = ["science", "data-structures"]
 exclude = [
-    "data/",
+    "/data/",
     "tests/fixture_snapshots.rs",
     "tests/scan_snapshot.rs",
     "tests/snapshots/fixture_snapshots__*",

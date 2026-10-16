@@ -10,7 +10,7 @@ repository.workspace = true
 keywords.workspace = true
 categories = ["science", "visualization", "rendering"]
 exclude = [
-    "benches/",
+    "/benches/",
 ]
 
 [package.metadata.docs.rs]

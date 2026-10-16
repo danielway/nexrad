@@ -10,8 +10,8 @@ repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
 exclude = [
-    "benches/",
-    "fuzz/",
+    "/benches/",
+    "/fuzz/",
     "tests/extract_fixtures.rs",
     "tests/version_compat.rs",
     "tests/volume_decode.rs",

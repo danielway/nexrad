@@ -19,11 +19,6 @@ compiling and behaving correctly on 1.0.
   - [Serialized data](#serialized-data)
 - [Upgrading from 0.x](#upgrading-from-0x)
   - [The crate split](#the-crate-split)
-  - [nexrad 0.0.3](#nexrad-003)
-  - [nexrad-model 0.1.0](#nexrad-model-010)
-  - [nexrad-decode 0.1.2](#nexrad-decode-012)
-  - [nexrad-data 0.2.0](#nexrad-data-020)
-  - [Conceptual changes since 0.x](#conceptual-changes-since-0x)
 - [Worked examples](#worked-examples)
   - [Load a local Archive II file](#load-a-local-archive-ii-file)
   - [List and download from AWS](#list-and-download-from-aws)
@@ -53,66 +48,51 @@ The six library crates release 1.0.0 together. This guide covers upgrades from t
 | `nexrad-process` | `1.0.0-rc.1` | none |
 | `nexrad-render` | `1.0.0-rc.4` | none |
 
-If you are on an earlier release candidate, follow the release-candidate section; the extra changes between your
-release candidate and the last one are small and the compiler will point to them. `nexrad 0.1.0-rc1` contained only an
-`Error` enum and is not covered.
+From an earlier release candidate, follow the release-candidate section; the compiler points to the small extra
+changes. `nexrad 0.1.0-rc1` contained only an `Error` enum and is not covered.
 
 The minimum supported Rust version is **1.88** for every crate. The release candidates declared 1.75, which was already
 incorrect: they used items that entered the prelude in 1.80, and their dependencies needed 1.88.
 
 ### How to use this guide
 
-The `nexrad` crate is a facade. It re-exports the five sub-crates as `nexrad::model`, `nexrad::decode`, `nexrad::data`,
-`nexrad::process` and `nexrad::render`, and adds the I/O entry points `load`, `load_file`, `download`,
-`download_latest`, `download_at`, `list_scans`, `stream`, `stream_with`, `stream_scans` and `stream_scans_with` plus a
-unified `nexrad::Error`.
+The `nexrad` facade re-exports the five sub-crates as `nexrad::model`, `nexrad::decode`, `nexrad::data`,
+`nexrad::process` and `nexrad::render`, and adds the I/O entry points (`load`, `download`, `list_scans`, `stream` and
+their variants) and a unified `nexrad::Error`.
 
-- **If you use the facade**, read the facade section for your baseline, then the sections of the sub-crates whose types
-  you touch. Most facade users touch `nexrad::model` (scans, sweeps, radials) and often `nexrad::render`.
-- **If you depend on sub-crates directly**, read the section for each one. They are in dependency order: `nexrad-model`
-  first, `nexrad` last.
-- **If you are on 0.x**, read [Upgrading from 0.x](#upgrading-from-0x) first, then the release-candidate sections for
-  the crates you use. The 0.x section maps 0.x items to their 1.0 names and does not repeat the release-candidate
-  tables.
+- **Facade users** read the facade section, then the sections of the sub-crates whose types they touch (usually
+  `nexrad::model`, often `nexrad::render`).
+- **Sub-crate users** read the section for each crate; they are in dependency order.
+- **0.x users** read [Upgrading from 0.x](#upgrading-from-0x) first, then the release-candidate sections.
 
-The per-crate CHANGELOGs ([`nexrad`](../nexrad/CHANGELOG.md), [`nexrad-model`](../nexrad-model/CHANGELOG.md),
+The per-crate sections explain semantics, errors and features; the [appendix](#appendix-complete-change-tables) maps
+every renamed, removed or re-typed item to its replacement and pull request. The CHANGELOGs
+([`nexrad`](../nexrad/CHANGELOG.md), [`nexrad-model`](../nexrad-model/CHANGELOG.md),
 [`nexrad-decode`](../nexrad-decode/CHANGELOG.md), [`nexrad-data`](../nexrad-data/CHANGELOG.md),
-[`nexrad-process`](../nexrad-process/CHANGELOG.md), [`nexrad-render`](../nexrad-render/CHANGELOG.md)) list every change
-with the pull request that made it. [architecture.md](architecture.md) states the rules that shaped 1.0: the
-[layering rules](architecture.md#layering-rules), [feature architecture](architecture.md#feature-architecture),
-[error architecture](architecture.md#error-architecture), [naming conventions](architecture.md#naming-conventions) and
-[enum stability](architecture.md#enum-stability).
+[`nexrad-process`](../nexrad-process/CHANGELOG.md), [`nexrad-render`](../nexrad-render/CHANGELOG.md)) list every
+change, and [architecture.md](architecture.md) states the rules behind them: [layering](architecture.md#layering-rules),
+[features](architecture.md#feature-architecture), [errors](architecture.md#error-architecture),
+[naming](architecture.md#naming-conventions) and [enum stability](architecture.md#enum-stability).
 
-The 1.0 snippets in this guide are written against the facade (`nexrad::model::...`). If you depend on a sub-crate
-directly, replace `nexrad::model` with `nexrad_model`, `nexrad::data` with `nexrad_data`, and so on; the paths below the
-crate root are identical.
+Snippets use the facade paths (`nexrad::model::...`); with a sub-crate, write `nexrad_model` for `nexrad::model` and so
+on. Paths below the crate root are identical.
 
 ### Changes that apply to every crate
 
-These five changes touch every crate. The per-crate sections below assume you have read them.
-
-**1. `Error` and `Result` at every crate root.** Each crate re-exports its error types at the root:
-`nexrad_model::Error`, `nexrad_decode::Error`, `nexrad_data::Error` (plus `nexrad_data::AwsError` with `aws`),
-`nexrad_process::Error`, `nexrad_render::Error` and `nexrad::Error`, each with a matching `Result`. The `result` modules
-still exist, so `nexrad_data::result::Error` keeps working. Nothing to change, but the short paths are available.
-
-**2. Every `Error` enum is `#[non_exhaustive]`.** So are `nexrad_data::AwsError`, `nexrad_model::data::Product`,
-`nexrad_model::data::VcpNumber`, `nexrad_decode::messages::{MessageContents, MessageType, RedundantChannel, VcpNumber}`,
-`nexrad_decode::messages::digital_radar_data::DataBlockName` and `nexrad_render::Projection`. A `match` on any of them
-outside its crate needs a wildcard arm:
+**1. `Error` and `Result` at every crate root** (#158), plus `nexrad_data::AwsError` with `aws`. The `result` modules
+remain.
 
 ```rust
-// 1.0.0-rc.N: compiled without a wildcard
-match product {
-    Product::Reflectivity => "dBZ",
-    Product::Velocity | Product::SpectrumWidth => "m/s",
-    Product::DifferentialReflectivity => "dB",
-    Product::DifferentialPhase => "deg",
-    Product::CorrelationCoefficient => "",
-    Product::ClutterFilterPower => "dB",
-}
+use nexrad_data::{AwsError, Error, Result}; // nexrad_data::result::Error still works
+```
 
-// 1.0
+**2. Every `Error` enum is `#[non_exhaustive]`** (#155), as are `nexrad_data::AwsError`,
+`nexrad_model::data::{Product, VcpNumber}`, `nexrad_decode::messages::{MessageContents, MessageType, RedundantChannel,
+VcpNumber}`, `nexrad_decode::messages::digital_radar_data::DataBlockName` and `nexrad_render::Projection`. A `match`
+outside the defining crate needs a wildcard arm. The deliberately exhaustive enums are listed under
+[Enum Stability](architecture.md#enum-stability).
+
+```rust
 match product {
     Product::Reflectivity => "dBZ",
     // ...
@@ -120,65 +100,47 @@ match product {
 }
 ```
 
-The deliberately exhaustive enums (`MomentValue`, `GateStatus`, `RadialStatus`, `WaveformType`, ...) are listed under
-[Enum Stability](architecture.md#enum-stability).
-
-**3. Acronyms are written as words.** Type and variant names follow Rust's RFC 430 casing: `VCPNumber` → `VcpNumber`,
-`RDAStatus` → `RdaStatus`, `AWSError` → `AwsError`, `CFPStatus` → `CfpStatus`, `SZ2Phase` → `Sz2Phase`. The terse
-waveform variants got descriptive names (`WaveformType::CS` → `ContiguousSurveillance`). Each crate section lists its
-renames, and the [appendix](#appendix-complete-change-tables) has the complete tables. If you persisted model data with
-serde, read [Serialized data](#serialized-data): these renames change the serialized form.
-
-**4. Optional dependencies are no longer features.** Every crate uses `dep:` syntax, so names such as `nexrad-model`,
-`tokio`, `futures`, `reqwest`, `rayon`, `xml` and `once_cell` are no longer feature names. Features are named for what
-they enable: `model`, `aws`, `parallel`, `uom`, `serde`, `chrono`. No crate depends on an async runtime any more; see
-[No Async Runtime Dependency](architecture.md#no-async-runtime-dependency).
-
-**5. Wrapping error variants display only their layer.** A variant that wraps another error (`nexrad::Error::{Model,
-Decode, Data, Render, Process, Io}`, `nexrad_data::Error::{Io, Decode, Model}`, `nexrad_decode::Error::Model`,
-`nexrad_process::Error::Model`, `nexrad_render::Error::Image`) has a `Display` text naming its layer (`decode error`)
-and returns the wrapped error from `source()`. `nexrad_data::Error::Aws` displays the `AwsError` itself. Walk the
-source chain to print the whole cause:
+**3. Acronyms are written as words** (#160), following Rust's RFC 430, and the terse waveform variants got descriptive
+names. The renames change the serialized form; see [Serialized data](#serialized-data).
 
 ```rust
-// err.to_string() is "decode error"; append each source's message
+// 1.0.0-rc.N: VCPNumber, RDAStatus, AWSError, CFPStatus, SZ2Phase, WaveformType::CS
+// 1.0:        VcpNumber, RdaStatus, AwsError, CfpStatus, Sz2Phase, WaveformType::ContiguousSurveillance
+```
+
+**4. Optional dependencies are no longer features** (#156). With `dep:` syntax, `nexrad-model`, `tokio`, `futures`,
+`reqwest`, `rayon`, `xml` and `once_cell` are not feature names; features are named for what they enable (`model`,
+`aws`, `parallel`, `uom`, `serde`, `chrono`). No crate depends on an async runtime; see
+[No Async Runtime Dependency](architecture.md#no-async-runtime-dependency).
+
+```toml
+nexrad-data = { version = "1.0", default-features = false, features = ["model", "parallel"] } # was ["nexrad-model", "rayon"]
+```
+
+**5. Wrapping error variants display only their layer** (#195). `nexrad::Error::{Model, Decode, Data, Render, Process,
+Io}`, `nexrad_data::Error::{Io, Decode, Model}`, `nexrad_decode::Error::Model`, `nexrad_process::Error::Model` and
+`nexrad_render::Error::Image` display a layer name (`decode error`) and return the wrapped error from `source()`;
+`nexrad_data::Error::Aws` displays the `AwsError` itself. Walk the source chain to print the whole cause:
+
+```rust
 let mut message = err.to_string();
 let mut source = std::error::Error::source(&err);
 while let Some(cause) = source {
     message = format!("{message}: {cause}");
     source = cause.source();
 }
-eprintln!("{message}");
 ```
 
 ## Upgrading from a release candidate
 
 ### nexrad-model from 1.0.0-rc.2
 
-#### Feature flags
+Renames and removals are in the [nexrad-model table](#nexrad-model-100-rc2-to-10). No feature changes.
 
-No feature changes. `serde`, `chrono` and `uom` are still opt-in.
-
-#### Error handling
-
-- `nexrad_model::Error` is `#[non_exhaustive]`: add a wildcard arm.
-- Its variants carry structured data (#185). `ElevationMismatch` is a struct variant: match it as
-  `Error::ElevationMismatch { expected, actual }` or `Error::ElevationMismatch { .. }`. New variants, each naming the
-  offending argument in a `parameter: &'static str` field:
-  - `InvalidGeometry { parameter, reason }`, from `SweepFieldBuilder::build`, `RadialBuilder::build`,
-    `CartesianField::new` and `VerticalField::new`;
-  - `InvalidMomentData { parameter, reason }`, from `MomentData::from_fixed_point` for an unsupported
-    `data_word_size`, a `gate_count` above `u16::MAX`, or a non-finite `scale` or `offset`;
-  - `MomentDataLength { expected, actual }`, from `MomentData::from_fixed_point` when `values` does not hold exactly
-    `gate_count` gates (lengths in bytes);
-  - `InvalidSite { parameter, reason }`, from `SiteBuilder::build` and `registry::SiteEntry::to_site`;
-  - `IndexOutOfBounds { row, column, rows, columns }`, from the field `set` methods.
-- `Error` implements `Clone` and `PartialEq`.
-
-#### Removed and renamed items
-
-Replace constructors with builders. Each builder takes the required values as arguments, has a setter per optional
-value, and ends with `.build()`:
+**Builders, `Result` and `Option`.** Constructors with long argument lists became builders (#165) that take the
+required values, have a setter per optional value and end with `.build()`. `Radial::builder` defaults to timestamp `0`,
+spacing `1.0` and `IntermediateRadialData`, and `ElevationCut::builder` takes the waveform **before** the channel
+configuration. Constructors with invariants return `Result`, and field indexing returns `Option` (#185):
 
 ```rust
 // 1.0.0-rc.2
@@ -187,308 +149,122 @@ let radial = Radial::new(
     elevation_number, elevation_angle_degrees, Some(reflectivity), None, None, None, None, None, None,
 );
 let site = Site::new(*b"KDMX", 41.7312, -93.7229, 299, 34);
+let sweep = Sweep::new(1, radials);
+let (value, status) = field.get(azimuth_idx, gate_idx);
 
 // 1.0
 let radial = Radial::builder(azimuth_number, azimuth_angle_degrees, elevation_number, elevation_angle_degrees)
     .collection_timestamp_millis(timestamp)
     .azimuth_spacing_degrees(0.5)
     .moment(reflectivity) // stored under reflectivity.product()
-    .build()?; // validates the angles
+    .build()?;
 let site = Site::builder(*b"KDMX", 41.7312, -93.7229)
     .site_elevation_meters(299)
     .feedhorn_height_meters(34)
-    .build()?; // validates the identifier and location
-```
-
-Constructors that have invariants to check return `Result`, and field indexing returns `Option` (#185):
-
-```rust
-// 1.0.0-rc.2
-let moment = MomentData::from_fixed_point(Product::Reflectivity, 1832, 2125, 250, 8, 2.0, 66.0, bytes);
-let sweep = Sweep::new(1, radials);
-let mut grid = CartesianField::new("Composite", "dBZ", extent, 800, 800);
-grid.set(row, col, dbz, GateStatus::Valid);
-let (value, status) = field.get(azimuth_idx, gate_idx);
-let row = field.radial_values(azimuth_idx);
-
-// 1.0
-let moment = MomentData::from_fixed_point(Product::Reflectivity, 1832, 2125, 250, 8, 2.0, 66.0, bytes)?;
+    .build()?;
 let sweep = Sweep::new(1, radials)?;
-let mut grid = CartesianField::new("Composite", "dBZ", extent, 800, 800)?;
-grid.set(row, col, dbz, GateStatus::Valid)?;
 let Some((value, status)) = field.get(azimuth_idx, gate_idx) else { return Ok(()) };
-let Some(row) = field.radial_values(azimuth_idx) else { return Ok(()) };
 ```
 
-| 1.0.0-rc.2 item | 1.0 replacement | Notes / PR |
-|---|---|---|
-| `Radial::new(..)` (14 arguments) | `Radial::builder(azimuth_number, azimuth_angle_degrees, elevation_number, elevation_angle_degrees)` with `.collection_timestamp_millis`, `.azimuth_spacing_degrees`, `.radial_status`, `.moment(data)`, then `.build()?` | Defaults: timestamp `0`, spacing `1.0`, status `IntermediateRadialData`. `build()` returns `Result`. #165, #170, #185 |
-| `ElevationCut::new(..)` (22 arguments) | `ElevationCut::builder(elevation_angle_degrees, waveform_type, channel_configuration)` | **Argument order changed**: waveform now comes before channel configuration. #165 |
-| `VolumeCoveragePattern::new(pattern_number: u16, ..)` | `VolumeCoveragePattern::builder(VcpNumber::from_number(n))` | #165 |
-| `Site::new(id, lat, lon, height, tower_height)` | `Site::builder(id, lat, lon).site_elevation_meters(..).feedhorn_height_meters(..).build()?` | Latitude and longitude are `f64`; `build()` returns `Result`. #164, #165, #182, #185 |
-| `SweepField::new_empty(label, unit, ..)` | `SweepField::builder(label, unit)` with setters, `.build()?` | `build()` returns `Result` and validates the geometry. #165 |
-| `VCPNumber` | `VcpNumber` | #160 |
-| `CFPStatus` | `CfpStatus` | #160 |
-| `ChannelConfiguration::SZ2Phase` | `ChannelConfiguration::Sz2Phase` | #160 |
-| `WaveformType::{CS, CDW, CDWO, B, SPP}` | `ContiguousSurveillance`, `ContiguousDopplerWithAmbiguityResolution`, `ContiguousDopplerWithoutAmbiguityResolution`, `Batch`, `StaggeredPulsePair` | #160 |
-| `RadialStatus::ElevationStartVCPFinal` | `RadialStatus::ElevationStartVcpFinal` | #160 |
-| `DataMoment` trait | Inherent methods on `MomentData`, same names and signatures | Remove `use ...::DataMoment`. #170 |
-| `CFPMomentData` | `MomentData` with `Product::ClutterFilterPower` | `Radial::clutter_filter_power()` returns `Option<&MomentData>`. #170 |
-| `CFPMomentValue::Status(s)` / `::Value(v)` | `MomentValue::CfpStatus(s)` / `MomentValue::Value(v)` | #170 |
-| `MomentData::from_fixed_point(gate_count: u16, ..) -> MomentData` | `MomentData::from_fixed_point(product, gate_count: usize, ..)?` | New first parameter (#170); returns `Result` and `gate_count` is `usize` (#185). |
-| `MomentData::gate_count() -> u16` | `MomentData::gate_count() -> usize` | #185 |
-| `Sweep::new(elevation_number, radials) -> Sweep` | `Sweep::new(elevation_number, radials)?` | Fails if a radial has another elevation number. #185 |
-| `SweepField::get(az, gate) -> (f32, GateStatus)` | `SweepField::get(az, gate) -> Option<(f32, GateStatus)>` | Same for `CartesianField::get` and `VerticalField::get`. #185 |
-| `SweepField::set(az, gate, value, status)` | `SweepField::set(az, gate, value, status)?` | Returns `Result<()>`; same for `CartesianField::set` and `VerticalField::set`. #185 |
-| `SweepField::{radial_values, radial_values_mut, radial_statuses}(az) -> &[_]` | `-> Option<&[_]>` / `Option<&mut [_]>` | #185 |
-| `CartesianField::new(..) -> CartesianField`, `VerticalField::new(..) -> VerticalField` | `-> Result<Self>` | #185 |
-| `Site::identifier() -> &[u8; 4]`, `Site::identifier_string() -> String` | `Site::identifier() -> &str` | #185 |
-| `registry::SiteEntry::to_site() -> Site` | `to_site() -> Result<Site>` | Every registry entry is valid. #185 |
-| `Product::moment_data(&radial)` / `Product::cfp_moment_data(&radial)` | `radial.moment(product)` | #170 |
-| `BinaryData` | Not public | It appeared in no public signature. #162 |
-| (facade) `nexrad::extract_field(sweep, p)` and friends | `sweep.field(p)`, `scan.fields(p)`, `scan.first_field(p)`, `scan.coordinate_system()` | New model methods. #172 |
-| `Site::height_meters()` / `height()` | `Site::site_elevation_meters()` / `site_elevation()` | Above mean sea level. #182 |
-| `Site::tower_height_meters()` / `tower_height()` | `Site::feedhorn_height_meters()` / `feedhorn_height()` | Above ground level. #182 |
-| `registry::SiteEntry::elevation_meters` | `registry::SiteEntry::site_elevation_meters` | Above mean sea level. `SiteEntry` is `#[non_exhaustive]`, so it cannot be built with a struct literal outside the crate. #182 |
-| `Radial::collection_timestamp()` | `Radial::collection_timestamp_millis()` | Milliseconds since the Unix epoch, UTC. #182 |
-| `SweepField::elevation_degrees()` | `SweepField::elevation_angle_degrees()` | #182 |
-| `SweepField::azimuths()` | `SweepField::azimuth_angles_degrees()` | #182 |
-| `SweepField::radial_status_mut(usize)` | `SweepField::radial_statuses_mut(usize)` | Returns `Option<&mut [GateStatus]>`. #182, #185 |
-| `VolumeCoveragePattern::doppler_velocity_resolution()` | `VolumeCoveragePattern::doppler_velocity_resolution_mps()` | #182 |
-| `VolumeCoveragePattern::{sails_cuts, mrle_cuts}()` | `VolumeCoveragePattern::{sails_cut_count, mrle_cut_count}()` | #182 |
-| `geo::PolarPoint::{azimuth_degrees, elevation_degrees}` | `geo::PolarPoint::{azimuth_angle_degrees, elevation_angle_degrees}` | #182 |
-| `VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `VcpNumber::{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}` | Same names as `nexrad_decode::messages::VcpNumber`; see the table below. #188 |
+**Errors** (#185). `ElevationMismatch` is a struct variant (match `ElevationMismatch { expected, actual }` or
+`ElevationMismatch { .. }`), and `Error` implements `Clone` and `PartialEq`. New variants, where `parameter` names the
+offending argument:
 
-`VcpNumber` variants are named by pattern number (#188), as in `nexrad-decode`:
+- `InvalidGeometry { parameter, reason }` from `SweepFieldBuilder::build`, `RadialBuilder::build`,
+  `CartesianField::new` and `VerticalField::new`;
+- `InvalidMomentData { parameter, reason }` from `MomentData::from_fixed_point` for an unsupported `data_word_size`, a
+  `gate_count` above `u16::MAX`, or a non-finite `scale` or `offset`;
+- `MomentDataLength { expected, actual }` (in bytes) when its `values` do not hold exactly `gate_count` gates;
+- `InvalidSite { parameter, reason }` from `SiteBuilder::build` and `registry::SiteEntry::to_site`;
+- `IndexOutOfBounds { row, column, rows, columns }` from the field `set` methods.
 
-| 1.0.0-rc.2 | 1.0 |
-|---|---|
-| `VCPNumber::Precipitation12` | `VcpNumber::Vcp12` |
-| `VCPNumber::ClearAirLongPulse31` | `VcpNumber::Vcp31` |
-| `VCPNumber::ClearAirShortPulse32` | `VcpNumber::Vcp32` |
-| `VCPNumber::ClearAir35` | `VcpNumber::Vcp35` |
-| `VCPNumber::PrecipitationMpda112` | `VcpNumber::Vcp112` |
-| `VCPNumber::PrecipitationSz2_212` | `VcpNumber::Vcp212` |
-| `VCPNumber::GeneralSurveillance215` | `VcpNumber::Vcp215` |
-| `VCPNumber::Unknown(11)`, `Unknown(21)`, `Unknown(121)`, `Unknown(211)`, `Unknown(221)` | `VcpNumber::Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` |
+**Behaviour and type changes**
 
-#### Behaviour and type changes
-
-- **Coordinates and angles are `f64`** (#164). `Site::latitude()`/`longitude()`, `registry::SiteEntry::{latitude,
-  longitude}`, `registry::nearest_site(f64, f64)`, `geo::PolarPoint::{azimuth_angle_degrees, elevation_angle_degrees}`,
-  `RadarCoordinateSystem::{geo_to_polar, gate_location}` and `SweepField::value_at_polar` use `f64`. With `uom`,
-  `Radial::{azimuth, azimuth_spacing, elevation_angle}`, `Sweep::elevation_angle` and
-  `Site::{site_elevation, feedhorn_height}` return `uom::si::f64` quantities. Literals keep compiling; `f32` variables
-  need `f64::from(x)` or `x as f64`. The angles stored on `Radial`, `Sweep`, `SweepField` and `ElevationCut` (the
-  `*_degrees` accessors) remain `f32`.
-- **`ElevationCut` angles are `f32`** (#182), like the other stored angles: `ElevationCut::builder` takes and
-  `ElevationCut::elevation_angle_degrees()` returns `f32` (was `f64`). `Scan::sweeps_at_elevation` takes `f32`, as it
-  did in 1.0.0-rc.2, so it compares directly against `Sweep::elevation_angle_degrees()`.
-- **`MomentValue` gained `CfpStatus(CfpStatus)`** and is still exhaustive, so an exhaustive `match` needs a new arm. It
-  is only produced for `Product::ClutterFilterPower`, and `GateStatus::from(MomentValue::CfpStatus(_))` is `NoData`.
-- **`GateStatus` gained `Filtered`** (#187) and is still exhaustive, so an exhaustive `match` needs a new arm. It marks
-  a gate whose valid value a processing step removed; the value is kept.
-- **`GateStatus::from` takes `MomentValue` by value** (#187): `GateStatus::from(&value)` becomes
-  `GateStatus::from(value)`.
-- **Constructors validate** (#185). `new_empty` accepted any geometry; `SweepFieldBuilder::build` returns
-  `Err(Error::InvalidGeometry { parameter, .. })` unless the azimuths are non-empty, finite, in `0.0..360.0` and
-  strictly ascending, `gate_count` is non-zero, `gate_interval_km` and `azimuth_spacing_degrees` are finite and positive,
-  `first_gate_range_km` is finite and not negative, and the elevation angle is finite. `CartesianField::new` and
-  `VerticalField::new` reject zero dimensions, an overflowing `width * height`, and non-finite or unordered
-  (`min >= max`) ranges, and the Cartesian extent must lie within valid latitudes and longitudes.
-  `MomentData::from_fixed_point` requires a word size of 8 or 16, exactly `gate_count` gates of data, and a finite scale
-  and offset. `RadialBuilder::build` requires a finite azimuth in `0.0..360.0`, a finite elevation and a positive
-  azimuth spacing. `SiteBuilder::build` requires four ASCII alphanumeric identifier bytes and an in-range location.
-- **Indexing is checked** (#185). `get` checks the row and column against their own dimensions, so `get(0, width + 3)`
-  returns `None` instead of silently reading the next row; `set` and the row accessors report out-of-range indices
-  instead of panicking.
-- **Unscaled moments decode their sentinels** (#185). For every product except clutter filter power, raw 0 and 1 decode
-  to `BelowThreshold` and `RangeFolded` even when `scale` is `0.0`; they used to decode as `Value(0.0)` and
-  `Value(1.0)`.
-- **`SweepField::from_radials` geometry** (#185). The elevation angle is the median over the radials carrying the
-  product (consistent with `Sweep::elevation_angle_degrees`) and the azimuth spacing comes from the first of them,
-  rather than both coming from the first radial in the sweep. Radials whose first gate range or gate interval differ
-  from the first product-bearing radial are skipped instead of being mis-registered.
-- **`SweepField::value_at_polar` respects sector coverage** (#185). The azimuth is normalized into `0.0..360.0`, the
-  lookup wraps across north only when the field covers the full circle, and for a sector or partial sweep azimuths
-  more than half the azimuth spacing outside the covered sector return `None` instead of the far end's value.
-- **`SweepField::product()`** records which product a field holds (`Some` for fields built from radials, copied by
-  `new_like`, optional on the builder).
-- **Site registry membership changed** (#148). Added `KBHX`, `KDOX`, `KHDC`, `KLGX` and `PAPD`. Removed `KLIX` (replaced
-  by `KHDC`), the invalid Alaska aliases `KABC`, `KACG`, `KAIH` and `KAKC` (use the `P...` identifiers), and a duplicate
-  `KCCX` entry. `KFDX` and `KPBZ` coordinates were corrected. `registry::site_by_id("KLIX")` now returns `None`, and
-  `nearest_site` can return a different site near those locations.
-- **`geo_to_polar` returns different ranges** (#188). It is now the exact inverse of `polar_to_geo` under one model
-  (spherical earth of radius 6371 km, 4/3 effective-radius refraction, antenna height above mean sea level). It used
-  `ground / cos(elevation)` and ignored the antenna height, so the new range is longer, by about 3.6 km at 300 km on a
-  19.5 degree tilt and by metres on the low tilts. `polar_to_geo` results move by under a metre. The new
-  `beam_height_meters` and `ground_range_km` expose the same geometry.
-- **`registry::nearest_site` uses great-circle distance** (#188), so near the antimeridian it can return a different
-  (correct) site. Registry sites have a feedhorn height of 0; prefer `Scan::site()`, decoded from the volume data
-  block, for a `RadarCoordinateSystem`.
-- **Radials carry Nyquist velocity and unambiguous range** (#188). `Radial::nyquist_velocity_mps()` and
-  `unambiguous_range_km()` return `Option<f32>`, filled by the `nexrad-decode` conversions. Dealias with the per-radial
-  Nyquist velocity: Doppler PRF sectors vary by azimuth within a sweep.
-- **Sweeps link to their elevation cut** (#188). Split cuts, SAILS, MRLE and MPDA repeat elevations, so
-  `Scan::fields`, `first_field` and `sweeps_at_elevation` can return several sweeps per angle with reflectivity and
-  velocity in different ones. Select by cut with `Scan::elevation_cut(&sweep)` and
+- **Coordinates and polar angles are `f64`** (#164): literals keep compiling; convert `f32` variables with
+  `f64::from(x)`. The stored `*_degrees` angles on `Radial`, `Sweep`, `SweepField` and `ElevationCut` are `f32`
+  (#182), so `Scan::sweeps_at_elevation` still takes `f32`.
+- **Exhaustive enums gained variants**: `MomentValue::CfpStatus(CfpStatus)`, produced only for
+  `Product::ClutterFilterPower` and mapped to `GateStatus::NoData`, and `GateStatus::Filtered` (#187), a gate whose
+  valid value a processing step removed, keeping the value. Exhaustive matches need the new arms.
+- **Constructors validate** (#185). `SweepFieldBuilder::build` requires non-empty, finite, strictly ascending azimuths
+  in `0.0..360.0`, a non-zero gate count, a finite positive gate interval and azimuth spacing, a finite non-negative
+  first gate range and a finite elevation. `CartesianField::new` and `VerticalField::new` reject zero or overflowing
+  dimensions and non-finite or unordered (`min >= max`) ranges, and a Cartesian extent must lie within valid latitudes
+  and longitudes. `MomentData::from_fixed_point` requires a word size of 8 or 16, exactly `gate_count` gates and a
+  finite scale and offset. `RadialBuilder::build` requires a finite azimuth in `0.0..360.0`, a finite elevation and a
+  positive spacing. `SiteBuilder::build` requires four ASCII alphanumeric identifier bytes and an in-range location.
+- **Indexing is checked** (#185): `get(0, width + 3)` returns `None` instead of reading the next row, and `set` and
+  the row accessors report out-of-range indices instead of panicking.
+- **Unscaled moments decode their sentinels** (#185): for every product except clutter filter power, raw 0 and 1
+  decode to `BelowThreshold` and `RangeFolded` even when `scale` is `0.0`, not to `Value(0.0)` and `Value(1.0)`.
+- **`SweepField::from_radials` geometry** (#185): the elevation (the median) and azimuth spacing come from the radials
+  carrying the product, not the sweep's first radial, and radials whose first gate range or gate interval differ from
+  the first such radial are skipped instead of mis-registered.
+- **`SweepField::value_at_polar` respects sector coverage** (#185): the azimuth is normalized into `0.0..360.0`, the
+  lookup wraps across north only for a full circle, and azimuths more than half a spacing outside a sector return
+  `None` instead of the far end's value.
+- **`SweepField::product()`** records the field's product (`Some` from `from_radials`, copied by `new_like`, optional on
+  the builder) (#170).
+- **Site registry** (#148): added `KBHX`, `KDOX`, `KHDC`, `KLGX`, `PAPD`; removed `KLIX` (now `KHDC`), the invalid
+  Alaska aliases `KABC`, `KACG`, `KAIH`, `KAKC` (use the `P...` identifiers) and a duplicate `KCCX`; corrected `KFDX`
+  and `KPBZ`. `site_by_id("KLIX")` returns `None`, and `nearest_site` can return a different site near those locations.
+- **`geo_to_polar` ranges change** (#188). It is the exact inverse of `polar_to_geo` under one model (spherical earth of
+  radius 6371 km, 4/3 effective-radius refraction, antenna height above mean sea level) instead of
+  `ground / cos(elevation)` without antenna height, so ranges grow by about 3.6 km at 300 km on a 19.5 degree tilt and
+  by metres on low tilts. `polar_to_geo` moves by under a metre. `beam_height_meters` and `ground_range_km` expose the
+  same geometry.
+- **`registry::nearest_site` uses great-circle distance** (#188), which corrects results near the antimeridian.
+  Registry sites have a feedhorn height of 0; build a `RadarCoordinateSystem` from `Scan::site()`.
+- **Radials carry Nyquist velocity and unambiguous range** (#188), filled by the `nexrad-decode` conversions. Dealias
+  with the per-radial value: Doppler PRF sectors vary by azimuth within a sweep.
+- **Sweeps link to their elevation cut** (#188). Split cuts, SAILS, MRLE and MPDA repeat elevations, so `Scan::fields`,
+  `first_field` and `sweeps_at_elevation` can return several sweeps per angle with reflectivity and velocity in
+  different ones; select with `Scan::elevation_cut(&sweep)` or
   `Scan::sweeps_with_waveform(WaveformType::ContiguousSurveillance)`.
-- **`Debug` output** prints the new type and variant names, `fnv1a: 0x...` instead of `sha256: "..."` for binary blobs,
-  and a `product` field on `Radial`/`MomentData` moments, and `nyquist_velocity_mps`/`unambiguous_range_km` fields on `Radial`. Update any snapshot tests that capture it.
+- **`Debug` output** prints the new names, `fnv1a: 0x...` instead of `sha256: "..."` for binary blobs, a `product` field
+  on moments and `nyquist_velocity_mps`/`unambiguous_range_km` on `Radial`; update snapshot tests that capture it.
 
 ### nexrad-decode from 1.0.0-rc.3
 
-#### Feature flags
+Renames and removals are in the [nexrad-decode tables](#nexrad-decode-100-rc3-to-10).
 
-The `nexrad-model` feature is now `model` (still on by default), and **`uom` is no longer a default feature** (#156).
-If you call any `uom`-typed accessor, enable it explicitly:
+**Features** (#156). `nexrad-model` is now `model` (still default), and **`uom` is no longer default**: enable it if you
+call `uom` accessors, or switch to the unit-suffixed ones.
 
 ```toml
-# 1.0.0-rc.3
-nexrad-decode = { version = "1.0.0-rc.3", default-features = false, features = ["nexrad-model"] }
-
-# 1.0 (add "uom" to the list if you call uom-typed accessors)
-nexrad-decode = { version = "1.0", default-features = false, features = ["model"] }
+nexrad-decode = { version = "1.0", default-features = false, features = ["model"] } # was ["nexrad-model"]; add "uom" if needed
 ```
 
-#### Error handling
+**Errors.** `Error` implements `Clone` and `PartialEq`. `Io` and `From<std::io::Error>` are gone (#168); nothing
+produced them, so handle I/O errors where you do the I/O. Variants carry offsets into the slice you passed to the
+decoder, including `InvalidDataBlockPointer`'s `position` (#190). New variants:
 
-- `nexrad_decode::Error` is `#[non_exhaustive]`.
-- `Error::Io` and `From<std::io::Error>` are removed (#168). Nothing produced them; handle I/O errors where you do the
-  I/O (`nexrad_data::Error` still converts from `std::io::Error`).
-- New variant `Error::MissingCoveragePattern`, returned by `ScanBuilder::build` when no type 5 message was seen (#169).
-- New variant `Error::Model(nexrad_model::Error)` (feature `model`), returned when decoded values fail a model
-  constructor's validation: moment data whose gate count does not match its encoded data, a radial with an out-of-range
-  azimuth, or a site with an invalid identifier or location (#185). Its `Display` text is `decoded data is invalid for
-  the model`; the model error's message comes from its `source()` (#195).
-- Variants carry structured detail, with offsets into the slice you passed to the decoder (#190):
+- `MissingCoveragePattern` (feature `model`), from `ScanBuilder::build` when no type 5 message was seen (#169);
+- `Model(nexrad_model::Error)` (feature `model`) when decoded values fail model validation: a moment whose gate count
+  does not match its data, an out-of-range radial azimuth, or an invalid site identifier or location (#185); it
+  displays `decoded data is invalid for the model` (#195);
+- `SegmentOutOfSequence { message_type, expected_segment, segment_count, offset }` for a missing or out-of-order
+  segment (#190).
 
-  | 1.0.0-rc.3 | 1.0 |
-  |---|---|
-  | `Error::UnexpectedEof` | `Error::UnexpectedEof { offset }`, the offset of the structure that runs past the end |
-  | `Error::UnknownDataBlockType { block_type: String }` | `{ block_type: [u8; 3], offset }` |
-  | `Error::MessageMissingDate` | `Error::MessageMissingDate { message_type }` |
-  | `Error::InvalidDataBlockPointer { bytes, position }` | Same fields; `position` is an offset into the input slice |
-  | `Error::Decoding(String)`, `Error::InvalidMessageLength { .. }`, `Error::DataSpansSegmentBoundary { .. }` | Removed (never constructed) |
-  | `Error::MissingCoveragePattern` | Requires the `model` feature |
-  | (new) | `Error::SegmentOutOfSequence { message_type, expected_segment, segment_count, offset }` |
+**Accessor naming** (#173, #191; see [Naming Conventions](architecture.md#naming-conventions) and "Accessor Naming" in
+the crate docs). The stem is the ICD field name. A decoded plain number carries a unit suffix
+(`azimuth_angle_degrees()`, `message_size_halfwords()`); `<stem>_raw()` is the wire encoding, only where it differs,
+and replaces `raw_<stem>()`; a decoded enum or struct takes the bare stem (`radial_status()`); counts are
+`<thing>_count()`; a byte string is `<stem>_raw()` beside `<stem>() -> Option<&str>`; with `uom`, the bare stem is the
+quantity (`azimuth_angle()`). Two names changed meaning: `digital_radar_data::Header::azimuth_resolution_spacing()` is
+now the `AzimuthResolutionSpacing` enum (the number is `azimuth_resolution_spacing_degrees()`), and
+`clutter_filter_map::RangeZone::end_range()` is now the `uom` length (the number is `end_range_km()`).
 
-  `Error` implements `Clone` and `PartialEq`, so tests can compare errors with `assert_eq!`.
-
-#### Removed and renamed items
-
-Accessors on decoded messages follow one rule (#173; see [Naming Conventions](architecture.md#naming-conventions) and
-"Accessor Naming" in the crate docs):
-
-- The stem is the ICD field name.
-- A decoded plain number carries a unit suffix: `azimuth_angle_degrees()`, `unambiguous_range_km()`,
-  `calibration_constant_db()`, `site_height_meters()`, `message_size_halfwords()`.
-- `<stem>_raw()` returns the wire encoding, only where it differs from the decoded value. The old `raw_<stem>()` prefix
-  form is gone.
-- A decoded enum or struct takes the bare stem: `radial_status()`, `build_number()`, `vcp_number()`.
-- Counts are `<thing>_count()`, and a byte string is `<stem>_raw()` beside `<stem>() -> Option<&str>`.
-- With the `uom` feature, the bare stem returns a `uom` quantity: `azimuth_angle()`, `end_range()`.
-- Type and variant names use UpperCamelCase acronyms: `VcpNumber`, `RdaStatus`, `Sz2Phase`.
-
-The renames you are most likely to hit:
-
-| 1.0.0-rc.3 | 1.0 | PR |
-|---|---|---|
-| `MessageHeader` public fields (`message_type`, `date`, `time`, `segment_size`, ...) | Accessors: `message_type()` / `message_type_raw()`, `date_time()`, `segment_size_raw()`, `sequence_number()`, `segment_count()`, `segment_number()`, `redundant_channel()` / `redundant_channel_raw()` | #166 |
-| `MessageHeader` | `MessageHeader<'a>`; `into_owned()` gives `MessageHeader<'static>` | #166 |
-| `MessageHeader::ref_from_prefix(bytes)` (zerocopy) | `MessageHeader::parse(bytes)?` | #166 |
-| `size_of::<MessageHeader>()` | `MessageHeader::SIZE` | #166 |
-| `MessageHeader::rda_redundant_channel()` | `redundant_channel()` | #173 |
-| `message_type as u8` | `message_type.number()`; `MessageType::from_number(u8)` | #166 |
-| `MessageType::{Spare1, Reserved1..5, ReservedFAARMSOnly1..5}` | `MessageType::Reserved(u8)` | #166 |
-| `MessageType::RDA*` / `RPG*`, `MessageContents::RDA*` | `Rda*` / `Rpg*` (`RDAStatusData` → `RdaStatusData`, `RDAPRFData` → `RdaPrfData`), with the `MessageType` names that differed from `MessageContents` renamed to match (see the next table) | #160, #191 |
-| `digital_radar_data::Header::azimuth_angle_raw()` | `azimuth_angle_degrees()` | #173 |
-| `digital_radar_data::Header::elevation_angle_raw()` | `elevation_angle_degrees()` | #173 |
-| `digital_radar_data::Header::radial_length_raw()` | `radial_length_bytes()` | #173 |
-| `digital_radar_data::Header::azimuth_resolution_spacing_type()` | `azimuth_resolution_spacing()` (see below) | #173 |
-| `VolumeDataBlock::latitude_raw()` / `longitude_raw()` | `latitude_degrees()` / `longitude_degrees()` | #173 |
-| `VolumeDataBlock::site_height_raw()` / `tower_height_raw()` | `site_height_meters()` / `tower_height_meters()` | #173 |
-| `VolumeDataBlock::volume_coverage_pattern() -> digital_radar_data::VolumeCoveragePattern` | `vcp_number() -> messages::VcpNumber` | #163, #191 |
-| `VolumeDataBlock::volume_coverage_pattern_number()` | `vcp_number_raw()` | #173, #191 |
-| `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, ..}` | `messages::VcpNumber::{Vcp12, Vcp31, Vcp32, ..}` | #160, #163 |
-| `GenericDataBlock::moment_data()` / `into_moment_data()` | Call them on the `DataBlock` wrapper: `m.reflectivity_data_block().map(\|b\| b.moment_data())`; they return `Result<MomentData>` | #170 |
-| `GenericDataBlock::cfp_moment_data()` / `into_cfp_moment_data()` | `moment_data()` / `into_moment_data()` on the CFP block's `DataBlock` | #170 |
-| `digital_radar_data::Message::site() -> Option<Site>` | `site()? -> Option<Site>` (returns `Result<Option<Site>>`) | #185 |
-| `rda_status_data::RDAStatus`, `RDABuildNumber`, `RMSControlStatus` | `RdaStatus`, `RdaBuildNumber`, `RmsControlStatus` | #160 |
-| `rda_status_data::Message::raw_<stem>()` | `<stem>_raw()` (`raw_rda_build_number()` → `build_number_raw()`) | #173 |
-| `rda_status_data::Message::volume_coverage_pattern() -> Option<VolumeCoveragePatternNumber>` | `vcp_number() -> Option<VcpSelection>`; `number()` is a `VcpNumber`, `source()` replaces `local()`/`remote()` | #163, #191 |
-| `volume_coverage_pattern::ElevationDataBlock::elevation_angle() -> f64`, `azimuth_rate()` | `elevation_angle_degrees() -> f32`, `azimuth_rate_degrees_per_second() -> f64` | #173, #191 |
-| `volume_coverage_pattern::WaveformType::{CS, CDW, CDWO, B, SPP}` | `ContiguousSurveillance`, `ContiguousDopplerWithAmbiguityResolution`, `ContiguousDopplerWithoutAmbiguityResolution`, `Batch`, `StaggeredPulsePair` | #160 |
-| `volume_coverage_pattern::ChannelConfiguration::SZ2Phase`, `UnknownPhase`; `WaveformType::Unknown` | `Sz2Phase`, `Unknown(u8)`; `Unknown(u8)` (match `Unknown(_)`) | #160, #191 |
-| `summarize` module | Removed; iterate `decode_messages(..)` and match on `message.contents()` | #168 |
-| `MessageContents::Other` | `MessageContents::Other { message_type, data }`; match with `Other { .. }` | #190 |
-| `block.volume_coverage_pattern()` on a `DataBlock` (through `Deref`) | `block.inner().vcp_number()` | #190, #191 |
-| `rda_adaptation_data::Message::{raw_data, read_integer4_at, read_real4_at, read_string_at, total_size}` | Removed; use the typed accessors | #190 |
-| `VolumeDataBlock::is_legacy()`, `RadialDataBlock::is_legacy()` | Removed; `lrtup_bytes()` is 44 for a legacy volume block and 20 for a legacy radial block | #190 |
-| `VolumeDataBlock::spare()`, `GenericDataBlockHeader::reserved()` | Removed | #190 |
-
-These accessors and variants were also renamed to follow the same rule (#191):
-
-| 1.0.0-rc.3 | 1.0 |
-|---|---|
-| `digital_radar_data::Header::date()` / `time()` | `date_raw()` / `time_raw()`; `date_time()` is the decoded value |
-| `clutter_filter_map::Message::map_generation_date()` / `map_generation_time()` / `date_time()` | `map_generation_date_raw()` / `map_generation_time_raw()` / `map_generation_date_time()` |
-| `clutter_filter_bypass_map::Message::bypass_map_generation_date()` / `bypass_map_generation_time()` / `date_time()` | `bypass_map_generation_date_raw()` / `bypass_map_generation_time_raw()` / `bypass_map_generation_date_time()` |
-| `rda_status_data::Message::bypass_map_generation_date()`, `bypass_map_generation_time()`, `clutter_filter_map_generation_date()`, `clutter_filter_map_generation_time()` | The same names with `_raw`; the `*_date_time()` accessors are unchanged |
-| `volume_coverage_pattern::ElevationDataBlock::supplemental_data()` / `super_resolution_control()` | `supplemental_data_raw()` / `super_resolution_control_raw()` |
-| `volume_coverage_pattern::Header::vcp_sequencing()` / `vcp_supplemental_data()` | `vcp_sequencing_raw()` / `vcp_supplemental_data_raw()` |
-| `digital_radar_data::RadialDataBlock::radial_flags()` | `radial_flags_raw()` |
-| `VolumeDataBlock::zdr_bias_estimate_weighted_mean() -> Option<u16>` | `zdr_bias_estimate_weighted_mean_raw()`; decoded `zdr_bias_estimate_weighted_mean_db() -> Option<f32>` |
-| `rda_status_data::Message::downloaded_pattern_number() -> u16` | `downloaded_pattern_number_raw()`; `downloaded_pattern_number() -> VcpNumber` |
-| `rda_prf_data::WaveformPrfData::waveform_type() -> u16` | `waveform_type_raw()`; `waveform_type() -> volume_coverage_pattern::WaveformType` |
-| `rda_log_data::Message::compression_type()` | `compression_type_raw()` |
-| `rda_status_data::Message::raw_volume_coverage_pattern()` | `vcp_number_raw()` |
-| `volume_coverage_pattern::Header::pattern_number()` | `vcp_number_raw()`; `vcp_number() -> VcpNumber` |
-| `digital_radar_data::DataBlockId::data_name_raw()` | `data_block_name_raw()` |
-| `digital_radar_data::ElevationDataBlock::atmos_raw()` / `atmos()` | `atmospheric_attenuation_raw()` / `atmospheric_attenuation_db_per_km()` |
-| `digital_radar_data::DataBlockId::data_block_name_str()` | Removed; use `data_block_name()` or `data_block_name_raw()` |
-| `digital_radar_data::DataBlockId::data_block_type_char()` | Removed; use `data_block_type()` or `data_block_type_raw()` |
-| `clutter_filter_map::AzimuthSegment::azimuth_segment()` | `azimuth_segment_number()` |
-| `clutter_filter_bypass_map::ElevationSegment::segment_number()` | `elevation_segment_number()` |
-| `clutter_filter_bypass_map::Message::number_of_elevation_segments()` | `elevation_segment_count()` |
-| `rda_prf_data::Message::number_of_waveforms()` | `waveform_count()` |
-| `volume_coverage_pattern::Header::number_of_elevation_cuts()`, `number_of_sails_cuts()`, `number_of_mrle_cuts()`, `number_of_base_tilts()`, `vcp_sequencing_number_of_elevations()` | `elevation_cut_count()`, `sails_cut_count()`, `mrle_cut_count()`, `base_tilt_count()`, `vcp_sequencing_elevation_count()` |
-| `digital_radar_data::GenericDataBlockHeader::number_of_data_moment_gates()` | `data_moment_gate_count()` |
-| `digital_radar_data_legacy::Message::num_surveillance_gates()` / `num_doppler_gates()` | `surveillance_gate_count()` / `doppler_gate_count()` |
-| `MessageHeader::segmented()` | `is_fixed_frame()` |
-| `Message::is_segmented()`, `MessageHeaders::is_segmented()` | `is_multi_segment()` |
-| `Message::offset()` / `size()` | `offset_bytes()` / `size_bytes()` |
-| `digital_radar_data::Header::radar_identifier() -> String` | `-> Option<&str>` (`None` when not valid UTF-8) |
-| `console_message::Message::text_bytes()` | `text_raw()` |
-| `rda_log_data::Message::identifier() -> &str` (`""` when invalid), `identifier_bytes()` | `identifier() -> Option<&str>`, `identifier_raw()` |
-| `rda_status_data::alarm::Message`, `alarm::get_alarm_message(code)` | `alarm::Definition`, `alarm::definition(code)` |
-| `rda_status_data::Message::alarm_messages()` | `alarm_definitions()` |
-| `digital_radar_data::SpotBlankingStatus` | `SpotBlankingFlags` (`rda_status_data::SpotBlankingStatus` keeps its name) |
-| `MessageType::RDADigitalRadarDataGenericFormat` | `MessageType::DigitalRadarData` |
-| `MessageType::RDADigitalRadarData` | `MessageType::DigitalRadarDataLegacy` |
-| `MessageType::RDAPerformanceMaintenanceData` | `MessageType::PerformanceMaintenanceData` |
-| `MessageType::RPGClutterCensorZones`, `RPGRequestForData` | `MessageType::ClutterCensorZones`, `RequestForData` |
-| `MessageType::RDAClutterFilterBypassMap`, `RDAClutterFilterMap` | `MessageType::ClutterFilterBypassMap`, `ClutterFilterMap` |
-| `MessageType::RDALoopBackTest`, `RPGLoopBackTest` | `MessageType::RdaLoopbackTest`, `RpgLoopbackTest` |
-| `MessageContents::VolumeCoveragePattern` | `MessageContents::RdaVolumeCoveragePattern` (`MessageType` keeps `RdaVolumeCoveragePattern` and `RpgVolumeCoveragePattern` apart) |
-
-The full lists are in the [nexrad-decode appendix](#nexrad-decode-100-rc3-to-10).
-
-`summarize` has no replacement; a few lines of iteration produce the same information:
+**`summarize` is removed** (#168); iterate instead:
 
 ```rust
-// 1.0.0-rc.3
-let summary = nexrad_decode::summarize::messages(&messages);
-println!("{:?}", summary.volume_coverage_patterns);
-
-// 1.0
 for message in &messages {
     match message.contents() {
         MessageContents::DigitalRadarData(m) => {
             let h = m.header();
             println!("elevation {} azimuth {}", h.elevation_number(), h.azimuth_angle_degrees());
             if let Some(volume) = m.volume_data_block() {
-                println!("{}", volume.inner().vcp_number()); // prints "VCP 212"
+                println!("{}", volume.inner().vcp_number()); // "VCP 212"
             }
         }
         MessageContents::RdaStatusData(s) => println!("{:?}", s.rda_status()),
@@ -497,23 +273,17 @@ for message in &messages {
 }
 ```
 
-Scan assembly moved into this crate (#169). If you assembled a `Scan` from decoded messages yourself, use
-`nexrad_decode::model::ScanBuilder` (feature `model`): `ScanBuilder::new()`, `add_message`/`add_messages`, `merge`,
-`build()`.
+**Scan assembly moved here** (#169): `nexrad_decode::model::ScanBuilder` (feature `model`) with `new`, `add_message`,
+`add_messages`, `merge` and `build`.
 
-#### Behaviour and type changes
+**Behaviour and type changes**
 
-- **Decoding is strict** (#190). `decode_messages` returns the error for the first message it cannot decode (a
-  truncated message, a bad data block pointer, an unknown data block name, a missing segment); 1.0.0-rc.3 logged a
-  warning and dropped the message, or stopped and returned what it had. A tail shorter than a message header (28 bytes)
-  still ends decoding cleanly when every byte is zero. To keep the messages before a failure, iterate
-  `iter_messages`, which yields one `Result` per message and stops after the first error:
+- **Decoding is strict** (#190). `decode_messages` returns the error for the first message it cannot decode (truncated,
+  bad data block pointer, unknown data block name, missing segment) instead of logging and dropping it, or stopping
+  with what it had. A tail shorter than a message header (28 bytes) ends decoding cleanly when every byte is zero. To
+  keep the messages before a failure:
 
   ```rust
-  // 1.0.0-rc.3: undecodable messages were skipped with a log warning
-  let messages = decode_messages(data)?;
-
-  // 1.0: the same lenient behaviour, with the failure reported
   let mut messages = Vec::new();
   let mut iter = nexrad_decode::iter_messages(data);
   for result in iter.by_ref() {
@@ -524,98 +294,57 @@ Scan assembly moved into this crate (#169). If you assembled a `Scan` from decod
   }
   ```
 
-- **`MessageContents::Other` carries the message** (#190): `Other { message_type, data }` holds the type from the
-  header and the undecoded payload, and `MessageContents::message_type()` names the type of any contents. Frames with
-  the unassigned message type 0 (unused metadata record slots) are each an `Other` message, and a clutter filter map
-  from a legacy (pre-ORDA) RDA, which uses the legacy notch width layout, decodes as `Other` rather than
-  `ClutterFilterMap`.
-- **`DataBlock` no longer derefs to its block** (#190). Methods of the inner block are reached through `inner()` (or
-  `into_inner()`): `m.volume_data_block().map(|b| b.inner().vcp_number())`. `moment_data()` and
-  `into_moment_data()` stay on the `DataBlock`.
-- **Multi-segment messages decode their full payload** (#190). Clutter filter bypass maps (type 13) that 1.0.0-rc.3
-  dropped now decode, clutter filter maps (type 15) have 360 azimuth segments instead of 350, and RDA adaptation data
-  (type 18) fields beyond the first segment, such as `site_name()`, hold their real values.
-- **Owned messages.** `Message::into_owned()` (and `MessageContents::into_owned()`, `MessageHeaders::into_owned()`)
-  copies a decoded message out of the input buffer as `Message<'static>` (#190).
-- **Root re-exports.** `decode_messages`, `iter_messages`, `Message`, `MessageContents`, `MessageIter` and
-  `MessageType` are available at `nexrad_decode::`; the `messages::` paths still work (#190).
-- **Two accessor names now mean something else.** `digital_radar_data::Header::azimuth_resolution_spacing()` used to be
-  the `uom` angle and now returns the `AzimuthResolutionSpacing` enum (formerly `azimuth_resolution_spacing_type()`);
-  use `azimuth_resolution_spacing_degrees()` for the number. `clutter_filter_map::RangeZone::end_range()` used to
-  return the `u16` kilometres and is now the `uom` length (feature `uom`); use `end_range_km()` for the number.
-- **`uom` is off by default.** Code that compiled only because `uom` was a default feature now fails to find the `uom`
-  accessors; enable the feature or switch to the unit-suffixed accessors.
-- **VCP 32 is recognised.** `VcpNumber::Vcp32` replaces what decoded as `Unknown(32)` in the type 31 path (#163).
-  `VcpNumber` also implements `Display` (`VCP 212`), which the old `VolumeCoveragePattern` enum did not.
-- **VCPs 11, 21, 121, 211 and 221 are recognised** (#188): `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211` and `Vcp221` replace
-  `Unknown(n)`, and the variants match `nexrad_model::data::VcpNumber` one for one.
-- **Converted radials carry radar physics** (#188). `digital_radar_data::Message::radial()`/`into_radial()` set the
-  model radial's Nyquist velocity and unambiguous range from the radial data block (left `None` when the block is
-  absent), and the legacy (type 1) conversion sets the unambiguous range from its header.
-- **Negative elevation angles decode correctly** (#146). VCP elevation and sector angles with the sign bit set were
-  returned as their 360-degree-wrapped value (for example 359.8 instead of -0.2).
-- **Spectrum width blocks report `DataBlockName::SpectrumWidth`** instead of `Unknown(*b"SW ")` (#173).
-- **With `uom`, `RadialDataBlock::unambiguous_range()` is 10× smaller**: it now applies the ICD 0.1 km scale. Use the new
-  `unambiguous_range_km()` for the plain value (#173).
-- **Legacy (type 1) radials with an unknown status** convert to `RadialStatus::Unknown(v)` instead of
-  `IntermediateRadialData` (#173). `digital_radar_data_legacy::Message::elevation_number()` returns `u8`, and
-  `radial_status()` and `vcp_number()` return decoded enums, with the codes in `radial_status_raw()` and
-  `vcp_number_raw()`.
-- **Code enums have one fallback** (#191). A status or code enum carries a value the ICD does not list in
-  `Unknown(<wire type>)`: `CompressionIndicator::FutureUse` is `Unknown(u8)`, `ProcessingStatus::Other` and
-  `rda_status_data::SpotBlankingStatus::Other` are `Unknown`, `TransitionPowerSourceStatus::Unknown` and `Other` merge
-  into `Unknown(u16)` (the ICD's "unknown" code 4 is `Unknown(4)`), and the `volume_coverage_pattern` enums
-  `WaveformType`, `PulseWidth` and `ChannelConfiguration` (`UnknownPhase`) carry `Unknown(u8)`, `PatternType`
-  `Unknown(u16)`. Match `Unknown(_)` where you matched the unit variant.
-- **`RdaBuildNumber` is a number, not an enum** (#191). `RdaBuildNumber::from_raw(u16)` wraps the wire value;
-  `major()`, `minor()`, `raw()` and `Display` (`"24.0"`) replace the `Build12_0` .. `Build24_0` variants,
-  `as_float()` and `is_known()`, and builds compare in build order (`build >= RdaBuildNumber::from_raw(2000)`).
-- **VCP and azimuth indexing angles are `f32`** (#191). `volume_coverage_pattern::ElevationDataBlock`'s elevation,
-  sector edge and EBC angles and `digital_radar_data::Header::azimuth_indexing_mode_degrees()` return `f32`, matching
-  `nexrad_model`; `azimuth_rate_degrees_per_second()` stays `f64`.
-- **Legacy radials carry their Nyquist velocity** (#191). `digital_radar_data_legacy::Message` exposes the type 1
-  Nyquist velocity and atmospheric attenuation factor, and its `radial()`/`into_radial()` set the model radial's
-  Nyquist velocity (left `None` when zero, as on surveillance cuts).
-- **Legacy clutter filter bypass maps decode as `Other`** (#191). A type 13 map from a legacy (pre-ORDA) RDA used
-  to decode as an empty `ClutterFilterBypassMap`; like the legacy type 15 map it is now `Other` with its payload.
-- **`MessageType` ordering.** It is no longer `#[repr(u8)]`, and its derived `Ord` puts `Reserved(_)` after
-  `RdaLogData`. Compare `number()` to order by wire number.
-- **Lifetimes.** `MessageHeaders::primary()`/`iter()` and `Message::header()` borrow from `self` rather than from the
-  input bytes; `Message::contents()` returns `&MessageContents<'a>`.
-- **No zerocopy traits** are implemented by any public `nexrad-decode` type (#166).
+- **`MessageContents::Other { message_type, data }`** carries the header's type and the undecoded payload (#190), and
+  `MessageContents::message_type()` names any contents' type. Each type 0 frame (an unused metadata record slot) is its
+  own `Other`, and maps from a legacy (pre-ORDA) RDA decode as `Other`: the type 15 clutter filter map with its legacy
+  notch width layout (#190) and the type 13 bypass map, which decoded as an empty map (#191).
+- **`DataBlock` no longer derefs** (#190): reach the block through `inner()` or `into_inner()`
+  (`m.volume_data_block().map(|b| b.inner().vcp_number())`); `moment_data()` and `into_moment_data()` stay on the
+  `DataBlock`.
+- **Multi-segment messages decode their full payload** (#190): type 13 bypass maps decode instead of being dropped,
+  type 15 maps have 360 azimuth segments instead of 350, and type 18 fields past the first segment, such as
+  `site_name()`, hold their real values.
+- **VCP numbers** (#163, #188): VCPs 11, 21, 32, 121, 211 and 221 no longer decode as `Unknown(n)`, the variants match
+  `nexrad_model::data::VcpNumber` one for one, and `VcpNumber` implements `Display` (`VCP 212`).
+- **Converted radials carry radar physics**: `digital_radar_data::Message::radial()`/`into_radial()` set the Nyquist
+  velocity and unambiguous range from the radial data block, `None` when it is absent (#188); the legacy (type 1)
+  conversion sets the unambiguous range (#188) and the Nyquist velocity, `None` when zero (#191), from its header.
+- **Fixed decodes**: negative VCP elevation and sector angles are negative instead of wrapped (359.8 for -0.2) (#146);
+  spectrum width blocks are `DataBlockName::SpectrumWidth`, not `Unknown(*b"SW ")` (#173); with `uom`,
+  `RadialDataBlock::unambiguous_range()` applies the ICD 0.1 km scale and is 10× smaller (#173); legacy radials with an
+  unknown status convert to `RadialStatus::Unknown(v)`, not `IntermediateRadialData` (#173).
+- **Code enums have one fallback** (#191): a value the ICD does not list is `Unknown(<wire type>)`; match `Unknown(_)`
+  where you matched a unit variant. The ICD's "unknown" transition power source code 4 is `Unknown(4)`.
+- **`RdaBuildNumber` is a number** (#191): `from_raw(u16)`, `major()`, `minor()`, `raw()`, `Display` (`"24.0"`) and
+  build ordering (`build >= RdaBuildNumber::from_raw(2000)`) replace the `Build12_0`..`Build24_0` variants.
+- **VCP and azimuth indexing angles are `f32`** (#191), matching the model; `azimuth_rate_degrees_per_second()` stays
+  `f64`.
+- **`MessageType` ordering** (#166): the derived `Ord` puts `Reserved(_)` after `RdaLogData`; compare `number()` to
+  order by wire number.
+- **Lifetimes** (#166): `MessageHeaders::primary()`/`iter()` and `Message::header()` borrow from `self`, and
+  `Message::contents()` returns `&MessageContents<'a>`. No public type implements zerocopy traits.
 
 ### nexrad-data from 1.0.0-rc.7
 
-#### Feature flags
+Renames and removals are in the [nexrad-data table](#nexrad-data-100-rc7-to-10).
+
+**Features.** `aws-polling` is removed; streaming is part of the default `aws` (#161). `nexrad-model` is now `model`, and
+`futures`, `once_cell`, `rayon`, `reqwest`, `tokio` and `xml` are no longer features (#156). `nexrad-decode`'s default
+features are no longer enabled through this crate, so add `nexrad-decode = { version = "1.0", features = ["uom"] }` if
+you call its `uom` accessors.
 
 ```toml
-# 1.0.0-rc.7: real-time streaming
-nexrad-data = { version = "1.0.0-rc.7", features = ["aws-polling"] }
-# 1.0: streaming is part of the default `aws` feature
-nexrad-data = { version = "1.0" }
+nexrad-data = { version = "1.0" }                                                               # was features = ["aws-polling"]
+nexrad-data = { version = "1.0", default-features = false, features = ["model", "parallel"] } # was ["nexrad-model", "rayon"]
 ```
 
-```toml
-# 1.0.0-rc.7: local files only, parallel decoding
-nexrad-data = { version = "1.0.0-rc.7", default-features = false, features = ["nexrad-model", "rayon"] }
-# 1.0
-nexrad-data = { version = "1.0", default-features = false, features = ["model", "parallel"] }
-```
-
-- `aws-polling` is removed; real-time streaming is part of `aws` (#161).
-- `nexrad-model` is renamed to `model` (#156).
-- `futures`, `nexrad-model`, `once_cell`, `rayon`, `reqwest`, `tokio` and `xml` are no longer features. Use `aws`,
-  `model` or `parallel`.
-- `nexrad-decode`'s default features are no longer enabled through this crate, so `nexrad-decode`'s `uom` is not turned
-  on for you. Add `nexrad-decode = { version = "1.0", features = ["uom"] }` if you call its `uom` accessors.
-
-#### Error handling
-
-`AwsError` moved and lost its `reqwest` payloads (#160, #171):
+**Errors.** `AwsError` moved to the crate root, and its HTTP variants box the error instead of holding a
+`reqwest::Error` (#160, #171). `is_transient()` says whether a failure is worth retrying (#171); `HttpClient` reports a
+failure to build the HTTP client, and none of the variants added in #192 is transient. `Error` and `AwsError` no longer
+implement `UnwindSafe`/`RefUnwindSafe`; wrap them in `AssertUnwindSafe` if you need that.
 
 ```rust
 // 1.0.0-rc.7
-use nexrad_data::result::aws::AWSError;
 match err {
     nexrad_data::result::Error::AWS(AWSError::S3GetObjectRequest(e)) => retry(e.is_timeout()),
     nexrad_data::result::Error::AWS(AWSError::S3ObjectNotFound) => missing(),
@@ -623,7 +352,6 @@ match err {
 }
 
 // 1.0
-use nexrad_data::{AwsError, Error};
 match err {
     Error::Aws(aws) if aws.is_transient() => retry(),
     Error::Aws(AwsError::S3ObjectNotFound) => missing(),
@@ -631,119 +359,59 @@ match err {
 }
 ```
 
-| 1.0.0-rc.7 | 1.0 | PR |
-|---|---|---|
-| `nexrad_data::result::aws::AWSError` | `nexrad_data::AwsError` (defined at `nexrad_data::result::AwsError`) | #160, #171 |
-| `Error::AWS(..)` | `Error::Aws(..)` | #160 |
-| `AWSError::S3ListObjects(reqwest::Error)`, `S3GetObjectRequest(..)`, `S3Streaming(..)` | Same variants holding `Box<dyn std::error::Error + Send + Sync>`; `source()` returns it | #171 |
-| `AWSError::PollingAsync` | Removed (never constructed) | #171 |
-| `Error::Decompression(bzip2::Error)` | Removed (never constructed); bzip2 failures are `Error::Io` | #171 |
-| (new) | `AwsError::is_transient()` reports whether a failure is worth retrying | #171 |
-| `AWSError::S3GetObject(Option<String>)` | `AwsError::S3GetObject { status: u16, body: Option<String> }` | #192 |
-| `AWSError::DateTime(String)`, `AWSError::InvalidSiteIdentifier(String)` | Removed; invalid archive names fail in `Identifier::parse` with `AwsError::InvalidIdentifier { name, reason }` | #192 |
-| (new) | `AwsError::InvalidVolumeIndex { index }`, `AwsError::HttpClient(Box<dyn Error + Send + Sync>)` (building the HTTP client failed) | #192 |
+**Real-time API.** `aws::realtime` was pruned to its polling surface (#167): the timing model is crate-private and its
+estimates are exposed through `ChunkIterator`, configuration goes through `PollConfig`, and `chunk_stream` takes your
+runtime's sleep function (#161).
 
-Both `Error` and `AwsError` are `#[non_exhaustive]`, and neither implements `UnwindSafe`/`RefUnwindSafe` (the boxed
-source error does not); wrap them in `AssertUnwindSafe` if you need that.
+**Behaviour and type changes**
 
-#### Removed and renamed items
-
-The `aws::realtime` module was pruned to its polling surface (#167). The timing model is crate-private, and its results
-are exposed through `ChunkIterator`:
-
-| 1.0.0-rc.7 | 1.0 | PR |
-|---|---|---|
-| `chunk_stream(config)` | `chunk_stream(config, \|d\| tokio::time::sleep(d))` | #161 |
-| `Chunk<'a>` | `Chunk`; `Chunk::IntermediateOrEnd` holds `Record<'static>` | #167 |
-| `download_chunk(site, &id) -> Result<(ChunkIdentifier, Chunk)>` | `-> Result<DownloadedChunk>`; read `d.identifier`, `d.chunk` | #167 |
-| `ChunkIterator::start_with_policies(site, download, discovery)` | `ChunkIterator::start_with(PollConfig::new(site).with_download_policy(..).with_discovery_policy(..))` | #167 |
-| `ChunkIterator::from_chunk(site, id, download, discovery)` | `ChunkIterator::from_chunk(config, id)` | #167 |
-| `ChunkIterator::download_policy()` / `discovery_policy()` | `config().download_policy()` / `config().discovery_policy()` | #167 |
-| `ChunkIterator::project_remaining_scan()` | `projected_volume_end_time()` | #167 |
-| `ChunkIterator::time_until_next() -> Option<chrono::Duration>` | `-> Option<std::time::Duration>` | #167 |
-| `RetryPolicy`, `PollConfig` public fields | Getters (`max_attempts()`, `initial_delay()`, `site()`, ...) and the existing `with_*` setters | #167 |
-| `RetryPolicy::with_initial_delay(chrono::Duration)` / `with_max_delay(..)` | Take `std::time::Duration` | #167 |
-| `ChunkIdentifier::new("KDMX".into(), ..)` | `ChunkIdentifier::new("KDMX", ..)` (`impl Into<String>`) | #167 |
-| `estimate_chunk_availability_time` | `ChunkIterator::next_expected_time()` / `time_until_next()` | #167 |
-| `ChunkTimingModel`, `ChunkTimingStats`, `ChunkCharacteristics`, `ElevationChunkMapper`, `ChunkMetadata`, `estimate_chunk_processing_time`, `project_scan_timing`, `project_full_scan_timing`, `ScanTimingProjection`, `ChunkProjection`, `RetryState`, `NextChunk` | No public replacement; `ChunkIterator` and `chunk_stream` handle sequencing, retries and timing | #167 |
-| `ChunkIdentifier::next_chunk(&mapper)` | No public replacement; `id.with_sequence(sequence, chunk_type)` names another chunk of the same volume when you know its sequence and type | #167 |
-| `volume::split_compressed_records(bytes)` | `volume::File::new(bytes).records()?` | #171 |
-| `volume::Header::{tape_filename, extension_number, icao_of_radar}() -> Option<String>` | `-> Option<&str>` | #171 |
-| `volume::File::header() -> Option<&Header>`, zerocopy traits on `volume::Header`, `size_of::<Header>()` | `header() -> Option<Header>` (by value), no zerocopy traits, `Header::SIZE` | #181 |
-| `aws::archive::list_files(site, &date)` | `list_files(site, date)` | #171 |
-| `aws::archive::download_file(identifier)` | `download_file(&identifier)` | #171 |
-| `aws::archive::Identifier::new(name)` | `Identifier::parse(&name)?` or `name.parse::<Identifier>()?` | #192 |
-| `Identifier::site() -> Option<&str>`, `date_time() -> Option<DateTime<Utc>>` | `site() -> &str`, `date_time() -> DateTime<Utc>` | #192 |
-| `aws::realtime::VolumeIndex::new(n)` | `VolumeIndex::new(n)?` (`Result`) | #192 |
-| `aws::realtime::list_chunks_in_volume(site, volume, max_keys)` | `list_chunks_in_volume(site, volume)` | #192 |
-
-#### Behaviour and type changes
-
-- **Decoding errors propagate** (#190). `Record::messages()`, `Record::radials()`, `File::scan()`,
-  `File::coverage_pattern_message()` and `assemble_volume` return `Error::Decode` with the first message that cannot be
-  decoded, where 1.0.0-rc.7 skipped it. For a lenient decode of one record, pass `record.data()` to
-  `nexrad_decode::iter_messages`.
-- **`Record::decompress` returns `Record<'static>`** (#171). Code that named the output lifetime (`Record<'b>`) drops
-  it.
-- **`DownloadedChunk`, `ChunkIteratorInit` and `LatestVolumeResult` are `#[non_exhaustive]`** (#167). You can still
-  read and move their fields; build a `DownloadedChunk` with `DownloadedChunk::new(identifier, chunk, attempts)`.
-  `get_latest_volume` and the new `get_latest_volume_from_hint` return `Result<LatestVolumeResult>`, whose `volume`
-  field is `Option<VolumeIndex>`.
-- **`VolumeIndex::new` is fallible** (#192). It returns `AwsError::InvalidVolumeIndex` outside `1..=999`. If you
-  restore a `VolumeIndex` from storage (for example a hint for `get_latest_volume_from_hint`), handle the error, for
-  instance by falling back to `get_latest_volume`.
-- **`list_chunks_in_volume` has no cap** (#192). It always returns every chunk of the volume's newest scan, sorted by
-  sequence. If you passed a cap, drop the argument and take what you need from the result (`.first()`,
-  `.last()`, `.iter().take(n)`); a cap of `1` used as an existence probe becomes `.is_empty()`.
-- **Archive identifiers are validated** (#192). `Identifier::parse` accepts `SSSSYYYYMMDD_HHMMSS` (UTC) with optional
-  `_Vnn`, `_MDM` and `.gz` suffixes and rejects anything else. `list_files` and `list_files_with_sizes` return volume
-  files only: `_MDM` metadata objects and unparseable names are skipped. Equality, ordering and hashing use the name
-  only.
-- **`ChunkIterator::try_next` makes a single attempt** (#192). It never sleeps or retries: `Ok(None)` means the next
-  chunk or volume is not available yet, so poll again on your own cadence (for example after `time_until_next()`).
-  Request errors now propagate; check `AwsError::is_transient()` to decide whether to keep polling. It no longer
-  returns `AwsError::ExpectedChunkNotFound`. `PollConfig`'s retry policies apply to `chunk_stream` only.
-- **`chunk_stream` yields its startup chunks** (#192). The first items are the volume's Start chunk (when joining
-  mid-volume) and the latest chunk, followed by the chunks after it. When joining mid-volume the first volume is
-  partial.
-- **`File::scan` includes legacy (type 1) radials** (#169), matching `Record::radials()`. Legacy-only volumes now yield
-  populated sweeps. `assemble_volume` accepts type 1 messages too.
-- **`Site::identifier` of a scan comes from the type 31 message header** rather than the Archive II volume header ICAO
-  (#169). The two agree for well-formed files; a missing header ICAO no longer produces `[0, 0, 0, 0]`.
+- **Decoding errors propagate** (#190): `Record::messages()`, `Record::radials()`, `File::scan()`,
+  `File::coverage_pattern_message()` and `assemble_volume` fail with `Error::Decode` where they skipped. For a lenient
+  decode of one record, pass `record.data()` to `nexrad_decode::iter_messages`.
+- **`get_latest_volume`** and the new `get_latest_volume_from_hint` return a `#[non_exhaustive]` `LatestVolumeResult`
+  whose `volume` is `Option<VolumeIndex>` (#167).
+- **`VolumeIndex::new` is fallible** (#192) outside `1..=999`; when restoring one from storage (for example a hint),
+  handle the error, for instance by falling back to `get_latest_volume`.
+- **`list_chunks_in_volume` has no cap** (#149, #192): it reads every listing page and returns every chunk of the
+  newest scan in a reused volume directory, sorted by sequence. Take what you need (`.first()`, `.last()`,
+  `.iter().take(n)`); a cap of 1 used as an existence probe becomes `.is_empty()`.
+- **Archive identifiers are validated** (#192): `Identifier::parse` accepts `SSSSYYYYMMDD_HHMMSS` (UTC) with optional
+  `_Vnn`, `_MDM` and `.gz` suffixes. `list_files` and `list_files_with_sizes` return volume files only, skipping `_MDM`
+  objects and unparseable names. Equality, ordering and hashing use the name only.
+- **`ChunkIterator::try_next` makes one attempt** (#192) and never sleeps: `Ok(None)` means not available yet, so poll
+  again on your own cadence (for example after `time_until_next()`). Request errors propagate (check
+  `is_transient()`), and it no longer returns `ExpectedChunkNotFound`. `PollConfig`'s retry policies apply to
+  `chunk_stream` only.
+- **`chunk_stream` yields its startup chunks** (#192): the volume's Start chunk when joining mid-volume (that first
+  volume is partial), then the latest chunk and those after it.
+- **Volume rollover yields the Start chunk** (#183): `try_next` and `chunk_stream` enter a new volume at sequence 1
+  (volume header and VCP) and continue in sequence order, instead of jumping to its newest chunk. `assemble_volume`
+  consumers no longer hit `Error::MissingCoveragePattern` after the first volume; consumers that skipped ahead see the
+  extra chunks. `volume::File::coverage_pattern_message()` reads a `Chunk::Start` file's VCP.
+- **Real-time volume selection** (#149, #154): `get_latest_volume` no longer returns an older volume when the newest sits
+  just after the wrap-around, and `ChunkIterator` waits instead of replaying an older scan left in the next volume
+  directory.
+- **`File::scan` includes legacy (type 1) radials** (#169), as `Record::radials()` does, and `assemble_volume` accepts
+  them; legacy-only volumes yield populated sweeps.
+- **A scan's `Site::identifier` comes from the type 31 message header** (#169), not the Archive II volume header ICAO;
+  they agree for well-formed files, and a missing ICAO no longer produces `[0, 0, 0, 0]`.
 - **`File::records()` returns `Error::TruncatedRecord`** instead of panicking on data shorter than the 24-byte volume
   header (#171).
-- **Real-time volume selection** (#149, #154). `list_chunks_in_volume` reads every listing page and returns only the
-  newest scan in a reused volume directory, sorted by sequence. `get_latest_volume` no longer returns an older volume
-  when the newest one sits just after the wrap-around, and `ChunkIterator` waits instead of replaying an older scan
-  left in the next volume directory.
-- **Real-time volume rollover yields the Start chunk** (#183). When `ChunkIterator::try_next` or `chunk_stream`
-  moves to a new volume, it now yields that volume's Start chunk (sequence 1, the volume header and VCP) and then every
-  later chunk in sequence order. Previously it jumped to the newest chunk already published in the new volume, skipping
-  the Start chunk and the chunks before the newest. Consumers feeding `assemble_volume` now receive every volume's Start
-  chunk, so they no longer hit `Error::MissingCoveragePattern` after the first volume; consumers that skipped ahead
-  should expect the extra chunks. To read a Start chunk's VCP yourself, use the new
-  `volume::File::coverage_pattern_message()` on the `Chunk::Start` file.
 
 ### nexrad-process from 1.0.0-rc.1
 
-#### Error handling
+Renames and removals are in the [nexrad-process table](#nexrad-process-100-rc1-to-10).
 
-`nexrad_process::Error` is `#[non_exhaustive]` and derives `Clone` and `PartialEq`. Invalid parameters are now
-reported by the constructors, so `Error::InvalidParameter` comes from `new` rather than from `process`. The new
-`Error::Model(nexrad_model::Error)` reports an output the model rejects, such as a `CompositeReflectivity::compute`
-extent outside valid latitudes and longitudes (#185). Its `Display` text is `model error`; the model error's message
-comes from its `source()` (#195).
+**Errors.** `Error` derives `Clone` and `PartialEq`, and its variants carry `&'static str` fields instead of a `String`
+(#193). `InvalidParameter` comes from the constructors rather than from `process`. New variants:
+`Model(nexrad_model::Error)` when the model rejects an output, such as a `CompositeReflectivity::compute` extent
+outside valid latitudes and longitudes (#185; it displays `model error`, #195); `GeometryMismatch { parameter }` for a
+CC field whose geometry differs from the input; and `UnexpectedProduct { expected, actual }` for an input holding the
+wrong product (#193).
 
-The variants carry structured data instead of a `String` (#193):
-
-| 1.0.0-rc.1 | 1.0 |
-|---|---|
-| `InvalidParameter(String)` | `InvalidParameter { parameter: &'static str, reason: &'static str }` |
-| `InvalidGeometry(String)` | `InvalidGeometry { parameter: &'static str, reason: &'static str }`; a CC field whose geometry differs from the input is `GeometryMismatch { parameter: &'static str }` |
-| `MissingData(String)` | `MissingData { what: &'static str }` |
-| (none) | `UnexpectedProduct { expected: Product, actual: Option<Product> }` for an input holding the wrong product |
-
-#### Removed and renamed items
+**Constructors and builders** (#175, #193). Processors have private fields and validating constructors.
+`ScanDerivedProduct::compute` drops the `scan` argument and takes a `CartesianGrid`, in calls and in your own impls,
+which must be `Send + Sync`, as must `SweepProcessor` impls:
 
 ```rust
 // 1.0.0-rc.1
@@ -769,66 +437,44 @@ let section = VerticalCrossSection::builder(200.0)
     .build()?;
 ```
 
-| 1.0.0-rc.1 | 1.0 | PR |
-|---|---|---|
-| `ThresholdFilter { min, max }` | `ThresholdFilter::new(min, max)?`; read with `min()`, `max()` | #175 |
-| `MedianFilter { azimuth_kernel, range_kernel }` | `MedianFilter::new(azimuth_kernel_radials, range_kernel_gates)?`; read with `azimuth_kernel_radials()`, `range_kernel_gates()` | #175, #193 |
-| `GaussianSmooth { sigma_azimuth, sigma_range }` | `GaussianSmooth::new(sigma_azimuth_radials, sigma_range_gates)?`; read with `sigma_azimuth_radials()`, `sigma_range_gates()` | #175, #193 |
-| `ScanDerivedProduct::compute(&self, scan, fields, coords, extent, resolution)` | `compute(&self, fields, coordinate_system, &CartesianGrid::new(extent, width, height)?)` | Drop the `scan` argument and pass a `CartesianGrid`, in calls and in your own impls, which must also be `Send + Sync`. #175, #193 |
-| `SweepProcessor` implementations | Must be `Send + Sync` | #193 |
-| `nexrad_process::pipeline::SweepPipeline` | `nexrad_process::SweepPipeline` | #193 |
-| `ScanProcessor` trait | Removed (no implementations); use a free function or your own trait | #175 |
-| `VerticalCrossSection::new(azimuth_degrees: f32, max_range_km, max_altitude_m, width, height)` | `VerticalCrossSection::builder(azimuth_angle_degrees: f64).max_range_km(..).max_altitude_meters(..).width(..).height(..).build()?`; getters for each | #164, #182, #193 |
-| `VerticalCrossSection::compute(&fields)` | `compute(&fields, &coordinate_system)`, for example with `scan.coordinate_system()` | The vertical axis is altitude above mean sea level, including the antenna height, and the horizontal axis is ground range. #188 |
-| `StormCell::elevation_degrees()` | `StormCell::elevation_angle_degrees()` | #182 |
-| `StormCell::max_reflectivity_azimuth_degrees()` | `StormCell::max_reflectivity_azimuth_angle_degrees()` | #182 |
-| `StormCell::bounds() -> &StormCellBounds`; `min_latitude()` and so on | `bounds() -> GeoExtent`; `bounds().min.latitude` and so on | #193 |
+**Behaviour and type changes**
 
-#### Behaviour and type changes
-
-- `MedianFilter::new` rejects zero or even kernel sizes, `GaussianSmooth::new` rejects sigmas that are not finite and
-  positive (NaN and infinity used to be accepted), and `ThresholdFilter::new` rejects a NaN bound or `min > max`.
-- **Masked gates are `Filtered`** (#187). `ThresholdFilter` and `CorrelationCoefficientFilter` mark the gates they
-  remove `GateStatus::Filtered` and keep their values; they used to set `NoData` with `0.0`. Code that looks for
-  `NoData` to find masked gates should look for `Filtered`; code that checks for `Valid` is unaffected. Smoothing and
-  storm-relative velocity pass `Filtered` gates through, and composite reflectivity, cross-sections and cell detection
-  skip them, as they do `NoData`.
-- The processors now implement `Debug`, `Clone` and `PartialEq` (and `CompositeReflectivity` also `Copy` and
-  `Default`).
-- **Inputs are checked by product** (#193). Build fields with `SweepField::from_radials` (or set
-  `SweepFieldBuilder::product`): `CompositeReflectivity::compute` needs `Product::Reflectivity` fields,
-  `CorrelationCoefficientFilter::new` a `Product::CorrelationCoefficient` field, `StormRelativeVelocity` a
-  `Product::Velocity` input, and `VerticalCrossSection::compute` and `StormCellDetector::detect` `Product::Reflectivity`
-  fields. Its output is labelled "Storm-Relative Velocity" with no product, so it no longer
-  passes as a velocity moment.
-- Every floating-point parameter must be finite (#193). `StormRelativeVelocity::new` also requires a direction in
-  `0.0..360.0`, `VerticalCrossSection`'s builder an azimuth in `0.0..360.0`, and `CorrelationCoefficientFilter::new`
-  a threshold in `0.0..=1.0`.
-- `CorrelationCoefficientFilter` requires the input and the CC field to share azimuth angles, first gate range and
-  gate interval, returning `Error::GeometryMismatch` otherwise (#193). Gate counts may differ.
-- `StormCell::centroid()` is weighted by linear reflectivity factor rather than dBZ, which moves it toward the most
-  intense gates (#193).
-- `MedianFilter`, `GaussianSmooth` and `StormCellDetector` no longer wrap a sector field's azimuths across north
-  (#193).
+- **Parameters are validated** (#175, #193): `MedianFilter::new` rejects zero or even kernels, `GaussianSmooth::new`
+  sigmas that are not finite and positive (NaN and infinity were accepted), and `ThresholdFilter::new` a NaN bound or
+  `min > max`. Every floating-point parameter must be finite; `StormRelativeVelocity::new` and the
+  `VerticalCrossSection` builder need a direction or azimuth in `0.0..360.0`, and `CorrelationCoefficientFilter::new` a
+  threshold in `0.0..=1.0`.
+- **Masked gates are `Filtered`** (#187): `ThresholdFilter` and `CorrelationCoefficientFilter` mark removed gates
+  `GateStatus::Filtered` and keep their values instead of setting `NoData` with `0.0`; look for `Filtered` where you
+  looked for `NoData` (checks for `Valid` are unaffected). Smoothing and storm-relative velocity pass them through;
+  composite reflectivity, cross-sections and cell detection skip them.
+- **Inputs are checked by product** (#193); build fields with `SweepField::from_radials` or set
+  `SweepFieldBuilder::product`. `CompositeReflectivity::compute`, `VerticalCrossSection::compute` and
+  `StormCellDetector::detect` need `Product::Reflectivity`, `CorrelationCoefficientFilter::new` a
+  `Product::CorrelationCoefficient` field and `StormRelativeVelocity` a `Product::Velocity` input; its output is
+  labelled "Storm-Relative Velocity" with no product, so it no longer passes as a velocity moment.
+- **`VerticalCrossSection::compute` takes the coordinate system** (#188), for example `scan.coordinate_system()`: the
+  vertical axis is altitude above mean sea level including the antenna height, and the horizontal axis is ground range.
+- `CorrelationCoefficientFilter` requires the input and CC fields to share azimuth angles, first gate range and gate
+  interval (`Error::GeometryMismatch`); gate counts may differ (#193).
+- `StormCell::centroid()` is weighted by linear reflectivity factor rather than dBZ, moving it toward the most intense
+  gates (#193).
+- `MedianFilter`, `GaussianSmooth` and `StormCellDetector` no longer wrap a sector field's azimuths across north (#193).
+- The processors implement `Debug`, `Clone` and `PartialEq`, and `CompositeReflectivity` also `Copy` and `Default`
+  (#175).
 
 ### nexrad-render from 1.0.0-rc.4
 
-#### Error handling
+Renames and removals are in the [nexrad-render table](#nexrad-render-100-rc4-to-10).
 
-| 1.0.0-rc.4 | 1.0 | PR |
-|---|---|---|
-| `Error::NoRadials` | `Error::EmptyField`, also returned for Cartesian or vertical fields with no rows or columns | #174 |
-| `Error::ImageSave(String)` | `Error::Image(image::ImageError)`; `source()` returns it, and `Display` is `image error` without its message | #174, #195 |
-| `Error::ProductNotFound` | Removed (only `render_radials` produced it) | #174 |
-| `Error::InvalidDimensions` | Unchanged; also returned for a zero width or height | #174 |
-| — | `Error::InvalidRange { min, max }` and `Error::InvalidTableSize { size }` from `ColorLookupTable::new` and an invalid `RenderOptions::with_value_range`; `Error::InvalidExtent` and `Error::MissingCoordinateSystem` from `render_sweep` with an extent | #194 |
+**Errors** (#174, #194). `NoRadials` is `EmptyField`, also returned for Cartesian or vertical fields with no rows or
+columns, and `InvalidDimensions` is also returned for a zero width or height. `Image(image::ImageError)` replaces
+`ImageSave(String)` and displays `image error` (#195). `ColorLookupTable::new` and an invalid
+`RenderOptions::with_value_range` return `InvalidRange { min, max }` or `InvalidTableSize { size }`, and `render_sweep`
+with an extent returns `InvalidExtent` or `MissingCoordinateSystem`. Because `image::ImageError` is not `UnwindSafe`,
+neither is `Error`.
 
-`nexrad_render::Error` is `#[non_exhaustive]` and, because `image::ImageError` is not, no longer implements
-`UnwindSafe`/`RefUnwindSafe`.
-
-#### Removed and renamed items
-
-Render through a `SweepField`:
+**Render through a `SweepField`** (#174):
 
 ```rust
 // 1.0.0-rc.4
@@ -841,142 +487,66 @@ let field = sweep
 let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options)?.into_image();
 ```
 
-| 1.0.0-rc.4 | 1.0 | PR |
-|---|---|---|
-| `render_radials(radials, product, &DiscreteColorScale, &options) -> RgbaImage` | `render_sweep(&SweepField::from_radials(radials, product)?, &scale.into(), &options)?.into_image()` | #174 |
-| `render_radials_default(radials, product, &options)` | `render_sweep(&field, &default_scale(product), &options)` | #174 |
-| `default_color_scale(product)` | `default_scale(product)` | #174 |
-| `default_scale(product) -> DiscreteColorScale` | `default_scale(product) -> ColorScale` | #174 |
-| `ColorLookupTable::from_scale(&DiscreteColorScale, ..)`, `from_color_scale(&ColorScale, ..)` | `ColorLookupTable::new(&ColorScale, min, max, size)` | Convert a `DiscreteColorScale` with `.into()`. #174 |
-| `RenderOptions::new(usize, usize)`, `size() -> (usize, usize)` | `u32` | #174 |
-| `RenderResult::new(..)` | Crate-private | #174 |
-| `RenderMetadata::{center_pixel, pixels_per_km, max_range_km, polar_to_pixel, pixel_distance_to_km, km_to_pixel_distance}` returning plain values | Return `Option`, `Some` only for polar renders | #174 |
-| `RenderMetadata::elevation_degrees() -> Option<f32>` | `RenderMetadata::elevation_angle_degrees() -> Option<f64>` | #164, #182 |
-| `PointQuery { polar, geo, value, status }` struct literal | Read `PointQuery` from `RenderMetadata::query_*`; it is `#[non_exhaustive]`, and `polar` is a `PolarPoint` with `azimuth_angle_degrees` and `elevation_angle_degrees` fields | #182 |
-| `ColorLookupTable::new(..) -> ColorLookupTable` | `ColorLookupTable::new(..) -> Result<ColorLookupTable>`; add `?` | #194 |
-| `RenderOptions::transparent()` | `with_background(Color::TRANSPARENT)` | #194 |
-| `RenderOptions::bilinear()` | `with_interpolation(Interpolation::Bilinear)` | #194 |
-| `RenderOptions::with_background([u8; 4])`, `background() -> Option<[u8; 4]>` | `with_background(Color)` (`Color::from_rgba8(rgba)` or `rgba.into()`), `background() -> Option<Color>` (`None` when fully transparent) | #194 |
-| `RenderResult::query_pixel`, `query_polar`, `query_geo` | `result.metadata().query_pixel(..)` and so on, same signatures | #194 |
-| `nexrad_render::Product` | `nexrad_model::data::Product` (or `nexrad::model::data::Product`) | #194 |
+**Behaviour and type changes**
 
-#### Behaviour and type changes
-
-- **Metadata is projection-aware** (#174). `RenderMetadata::projection()` returns `Projection::Polar`,
-  `Projection::Geographic` or `Projection::Vertical`. Polar-only accessors and `RenderResult::query_pixel`,
-  `query_polar` and `query_geo` return `None` for `render_cartesian` and `render_vertical` results, which used to report
-  `pixels_per_km = 0` and divide by zero in `pixel_to_polar`. For `render_cartesian` results, `pixel_to_geo` and
-  `geo_to_pixel` now map linearly through the extent. The `Polar`, `Geographic` and `Vertical` variants are
-  `#[non_exhaustive]`, so a struct pattern on them needs `..`: `Projection::Polar { center_pixel, .. }`. The `Polar`
-  elevation field is `elevation_angle_degrees` and the `Vertical` altitude field is `altitude_range_meters` (#182).
-- **Polar angles are `f64`** (#164): `RenderMetadata::elevation_angle_degrees()`, `polar_to_pixel` and
-  `RenderResult::query_polar` take or return `f64`.
-- **Image dimensions are `u32`** (#174). `RenderOptions::native_for` saturates at `u32::MAX`.
-- **`ColorLookupTable::new` validates its arguments** (#194): `min` and `max` must be finite with `min < max`
-  (`Error::InvalidRange`; `min == max` used to map every value to NaN and `min > max` silently reversed the table) and
-  `size` at least 2 (`Error::InvalidTableSize`).
-- **Colour range** (#194): every renderer builds its lookup table over `RenderOptions::value_range()` when set, else the
-  field's product range (`Product::value_range`), else the field's valid-value range, else `-32..95`. `render_sweep`
-  used to span the field's own data range, and `render_cartesian`/`render_vertical` used the field's range. Colours of a
-  sweep with a known product are now stable across sweeps; pin the old behaviour with
+- **Metadata is projection-aware** (#174). `RenderMetadata::projection()` is `Polar`, `Geographic` or `Vertical`.
+  Polar-only accessors and the point queries return `None` for `render_cartesian` and `render_vertical` results, which
+  reported `pixels_per_km = 0` and divided by zero in `pixel_to_polar`; for `render_cartesian`, `pixel_to_geo` and
+  `geo_to_pixel` map linearly through the extent. The variants are `#[non_exhaustive]`
+  (`Projection::Polar { center_pixel, .. }`), with the fields `elevation_angle_degrees` (`Polar`) and
+  `altitude_range_meters` (`Vertical`) (#182).
+- **Image dimensions are `u32`** (#174); `RenderOptions::native_for` saturates at `u32::MAX`.
+- **`ColorLookupTable::new` validates** (#194): finite `min < max` (`min == max` mapped every value to NaN and
+  `min > max` silently reversed the table) and a `size` of at least 2.
+- **Colour range** (#194): every renderer uses `RenderOptions::value_range()`, else the product range
+  (`Product::value_range`), else the field's valid-value range, else `-32..95`. `render_sweep` used the field's own data
+  range, so colours of a sweep with a known product are now stable across sweeps; pin a range with
   `with_value_range(min, max)`.
-- **Discrete colours are exact** (#194): `ColorLookupTable::color` returns a discrete scale's own colour for every
-  value in range, so values on a threshold (20 dBZ, 30 dBZ, ...) no longer take the colour of the level below.
-  `entries()` is still the scale sampled at evenly spaced values.
-- **`Color::to_rgba8` rounds and clamps** (#194): components are clamped to `0.0..=1.0` and rounded to the nearest byte
-  instead of truncated, so some built-in scale colours shift by one step (for example `0.6627` is now 169, not 168).
-- **`RenderOptions::with_extent` renders into the extent** (#194): `render_sweep` draws the sweep onto a
-  latitude/longitude grid covering exactly that extent and reports `Projection::Geographic`; it needs
-  `with_coord_system` (`Error::MissingCoordinateSystem` otherwise). It used to only copy the extent into the metadata
-  while the image stayed radar-centred. `render_cartesian` and `render_vertical` ignore the option.
-- **Non-valid gates** are still drawn as the background by default; `RenderOptions::with_status_color(status, color)`
-  draws them in a colour, such as purple for `GateStatus::RangeFolded` (#194).
-- **`image` codecs are opt-in** (#194): `nexrad-render` depends on `image` with only the `png` feature.
-  `RenderResult::save` and the new `write_to` support other formats once you enable the matching feature on your own
-  `image = { version = "0.25", default-features = false, features = ["jpeg"] }` dependency; without it, saving a
-  `.jpg` fails with `Error::Image`.
-- `nexrad_render::image` re-exports the `image` crate, so you can name `image::ImageError` without your own dependency.
-- **Queries on a sector sweep** (`RenderMetadata::query_pixel`, `query_polar`, `query_geo`) return `None` beyond the
-  covered azimuths instead of the far end's value across north (#185). `Error::EmptyField` is no longer reachable for
-  Cartesian or vertical fields built with `new`, which rejects zero dimensions.
+- **Discrete colours are exact** (#194): values on a threshold (20 dBZ, 30 dBZ, ...) no longer take the colour of the
+  level below; `entries()` still samples the scale at evenly spaced values.
+- **`Color::to_rgba8` rounds and clamps** (#194), so some built-in colours shift by one step (`0.6627` is 169, not 168).
+- **`RenderOptions::with_extent` renders into the extent** (#194): `render_sweep` draws onto a latitude/longitude grid
+  covering exactly that extent (`Projection::Geographic`) and needs `with_coord_system`; it used to only copy the
+  extent into the metadata. `render_cartesian` and `render_vertical` ignore it.
+- **Non-valid gates** are drawn as the background unless `RenderOptions::with_status_color(status, color)` gives them a
+  colour, such as purple for `GateStatus::RangeFolded` (#194).
+- **`image` codecs are opt-in** (#194): only `png` is enabled. For other formats in `save` and the new `write_to`, enable
+  the codec on your own `image = { version = "0.25", default-features = false, features = ["jpeg"] }`; otherwise saving
+  a `.jpg` fails with `Error::Image`. `nexrad_render::image` re-exports the crate.
+- **Queries on a sector sweep** return `None` beyond the covered azimuths instead of the far end's value (#185).
+  `EmptyField` is unreachable for Cartesian and vertical fields built with `new`, which rejects zero dimensions.
 
 ### nexrad from 1.0.0-rc.4
 
-#### Feature flags
+Renames and removals are in the [nexrad table](#nexrad-100-rc4-to-10).
+
+**Features** (#156, #161). `aws-polling` and `tokio` are removed; `stream` is part of `aws`. Sub-crates are depended
+on without default features, and each facade feature enables what it needs: `decode` implies `model`, `data` implies
+`decode` and `model`, `parallel` implies `data`, `aws` implies `data` and `chrono`. `full` (the default) is `wasm` +
+`parallel`, and a minimal local-file build (`features = ["data"]`) no longer compiles reqwest.
 
 ```toml
-# 1.0.0-rc.4
-nexrad = { version = "1.0.0-rc.4", default-features = false, features = ["aws-polling"] }
-
-# 1.0
-nexrad = { version = "1.0", default-features = false, features = ["aws"] }
+nexrad = { version = "1.0", default-features = false, features = ["aws"] } # was ["aws-polling"]
 ```
 
-- `aws-polling` and `tokio` are removed; `stream` is part of `aws` (#156, #161).
-- Sub-crates are depended on with default features off; each facade feature enables what it needs. `decode` implies
-  `model`, `data` implies `decode` and `model`, `parallel` implies `data`, `aws` implies `data` and `chrono`. A minimal
-  local-file build is `features = ["data"]` and no longer compiles reqwest.
-- `full` (the default) is `wasm` + `parallel`.
-
-#### Error handling
-
-Errors raised inside `nexrad-data` are flattened by layer (#176):
+**Errors are flattened by layer** (#176): decode, model and I/O errors raised inside `nexrad-data`, including items
+from `stream` and `stream_scans`, become `Error::Decode`, `Error::Model` and `Error::Io`; other data errors stay
+`Error::Data`. `data error: error decoding NEXRAD data` becomes `decode error`, with the message in `source()` (#195).
 
 ```rust
-// 1.0.0-rc.4
-match nexrad::load_file(path) {
-    Ok(scan) => use_scan(scan),
-    Err(nexrad::Error::Io(e)) => unreadable(e), // reading the file
-    Err(nexrad::Error::Data(nexrad::data::result::Error::Decode(e))) => malformed(e),
-    Err(nexrad::Error::Data(e)) => archive_error(e),
-    Err(e) => other(e),
-}
-
-// 1.0
 match nexrad::load_file(path) {
     Ok(scan) => use_scan(scan),
     Err(nexrad::Error::Io(e)) => unreadable(e),
-    Err(nexrad::Error::Decode(e)) => malformed(e), // no longer nested in Error::Data
+    Err(nexrad::Error::Decode(e)) => malformed(e), // was Error::Data(data::result::Error::Decode(e))
     Err(nexrad::Error::Data(e)) => archive_error(e),
-    Err(e) => other(e), // nexrad::Error is #[non_exhaustive]
+    Err(e) => other(e),
 }
 ```
 
-| 1.0.0-rc.4 | 1.0 | PR |
-|---|---|---|
-| `Error::Data(data::Error::Decode(e))` | `Error::Decode(e)` | #176 |
-| `Error::Data(data::Error::Model(e))` | `Error::Model(e)` | #176 |
-| `Error::Data(data::Error::Io(e))` | `Error::Io(e)` | #176 |
-| `Error::NoDataAvailable { date: String, .. }` | `date: chrono::NaiveDate`, and the variant exists only with `aws` | #176 |
-| `Error::NoDataAvailable` from `download_at` | `Error::NoScanAt { site, datetime }` (feature `aws`) when no volume overlaps the datetime | #195 |
-| `Error::MissingSiteMetadata` | Removed (only `coordinate_system_required` produced it) | #172 |
-
-`Display` text changes with the flattening, and wrapping variants name only the layer: `data error: error decoding
-NEXRAD data` becomes `decode error`, and the decode error's message comes from the variant's `source()` (#176, #195).
-Walk the source chain to print the whole cause. Items from `stream` and `stream_scans` are flattened the same way.
-
-#### Removed and renamed items
-
-| 1.0.0-rc.4 | 1.0 | PR |
-|---|---|---|
-| `extract_field(sweep, product)` | `sweep.field(product)` | #172 |
-| `extract_fields(&scan, product)` | `scan.fields(product)` | #172 |
-| `extract_first_field(&scan, product)` | `scan.first_field(product)` | #172 |
-| `coordinate_system(&scan)` | `scan.coordinate_system()` | #172 |
-| `coordinate_system_required(&scan)?` | `scan.coordinate_system().ok_or(/* your error */)?` | #172 |
-| `sites()` | `nexrad::model::meta::registry::sites()` | #172 |
-| `site(id)` | `nexrad::model::meta::registry::site_by_id(id)` | #172 |
-| `nearest_site(lat: f32, lon: f32)` | `nexrad::model::meta::registry::nearest_site(lat: f64, lon: f64)` | #164, #172 |
-| `download(identifier)` | `download(&identifier)` | #176 |
-| `load(&data)` | `load(data)`, taking the `Vec<u8>` by value | #195 |
-| `download_latest(site, date)` | `download_latest(site)` for the newest archived volume; for the last volume of a date, `list_scans(site, date)` and `download` the last identifier | #195 |
-| `download_at(site, datetime)` returning `Error::NoDataAvailable` | Returns `Error::NoScanAt { site, datetime }` when no volume started within 15 minutes before `datetime`; searches the previous UTC date when `datetime` precedes the date's first volume | #195 |
-| `Error::Model`, `Decode`, `Data`, `Render`, `Process`, `Io` `Display` (`decode error: <message>`) | The layer name alone (`decode error`); the message comes from `source()` | #195 |
-| `stream(site)` | `stream(site, \|d\| tokio::time::sleep(d))` | #161 |
-| (a `PollConfig` with `nexrad_data` directly) | `stream_with(config, sleep)` | #195 |
-| (assembling chunks into scans yourself) | `stream_scans(site, sleep)`, `stream_scans_with(config, sleep)` | #195 |
-| (your own `chrono` dependency) | `nexrad::chrono` (feature `chrono`, implied by `aws`) | #176 |
-| (your own `futures-util` dependency for `StreamExt`) | `nexrad::futures_util` (feature `aws`) | #195 |
+**I/O entry points** (#195). `download_latest(site)` downloads the newest archived volume; for the last volume of a
+date, `list_scans(site, date)` and `download` the last identifier. `download_at` returns the volume that started at
+most 15 minutes before `datetime`, searching the previous UTC date when `datetime` precedes the date's first volume,
+and `Error::NoScanAt` otherwise.
 
 ### Serialized data
 
@@ -988,63 +558,66 @@ II source files.** There is no compatibility shim. The incompatible changes are:
 | `WaveformType` | Variants serialize as `"ContiguousSurveillance"`, `"ContiguousDopplerWithAmbiguityResolution"`, `"ContiguousDopplerWithoutAmbiguityResolution"`, `"Batch"`, `"StaggeredPulsePair"` instead of `"CS"`, `"CDW"`, `"CDWO"`, `"B"`, `"SPP"` | #160 |
 | `ChannelConfiguration` | `"Sz2Phase"` instead of `"SZ2Phase"` | #160 |
 | `RadialStatus` | `"ElevationStartVcpFinal"` instead of `"ElevationStartVCPFinal"` | #160 |
-| `MomentData` | A struct with a `product` field next to the encoding fields; it was `serde(transparent)` over an inner block. Every moment on a `Radial`, including `clutter_filter_power`, has this shape | #170 |
+| `MomentData` | A struct with a `product` field next to the encoding fields, for every moment on a `Radial` including `clutter_filter_power`; it was `serde(transparent)` over an inner block | #170 |
 | `SweepField` | Gains a `product` field | #170 |
-| `Site` | `latitude` and `longitude` are `f64` (were `f32`). Self-describing formats such as JSON still read old values; fixed-width binary formats such as bincode do not | #164 |
-| `Site` | `height_meters` and `tower_height_meters` are renamed `site_elevation_meters` and `feedhorn_height_meters` | #182 |
-| `Radial` | `collection_timestamp` is renamed `collection_timestamp_millis` | #182 |
-| `Radial` | Gains `nyquist_velocity_mps` and `unambiguous_range_km` (`Option<f32>`). Self-describing formats such as JSON read data without them as `None`; fixed-width binary formats such as bincode do not | #188 |
-| `SweepField` | `elevation_degrees` and `azimuths` are renamed `elevation_angle_degrees` and `azimuth_angles_degrees` | #182 |
-| `VolumeCoveragePattern` | `doppler_velocity_resolution`, `sails_cuts` and `mrle_cuts` are renamed `doppler_velocity_resolution_mps`, `sails_cut_count` and `mrle_cut_count` | #182 |
+| `Site` | `latitude` and `longitude` are `f64`; self-describing formats such as JSON still read old values, fixed-width binary formats such as bincode do not | #164 |
+| `Site` | `height_meters` and `tower_height_meters` are `site_elevation_meters` and `feedhorn_height_meters` | #182 |
+| `Radial` | `collection_timestamp` is `collection_timestamp_millis` | #182 |
+| `Radial` | Gains `nyquist_velocity_mps` and `unambiguous_range_km` (`Option<f32>`); JSON reads data without them as `None`, bincode does not | #188 |
+| `SweepField` | `elevation_degrees` and `azimuths` are `elevation_angle_degrees` and `azimuth_angles_degrees` | #182 |
+| `VolumeCoveragePattern` | `doppler_velocity_resolution`, `sails_cuts` and `mrle_cuts` are `doppler_velocity_resolution_mps`, `sails_cut_count` and `mrle_cut_count` | #182 |
 | `ElevationCut` | `elevation_angle_degrees` is `f32` (was `f64`) | #182 |
-| `PolarPoint` | `azimuth_degrees` and `elevation_degrees` are renamed `azimuth_angle_degrees` and `elevation_angle_degrees` | #182 |
-| `MomentData` | `first_gate_range`, `gate_interval` and `values` are renamed `first_gate_range_meters`, `gate_interval_meters` and `raw_values`, matching the accessors | #189 |
-| `MomentData` | `raw_values` serializes as a byte string (`serialize_bytes`) instead of a sequence of integers. JSON and other formats without a bytes type still write and read an array of integers; formats with one, such as MessagePack and CBOR, write a binary string | #189 |
-| `SweepField`, `CartesianField`, `VerticalField` | `status` is renamed `statuses`, matching the accessor | #189 |
-| `Site` | `identifier` serializes as the four-character string `Site::identifier()` returns (`"KTLX"`) instead of an array of four byte values (`[75, 84, 76, 88]`); only the string form deserializes | #189 |
-| `CfpStatus` | Variants serialize as their PascalCase names (`"FilterNotApplied"`, `"PointClutterFilterApplied"`, `"DualPolOnlyFilterApplied"`, `{"Reserved": n}`) instead of snake_case (`"filter_not_applied"`, ...) | #189 |
-| `SweepField`, `CartesianField`, `VerticalField`, `MomentData`, `Radial`, `Site`, `Sweep` | Deserialization applies the constructors' validation and fails on data they reject: field `values` and `statuses` must each hold one entry per cell, `raw_values` must hold exactly `gate_count` gates of `data_word_size` bits, each `Radial` moment must sit under its own product's key, `Site` coordinates must be in range, and every radial of a `Sweep` must share its `elevation_number` | #189 |
+| `PolarPoint` | `azimuth_degrees` and `elevation_degrees` are `azimuth_angle_degrees` and `elevation_angle_degrees` | #182 |
+| `MomentData` | `first_gate_range`, `gate_interval` and `values` are `first_gate_range_meters`, `gate_interval_meters` and `raw_values` | #189 |
+| `MomentData` | `raw_values` is a byte string (`serialize_bytes`); JSON and other formats without a bytes type still use an array of integers, MessagePack and CBOR write a binary string | #189 |
+| `SweepField`, `CartesianField`, `VerticalField` | `status` is `statuses` | #189 |
+| `Site` | `identifier` is the four-character string (`"KTLX"`) instead of four byte values (`[75, 84, 76, 88]`); only the string deserializes | #189 |
+| `CfpStatus` | Variants are PascalCase (`"FilterNotApplied"`, `{"Reserved": n}`) instead of snake_case (`"filter_not_applied"`) | #189 |
+| `SweepField`, `CartesianField`, `VerticalField`, `MomentData`, `Radial`, `Site`, `Sweep` | Deserialization validates as the constructors do: one `values` and `statuses` entry per cell, exactly `gate_count` gates of `data_word_size` bits in `raw_values`, each `Radial` moment under its own product's key, in-range `Site` coordinates, and one `elevation_number` across a `Sweep`'s radials | #189 |
 
-Unchanged: `VcpNumber` serializes as its `u16` number (as `VCPNumber` already did), and the field names of `Scan` and
-`Sweep` are the same. From 1.0, every serialized field name equals its accessor's name, every enum variant serializes
-as its PascalCase Rust name, and this representation is stable within 1.x. The `nexrad-model/tests/snapshots/` files
-show the 1.0 serialized form of a real scan.
+Unchanged: `VcpNumber` serializes as its `u16` number, and the field names of `Scan` and `Sweep` are the same. From
+1.0, serialized field names equal accessor names, enum variants serialize as their PascalCase names, and the
+representation is stable within 1.x; `nexrad-model/tests/snapshots/` shows it for a real scan.
 
-Data serialized by `nexrad-model` 0.1.0 is further away: its `Scan` held a `coverage_pattern_number` instead of a
-`coverage_pattern`, its `Site` had `height_meters` where 1.0 has `site_elevation_meters`, its `RadialStatus` used
-`VolumeScanStart`/`VolumeScanEnd`, and its `MomentData` held only scale, offset and values. Regenerate it as well.
-
-`Debug` output also changed (see the [nexrad-model](#nexrad-model-from-100-rc2) section); it was never a stable
-format.
+Data serialized by `nexrad-model` 0.1.0 differs further (`Scan::coverage_pattern_number` instead of
+`coverage_pattern`, `Site::height_meters`, `RadialStatus::VolumeScanStart`/`VolumeScanEnd`, a `MomentData` of only
+scale, offset and values); regenerate it too. `Debug` output also changed and was never a stable format.
 
 ## Upgrading from 0.x
 
-Read this section for the crate split and the mapping of 0.x entry points, then the
-[release-candidate section](#upgrading-from-a-release-candidate) for each crate you use: every release-candidate change
-also applies to you, and those tables are not repeated here.
+Read this section, then the [release-candidate section](#upgrading-from-a-release-candidate) for each crate you use:
+every release-candidate change also applies to you.
 
 ### The crate split
 
-`nexrad` 0.0.3 was a single crate. In 1.0 its responsibilities live in five crates, and `nexrad` is a facade over them:
+`nexrad` 0.0.3 was a single crate; in 1.0 its responsibilities live in five crates under the `nexrad` facade.
+`nexrad-model` 0.1.0, `nexrad-decode` 0.1.2 and `nexrad-data` 0.2.0 came after the split and already have the 1.0
+shape.
 
-| `nexrad` 0.0.3 module | 1.0 home | What it does now |
-|---|---|---|
-| `nexrad::download` (feature `download`, `aws-sdk-s3`) | `nexrad_data::aws::archive`, or `nexrad::list_scans` / `download` / `download_latest` / `download_at` (feature `aws`) | Plain HTTPS through reqwest, no AWS SDK or credentials; runtime-agnostic, WASM-compatible |
-| `nexrad::decompress` | `nexrad_data::volume` (`Record::decompress`), applied automatically by `File::scan` and `nexrad::load` | bzip2 LDM record decompression |
-| `nexrad::decode` | `nexrad_decode::messages` (protocol level) or `nexrad::load` / `nexrad_data::volume::File::scan` (model level) | ICD message parsing for every message type the library supports |
-| `nexrad::model` | `nexrad_decode::messages` (wire-format structs) and `nexrad_model::data` (`Scan`, `Sweep`, `Radial`, `MomentData`) | See [Conceptual changes](#conceptual-changes-since-0x) |
-| `nexrad::file` | `nexrad_data::aws::archive::Identifier`, `nexrad_data::volume::{File, Record}` | File identifiers and volume handling |
-| `nexrad::result` | `nexrad::Error` and each sub-crate's `Error` | One error type per crate, unified in the facade |
-| (the `render` example) | `nexrad_render` | Rendering is a library crate now |
-| (none) | `nexrad_process` | Filters and derived products |
-
-`nexrad-model` 0.1.0, `nexrad-decode` 0.1.2 and `nexrad-data` 0.2.0 were the first versions after the split and already
-have the 1.0 shape. Their sections below list what changed beyond the release-candidate tables.
-
-Feature flags:
+The model replaces raw messages. 0.0.3's `DataFile::elevation_scans()` was a `HashMap<u8, Vec<Message31>>` of type 31
+messages keyed by elevation number, and you applied scale and offset to raw gate bytes yourself. `nexrad::load` returns
+a `Scan` of ordered `sweeps()` of `Radial`s whose `MomentData::iter()` yields decoded `MomentValue`s (`Value(f32)`,
+`BelowThreshold`, `RangeFolded`, `CfpStatus`), and `Sweep::field(product)` gives the dense azimuth × gate `SweepField`
+that processing and rendering consume. `nexrad_decode::messages` still offers protocol-level access and decodes many
+more message types, including legacy type 1 radials, which `File::scan` uses alongside type 31. Downloads use plain
+HTTPS to the public NOAA buckets instead of the `aws-sdk-s3` client and its credentials, region configuration and tokio
+requirement, so they work on any async runtime and build for `wasm32`. Real-time data is a stream: the channel-based
+`poll_chunks` became `chunk_stream(config, sleep)`, a `Stream` of `DownloadedChunk`s with retry policies,
+`assemble_volume` turns a volume's chunks into a `Scan`, and the facade wraps both as `nexrad::stream(site, sleep)` and
+`nexrad::stream_scans(site, sleep)`.
 
 | 0.x | 1.0 |
 |---|---|
+| **`nexrad` 0.0.3 modules** | |
+| `nexrad::download` (feature `download`, `aws-sdk-s3`) | `nexrad_data::aws::archive`, or `nexrad::list_scans` / `download` / `download_latest` / `download_at` (feature `aws`) |
+| `nexrad::decompress` | `nexrad_data::volume` (`Record::decompress`), applied automatically by `File::scan` and `nexrad::load` |
+| `nexrad::decode` | `nexrad_decode::messages` (protocol level) or `nexrad::load` / `nexrad_data::volume::File::scan` (model level) |
+| `nexrad::model` | `nexrad_decode::messages` (wire-format structs) and `nexrad_model::data` (`Scan`, `Sweep`, `Radial`, `MomentData`) |
+| `nexrad::file` | `nexrad_data::aws::archive::Identifier`, `nexrad_data::volume::{File, Record}` |
+| `nexrad::result` | `nexrad::Error` and each sub-crate's `Error` |
+| (the `render` example) | `nexrad_render`, a library crate |
+| (none) | `nexrad_process`: filters and derived products |
+| **Features** | |
 | `nexrad` 0.0.3 `download` | `nexrad` `aws` (or `nexrad-data` `aws`) |
 | `nexrad-data` 0.2.0 `decode` | Removed: decoding is always available |
 | `nexrad-data` 0.2.0 `nexrad-model` | `model` |
@@ -1052,14 +625,10 @@ Feature flags:
 | `nexrad-decode` 0.1.2 `nexrad-model` | `model` (default) |
 | `nexrad-decode` 0.1.2 `uom` (default) | `uom` (opt-in) |
 | `nexrad-model` 0.1.0 `serde`, `chrono`, `uom` | Unchanged |
-
-### nexrad 0.0.3
-
-| 0.0.3 item | 1.0 item |
-|---|---|
+| **`nexrad` 0.0.3 items** | |
 | `decode::decode_file(&Vec<u8>) -> Result<model::DataFile>` | `nexrad::load(Vec<u8>) -> Result<Scan>` (decompresses as needed), or `nexrad_decode::messages::decode_messages(&[u8])` for decompressed message bytes |
 | `decompress::decompress_file(&[u8]) -> Result<Vec<u8>>` | Not needed with `load`/`File::scan`; per record, `nexrad_data::volume::File::new(bytes).records()?` then `Record::decompress()` |
-| `file::is_compressed(&[u8])` | `nexrad_data::volume::Record::compressed()` per LDM record. (`File::compressed()` reports whole-file gzip compression, which 0.0.3 did not handle.) |
+| `file::is_compressed(&[u8])` | `nexrad_data::volume::Record::compressed()` per LDM record (`File::compressed()` reports whole-file gzip compression, which 0.0.3 did not handle) |
 | `download::list_files(&str, &NaiveDate) -> Result<Vec<FileMetadata>>` | `nexrad::list_scans(&str, NaiveDate) -> Result<Vec<Identifier>>` or `nexrad_data::aws::archive::list_files(&str, NaiveDate)` |
 | `download::download_file(&FileMetadata) -> Result<Vec<u8>>` | `nexrad::download(&Identifier) -> Result<Scan>`, or `nexrad_data::aws::archive::download_file(&Identifier) -> Result<File>` |
 | `file::FileMetadata` (`site()`, `date()`, `identifier()`) | `nexrad_data::aws::archive::Identifier` (`site()`, `date_time()`, `name()`) |
@@ -1071,12 +640,8 @@ Feature flags:
 | `model::MessageHeader`, `VolumeHeaderRecord`, `DataBlockHeader` | `nexrad_decode::messages::MessageHeader`, `nexrad_data::volume::Header`, `digital_radar_data::DataBlockId` |
 | `result::Error::{FileError, DeserializationError, DecompressionError}` | `nexrad::Error::Io`, `Decode`, `Data` |
 | `result::Error::{S3GeneralError, S3ListObjectsError, S3GetObjectError, S3StreamingError}` | `nexrad::Error::Data(nexrad_data::Error::Aws(AwsError::..))` and `nexrad::Error::NoDataAvailable` |
-
-### nexrad-model 0.1.0
-
-| 0.1.0 item | 1.0 item |
-|---|---|
-| `Radial::new(..)` | `Radial::builder(..)` (see the [release-candidate table](#nexrad-model-from-100-rc2)) |
+| **`nexrad-model` 0.1.0** (new in 1.0: `Product`, `VolumeCoveragePattern`, `ElevationCut`, `VcpNumber`, `SweepField`, `CartesianField`, `VerticalField`, `GateStatus`, the `geo` module and the `meta::registry` site registry) | |
+| `Radial::new(..)` | `Radial::builder(..)` (see the [nexrad-model table](#nexrad-model-100-rc2-to-10)) |
 | `Radial::specific_differential_phase()` | Removed; `Radial::clutter_filter_power()` and `Radial::moment(Product)` are new |
 | `MomentData::from_fixed_point(scale, offset, values)` | `MomentData::from_fixed_point(product, gate_count, first_gate_range, gate_interval, data_word_size, scale, offset, values)` |
 | `MomentData::values()` | Unchanged; `iter()` avoids the allocation. `MomentValue` gains `CfpStatus` |
@@ -1090,44 +655,19 @@ Feature flags:
 | `Site::feedhorn_height_meters()` / `feedhorn_height()` | Unchanged |
 | `uom` accessors (`Radial::azimuth()`, `Site::feedhorn_height()`, ...) returning `uom::si::f32` | `uom::si::f64` |
 | `Error::ElevationMismatchError` | `Error::ElevationMismatch` |
-
-New in 1.0: `Product`, `VolumeCoveragePattern`, `ElevationCut`, `VcpNumber`, `SweepField`, `CartesianField`,
-`VerticalField`, `GateStatus`, the `geo` module and the `meta::registry` site registry.
-
-### nexrad-decode 0.1.2
-
-0.1.2 decoded from a reader; 1.0 decodes from a byte slice and borrows from it:
-
-```rust
-// 0.1.2
-let messages = nexrad_decode::messages::decode_messages(&mut std::io::Cursor::new(&bytes))?;
-
-// 1.0
-let messages = nexrad_decode::messages::decode_messages(&bytes)?;
-```
-
-| 0.1.2 item | 1.0 item |
-|---|---|
+| **`nexrad-decode` 0.1.2** (decoded from a reader; 1.0 decodes from a byte slice and borrows from it) | |
 | `messages::decode_messages<R: Read + Seek>(&mut R) -> Result<Vec<Message>>` | `messages::decode_messages(&[u8]) -> Result<Vec<Message<'_>>>` |
 | `messages::decode_message_header(&mut R)` | `messages::MessageHeader::parse(&[u8])` |
 | `messages::decode_message_contents(&mut R, MessageType)`, `digital_radar_data::decode_digital_radar_data`, `rda_status_data::decode_rda_status_message`, `volume_coverage_pattern::decode_volume_coverage_pattern`, `clutter_filter_map::decode_clutter_filter_map` | `decode_messages`, which decodes every supported message type |
 | `messages::message_header::MessageHeader` (module) | `messages::MessageHeader` |
 | `MessageContents::Other` for most types | Typed variants for most message types (`DigitalRadarDataLegacy`, `ConsoleMessage`, `ClutterCensorZones`, `RequestForData`, ...); `Other` remains for the rest |
-| Public struct fields on `digital_radar_data::{Message, Header, VolumeDataBlock, ..}` | Accessor methods: `m.header()`, `m.volume_data_block()`, `m.reflectivity_data_block()`, ... |
+| Public struct fields on `digital_radar_data::{Message, Header, VolumeDataBlock, ..}` | Accessor methods: `m.header()`, `m.volume_data_block()`, `m.reflectivity_data_block()`, ...; the 0.1.2 names (`azimuth_angle()`, `latitude()`, `lrtup()`, `site_height()`, ...) follow the [nexrad-decode tables](#nexrad-decode-100-rc3-to-10): plain numbers gain a unit suffix and `uom` quantities keep the bare name |
 | `digital_radar_data::Message::specific_diff_phase_data_block` | Removed |
 | `digital_radar_data::ScaledMomentValue`, `GenericDataBlock::decoded_values()` | `DataBlock::moment_data()?` then `MomentData::iter()` (feature `model`) |
-| `summarize` (`messages`, `MessageSummary`, `ScanSummary`) | Removed; see [the release-candidate section](#nexrad-decode-from-100-rc3) |
+| `summarize` (`messages`, `MessageSummary`, `ScanSummary`) | Removed; see [nexrad-decode](#nexrad-decode-from-100-rc3) |
 | `Error::FileError`, `DeserializationError` | Removed; decoding no longer does I/O or uses bincode |
 | `Error::DecodingError(String)`, `MessageMissingDateError` | `Error::Decoding(String)`, `MessageMissingDate` |
-
-The 0.1.2 accessor names (`azimuth_angle()`, `latitude()`, `lrtup()`, `site_height()`, ...) follow the 1.0 convention
-after the renames listed in the [release-candidate section](#nexrad-decode-from-100-rc3) and
-[appendix](#nexrad-decode-100-rc3-to-10): plain numbers gain a unit suffix and `uom` quantities keep the bare name.
-
-### nexrad-data 0.2.0
-
-| 0.2.0 item | 1.0 item |
-|---|---|
+| **`nexrad-data` 0.2.0** | |
 | `volume::File::header() -> Result<Header>` | `-> Option<&Header>` |
 | `volume::File::records() -> Vec<Record>` | `-> Result<Vec<Record>>` |
 | `volume::File::data() -> &Vec<u8>` | `-> &[u8]` |
@@ -1146,28 +686,10 @@ after the renames listed in the [release-candidate section](#nexrad-decode-from-
 | `result::Error::{DeserializationError, DecompressionError}` | Removed |
 | `result::aws::AWSError::*Error` variants (`S3ListObjectsError`, `DateTimeError`, ...) | `AwsError::*` without the suffix (`S3ListObjects`, `DateTime`, ...); `PollingAsyncError` removed |
 
-### Conceptual changes since 0.x
-
-- **Model, not messages.** 0.0.3 gave you `DataFile::elevation_scans()`, a `HashMap<u8, Vec<Message31>>` of raw type 31
-  messages keyed by elevation number, and you applied scale and offset to raw gate bytes yourself. In 1.0,
-  `nexrad::load` returns a `Scan` with ordered `sweeps()`, each holding `Radial`s whose moments are `MomentData`
-  values; `MomentData::iter()` yields decoded `MomentValue`s (`Value(f32)`, `BelowThreshold`, `RangeFolded`,
-  `CfpStatus`). `Sweep::field(product)` turns a sweep into a `SweepField`, a dense azimuth × gate grid that processing
-  and rendering consume. Protocol-level access is still there in `nexrad_decode::messages` when you need it.
-- **Many more message types are decoded**, including legacy type 1 radials, which `File::scan` now uses alongside
-  type 31.
-- **Downloads use plain HTTPS.** The `aws-sdk-s3` client (with its credentials, region configuration and tokio
-  requirement) is gone. `nexrad_data::aws` talks to the public NOAA buckets through reqwest, works on any async runtime,
-  and builds for `wasm32`.
-- **Real-time data is a stream.** The channel-based `poll_chunks` became `chunk_stream(config, sleep)`, a `Stream` of
-  `DownloadedChunk`s with retry policies, and `assemble_volume` turns a volume's chunks into a `Scan`. The facade's
-  `nexrad::stream(site, sleep)` wraps it, and `nexrad::stream_scans(site, sleep)` yields the assembled scans.
-
 ## Worked examples
 
-Each flow is shown for the 0.x releases where they had an equivalent, the last release candidate and 1.0. The 1.0
-versions are compiled against the 1.0 crates; the older versions are taken from the documentation and examples of those
-releases.
+Each flow is shown for the 0.x releases that had an equivalent, the last release candidate and 1.0. The 1.0 versions
+compile against the 1.0 crates; the older ones come from those releases' documentation and examples.
 
 ### Load a local Archive II file
 
@@ -1268,12 +790,12 @@ fn main() -> nexrad::Result<()> {
             let Some(reflectivity) = radial.moment(Product::Reflectivity) else {
                 continue;
             };
-            println!("{} gates", reflectivity.gate_count()); // inherent, no trait import
+            println!("{} gates", reflectivity.gate_count());
             for value in reflectivity.iter() {
                 match value {
                     MomentValue::Value(dbz) => { let _ = dbz; }
                     MomentValue::BelowThreshold | MomentValue::RangeFolded => {}
-                    MomentValue::CfpStatus(_) => {} // only for Product::ClutterFilterPower
+                    MomentValue::CfpStatus(_) => {}
                 }
             }
         }
@@ -1290,7 +812,7 @@ fn main() -> nexrad::Result<()> {
 ```
 
 Without the facade, `nexrad_data::volume::File::new(std::fs::read(path)?).decompress()?.scan()?` returns the same
-`Scan` (`decompress` handles gzip-wrapped files; LDM records are decompressed by `scan`).
+`Scan` (`decompress` handles gzip-wrapped files; `scan` decompresses LDM records).
 
 ### List and download from AWS
 
@@ -1390,12 +912,11 @@ async fn main() -> nexrad::Result<()> {
     let scans = nexrad::list_scans("KDMX", date).await?;
     if let Some(id) = scans.last() {
         println!("downloading {}", id.name());
-        let scan = nexrad::download(id).await?; // by reference, no clone
+        let scan = nexrad::download(id).await?;
         println!("{} sweeps", scan.sweeps().len());
     }
     // The newest archived volume, whatever the date: nexrad::download_latest("KDMX").await?
 
-    // Real-time: pass the runtime's sleep function.
     let stream = nexrad::stream("KDMX", |d| tokio::time::sleep(d));
     let mut stream = std::pin::pin!(stream);
     while let Some(chunk) = stream.next().await {
@@ -1407,8 +928,9 @@ async fn main() -> nexrad::Result<()> {
 }
 ```
 
-With `nexrad-data` directly, the archive calls are `list_files("KDMX", date)` and `download_file(id).await?.decompress()?`
-followed by `.scan()?`. For real time, configure retries on a `PollConfig` and assemble chunks into scans:
+With `nexrad-data` directly, the archive calls are `list_files("KDMX", date)` and
+`download_file(id).await?.decompress()?.scan()?`; for real time, configure retries on a `PollConfig` and assemble
+chunks into scans (on `wasm32`, pass a timer such as `|d| gloo_timers::future::sleep(d)`):
 
 ```rust
 use futures_util::StreamExt;
@@ -1436,12 +958,10 @@ async fn poll() -> nexrad::data::Result<()> {
 }
 ```
 
-On `wasm32`, pass a timer future instead of tokio's, for example `|d| gloo_timers::future::sleep(d)`.
-
 ### Render a reflectivity sweep to PNG
 
 0.x had no rendering library; the `render` example in `nexrad` 0.0.3 rasterised `Message31` gates by hand into a PPM
-file. Use the 1.0 code below.
+file.
 
 **1.0.0-rc.4**
 
@@ -1482,12 +1002,11 @@ fn main() -> nexrad::Result<()> {
         .field(Product::Reflectivity)
         .ok_or_else(|| std::io::Error::other("no reflectivity"))?;
 
-    let scale = default_scale(Product::Reflectivity); // a ColorScale (the NWS reflectivity scale)
-    let options = RenderOptions::new(1024, 1024); // u32 dimensions
+    let scale = default_scale(Product::Reflectivity); // a ColorScale; nws_reflectivity_scale().into() is the same
+    let options = RenderOptions::new(1024, 1024);
     let result = render_sweep(&field, &scale, &options)?;
-    result.save("reflectivity.png")?; // Error::Image(ImageError) on failure
+    result.save("reflectivity.png")?;
 
-    // Polar-only metadata is optional in 1.0:
     if let Some(px) = result.metadata().km_to_pixel_distance(100.0) {
         println!("100 km is {px} pixels");
     }
@@ -1495,89 +1014,86 @@ fn main() -> nexrad::Result<()> {
 }
 ```
 
-`default_scale(product)` returns the standard scale for each product as a `ColorScale`; the individual scale functions
-(`nws_reflectivity_scale()`, `velocity_scale()`, ...) still return a `DiscreteColorScale`, which converts with
-`.into()`. To keep rendering an arbitrary radial slice, build the field with
-`SweepField::from_radials(radials, product)`.
-
 ## Appendix: complete change tables
 
-These tables list every removed, renamed or re-typed public item between each baseline and 1.0, grouped by type. Added
-items that replace nothing are in the CHANGELOGs.
+Every removed, renamed or re-typed public item between each release candidate and 1.0, with the pull request that
+changed it. Added items that replace nothing are in the CHANGELOGs.
 
 ### nexrad-model 1.0.0-rc.2 to 1.0
 
 <details>
 <summary>Show the table</summary>
 
-| 1.0.0-rc.2 | 1.0 |
-|---|---|
-| `BinaryData<T>` (and its impls) | Not public |
-| `data::VCPNumber` | `data::VcpNumber`, `#[non_exhaustive]`, variants named by pattern number (below) |
-| `data::CFPStatus` (variants unchanged) | `data::CfpStatus` |
-| `data::CFPMomentData` (`from_fixed_point`, `iter`, `values`, `DataMoment` impl) | `data::MomentData` with `Product::ClutterFilterPower` |
-| `data::CFPMomentValue::{Status, Value}` | `data::MomentValue::{CfpStatus, Value}` |
-| `data::DataMoment` trait (`data_word_size`, `first_gate_range`, `first_gate_range_km`, `gate_count`, `gate_interval`, `gate_interval_km`, `offset`, `raw_gate_values`, `raw_values`, `scale`) | Inherent methods on `MomentData` |
-| `data::ChannelConfiguration::SZ2Phase` | `Sz2Phase` |
-| `data::WaveformType::{CS, CDW, CDWO, B, SPP}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair}` |
-| `data::RadialStatus::ElevationStartVCPFinal` | `ElevationStartVcpFinal` |
-| `data::Product` | `#[non_exhaustive]` |
-| `data::Product::moment_data(&Radial)`, `cfp_moment_data(&Radial)` | `Radial::moment(Product)` |
-| `data::MomentData::from_fixed_point(u16, u16, u16, u8, f32, f32, Vec<u8>) -> Self` | `from_fixed_point(Product, usize, u16, u16, u8, f32, f32, Vec<u8>) -> Result<Self>` |
-| `data::MomentData::gate_count() -> u16` | `-> usize` |
-| `data::Radial::new(i64, u16, f32, f32, RadialStatus, u8, f32, Option<MomentData> × 6, Option<CFPMomentData>)` | `Radial::builder(u16, f32, u8, f32)` → `RadialBuilder`, `build() -> Result<Radial>` |
-| `data::Sweep::new(u8, Vec<Radial>) -> Self` | `-> Result<Self>` |
-| `data::Radial::clutter_filter_power() -> Option<&CFPMomentData>` | `-> Option<&MomentData>` |
-| `data::Radial::{azimuth, azimuth_spacing, elevation_angle}() -> uom::si::f32::Angle` | `-> uom::si::f64::Angle` |
-| `data::Sweep::elevation_angle() -> Option<uom::si::f32::Angle>` | `-> Option<uom::si::f64::Angle>` |
-| `data::Scan::coverage_pattern_number() -> VCPNumber` | `-> VcpNumber` |
-| `data::VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}`; adds `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` |
-| `data::Radial` (no PRF context) | Adds `nyquist_velocity_mps()`, `unambiguous_range_km() -> Option<f32>` (with `uom`, `nyquist_velocity()`, `unambiguous_range()`); `RadialBuilder::{nyquist_velocity_mps, unambiguous_range_km}` |
-| `data::Scan` | Adds `elevation_cut(&Sweep) -> Option<&ElevationCut>`, `sweeps_with_waveform(WaveformType) -> impl Iterator<Item = &Sweep>` |
-| `data::ElevationCut::new(f64, ChannelConfiguration, WaveformType, ..)` (22 arguments) | `ElevationCut::builder(f32, WaveformType, ChannelConfiguration)` → `ElevationCutBuilder` |
-| `data::ElevationCut::elevation_angle_degrees() -> f64` | `-> f32` |
-| `data::VolumeCoveragePattern::new(u16, ..)` (14 arguments) | `VolumeCoveragePattern::builder(VcpNumber)` → `VolumeCoveragePatternBuilder` |
-| `data::VolumeCoveragePattern::pattern_number() -> VCPNumber` | `-> VcpNumber` |
-| `data::SweepField::new_empty(label, unit, f32, Vec<f32>, f32, f64, f64, usize)` | `SweepField::builder(label, unit)` → `SweepFieldBuilder`, `build() -> Result<SweepField>` |
-| `data::SweepField::value_at_polar(f32, f64)` | `value_at_polar(f64, f64)` |
-| `data::SweepField::elevation_degrees()` | `elevation_angle_degrees()` |
-| `data::SweepField::azimuths() -> &[f32]` | `azimuth_angles_degrees() -> &[f32]` |
-| `data::SweepField::radial_status_mut(usize) -> &mut [GateStatus]` | `radial_statuses_mut(usize) -> Option<&mut [GateStatus]>` |
-| `data::SweepField::radial_values(usize) -> &[f32]`, `radial_values_mut(usize) -> &mut [f32]`, `radial_statuses(usize) -> &[GateStatus]` | `-> Option<&[f32]>`, `-> Option<&mut [f32]>`, `-> Option<&[GateStatus]>` |
-| `data::SweepField::get(usize, usize) -> (f32, GateStatus)` | `-> Option<(f32, GateStatus)>` |
-| `data::SweepField::set(usize, usize, f32, GateStatus)` | `-> Result<()>` |
-| `data::CartesianField::new(label, unit, GeoExtent, usize, usize) -> Self` | `-> Result<Self>` |
-| `data::CartesianField::get(usize, usize) -> (f32, GateStatus)`, `set(..)` | `get -> Option<(f32, GateStatus)>`, `set -> Result<()>` |
-| `data::VerticalField::new(label, unit, (f64, f64), (f64, f64), usize, usize) -> Self` | `-> Result<Self>` |
-| `data::VerticalField::get(usize, usize) -> (f32, GateStatus)`, `set(..)` | `get -> Option<(f32, GateStatus)>`, `set -> Result<()>` |
-| `data::GateStatus::{Valid, BelowThreshold, RangeFolded, NoData}` | Adds `Filtered`; still exhaustive |
-| `impl From<&data::MomentValue> for data::GateStatus` | `impl From<data::MomentValue> for data::GateStatus` |
-| `data::Radial::collection_timestamp() -> i64` | `collection_timestamp_millis() -> i64` |
-| `data::VolumeCoveragePattern::doppler_velocity_resolution() -> f32` | `doppler_velocity_resolution_mps() -> f32` |
-| `data::VolumeCoveragePattern::{sails_cuts, mrle_cuts}() -> u8` | `{sails_cut_count, mrle_cut_count}() -> u8` |
-| `geo::PolarPoint::{azimuth_degrees, elevation_degrees}: f32` | `{azimuth_angle_degrees, elevation_angle_degrees}: f64` |
-| `geo::RadarCoordinateSystem::gate_location(f32, f32, usize, f64, f64)` | `gate_location(f64, f64, usize, f64, f64)` |
-| `geo::RadarCoordinateSystem::geo_to_polar(GeoPoint, f32)` (flat-earth range) | `geo_to_polar(GeoPoint, f64)`, the exact inverse of `polar_to_geo`; ranges change |
-| `geo::RadarCoordinateSystem` | Adds `beam_height_meters(f64, f64) -> f64`, `ground_range_km(f64, f64) -> f64` |
-| `meta::Site::new([u8; 4], f32, f32, i16, u16)` | `Site::builder([u8; 4], f64, f64)` → `SiteBuilder`, `build() -> Result<Site>` |
-| `meta::Site::identifier() -> &[u8; 4]` | `-> &str` |
-| `meta::Site::identifier_string() -> String` | Removed; `identifier()` |
-| `meta::Site::{latitude, longitude}() -> f32` | `-> f64` |
-| `meta::Site::height_meters() -> i16` | `site_elevation_meters() -> i16` |
-| `meta::Site::tower_height_meters() -> u16` | `feedhorn_height_meters() -> u16` |
-| `meta::Site::{height, tower_height}() -> uom::si::f32::Length` | `{site_elevation, feedhorn_height}() -> uom::si::f64::Length` |
-| `meta::registry::SiteEntry` | `#[non_exhaustive]` |
-| `meta::registry::SiteEntry::{latitude, longitude}: f32` | `f64` |
-| `meta::registry::SiteEntry::elevation_meters: i16` | `site_elevation_meters: i16` |
-| `meta::registry::nearest_site(f32, f32)` | `nearest_site(f64, f64)` |
-| `meta::registry::SiteEntry::to_site() -> Site` | `-> Result<Site>` |
-| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, reason }`, `MomentDataLength { expected, actual }`, `InvalidSite { parameter, reason }`, `IndexOutOfBounds { row, column, rows, columns }` |
-| `result::Error::ElevationMismatch` (unit variant) | `ElevationMismatch { expected: u8, actual: u8 }` |
-| serde: `data::MomentData` keys `first_gate_range`, `gate_interval`, `values` (a sequence of integers) | `first_gate_range_meters`, `gate_interval_meters`, `raw_values` (a byte string) |
-| serde: `data::{SweepField, CartesianField, VerticalField}` key `status` | `statuses` |
-| serde: `meta::Site` key `identifier` as `[u8; 4]` (an array of four numbers) | A four-character string (`"KTLX"`) |
-| serde: `data::CfpStatus` variants in snake_case | PascalCase variant names |
-| serde: `Deserialize` for `data::{SweepField, CartesianField, VerticalField, MomentData, Radial, Sweep}` and `meta::Site` (no validation) | Validates as the constructors and builders do |
+| 1.0.0-rc.2 | 1.0 | PR |
+|---|---|---|
+| `BinaryData<T>` (and its impls) | Not public; it appeared in no public signature | #162 |
+| `data::VCPNumber` | `data::VcpNumber`, `#[non_exhaustive]`, variants named by pattern number (below) | #155, #160, #188 |
+| `data::CFPStatus` (variants unchanged) | `data::CfpStatus` | #160 |
+| `data::CFPMomentData` (`from_fixed_point`, `iter`, `values`, `DataMoment` impl) | `data::MomentData` with `Product::ClutterFilterPower` | #170 |
+| `data::CFPMomentValue::{Status, Value}` | `data::MomentValue::{CfpStatus, Value}` | #170 |
+| `data::DataMoment` trait (`data_word_size`, `first_gate_range`, `first_gate_range_km`, `gate_count`, `gate_interval`, `gate_interval_km`, `offset`, `raw_gate_values`, `raw_values`, `scale`) | Inherent methods on `MomentData`, same names and signatures; remove the import | #170 |
+| `data::ChannelConfiguration::SZ2Phase` | `Sz2Phase` | #160 |
+| `data::WaveformType::{CS, CDW, CDWO, B, SPP}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair}` | #160 |
+| `data::RadialStatus::ElevationStartVCPFinal` | `ElevationStartVcpFinal` | #160 |
+| `data::Product` | `#[non_exhaustive]` | #155 |
+| `data::Product::moment_data(&Radial)`, `cfp_moment_data(&Radial)` | `Radial::moment(Product)` | #170 |
+| `data::MomentData::from_fixed_point(u16, u16, u16, u8, f32, f32, Vec<u8>) -> Self` | `from_fixed_point(Product, usize, u16, u16, u8, f32, f32, Vec<u8>) -> Result<Self>` | #170, #185 |
+| `data::MomentData::gate_count() -> u16` | `-> usize` | #185 |
+| `data::Radial::new(i64, u16, f32, f32, RadialStatus, u8, f32, Option<MomentData> × 6, Option<CFPMomentData>)` | `Radial::builder(u16, f32, u8, f32)` → `RadialBuilder` with `collection_timestamp_millis`, `azimuth_spacing_degrees`, `radial_status`, `moment(data)` (replacing the per-product setters), `build() -> Result<Radial>` | #165, #170, #185 |
+| `data::Sweep::new(u8, Vec<Radial>) -> Self` | `-> Result<Self>` | #185 |
+| `data::Radial::clutter_filter_power() -> Option<&CFPMomentData>` | `-> Option<&MomentData>` | #170 |
+| `data::Radial::{azimuth, azimuth_spacing, elevation_angle}() -> uom::si::f32::Angle` | `-> uom::si::f64::Angle` | #164 |
+| `data::Sweep::elevation_angle() -> Option<uom::si::f32::Angle>` | `-> Option<uom::si::f64::Angle>` | #164 |
+| `data::Scan::coverage_pattern_number() -> VCPNumber` | `-> VcpNumber` | #160 |
+| `data::VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}`, as in `nexrad_decode::messages::VcpNumber`; `Unknown(11)`, `Unknown(21)`, `Unknown(121)`, `Unknown(211)`, `Unknown(221)` are `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` | #188 |
+| `data::Radial` (no PRF context) | Adds `nyquist_velocity_mps()`, `unambiguous_range_km() -> Option<f32>` (with `uom`, `nyquist_velocity()`, `unambiguous_range()`); `RadialBuilder::{nyquist_velocity_mps, unambiguous_range_km}` | #188 |
+| `data::Scan` | Adds `elevation_cut(&Sweep) -> Option<&ElevationCut>`, `sweeps_with_waveform(WaveformType) -> impl Iterator<Item = &Sweep>` | #188 |
+| `data::ElevationCut::new(f64, ChannelConfiguration, WaveformType, ..)` (22 arguments) | `ElevationCut::builder(f32, WaveformType, ChannelConfiguration)` → `ElevationCutBuilder`; note the argument order | #165, #182 |
+| `data::ElevationCut::elevation_angle_degrees() -> f64` | `-> f32` | #182 |
+| `data::VolumeCoveragePattern::new(u16, ..)` (14 arguments) | `VolumeCoveragePattern::builder(VcpNumber)` → `VolumeCoveragePatternBuilder`; convert a number with `VcpNumber::from_number(n)` | #165 |
+| `data::VolumeCoveragePattern::pattern_number() -> VCPNumber` | `-> VcpNumber` | #160 |
+| `data::SweepField::new_empty(label, unit, f32, Vec<f32>, f32, f64, f64, usize)` | `SweepField::builder(label, unit)` → `SweepFieldBuilder`, `build() -> Result<SweepField>`, which validates the geometry | #165, #185 |
+| `data::SweepField::value_at_polar(f32, f64)` | `value_at_polar(f64, f64)` | #164 |
+| `data::SweepField::elevation_degrees()` | `elevation_angle_degrees()` | #182 |
+| `data::SweepField::azimuths() -> &[f32]` | `azimuth_angles_degrees() -> &[f32]` | #182 |
+| `data::SweepField::radial_status_mut(usize) -> &mut [GateStatus]` | `radial_statuses_mut(usize) -> Option<&mut [GateStatus]>` | #182, #185 |
+| `data::SweepField::radial_values(usize) -> &[f32]`, `radial_values_mut(usize) -> &mut [f32]`, `radial_statuses(usize) -> &[GateStatus]` | `-> Option<&[f32]>`, `-> Option<&mut [f32]>`, `-> Option<&[GateStatus]>` | #185 |
+| `data::SweepField::get(usize, usize) -> (f32, GateStatus)` | `-> Option<(f32, GateStatus)>` | #185 |
+| `data::SweepField::set(usize, usize, f32, GateStatus)` | `-> Result<()>` | #185 |
+| `data::CartesianField::new(label, unit, GeoExtent, usize, usize) -> Self` | `-> Result<Self>` | #185 |
+| `data::CartesianField::get(usize, usize) -> (f32, GateStatus)`, `set(..)` | `get -> Option<(f32, GateStatus)>`, `set -> Result<()>` | #185 |
+| `data::VerticalField::new(label, unit, (f64, f64), (f64, f64), usize, usize) -> Self` | `-> Result<Self>` | #185 |
+| `data::VerticalField::get(usize, usize) -> (f32, GateStatus)`, `set(..)` | `get -> Option<(f32, GateStatus)>`, `set -> Result<()>` | #185 |
+| `data::GateStatus::{Valid, BelowThreshold, RangeFolded, NoData}` | Adds `Filtered`; still exhaustive | #187 |
+| `impl From<&data::MomentValue> for data::GateStatus` | `impl From<data::MomentValue> for data::GateStatus` | #187 |
+| `data::Radial::collection_timestamp() -> i64` | `collection_timestamp_millis() -> i64`, milliseconds since the Unix epoch, UTC | #182 |
+| `data::VolumeCoveragePattern::doppler_velocity_resolution() -> f32` | `doppler_velocity_resolution_mps() -> f32` | #182 |
+| `data::VolumeCoveragePattern::{sails_cuts, mrle_cuts}() -> u8` | `{sails_cut_count, mrle_cut_count}() -> u8` | #182 |
+| `geo::PolarPoint::{azimuth_degrees, elevation_degrees}: f32` | `{azimuth_angle_degrees, elevation_angle_degrees}: f64` | #164, #182 |
+| `geo::RadarCoordinateSystem::gate_location(f32, f32, usize, f64, f64)` | `gate_location(f64, f64, usize, f64, f64)` | #164 |
+| `geo::RadarCoordinateSystem::geo_to_polar(GeoPoint, f32)` (flat-earth range) | `geo_to_polar(GeoPoint, f64)`, the exact inverse of `polar_to_geo`; ranges change | #164, #188 |
+| `geo::RadarCoordinateSystem` | Adds `beam_height_meters(f64, f64) -> f64`, `ground_range_km(f64, f64) -> f64` | #188 |
+| `meta::Site::new([u8; 4], f32, f32, i16, u16)` | `Site::builder([u8; 4], f64, f64)` → `SiteBuilder` with `site_elevation_meters`, `feedhorn_height_meters`, `build() -> Result<Site>` | #164, #165, #182, #185 |
+| `meta::Site::identifier() -> &[u8; 4]` | `-> &str` | #185 |
+| `meta::Site::identifier_string() -> String` | Removed; `identifier()` | #185 |
+| `meta::Site::{latitude, longitude}() -> f32` | `-> f64` | #164 |
+| `meta::Site::height_meters() -> i16` | `site_elevation_meters() -> i16`, above mean sea level | #182 |
+| `meta::Site::tower_height_meters() -> u16` | `feedhorn_height_meters() -> u16`, above ground level | #182 |
+| `meta::Site::{height, tower_height}() -> uom::si::f32::Length` | `{site_elevation, feedhorn_height}() -> uom::si::f64::Length` | #164, #182 |
+| `meta::registry::SiteEntry` | `#[non_exhaustive]` | #182 |
+| `meta::registry::SiteEntry::{latitude, longitude}: f32` | `f64` | #164 |
+| `meta::registry::SiteEntry::elevation_meters: i16` | `site_elevation_meters: i16` | #182 |
+| `meta::registry::nearest_site(f32, f32)` | `nearest_site(f64, f64)` | #164 |
+| `meta::registry::SiteEntry::to_site() -> Site` | `-> Result<Site>`; every registry entry is valid | #185 |
+| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, reason }`, `MomentDataLength { expected, actual }`, `InvalidSite { parameter, reason }`, `IndexOutOfBounds { row, column, rows, columns }` | #155, #185 |
+| `result::Error::ElevationMismatch` (unit variant) | `ElevationMismatch { expected: u8, actual: u8 }` | #185 |
+| serde: `data::MomentData` keys `first_gate_range`, `gate_interval`, `values` (a sequence of integers) | `first_gate_range_meters`, `gate_interval_meters`, `raw_values` (a byte string) | #189 |
+| serde: `data::{SweepField, CartesianField, VerticalField}` key `status` | `statuses` | #189 |
+| serde: `meta::Site` key `identifier` as `[u8; 4]` (an array of four numbers) | A four-character string (`"KTLX"`) | #189 |
+| serde: `data::CfpStatus` variants in snake_case | PascalCase variant names | #189 |
+| serde: `Deserialize` for `data::{SweepField, CartesianField, VerticalField, MomentData, Radial, Sweep}` and `meta::Site` (no validation) | Validates as the constructors and builders do | #189 |
+
+The facade's `extract_field` and friends moved to model methods; see the [nexrad table](#nexrad-100-rc4-to-10).
 
 </details>
 
@@ -1590,119 +1106,119 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 
 **Types and enum variants**
 
-| 1.0.0-rc.3 | 1.0 |
-|---|---|
-| `MessageType::RDAStatusData`, `RDAConsoleMessage`, `RDAVolumeCoveragePattern`, `RDAControlCommands`, `RDAAdaptationData`, `RDAPRFData`, `RDALogData` | `Rda...` (`RdaPrfData` for `RDAPRFData`) |
-| `MessageType::RDADigitalRadarDataGenericFormat`, `RDADigitalRadarData`, `RDAPerformanceMaintenanceData`, `RDAClutterFilterBypassMap`, `RDAClutterFilterMap` | `DigitalRadarData`, `DigitalRadarDataLegacy`, `PerformanceMaintenanceData`, `ClutterFilterBypassMap`, `ClutterFilterMap` |
-| `MessageType::RPGVolumeCoveragePattern`, `RPGConsoleMessage` | `RpgVolumeCoveragePattern`, `RpgConsoleMessage` |
-| `MessageType::RPGClutterCensorZones`, `RPGRequestForData` | `ClutterCensorZones`, `RequestForData` |
-| `MessageType::RDALoopBackTest`, `RPGLoopBackTest` | `RdaLoopbackTest`, `RpgLoopbackTest` |
-| `MessageContents::VolumeCoveragePattern` | `RdaVolumeCoveragePattern` |
-| `MessageType::Spare1` (14), `ReservedFAARMSOnly1..5` (16, 17, 24, 25, 26), `Reserved1..5` (20–23, 29) | `MessageType::Reserved(u8)` holding the type number |
-| `MessageType` with `#[repr(u8)]` discriminants | No discriminants; `number()`, `from_number(u8)`; `#[non_exhaustive]` |
-| `MessageContents::RDAStatusData`, `RDAControlCommands`, `RDAPRFData`, `RDALogData`, `RDAAdaptationData` | `RdaStatusData`, `RdaControlCommands`, `RdaPrfData`, `RdaLogData`, `RdaAdaptationData`; `#[non_exhaustive]` |
-| `RedundantChannel::ORDASingleChannel`, `ORDARedundantChannel1`, `ORDARedundantChannel2` | `OrdaSingleChannel`, `OrdaRedundantChannel1`, `OrdaRedundantChannel2`; `#[non_exhaustive]` |
-| `MessageHeader` (`#[repr(C)]`, public fields, zerocopy traits) | `MessageHeader<'a>` with accessors; `parse`, `SIZE`, `into_owned` |
-| `MessageHeaders::Single(&'a MessageHeader)`, `Multiple(Vec<&'a MessageHeader>)` | `Single(MessageHeader<'a>)`, `Multiple(Vec<MessageHeader<'a>>)` |
-| `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, VCP35, VCP112, VCP212, VCP215, Unknown}` | `VcpNumber::{Vcp11, Vcp12, Vcp21, Vcp31, Vcp32, Vcp35, Vcp112, Vcp121, Vcp211, Vcp212, Vcp215, Vcp221, Unknown}` |
-| `digital_radar_data::DataMomentPointer`, `DataMomentPointerType`, `DataMomentGenericPointerType` | Removed |
-| `digital_radar_data::CompressionIndicator::CompressedBZIP2`, `CompressedZLIB`, `FutureUse` | `CompressedBzip2`, `CompressedZlib`, `Unknown(u8)` |
-| `digital_radar_data::ProcessingStatus::RxRNoise`, `CBT`, `Other(u16)` | `RxrNoise`, `Cbt`, `Unknown(u16)` |
-| `digital_radar_data::SpotBlankingStatus` | `SpotBlankingFlags` |
-| `digital_radar_data::RadialStatus::ElevationStartVCPFinal` | `ElevationStartVcpFinal` |
-| `digital_radar_data::DataBlockName` | `#[non_exhaustive]` |
-| `rda_status_data::RDAStatus`, `RDABuildNumber`, `RMSControlStatus` | `RdaStatus`, `RdaBuildNumber`, `RmsControlStatus` |
-| `rda_status_data::RMSControlStatus::{NonRMS, RMSInControl, RDAInControl}` | `RmsControlStatus::{NonRms, RmsInControl, RdaInControl}` |
-| `rda_status_data::CommandAcknowledgement::RemoteVCPReceived` | `RemoteVcpReceived` |
-| `rda_status_data::TransitionPowerSourceStatus::OK`, `Unknown`, `Other(u16)` | `Ok`, `Unknown(u16)` (code 4 is `Unknown(4)`) |
-| `rda_status_data::SpotBlankingStatus::Other(u8)` | `Unknown(u16)` |
-| `rda_status_data::RDABuildNumber::{Build12_0, .., Build24_0, Unknown(f32)}`, `as_float()`, `is_known()` | `RdaBuildNumber` newtype: `from_raw(u16)`, `raw()`, `major()`, `minor()`, `Display`, `Ord` |
-| `rda_status_data::alarm::Message`, `alarm::get_alarm_message(u16)` | `alarm::Definition`, `alarm::definition(u16)` |
-| `rda_status_data::VolumeCoveragePatternNumber` (`number() -> i16`, `local()`, `remote()`) | `VcpSelection` (`number() -> VcpNumber`, `source() -> VcpSource`) |
-| `volume_coverage_pattern::ChannelConfiguration::SZ2Phase`, `UnknownPhase` | `Sz2Phase`, `Unknown(u8)` |
-| `volume_coverage_pattern::PulseWidth::Unknown`, `PatternType::Unknown` | `PulseWidth::Unknown(u8)`, `PatternType::Unknown(u16)` |
-| `volume_coverage_pattern::WaveformType::{CS, CDW, CDWO, B, SPP, Unknown}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair, Unknown(u8)}` |
-| `clutter_censor_zones::Message::regions() -> &[raw Region]` (public `Integer2`/`Code2` fields) | `-> &[clutter_censor_zones::Region<'a>]` with accessors and `OperatorSelectCode` |
-| `summarize` module (`messages`, `MessageSummary`, `MessageGroupSummary`, `VCPInfo`, `VCPElevationInfo`, `RDAStatusInfo`) | Removed |
-| `result::Error::Io(std::io::Error)`, `From<std::io::Error>` | Removed |
-| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `MissingCoveragePattern` (feature `model`), `SegmentOutOfSequence` and (feature `model`) `Model(nexrad_model::Error)` |
-| `result::Error::Decoding(String)`, `InvalidMessageLength { message_type, delta }`, `DataSpansSegmentBoundary { position }` | Removed |
-| `result::Error::UnexpectedEof`, `MessageMissingDate` | `UnexpectedEof { offset }`, `MessageMissingDate { message_type }` |
-| `result::Error::UnknownDataBlockType { block_type: String }` | `UnknownDataBlockType { block_type: [u8; 3], offset }` |
-| `MessageContents::Other` | `MessageContents::Other { message_type: MessageType, data: Cow<'a, [u8]> }` |
-| `digital_radar_data::DataBlock<'a, T>: Deref<Target = T>` | No `Deref`; `inner()`, `into_inner()` |
-| `decode_messages(&[u8]) -> Result<Vec<Message>>`, skipping undecodable messages | Same signature, returns the first error; also at `nexrad_decode::decode_messages` |
-| (new) | `iter_messages(&[u8]) -> MessageIter`, `MessageIter::offset()`; root re-exports of `Message`, `MessageContents`, `MessageIter`, `MessageType` |
-| (new) | `Message::into_owned()`, `MessageContents::into_owned()`, `MessageContents::message_type()`, `MessageHeaders::into_owned()` |
+| 1.0.0-rc.3 | 1.0 | PR |
+|---|---|---|
+| `MessageType::RDAStatusData`, `RDAConsoleMessage`, `RDAVolumeCoveragePattern`, `RDAControlCommands`, `RDAAdaptationData`, `RDAPRFData`, `RDALogData` | `Rda...` (`RdaPrfData` for `RDAPRFData`) | #160 |
+| `MessageType::RDADigitalRadarDataGenericFormat`, `RDADigitalRadarData`, `RDAPerformanceMaintenanceData`, `RDAClutterFilterBypassMap`, `RDAClutterFilterMap` | `DigitalRadarData`, `DigitalRadarDataLegacy`, `PerformanceMaintenanceData`, `ClutterFilterBypassMap`, `ClutterFilterMap`, matching `MessageContents` | #191 |
+| `MessageType::RPGVolumeCoveragePattern`, `RPGConsoleMessage` | `RpgVolumeCoveragePattern`, `RpgConsoleMessage` | #160 |
+| `MessageType::RPGClutterCensorZones`, `RPGRequestForData` | `ClutterCensorZones`, `RequestForData` | #191 |
+| `MessageType::RDALoopBackTest`, `RPGLoopBackTest` | `RdaLoopbackTest`, `RpgLoopbackTest` | #191 |
+| `MessageContents::VolumeCoveragePattern` | `RdaVolumeCoveragePattern` (`MessageType` keeps `RdaVolumeCoveragePattern`, type 5, apart from `RpgVolumeCoveragePattern`, type 7) | #191 |
+| `MessageType::Spare1` (14), `ReservedFAARMSOnly1..5` (16, 17, 24, 25, 26), `Reserved1..5` (20–23, 29) | `MessageType::Reserved(u8)` holding the type number | #166 |
+| `MessageType` with `#[repr(u8)]` discriminants | No discriminants; `number()` replaces `as u8`, `from_number(u8)`; `#[non_exhaustive]` | #155, #166 |
+| `MessageContents::RDAStatusData`, `RDAControlCommands`, `RDAPRFData`, `RDALogData`, `RDAAdaptationData` | `RdaStatusData`, `RdaControlCommands`, `RdaPrfData`, `RdaLogData`, `RdaAdaptationData`; `#[non_exhaustive]` | #155, #160 |
+| `RedundantChannel::ORDASingleChannel`, `ORDARedundantChannel1`, `ORDARedundantChannel2` | `OrdaSingleChannel`, `OrdaRedundantChannel1`, `OrdaRedundantChannel2`; `#[non_exhaustive]` | #155, #160 |
+| `MessageHeader` (`#[repr(C)]`, public fields, zerocopy traits) | `MessageHeader<'a>` with accessors; `parse(bytes)?` replaces `ref_from_prefix`, `SIZE` replaces `size_of::<MessageHeader>()`, `into_owned()` gives `MessageHeader<'static>` | #166 |
+| `MessageHeaders::Single(&'a MessageHeader)`, `Multiple(Vec<&'a MessageHeader>)` | `Single(MessageHeader<'a>)`, `Multiple(Vec<MessageHeader<'a>>)` | #166 |
+| `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, VCP35, VCP112, VCP212, VCP215, Unknown}` | `VcpNumber::{Vcp11, Vcp12, Vcp21, Vcp31, Vcp32, Vcp35, Vcp112, Vcp121, Vcp211, Vcp212, Vcp215, Vcp221, Unknown}` | #160, #163, #188 |
+| `digital_radar_data::DataMomentPointer`, `DataMomentPointerType`, `DataMomentGenericPointerType` | Removed | #166 |
+| `digital_radar_data::CompressionIndicator::CompressedBZIP2`, `CompressedZLIB`, `FutureUse` | `CompressedBzip2`, `CompressedZlib`, `Unknown(u8)` | #160, #191 |
+| `digital_radar_data::ProcessingStatus::RxRNoise`, `CBT`, `Other(u16)` | `RxrNoise`, `Cbt`, `Unknown(u16)` | #160, #191 |
+| `digital_radar_data::SpotBlankingStatus` | `SpotBlankingFlags` (`rda_status_data::SpotBlankingStatus` keeps its name) | #191 |
+| `digital_radar_data::RadialStatus::ElevationStartVCPFinal` | `ElevationStartVcpFinal` | #160 |
+| `digital_radar_data::DataBlockName` | `#[non_exhaustive]` | #155 |
+| `rda_status_data::RDAStatus`, `RDABuildNumber`, `RMSControlStatus` | `RdaStatus`, `RdaBuildNumber`, `RmsControlStatus` | #160 |
+| `rda_status_data::RMSControlStatus::{NonRMS, RMSInControl, RDAInControl}` | `RmsControlStatus::{NonRms, RmsInControl, RdaInControl}` | #160 |
+| `rda_status_data::CommandAcknowledgement::RemoteVCPReceived` | `RemoteVcpReceived` | #160 |
+| `rda_status_data::TransitionPowerSourceStatus::OK`, `Unknown`, `Other(u16)` | `Ok`, `Unknown(u16)` (code 4 is `Unknown(4)`) | #160, #191 |
+| `rda_status_data::SpotBlankingStatus::Other(u8)` | `Unknown(u16)`, no longer truncating the wire value | #191 |
+| `rda_status_data::RDABuildNumber::{Build12_0, .., Build24_0, Unknown(f32)}`, `as_float()`, `is_known()` | `RdaBuildNumber` newtype: `from_raw(u16)`, `raw()`, `major()`, `minor()`, `Display`, `Ord` | #191 |
+| `rda_status_data::alarm::Message`, `alarm::get_alarm_message(u16)` | `alarm::Definition`, `alarm::definition(u16)` | #191 |
+| `rda_status_data::VolumeCoveragePatternNumber` (`number() -> i16`, `local()`, `remote()`) | `VcpSelection` (`number() -> VcpNumber`, `source() -> VcpSource`) | #163, #191 |
+| `volume_coverage_pattern::ChannelConfiguration::SZ2Phase`, `UnknownPhase` | `Sz2Phase`, `Unknown(u8)` | #160, #191 |
+| `volume_coverage_pattern::PulseWidth::Unknown`, `PatternType::Unknown` | `PulseWidth::Unknown(u8)`, `PatternType::Unknown(u16)` | #191 |
+| `volume_coverage_pattern::WaveformType::{CS, CDW, CDWO, B, SPP, Unknown}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair, Unknown(u8)}` | #160, #191 |
+| `clutter_censor_zones::Message::regions() -> &[raw Region]` (public `Integer2`/`Code2` fields) | `-> &[clutter_censor_zones::Region<'a>]` with accessors and `OperatorSelectCode` | #166 |
+| `summarize` module (`messages`, `MessageSummary`, `MessageGroupSummary`, `VCPInfo`, `VCPElevationInfo`, `RDAStatusInfo`) | Removed; iterate `decode_messages(..)` and match on `message.contents()` | #168 |
+| `result::Error::Io(std::io::Error)`, `From<std::io::Error>` | Removed | #168 |
+| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `MissingCoveragePattern` (feature `model`), `SegmentOutOfSequence` and (feature `model`) `Model(nexrad_model::Error)` | #155, #169, #185, #190 |
+| `result::Error::Decoding(String)`, `InvalidMessageLength { message_type, delta }`, `DataSpansSegmentBoundary { position }` | Removed (never constructed) | #190 |
+| `result::Error::UnexpectedEof`, `MessageMissingDate` | `UnexpectedEof { offset }`, `MessageMissingDate { message_type }` | #190 |
+| `result::Error::UnknownDataBlockType { block_type: String }` | `UnknownDataBlockType { block_type: [u8; 3], offset }` | #190 |
+| `MessageContents::Other` | `MessageContents::Other { message_type: MessageType, data: Cow<'a, [u8]> }`; match `Other { .. }` | #190 |
+| `digital_radar_data::DataBlock<'a, T>: Deref<Target = T>` | No `Deref`; `inner()`, `into_inner()` (`block.inner().vcp_number()`) | #190 |
+| `decode_messages(&[u8]) -> Result<Vec<Message>>`, skipping undecodable messages | Same signature, returns the first error; also at `nexrad_decode::decode_messages` | #190 |
+| (new) | `iter_messages(&[u8]) -> MessageIter`, `MessageIter::offset()`; root re-exports of `Message`, `MessageContents`, `MessageIter`, `MessageType` | #190 |
+| (new) | `Message::into_owned()`, `MessageContents::into_owned()`, `MessageContents::message_type()`, `MessageHeaders::into_owned()` | #190 |
 
 **Accessors**
 
-| Type | 1.0.0-rc.3 | 1.0 |
-|---|---|---|
-| `MessageHeader` | fields `segment_size`, `redundant_channel`, `message_type`, `sequence_number`, `date` + `time`, `segment_count`, `segment_number` | `segment_size_raw()`, `redundant_channel_raw()`, `message_type_raw()`, `sequence_number()`, `date_time()`, `segment_count()`, `segment_number()` |
-| `MessageHeader` | `rda_redundant_channel()` | `redundant_channel()` |
-| `MessageHeader` | (none) | `segment_size_bytes()` |
-| `digital_radar_data::Header` | `azimuth_angle_raw()`, `elevation_angle_raw()`, `radial_length_raw()` | `azimuth_angle_degrees()`, `elevation_angle_degrees()`, `radial_length_bytes()` |
-| `digital_radar_data::Header` | `azimuth_resolution_spacing_type() -> AzimuthResolutionSpacing` | `azimuth_resolution_spacing() -> AzimuthResolutionSpacing` |
-| `digital_radar_data::Header` | `azimuth_resolution_spacing() -> Angle` (uom) | `azimuth_resolution_spacing_degrees() -> f32` |
-| `digital_radar_data::Header` | `azimuth_indexing_mode_degrees() -> Option<f64>` | `-> Option<f32>` |
-| `digital_radar_data::VolumeDataBlock` | `lrtup_raw()`, `latitude_raw()`, `longitude_raw()`, `site_height_raw()`, `tower_height_raw()` | `lrtup_bytes()`, `latitude_degrees()`, `longitude_degrees()`, `site_height_meters()`, `tower_height_meters()` |
-| `digital_radar_data::VolumeDataBlock` | `calibration_constant()`, `system_differential_reflectivity()` | `calibration_constant_db()`, `system_differential_reflectivity_db()` |
-| `digital_radar_data::VolumeDataBlock` | `horizontal_shv_tx_power_raw()`, `vertical_shv_tx_power_raw()` | `horizontal_shv_tx_power_kw()`, `vertical_shv_tx_power_kw()` |
-| `digital_radar_data::VolumeDataBlock` | `initial_system_differential_phase_raw()` | `initial_system_differential_phase_degrees()` |
-| `digital_radar_data::VolumeDataBlock` | `volume_coverage_pattern() -> VolumeCoveragePattern`, `volume_coverage_pattern_number()` | `vcp_number() -> VcpNumber`, `vcp_number_raw()` |
-| `digital_radar_data::VolumeDataBlock` | `zdr_bias_estimate_weighted_mean()` | `zdr_bias_estimate_weighted_mean_raw()`, `zdr_bias_estimate_weighted_mean_db()` |
-| `digital_radar_data::RadialDataBlock` | `lrtup_raw()`, `horizontal_channel_noise_level()`, `vertical_channel_noise_level()` | `lrtup_bytes()`, `horizontal_channel_noise_level_dbm()`, `vertical_channel_noise_level_dbm()` |
-| `digital_radar_data::RadialDataBlock` | `horizontal_channel_calibration_constant()`, `vertical_channel_calibration_constant()` | `horizontal_channel_calibration_constant_db()`, `vertical_channel_calibration_constant_db()` |
-| `digital_radar_data::RadialDataBlock` | (none) | `unambiguous_range_km()`, `nyquist_velocity_mps()` |
-| `digital_radar_data::ElevationDataBlock` | `lrtup_raw()`, `calibration_constant()`, `atmos_raw()`, `atmos()` | `lrtup_bytes()`, `calibration_constant_db()`, `atmospheric_attenuation_raw()`, `atmospheric_attenuation_db_per_km()` |
-| `digital_radar_data::GenericDataBlockHeader` | (none) | `tover_db()`, `snr_threshold_db()`, `moment_size_bytes()` |
-| `digital_radar_data::GenericDataBlock` | `moment_data()`, `into_moment_data()`, `cfp_moment_data()`, `into_cfp_moment_data()` | `DataBlock<'a, GenericDataBlock<'a>>::moment_data() -> Result<MomentData>`, `into_moment_data()` |
-| `digital_radar_data::Message` | `site() -> Option<Site>` | `site() -> Result<Option<Site>>` |
-| `digital_radar_data_legacy::Message` | `azimuth_angle()`, `elevation_angle()`, `calibration_constant()` | `azimuth_angle_degrees()`, `elevation_angle_degrees()`, `calibration_constant_db()` |
-| `digital_radar_data_legacy::Message` | `surveillance_first_gate_range()`, `doppler_first_gate_range()`, `surveillance_gate_interval()`, `doppler_gate_interval()` | `..._meters()` |
-| `digital_radar_data_legacy::Message` | `doppler_velocity_resolution()` | `doppler_velocity_resolution_mps()` |
-| `digital_radar_data_legacy::Message` | `elevation_number() -> u16`, `radial_status() -> u16`, `vcp_number() -> u16` | `elevation_number() -> u8`, `radial_status() -> RadialStatus` + `radial_status_raw()`, `vcp_number() -> VcpNumber` + `vcp_number_raw()` |
-| `volume_coverage_pattern::Header` | `message_size()`, `doppler_velocity_resolution()` | `message_size_halfwords()`, `doppler_velocity_resolution_mps()` |
-| `volume_coverage_pattern::ElevationDataBlock` | `elevation_angle()`, `azimuth_rate()`, `sector_1_edge_angle()`, `sector_2_edge_angle()`, `sector_3_edge_angle()`, `ebc_angle()` | `elevation_angle_degrees()`, `azimuth_rate_degrees_per_second()`, `sector_N_edge_angle_degrees()`, `ebc_angle_degrees()` |
-| `volume_coverage_pattern::ElevationDataBlock` | `reflectivity_threshold()`, `velocity_threshold()`, `spectrum_width_threshold()`, `differential_reflectivity_threshold()`, `differential_phase_threshold()`, `correlation_coefficient_threshold()` | `..._threshold_db()` |
-| `clutter_filter_map::RangeZone` | `raw_op_code()`, `end_range() -> u16`, `end_range_uom()` | `op_code_raw()`, `end_range_km() -> u16`, `end_range()` (uom) |
-| `request_for_data::Message` | `raw_data_request_type()` | `data_request_type_raw()` |
-| `rda_status_data::Message` | `raw_rda_status()`, `raw_operability_status()`, `raw_control_status()`, `raw_auxiliary_power_generator_state()`, `raw_horizontal_reflectivity_calibration_correction()`, `raw_data_transmission_enabled()`, `raw_rda_control_authorization()`, `raw_operational_mode()`, `raw_super_resolution_status()`, `raw_clutter_mitigation_decision_status()`, `raw_rda_scan_and_data_flags()`, `raw_rda_alarm_summary()`, `raw_command_acknowledgement()`, `raw_channel_control_status()`, `raw_spot_blanking_status()`, `raw_vertical_reflectivity_calibration_correction()`, `raw_transition_power_source_status()`, `raw_rms_control_status()`, `raw_performance_check_status()`, `raw_alarm_codes()`, `raw_signal_processor_options()` | The same stems with a `_raw` suffix (`rda_status_raw()`, ..., `signal_processor_options_raw()`) |
-| `rda_status_data::Message` | `raw_rda_build_number()` | `build_number_raw()` |
-| `rda_status_data::Message` | `raw_volume_coverage_pattern()`, `volume_coverage_pattern()` | `vcp_number_raw()`, `vcp_number()` |
-| `rda_status_data::Message` | `bypass_map_generation_date()`, `bypass_map_generation_time()`, `clutter_filter_map_generation_date()`, `clutter_filter_map_generation_time()` | `..._raw()` |
-| `rda_status_data::Message` | `downloaded_pattern_number() -> u16` | `downloaded_pattern_number_raw()`, `downloaded_pattern_number() -> VcpNumber` |
-| `rda_status_data::Message` | `alarm_messages()` | `alarm_definitions()` |
-| `digital_radar_data::Header` | `date()`, `time()`, `radar_identifier() -> String` | `date_raw()`, `time_raw()`, `radar_identifier() -> Option<&str>` |
-| `digital_radar_data::DataBlockId` | `data_name_raw()`, `data_block_name_str()`, `data_block_type_char()` | `data_block_name_raw()`; the other two removed |
-| `digital_radar_data::RadialDataBlock` | `radial_flags()` | `radial_flags_raw()` |
-| `digital_radar_data::GenericDataBlockHeader` | `number_of_data_moment_gates()` | `data_moment_gate_count()` |
-| `digital_radar_data_legacy::Message` | `num_surveillance_gates()`, `num_doppler_gates()` | `surveillance_gate_count()`, `doppler_gate_count()` |
-| `digital_radar_data_legacy::Message` | (none) | `nyquist_velocity_raw()`, `nyquist_velocity_mps()`, `atmospheric_attenuation_raw()`, `atmospheric_attenuation_db_per_km()`, `nyquist_velocity()` (uom) |
-| `volume_coverage_pattern::Header` | `pattern_number()`, `number_of_elevation_cuts()`, `number_of_sails_cuts()`, `number_of_mrle_cuts()`, `number_of_base_tilts()` | `vcp_number_raw()` + `vcp_number()`, `elevation_cut_count()`, `sails_cut_count()`, `mrle_cut_count()`, `base_tilt_count()` |
-| `volume_coverage_pattern::Header` | `vcp_sequencing()`, `vcp_supplemental_data()`, `vcp_sequencing_number_of_elevations()` | `vcp_sequencing_raw()`, `vcp_supplemental_data_raw()`, `vcp_sequencing_elevation_count()` |
-| `volume_coverage_pattern::ElevationDataBlock` | `supplemental_data()`, `super_resolution_control()`; angles as `f64` | `supplemental_data_raw()`, `super_resolution_control_raw()`; angles as `f32` |
-| `clutter_filter_map::Message` | `map_generation_date()`, `map_generation_time()`, `date_time()` | `map_generation_date_raw()`, `map_generation_time_raw()`, `map_generation_date_time()` |
-| `clutter_filter_map::AzimuthSegment` | `azimuth_segment()` | `azimuth_segment_number()` |
-| `clutter_filter_bypass_map::Message` | `bypass_map_generation_date()`, `bypass_map_generation_time()`, `date_time()`, `number_of_elevation_segments()` | `bypass_map_generation_date_raw()`, `bypass_map_generation_time_raw()`, `bypass_map_generation_date_time()`, `elevation_segment_count()` |
-| `clutter_filter_bypass_map::ElevationSegment` | `segment_number()` | `elevation_segment_number()` |
-| `rda_prf_data::Message` | `number_of_waveforms()` | `waveform_count()` |
-| `rda_prf_data::WaveformPrfData` | `waveform_type() -> u16` | `waveform_type_raw()`, `waveform_type() -> WaveformType` |
-| `rda_log_data::Message` | `identifier() -> &str`, `identifier_bytes()`, `compression_type()` | `identifier() -> Option<&str>`, `identifier_raw()`, `compression_type_raw()` |
-| `console_message::Message` | `text_bytes()` | `text_raw()` |
-| `MessageHeader` | `segmented()` | `is_fixed_frame()` |
-| `Message`, `MessageHeaders` | `is_segmented()`; `Message::offset()`, `size()` | `is_multi_segment()`; `offset_bytes()`, `size_bytes()` |
-| `rda_status_data::Message` | `average_transmitter_power()`, `horizontal_reflectivity_calibration_correction()` | `average_transmitter_power_watts()`, `horizontal_reflectivity_calibration_correction_db()` |
-| `rda_status_data::Message` | (none) | `vertical_reflectivity_calibration_correction_db()` |
-| `console_message::Message` | `message_size()` | `message_size_bytes()` |
-| `loopback_test::Message` | `message_size()` | `message_size_halfwords()` |
-| `rda_log_data::Message` | `compressed_size()`, `decompressed_size()` | `compressed_size_bytes()`, `decompressed_size_bytes()` |
-| `rda_adaptation_data::Message` | `raw_data()`, `read_integer4_at()`, `read_real4_at()`, `read_string_at()`, `total_size()` | Removed |
-| `digital_radar_data::VolumeDataBlock` | `is_legacy()`, `spare()` | Removed |
-| `digital_radar_data::RadialDataBlock` | `is_legacy()` | Removed |
-| `digital_radar_data::GenericDataBlockHeader` | `reserved()` | Removed |
-| `clutter_censor_zones::Region` | fields `start_range`, `stop_range`, `start_azimuth`, `stop_azimuth`, `elevation_segment_number`, `operator_select_code` | `start_range_km()`, `stop_range_km()`, `start_azimuth_degrees()`, `stop_azimuth_degrees()`, `elevation_segment_number()`, `operator_select_code()` / `operator_select_code_raw()` |
+| Type | 1.0.0-rc.3 | 1.0 | PR |
+|---|---|---|---|
+| `MessageHeader` | fields `segment_size`, `redundant_channel`, `message_type`, `sequence_number`, `date` + `time`, `segment_count`, `segment_number` | `segment_size_raw()`, `redundant_channel_raw()` / `redundant_channel()`, `message_type_raw()` / `message_type()`, `sequence_number()`, `date_time()`, `segment_count()`, `segment_number()` | #166, #173 |
+| `MessageHeader` | `rda_redundant_channel()` | `redundant_channel()` | #173 |
+| `MessageHeader` | (none) | `segment_size_bytes()` | #173 |
+| `digital_radar_data::Header` | `azimuth_angle_raw()`, `elevation_angle_raw()`, `radial_length_raw()` | `azimuth_angle_degrees()`, `elevation_angle_degrees()`, `radial_length_bytes()` | #173 |
+| `digital_radar_data::Header` | `azimuth_resolution_spacing_type() -> AzimuthResolutionSpacing` | `azimuth_resolution_spacing() -> AzimuthResolutionSpacing` | #173 |
+| `digital_radar_data::Header` | `azimuth_resolution_spacing() -> Angle` (uom) | `azimuth_resolution_spacing_degrees() -> f32` | #173 |
+| `digital_radar_data::Header` | `azimuth_indexing_mode_degrees() -> Option<f64>` | `-> Option<f32>` | #191 |
+| `digital_radar_data::VolumeDataBlock` | `lrtup_raw()`, `latitude_raw()`, `longitude_raw()`, `site_height_raw()`, `tower_height_raw()` | `lrtup_bytes()`, `latitude_degrees()`, `longitude_degrees()`, `site_height_meters()`, `tower_height_meters()` | #173 |
+| `digital_radar_data::VolumeDataBlock` | `calibration_constant()`, `system_differential_reflectivity()` | `calibration_constant_db()`, `system_differential_reflectivity_db()` | #173 |
+| `digital_radar_data::VolumeDataBlock` | `horizontal_shv_tx_power_raw()`, `vertical_shv_tx_power_raw()` | `horizontal_shv_tx_power_kw()`, `vertical_shv_tx_power_kw()` | #173 |
+| `digital_radar_data::VolumeDataBlock` | `initial_system_differential_phase_raw()` | `initial_system_differential_phase_degrees()` | #173 |
+| `digital_radar_data::VolumeDataBlock` | `volume_coverage_pattern() -> VolumeCoveragePattern`, `volume_coverage_pattern_number()` | `vcp_number() -> VcpNumber`, `vcp_number_raw()` | #163, #173, #191 |
+| `digital_radar_data::VolumeDataBlock` | `zdr_bias_estimate_weighted_mean()` | `zdr_bias_estimate_weighted_mean_raw()`, `zdr_bias_estimate_weighted_mean_db() -> Option<f32>` | #191 |
+| `digital_radar_data::RadialDataBlock` | `lrtup_raw()`, `horizontal_channel_noise_level()`, `vertical_channel_noise_level()` | `lrtup_bytes()`, `horizontal_channel_noise_level_dbm()`, `vertical_channel_noise_level_dbm()` | #173 |
+| `digital_radar_data::RadialDataBlock` | `horizontal_channel_calibration_constant()`, `vertical_channel_calibration_constant()` | `horizontal_channel_calibration_constant_db()`, `vertical_channel_calibration_constant_db()` | #173 |
+| `digital_radar_data::RadialDataBlock` | (none) | `unambiguous_range_km()`, `nyquist_velocity_mps()` | #173 |
+| `digital_radar_data::ElevationDataBlock` | `lrtup_raw()`, `calibration_constant()`, `atmos_raw()`, `atmos()` | `lrtup_bytes()`, `calibration_constant_db()`, `atmospheric_attenuation_raw()`, `atmospheric_attenuation_db_per_km()` | #173, #191 |
+| `digital_radar_data::GenericDataBlockHeader` | (none) | `tover_db()`, `snr_threshold_db()`, `moment_size_bytes()` | #173 |
+| `digital_radar_data::GenericDataBlock` | `moment_data()`, `into_moment_data()`, `cfp_moment_data()`, `into_cfp_moment_data()` | `DataBlock<'a, GenericDataBlock<'a>>::moment_data() -> Result<MomentData>`, `into_moment_data()` (`m.reflectivity_data_block().map(\|b\| b.moment_data())`) | #170 |
+| `digital_radar_data::Message` | `site() -> Option<Site>` | `site() -> Result<Option<Site>>` | #185 |
+| `digital_radar_data_legacy::Message` | `azimuth_angle()`, `elevation_angle()`, `calibration_constant()` | `azimuth_angle_degrees()`, `elevation_angle_degrees()`, `calibration_constant_db()` | #173 |
+| `digital_radar_data_legacy::Message` | `surveillance_first_gate_range()`, `doppler_first_gate_range()`, `surveillance_gate_interval()`, `doppler_gate_interval()` | `..._meters()` | #173 |
+| `digital_radar_data_legacy::Message` | `doppler_velocity_resolution()` | `doppler_velocity_resolution_mps()` | #173 |
+| `digital_radar_data_legacy::Message` | `elevation_number() -> u16`, `radial_status() -> u16`, `vcp_number() -> u16` | `elevation_number() -> u8`, `radial_status() -> RadialStatus` + `radial_status_raw()`, `vcp_number() -> VcpNumber` + `vcp_number_raw()` | #173 |
+| `volume_coverage_pattern::Header` | `message_size()`, `doppler_velocity_resolution()` | `message_size_halfwords()`, `doppler_velocity_resolution_mps()` | #173 |
+| `volume_coverage_pattern::ElevationDataBlock` | `elevation_angle()`, `azimuth_rate()`, `sector_1_edge_angle()`, `sector_2_edge_angle()`, `sector_3_edge_angle()`, `ebc_angle()` | `elevation_angle_degrees()`, `azimuth_rate_degrees_per_second()`, `sector_N_edge_angle_degrees()`, `ebc_angle_degrees()` | #173 |
+| `volume_coverage_pattern::ElevationDataBlock` | `reflectivity_threshold()`, `velocity_threshold()`, `spectrum_width_threshold()`, `differential_reflectivity_threshold()`, `differential_phase_threshold()`, `correlation_coefficient_threshold()` | `..._threshold_db()` | #173 |
+| `clutter_filter_map::RangeZone` | `raw_op_code()`, `end_range() -> u16`, `end_range_uom()` | `op_code_raw()`, `end_range_km() -> u16`, `end_range()` (uom) | #173 |
+| `request_for_data::Message` | `raw_data_request_type()` | `data_request_type_raw()` | #173 |
+| `rda_status_data::Message` | `raw_rda_status()`, `raw_operability_status()`, `raw_control_status()`, `raw_auxiliary_power_generator_state()`, `raw_horizontal_reflectivity_calibration_correction()`, `raw_data_transmission_enabled()`, `raw_rda_control_authorization()`, `raw_operational_mode()`, `raw_super_resolution_status()`, `raw_clutter_mitigation_decision_status()`, `raw_rda_scan_and_data_flags()`, `raw_rda_alarm_summary()`, `raw_command_acknowledgement()`, `raw_channel_control_status()`, `raw_spot_blanking_status()`, `raw_vertical_reflectivity_calibration_correction()`, `raw_transition_power_source_status()`, `raw_rms_control_status()`, `raw_performance_check_status()`, `raw_alarm_codes()`, `raw_signal_processor_options()` | The same stems with a `_raw` suffix (`rda_status_raw()`, ..., `signal_processor_options_raw()`) | #173 |
+| `rda_status_data::Message` | `raw_rda_build_number()` | `build_number_raw()` | #173 |
+| `rda_status_data::Message` | `raw_volume_coverage_pattern()`, `volume_coverage_pattern()` | `vcp_number_raw()`, `vcp_number()` (`Option<VcpSelection>` instead of `Option<VolumeCoveragePatternNumber>`) | #163, #191 |
+| `rda_status_data::Message` | `bypass_map_generation_date()`, `bypass_map_generation_time()`, `clutter_filter_map_generation_date()`, `clutter_filter_map_generation_time()` | `..._raw()`; the `*_date_time()` accessors are unchanged | #191 |
+| `rda_status_data::Message` | `downloaded_pattern_number() -> u16` | `downloaded_pattern_number_raw()`, `downloaded_pattern_number() -> VcpNumber` | #191 |
+| `rda_status_data::Message` | `alarm_messages()` | `alarm_definitions()` | #191 |
+| `digital_radar_data::Header` | `date()`, `time()`, `radar_identifier() -> String` | `date_raw()`, `time_raw()` (`date_time()` is the decoded value), `radar_identifier() -> Option<&str>` (`None` when not valid UTF-8) | #191 |
+| `digital_radar_data::DataBlockId` | `data_name_raw()`, `data_block_name_str()`, `data_block_type_char()` | `data_block_name_raw()`; the other two removed (use `data_block_name()`/`data_block_name_raw()` and `data_block_type()`/`data_block_type_raw()`) | #191 |
+| `digital_radar_data::RadialDataBlock` | `radial_flags()` | `radial_flags_raw()` | #191 |
+| `digital_radar_data::GenericDataBlockHeader` | `number_of_data_moment_gates()` | `data_moment_gate_count()` | #191 |
+| `digital_radar_data_legacy::Message` | `num_surveillance_gates()`, `num_doppler_gates()` | `surveillance_gate_count()`, `doppler_gate_count()` | #191 |
+| `digital_radar_data_legacy::Message` | (none) | `nyquist_velocity_raw()`, `nyquist_velocity_mps()`, `atmospheric_attenuation_raw()`, `atmospheric_attenuation_db_per_km()`, `nyquist_velocity()` (uom) | #191 |
+| `volume_coverage_pattern::Header` | `pattern_number()`, `number_of_elevation_cuts()`, `number_of_sails_cuts()`, `number_of_mrle_cuts()`, `number_of_base_tilts()` | `vcp_number_raw()` + `vcp_number()`, `elevation_cut_count()`, `sails_cut_count()`, `mrle_cut_count()`, `base_tilt_count()` | #191 |
+| `volume_coverage_pattern::Header` | `vcp_sequencing()`, `vcp_supplemental_data()`, `vcp_sequencing_number_of_elevations()` | `vcp_sequencing_raw()`, `vcp_supplemental_data_raw()`, `vcp_sequencing_elevation_count()` | #191 |
+| `volume_coverage_pattern::ElevationDataBlock` | `supplemental_data()`, `super_resolution_control()`; angles as `f64` | `supplemental_data_raw()`, `super_resolution_control_raw()`; angles as `f32` | #191 |
+| `clutter_filter_map::Message` | `map_generation_date()`, `map_generation_time()`, `date_time()` | `map_generation_date_raw()`, `map_generation_time_raw()`, `map_generation_date_time()` | #191 |
+| `clutter_filter_map::AzimuthSegment` | `azimuth_segment()` | `azimuth_segment_number()` | #191 |
+| `clutter_filter_bypass_map::Message` | `bypass_map_generation_date()`, `bypass_map_generation_time()`, `date_time()`, `number_of_elevation_segments()` | `bypass_map_generation_date_raw()`, `bypass_map_generation_time_raw()`, `bypass_map_generation_date_time()`, `elevation_segment_count()` | #191 |
+| `clutter_filter_bypass_map::ElevationSegment` | `segment_number()` | `elevation_segment_number()` | #191 |
+| `rda_prf_data::Message` | `number_of_waveforms()` | `waveform_count()` | #191 |
+| `rda_prf_data::WaveformPrfData` | `waveform_type() -> u16` | `waveform_type_raw()`, `waveform_type() -> WaveformType` | #191 |
+| `rda_log_data::Message` | `identifier() -> &str`, `identifier_bytes()`, `compression_type()` | `identifier() -> Option<&str>` (was `""` when invalid), `identifier_raw()`, `compression_type_raw()` | #191 |
+| `console_message::Message` | `text_bytes()` | `text_raw()` | #191 |
+| `MessageHeader` | `segmented()` | `is_fixed_frame()` | #191 |
+| `Message`, `MessageHeaders` | `is_segmented()`; `Message::offset()`, `size()` | `is_multi_segment()`; `offset_bytes()`, `size_bytes()` | #191 |
+| `rda_status_data::Message` | `average_transmitter_power()`, `horizontal_reflectivity_calibration_correction()` | `average_transmitter_power_watts()`, `horizontal_reflectivity_calibration_correction_db()` | #173 |
+| `rda_status_data::Message` | (none) | `vertical_reflectivity_calibration_correction_db()` | #173 |
+| `console_message::Message` | `message_size()` | `message_size_bytes()` | #173 |
+| `loopback_test::Message` | `message_size()` | `message_size_halfwords()` | #173 |
+| `rda_log_data::Message` | `compressed_size()`, `decompressed_size()` | `compressed_size_bytes()`, `decompressed_size_bytes()` | #173 |
+| `rda_adaptation_data::Message` | `raw_data()`, `read_integer4_at()`, `read_real4_at()`, `read_string_at()`, `total_size()` | Removed; use the typed accessors | #190 |
+| `digital_radar_data::VolumeDataBlock` | `is_legacy()`, `spare()` | Removed; `lrtup_bytes()` is 44 for a legacy volume block | #190 |
+| `digital_radar_data::RadialDataBlock` | `is_legacy()` | Removed; `lrtup_bytes()` is 20 for a legacy radial block | #190 |
+| `digital_radar_data::GenericDataBlockHeader` | `reserved()` | Removed | #190 |
+| `clutter_censor_zones::Region` | fields `start_range`, `stop_range`, `start_azimuth`, `stop_azimuth`, `elevation_segment_number`, `operator_select_code` | `start_range_km()`, `stop_range_km()`, `start_azimuth_degrees()`, `stop_azimuth_degrees()`, `elevation_segment_number()`, `operator_select_code()` / `operator_select_code_raw()` | #166 |
 
 The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) accessors keep their ICD mnemonic names.
 
@@ -1713,53 +1229,53 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 <details>
 <summary>Show the table</summary>
 
-| 1.0.0-rc.7 | 1.0 |
-|---|---|
-| `result::aws` module, `result::aws::AWSError` | `result::AwsError` (also `nexrad_data::AwsError`), `#[non_exhaustive]` |
-| `AWSError::S3GetObjectRequest(reqwest::Error)`, `S3ListObjects(reqwest::Error)`, `S3Streaming(reqwest::Error)` | Same names holding `Box<dyn Error + Send + Sync>` |
-| `AWSError::PollingAsync` | Removed |
-| `result::Error::AWS` | `Error::Aws` |
-| `result::Error::Decompression(bzip2::Error)`, `From<bzip2::Error>` | Removed |
-| `result::Error` | `#[non_exhaustive]` |
-| `volume::split_compressed_records(&[u8])` | Removed; `File::records()` |
-| `volume::Header::{extension_number, icao_of_radar, tape_filename}() -> Option<String>` | `-> Option<&str>` |
-| `volume::File::header() -> Option<&Header>`; `#[repr(C)] volume::Header` with `zerocopy::{FromBytes, FromZeros, Immutable, KnownLayout, TryFromBytes}` | `header() -> Option<Header>`; `Header` without zerocopy traits, `Header::SIZE` |
-| `volume::Record::decompress<'b>(&self) -> Result<Record<'b>>` | `decompress(&self) -> Result<Record<'static>>` |
-| `aws::archive::list_files(&str, &NaiveDate)` | `list_files(&str, NaiveDate)` |
-| `aws::archive::download_file(Identifier)` | `download_file(&Identifier)` |
-| `aws::archive::Identifier::new(String) -> Identifier` | `Identifier::parse(&str) -> Result<Identifier>`, `impl FromStr` |
-| `aws::archive::Identifier::{site() -> Option<&str>, date_time() -> Option<DateTime<Utc>>}` | `site() -> &str`, `date_time() -> DateTime<Utc>` |
-| (new) | `aws::archive::Identifier::{version, is_metadata, is_gzip}()`, `Display`, `Debug`; `aws::archive::list_files_with_sizes`, `ListedFile` |
-| `aws::archive::list_files` returning every object | Volume files only |
-| `aws::realtime::VolumeIndex::new(usize) -> VolumeIndex` | `new(usize) -> Result<VolumeIndex>` |
-| `aws::realtime::list_chunks_in_volume(&str, VolumeIndex, usize)` | `list_chunks_in_volume(&str, VolumeIndex)` |
-| `AwsError::S3GetObject(Option<String>)` | `S3GetObject { status: u16, body: Option<String> }` |
-| `AwsError::{DateTime, InvalidSiteIdentifier}(String)` | Removed |
-| (new) | `AwsError::{InvalidIdentifier { name, reason }, InvalidVolumeIndex { index }, HttpClient(Box<dyn Error + Send + Sync>)}` |
-| `aws::realtime::ChunkIterator::try_next()` retrying volume discovery and returning `ExpectedChunkNotFound` when exhausted | Single attempt; `Ok(None)` until available |
-| `aws::realtime::chunk_stream(..)` discarding its startup chunks | Yields the Start chunk (when joining mid-volume) and the latest chunk first |
-| `aws::realtime::Chunk<'a>`, `Chunk::IntermediateOrEnd(Record<'a>)` | `Chunk`, `Chunk::IntermediateOrEnd(Record<'static>)` |
-| `aws::realtime::DownloadedChunk::chunk: Chunk<'static>` | `chunk: Chunk`; struct is `#[non_exhaustive]`, `DownloadedChunk::new` |
-| `aws::realtime::ChunkIteratorInit`, `LatestVolumeResult` | `#[non_exhaustive]` |
-| `aws::realtime::assemble_volume<'a>(impl IntoIterator<Item = Chunk<'a>>)` | `assemble_volume(impl IntoIterator<Item = Chunk>)` |
-| `aws::realtime::chunk_stream(PollConfig)` | `chunk_stream(PollConfig, S) where S: Fn(Duration) -> F, F: Future<Output = ()>` |
-| `aws::realtime::download_chunk<'a>(&str, &ChunkIdentifier) -> Result<(ChunkIdentifier, Chunk<'a>)>` | `download_chunk(&str, &ChunkIdentifier) -> Result<DownloadedChunk>` |
-| `aws::realtime::ChunkIdentifier::new(String, ..)`, `from_name(String, VolumeIndex, String, ..)` | `new(impl Into<String>, ..)`, `from_name(impl Into<String>, VolumeIndex, impl Into<String>, ..)` |
-| `aws::realtime::ChunkIdentifier::next_chunk(&ElevationChunkMapper)`, `NextChunk::{Sequence, Volume}` | Removed; `ChunkIdentifier::with_sequence(usize, ChunkType)` names a sibling chunk |
-| `aws::realtime::ChunkIterator::start_with_policies(&str, RetryPolicy, RetryPolicy)` | `start_with(PollConfig)` |
-| `aws::realtime::ChunkIterator::from_chunk(&str, ChunkIdentifier, RetryPolicy, RetryPolicy)` | `from_chunk(PollConfig, ChunkIdentifier)` |
-| `aws::realtime::ChunkIterator::{download_policy, discovery_policy}()` | `config().download_policy()`, `config().discovery_policy()` |
-| `aws::realtime::ChunkIterator::time_until_next() -> Option<chrono::Duration>` | `-> Option<std::time::Duration>` |
-| `aws::realtime::ChunkIterator::project_remaining_scan() -> Option<ScanTimingProjection>` | `projected_volume_end_time() -> Option<DateTime<Utc>>` |
-| `aws::realtime::ChunkIterator::{timing_stats, timing_stats_mut, elevation_mapper, chunk_metadata, all_chunk_metadata}()` | Removed |
-| `aws::realtime::PollConfig::{site, download_policy, discovery_policy}` fields | Getters of the same names |
-| `aws::realtime::RetryPolicy::{max_attempts, initial_delay, backoff_multiplier, max_delay}` fields | Getters of the same names (`std::time::Duration`) |
-| `aws::realtime::RetryPolicy::with_initial_delay(chrono::Duration)`, `with_max_delay(chrono::Duration)` | Take `std::time::Duration` |
-| `aws::realtime::{ChunkTimingModel, ChunkTimingStats, ChunkCharacteristics, ElevationChunkMapper, ChunkMetadata, ChunkProjection, ScanTimingProjection, RetryState}` | Removed |
-| `aws::realtime::{estimate_chunk_availability_time, estimate_chunk_processing_time, project_scan_timing, project_full_scan_timing}` | Removed |
-| (new) | `volume::File::coverage_pattern_message() -> Result<volume_coverage_pattern::Message<'static>>` |
-| `volume::Record::messages()`, `radials()`, `File::scan()`, `aws::realtime::assemble_volume` skipping undecodable messages | Fail with `Error::Decode` on the first one |
-| `aws::realtime::ChunkIterator::try_next()`, `chunk_stream(..)` at volume rollover: newest chunk of the next volume | The next volume's Start chunk, then each later chunk in sequence order |
+| 1.0.0-rc.7 | 1.0 | PR |
+|---|---|---|
+| `result::aws` module, `result::aws::AWSError` | `result::AwsError` (also `nexrad_data::AwsError`), `#[non_exhaustive]` | #155, #160, #171 |
+| `AWSError::S3GetObjectRequest(reqwest::Error)`, `S3ListObjects(reqwest::Error)`, `S3Streaming(reqwest::Error)` | Same names holding `Box<dyn Error + Send + Sync>`, which `source()` returns | #171 |
+| `AWSError::PollingAsync` | Removed (never constructed) | #171 |
+| `result::Error::AWS` | `Error::Aws` | #160 |
+| `result::Error::Decompression(bzip2::Error)`, `From<bzip2::Error>` | Removed (never constructed); bzip2 failures are `Error::Io` | #171 |
+| `result::Error` | `#[non_exhaustive]` | #155 |
+| `volume::split_compressed_records(&[u8])` | Removed; `File::new(bytes).records()?` | #171 |
+| `volume::Header::{extension_number, icao_of_radar, tape_filename}() -> Option<String>` | `-> Option<&str>` | #171 |
+| `volume::File::header() -> Option<&Header>`; `#[repr(C)] volume::Header` with `zerocopy::{FromBytes, FromZeros, Immutable, KnownLayout, TryFromBytes}` | `header() -> Option<Header>`; `Header` without zerocopy traits, `Header::SIZE` replacing `size_of::<Header>()` | #181 |
+| `volume::Record::decompress<'b>(&self) -> Result<Record<'b>>` | `decompress(&self) -> Result<Record<'static>>` | #171 |
+| `aws::archive::list_files(&str, &NaiveDate)` | `list_files(&str, NaiveDate)` | #171 |
+| `aws::archive::download_file(Identifier)` | `download_file(&Identifier)` | #171 |
+| `aws::archive::Identifier::new(String) -> Identifier` | `Identifier::parse(&str) -> Result<Identifier>`, `impl FromStr` | #192 |
+| `aws::archive::Identifier::{site() -> Option<&str>, date_time() -> Option<DateTime<Utc>>}` | `site() -> &str`, `date_time() -> DateTime<Utc>` | #192 |
+| (new) | `aws::archive::Identifier::{version, is_metadata, is_gzip}()`, `Display`, `Debug`; `aws::archive::list_files_with_sizes`, `ListedFile` | #186, #192 |
+| `aws::archive::list_files` returning every object | Volume files only | #192 |
+| `aws::realtime::VolumeIndex::new(usize) -> VolumeIndex` | `new(usize) -> Result<VolumeIndex>` | #192 |
+| `aws::realtime::list_chunks_in_volume(&str, VolumeIndex, usize)` | `list_chunks_in_volume(&str, VolumeIndex)` | #149, #192 |
+| `AwsError::S3GetObject(Option<String>)` | `S3GetObject { status: u16, body: Option<String> }` | #192 |
+| `AwsError::{DateTime, InvalidSiteIdentifier}(String)` | Removed; invalid archive names fail in `Identifier::parse` with `InvalidIdentifier` | #192 |
+| (new) | `AwsError::{InvalidIdentifier { name, reason }, InvalidVolumeIndex { index }, HttpClient(Box<dyn Error + Send + Sync>)}` | #192 |
+| `aws::realtime::ChunkIterator::try_next()` retrying volume discovery and returning `ExpectedChunkNotFound` when exhausted | Single attempt; `Ok(None)` until available | #192 |
+| `aws::realtime::chunk_stream(..)` discarding its startup chunks | Yields the Start chunk (when joining mid-volume) and the latest chunk first | #192 |
+| `aws::realtime::Chunk<'a>`, `Chunk::IntermediateOrEnd(Record<'a>)` | `Chunk`, `Chunk::IntermediateOrEnd(Record<'static>)` | #167 |
+| `aws::realtime::DownloadedChunk::chunk: Chunk<'static>` | `chunk: Chunk`; struct is `#[non_exhaustive]`, `DownloadedChunk::new` | #167 |
+| `aws::realtime::ChunkIteratorInit`, `LatestVolumeResult` | `#[non_exhaustive]` | #167 |
+| `aws::realtime::assemble_volume<'a>(impl IntoIterator<Item = Chunk<'a>>)` | `assemble_volume(impl IntoIterator<Item = Chunk>)` | #167 |
+| `aws::realtime::chunk_stream(PollConfig)` | `chunk_stream(PollConfig, S) where S: Fn(Duration) -> F, F: Future<Output = ()>`, for example `\|d\| tokio::time::sleep(d)` | #161 |
+| `aws::realtime::download_chunk<'a>(&str, &ChunkIdentifier) -> Result<(ChunkIdentifier, Chunk<'a>)>` | `download_chunk(&str, &ChunkIdentifier) -> Result<DownloadedChunk>`; read `d.identifier`, `d.chunk` | #167 |
+| `aws::realtime::ChunkIdentifier::new(String, ..)`, `from_name(String, VolumeIndex, String, ..)` | `new(impl Into<String>, ..)`, `from_name(impl Into<String>, VolumeIndex, impl Into<String>, ..)` | #167 |
+| `aws::realtime::ChunkIdentifier::next_chunk(&ElevationChunkMapper)`, `NextChunk::{Sequence, Volume}` | Removed; `ChunkIterator` and `chunk_stream` sequence chunks, and `ChunkIdentifier::with_sequence(usize, ChunkType)` names a sibling chunk | #167 |
+| `aws::realtime::ChunkIterator::start_with_policies(&str, RetryPolicy, RetryPolicy)` | `start_with(PollConfig::new(site).with_download_policy(..).with_discovery_policy(..))` | #167 |
+| `aws::realtime::ChunkIterator::from_chunk(&str, ChunkIdentifier, RetryPolicy, RetryPolicy)` | `from_chunk(PollConfig, ChunkIdentifier)` | #167 |
+| `aws::realtime::ChunkIterator::{download_policy, discovery_policy}()` | `config().download_policy()`, `config().discovery_policy()` | #167 |
+| `aws::realtime::ChunkIterator::time_until_next() -> Option<chrono::Duration>` | `-> Option<std::time::Duration>` | #167 |
+| `aws::realtime::ChunkIterator::project_remaining_scan() -> Option<ScanTimingProjection>` | `projected_volume_end_time() -> Option<DateTime<Utc>>` | #167 |
+| `aws::realtime::ChunkIterator::{timing_stats, timing_stats_mut, elevation_mapper, chunk_metadata, all_chunk_metadata}()` | Removed | #167 |
+| `aws::realtime::PollConfig::{site, download_policy, discovery_policy}` fields | Getters of the same names and the existing `with_*` setters | #167 |
+| `aws::realtime::RetryPolicy::{max_attempts, initial_delay, backoff_multiplier, max_delay}` fields | Getters of the same names (`std::time::Duration`) | #167 |
+| `aws::realtime::RetryPolicy::with_initial_delay(chrono::Duration)`, `with_max_delay(chrono::Duration)` | Take `std::time::Duration` | #167 |
+| `aws::realtime::{ChunkTimingModel, ChunkTimingStats, ChunkCharacteristics, ElevationChunkMapper, ChunkMetadata, ChunkProjection, ScanTimingProjection, RetryState}` | Removed; `ChunkIterator` and `chunk_stream` handle sequencing, retries (configured with `RetryPolicy`) and timing | #167 |
+| `aws::realtime::{estimate_chunk_availability_time, estimate_chunk_processing_time, project_scan_timing, project_full_scan_timing}` | Removed; `ChunkIterator::next_expected_time()`, `time_until_next()` and `projected_volume_end_time()` | #167 |
+| (new) | `volume::File::coverage_pattern_message() -> Result<volume_coverage_pattern::Message<'static>>` | #183 |
+| `volume::Record::messages()`, `radials()`, `File::scan()`, `aws::realtime::assemble_volume` skipping undecodable messages | Fail with `Error::Decode` on the first one | #190 |
+| `aws::realtime::ChunkIterator::try_next()`, `chunk_stream(..)` at volume rollover: newest chunk of the next volume | The next volume's Start chunk, then each later chunk in sequence order | #183 |
 
 </details>
 
@@ -1768,28 +1284,28 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 <details>
 <summary>Show the table</summary>
 
-| 1.0.0-rc.1 | 1.0 |
-|---|---|
-| `ScanProcessor` trait (`name`, `process_scan`) | Removed |
-| `ScanDerivedProduct::compute(&self, &Scan, &[SweepField], &RadarCoordinateSystem, &GeoExtent, (usize, usize))` | `compute(&self, &[SweepField], &RadarCoordinateSystem, &CartesianGrid)` (also `CompositeReflectivity::compute`) |
-| `trait SweepProcessor`, `trait ScanDerivedProduct` | `trait SweepProcessor: Send + Sync`, `trait ScanDerivedProduct: Send + Sync` |
-| (none) | `CartesianGrid::new(GeoExtent, usize, usize) -> Result<Self>`, `extent()`, `width()`, `height()` |
-| `pipeline::SweepPipeline` | `SweepPipeline` only; adds `len()`, `is_empty()`, `steps()` |
-| `filter::ThresholdFilter::{min, max}` fields | `ThresholdFilter::new(Option<f32>, Option<f32>) -> Result<Self>`, `min()`, `max()` |
-| `filter::MedianFilter::{azimuth_kernel, range_kernel}` fields | `MedianFilter::new(usize, usize) -> Result<Self>`, `azimuth_kernel_radials()`, `range_kernel_gates()` |
-| `filter::GaussianSmooth::{sigma_azimuth, sigma_range}` fields | `GaussianSmooth::new(f32, f32) -> Result<Self>`, `sigma_azimuth_radials()`, `sigma_range_gates()` |
-| `filter::CorrelationCoefficientFilter::new(f32, SweepField) -> Result<Self>` | Same signature; adds `threshold()`, `correlation_coefficient()` |
-| `derived::StormRelativeVelocity::new(f32, f32) -> Result<Self>` | Same signature; adds `storm_direction_degrees()`, `storm_speed_mps()` |
-| `derived::VerticalCrossSection::new(f32, f64, f64, usize, usize)` | `VerticalCrossSection::builder(f64) -> VerticalCrossSectionBuilder`, setters `max_range_km(f64)`, `max_altitude_meters(f64)`, `width(usize)`, `height(usize)`, `build() -> Result<VerticalCrossSection>`; getters for all five |
-| `derived::VerticalCrossSection::compute(&self, &[SweepField])` | `compute(&self, &[SweepField], &RadarCoordinateSystem)` |
-| `detection::StormCell::elevation_degrees() -> f32` | `elevation_angle_degrees() -> f32` |
-| `detection::StormCell::max_reflectivity_azimuth_degrees() -> f32` | `max_reflectivity_azimuth_angle_degrees() -> f32` |
-| `detection::StormCell::bounds() -> &StormCellBounds` | `bounds() -> GeoExtent` |
-| `detection::StormCellBounds` | Removed; use `nexrad_model::geo::GeoExtent` |
-| `detection::StormCellDetector::new(f32, usize) -> Result<Self>` | Same signature; adds `reflectivity_threshold_dbz()`, `min_gate_count()` |
-| `filter::{ThresholdFilter, CorrelationCoefficientFilter}` mask gates as `(0.0, GateStatus::NoData)` | Mask gates as `(value, GateStatus::Filtered)` |
-| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `Model(nexrad_model::Error)`, `GeometryMismatch { parameter }`, `UnexpectedProduct { expected, actual }` |
-| `result::Error::{InvalidParameter, InvalidGeometry, MissingData}(String)` | `InvalidParameter { parameter, reason }`, `InvalidGeometry { parameter, reason }`, `MissingData { what }` |
+| 1.0.0-rc.1 | 1.0 | PR |
+|---|---|---|
+| `ScanProcessor` trait (`name`, `process_scan`) | Removed (no implementations); use a free function or your own trait | #175 |
+| `ScanDerivedProduct::compute(&self, &Scan, &[SweepField], &RadarCoordinateSystem, &GeoExtent, (usize, usize))` | `compute(&self, &[SweepField], &RadarCoordinateSystem, &CartesianGrid)` (also `CompositeReflectivity::compute`) | #175, #193 |
+| `trait SweepProcessor`, `trait ScanDerivedProduct` | `trait SweepProcessor: Send + Sync`, `trait ScanDerivedProduct: Send + Sync` | #193 |
+| (none) | `CartesianGrid::new(GeoExtent, usize, usize) -> Result<Self>`, `extent()`, `width()`, `height()` | #193 |
+| `pipeline::SweepPipeline` | `SweepPipeline` only; adds `len()`, `is_empty()`, `steps()` | #193 |
+| `filter::ThresholdFilter::{min, max}` fields | `ThresholdFilter::new(Option<f32>, Option<f32>) -> Result<Self>`, `min()`, `max()` | #175 |
+| `filter::MedianFilter::{azimuth_kernel, range_kernel}` fields | `MedianFilter::new(usize, usize) -> Result<Self>`, `azimuth_kernel_radials()`, `range_kernel_gates()` | #175, #193 |
+| `filter::GaussianSmooth::{sigma_azimuth, sigma_range}` fields | `GaussianSmooth::new(f32, f32) -> Result<Self>`, `sigma_azimuth_radials()`, `sigma_range_gates()` | #175, #193 |
+| `filter::CorrelationCoefficientFilter::new(f32, SweepField) -> Result<Self>` | Same signature; adds `threshold()`, `correlation_coefficient()` | #193 |
+| `derived::StormRelativeVelocity::new(f32, f32) -> Result<Self>` | Same signature; adds `storm_direction_degrees()`, `storm_speed_mps()` | #193 |
+| `derived::VerticalCrossSection::new(f32, f64, f64, usize, usize)` | `VerticalCrossSection::builder(f64) -> VerticalCrossSectionBuilder`, setters `max_range_km(f64)`, `max_altitude_meters(f64)`, `width(usize)`, `height(usize)`, `build() -> Result<VerticalCrossSection>`; getters for all five | #164, #182, #193 |
+| `derived::VerticalCrossSection::compute(&self, &[SweepField])` | `compute(&self, &[SweepField], &RadarCoordinateSystem)` | #188 |
+| `detection::StormCell::elevation_degrees() -> f32` | `elevation_angle_degrees() -> f32` | #182 |
+| `detection::StormCell::max_reflectivity_azimuth_degrees() -> f32` | `max_reflectivity_azimuth_angle_degrees() -> f32` | #182 |
+| `detection::StormCell::bounds() -> &StormCellBounds` | `bounds() -> GeoExtent`; `bounds().min.latitude` for `min_latitude()`, and so on | #193 |
+| `detection::StormCellBounds` | Removed; use `nexrad_model::geo::GeoExtent` | #193 |
+| `detection::StormCellDetector::new(f32, usize) -> Result<Self>` | Same signature; adds `reflectivity_threshold_dbz()`, `min_gate_count()` | #193 |
+| `filter::{ThresholdFilter, CorrelationCoefficientFilter}` mask gates as `(0.0, GateStatus::NoData)` | Mask gates as `(value, GateStatus::Filtered)` | #187 |
+| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `Model(nexrad_model::Error)`, `GeometryMismatch { parameter }`, `UnexpectedProduct { expected, actual }` | #155, #185, #193 |
+| `result::Error::{InvalidParameter, InvalidGeometry, MissingData}(String)` | `InvalidParameter { parameter, reason }`, `InvalidGeometry { parameter, reason }`, `MissingData { what }` | #193 |
 
 </details>
 
@@ -1798,32 +1314,32 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 <details>
 <summary>Show the table</summary>
 
-| 1.0.0-rc.4 | 1.0 |
-|---|---|
-| `render_radials(&[Radial], Product, &DiscreteColorScale, &RenderOptions) -> Result<RgbaImage>` | Removed; `render_sweep` |
-| `render_radials_default(&[Radial], Product, &RenderOptions) -> Result<RgbaImage>` | Removed; `render_sweep` with `default_scale` |
-| `default_color_scale(Product) -> ColorScale` | Removed; `default_scale` |
-| `default_scale(Product) -> DiscreteColorScale` | `default_scale(Product) -> ColorScale` |
-| `ColorLookupTable::from_scale(&DiscreteColorScale, f32, f32, usize)`, `from_color_scale(&ColorScale, f32, f32, usize)` | `ColorLookupTable::new(&ColorScale, f32, f32, usize) -> Result<ColorLookupTable>` |
-| `ColorScaleLevel` private fields | `pub value: f32`, `pub color: Color` |
-| `Color::to_rgba8` truncating | Rounds to nearest, clamps to `0.0..=1.0` |
-| `RenderOptions::new(usize, usize)`, `size() -> (usize, usize)` | `new(u32, u32)`, `size() -> (u32, u32)` |
-| `RenderOptions::transparent()`, `bilinear()` | Removed; `with_background(Color::TRANSPARENT)`, `with_interpolation(Interpolation::Bilinear)` |
-| `RenderOptions::with_background([u8; 4])`, `background() -> Option<[u8; 4]>` | `with_background(Color)`, `background() -> Option<Color>` |
-| `RenderResult::new(RgbaImage, RenderMetadata)` | Crate-private |
-| `RenderResult::query_pixel(&SweepField, f64, f64)`, `query_geo(&SweepField, &GeoPoint)` | `RenderMetadata::query_pixel`, `RenderMetadata::query_geo` |
-| `RenderResult::query_polar(&SweepField, f32, f64)` | `RenderMetadata::query_polar(&SweepField, f64, f64)` |
-| `nexrad_render::Product` (re-export) | Removed; `nexrad_model::data::Product` |
-| `image` dependency with default features | `image` with only `png`; enable other codecs on your own `image` dependency |
-| `RenderMetadata::center_pixel() -> (f64, f64)` | `-> Option<(f64, f64)>` |
-| `RenderMetadata::{pixels_per_km, max_range_km}() -> f64` | `-> Option<f64>` |
-| `RenderMetadata::{pixel_distance_to_km, km_to_pixel_distance}(f64) -> f64` | `-> Option<f64>` |
-| `RenderMetadata::polar_to_pixel(f32, f64) -> (f64, f64)` | `polar_to_pixel(f64, f64) -> Option<(f64, f64)>` |
-| `RenderMetadata::elevation_degrees() -> Option<f32>` | `elevation_angle_degrees() -> Option<f64>` |
-| `PointQuery` | `#[non_exhaustive]` |
-| `result::Error::{NoRadials, ImageSave(String), ProductNotFound}` | `EmptyField`, `Image(image::ImageError)`, removed |
-| `result::Error` | `#[non_exhaustive]`; new `InvalidRange { min, max }`, `InvalidTableSize { size }`, `InvalidExtent`, `MissingCoordinateSystem` |
-| `result::Error`: `UnwindSafe`, `RefUnwindSafe` | Neither (`image::ImageError` is not) |
+| 1.0.0-rc.4 | 1.0 | PR |
+|---|---|---|
+| `render_radials(&[Radial], Product, &DiscreteColorScale, &RenderOptions) -> Result<RgbaImage>` | Removed; `render_sweep(&SweepField::from_radials(radials, product)?, &scale.into(), &options)?.into_image()` | #174 |
+| `render_radials_default(&[Radial], Product, &RenderOptions) -> Result<RgbaImage>` | Removed; `render_sweep` with `default_scale(product)` | #174 |
+| `default_color_scale(Product) -> ColorScale` | Removed; `default_scale` | #174 |
+| `default_scale(Product) -> DiscreteColorScale` | `default_scale(Product) -> ColorScale` | #174 |
+| `ColorLookupTable::from_scale(&DiscreteColorScale, f32, f32, usize)`, `from_color_scale(&ColorScale, f32, f32, usize)` | `ColorLookupTable::new(&ColorScale, f32, f32, usize) -> Result<ColorLookupTable>`; convert a `DiscreteColorScale` with `.into()` | #174, #194 |
+| `ColorScaleLevel` private fields | `pub value: f32`, `pub color: Color` | #194 |
+| `Color::to_rgba8` truncating | Rounds to nearest, clamps to `0.0..=1.0` | #194 |
+| `RenderOptions::new(usize, usize)`, `size() -> (usize, usize)` | `new(u32, u32)`, `size() -> (u32, u32)` | #174 |
+| `RenderOptions::transparent()`, `bilinear()` | Removed; `with_background(Color::TRANSPARENT)`, `with_interpolation(Interpolation::Bilinear)` | #194 |
+| `RenderOptions::with_background([u8; 4])`, `background() -> Option<[u8; 4]>` | `with_background(Color)` (`Color::from_rgba8(rgba)` or `rgba.into()`), `background() -> Option<Color>` (`None` when fully transparent) | #194 |
+| `RenderResult::new(RgbaImage, RenderMetadata)` | Crate-private | #174 |
+| `RenderResult::query_pixel(&SweepField, f64, f64)`, `query_geo(&SweepField, &GeoPoint)` | `RenderMetadata::query_pixel`, `RenderMetadata::query_geo` (`result.metadata().query_pixel(..)`) | #194 |
+| `RenderResult::query_polar(&SweepField, f32, f64)` | `RenderMetadata::query_polar(&SweepField, f64, f64)` | #164, #194 |
+| `nexrad_render::Product` (re-export) | Removed; `nexrad_model::data::Product` (or `nexrad::model::data::Product`) | #194 |
+| `image` dependency with default features | `image` with only `png`; enable other codecs on your own `image` dependency | #194 |
+| `RenderMetadata::center_pixel() -> (f64, f64)` | `-> Option<(f64, f64)>`, `Some` only for polar renders | #174 |
+| `RenderMetadata::{pixels_per_km, max_range_km}() -> f64` | `-> Option<f64>` | #174 |
+| `RenderMetadata::{pixel_distance_to_km, km_to_pixel_distance}(f64) -> f64` | `-> Option<f64>` | #174 |
+| `RenderMetadata::polar_to_pixel(f32, f64) -> (f64, f64)` | `polar_to_pixel(f64, f64) -> Option<(f64, f64)>` | #164, #174 |
+| `RenderMetadata::elevation_degrees() -> Option<f32>` | `elevation_angle_degrees() -> Option<f64>` | #164, #182 |
+| `PointQuery` | `#[non_exhaustive]`; read it from `RenderMetadata::query_*`, its `polar` a `PolarPoint` with `azimuth_angle_degrees` and `elevation_angle_degrees` | #182 |
+| `result::Error::{NoRadials, ImageSave(String), ProductNotFound}` | `EmptyField`, `Image(image::ImageError)`, removed (only `render_radials` produced it) | #174, #195 |
+| `result::Error` | `#[non_exhaustive]`; new `InvalidRange { min, max }`, `InvalidTableSize { size }`, `InvalidExtent`, `MissingCoordinateSystem` | #155, #194 |
+| `result::Error`: `UnwindSafe`, `RefUnwindSafe` | Neither (`image::ImageError` is not) | #174 |
 
 </details>
 
@@ -1832,22 +1348,24 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 <details>
 <summary>Show the table</summary>
 
-| 1.0.0-rc.4 | 1.0 |
-|---|---|
-| `extract_field`, `extract_fields`, `extract_first_field` | `Sweep::field`, `Scan::fields`, `Scan::first_field` |
-| `coordinate_system`, `coordinate_system_required` | `Scan::coordinate_system` |
-| `sites`, `site`, `nearest_site(f32, f32)` | `model::meta::registry::{sites, site_by_id, nearest_site(f64, f64)}` |
-| `download(Identifier)` | `download(&Identifier)` |
-| `load(&[u8])` | `load(Vec<u8>)` |
-| `download_latest(&str, NaiveDate)` | `download_latest(&str)`; for a given date, `list_scans` then `download` |
-| `download_at` miss: `Error::NoDataAvailable` | `Error::NoScanAt { site, datetime }`; the previous UTC date is searched too |
-| `stream(&str)` | `stream(&str, S) where S: Fn(Duration) -> F, F: Future<Output = ()>` |
-| (new) | `stream_with(PollConfig, S)`, `stream_scans(&str, S)`, `stream_scans_with(PollConfig, S)`, `futures_util` re-export |
-| `Error::MissingSiteMetadata` | Removed |
-| `Error::NoDataAvailable::date: String` | `date: chrono::NaiveDate`; variant requires `aws` |
-| `Error::{Model, Decode, Data, Render, Process, Io}` `Display` `"<layer> error: <message>"` | `"<layer> error"`; the message comes from `source()` |
-| `Error` | `#[non_exhaustive]` |
-| Features `aws-polling`, `tokio` | Removed; use `aws` |
+| 1.0.0-rc.4 | 1.0 | PR |
+|---|---|---|
+| `extract_field`, `extract_fields`, `extract_first_field` | `Sweep::field`, `Scan::fields`, `Scan::first_field` | #172 |
+| `coordinate_system`, `coordinate_system_required` | `Scan::coordinate_system` (`scan.coordinate_system().ok_or(/* your error */)?` for the latter) | #172 |
+| `sites`, `site`, `nearest_site(f32, f32)` | `model::meta::registry::{sites, site_by_id, nearest_site(f64, f64)}` | #164, #172 |
+| `download(Identifier)` | `download(&Identifier)` | #176 |
+| `load(&[u8])` | `load(Vec<u8>)` | #195 |
+| `download_latest(&str, NaiveDate)` | `download_latest(&str)`; for a given date, `list_scans` then `download` | #195 |
+| `download_at` miss: `Error::NoDataAvailable` | `Error::NoScanAt { site, datetime }`; the previous UTC date is searched too | #195 |
+| `stream(&str)` | `stream(&str, S) where S: Fn(Duration) -> F, F: Future<Output = ()>` | #161 |
+| (new) | `stream_with(PollConfig, S)`, `stream_scans(&str, S)`, `stream_scans_with(PollConfig, S)`, `futures_util` re-export (for `StreamExt`) | #195 |
+| (your own `chrono` dependency) | `nexrad::chrono` (feature `chrono`, implied by `aws`) | #176 |
+| `Error::Data(data::Error::Decode(e))`, `Error::Data(data::Error::Model(e))`, `Error::Data(data::Error::Io(e))` | `Error::Decode(e)`, `Error::Model(e)`, `Error::Io(e)` | #176 |
+| `Error::MissingSiteMetadata` | Removed (only `coordinate_system_required` produced it) | #172 |
+| `Error::NoDataAvailable::date: String` | `date: chrono::NaiveDate`; variant requires `aws` | #176 |
+| `Error::{Model, Decode, Data, Render, Process, Io}` `Display` `"<layer> error: <message>"` | `"<layer> error"`; the message comes from `source()` | #176, #195 |
+| `Error` | `#[non_exhaustive]` | #155 |
+| Features `aws-polling`, `tokio` | Removed; use `aws` | #156, #161 |
 
 </details>
 
@@ -1856,18 +1374,17 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 <details>
 <summary>Show the notes</summary>
 
-The [Upgrading from 0.x](#upgrading-from-0x) tables cover every public entry point of `nexrad` 0.0.3,
-`nexrad-model` 0.1.0, `nexrad-decode` 0.1.2 and `nexrad-data` 0.2.0. Beyond them, the 0.x diffs differ from the
-release-candidate diffs above only in:
+The [Upgrading from 0.x](#upgrading-from-0x) table covers every public entry point of `nexrad` 0.0.3, `nexrad-model`
+0.1.0, `nexrad-decode` 0.1.2 and `nexrad-data` 0.2.0. Beyond it, the 0.x diffs differ from the release-candidate diffs
+above only in:
 
 - `nexrad` 0.0.3: every item of the `model` module (`DataFile`, `Message31`, `Message31Header`, `MessageHeader`,
   `DataMoment`, `GenericData`, `DataBlockHeader`, `VolumeData`, `ElevationData`, `RadialData`, `VolumeHeaderRecord`)
-  is removed; see [nexrad 0.0.3](#nexrad-003) for their successors.
+  is removed; the table names their successors.
 - `nexrad-decode` 0.1.2: the message structs gained a lifetime (`Message<'a>`, `Header<'a>`, ...) and lost their public
-  fields; accessors replace them with the names in the
-  [nexrad-decode table](#nexrad-decode-100-rc3-to-10). Legacy digital radar data,
+  fields to the accessors in the [nexrad-decode tables](#nexrad-decode-100-rc3-to-10). Legacy digital radar data,
   performance/maintenance, console, control command, clutter map, censor zone, request, loopback, adaptation, PRF and
-  log messages are decoded into typed `MessageContents` variants instead of `Other`.
+  log messages decode into typed `MessageContents` variants instead of `Other`.
 - `nexrad-data` 0.2.0: the realtime timing and iterator API (`ChunkIterator`, `chunk_stream`, `PollConfig`,
   `RetryPolicy`, `DownloadedChunk`, `assemble_volume`) is new, and `File::compressed`/`decompress` handle gzip-wrapped
   volumes.
@@ -1876,15 +1393,15 @@ release-candidate diffs above only in:
 
 ### How these tables were produced
 
-The tables come from [`cargo public-api`](https://github.com/cargo-public-api/cargo-public-api) diffs of each crate
-against its published baseline, with trait-implementation noise removed, cross-checked against the CHANGELOGs and the
-pull requests they cite. To see the full diff for the version you are on, run this from a checkout of the repository
-(it needs a nightly toolchain for rustdoc JSON; the repository pins one in `xtask/src/public_api.rs`):
+From [`cargo public-api`](https://github.com/cargo-public-api/cargo-public-api) diffs of each crate against its
+published baseline, without trait-implementation noise, cross-checked against the CHANGELOGs and the pull requests they
+cite. To see the full diff for your version, run from a checkout (rustdoc JSON needs the nightly pinned in
+`xtask/src/public_api.rs`):
 
 ```sh
 cargo install cargo-public-api
 RUSTUP_TOOLCHAIN=nightly cargo public-api -p nexrad-data --all-features --simplified diff 1.0.0-rc.5
 ```
 
-Replace the crate and version with yours. The output has "Removed items", "Changed items" and "Added items" sections;
-items whose path or signature changed appear as a removal plus an addition.
+The output's "Removed items", "Changed items" and "Added items" sections show a changed path or signature as a removal
+plus an addition.

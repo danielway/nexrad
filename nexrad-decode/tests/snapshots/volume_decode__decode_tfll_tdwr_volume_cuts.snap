@@ -1,0 +1,29 @@
+---
+source: nexrad-decode/tests/volume_decode.rs
+expression: summary
+---
+[
+    "1: 360 radials at 0.26°",
+    "2: 360 radials at 0.26°",
+    "3: 360 radials at 0.97°",
+    "4: 360 radials at 1.89°",
+    "5: 360 radials at 4.00°",
+    "6: 360 radials at 0.26°",
+    "7: 360 radials at 6.06°",
+    "8: 360 radials at 8.26°",
+    "9: 360 radials at 11.29°",
+    "10: 360 radials at 0.26°",
+    "11: 360 radials at 15.07°",
+    "12: 360 radials at 20.08°",
+    "13: 360 radials at 0.97°",
+    "14: 360 radials at 0.26°",
+    "15: 360 radials at 1.89°",
+    "16: 360 radials at 4.00°",
+    "17: 360 radials at 6.06°",
+    "18: 360 radials at 0.26°",
+    "19: 360 radials at 8.26°",
+    "20: 360 radials at 11.29°",
+    "21: 360 radials at 15.07°",
+    "22: 360 radials at 0.26°",
+    "23: 360 radials at 20.08°",
+]

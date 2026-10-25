@@ -8,6 +8,7 @@ use nexrad_decode::messages::{decode_messages, MessageContents, MessageType};
 
 const KDMX_FILE: &[u8] = include_bytes!("../../downloads/KDMX20220305_232324_V06");
 const KCRP_FILE: &[u8] = include_bytes!("../../downloads/KCRP20170826_044114_V06");
+const TFLL_FILE: &[u8] = include_bytes!("../../downloads/TFLL20261025_203505_V08");
 
 #[test]
 fn test_decode_kdmx_volume_structure() {
@@ -193,4 +194,37 @@ fn test_decode_kdmx_volume_radar_data_properties() {
     // Should find volume scan boundaries
     assert!(found_volume_start, "expected to find volume scan start");
     assert!(found_volume_end, "expected to find volume scan end");
+}
+
+/// A TDWR volume: Fort Lauderdale (TFLL), 2026-10-25 20:35 UTC.
+///
+/// TDWR radials pad a few bytes past their last data block. Each record must still decode in
+/// full, giving 360 radials for every cut; reading the next header from the padding used to fail
+/// after the first radial of each record.
+#[test]
+fn test_decode_tfll_tdwr_volume_cuts() {
+    let volume = volume::File::new(TFLL_FILE.to_vec());
+
+    let mut cuts = std::collections::BTreeMap::<u8, (usize, f32)>::new();
+    for mut record in volume.records().expect("records") {
+        if record.compressed() {
+            record = record.decompress().expect("decompresses");
+        }
+
+        for message in decode_messages(record.data()).expect("decodes") {
+            if let MessageContents::DigitalRadarData(radar_data) = message.contents() {
+                let header = radar_data.header();
+                let cut = cuts
+                    .entry(header.elevation_number())
+                    .or_insert((0, header.elevation_angle_degrees()));
+                cut.0 += 1;
+            }
+        }
+    }
+
+    let summary: Vec<String> = cuts
+        .iter()
+        .map(|(number, (radials, angle))| format!("{number}: {radials} radials at {angle:.2}°"))
+        .collect();
+    insta::assert_debug_snapshot!(summary);
 }

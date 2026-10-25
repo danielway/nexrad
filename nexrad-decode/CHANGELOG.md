@@ -135,3 +135,5 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Multi-segment messages read each segment's full payload, so clutter filter bypass maps (type 13) decode, clutter
   filter maps (type 15) have 360 azimuth segments, and RDA adaptation data (type 18) fields past the first segment are
   read from the right offsets. (#190)
+- A digital radar data (type 31) message that pads past its last data block, as TDWR radials do, no longer throws
+  off the messages after it; decoding resumes at the message's declared end.

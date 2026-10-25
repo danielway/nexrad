@@ -323,6 +323,16 @@ fn decode_variable_length_message<'a>(
     let message_type = header.message_type();
     let contents = if message_type == MessageType::DigitalRadarData {
         let radar_data_message = digital_radar_data::Message::parse(reader)?;
+
+        // The data blocks can end before the message does: TDWR radials pad a few bytes past
+        // their last block. Skip to the declared end so the next message is read from its
+        // header rather than from the padding.
+        let declared_end = offset + MessageHeader::SIZE + declared_payload_size(&header);
+        let padding = declared_end.saturating_sub(reader.position());
+        if padding <= reader.remaining().len() {
+            reader.advance(padding);
+        }
+
         MessageContents::DigitalRadarData(Box::new(radar_data_message))
     } else {
         let payload_size = declared_payload_size(&header);

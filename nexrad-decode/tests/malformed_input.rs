@@ -170,6 +170,27 @@ fn test_iter_messages_yields_messages_before_the_error() {
 }
 
 #[test]
+fn test_digital_radar_data_padding_is_skipped() {
+    // TDWR radials end a few bytes after their last data block; the declared message size
+    // counts that padding.
+    const PADDING: usize = 6;
+    let mut padded = DIGITAL_RADAR_DATA.to_vec();
+    let halfwords = u16::from_be_bytes([padded[12], padded[13]]) + (PADDING / 2) as u16;
+    padded[12..14].copy_from_slice(&halfwords.to_be_bytes());
+    padded.extend_from_slice(&[0; PADDING]);
+
+    let data = concat(&[&padded, &padded, RDA_STATUS]);
+    let messages = decode_messages(&data).expect("decodes");
+    assert_eq!(messages.len(), 3);
+    assert_eq!(messages[0].size_bytes(), padded.len());
+    assert_eq!(messages[1].offset_bytes(), padded.len());
+    assert_eq!(
+        messages[2].header().message_type(),
+        MessageType::RdaStatusData
+    );
+}
+
+#[test]
 fn test_iter_messages_matches_decode_messages() {
     let data = concat(&[RDA_STATUS, VOLUME_COVERAGE_PATTERN, DIGITAL_RADAR_DATA]);
     let iterated = iter_messages(&data)

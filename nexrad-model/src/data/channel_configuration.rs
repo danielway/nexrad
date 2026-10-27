@@ -4,6 +4,9 @@ use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
 /// Channel configuration (phase coding) for an elevation cut.
+///
+/// `nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration` has the same variants
+/// and converts to and from this type without loss; it also maps each variant to its ICD code.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum ChannelConfiguration {
@@ -13,8 +16,8 @@ pub enum ChannelConfiguration {
     RandomPhase,
     /// SZ2 phase coding.
     Sz2Phase,
-    /// Unknown phase configuration.
-    Unknown,
+    /// A channel configuration the ICD does not define, carrying the code the decoder read.
+    Unknown(u8),
 }
 
 impl Display for ChannelConfiguration {
@@ -23,7 +26,7 @@ impl Display for ChannelConfiguration {
             ChannelConfiguration::ConstantPhase => write!(f, "Constant Phase"),
             ChannelConfiguration::RandomPhase => write!(f, "Random Phase"),
             ChannelConfiguration::Sz2Phase => write!(f, "SZ2 Phase"),
-            ChannelConfiguration::Unknown => write!(f, "Unknown"),
+            ChannelConfiguration::Unknown(code) => write!(f, "Unknown ({code})"),
         }
     }
 }

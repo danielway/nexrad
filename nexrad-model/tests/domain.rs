@@ -11,18 +11,18 @@ use nexrad_model::meta::{registry, Site};
 use nexrad_model::result::Error;
 
 const KNOWN_VCPS: [(u16, VcpNumber); 12] = [
-    (11, VcpNumber::Vcp11),
-    (12, VcpNumber::Vcp12),
-    (21, VcpNumber::Vcp21),
-    (31, VcpNumber::Vcp31),
-    (32, VcpNumber::Vcp32),
-    (35, VcpNumber::Vcp35),
-    (112, VcpNumber::Vcp112),
-    (121, VcpNumber::Vcp121),
-    (211, VcpNumber::Vcp211),
-    (212, VcpNumber::Vcp212),
-    (215, VcpNumber::Vcp215),
-    (221, VcpNumber::Vcp221),
+    (11, VcpNumber::VCP_11),
+    (12, VcpNumber::VCP_12),
+    (21, VcpNumber::VCP_21),
+    (31, VcpNumber::VCP_31),
+    (32, VcpNumber::VCP_32),
+    (35, VcpNumber::VCP_35),
+    (112, VcpNumber::VCP_112),
+    (121, VcpNumber::VCP_121),
+    (211, VcpNumber::VCP_211),
+    (212, VcpNumber::VCP_212),
+    (215, VcpNumber::VCP_215),
+    (221, VcpNumber::VCP_221),
 ];
 
 #[test]
@@ -108,7 +108,7 @@ fn sweep(elevation_number: u8, elevation_angle_degrees: f32) -> Sweep {
 
 /// A split-cut scan: surveillance and Doppler cuts at 0.5 and 1.5 degrees, then a batch cut.
 fn split_cut_scan() -> Scan {
-    let vcp = VolumeCoveragePattern::builder(VcpNumber::Vcp212)
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::VCP_212)
         .elevation_cuts(vec![
             cut(0.5, WaveformType::ContiguousSurveillance),
             cut(
@@ -181,28 +181,17 @@ fn sweeps_with_waveform_selects_by_cut_in_scan_order() {
 }
 
 #[test]
-fn vcp_number_from_number_names_every_known_pattern() {
+fn vcp_number_constants_carry_their_numbers() {
     for (number, vcp) in KNOWN_VCPS {
-        assert_eq!(VcpNumber::from_number(number), vcp);
+        assert_eq!(VcpNumber::new(number), vcp);
         assert_eq!(vcp.number(), number);
         assert_eq!(u16::from(vcp), number);
-        assert_eq!(
-            vcp.to_string(),
-            format!("VCP {number} ({})", vcp.description())
-        );
+        assert_eq!(vcp.to_string(), format!("VCP {number}"));
     }
 
-    assert_eq!(VcpNumber::from_number(999), VcpNumber::Unknown(999));
-    assert_eq!(VcpNumber::Unknown(999).number(), 999);
-    assert_eq!(VcpNumber::Unknown(999).to_string(), "VCP 999");
-}
-
-#[test]
-fn vcp_number_describes_every_known_pattern() {
-    for (_, vcp) in KNOWN_VCPS {
-        assert!(!vcp.description().is_empty());
-        assert_ne!(vcp.description(), "Unknown", "{vcp:?}");
-    }
+    assert_eq!(VcpNumber::from(999), VcpNumber::new(999));
+    assert_eq!(VcpNumber::new(999).number(), 999);
+    assert_eq!(VcpNumber::new(999).to_string(), "VCP 999");
 }
 
 fn coordinate_system() -> RadarCoordinateSystem {
@@ -323,4 +312,52 @@ fn nearest_site_wraps_across_the_antimeridian() {
 
     let site = registry::nearest_site(60.0, -179.5).unwrap();
     assert_eq!(site.id, "PAEC");
+}
+
+#[test]
+fn waveform_abbreviations_follow_the_icd_legend() {
+    assert_eq!(
+        WaveformType::ContiguousSurveillance.abbreviation(),
+        Some("CS")
+    );
+    assert_eq!(
+        WaveformType::ContiguousDopplerWithAmbiguityResolution.abbreviation(),
+        Some("CD/W")
+    );
+    assert_eq!(
+        WaveformType::ContiguousDopplerWithoutAmbiguityResolution.abbreviation(),
+        Some("CD/WO")
+    );
+    assert_eq!(WaveformType::Batch.abbreviation(), Some("B"));
+    assert_eq!(WaveformType::StaggeredPulsePair.abbreviation(), None);
+    assert_eq!(WaveformType::Unknown(9).abbreviation(), None);
+}
+
+#[test]
+fn unknown_codes_display_their_code() {
+    assert_eq!(WaveformType::Unknown(9).to_string(), "Unknown (9)");
+    assert_eq!(ChannelConfiguration::Unknown(3).to_string(), "Unknown (3)");
+    assert_eq!(
+        nexrad_model::data::PulseWidth::Unknown(1).to_string(),
+        "Unknown (1)"
+    );
+    assert_eq!(
+        nexrad_model::data::RadialStatus::Unknown(6).to_string(),
+        "Unknown (6)"
+    );
+    assert_eq!(
+        nexrad_model::data::RadialStatus::ScanStart.to_string(),
+        "Scan Start"
+    );
+}
+
+#[test]
+fn vcp_numbers_order_by_number() {
+    assert!(VcpNumber::VCP_35 < VcpNumber::VCP_112);
+    assert!(VcpNumber::new(7) < VcpNumber::VCP_11);
+    let label = match VcpNumber::new(212) {
+        VcpNumber::VCP_212 => "212",
+        _ => "other",
+    };
+    assert_eq!(label, "212");
 }

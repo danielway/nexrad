@@ -30,7 +30,7 @@ impl core::marker::UnsafeUnpin for nexrad_render::result::Error
 impl !core::panic::unwind_safe::RefUnwindSafe for nexrad_render::result::Error
 impl !core::panic::unwind_safe::UnwindSafe for nexrad_render::result::Error
 pub type nexrad_render::result::Result<T> = core::result::Result<T, nexrad_render::result::Error>
-pub enum nexrad_render::ColorScale
+#[non_exhaustive] pub enum nexrad_render::ColorScale
 pub nexrad_render::ColorScale::Continuous(nexrad_render::ContinuousColorScale)
 pub nexrad_render::ColorScale::Discrete(nexrad_render::DiscreteColorScale)
 impl nexrad_render::ColorScale
@@ -79,7 +79,7 @@ impl core::marker::Unpin for nexrad_render::result::Error
 impl core::marker::UnsafeUnpin for nexrad_render::result::Error
 impl !core::panic::unwind_safe::RefUnwindSafe for nexrad_render::result::Error
 impl !core::panic::unwind_safe::UnwindSafe for nexrad_render::result::Error
-pub enum nexrad_render::Interpolation
+#[non_exhaustive] pub enum nexrad_render::Interpolation
 pub nexrad_render::Interpolation::Bilinear
 pub nexrad_render::Interpolation::Nearest
 impl core::clone::Clone for nexrad_render::Interpolation

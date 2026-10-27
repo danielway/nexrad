@@ -8,7 +8,7 @@ use nexrad_model::meta::Site;
 
 /// Helper to create a minimal VCP for testing
 fn test_vcp(pattern_number: u16) -> VolumeCoveragePattern {
-    VolumeCoveragePattern::builder(VcpNumber::from_number(pattern_number))
+    VolumeCoveragePattern::builder(VcpNumber::new(pattern_number))
         .version(1)
         .doppler_velocity_resolution_mps(0.5)
         .pulse_width(PulseWidth::Short)
@@ -80,7 +80,7 @@ fn test_scan_creation() {
     ];
     let scan = Scan::new(test_vcp(212), sweeps);
 
-    assert_eq!(scan.coverage_pattern_number(), VcpNumber::Vcp212);
+    assert_eq!(scan.coverage_pattern_number(), VcpNumber::VCP_212);
     assert_eq!(scan.sweeps().len(), 2);
 }
 
@@ -536,24 +536,24 @@ fn test_vcp_builder_defaults_and_cuts() {
     .build()
     .unwrap();
 
-    let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212))
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212))
         .build()
         .unwrap();
-    assert_eq!(vcp.pattern_number(), VcpNumber::from_number(212));
+    assert_eq!(vcp.pattern_number(), VcpNumber::new(212));
     assert_eq!(vcp.version(), 0);
     assert_eq!(vcp.doppler_velocity_resolution_mps(), 0.5);
     assert_eq!(vcp.pulse_width(), PulseWidth::Short);
     assert!(!vcp.sails_enabled());
     assert!(vcp.elevation_cuts().is_empty());
 
-    let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212))
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212))
         .elevation_cut(cut.clone())
         .elevation_cut(cut.clone())
         .build()
         .unwrap();
     assert_eq!(vcp.elevation_cut_count(), 2);
 
-    let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212))
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212))
         .elevation_cut(cut.clone())
         .elevation_cuts(vec![cut])
         .build()

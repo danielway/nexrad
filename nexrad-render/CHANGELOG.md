@@ -69,6 +69,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - PNG encoding uses the `png` crate as a private dependency; `image` is a dependency only with the `image` feature.
   (#194, #203)
 - The published crate leaves out the benchmark, which needs files from outside it. (#196)
+- `ColorScale` and `Interpolation` are `#[non_exhaustive]`; matches on them outside this crate need a wildcard arm.
+  (#207)
 
 ### Removed
 

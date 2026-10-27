@@ -1,14 +1,13 @@
 use crate::result::{check_product, Error, Result};
-use crate::{CartesianGrid, ScanDerivedProduct};
+use crate::CartesianGrid;
 use nexrad_model::data::{CartesianField, GateStatus, Product, SweepField};
 use nexrad_model::geo::{GeoPoint, RadarCoordinateSystem};
 
 /// Composite reflectivity (CREF) — the maximum reflectivity at each geographic
 /// point across all elevation tilts.
 ///
-/// This is one of the most commonly used derived products in operational
-/// meteorology. It provides a plan view of the strongest echoes in the scan
-/// regardless of altitude, making it useful for identifying convective storms.
+/// The output is a plan view holding, for each grid cell, the largest valid reflectivity any
+/// tilt has at that point, whatever its altitude.
 ///
 /// # Algorithm
 ///
@@ -24,7 +23,7 @@ use nexrad_model::geo::{GeoPoint, RadarCoordinateSystem};
 ///
 /// ```
 /// use nexrad_process::derived::CompositeReflectivity;
-/// use nexrad_process::{CartesianGrid, ScanDerivedProduct};
+/// use nexrad_process::CartesianGrid;
 /// # let site = nexrad_model::meta::Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
 /// # let coord_sys = nexrad_model::geo::RadarCoordinateSystem::new(&site);
 /// # let lowest_tilt = nexrad_model::data::SweepField::builder("Reflectivity", "dBZ")
@@ -38,22 +37,35 @@ use nexrad_model::geo::{GeoPoint, RadarCoordinateSystem};
 /// # let ref_fields = vec![lowest_tilt];
 ///
 /// let grid = CartesianGrid::new(coord_sys.sweep_extent(230.0), 800, 800)?;
-/// let field = CompositeReflectivity.compute(&ref_fields, &coord_sys, &grid)?;
+/// let field = CompositeReflectivity::new().compute(&ref_fields, &coord_sys, &grid)?;
 /// # Ok::<(), nexrad_process::Error>(())
 /// ```
+///
+/// The type has no parameters today. It is non-exhaustive so that parameters can be added in a
+/// minor release; construct it with [`new`](Self::new) or [`Default`].
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[non_exhaustive]
 pub struct CompositeReflectivity;
 
-impl ScanDerivedProduct for CompositeReflectivity {
-    fn name(&self) -> &str {
-        "CompositeReflectivity"
+impl CompositeReflectivity {
+    /// Create a composite reflectivity product.
+    pub fn new() -> Self {
+        Self
     }
 
+    /// Compute the composite from the reflectivity sweep fields of a scan.
+    ///
+    /// # Parameters
+    ///
+    /// - `fields` — Reflectivity sweep fields, one per elevation tilt
+    /// - `coordinate_system` — Radar coordinate system for geographic projection
+    /// - `grid` — Geographic extent and dimensions of the output field
+    ///
     /// # Errors
     ///
     /// Returns [`Error::MissingData`] if `fields` is empty and
     /// [`Error::UnexpectedProduct`] if any field does not hold [`Product::Reflectivity`].
-    fn compute(
+    pub fn compute(
         &self,
         fields: &[SweepField],
         coordinate_system: &RadarCoordinateSystem,
@@ -172,7 +184,7 @@ mod tests {
 
         let fields = vec![make_uniform_field(0.5, 30.0)];
 
-        let result = CompositeReflectivity
+        let result = CompositeReflectivity::new()
             .compute(&fields, &coord_sys, &grid)
             .unwrap();
 
@@ -193,7 +205,7 @@ mod tests {
             make_uniform_field(3.5, 25.0),
         ];
 
-        let result = CompositeReflectivity
+        let result = CompositeReflectivity::new()
             .compute(&fields, &coord_sys, &grid)
             .unwrap();
 
@@ -215,7 +227,7 @@ mod tests {
             }
         }
 
-        let result = CompositeReflectivity
+        let result = CompositeReflectivity::new()
             .compute(
                 &[make_uniform_field(0.5, 20.0), filtered.clone()],
                 &coord_sys,
@@ -224,7 +236,7 @@ mod tests {
             .unwrap();
         assert_eq!(result.get(5, 5), Some((20.0, GateStatus::Valid)));
 
-        let result = CompositeReflectivity
+        let result = CompositeReflectivity::new()
             .compute(&[filtered], &coord_sys, &grid)
             .unwrap();
         assert_eq!(
@@ -238,7 +250,7 @@ mod tests {
         let coord_sys = RadarCoordinateSystem::new(&test_site());
         let grid = CartesianGrid::new(coord_sys.sweep_extent(25.0), 10, 10).unwrap();
 
-        let result = CompositeReflectivity.compute(&[], &coord_sys, &grid);
+        let result = CompositeReflectivity::new().compute(&[], &coord_sys, &grid);
         assert!(result.is_err());
     }
 
@@ -247,8 +259,11 @@ mod tests {
         let coord_sys = RadarCoordinateSystem::new(&test_site());
         let grid = CartesianGrid::new(coord_sys.sweep_extent(25.0), 12, 8)?;
 
-        let result =
-            CompositeReflectivity.compute(&[make_uniform_field(0.5, 30.0)], &coord_sys, &grid)?;
+        let result = CompositeReflectivity::new().compute(
+            &[make_uniform_field(0.5, 30.0)],
+            &coord_sys,
+            &grid,
+        )?;
         assert_eq!(result.label(), "Composite Reflectivity");
         assert_eq!(result.unit(), "dBZ");
         assert_eq!(result.extent(), grid.extent());
@@ -268,7 +283,7 @@ mod tests {
             .build()
             .unwrap();
         assert_eq!(
-            CompositeReflectivity.compute(
+            CompositeReflectivity::new().compute(
                 &[make_uniform_field(0.5, 30.0), unlabelled],
                 &coord_sys,
                 &grid
@@ -287,7 +302,7 @@ mod tests {
             .build()
             .unwrap();
         assert_eq!(
-            CompositeReflectivity.compute(&[velocity], &coord_sys, &grid),
+            CompositeReflectivity::new().compute(&[velocity], &coord_sys, &grid),
             Err(Error::UnexpectedProduct {
                 expected: Product::Reflectivity,
                 actual: Some(Product::Velocity),

@@ -883,7 +883,7 @@ fn elevation_cut_builder_rejects_non_finite_values() {
 #[test]
 fn coverage_pattern_builder_rejects_invalid_doppler_resolution() {
     let build = |resolution| {
-        VolumeCoveragePattern::builder(VcpNumber::from_number(212))
+        VolumeCoveragePattern::builder(VcpNumber::new(212))
             .doppler_velocity_resolution_mps(resolution)
             .build()
     };

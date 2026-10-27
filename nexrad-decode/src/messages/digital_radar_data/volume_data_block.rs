@@ -248,7 +248,7 @@ impl<'a> VolumeDataBlock<'a> {
 
     /// Identifies the volume coverage pattern in use.
     pub fn vcp_number(&self) -> VcpNumber {
-        VcpNumber::from_number(self.vcp_number_raw())
+        VcpNumber::new(self.vcp_number_raw())
     }
 
     /// Processing option flags.

@@ -63,7 +63,7 @@ impl<'a> Message<'a> {
     /// describe. Values decoded from this message are always accepted.
     #[cfg(feature = "model")]
     pub fn to_model(&self) -> Result<nexrad_model::data::VolumeCoveragePattern> {
-        use nexrad_model::data::{ElevationCut, VcpNumber, VolumeCoveragePattern};
+        use nexrad_model::data::{ElevationCut, VolumeCoveragePattern};
 
         let header = &self.header;
         let elevation_cuts = self
@@ -104,22 +104,20 @@ impl<'a> Message<'a> {
             })
             .collect::<std::result::Result<Vec<_>, _>>()?;
 
-        Ok(
-            VolumeCoveragePattern::builder(VcpNumber::from_number(header.vcp_number_raw()))
-                .version(header.version())
-                .doppler_velocity_resolution_mps(header.doppler_velocity_resolution_mps())
-                .pulse_width(header.pulse_width().into())
-                .sails_enabled(header.is_sails_vcp())
-                .sails_cut_count(header.sails_cut_count())
-                .mrle_enabled(header.is_mrle_vcp())
-                .mrle_cut_count(header.mrle_cut_count())
-                .mpda_enabled(header.is_mpda_vcp())
-                .base_tilt_enabled(header.is_base_tilt_vcp())
-                .base_tilt_count(header.base_tilt_count())
-                .sequence_active(header.vcp_sequencing_sequence_active())
-                .truncated(header.vcp_sequencing_truncated())
-                .elevation_cuts(elevation_cuts)
-                .build()?,
-        )
+        Ok(VolumeCoveragePattern::builder(header.vcp_number().into())
+            .version(header.version())
+            .doppler_velocity_resolution_mps(header.doppler_velocity_resolution_mps())
+            .pulse_width(header.pulse_width().into())
+            .sails_enabled(header.is_sails_vcp())
+            .sails_cut_count(header.sails_cut_count())
+            .mrle_enabled(header.is_mrle_vcp())
+            .mrle_cut_count(header.mrle_cut_count())
+            .mpda_enabled(header.is_mpda_vcp())
+            .base_tilt_enabled(header.is_base_tilt_vcp())
+            .base_tilt_count(header.base_tilt_count())
+            .sequence_active(header.vcp_sequencing_sequence_active())
+            .truncated(header.vcp_sequencing_truncated())
+            .elevation_cuts(elevation_cuts)
+            .build()?)
     }
 }

@@ -111,7 +111,7 @@ impl SweepProcessor for SweepPipeline {
 mod tests {
     use super::*;
     use crate::derived::{CompositeReflectivity, StormRelativeVelocity, VerticalCrossSection};
-    use crate::detection::StormCellDetector;
+    use crate::detection::ThresholdRegionDetector;
     use crate::filter::{
         CorrelationCoefficientFilter, GaussianSmooth, MedianFilter, ThresholdFilter,
     };
@@ -129,10 +129,9 @@ mod tests {
         assert_send_sync::<StormRelativeVelocity>();
         assert_send_sync::<CompositeReflectivity>();
         assert_send_sync::<VerticalCrossSection>();
-        assert_send_sync::<StormCellDetector>();
+        assert_send_sync::<ThresholdRegionDetector>();
         assert_send_sync::<CartesianGrid>();
         assert_send_sync::<Box<dyn SweepProcessor>>();
-        assert_send_sync::<Box<dyn crate::ScanDerivedProduct>>();
     }
 
     #[test]

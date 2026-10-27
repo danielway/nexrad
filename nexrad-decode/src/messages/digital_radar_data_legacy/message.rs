@@ -162,7 +162,7 @@ impl<'a> Message<'a> {
     /// Type 31 header. A value that does not fit in a `u8` (only possible in malformed data) is
     /// reported as [`RadialStatus::Unknown(u8::MAX)`](RadialStatus::Unknown).
     pub fn radial_status(&self) -> RadialStatus {
-        RadialStatus::from_raw(u8::try_from(self.radial_status_raw()).unwrap_or(u8::MAX))
+        RadialStatus::from_number(u8::try_from(self.radial_status_raw()).unwrap_or(u8::MAX))
     }
 
     /// Volume Coverage Pattern number (raw value). See [`vcp_number()`](Self::vcp_number) for the
@@ -173,7 +173,7 @@ impl<'a> Message<'a> {
 
     /// Volume Coverage Pattern number.
     pub fn vcp_number(&self) -> VcpNumber {
-        VcpNumber::from(self.vcp_number_raw())
+        VcpNumber::new(self.vcp_number_raw())
     }
 
     /// Unambiguous range in kilometers.

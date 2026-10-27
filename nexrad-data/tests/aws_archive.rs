@@ -19,7 +19,7 @@ async fn test_list_files_basic() {
         // All files should have the correct site
         for file in &files {
             assert_eq!(file.site(), site);
-            assert!(!file.is_metadata());
+            assert!(!file.is_model_data());
         }
     } else {
         println!(
@@ -48,7 +48,7 @@ async fn test_list_files_with_sizes_matches_list_files() {
         .collect();
     assert_eq!(names, listed_names);
     for file in &listed {
-        assert!(!file.identifier().is_metadata());
+        assert!(!file.identifier().is_model_data());
         assert!(file.size() > 0, "{} has no size", file.identifier().name());
     }
 }

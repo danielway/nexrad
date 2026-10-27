@@ -50,7 +50,7 @@ impl Ord for ListedFile {
 /// Lists the volume files for the specified site and UTC date. This effectively returns an index
 /// of volume files which can then be individually downloaded.
 ///
-/// Only volume files are returned: metadata objects ([`Identifier::is_metadata`]) and objects whose
+/// Only volume files are returned: model data objects ([`Identifier::is_model_data`]) and objects whose
 /// names do not follow the archive grammar are skipped rather than reported as errors.
 ///
 /// # Errors
@@ -69,7 +69,7 @@ pub async fn list_files(site: &str, date: NaiveDate) -> crate::result::Result<Ve
 /// Lists the volume files for the specified site and UTC date along with each file's size in
 /// bytes. Sizes come from the same listing request as [`list_files`], so this costs nothing extra.
 ///
-/// Only volume files are returned: metadata objects ([`Identifier::is_metadata`]) and objects whose
+/// Only volume files are returned: model data objects ([`Identifier::is_model_data`]) and objects whose
 /// names do not follow the archive grammar are skipped rather than reported as errors.
 ///
 /// # Errors
@@ -99,7 +99,7 @@ pub async fn list_files_with_sizes(
 fn volume_file(key: &str, size: u64) -> Option<ListedFile> {
     let name = key.rsplit('/').next()?;
     let identifier = Identifier::parse(name).ok()?;
-    (!identifier.is_metadata()).then_some(ListedFile { identifier, size })
+    (!identifier.is_model_data()).then_some(ListedFile { identifier, size })
 }
 
 #[cfg(test)]

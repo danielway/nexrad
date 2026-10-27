@@ -56,7 +56,7 @@ fn parses_every_fixture_name() {
         let identifier = parse(name);
         assert_eq!(identifier.name(), *name);
         assert_eq!(identifier.site(), &name[..4]);
-        assert!(!identifier.is_metadata());
+        assert!(!identifier.is_model_data());
     }
 }
 
@@ -69,7 +69,7 @@ fn modern_name() {
         Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap()
     );
     assert_eq!(identifier.version(), Some("V06"));
-    assert!(!identifier.is_metadata());
+    assert!(!identifier.is_model_data());
     assert!(!identifier.is_gzip());
 }
 
@@ -101,9 +101,9 @@ fn unversioned_gzip_name() {
 }
 
 #[test]
-fn metadata_name() {
+fn model_data_name() {
     let identifier = parse("KDMX20220305_232324_V06_MDM");
-    assert!(identifier.is_metadata());
+    assert!(identifier.is_model_data());
     assert_eq!(identifier.version(), Some("V06"));
     assert_eq!(identifier.site(), "KDMX");
     assert_eq!(
@@ -183,11 +183,11 @@ fn equality_ordering_and_hashing_use_the_name_only() {
     assert_ne!(a, c);
     assert_eq!(a.cmp(&c), a.name().cmp(c.name()));
 
-    // A metadata object differs from its volume file only by name, and orders after it
-    let metadata = parse("KDMX20220305_232324_V06_MDM");
-    assert_ne!(a, metadata);
-    assert_eq!(a.date_time(), metadata.date_time());
-    assert!(a < metadata);
+    // A model data object differs from its volume file only by name, and orders after it
+    let model_data = parse("KDMX20220305_232324_V06_MDM");
+    assert_ne!(a, model_data);
+    assert_eq!(a.date_time(), model_data.date_time());
+    assert!(a < model_data);
 }
 
 #[test]

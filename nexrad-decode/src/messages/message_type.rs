@@ -50,6 +50,13 @@ pub enum MessageType {
     /// Message type 18. Metadata.
     RdaAdaptationData,
 
+    /// Message type 29. Model Data, sent to the RPG from AWIPS and written to the Archive II
+    /// interface after a volume (Archive II ICD 2620010J §7.6.7). The payload is encoded with
+    /// External Data Representation (XDR) and is not decoded by this crate: its contents decode as
+    /// [`MessageContents::Other`](crate::messages::MessageContents::Other). In the archive bucket
+    /// it is stored as a separate `_MDM` object.
+    ModelData,
+
     /// Message type 31. Generic format digital radar data (primary data format).
     DigitalRadarData,
 
@@ -63,7 +70,7 @@ pub enum MessageType {
     ///
     /// - 14 is spare.
     /// - 16, 17, 24, 25 and 26 are reserved for FAA RMS use.
-    /// - 20, 21, 22, 23 and 29 are reserved.
+    /// - 20, 21, 22 and 23 are reserved.
     Reserved(u8),
 
     /// A message type number the ICD does not define, carrying that number. Kept for forward
@@ -93,10 +100,11 @@ impl MessageType {
             13 => MessageType::ClutterFilterBypassMap,
             15 => MessageType::ClutterFilterMap,
             18 => MessageType::RdaAdaptationData,
+            29 => MessageType::ModelData,
             31 => MessageType::DigitalRadarData,
             32 => MessageType::RdaPrfData,
             33 => MessageType::RdaLogData,
-            14 | 16 | 17 | 20..=26 | 29 => MessageType::Reserved(number),
+            14 | 16 | 17 | 20..=26 => MessageType::Reserved(number),
             other => MessageType::Unknown(other),
         }
     }
@@ -119,6 +127,7 @@ impl MessageType {
             MessageType::ClutterFilterBypassMap => 13,
             MessageType::ClutterFilterMap => 15,
             MessageType::RdaAdaptationData => 18,
+            MessageType::ModelData => 29,
             MessageType::DigitalRadarData => 31,
             MessageType::RdaPrfData => 32,
             MessageType::RdaLogData => 33,
@@ -139,8 +148,14 @@ mod tests {
     }
 
     #[test]
+    fn model_data_is_message_type_29() {
+        assert_eq!(MessageType::from_number(29), MessageType::ModelData);
+        assert_eq!(MessageType::ModelData.number(), 29);
+    }
+
+    #[test]
     fn spare_and_reserved_numbers_classify_as_reserved() {
-        for number in [14, 16, 17, 20, 21, 22, 23, 24, 25, 26, 29] {
+        for number in [14, 16, 17, 20, 21, 22, 23, 24, 25, 26] {
             assert_eq!(
                 MessageType::from_number(number),
                 MessageType::Reserved(number)

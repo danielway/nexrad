@@ -37,7 +37,7 @@ NOAA uploads archive and real-time NEXRAD data to AWS Open Data S3 buckets which
 Historical volumes are archived by date and radar site in the `unidata-nexrad-level2` bucket. The
 `nexrad_data::aws::archive` module provides functions for accessing these volumes. The `archive::list_files` function
 queries volume files for a given UTC date and radar site, returning a validated identifier for each volume
-(metadata objects are skipped). The `archive::download_file`
+(model data objects, which carry message type 29 and have an `_MDM` suffix, are skipped). The `archive::download_file`
 function downloads a volume file by its identifier.
 
 ### Real-Time Data

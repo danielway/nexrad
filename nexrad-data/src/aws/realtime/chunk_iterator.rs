@@ -87,10 +87,8 @@ enum Step {
 
 /// Pull-based iterator for real-time NEXRAD chunks.
 ///
-/// This iterator allows manual control over timing, making it suitable for
-/// environments without tokio or where caller-controlled scheduling is preferred.
-/// Instead of blocking, callers can use [`next_expected_time`](Self::next_expected_time)
-/// to determine when to call [`try_next`](Self::try_next).
+/// The caller controls timing: [`next_expected_time`](Self::next_expected_time) estimates when
+/// to call [`try_next`](Self::try_next).
 ///
 /// Within a volume, [`try_next`](Self::try_next) returns chunks in sequence order. When a volume
 /// ends, it waits for the next volume and always returns its Start chunk (sequence 1, carrying the
@@ -119,20 +117,11 @@ pub struct ChunkIterator {
 }
 
 impl ChunkIterator {
-    /// Starts a new chunk iterator at the latest available volume.
+    /// Starts a new chunk iterator at the latest available volume, shorthand for
+    /// [`start_with(PollConfig::new(site))`](Self::start_with).
     ///
-    /// This will make network requests to discover the latest volume and download
-    /// the most recent chunk. The returned [`ChunkIteratorInit`] contains both the
-    /// iterator and the initial chunk(s), including the Start chunk if joining mid-volume.
-    ///
-    /// # Returns
-    ///
-    /// A [`ChunkIteratorInit`] containing:
-    /// - `iterator`: The initialized iterator ready for `try_next()` calls
-    /// - `latest_chunk`: The most recent chunk in the volume
-    /// - `start_chunk`: The Start chunk if it differs from `latest_chunk` (contains VCP metadata)
-    ///
-    /// This is shorthand for [`start_with(PollConfig::new(site))`](Self::start_with).
+    /// Finds the latest volume and downloads its most recent chunk, plus the volume's Start chunk
+    /// when joining mid-volume; see [`ChunkIteratorInit`].
     ///
     /// # Errors
     ///
@@ -171,7 +160,6 @@ impl ChunkIterator {
             current_vcp_unavailable: false,
         };
 
-        // Fetch the initial chunk(s)
         let (latest_chunk, start_chunk) = iterator.fetch_initial_chunks(volume).await?;
 
         Ok(ChunkIteratorInit {
@@ -430,7 +418,6 @@ impl ChunkIterator {
                 let identifier = &downloaded.identifier;
                 self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
-                // Update VCP if this is a start chunk
                 if identifier.chunk_type() == ChunkType::Start {
                     self.refresh_vcp(&downloaded.chunk);
                 }
@@ -440,7 +427,6 @@ impl ChunkIterator {
                 Ok(Some(downloaded))
             }
             Err(Error::Aws(AwsError::S3ObjectNotFound)) => {
-                // Chunk not yet available
                 debug!("Chunk {} not yet available", chunk_id.name());
                 Ok(None)
             }
@@ -525,7 +511,7 @@ impl ChunkIterator {
     /// Returns the total number of HTTP requests made by this iterator.
     ///
     /// This includes requests made during initialization and all subsequent
-    /// `try_next()` calls. Useful for displaying network statistics in UIs.
+    /// `try_next()` calls.
     pub fn requests_made(&self) -> usize {
         self.requests_made
     }

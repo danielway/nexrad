@@ -1,7 +1,6 @@
 //! Core data model for NEXRAD weather radar data.
 //!
-//! This crate provides an ergonomic API for working with NEXRAD radar data, documented
-//! for users who may not be familiar with the NOAA Archive II format.
+//! The types and their documentation assume no familiarity with the NOAA Archive II format.
 //!
 //! # Overview
 //!

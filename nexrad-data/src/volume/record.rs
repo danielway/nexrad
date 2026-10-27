@@ -264,7 +264,6 @@ fn split_ldm_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
             break;
         }
 
-        // Check bounds for reading record size
         if position + 4 > data.len() {
             return Err(Error::TruncatedRecord {
                 expected: position + 4,
@@ -284,7 +283,6 @@ fn split_ldm_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
             });
         }
 
-        // Check bounds for full record
         let record_end = position + record_size + 4;
         if record_end > data.len() {
             return Err(Error::TruncatedRecord {

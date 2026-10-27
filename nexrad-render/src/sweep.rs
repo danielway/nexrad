@@ -22,13 +22,6 @@ use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 /// ([`Projection::Geographic`]): each pixel centre is mapped to the polar point a beam
 /// at the sweep's elevation passes over, using the options' coordinate system.
 ///
-/// # Arguments
-///
-/// * `field` - The sweep field to render
-/// * `color_scale` - Color scale to apply (discrete or continuous)
-/// * `options` - Rendering options (size, background, extent, coordinate system,
-///   interpolation, value range, status colors)
-///
 /// # Errors
 ///
 /// Returns [`Error::InvalidDimensions`] if either output dimension is zero,

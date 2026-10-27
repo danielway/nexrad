@@ -38,27 +38,16 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SweepField {
-    /// Human-readable label (e.g., "Reflectivity", "Dealiased Velocity").
     label: String,
-    /// Physical unit string (e.g., "dBZ", "m/s").
     unit: String,
-    /// The radar product this field holds, if it corresponds to one.
     product: Option<Product>,
-    /// Elevation angle in degrees.
     elevation_angle_degrees: f32,
-    /// Azimuth angle in degrees for each radial row, sorted ascending.
     azimuth_angles_degrees: Vec<f32>,
-    /// Azimuthal spacing between radials in degrees.
     azimuth_spacing_degrees: f32,
-    /// Range to center of first gate in km.
     first_gate_range_km: f64,
-    /// Gate spacing in km.
     gate_interval_km: f64,
-    /// Number of gates per radial.
     gate_count: usize,
-    /// Flat array of gate values, row-major: `values[az_idx * gate_count + gate_idx]`.
     values: Vec<f32>,
-    /// Parallel status array: `statuses[az_idx * gate_count + gate_idx]`.
     statuses: Vec<GateStatus>,
 }
 
@@ -691,19 +680,12 @@ impl SweepFieldBuilder {
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct CartesianField {
-    /// Human-readable label.
     label: String,
-    /// Physical unit string.
     unit: String,
-    /// Geographic extent of the grid.
     extent: GeoExtent,
-    /// Number of columns.
     width: usize,
-    /// Number of rows.
     height: usize,
-    /// Flat array of values, row-major.
     values: Vec<f32>,
-    /// Parallel status array.
     statuses: Vec<GateStatus>,
 }
 
@@ -860,21 +842,13 @@ impl CartesianField {
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct VerticalField {
-    /// Human-readable label.
     label: String,
-    /// Physical unit string.
     unit: String,
-    /// Horizontal axis: (min_km, max_km) distance range.
     distance_range_km: (f64, f64),
-    /// Vertical axis: (min_meters, max_meters) altitude range.
     altitude_range_meters: (f64, f64),
-    /// Number of horizontal bins (columns).
     width: usize,
-    /// Number of vertical bins (rows).
     height: usize,
-    /// Flat array of values, row-major.
     values: Vec<f32>,
-    /// Parallel status array.
     statuses: Vec<GateStatus>,
 }
 

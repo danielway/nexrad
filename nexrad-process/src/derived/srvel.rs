@@ -53,13 +53,9 @@ pub struct StormRelativeVelocity {
 }
 
 impl StormRelativeVelocity {
-    /// Create a new storm-relative velocity processor.
-    ///
-    /// # Parameters
-    ///
-    /// - `storm_direction_degrees` — Direction the storm is moving from (not toward), in
-    ///   degrees clockwise from north, in `0.0..360.0`.
-    /// - `storm_speed_mps` — Storm movement speed in m/s.
+    /// Create a storm-relative velocity processor for a storm moving from
+    /// `storm_direction_degrees` (not toward; degrees clockwise from north, in `0.0..360.0`) at
+    /// `storm_speed_mps` meters per second.
     ///
     /// # Errors
     ///

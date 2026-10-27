@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 /// [`from_number`](Self::from_number) and [`number`](Self::number).
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[non_exhaustive]
 pub enum PulseWidth {
     /// Short pulse (code 2).
     Short,
@@ -71,6 +72,8 @@ impl From<nexrad_model::data::PulseWidth> for PulseWidth {
             Model::Short => Self::Short,
             Model::Long => Self::Long,
             Model::Unknown(code) => Self::Unknown(code),
+            // A variant named by a newer nexrad-model than this nexrad-decode was built for.
+            _ => Self::Unknown(u8::MAX),
         }
     }
 }

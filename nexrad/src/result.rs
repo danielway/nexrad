@@ -148,6 +148,7 @@ pub enum Error {
     /// date nor the previous one has an archive volume for the site.
     #[cfg(feature = "aws")]
     #[error("no data available for site {site} on {date}")]
+    #[non_exhaustive]
     NoDataAvailable {
         /// The radar site identifier (e.g., "KTLX").
         site: String,
@@ -161,6 +162,7 @@ pub enum Error {
     /// requested datetime, for example because the radar was not operating then.
     #[cfg(feature = "aws")]
     #[error("no scan for site {site} overlaps {datetime}")]
+    #[non_exhaustive]
     NoScanAt {
         /// The radar site identifier (e.g., "KTLX").
         site: String,
@@ -178,5 +180,41 @@ impl From<nexrad_data::result::Error> for Error {
             nexrad_data::result::Error::Io(error) => Error::Io(error),
             other => Error::Data(other),
         }
+    }
+}
+
+#[cfg(all(test, feature = "aws"))]
+mod tests {
+    use super::Error;
+
+    #[test]
+    fn no_data_available_message() {
+        let date = chrono::NaiveDate::from_ymd_opt(2023, 5, 20).expect("valid date");
+        let err = Error::NoDataAvailable {
+            site: "KTLX".to_string(),
+            date,
+        };
+
+        assert_eq!(
+            err.to_string(),
+            "no data available for site KTLX on 2023-05-20"
+        );
+    }
+
+    #[test]
+    fn no_scan_at_message() {
+        let datetime = chrono::NaiveDate::from_ymd_opt(2023, 5, 20)
+            .and_then(|date| date.and_hms_opt(20, 16, 43))
+            .expect("valid datetime")
+            .and_utc();
+        let err = Error::NoScanAt {
+            site: "KTLX".to_string(),
+            datetime,
+        };
+
+        assert_eq!(
+            err.to_string(),
+            "no scan for site KTLX overlaps 2023-05-20 20:16:43 UTC"
+        );
     }
 }

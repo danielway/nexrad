@@ -26,6 +26,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Getters for the parameters of `VerticalCrossSection`, `StormRelativeVelocity`, `StormCellDetector` and
   `CorrelationCoefficientFilter`. (#193)
 - `derived::CompositeReflectivity::new()`. (#207)
+- `Error::Custom(Box<dyn Error + Send + Sync>)` for errors of a `SweepProcessor` implemented outside this crate. (#215)
 
 ### Changed
 
@@ -60,6 +61,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   documented as connected regions at or above one reflectivity threshold; behaviour is unchanged. (#207)
 - `derived::CompositeReflectivity` is `#[non_exhaustive]`, so it is built with `new()` or `Default` rather than a
   literal, and `compute` is an inherent method. (#207)
+- `Error` no longer implements `Clone` or `PartialEq`, so it can hold a boxed source; compare with `matches!`. (#215)
+- The struct-like variants of `Error` are `#[non_exhaustive]`: patterns outside this crate need `..`. (#215)
+- `SweepPipeline::then` is `#[must_use]`. (#215)
 
 ### Removed
 

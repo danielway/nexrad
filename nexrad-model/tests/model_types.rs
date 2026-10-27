@@ -185,7 +185,7 @@ fn test_moment_data_creation() {
     assert_eq!(moment.data_word_size(), 8);
     assert_eq!(moment.scale(), 2.0);
     assert_eq!(moment.offset(), 33.0);
-    assert_eq!(moment.raw_values(), &[0, 1, 50, 100, 150, 200, 255]);
+    assert_eq!(moment.raw_bytes(), &[0, 1, 50, 100, 150, 200, 255]);
     assert_eq!(
         moment.raw_gate_values().collect::<Vec<_>>(),
         vec![0, 1, 50, 100, 150, 200, 255]
@@ -517,19 +517,19 @@ fn test_radial_builder_moment_stores_by_product() {
         let moment = radial.moment(product).expect("moment is set");
         assert_eq!(moment.product(), product);
     }
-    assert_eq!(radial.reflectivity().unwrap().raw_values(), &[100]);
-    assert_eq!(radial.velocity().unwrap().raw_values(), &[101]);
-    assert_eq!(radial.spectrum_width().unwrap().raw_values(), &[102]);
+    assert_eq!(radial.reflectivity().unwrap().raw_bytes(), &[100]);
+    assert_eq!(radial.velocity().unwrap().raw_bytes(), &[101]);
+    assert_eq!(radial.spectrum_width().unwrap().raw_bytes(), &[102]);
     assert_eq!(
-        radial.differential_reflectivity().unwrap().raw_values(),
+        radial.differential_reflectivity().unwrap().raw_bytes(),
         &[103]
     );
-    assert_eq!(radial.differential_phase().unwrap().raw_values(), &[104]);
+    assert_eq!(radial.differential_phase().unwrap().raw_bytes(), &[104]);
     assert_eq!(
-        radial.correlation_coefficient().unwrap().raw_values(),
+        radial.correlation_coefficient().unwrap().raw_bytes(),
         &[105]
     );
-    assert_eq!(radial.clutter_filter_power().unwrap().raw_values(), &[106]);
+    assert_eq!(radial.clutter_filter_power().unwrap().raw_bytes(), &[106]);
 }
 
 #[test]
@@ -812,12 +812,7 @@ fn test_scan_coordinate_system() {
         .feedhorn_height_meters(20)
         .build()
         .unwrap();
-    let scan = Scan::with_site(
-        site.clone(),
-        VcpNumber::VCP_212,
-        Some(test_vcp(212)),
-        vec![],
-    );
+    let scan = Scan::new(VcpNumber::VCP_212, Some(test_vcp(212)), vec![]).with_site(site.clone());
 
     let coords = scan.coordinate_system().expect("site metadata");
     assert_eq!(coords, RadarCoordinateSystem::new(&site));

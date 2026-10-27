@@ -46,12 +46,14 @@ impl PollConfig {
 
     /// Sets the retry policy for downloading individual chunks in
     /// [`chunk_stream`](super::chunk_stream).
+    #[must_use]
     pub fn with_download_policy(mut self, policy: RetryPolicy) -> Self {
         self.download_policy = policy;
         self
     }
 
     /// Sets the retry policy for discovering new volumes in [`chunk_stream`](super::chunk_stream).
+    #[must_use]
     pub fn with_discovery_policy(mut self, policy: RetryPolicy) -> Self {
         self.discovery_policy = policy;
         self

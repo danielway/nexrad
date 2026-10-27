@@ -154,7 +154,7 @@ impl ScanBuilder {
         let number = vcp_number(number);
         let sweeps = Sweep::split_by_elevation_number(self.radials);
         Ok(match self.site {
-            Some(site) => Scan::with_site(site, number, self.coverage_pattern, sweeps),
+            Some(site) => Scan::new(number, self.coverage_pattern, sweeps).with_site(site),
             None => Scan::new(number, self.coverage_pattern, sweeps),
         })
     }
@@ -234,11 +234,10 @@ mod tests {
 
     #[test]
     fn model_errors_convert_into_decode_errors() {
-        let error: Error = nexrad_model::result::Error::InvalidSite {
-            parameter: "latitude",
-            reason: "must be finite and within -90.0..=90.0",
-        }
-        .into();
+        let error: Error = nexrad_model::meta::Site::builder(*b"KDMX", f64::NAN, 0.0)
+            .build()
+            .expect_err("NaN latitude")
+            .into();
         assert!(matches!(
             error,
             Error::Model(nexrad_model::result::Error::InvalidSite {

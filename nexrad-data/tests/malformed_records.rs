@@ -228,7 +228,7 @@ fn test_record_messages_corrupt_message() {
     assert!(!record.compressed());
 
     match record.messages() {
-        Err(Error::Decode(nexrad_decode::result::Error::UnexpectedEof { offset })) => {
+        Err(Error::Decode(nexrad_decode::result::Error::UnexpectedEof { offset, .. })) => {
             assert_eq!(offset, 2432);
         }
         other => panic!("Expected Decode(UnexpectedEof), got: {:?}", other),

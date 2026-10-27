@@ -307,12 +307,12 @@ mod tests {
             .gate_count(4)
             .build()
             .unwrap();
-        assert_eq!(
+        assert!(matches!(
             srv.process(&reflectivity),
             Err(Error::UnexpectedProduct {
                 expected: Product::Velocity,
                 actual: Some(Product::Reflectivity),
             })
-        );
+        ));
     }
 }

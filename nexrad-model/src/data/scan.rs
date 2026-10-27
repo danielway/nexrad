@@ -35,7 +35,8 @@ impl Scan {
     ///
     /// `coverage_pattern_number` is stored as given, even when `coverage_pattern` carries a
     /// different [`pattern_number`](VolumeCoveragePattern::pattern_number); some archived volumes
-    /// record a different number in each place.
+    /// record a different number in each place. The scan has no [`site`](Self::site) until
+    /// [`with_site`](Self::with_site) sets one.
     pub fn new(
         coverage_pattern_number: VcpNumber,
         coverage_pattern: Option<VolumeCoveragePattern>,
@@ -49,20 +50,11 @@ impl Scan {
         }
     }
 
-    /// Create a new radar scan with site metadata, coverage pattern number, optional coverage
-    /// pattern, and sweeps. See [`new`](Self::new).
-    pub fn with_site(
-        site: Site,
-        coverage_pattern_number: VcpNumber,
-        coverage_pattern: Option<VolumeCoveragePattern>,
-        sweeps: Vec<Sweep>,
-    ) -> Self {
-        Self {
-            site: Some(site),
-            coverage_pattern_number,
-            coverage_pattern,
-            sweeps,
-        }
+    /// Set the radar site that produced this scan.
+    #[must_use]
+    pub fn with_site(mut self, site: Site) -> Self {
+        self.site = Some(site);
+        self
     }
 
     /// The radar site that produced this scan, if available.
@@ -189,7 +181,7 @@ impl Scan {
     /// let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212)).build()?;
     /// let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
     ///
-    /// let scan = Scan::with_site(site, vcp.pattern_number(), Some(vcp.clone()), vec![]);
+    /// let scan = Scan::new(vcp.pattern_number(), Some(vcp.clone()), vec![]).with_site(site);
     /// let coords = scan.coordinate_system().unwrap();
     /// assert_eq!(coords.latitude(), 35.3331);
     ///

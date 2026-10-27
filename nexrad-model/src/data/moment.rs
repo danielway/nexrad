@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 /// CFP status codes for clutter filter power moments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[non_exhaustive]
 pub enum CfpStatus {
     /// Clutter filter not applied.
     FilterNotApplied,
@@ -44,7 +45,7 @@ pub struct MomentData {
     data_word_size: u8,
     scale: f32,
     offset: f32,
-    raw_values: BinaryData<Vec<u8>>,
+    raw_bytes: BinaryData<Vec<u8>>,
 }
 
 impl MomentData {
@@ -77,10 +78,10 @@ impl MomentData {
     ///     .is_err());
     /// # Ok::<(), nexrad_model::result::Error>(())
     /// ```
-    pub fn builder(product: Product, raw_values: Vec<u8>) -> MomentDataBuilder {
+    pub fn builder(product: Product, raw_bytes: Vec<u8>) -> MomentDataBuilder {
         MomentDataBuilder {
             product,
-            raw_values,
+            raw_bytes,
             gate_count: None,
             first_gate_range_meters: 0,
             gate_interval_meters: 0,
@@ -139,15 +140,15 @@ impl MomentData {
 
     /// The raw encoded gate values as bytes. For 8-bit moments, each byte is one gate.
     /// For 16-bit moments, each pair of bytes is a big-endian `u16` gate value.
-    pub fn raw_values(&self) -> &[u8] {
-        &self.raw_values
+    pub fn raw_bytes(&self) -> &[u8] {
+        &self.raw_bytes
     }
 
     /// Iterator over raw gate values as `u16`, handling both 8-bit and 16-bit word sizes.
     pub fn raw_gate_values(&self) -> impl Iterator<Item = u16> + '_ {
         let is_16bit = self.data_word_size == 16;
         let step = if is_16bit { 2 } else { 1 };
-        self.raw_values.chunks_exact(step).map(move |chunk| {
+        self.raw_bytes.chunks_exact(step).map(move |chunk| {
             if is_16bit {
                 u16::from_be_bytes([chunk[0], chunk[1]])
             } else {
@@ -205,7 +206,7 @@ impl MomentData {
 /// The product and the raw gate bytes are required. All other properties are optional and
 /// default to:
 ///
-/// - `gate_count`: the number of gates `raw_values` holds at the word size
+/// - `gate_count`: the number of gates `raw_bytes` holds at the word size
 /// - `first_gate_range_meters`: `0`
 /// - `gate_interval_meters`: `0`
 /// - `data_word_size`: `8`
@@ -215,7 +216,7 @@ impl MomentData {
 #[must_use]
 pub struct MomentDataBuilder {
     product: Product,
-    raw_values: Vec<u8>,
+    raw_bytes: Vec<u8>,
     gate_count: Option<usize>,
     first_gate_range_meters: u16,
     gate_interval_meters: u16,
@@ -286,17 +287,17 @@ impl MomentDataBuilder {
         };
         let gate_count = self
             .gate_count
-            .unwrap_or(self.raw_values.len() / bytes_per_gate);
+            .unwrap_or(self.raw_bytes.len() / bytes_per_gate);
         let compact_gate_count =
             u16::try_from(gate_count).map_err(|_| Error::InvalidMomentData {
                 parameter: "gate_count",
                 reason: "must fit in a u16",
             })?;
         let expected_len = gate_count * bytes_per_gate;
-        if self.raw_values.len() != expected_len {
+        if self.raw_bytes.len() != expected_len {
             return Err(Error::MomentDataLength {
                 expected: expected_len,
-                actual: self.raw_values.len(),
+                actual: self.raw_bytes.len(),
             });
         }
         for (parameter, value) in [("scale", self.scale), ("offset", self.offset)] {
@@ -316,7 +317,7 @@ impl MomentDataBuilder {
             data_word_size: self.data_word_size,
             scale: self.scale,
             offset: self.offset,
-            raw_values: BinaryData::new(self.raw_values),
+            raw_bytes: BinaryData::new(self.raw_bytes),
         })
     }
 }
@@ -329,7 +330,7 @@ impl<'de> Deserialize<'de> for MomentData {
         deserializer: D,
     ) -> std::result::Result<Self, D::Error> {
         let repr = MomentDataRepr::deserialize(deserializer)?;
-        MomentData::builder(repr.product, repr.raw_values.0)
+        MomentData::builder(repr.product, repr.raw_bytes.0)
             .gate_count(usize::from(repr.gate_count))
             .first_gate_range_meters(repr.first_gate_range_meters)
             .gate_interval_meters(repr.gate_interval_meters)
@@ -353,7 +354,7 @@ struct MomentDataRepr {
     data_word_size: u8,
     scale: f32,
     offset: f32,
-    raw_values: BinaryData<Vec<u8>>,
+    raw_bytes: BinaryData<Vec<u8>>,
 }
 
 /// The data moment value for a product in a radial's gate. The value may be a floating-point

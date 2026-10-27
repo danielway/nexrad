@@ -11,10 +11,10 @@ pub nexrad::result::Error::Data(nexrad_data::result::Error)
 pub nexrad::result::Error::Decode(nexrad_decode::result::Error)
 pub nexrad::result::Error::Io(core::io::error::Error)
 pub nexrad::result::Error::Model(nexrad_model::result::Error)
-pub nexrad::result::Error::NoDataAvailable
+#[non_exhaustive] pub nexrad::result::Error::NoDataAvailable
 pub nexrad::result::Error::NoDataAvailable::date: chrono::naive::date::NaiveDate
 pub nexrad::result::Error::NoDataAvailable::site: alloc::string::String
-pub nexrad::result::Error::NoScanAt
+#[non_exhaustive] pub nexrad::result::Error::NoScanAt
 pub nexrad::result::Error::NoScanAt::datetime: chrono::datetime::DateTime<chrono::offset::utc::Utc>
 pub nexrad::result::Error::NoScanAt::site: alloc::string::String
 pub nexrad::result::Error::Process(nexrad_process::result::Error)
@@ -50,10 +50,10 @@ pub nexrad::Error::Data(nexrad_data::result::Error)
 pub nexrad::Error::Decode(nexrad_decode::result::Error)
 pub nexrad::Error::Io(core::io::error::Error)
 pub nexrad::Error::Model(nexrad_model::result::Error)
-pub nexrad::Error::NoDataAvailable
+#[non_exhaustive] pub nexrad::Error::NoDataAvailable
 pub nexrad::Error::NoDataAvailable::date: chrono::naive::date::NaiveDate
 pub nexrad::Error::NoDataAvailable::site: alloc::string::String
-pub nexrad::Error::NoScanAt
+#[non_exhaustive] pub nexrad::Error::NoScanAt
 pub nexrad::Error::NoScanAt::datetime: chrono::datetime::DateTime<chrono::offset::utc::Utc>
 pub nexrad::Error::NoScanAt::site: alloc::string::String
 pub nexrad::Error::Process(nexrad_process::result::Error)

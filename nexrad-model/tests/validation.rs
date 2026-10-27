@@ -35,14 +35,18 @@ fn geometry_parameter(result: Result<impl std::fmt::Debug, Error>) -> &'static s
 
 fn moment_parameter(result: Result<MomentData, Error>) -> (&'static str, &'static str) {
     match result {
-        Err(Error::InvalidMomentData { parameter, reason }) => (parameter, reason),
+        Err(Error::InvalidMomentData {
+            parameter, reason, ..
+        }) => (parameter, reason),
         other => panic!("expected InvalidMomentData, got {other:?}"),
     }
 }
 
 fn moment_length(result: Result<MomentData, Error>) -> (usize, usize) {
     match result {
-        Err(Error::MomentDataLength { expected, actual }) => (expected, actual),
+        Err(Error::MomentDataLength {
+            expected, actual, ..
+        }) => (expected, actual),
         other => panic!("expected MomentDataLength, got {other:?}"),
     }
 }
@@ -93,15 +97,16 @@ fn sweep_field_set_reports_out_of_bounds() {
     field.set(1, 2, 42.0, GateStatus::Valid).unwrap();
     assert_eq!(field.get(1, 2), Some((42.0, GateStatus::Valid)));
 
-    assert_eq!(
+    assert!(matches!(
         field.set(0, 4, 1.0, GateStatus::Valid),
         Err(Error::IndexOutOfBounds {
             row: 0,
             column: 4,
             rows: 3,
             columns: 4,
+            ..
         })
-    );
+    ));
     assert!(matches!(
         field.set(3, 0, 1.0, GateStatus::Valid),
         Err(Error::IndexOutOfBounds { row: 3, .. })
@@ -137,15 +142,16 @@ fn cartesian_field_indexing_is_checked() {
     assert_eq!(field.get(1, 4), Some((3.0, GateStatus::Valid)));
     assert_eq!(field.get(0, 5 + 3), None);
     assert_eq!(field.get(2, 0), None);
-    assert_eq!(
+    assert!(matches!(
         field.set(0, 5, 1.0, GateStatus::Valid),
         Err(Error::IndexOutOfBounds {
             row: 0,
             column: 5,
             rows: 2,
             columns: 5,
+            ..
         })
-    );
+    ));
 }
 
 #[test]
@@ -504,7 +510,7 @@ fn moment_data_exposes_constructor_units() {
 }
 
 #[test]
-fn unscaled_moment_decodes_sentinels_before_raw_values() {
+fn unscaled_moment_decodes_sentinels_before_raw_bytes() {
     // 16-bit, scale 0: raw 0 and 1 are sentinels, not the values 0.0 and 1.0.
     let moment = MomentData::builder(Product::DifferentialPhase, vec![0, 0, 0, 1, 0x01, 0x00])
         .first_gate_range_meters(2125)
@@ -577,13 +583,14 @@ fn sweep_new_rejects_radials_from_other_elevations() {
             .unwrap()
     };
 
-    assert_eq!(
+    assert!(matches!(
         Sweep::new(2, vec![radial(2), radial(3)]),
         Err(Error::ElevationMismatch {
             expected: 2,
             actual: 3,
+            ..
         })
-    );
+    ));
     assert_eq!(Sweep::new(2, vec![radial(2)]).unwrap().radials().len(), 1);
 
     // Splitting by elevation upholds the invariant without an error path.
@@ -598,13 +605,14 @@ fn sweep_merge_reports_both_elevation_numbers() {
         .unwrap()
         .merge(Sweep::new(5, vec![]).unwrap());
 
-    assert_eq!(
+    assert!(matches!(
         merged,
         Err(Error::ElevationMismatch {
             expected: 3,
             actual: 5,
+            ..
         })
-    );
+    ));
 }
 
 // --- SiteBuilder::build ---

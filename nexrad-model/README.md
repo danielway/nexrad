@@ -39,7 +39,7 @@ Scan                           A complete radar volume
 Every moment, including clutter filter power, is a `MomentData` that knows its `Product`.
 `Radial::moment(product)` is the uniform accessor; the named getters are shorthands for it.
 `MomentData` exposes the raw encoding (`scale()`, `offset()`, `data_word_size()`,
-`raw_values()`, `raw_gate_values()`) and decodes gates through `iter()`/`values()`, which
+`raw_bytes()`, `raw_gate_values()`) and decodes gates through `iter()`/`values()`, which
 yield `MomentValue` variants:
 
 - `MomentValue::Value(f32)` — a valid measurement

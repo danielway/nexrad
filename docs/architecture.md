@@ -127,6 +127,9 @@ appear in public signatures:
 | `futures_core` | The `Stream` returned by `nexrad_data::aws::realtime::chunk_stream` and `nexrad::stream` | Return type only |
 | `futures_util` | The facade, internally | Not re-exported and not in any signature; consumers depend on `futures-util` or `futures` themselves for `StreamExt` |
 
+`chrono` and `futures_core` are 0.x crates. The 1.x releases stay on `chrono` 0.4 and `futures-core` 0.3; moving to a
+later major version of either is a major release of every crate that exposes it.
+
 Not allowed in public signatures: `reqwest`, `bzip2`, `png`, `zerocopy` traits, `tokio`, `once_cell`. HTTP failures are
 boxed inside `AwsError`, bzip2 failures surface as `Error::Io`, PNG encoder failures are boxed inside
 `nexrad_render::Error::Encode`, and the `#[repr(C)]` wire structs of `nexrad-decode` and
@@ -203,7 +206,10 @@ does not build for WASM.
 
 - Every crate defines its errors in a public `result` module and re-exports `Error` and `Result` at its root;
   `nexrad-data` also re-exports `AwsError` (feature `aws`).
-- Every `Error` enum, and `nexrad_data::result::AwsError`, is `#[non_exhaustive]`.
+- Every `Error` enum, and `nexrad_data::result::AwsError`, is `#[non_exhaustive]`, and so is each of their struct-like
+  variants, so a variant can gain a field in a minor release. Code outside the defining crate builds these errors only
+  through the operations that return them.
+- `nexrad_process::Error::Custom` boxes the error of a `SweepProcessor` implemented outside the crate.
 - No error carries a 0.x dependency's error type as a payload. HTTP errors (`nexrad_data::AwsError`) and image
   encoder errors (`nexrad_render::Error::Encode`) are boxed as `Box<dyn std::error::Error + Send + Sync>`, which
   `source()` returns; I/O failures while writing an image are `nexrad_render::Error::Io(std::io::Error)`.
@@ -217,7 +223,9 @@ does not build for WASM.
 With the `serde` feature, `nexrad-model` types serialize with field names equal to their accessor names, enum variants
 as their PascalCase names, `VcpNumber` as its number and raw gate bytes as a byte string. `nexrad-decode`'s `serde`
 feature covers only the five types it shares with the model, in the same form. Deserialization applies the
-same validation as the constructors and builders. The representation is stable within a major version.
+same validation as the constructors and builders. The representation is stable within a major version: a field added
+to a serialized type in a minor release carries `#[serde(default)]`, so data written by an earlier 1.x release still
+deserializes.
 
 ## Naming Conventions
 
@@ -361,14 +369,17 @@ serializes.
 Non-exhaustive structs and enum variants (fields may be added in minor releases, so code outside the defining crate
 cannot construct them with a literal and must use `..` in struct patterns): `nexrad_model::meta::registry::SiteEntry`,
 `nexrad_render::PointQuery`, the `Projection::Polar`, `Geographic` and `Vertical` variants, and every struct-like
-variant of `nexrad_data`'s `Error` and `AwsError` (such as `AwsError::S3GetObject { status, body }`).
+variant of every crate's `Error` and of `nexrad_data::AwsError` (such as `AwsError::S3GetObject { status, body }`).
 
 `nexrad_data::aws::realtime::ChunkType` is non-exhaustive as well: the Archive II ICD defines a fourth LDM key type,
 `M` (Model Data), that the real-time bucket does not use today.
 
 The ICD code enums in the `nexrad-decode` message modules that carry an `Unknown(n)` or `Reserved(n)` variant (the
-status, mode and code enums of the RDA status, clutter, radar data and VCP messages) are also non-exhaustive, as are
-`ColorScale` and `Interpolation` in `nexrad-render` and the unit struct `nexrad_process::derived::CompositeReflectivity`.
+status, mode and code enums of the RDA status, clutter, radar data and VCP messages) are also non-exhaustive, and so are
+their `nexrad-model` counterparts (`WaveformType`, `ChannelConfiguration`, `PulseWidth`, `RadialStatus`) and
+`nexrad_model::data::CfpStatus`, as are `ColorScale` and `Interpolation` in `nexrad-render` and the unit struct
+`nexrad_process::derived::CompositeReflectivity`. A variant that a newer `nexrad-model` names converts into an older
+`nexrad-decode` as `Unknown(255)`.
 An `Unknown(n)` or `Reserved(n)` value may be promoted to a named variant in a minor release when a later ICD names that
 code; code that needs a stable result across releases should compare the raw code (`number()` or the `*_raw()`
 accessor) rather than match on `Unknown(n)`.

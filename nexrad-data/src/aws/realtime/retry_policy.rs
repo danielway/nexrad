@@ -80,24 +80,28 @@ impl RetryPolicy {
     }
 
     /// Sets the maximum number of retry attempts.
+    #[must_use]
     pub fn with_max_attempts(mut self, n: usize) -> Self {
         self.max_attempts = n;
         self
     }
 
     /// Sets the initial delay before the first retry.
+    #[must_use]
     pub fn with_initial_delay(mut self, d: Duration) -> Self {
         self.initial_delay = d;
         self
     }
 
     /// Sets the backoff multiplier applied after each attempt.
+    #[must_use]
     pub fn with_backoff_multiplier(mut self, m: f64) -> Self {
         self.backoff_multiplier = m;
         self
     }
 
     /// Sets the maximum delay between attempts.
+    #[must_use]
     pub fn with_max_delay(mut self, d: Duration) -> Self {
         self.max_delay = d;
         self

@@ -15,6 +15,14 @@ const DRD_HEADER: usize = MessageHeader::SIZE;
 /// Offset of the first data block pointer within a type 31 message.
 const DRD_POINTERS: usize = DRD_HEADER + 32;
 
+/// The offset of the `UnexpectedEof` error that decoding `result` must have failed with.
+fn eof_offset<T: std::fmt::Debug>(result: nexrad_decode::Result<T>) -> usize {
+    match result {
+        Err(Error::UnexpectedEof { offset, .. }) => offset,
+        other => panic!("expected UnexpectedEof, got {other:?}"),
+    }
+}
+
 fn concat(parts: &[&[u8]]) -> Vec<u8> {
     parts.concat()
 }
@@ -45,51 +53,31 @@ fn test_zero_tail_shorter_than_header_is_padding() {
 #[test]
 fn test_truncated_header() {
     let data = concat(&[RDA_STATUS, &[0xFF; 10]]);
-    assert_eq!(
-        decode_messages(&data),
-        Err(Error::UnexpectedEof {
-            offset: RDA_STATUS.len()
-        })
-    );
+    assert_eq!(eof_offset(decode_messages(&data)), RDA_STATUS.len());
 
     // A short tail that is not all zero is an error even at the start of the input.
-    assert_eq!(
-        decode_messages(&[0, 0, 1]),
-        Err(Error::UnexpectedEof { offset: 0 })
-    );
+    assert_eq!(eof_offset(decode_messages(&[0, 0, 1])), 0);
 }
 
 #[test]
 fn test_zero_tail_longer_than_header_is_an_error() {
     // A zero header declares a fixed-segment frame, which must be present in full.
     let data = concat(&[RDA_STATUS, &[0; MessageHeader::SIZE]]);
-    assert_eq!(
-        decode_messages(&data),
-        Err(Error::UnexpectedEof {
-            offset: RDA_STATUS.len()
-        })
-    );
+    assert_eq!(eof_offset(decode_messages(&data)), RDA_STATUS.len());
 }
 
 #[test]
 fn test_truncated_fixed_segment_body() {
     let data = concat(&[RDA_STATUS, &VOLUME_COVERAGE_PATTERN[..1000]]);
-    assert_eq!(
-        decode_messages(&data),
-        Err(Error::UnexpectedEof {
-            offset: RDA_STATUS.len()
-        })
-    );
+    assert_eq!(eof_offset(decode_messages(&data)), RDA_STATUS.len());
 }
 
 #[test]
 fn test_truncated_digital_radar_data_body() {
     let data = concat(&[RDA_STATUS, &DIGITAL_RADAR_DATA[..DRD_HEADER + 10]]);
     assert_eq!(
-        decode_messages(&data),
-        Err(Error::UnexpectedEof {
-            offset: RDA_STATUS.len() + DRD_HEADER
-        })
+        eof_offset(decode_messages(&data)),
+        RDA_STATUS.len() + DRD_HEADER
     );
 }
 
@@ -101,13 +89,15 @@ fn test_bad_data_block_pointer() {
 
     // The pointer table is 8 pointers long, so the first block cannot start before byte 64.
     let pointers_end = DRD_POINTERS - DRD_HEADER + 8 * 4;
-    assert_eq!(
-        decode_messages(&data),
+    match decode_messages(&data) {
         Err(Error::InvalidDataBlockPointer {
-            bytes: pointers_end,
-            position: RDA_STATUS.len() + DRD_HEADER + pointers_end,
-        })
-    );
+            bytes, position, ..
+        }) => {
+            assert_eq!(bytes, pointers_end);
+            assert_eq!(position, RDA_STATUS.len() + DRD_HEADER + pointers_end);
+        }
+        other => panic!("expected InvalidDataBlockPointer, got {other:?}"),
+    }
 }
 
 #[test]
@@ -253,8 +243,8 @@ fn test_other_carries_type_and_payload_of_variable_length_message() {
 
     // A payload cut short is an error at the message's offset.
     assert_eq!(
-        decode_messages(&message[..message.len() - 1]),
-        Err(Error::UnexpectedEof { offset: 0 })
+        eof_offset(decode_messages(&message[..message.len() - 1])),
+        0
     );
 }
 
@@ -268,10 +258,7 @@ fn test_random_garbage_data() {
 
 #[test]
 fn test_all_zeros() {
-    assert_eq!(
-        decode_messages(&[0; 1000]),
-        Err(Error::UnexpectedEof { offset: 0 })
-    );
+    assert_eq!(eof_offset(decode_messages(&[0; 1000])), 0);
 }
 
 #[test]
@@ -321,8 +308,5 @@ fn test_oversized_message_length() {
     data[12] = 0xFF;
     data[13] = 0xFF;
     data[24] = 0xFF;
-    assert_eq!(
-        decode_messages(&data),
-        Err(Error::UnexpectedEof { offset: 0 })
-    );
+    assert_eq!(eof_offset(decode_messages(&data)), 0);
 }

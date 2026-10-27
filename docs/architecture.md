@@ -49,6 +49,8 @@ Each library crate owns exactly one concern:
 | `nexrad` | Re-exports, I/O entry points, unified error type | New functionality |
 
 A WASM application can therefore use `nexrad-model` and `nexrad-render` without file I/O or native networking code.
+`nexrad-render` returns rendered images in memory; its only I/O is the optional encoding of a rendered image to a
+caller-supplied writer or file path.
 
 ### Layering Rules
 
@@ -90,9 +92,10 @@ let scan = nexrad_data::volume::File::new(bytes).decompress()?.scan()?;
 
 ### What the public API is
 
-Everything reachable through `pub` that is not `#[doc(hidden)]` is public API and is covered by semver. Items that must
-stay evolvable but are needed by examples or by `nexrad-inspector` are `#[doc(hidden)]` and carry no stability
-guarantee.
+Everything reachable through `pub` is public API and is covered by semver. The library crates have no `#[doc(hidden)]`
+items: the examples and `nexrad-inspector` use only the documented public API, and an item one of them needs is made
+public and documented, not hidden. The only items outside the public API are those compiled for doc tests alone
+(`#[cfg(doctest)]`, which wires each crate's README into `cargo test --doc`); they do not exist in a normal build.
 
 Each library crate sets `[package.metadata.docs.rs] all-features = true` and `rustdoc-args = ["--cfg", "docsrs"]` so
 docs.rs shows the features feature-gated items require, enables `#![warn(unnameable_types)]` so a public type cannot
@@ -278,7 +281,7 @@ let filtered = SweepPipeline::new()
 The renderer converts field data to images in three steps:
 
 1. **Color scale selection**: a `ColorScale` is discrete (step-function) or continuous (linear interpolation);
-   `default_scale(product)` picks the standard scale for a product.
+   `default_scale(product)` picks the crate's built-in scale for a product.
 2. **LUT construction**: `ColorLookupTable::new(&scale, min, max, size)` pre-computes RGBA entries for O(1) lookup;
    renderers build it over `RenderOptions::value_range()`, else the field's product range, else the field's valid-value
    range.

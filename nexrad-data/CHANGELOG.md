@@ -74,7 +74,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The `aws` feature's build requirements (a C compiler, and NASM on Windows x86 targets) are documented. (#196)
 - `aws` no longer includes a TLS backend; the new `aws-rustls` feature (default) adds rustls with the aws-lc-rs
   provider, which `aws` enabled before. On `wasm32`, `aws` alone is enough; on native targets, `aws` without a TLS
-  backend builds but its HTTPS requests fail. (#PRNUM)
+  backend builds but its HTTPS requests fail. (#204)
 
 ### Removed
 

@@ -330,7 +330,7 @@ Renames and removals are in the [nexrad-data table](#nexrad-data-100-rc7-to-10).
 
 **Features.** `aws-polling` is removed; streaming is part of the default `aws` (#161). `aws` no longer includes a TLS
 backend: the new default feature `aws-rustls` adds rustls with the aws-lc-rs provider, which `aws` used to enable
-(#PRNUM). With `default-features = false`, add `aws-rustls` next to `aws` on native targets, or requests to the HTTPS
+(#204). With `default-features = false`, add `aws-rustls` next to `aws` on native targets, or requests to the HTTPS
 endpoints fail at runtime; on `wasm32`, `aws` alone is enough. `nexrad-model` is now `model`, and
 `futures`, `once_cell`, `rayon`, `reqwest`, `tokio` and `xml` are no longer features (#156). `nexrad-decode`'s default
 features are no longer enabled through this crate, so add `nexrad-decode = { version = "1.0", features = ["uom"] }` if
@@ -524,7 +524,7 @@ let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options
 
 Renames and removals are in the [nexrad table](#nexrad-100-rc4-to-10).
 
-**Features** (#156, #161, #PRNUM). `aws-polling` and `tokio` are removed; `stream` is part of `aws`. Sub-crates are
+**Features** (#156, #161, #204). `aws-polling` and `tokio` are removed; `stream` is part of `aws`. Sub-crates are
 depended on without default features, and each facade feature enables what it needs: `decode` implies `model`, `data`
 implies `decode`, `model` and `chrono`, `parallel` implies `data`, `aws` implies `data`, and `aws-rustls` implies `aws`.
 A minimal local-file build (`features = ["data"]`) no longer compiles reqwest.
@@ -1291,7 +1291,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | (new) | `volume::File::coverage_pattern_message() -> Result<volume_coverage_pattern::Message<'static>>` | #183 |
 | `volume::Record::messages()`, `radials()`, `File::scan()`, `aws::realtime::assemble_volume` skipping undecodable messages | Fail with `Error::Decode` on the first one | #190 |
 | `aws::realtime::ChunkIterator::try_next()`, `chunk_stream(..)` at volume rollover: newest chunk of the next volume | The next volume's Start chunk, then each later chunk in sequence order | #183 |
-| feature `aws` (with rustls) | `aws` (no TLS backend) and default `aws-rustls` (rustls with aws-lc-rs) | #PRNUM |
+| feature `aws` (with rustls) | `aws` (no TLS backend) and default `aws-rustls` (rustls with aws-lc-rs) | #204 |
 
 </details>
 
@@ -1375,10 +1375,10 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `download_at` miss: `Error::NoDataAvailable` | `Error::NoScanAt { site, datetime }`; the previous UTC date is searched too | #195 |
 | `stream(&str)` | `stream(&str, S) where S: Fn(Duration) -> F, F: Future<Output = ()>` | #161 |
 | (new) | `stream_with(PollConfig, S)`, `stream_scans(&str, S)`, `stream_scans_with(PollConfig, S)`, `futures_util` re-export (for `StreamExt`) | #195 |
-| (your own `chrono` dependency) | `nexrad::chrono` (feature `chrono`, implied by `data`) | #176, #PRNUM |
-| feature `wasm` | Removed; list the features you use (every feature except `parallel` builds for `wasm32`) | #PRNUM |
-| default features `full` | `data`, `aws`, `aws-rustls`, `render` | #PRNUM |
-| feature `aws` (with rustls) | `aws` (no TLS backend) and `aws-rustls` (rustls with aws-lc-rs) | #PRNUM |
+| (your own `chrono` dependency) | `nexrad::chrono` (feature `chrono`, implied by `data`) | #176, #204 |
+| feature `wasm` | Removed; list the features you use (every feature except `parallel` builds for `wasm32`) | #204 |
+| default features `full` | `data`, `aws`, `aws-rustls`, `render` | #204 |
+| feature `aws` (with rustls) | `aws` (no TLS backend) and `aws-rustls` (rustls with aws-lc-rs) | #204 |
 | `Error::Data(data::Error::Decode(e))`, `Error::Data(data::Error::Model(e))`, `Error::Data(data::Error::Io(e))` | `Error::Decode(e)`, `Error::Model(e)`, `Error::Io(e)` | #176 |
 | `Error::MissingSiteMetadata` | Removed (only `coordinate_system_required` produced it) | #172 |
 | `Error::NoDataAvailable::date: String` | `date: chrono::NaiveDate`; variant requires `aws` | #176 |

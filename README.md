@@ -162,7 +162,7 @@ fn main() -> nexrad::Result<()> {
     let color_scale = default_scale(Product::Reflectivity);
 
     let result = render_sweep(&field, &color_scale, &options)?;
-    result.save("reflectivity.png")?;
+    result.save_png("reflectivity.png")?;
     Ok(())
 }
 ```
@@ -176,7 +176,7 @@ Each feature also enables the features listed under "Implies".
 | `model` | Core data types (Scan, Sweep, Radial) | | Pure Rust |
 | `decode` | Binary protocol decoding | `model` | chrono, zerocopy |
 | `data` | Local file I/O | `decode`, `model` | bzip2 |
-| `render` | Image rendering | `model` | image |
+| `render` | Image rendering | `model` | png |
 | `process` | Processing algorithms | `model` | nexrad-model |
 | `aws` | AWS S3 downloads and real-time streaming | `data`, `chrono` | reqwest, futures-util |
 | `parallel` | Parallel decompression | `data` | rayon |
@@ -185,6 +185,7 @@ Each feature also enables the features listed under "Implies".
 | `chrono` | DateTime type support | | chrono |
 | `wasm` | All WASM-compatible features | (see below) | (see below) |
 | `full` | All features (native only, default) | `wasm`, `parallel` | All above |
+| `image` | `RenderResult::into_rgba_image` (opt-in, not in `full`, outside the semver promise) | `render` | image |
 
 ### WASM Support
 

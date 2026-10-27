@@ -16,8 +16,8 @@
 use nexrad::model::data::Product;
 use nexrad::process::derived::CompositeReflectivity;
 use nexrad::process::filter::ThresholdFilter;
+use nexrad::process::CartesianGrid;
 use nexrad::process::SweepPipeline;
-use nexrad::process::{CartesianGrid, ScanDerivedProduct};
 use nexrad::render::{default_scale, render_sweep, ColorScale, RenderOptions};
 use std::env;
 
@@ -53,7 +53,7 @@ fn main() -> nexrad::Result<()> {
     // --- Render original (unprocessed) ---
     let options = RenderOptions::native_for(&field);
     let result = render_sweep(&field, &color_scale, &options)?;
-    result.save("pipeline_original.png")?;
+    result.save_png("pipeline_original.png")?;
     println!("Saved pipeline_original.png");
 
     // --- Apply a processing pipeline ---
@@ -62,7 +62,7 @@ fn main() -> nexrad::Result<()> {
     let filtered = pipeline.execute(&field)?;
 
     let result = render_sweep(&filtered, &color_scale, &options)?;
-    result.save("pipeline_filtered.png")?;
+    result.save_png("pipeline_filtered.png")?;
     println!("Saved pipeline_filtered.png (threshold 5-75 dBZ)");
 
     // --- Compute composite reflectivity ---
@@ -78,11 +78,11 @@ fn main() -> nexrad::Result<()> {
     let extent = coord_sys.sweep_extent(ref_fields[0].max_range_km());
 
     let grid = CartesianGrid::new(extent, 800, 800)?;
-    let composite = CompositeReflectivity.compute(&ref_fields, &coord_sys, &grid)?;
+    let composite = CompositeReflectivity::new().compute(&ref_fields, &coord_sys, &grid)?;
 
     let cart_result =
         nexrad::render::render_cartesian(&composite, &color_scale, &RenderOptions::new(800, 800))?;
-    cart_result.save("pipeline_composite.png")?;
+    cart_result.save_png("pipeline_composite.png")?;
     println!("Saved pipeline_composite.png (composite reflectivity)");
 
     // --- Demonstrate RenderResult metadata ---

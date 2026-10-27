@@ -37,8 +37,10 @@ Message {
             azimuth_number: 1,
             elevation_angle_degrees: 0.57128906,
             elevation_number: 1,
-            radial_status: VolumeScanStart,
-            vcp_number: Vcp32,
+            radial_status: ScanStart,
+            vcp_number: VcpNumber(
+                32,
+            ),
             unambiguous_range_km: 466.0,
             nyquist_velocity_mps: 0.0,
             atmospheric_attenuation_db_per_km: -0.012,

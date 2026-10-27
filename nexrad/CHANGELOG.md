@@ -21,6 +21,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   volume; chunks before the first Start chunk are skipped, and a stream error discards the partial volume. (#195)
 - `nexrad::futures_util` re-exports `futures_util` (feature `aws`), for `StreamExt` on the real-time streams. (#195)
 - `Error::NoScanAt { site, datetime }` (feature `aws`), from `download_at`. (#195)
+- An opt-in `image` feature enabling `nexrad-render/image` (`RenderResult::into_rgba_image`). It is not part of `wasm`
+  or `full`, tracks the `image` crate's own 0.x releases and is excluded from the semver promise. (#203)
 
 ### Changed
 
@@ -38,10 +40,13 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Errors from `nexrad-data` are flattened by layer: its decode, model and I/O errors become `Error::Decode`,
   `Error::Model` and `Error::Io`, and other data errors stay `Error::Data`. (#176)
 - `Error::NoDataAvailable` requires the `aws` feature, and its `date` is a `chrono::NaiveDate`. (#176)
+- The `render` feature no longer pulls in the `image` crate; `nexrad::render` results are owned RGBA8 pixel buffers.
+  (#203)
 - The wrapping variants `Model`, `Decode`, `Data`, `Render`, `Process` and `Io` display only their layer, with the
   wrapped error as their `source()`. (#195)
 - docs.rs shows the feature each feature-gated item requires. (#196)
 - The package description covers loading, downloading, decoding, processing and rendering. (#196)
+- The `serde` feature also enables `nexrad-decode/serde`. (#205)
 - The `aws` feature's build requirements (a C compiler, and NASM on Windows x86 targets) are documented. (#196)
 - `load`, `load_file` and `download` return a scan for a volume without a volume coverage pattern message, such as a
   pre-2008 legacy volume, with `Scan::coverage_pattern()` `None`; see `nexrad-model`. (#208)

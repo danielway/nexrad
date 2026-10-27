@@ -7,11 +7,12 @@
 //!
 //! # Architecture
 //!
-//! Two processing traits cover different scopes:
-//!
-//! - [`SweepProcessor`] — single-sweep algorithms (filtering, smoothing)
-//! - [`ScanDerivedProduct`] — produces a [`CartesianField`] on a [`CartesianGrid`] from
-//!   the sweeps of a full scan (e.g. [`derived::CompositeReflectivity`])
+//! - [`SweepProcessor`] — the trait for single-sweep algorithms (filtering, smoothing), which
+//!   [`SweepPipeline`] chains
+//! - [`derived`] — products computed from the sweeps of a full scan, each with its own inherent
+//!   `compute` method, such as [`derived::CompositeReflectivity`] (a [`CartesianField`] on a
+//!   [`CartesianGrid`]) and [`derived::VerticalCrossSection`]
+//! - [`detection`] — connected-region detection on a sweep field
 //!
 //! # Example
 //!
@@ -45,7 +46,7 @@
 mod azimuth;
 /// Derived products computed from radar scans.
 pub mod derived;
-/// Storm cell detection algorithms.
+/// Connected-region detection on sweep fields.
 pub mod detection;
 /// Filtering algorithms for sweep field data.
 pub mod filter;
@@ -58,8 +59,9 @@ pub use grid::CartesianGrid;
 pub use pipeline::SweepPipeline;
 pub use result::{Error, Result};
 
-use nexrad_model::data::{CartesianField, SweepField};
-use nexrad_model::geo::RadarCoordinateSystem;
+#[cfg(doc)]
+use nexrad_model::data::CartesianField;
+use nexrad_model::data::SweepField;
 
 /// Transforms one [`SweepField`] into another.
 ///
@@ -77,33 +79,4 @@ pub trait SweepProcessor: Send + Sync {
     /// Returns an error if the input does not suit the processor, for example when it holds a
     /// different product or geometry than the processor requires.
     fn process(&self, input: &SweepField) -> Result<SweepField>;
-}
-
-/// Produces a [`CartesianField`] from the sweeps of a full scan.
-///
-/// This trait is for derived products that combine data from multiple elevations
-/// into a single geographic surface, such as composite reflectivity, echo tops,
-/// and vertically integrated liquid (VIL).
-pub trait ScanDerivedProduct: Send + Sync {
-    /// A human-readable name for this product.
-    fn name(&self) -> &str;
-
-    /// Compute the derived product from the sweep fields of a scan.
-    ///
-    /// # Parameters
-    ///
-    /// - `fields` — Sweep fields for the relevant product, one per elevation
-    /// - `coordinate_system` — Radar coordinate system for geographic projection
-    /// - `grid` — Geographic extent and dimensions of the output field
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the fields do not suit the product, for example when none are given or
-    /// they hold a different product than it requires.
-    fn compute(
-        &self,
-        fields: &[SweepField],
-        coordinate_system: &RadarCoordinateSystem,
-        grid: &CartesianGrid,
-    ) -> Result<CartesianField>;
 }

@@ -1,5 +1,6 @@
 /// The RDA system's spot blanking status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum SpotBlankingStatus {
     /// Spot blanking hardware is not installed.
     NotInstalled,

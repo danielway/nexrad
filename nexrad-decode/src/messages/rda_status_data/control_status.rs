@@ -1,5 +1,6 @@
 /// The possible RDA system control statuses.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum ControlStatus {
     /// Only local control is permitted.
     LocalControlOnly,

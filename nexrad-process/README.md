@@ -6,14 +6,10 @@
 
 Processing algorithms for NEXRAD weather radar data.
 
-## Processing Traits
+## Processing Trait
 
-Two traits cover different processing scopes:
-
-| Trait | Scope | Input → Output |
-|-------|-------|---------------|
-| `SweepProcessor` | Single sweep | `SweepField → SweepField` |
-| `ScanDerivedProduct` | Full scan | `[SweepField] → CartesianField` |
+`SweepProcessor` transforms one sweep (`SweepField → SweepField`); `SweepPipeline` chains processors. Products that
+combine the sweeps of a full scan have their own inherent `compute` methods.
 
 ## Filters
 
@@ -30,14 +26,15 @@ Built-in `SweepProcessor` implementations:
 
 | Product | Trait | Output |
 |---------|-------|--------|
-| `CompositeReflectivity` | `ScanDerivedProduct` | `CartesianField` — max reflectivity across all tilts |
+| `CompositeReflectivity` | (standalone) | `CartesianField` — max reflectivity across all tilts |
 | `StormRelativeVelocity` | `SweepProcessor` | `SweepField` — velocity with storm motion removed |
 | `VerticalCrossSection` | (standalone) | `VerticalField` — RHI-style range-height display |
 
-## Storm Cell Detection
+## Threshold Region Detection
 
-`detection::StormCellDetector` finds contiguous regions of reflectivity above a threshold in a `SweepField` and reports
-each as a `StormCell` with its centroid, bounds, area and reflectivity statistics.
+`detection::ThresholdRegionDetector` finds connected regions of gates at or above one reflectivity threshold in a
+`SweepField` and reports each as a `ThresholdRegion` with its centroid, bounds, area and reflectivity statistics. The
+names describe the computation; a region is not a meteorological classification.
 
 ## Constructing Processors
 

@@ -1,5 +1,6 @@
 /// The possible RDA system statuses.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum RdaStatus {
     /// System is starting up.
     StartUp,

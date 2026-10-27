@@ -28,10 +28,13 @@ render = ["dep:nexrad-render", "model"]
 process = ["dep:nexrad-process", "model"]
 
 # Pass-through features from sub-crates
-serde = ["nexrad-model?/serde"]
+serde = ["nexrad-model?/serde", "nexrad-decode?/serde"]
 uom = ["nexrad-model?/uom", "nexrad-decode?/uom"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
 parallel = ["data", "nexrad-data/parallel"]
+# `RenderResult::into_rgba_image`; tracks the `image` crate's 0.x releases and is excluded
+# from the semver promise, so it is not part of `wasm` or `full`
+image = ["render", "nexrad-render/image"]
 # AWS S3 access, including real-time streaming (WASM-compatible)
 aws = ["data", "chrono", "nexrad-data/aws", "dep:futures-util"]
 

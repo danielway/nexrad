@@ -169,17 +169,12 @@ impl<'a> ElevationDataBlock<'a> {
 
     /// The channel configuration for this cut
     pub fn channel_configuration(&self) -> ChannelConfiguration {
-        match self.inner.channel_configuration {
-            0 => ChannelConfiguration::ConstantPhase,
-            1 => ChannelConfiguration::RandomPhase,
-            2 => ChannelConfiguration::Sz2Phase,
-            other => ChannelConfiguration::Unknown(other),
-        }
+        ChannelConfiguration::from_number(self.inner.channel_configuration)
     }
 
     /// The waveform type for this cut
     pub fn waveform_type(&self) -> WaveformType {
-        WaveformType::from_raw(self.inner.waveform_type)
+        WaveformType::from_number(self.inner.waveform_type)
     }
 
     /// The azimuth rate of the cut in degrees/second

@@ -7,8 +7,10 @@ use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
 /// Interpolation method for rendering radar data.
 ///
 /// Controls how pixel values are sampled from the underlying data grid.
-/// The default is [`Nearest`](Interpolation::Nearest) for backward compatibility.
+/// The default is [`Nearest`](Interpolation::Nearest) for backward compatibility. The enum is
+/// non-exhaustive so that another sampling method can be added in a minor release.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
 pub enum Interpolation {
     /// Nearest-neighbor sampling (fastest, produces blocky/aliased output).
     ///

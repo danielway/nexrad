@@ -73,7 +73,7 @@ fn scan() -> Scan {
             .sails_sequence_number(1)
             .build(),
     ];
-    let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212))
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212))
         .version(1)
         .doppler_velocity_resolution_mps(0.5)
         .pulse_width(PulseWidth::Short)
@@ -309,7 +309,17 @@ fn enums_serialize_as_variant_names() {
     );
     assert_eq!(to_json(&CfpStatus::Reserved(6)), json!({ "Reserved": 6 }));
     assert_eq!(to_json(&GateStatus::NoData), json!("NoData"));
-    assert_eq!(to_json(&VcpNumber::from_number(212)), json!(212));
+    assert_eq!(to_json(&VcpNumber::new(212)), json!(212));
+    assert_eq!(to_json(&VcpNumber::VCP_35), json!(35));
+    assert_eq!(to_json(&WaveformType::Unknown(9)), json!({ "Unknown": 9 }));
+    assert_eq!(
+        to_json(&ChannelConfiguration::Unknown(3)),
+        json!({ "Unknown": 3 })
+    );
+    assert_eq!(to_json(&PulseWidth::Unknown(1)), json!({ "Unknown": 1 }));
+    assert_eq!(to_json(&RadialStatus::ScanStart), json!("ScanStart"));
+    assert_round_trips(&WaveformType::Unknown(9));
+    assert_round_trips(&VcpNumber::new(999));
 }
 
 #[test]

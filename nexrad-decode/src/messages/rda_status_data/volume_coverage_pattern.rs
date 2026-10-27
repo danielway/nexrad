@@ -30,7 +30,7 @@ impl VcpSelection {
         };
 
         Some(Self {
-            number: VcpNumber::from_number(value.unsigned_abs()),
+            number: VcpNumber::new(value.unsigned_abs()),
             source,
         })
     }
@@ -56,14 +56,14 @@ mod tests {
         assert_eq!(VcpSelection::from_raw(0), None);
 
         let local = VcpSelection::from_raw(-212).unwrap();
-        assert_eq!(local.number(), VcpNumber::Vcp212);
+        assert_eq!(local.number(), VcpNumber::VCP_212);
         assert_eq!(local.source(), VcpSource::Local);
 
         let remote = VcpSelection::from_raw(35).unwrap();
-        assert_eq!(remote.number(), VcpNumber::Vcp35);
+        assert_eq!(remote.number(), VcpNumber::VCP_35);
         assert_eq!(remote.source(), VcpSource::Remote);
 
         let min = VcpSelection::from_raw(i16::MIN).unwrap();
-        assert_eq!(min.number(), VcpNumber::Unknown(32768));
+        assert_eq!(min.number(), VcpNumber::new(32768));
     }
 }

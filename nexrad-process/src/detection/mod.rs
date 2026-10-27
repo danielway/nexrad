@@ -1,9 +1,10 @@
-//! Storm cell detection algorithms.
+//! Connected-region detection on sweep fields.
 //!
-//! This module provides algorithms for identifying and characterizing storm
-//! cells in radar data using connected-component analysis on reflectivity
-//! fields.
+//! [`ThresholdRegionDetector`](crate::detection::ThresholdRegionDetector) finds connected
+//! regions of gates at or above one reflectivity threshold using connected-component labeling,
+//! and reports each as a [`ThresholdRegion`](crate::detection::ThresholdRegion). The names
+//! describe the computation, not a meteorological classification.
 
-mod cell;
+mod region;
 
-pub use cell::{StormCell, StormCellDetector};
+pub use region::{ThresholdRegion, ThresholdRegionDetector};

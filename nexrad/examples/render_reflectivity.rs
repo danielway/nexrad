@@ -5,7 +5,7 @@
 //!
 //! Run with:
 //! ```bash
-//! cargo run --example render_reflectivity --features nexrad/render -- \
+//! cargo run --example render_reflectivity -- \
 //!     tests/fixtures/convective/KDMX20220305_232324.bin output.png
 //! ```
 

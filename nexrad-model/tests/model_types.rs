@@ -2,7 +2,7 @@
 
 use nexrad_model::data::{
     CfpStatus, GateStatus, MomentData, MomentValue, Product, PulseWidth, Scan, Sweep, VcpNumber,
-    VolumeCoveragePattern,
+    VolumeCoveragePattern, WaveformType,
 };
 use nexrad_model::meta::Site;
 
@@ -78,10 +78,44 @@ fn test_scan_creation() {
         Sweep::new(1, vec![]).unwrap(),
         Sweep::new(2, vec![]).unwrap(),
     ];
-    let scan = Scan::new(test_vcp(212), sweeps);
+    let scan = Scan::new(VcpNumber::VCP_212, Some(test_vcp(212)), sweeps);
 
     assert_eq!(scan.coverage_pattern_number(), VcpNumber::VCP_212);
     assert_eq!(scan.sweeps().len(), 2);
+}
+
+#[test]
+fn test_scan_without_coverage_pattern() {
+    let scan = Scan::new(
+        VcpNumber::new(32),
+        None,
+        vec![Sweep::new(1, vec![]).unwrap()],
+    );
+
+    assert!(scan.coverage_pattern().is_none());
+    assert_eq!(scan.coverage_pattern_number().number(), 32);
+    assert!(scan.elevation_cut(&scan.sweeps()[0]).is_none());
+    assert_eq!(
+        scan.sweeps_with_waveform(WaveformType::ContiguousSurveillance)
+            .count(),
+        0
+    );
+    assert!(format!("{scan}").starts_with("Scan (VCP 32"));
+}
+
+#[test]
+fn test_scan_keeps_its_own_coverage_pattern_number() {
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::new(0))
+        .build()
+        .unwrap();
+    let scan = Scan::new(VcpNumber::new(32), Some(vcp), vec![]);
+
+    assert_eq!(scan.coverage_pattern_number().number(), 32);
+    assert_eq!(
+        scan.coverage_pattern()
+            .map(|vcp| vcp.pattern_number().number()),
+        Some(0)
+    );
 }
 
 #[test]
@@ -91,7 +125,7 @@ fn test_scan_display() {
         Sweep::new(2, vec![]).unwrap(),
         Sweep::new(3, vec![]).unwrap(),
     ];
-    let scan = Scan::new(test_vcp(212), sweeps);
+    let scan = Scan::new(VcpNumber::VCP_212, Some(test_vcp(212)), sweeps);
     let display = format!("{}", scan);
 
     assert!(display.contains("VCP 212"));
@@ -723,7 +757,8 @@ fn test_sweep_field() {
 #[test]
 fn test_scan_fields() {
     let scan = Scan::new(
-        test_vcp(212),
+        VcpNumber::VCP_212,
+        Some(test_vcp(212)),
         vec![
             sweep_with_moments(1, vec![test_moment(Product::Reflectivity, vec![100])]),
             sweep_with_moments(2, vec![test_moment(Product::Velocity, vec![120])]),
@@ -746,7 +781,8 @@ fn test_scan_fields() {
 #[test]
 fn test_scan_first_field() {
     let scan = Scan::new(
-        test_vcp(212),
+        VcpNumber::VCP_212,
+        Some(test_vcp(212)),
         vec![
             sweep_with_moments(1, vec![test_moment(Product::Reflectivity, vec![100])]),
             sweep_with_moments(2, vec![test_moment(Product::Velocity, vec![120, 130])]),
@@ -776,13 +812,18 @@ fn test_scan_coordinate_system() {
         .feedhorn_height_meters(20)
         .build()
         .unwrap();
-    let scan = Scan::with_site(site.clone(), test_vcp(212), vec![]);
+    let scan = Scan::with_site(
+        site.clone(),
+        VcpNumber::VCP_212,
+        Some(test_vcp(212)),
+        vec![],
+    );
 
     let coords = scan.coordinate_system().expect("site metadata");
     assert_eq!(coords, RadarCoordinateSystem::new(&site));
     assert_eq!(coords.antenna_height_meters(), 390.0);
 
-    assert!(Scan::new(test_vcp(212), vec![])
+    assert!(Scan::new(VcpNumber::VCP_212, Some(test_vcp(212)), vec![])
         .coordinate_system()
         .is_none());
 }

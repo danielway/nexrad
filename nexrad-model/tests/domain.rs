@@ -40,22 +40,6 @@ fn radial_round_trips_nyquist_velocity_and_unambiguous_range() {
     assert_eq!(bare.unambiguous_range_km(), None);
 }
 
-#[cfg(feature = "uom")]
-#[test]
-fn radial_reports_nyquist_velocity_and_unambiguous_range_as_quantities() {
-    use uom::si::{length::kilometer, velocity::meter_per_second};
-
-    let radial = Radial::builder(1, 10.0, 1, 0.5)
-        .nyquist_velocity_mps(26.5)
-        .unambiguous_range_km(117.0)
-        .build()
-        .unwrap();
-    let nyquist = radial.nyquist_velocity().unwrap();
-    assert!((nyquist.get::<meter_per_second>() - 26.5).abs() < 1e-9);
-    let range = radial.unambiguous_range().unwrap();
-    assert!((range.get::<kilometer>() - 117.0).abs() < 1e-9);
-}
-
 #[test]
 fn radial_rejects_invalid_nyquist_velocity_and_unambiguous_range() {
     for value in [0.0, -1.0, f32::NAN, f32::INFINITY] {
@@ -132,7 +116,7 @@ fn split_cut_scan() -> Scan {
         sweep(5, 2.4),
         sweep(6, 3.4),
     ];
-    Scan::new(vcp, sweeps)
+    Scan::new(vcp.pattern_number(), Some(vcp), sweeps)
 }
 
 #[test]

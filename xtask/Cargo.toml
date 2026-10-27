@@ -12,5 +12,5 @@ repository.workspace = true
 chrono = { workspace = true }
 clap = { workspace = true }
 nexrad-model = { path = "../nexrad-model" }
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["rustls"] }
 tokio = { workspace = true }

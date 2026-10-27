@@ -27,11 +27,12 @@ pub enum Error {
     /// Call `Record::decompress()` first.
     #[error("compressed record must be decompressed before decoding")]
     CompressedRecord,
-    /// Cannot access records or scan from a gzip-compressed volume file.
+    /// Cannot borrow records from a gzip-compressed volume file (`File::records`).
     /// Call `decompress()` first.
     #[error("gzip-compressed volume file must be decompressed before accessing records")]
     CompressedFile,
-    /// Volume file is missing the required VCP (message type 5).
+    /// No volume coverage pattern message (type 5) was found where one is required, such as by
+    /// `File::coverage_pattern_message`.
     #[error("volume missing coverage pattern (message type 5)")]
     MissingCoveragePattern,
     /// LDM record was truncated and contains fewer bytes than expected.

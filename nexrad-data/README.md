@@ -30,8 +30,9 @@ I/O and decompression.
 use nexrad_data::volume::File;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Older archive files are gzip-wrapped; `decompress` unwraps them and returns other files as-is
-    let file = File::new(std::fs::read("KTLX20130520_201643_V06.ar2v")?).decompress()?;
+    // Older archive files are gzip-wrapped; `scan` decompresses them itself. `decompress` does the same for
+    // `records`, which borrows its records from the file, and returns other files as-is.
+    let file = File::new(std::fs::read("KTLX20130520_201643_V06.ar2v")?);
     let scan = file.scan()?;
     println!("{} sweeps", scan.sweeps().len());
     Ok(())
@@ -79,14 +80,18 @@ limits apply instead.
 ## Features
 
 The APIs in this crate should be configured to require only the dependencies they need, leaving the consumer to include
-as much or little as they desire. By default, the `aws` and `model` features are enabled. Decoding of volume headers
-and LDM records' NEXRAD messages via `nexrad-decode` is always available. The following named features are helpful
-groupings of dependencies/behavior:
+as much or little as they desire. By default, the `aws`, `aws-rustls` and `model` features are enabled. Decoding of
+volume headers and LDM records' NEXRAD messages via `nexrad-decode` is always available. The following named features
+are helpful groupings of dependencies/behavior:
 
 - `aws` (default) - Enables accessing archive and real-time NEXRAD data from AWS Open Data, including
-  `realtime::chunk_stream`, an async stream that polls for new real-time chunks. WASM-compatible. Its TLS stack
-  (rustls with the `aws-lc-rs` crypto provider) compiles C code, which needs a C compiler and, on Windows x86 targets,
-  NASM.
+  `realtime::chunk_stream`, an async stream that polls for new real-time chunks. It includes no TLS backend. On
+  native targets `aws` alone compiles, but every HTTPS request fails at run time with reqwest's `invalid URL, scheme
+  is not http` connect error unless a TLS backend is enabled: `aws-rustls`, or a TLS feature of `reqwest` 0.13 (for
+  example `native-tls`) enabled by your own manifest or any other crate in the build, since Cargo unifies features.
+  `wasm32` targets need none because the browser performs TLS for requests made through the JavaScript `fetch` API.
+- `aws-rustls` (default) - `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS backend. aws-lc-rs compiles
+  C code, which needs a C compiler and, on Windows x86 targets, NASM.
 - `model` (default) - Provides mappings to a common radar data model, particularly for mapping `volume::File` into a
   `Scan`.
 - `parallel` - Parallelize LDM record decompression and decoding using Rayon.

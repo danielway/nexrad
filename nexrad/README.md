@@ -75,7 +75,7 @@ Access sub-crate APIs through module re-exports:
 - `nexrad::process` — Processing algorithms (`SweepPipeline`, filters, derived products)
 - `nexrad::render` — Visualization (`render_sweep`, color scales, `RenderOptions`)
 
-`nexrad::chrono` re-exports `chrono` (with the `chrono` feature, implied by `aws`) because
+`nexrad::chrono` re-exports `chrono` (with the `chrono` feature, implied by `data`) because
 `list_scans` takes a `NaiveDate` (a UTC calendar date) and `download_at` a `DateTime<Utc>`, so you
 don't need a separate `chrono` dependency to call them. The real-time streams implement `futures_core::Stream`; add
 `futures-util` (or `futures`) to your own dependencies for `StreamExt::next`.
@@ -99,26 +99,31 @@ overlaps the datetime passed to `download_at`. Wrapping variants name only the l
 
 ## Features
 
-All features except `image` are enabled by default through `full`. Each feature also enables the features it
-depends on, so `data` alone is enough for local file loading.
+The default features, `data`, `aws`, `aws-rustls` and `render`, load local files, download from
+AWS and render images. `full` enables every feature except `image`. Each feature also enables the
+features it depends on, so `data` alone is enough for local file loading.
 
-| Feature | Description | Implies | WASM |
-|---------|-------------|---------|------|
-| `model` | Core data types | | Yes |
-| `decode` | Protocol decoding | `model` | Yes |
-| `data` | Local file I/O (`load`, `load_file`) | `decode`, `model` | Yes |
-| `render` | Image rendering | `model` | Yes |
-| `process` | Processing algorithms | `model` | Yes |
-| `aws` | AWS S3 archive downloads and real-time streaming | `data`, `chrono` | Yes |
-| `serde` | Serialization support | | Yes |
-| `uom` | Type-safe units of measure | | Yes |
-| `chrono` | DateTime type support | | Yes |
-| `parallel` | Parallel decompression (requires rayon) | `data` | No |
-| `image` | `RenderResult::into_rgba_image` interop (opt-in, outside the semver promise) | `render` | Yes |
-| `wasm` | All WASM-compatible features | all features marked Yes | Yes |
-| `full` | All features (default) | `wasm`, `parallel` | No |
+| Feature | Description | Implies |
+|---------|-------------|---------|
+| `model` | Core data types | |
+| `decode` | Protocol decoding | `model` |
+| `data` | Local file I/O (`load`, `load_file`) | `decode`, `model`, `chrono` |
+| `render` | Image rendering | `model` |
+| `process` | Processing algorithms | `model` |
+| `aws` | AWS S3 archive downloads and real-time streaming, without a TLS backend | `data` |
+| `aws-rustls` | `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS backend | `aws` |
+| `parallel` | Parallel decompression (requires rayon) | `data` |
+| `serde` | Serialization support | |
+| `chrono` | DateTime type support | |
+| `image` | `RenderResult::into_rgba_image` interop (opt-in, outside the semver promise) | `render` |
+| `full` | Every feature above except `image` | all of them except `image` |
 
-The `image` feature is not part of `wasm` or `full`. It tracks the `image` crate's own 0.x releases and is
+Every feature except `parallel` builds for `wasm32-unknown-unknown`.
+
+Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example with the `uom` crate) may
+be offered later as a separate crate or extension trait.
+
+The `image` feature is not part of `full`. It tracks the `image` crate's own 0.x releases and is
 excluded from the semver promise: a minor or patch release may move it to a newer, incompatible `image` version.
 Without it, rendered images are plain RGBA8 pixel buffers with `write_png` and `save_png`.
 
@@ -128,16 +133,29 @@ For local file processing without rendering or networking:
 nexrad = { version = "1.0", default-features = false, features = ["data"] }
 ```
 
+### TLS
+
+On native targets, `aws` alone compiles but has no TLS backend, so every HTTPS request fails at run
+time with reqwest's `invalid URL, scheme is not http` connect error. A TLS feature of `reqwest` 0.13
+(for example `native-tls`) enabled by any other crate in the build also provides one, since Cargo
+unifies features. `wasm32` needs no TLS backend because the browser performs TLS. `aws-rustls` (on by default) adds rustls with the `aws-lc-rs` crypto provider,
+which compiles C code and needs a C compiler and, on Windows x86 targets, NASM. To use a different
+TLS backend, disable the default features, enable `aws`, and enable a TLS feature of `reqwest` 0.13
+in your own manifest.
+
 ## WASM Support
 
-For WebAssembly targets, use the `wasm` feature which enables all WASM-compatible functionality:
+Every feature except `parallel` builds for `wasm32-unknown-unknown`. On `wasm32`, `aws` sends
+requests through the JavaScript `fetch` API and needs no TLS feature:
 
 ```toml
-nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
+nexrad = { version = "1.0", default-features = false, features = [
+    "data", "render", "process", "aws", "serde", "chrono",
+] }
 ```
 
-The `parallel` feature requires a native thread pool (rayon) and is not WASM-compatible. Real-time
-streaming is part of `aws` and is runtime-agnostic, so it works on WASM with any sleep future.
+The `parallel` feature requires a native thread pool (rayon). Real-time streaming is part of `aws`
+and is runtime-agnostic, so it works on WASM with any sleep future.
 
 ## Minimum Supported Rust Version
 

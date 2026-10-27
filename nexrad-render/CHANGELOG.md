@@ -73,6 +73,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   scale docs list value ranges and colors without interpreting them. (#209)
 - `ColorScale` and `Interpolation` are `#[non_exhaustive]`; matches on them outside this crate need a wildcard arm.
   (#207)
+- A gate whose `GateStatus` is one a later `nexrad-model` release adds is drawn with the `NoData` status color.
+  (#211)
 
 ### Removed
 

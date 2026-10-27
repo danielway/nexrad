@@ -4,13 +4,6 @@ use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::borrow::Cow;
 
-#[cfg(feature = "uom")]
-use uom::si::angle::degree;
-#[cfg(feature = "uom")]
-use uom::si::f64::{Angle, Information};
-#[cfg(feature = "uom")]
-use uom::si::information::byte;
-
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
 #[derive(Clone, PartialEq, Debug)]
@@ -126,12 +119,6 @@ impl<'a> Header<'a> {
         )
     }
 
-    /// Azimuth angle at which the radial was collected.
-    #[cfg(feature = "uom")]
-    pub fn azimuth_angle(&self) -> Angle {
-        Angle::new::<degree>(self.inner.azimuth_angle.get() as f64)
-    }
-
     /// Whether the message is compressed and what type of compression was used.
     pub fn compression_indicator(&self) -> CompressionIndicator {
         match self.inner.compression_indicator {
@@ -142,38 +129,14 @@ impl<'a> Header<'a> {
         }
     }
 
-    /// Uncompressed length of the radial (including the data header block).
-    #[cfg(feature = "uom")]
-    pub fn radial_length(&self) -> Information {
-        Information::new::<byte>(self.inner.radial_length.get() as f64)
-    }
-
     /// The radial's status within the larger scan.
     pub fn radial_status(&self) -> RadialStatus {
         RadialStatus::from_number(self.inner.radial_status)
     }
 
-    /// The radial's collection elevation angle.
-    #[cfg(feature = "uom")]
-    pub fn elevation_angle(&self) -> Angle {
-        Angle::new::<degree>(self.inner.elevation_angle.get() as f64)
-    }
-
     /// The spot blanking status for the current radial, elevation, and volume scan.
     pub fn radial_spot_blanking_status(&self) -> SpotBlankingFlags {
         SpotBlankingFlags::new(self.inner.radial_spot_blanking_status)
-    }
-
-    /// The azimuth indexing value (if keyed to constant angles).
-    #[cfg(feature = "uom")]
-    pub fn azimuth_indexing_mode(&self) -> Option<Angle> {
-        if self.inner.azimuth_indexing_mode == 0 {
-            None
-        } else {
-            Some(Angle::new::<degree>(
-                self.inner.azimuth_indexing_mode as f64 * 0.01,
-            ))
-        }
     }
 
     /// Azimuthal spacing between adjacent radials.

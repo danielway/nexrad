@@ -373,3 +373,80 @@ fn test_fixture_stratiform_noreaster_moment_stats_snapshot() {
     let stats = create_moment_stats(&scan, 0, 0);
     assert_yaml_snapshot!("stratiform_noreaster_moment_stats", stats);
 }
+
+// =============================================================================
+// LEGACY GZIP VOLUMES (MESSAGE TYPE 1)
+// =============================================================================
+
+/// KTLX, June 1991: gzip-wrapped, type 1 radials, no volume coverage pattern message.
+const LEGACY_KTLX_1991: &[u8] = include_bytes!("../../downloads/KTLX19910605_162126.gz");
+/// KABR, January 2005: gzip-wrapped, type 1 radials, a volume coverage pattern message numbered
+/// 0 with no cuts, and radials numbered 32.
+const LEGACY_KABR_2005: &[u8] = include_bytes!("../../downloads/KABR20050101_000745.gz");
+
+/// Scan metadata plus what a legacy volume does and does not carry.
+#[derive(Serialize)]
+struct LegacyScanSnapshot {
+    site: Option<String>,
+    /// The coverage pattern message's own number and cut count, if it was present.
+    coverage_pattern: Option<(u16, usize)>,
+    metadata: ScanMetadataSnapshot,
+}
+
+fn create_legacy_scan_snapshot(scan: &Scan) -> LegacyScanSnapshot {
+    LegacyScanSnapshot {
+        site: scan.site().map(|site| site.identifier().to_string()),
+        coverage_pattern: scan
+            .coverage_pattern()
+            .map(|vcp| (vcp.pattern_number().number(), vcp.elevation_cuts().len())),
+        metadata: create_scan_metadata_snapshot(scan),
+    }
+}
+
+#[test]
+fn test_legacy_ktlx_1991_metadata_snapshot() {
+    // Loaded without an explicit decompress: `File::scan` decompresses the gzip wrapper itself.
+    let scan = load_scan(LEGACY_KTLX_1991);
+    assert!(scan.coverage_pattern().is_none());
+    assert_eq!(scan.coverage_pattern_number().number(), 21);
+    assert_yaml_snapshot!(
+        "legacy_ktlx_1991_metadata",
+        create_legacy_scan_snapshot(&scan)
+    );
+}
+
+#[test]
+fn test_legacy_ktlx_1991_moment_stats_snapshot() {
+    let scan = load_scan(LEGACY_KTLX_1991);
+    // The first two sweeps are the surveillance and Doppler halves of a split cut.
+    let stats = [
+        create_moment_stats(&scan, 0, 0),
+        create_moment_stats(&scan, 1, 0),
+    ];
+    assert_yaml_snapshot!("legacy_ktlx_1991_moment_stats", stats);
+}
+
+#[test]
+fn test_legacy_kabr_2005_metadata_snapshot() {
+    let scan = load_scan(LEGACY_KABR_2005);
+    assert_eq!(
+        scan.coverage_pattern()
+            .map(|vcp| vcp.pattern_number().number()),
+        Some(0)
+    );
+    assert_eq!(scan.coverage_pattern_number().number(), 32);
+    assert_yaml_snapshot!(
+        "legacy_kabr_2005_metadata",
+        create_legacy_scan_snapshot(&scan)
+    );
+}
+
+#[test]
+fn test_legacy_kabr_2005_moment_stats_snapshot() {
+    let scan = load_scan(LEGACY_KABR_2005);
+    let stats = [
+        create_moment_stats(&scan, 0, 0),
+        create_moment_stats(&scan, 1, 0),
+    ];
+    assert_yaml_snapshot!("legacy_kabr_2005_moment_stats", stats);
+}

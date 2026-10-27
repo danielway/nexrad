@@ -47,7 +47,9 @@ fn print_messages(decompressed_data: &[u8]) -> nexrad_decode::Result<()> {
 
 With the `model` feature, `model::ScanBuilder` assembles decoded messages into a `nexrad_model::data::Scan`.
 Radar data messages (types 1 and 31) become radials, the first volume coverage pattern message (type 5) becomes the
-scan's coverage pattern, and the first volume data block identifies the site:
+scan's coverage pattern, and the first volume data block identifies the site. A volume without a type 5 message still
+builds, with `Scan::coverage_pattern()` returning `None`; `Scan::coverage_pattern_number()` comes from the type 5
+message when its number is non-zero and otherwise from the radials:
 
 ```rust
 use nexrad_decode::messages::decode_messages;
@@ -94,8 +96,8 @@ different layout and also decodes as `Other`. `MessageContents`, `MessageType` a
 
 Accessors on decoded messages are named after the ICD field: `<stem>_raw()` returns the wire value when its encoding
 differs from the decoded value, a decoded number carries its unit (`azimuth_angle_degrees()`,
-`unambiguous_range_km()`), a decoded enum or struct uses the bare stem (`radial_status()`), and with the `uom` feature
-the bare stem returns a `uom` quantity (`azimuth_angle()`). The crate documentation describes the convention in full.
+`unambiguous_range_km()`), and a decoded enum or struct uses the bare stem (`radial_status()`). The crate documentation describes the convention
+in full.
 
 ## Modules
 
@@ -108,7 +110,9 @@ the bare stem returns a `uom` quantity (`azimuth_angle()`). The crate documentat
 | Feature | Default | Description |
 |---------|---------|-------------|
 | `model` | Yes | Conversion of decoded messages to `nexrad-model` types (`ScanBuilder`, `into_radial`, `to_model`, `site`) |
-| `uom` | No | Type-safe units of measure via the `uom` crate |
+
+Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example with the `uom` crate)
+may be offered later as a separate crate or extension trait.
 
 ## Minimum Supported Rust Version
 

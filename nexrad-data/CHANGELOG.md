@@ -35,7 +35,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The minimum supported Rust version is 1.88 (it was declared as 1.75, which was already incorrect). (#157)
 - `Error` and `AwsError` are `#[non_exhaustive]`; matches on them outside this crate need a wildcard arm. (#155)
 - The `nexrad-model` feature is renamed `model`, `aws-polling` is folded into `aws`, optional dependencies are no
-  longer features, and `nexrad-decode`'s default features (including `uom`) are no longer enabled. (#156, #161)
+  longer features, and `nexrad-decode`'s default features are no longer enabled. (#156, #161)
 - `result::aws::AWSError` → `result::AwsError`, also at the crate root, and `Error::AWS` → `Error::Aws`. (#160, #171)
 - `aws::realtime::VolumeIndex::as_number()` → `number()`, matching the other `number()` accessors. (#206)
 - `AwsError::S3ListObjects`, `S3GetObjectRequest` and `S3Streaming` box the HTTP error instead of holding a
@@ -90,6 +90,17 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The published crate leaves out the tests and benchmarks that need files from outside it, the fuzz targets and
   the `trim_fixture` maintainer example. (#196)
 - The `aws` feature's build requirements (a C compiler, and NASM on Windows x86 targets) are documented. (#196)
+- `aws` no longer includes a TLS backend; the new `aws-rustls` feature (default) adds rustls with the aws-lc-rs
+  provider, which `aws` enabled before. On `wasm32`, `aws` alone is enough; on native targets, `aws` without a TLS
+  backend builds but its HTTPS requests fail. (#204)
+- `volume::File::scan()` and `File::coverage_pattern_message()` decompress a gzip-wrapped file themselves instead of
+  returning `Error::CompressedFile`. `File::records()`, which borrows its records from the file, still needs
+  `File::decompress()` first. (#208)
+- `volume::File::scan()` and `aws::realtime::assemble_volume` return a scan whose `coverage_pattern()` is `None` when
+  no type 5 message was seen, such as for a legacy volume or chunks without a Start chunk, with the coverage pattern
+  number taken from the radials. They fail only when no coverage pattern number is found, with `Error::Decode`
+  carrying `MissingCoveragePatternNumber`, instead of `Error::MissingCoveragePattern`, which
+  `File::coverage_pattern_message()` still returns. (#208)
 - Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the
   real-time chunk counts and upload timings are documented as observed bucket behaviour, not a guarantee. (#209)
 

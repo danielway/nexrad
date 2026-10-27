@@ -1,0 +1,34 @@
+---
+source: nexrad-model/tests/fixture_snapshots.rs
+expression: stats
+---
+- sweep_index: 0
+  radial_index: 0
+  reflectivity:
+    gate_count: 460
+    first_gate_range_km: 0
+    gate_interval_km: 1
+    data_sha256: 1db7b0016341276551a0ee4bd5ee97d16981fbaaededa05bd37f7c9a013a6f72
+  velocity: ~
+  spectrum_width: ~
+  differential_reflectivity: ~
+  differential_phase: ~
+  correlation_coefficient: ~
+  clutter_filter_power: ~
+- sweep_index: 1
+  radial_index: 0
+  reflectivity: ~
+  velocity:
+    gate_count: 918
+    first_gate_range_km: 0.125
+    gate_interval_km: 0.25
+    data_sha256: a5503c47b85140fc73e0fbc95405c188c87e4793fd82faa52cee9095c170efb7
+  spectrum_width:
+    gate_count: 918
+    first_gate_range_km: 0.125
+    gate_interval_km: 0.25
+    data_sha256: 3d8ffbf68e702885995a3ab101e8c656e921db5da7e19e988bdf92d6548533b1
+  differential_reflectivity: ~
+  differential_phase: ~
+  correlation_coefficient: ~
+  clutter_filter_power: ~

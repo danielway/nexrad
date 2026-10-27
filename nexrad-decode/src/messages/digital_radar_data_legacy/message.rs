@@ -192,14 +192,6 @@ impl<'a> Message<'a> {
         self.nyquist_velocity_raw() as f32 * 0.01
     }
 
-    /// Nyquist velocity.
-    #[cfg(feature = "uom")]
-    pub fn nyquist_velocity(&self) -> uom::si::f64::Velocity {
-        uom::si::f64::Velocity::new::<uom::si::velocity::meter_per_second>(
-            self.nyquist_velocity_raw() as f64 * 0.01,
-        )
-    }
-
     /// Atmospheric attenuation factor in thousandths of a dB/km (raw scaled value). See
     /// [`atmospheric_attenuation_db_per_km()`](Self::atmospheric_attenuation_db_per_km) for the
     /// decoded value.
@@ -305,14 +297,14 @@ impl<'a> Message<'a> {
     #[cfg(feature = "model")]
     pub fn into_radial(self) -> Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{MomentData, Product, Radial};
+        use nexrad_model::data::{Product, Radial};
 
         // Extract header values before moving gate data out of self.
         let surveillance_gate_count = self.surveillance_gate_count();
-        let surv_first_range = self.surveillance_first_gate_range_meters().unsigned_abs();
+        let surv_first_range = self.surveillance_first_gate_range_meters();
         let surv_interval = self.surveillance_gate_interval_meters();
         let doppler_gate_count = self.doppler_gate_count();
-        let dopp_first_range = self.doppler_first_gate_range_meters().unsigned_abs();
+        let dopp_first_range = self.doppler_first_gate_range_meters();
         let dopp_interval = self.doppler_gate_interval_meters();
         let vel_resolution = self.doppler_velocity_resolution_mps();
         let radial_status: nexrad_model::data::RadialStatus = self.radial_status().into();
@@ -332,13 +324,15 @@ impl<'a> Message<'a> {
         let reflectivity = self
             .reflectivity_gates
             .map(|gates| {
-                MomentData::builder(Product::Reflectivity, gates.into_owned())
-                    .gate_count(usize::from(surveillance_gate_count))
-                    .first_gate_range_meters(surv_first_range)
-                    .gate_interval_meters(surv_interval)
-                    .scale(2.0)
-                    .offset(66.0)
-                    .build()
+                legacy_moment(
+                    Product::Reflectivity,
+                    surveillance_gate_count,
+                    surv_first_range,
+                    surv_interval,
+                    2.0,
+                    66.0,
+                    gates.into_owned(),
+                )
             })
             .transpose()?;
 
@@ -346,26 +340,30 @@ impl<'a> Message<'a> {
             .velocity_gates
             .map(|gates| {
                 let scale = if vel_resolution > 0.9 { 1.0 } else { 2.0 };
-                MomentData::builder(Product::Velocity, gates.into_owned())
-                    .gate_count(usize::from(doppler_gate_count))
-                    .first_gate_range_meters(dopp_first_range)
-                    .gate_interval_meters(dopp_interval)
-                    .scale(scale)
-                    .offset(129.0)
-                    .build()
+                legacy_moment(
+                    Product::Velocity,
+                    doppler_gate_count,
+                    dopp_first_range,
+                    dopp_interval,
+                    scale,
+                    129.0,
+                    gates.into_owned(),
+                )
             })
             .transpose()?;
 
         let spectrum_width = self
             .spectrum_width_gates
             .map(|gates| {
-                MomentData::builder(Product::SpectrumWidth, gates.into_owned())
-                    .gate_count(usize::from(doppler_gate_count))
-                    .first_gate_range_meters(dopp_first_range)
-                    .gate_interval_meters(dopp_interval)
-                    .scale(2.0)
-                    .offset(129.0)
-                    .build()
+                legacy_moment(
+                    Product::SpectrumWidth,
+                    doppler_gate_count,
+                    dopp_first_range,
+                    dopp_interval,
+                    2.0,
+                    129.0,
+                    gates.into_owned(),
+                )
             })
             .transpose()?;
 
@@ -402,19 +400,19 @@ impl<'a> Message<'a> {
         spectrum_width_gates: Option<Vec<u8>>,
     ) -> Result<nexrad_model::data::Radial> {
         use crate::result::Error;
-        use nexrad_model::data::{MomentData, Product, Radial};
+        use nexrad_model::data::{Product, Radial};
 
         let reflectivity = reflectivity_gates
             .map(|gates| {
-                MomentData::builder(Product::Reflectivity, gates)
-                    .gate_count(usize::from(msg.surveillance_gate_count()))
-                    .first_gate_range_meters(
-                        msg.surveillance_first_gate_range_meters().unsigned_abs(),
-                    )
-                    .gate_interval_meters(msg.surveillance_gate_interval_meters())
-                    .scale(2.0)
-                    .offset(66.0)
-                    .build()
+                legacy_moment(
+                    Product::Reflectivity,
+                    msg.surveillance_gate_count(),
+                    msg.surveillance_first_gate_range_meters(),
+                    msg.surveillance_gate_interval_meters(),
+                    2.0,
+                    66.0,
+                    gates,
+                )
             })
             .transpose()?;
 
@@ -425,25 +423,29 @@ impl<'a> Message<'a> {
                 } else {
                     (2.0, 129.0)
                 };
-                MomentData::builder(Product::Velocity, gates)
-                    .gate_count(usize::from(msg.doppler_gate_count()))
-                    .first_gate_range_meters(msg.doppler_first_gate_range_meters().unsigned_abs())
-                    .gate_interval_meters(msg.doppler_gate_interval_meters())
-                    .scale(scale)
-                    .offset(offset)
-                    .build()
+                legacy_moment(
+                    Product::Velocity,
+                    msg.doppler_gate_count(),
+                    msg.doppler_first_gate_range_meters(),
+                    msg.doppler_gate_interval_meters(),
+                    scale,
+                    offset,
+                    gates,
+                )
             })
             .transpose()?;
 
         let spectrum_width = spectrum_width_gates
             .map(|gates| {
-                MomentData::builder(Product::SpectrumWidth, gates)
-                    .gate_count(usize::from(msg.doppler_gate_count()))
-                    .first_gate_range_meters(msg.doppler_first_gate_range_meters().unsigned_abs())
-                    .gate_interval_meters(msg.doppler_gate_interval_meters())
-                    .scale(2.0)
-                    .offset(129.0)
-                    .build()
+                legacy_moment(
+                    Product::SpectrumWidth,
+                    msg.doppler_gate_count(),
+                    msg.doppler_first_gate_range_meters(),
+                    msg.doppler_gate_interval_meters(),
+                    2.0,
+                    129.0,
+                    gates,
+                )
             })
             .transpose()?;
 
@@ -492,6 +494,59 @@ impl<'a> Message<'a> {
     }
 }
 
+/// Builds a model moment from a legacy radial's 8-bit gates.
+///
+/// The ICD defines the range to the first gate as a signed value, and type 1 radials can place
+/// their first gates at a negative range (behind the radar). The model's first gate range is
+/// unsigned, so leading gates centered at a negative range are dropped and the first gate range
+/// is moved to the first remaining gate, which keeps every remaining gate at its decoded range.
+#[cfg(feature = "model")]
+fn legacy_moment(
+    product: nexrad_model::data::Product,
+    gate_count: u16,
+    first_gate_range_meters: i16,
+    gate_interval_meters: u16,
+    scale: f32,
+    offset: f32,
+    mut gates: Vec<u8>,
+) -> Result<nexrad_model::data::MomentData> {
+    let (first_gate_range_meters, skipped) =
+        first_gate_layout(first_gate_range_meters, gate_interval_meters)?;
+    let gate_count = usize::from(gate_count).saturating_sub(skipped);
+    gates.drain(..skipped.min(gates.len()));
+    Ok(nexrad_model::data::MomentData::builder(product, gates)
+        .gate_count(gate_count)
+        .first_gate_range_meters(first_gate_range_meters)
+        .gate_interval_meters(gate_interval_meters)
+        .data_word_size(8)
+        .scale(scale)
+        .offset(offset)
+        .build()?)
+}
+
+/// The first non-negative gate's range in meters, and the number of leading gates before it.
+///
+/// # Errors
+///
+/// Returns [`Error::NegativeFirstGateRange`](crate::result::Error::NegativeFirstGateRange) for a
+/// negative range with a zero gate interval, where no gate lies at a non-negative range.
+#[cfg(feature = "model")]
+fn first_gate_layout(range_meters: i16, interval_meters: u16) -> Result<(u16, usize)> {
+    if let Ok(range) = u16::try_from(range_meters) {
+        return Ok((range, 0));
+    }
+    if interval_meters == 0 {
+        return Err(crate::result::Error::NegativeFirstGateRange { range_meters });
+    }
+
+    let behind = u32::from(range_meters.unsigned_abs());
+    let interval = u32::from(interval_meters);
+    let skipped = behind.div_ceil(interval);
+    // Lands in 0..interval, so it fits in u16.
+    let first = (skipped * interval - behind) as u16;
+    Ok((first, skipped as usize))
+}
+
 impl Debug for Message<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("DigitalRadarDataLegacy")
@@ -526,5 +581,64 @@ impl Debug for Message<'_> {
             .field("has_velocity", &self.velocity_gates.is_some())
             .field("has_spectrum_width", &self.spectrum_width_gates.is_some())
             .finish()
+    }
+}
+
+#[cfg(all(test, feature = "model"))]
+mod tests {
+    use super::*;
+    use nexrad_model::data::Product;
+
+    #[test]
+    fn first_gate_layout_keeps_non_negative_ranges() {
+        assert_eq!(first_gate_layout(0, 1000).unwrap(), (0, 0));
+        assert_eq!(first_gate_layout(2125, 250).unwrap(), (2125, 0));
+        assert_eq!(
+            first_gate_layout(i16::MAX, 0).unwrap(),
+            (i16::MAX as u16, 0)
+        );
+    }
+
+    #[test]
+    fn first_gate_layout_skips_gates_behind_the_radar() {
+        // Legacy Doppler gates: centered at -375, -125, 125, ... meters.
+        assert_eq!(first_gate_layout(-375, 250).unwrap(), (125, 2));
+        assert_eq!(first_gate_layout(-500, 250).unwrap(), (0, 2));
+        assert_eq!(first_gate_layout(-1, 1000).unwrap(), (999, 1));
+        assert_eq!(first_gate_layout(i16::MIN, 1).unwrap(), (0, 32768));
+    }
+
+    #[test]
+    fn first_gate_layout_rejects_negative_range_without_interval() {
+        assert!(matches!(
+            first_gate_layout(-375, 0),
+            Err(crate::result::Error::NegativeFirstGateRange { range_meters: -375 })
+        ));
+    }
+
+    #[test]
+    fn legacy_moment_drops_gates_at_negative_range() {
+        let moment = legacy_moment(
+            Product::Velocity,
+            4,
+            -375,
+            250,
+            2.0,
+            129.0,
+            vec![10, 20, 30, 40],
+        )
+        .expect("builds moment");
+        assert_eq!(moment.first_gate_range_meters(), 125);
+        assert_eq!(moment.gate_interval_meters(), 250);
+        assert_eq!(moment.gate_count(), 2);
+        assert_eq!(moment.raw_values(), &[30, 40]);
+    }
+
+    #[test]
+    fn legacy_moment_with_every_gate_behind_the_radar_is_empty() {
+        let moment = legacy_moment(Product::Velocity, 2, -750, 250, 2.0, 129.0, vec![10, 20])
+            .expect("builds moment");
+        assert_eq!(moment.first_gate_range_meters(), 0);
+        assert_eq!(moment.gate_count(), 0);
     }
 }

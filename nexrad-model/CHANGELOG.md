@@ -26,8 +26,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Error` implements `Clone` and `PartialEq`. (#185)
 - `GateStatus::Filtered`, for a gate whose valid value a processing step removed; exhaustive matches need a new arm.
   (#187)
-- Per-radial `Radial::nyquist_velocity_mps()` and `unambiguous_range_km()` (with `uom`, `nyquist_velocity()` and
-  `unambiguous_range()`) and their `RadialBuilder` setters, which reject values that are not finite and positive. (#188)
+- Per-radial `Radial::nyquist_velocity_mps()` and `unambiguous_range_km()` and their `RadialBuilder` setters, which reject values that are not finite and positive. (#188)
 - `Scan::elevation_cut(&Sweep)` and `Scan::sweeps_with_waveform(WaveformType)`. (#188)
 - `VcpNumber` constants for VCPs 11, 21, 121, 211 and 221, formerly `Unknown(n)`. (#188, #205)
 - `WaveformType::abbreviation()`, the ICD's `CS`, `CD/W`, `CD/WO` or `B` (`None` for staggered pulse pair, which the
@@ -51,7 +50,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Error` and `data::Product` are `#[non_exhaustive]`; matches on them outside this crate need a wildcard arm. (#155)
 - Acronyms in type and variant names are UpperCamelCase words (`VcpNumber`, `CfpStatus`, `Sz2Phase`,
   `ElevationStartVcpFinal`), and `WaveformType` variants have descriptive names; serde uses the new names. (#160)
-- Geographic coordinates and polar angles are `f64`, as are the `uom` quantities; the `*_degrees` angles stored on
+- Geographic coordinates and polar angles are `f64`; the `*_degrees` angles stored on
   `Radial`, `Sweep` and `SweepField` stay `f32`. (#164)
 - Builders replace the long positional constructors `Radial::new`, `ElevationCut::new` (the builder takes the waveform
   before the channel configuration), `VolumeCoveragePattern::new`, `Site::new` and `SweepField::new_empty`. (#165,
@@ -69,6 +68,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   level) and `feedhorn_height_meters` (above ground level). Builder setters and serde names follow. (#182)
 - `ElevationCut`'s elevation angle is `f32`, like the other stored angles. (#182)
 - `meta::registry::SiteEntry` is `#[non_exhaustive]`. (#182)
+- `meta::registry::SiteEntry::state` is `Option<&'static str>`, `None` for a site outside the United States; every
+  current entry is `Some`. `Display` omits the state when it is `None`. (#211)
+- `data::GateStatus` is `#[non_exhaustive]`, as `Filtered` and `NoData` come from processing steps and a later step
+  may add a status; matches outside this crate need a wildcard arm. `MomentValue` stays exhaustive. (#211)
 - `Debug` output prints renamed items under their new names (#160), binary blobs as `fnv1a: 0x...` hashes (#162),
   moments with a `product` field instead of a nested `inner` block (#170), and the fields renamed for serde (#189).
 - Field indexing is checked: `get` and the row accessors return `Option`, and `set` returns `Result`. (#185)
@@ -112,6 +115,11 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The crates.io categories are `science` and `data-structures`; `parsing` is dropped. (#196)
 - The published crate leaves out the fixture tests that need files from outside it and the site registry's source
   CSV. (#196)
+- `Scan::coverage_pattern()` returns `Option<&VolumeCoveragePattern>`, `None` for a scan built without a volume
+  coverage pattern message, and `Scan::coverage_pattern_number()` is stored on the scan, so it is present either way.
+  `Scan::new` and `Scan::with_site` take the coverage pattern number and an `Option<VolumeCoveragePattern>`. With
+  `serde`, `Scan` serializes a `coverage_pattern_number` field, and `coverage_pattern` is nullable and defaults to
+  null when absent. (#208)
 - Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the
   `Product` variants describe the quantity each moment holds, and `Product::value_range()` is documented as a display
   default, stable for 1.x. (#209)
@@ -123,6 +131,11 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The `DataMoment` trait; its methods are inherent on `MomentData`. (#170)
 - `Product::moment_data` and `Product::cfp_moment_data`; use `Radial::moment`. (#170)
 - `Site::identifier_string()`. (#185)
+- The `uom` feature and the accessors it enabled (`Radial::{azimuth, azimuth_spacing, elevation_angle,
+  nyquist_velocity, unambiguous_range}`, `Sweep::elevation_angle`, `MomentData::{first_gate_range, gate_interval}`,
+  `Site::{site_elevation, feedhorn_height}`), and the `uom` dependency. `uom` is pre-1.0 and would tie this crate's
+  major version to its own; use the unit-suffixed accessors (`elevation_angle_degrees()`, `gate_interval_km()`, ...).
+  Unit-typed accessors may come later as a separate crate or extension trait. (#202)
 - `MomentData::from_fixed_point`, whose eight positional arguments included two swappable pairs; use
   `MomentData::builder`. (#210)
 - `VcpNumber::description()`, whose per-pattern summaries were operational characterisations rather than ICD

@@ -24,33 +24,36 @@ fn main() -> nexrad::Result<()> {
     println!("{}", scan.coverage_pattern_number());
     println!("Sweeps: {}", scan.sweeps().len());
 
-    let vcp = scan.coverage_pattern();
     println!("\n=== VCP Configuration ===");
-    println!("Version: {}", vcp.version());
-    println!(
-        "Doppler Resolution: {} m/s",
-        vcp.doppler_velocity_resolution_mps()
-    );
-    println!(
-        "SAILS: {} ({} cuts)",
-        vcp.sails_enabled(),
-        vcp.sails_cut_count()
-    );
-    println!(
-        "MRLE: {} ({} cuts)",
-        vcp.mrle_enabled(),
-        vcp.mrle_cut_count()
-    );
-    println!("MPDA: {}", vcp.mpda_enabled());
-
-    println!("\n=== Elevation Cuts ===");
-    for (i, cut) in vcp.elevation_cuts().iter().enumerate() {
+    if let Some(vcp) = scan.coverage_pattern() {
+        println!("Version: {}", vcp.version());
         println!(
-            "  Cut {}: {:.1} deg, {:?}",
-            i + 1,
-            cut.elevation_angle_degrees(),
-            cut.waveform_type()
+            "Doppler Resolution: {} m/s",
+            vcp.doppler_velocity_resolution_mps()
         );
+        println!(
+            "SAILS: {} ({} cuts)",
+            vcp.sails_enabled(),
+            vcp.sails_cut_count()
+        );
+        println!(
+            "MRLE: {} ({} cuts)",
+            vcp.mrle_enabled(),
+            vcp.mrle_cut_count()
+        );
+        println!("MPDA: {}", vcp.mpda_enabled());
+
+        println!("\n=== Elevation Cuts ===");
+        for (i, cut) in vcp.elevation_cuts().iter().enumerate() {
+            println!(
+                "  Cut {}: {:.1} deg, {:?}",
+                i + 1,
+                cut.elevation_angle_degrees(),
+                cut.waveform_type()
+            );
+        }
+    } else {
+        println!("No volume coverage pattern message in this volume");
     }
 
     println!("\n=== Sweep Details ===");

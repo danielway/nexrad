@@ -56,9 +56,9 @@ which encode a rendered image as PNG to a caller-supplied writer or file path.
 
 - **All conversion to model types lives in `nexrad-decode`**, behind its `model` feature (for example
   `nexrad_decode::model::ScanBuilder`).
-- **`nexrad-data` orchestrates I/O and decompression only.** `volume::File::scan`, `volume::Record::radials` and
-  `aws::realtime::assemble_volume` decompress records and hand their messages to `nexrad-decode`, with no
-  protocol-to-model mapping of their own.
+- **`nexrad-data` orchestrates I/O and decompression only.** `volume::File::scan` (which also decompresses a gzip-wrapped
+  file), `volume::Record::radials` and `aws::realtime::assemble_volume` decompress records and hand their messages to
+  `nexrad-decode`, with no protocol-to-model mapping of their own.
 - **The facade contains re-exports and I/O entry points only** (`load`, `download`, `list_scans`, `stream` and their
   variants). Anything expressible as a method on a model type lives on the model type (`Sweep::field`), and the static
   site registry lives in `nexrad_model::meta::registry`.
@@ -70,7 +70,7 @@ which encode a rendered image as PNG to a caller-supplied writer or file path.
 - **nexrad-decode** implements NOAA ICD 2620002AA. Its types mirror the binary wire format for developers working at the
   protocol level, and its `model` feature converts them to model types.
 
-The split keeps the model's dependencies minimal (`thiserror`, and optionally `serde`, `chrono`, `uom`) and untouched by
+The split keeps the model's dependencies minimal (`thiserror`, and optionally `serde`, `chrono`) and untouched by
 new protocol parsing, and keeps wire-format details out of the model's public API: the model evolves with user-facing
 requirements, the decoder with the ICD.
 
@@ -90,7 +90,7 @@ let scan = nexrad::load_file("volume.ar2v")?;
 let field = scan.sweeps()[0].field(Product::Reflectivity);
 
 // Through sub-crates directly (fine-grained)
-let scan = nexrad_data::volume::File::new(bytes).decompress()?.scan()?;
+let scan = nexrad_data::volume::File::new(bytes).scan()?;
 ```
 
 ## Public API and Versioning Policy
@@ -123,7 +123,6 @@ appear in public signatures:
 | `std` | Everywhere | |
 | `chrono` | Timestamps and dates in model, decode, data and the facade | Re-exported from the facade as `nexrad::chrono` (feature `chrono`) |
 | `serde` | `Serialize`/`Deserialize` impls | Opt-in `serde` feature |
-| `uom` | Unit-typed accessors | Opt-in `uom` feature |
 | `image` | `nexrad_render::RenderResult::into_rgba_image` only | Opt-in `image` feature of `nexrad-render` (and the facade), off by default and not in `full`. It tracks `image`'s own 0.x releases and is excluded from the semver promise. Without it, `RenderResult` exposes owned RGBA8 pixels (`pixels()`, `into_pixels()`) |
 | `futures_core` | The `Stream` returned by `nexrad_data::aws::realtime::chunk_stream` and `nexrad::stream` | Return type only |
 | `futures_util` | The facade, internally | Not re-exported and not in any signature; consumers depend on `futures-util` or `futures` themselves for `StreamExt` |
@@ -147,7 +146,9 @@ CHANGELOGs.
 | `Public API baselines` | `api/<crate>.txt` matches each library crate's public API. Regenerate with `cargo run -p xtask -- public-api`; compare with `cargo run -p xtask -- public-api --check`. A PR that changes a public API updates the baselines in the same PR |
 | `Semver checks` | `cargo semver-checks` against the latest release on crates.io. Advisory (`continue-on-error: true`) until 1.0.0 is published, then blocking |
 | `Fuzz target build check` | The fuzz targets in `nexrad-decode/fuzz` and `nexrad-data/fuzz` (outside the workspace) still build |
-| `WASM compatibility check` | Each library crate, and the facade's `wasm` feature, builds for `wasm32-unknown-unknown` |
+| `WASM compatibility check` | Each library crate, and the facade with every feature except `parallel` and `image`, builds for `wasm32-unknown-unknown` |
+| `Feature set tests` | `cargo test -p nexrad` with no default features and with every feature except `parallel` and `image` |
+| `Windows build` | `cargo check --workspace --all-features --all-targets` on Windows, which builds the `aws-rustls` TLS stack (aws-lc-rs with NASM) |
 
 ## Feature Architecture
 
@@ -156,14 +157,34 @@ are named for what they enable, not for the crate they pull in.
 
 | Crate | Features (defaults in bold) |
 |-------|-----------------------------|
-| `nexrad-model` | `serde`, `chrono`, `uom` |
-| `nexrad-decode` | **`model`** (conversion to `nexrad-model` types), `uom` |
-| `nexrad-data` | **`aws`** (S3 archive and real-time access), **`model`** (`File::scan`, `Record::radials`, `assemble_volume`; enables `nexrad-decode/model`), `parallel` (rayon) |
+| `nexrad-model` | `serde`, `chrono` |
+| `nexrad-decode` | **`model`** (conversion to `nexrad-model` types), `serde` (the code enums and `VcpNumber`) |
+| `nexrad-data` | **`aws`** (S3 archive and real-time access, without a TLS backend), **`aws-rustls`** (`aws` with rustls and the aws-lc-rs provider), **`model`** (`File::scan`, `Record::radials`, `assemble_volume`; enables `nexrad-decode/model`), `parallel` (rayon) |
 | `nexrad-process` | none |
 | `nexrad-render` | `image` (`RenderResult::into_rgba_image`; outside the semver promise) |
-| `nexrad` | **`full`**; see the feature table in the crate docs |
+| `nexrad` | **`data`**, **`aws`**, **`aws-rustls`**, **`render`**, `full` for every feature except `image`, and `image`; see the feature table in the crate docs |
 
-`uom` is off by default in every sub-crate; the facade turns it on only through `wasm`/`full`.
+No crate exposes unit-typed quantities: accessors return plain numbers with the unit in the name. `uom` was removed
+before 1.0 because it is pre-1.0 itself and would tie our major version to its own; unit-typed accessors may come later
+as a separate crate or extension trait.
+
+### Feature Policy
+
+- **Defaults are a working set, not everything.** The facade's default is "load, download, render" (`data`, `aws`,
+  `aws-rustls`, `render`). `full` enables every feature except `image`. Removing a feature, or removing one from a
+  default set, is a breaking change, while adding one is not, so the defaults stay small.
+- **No target-named feature sets.** Every feature except `parallel` builds for `wasm32-unknown-unknown`, and a WASM
+  build lists the features it uses. CI checks that set for `wasm32` and tests it on native.
+- **Interop outside the semver promise stays opt-in.** `image` (`RenderResult::into_rgba_image`) tracks the `image`
+  crate's own 0.x releases and may move to a newer, incompatible `image` version in a minor or patch release, so it
+  is in neither the default set nor `full`.
+- **TLS backends are separate features.** `aws` is the HTTP client machinery with no TLS backend; on `wasm32` it uses
+  the JavaScript `fetch` API and needs none. `aws-rustls` (default) selects rustls with the aws-lc-rs provider, which
+  needs a C compiler and, on Windows x86 targets, NASM. Other backends can be added later as further `aws-*` features
+  (for example `aws-rustls-ring` or `aws-native-tls`) without breaking anyone. On native targets, `aws` without any
+  TLS backend compiles, but every HTTPS request fails at run time with reqwest's `invalid URL, scheme is not http`
+  connect error; a TLS feature of `reqwest` (for example `native-tls`) enabled by the user's manifest or any other
+  crate in the build satisfies it, since Cargo unifies features.
 
 ### Facade Feature Gating
 
@@ -176,7 +197,7 @@ list them), so network dependencies such as reqwest are compiled only with `aws`
 No library crate depends on an async runtime, and `aws` is the only network feature. Real-time streaming
 (`chunk_stream(config, sleep)`, `nexrad::stream(site, sleep)`) takes a caller-supplied sleep function, such as
 `|d| tokio::time::sleep(d)` or a `gloo-timers` timer on `wasm32`, so it builds for WASM. Only `parallel` (rayon threads)
-is excluded from the `wasm` feature set.
+does not build for WASM.
 
 ## Error Architecture
 
@@ -203,8 +224,8 @@ same validation as the constructors and builders. The representation is stable w
 - **Acronyms are UpperCamelCase words**: `VcpNumber`, `AwsError`.
 - **Decoded-message accessors** in `nexrad-decode` follow "Accessor Naming" in its crate docs: the stem is the ICD
   field name; `<stem>_raw()` exists only when the wire encoding differs from the decoded value; a decoded plain number
-  is `<stem>_<unit>()` (`azimuth_angle_degrees()`); a decoded enum or struct is the bare stem (`radial_status()`); and
-  feature-gated `uom` accessors take the bare stem (`azimuth_angle()`).
+  is `<stem>_<unit>()` (`azimuth_angle_degrees()`); and a decoded enum or struct is the bare stem
+  (`radial_status()`).
 - **Model types** keep unit suffixes on plain numbers. Angles use the stems `azimuth_angle_degrees` and
   `elevation_angle_degrees` (a slice of azimuths is `azimuth_angles_degrees`); lengths end in `_meters` or `_km`,
   velocities in `_mps`, and timestamps in `_millis`. `site_elevation_meters` is the ground elevation above mean sea
@@ -330,7 +351,8 @@ inside the defining crate keeps exhaustive matches so the compiler flags every p
 
 Non-exhaustive: every crate's `Error` enum and `nexrad_data::result::AwsError`, and enums over sets that grow with the
 ICD or the library, such as message types and products (`MessageContents`, `Product`) and render projections
-(`Projection`).
+(`Projection`). `nexrad_model::data::GateStatus` is non-exhaustive because some of its variants (`Filtered`, `NoData`)
+are set by processing steps rather than by the data encoding, and a later processing step may add a status.
 
 `VcpNumber` is not an enum: it is a `u16` newtype with associated constants (`VcpNumber::VCP_212`) that work as `match`
 patterns. Naming a further pattern adds a constant, which cannot change how an existing value matches, compares or
@@ -351,9 +373,9 @@ An `Unknown(n)` or `Reserved(n)` value may be promoted to a named variant in a m
 code; code that needs a stable result across releases should compare the raw code (`number()` or the `*_raw()`
 accessor) rather than match on `Unknown(n)`.
 
-Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue` and
-`GateStatus`. Adding a variant to an exhaustive enum is a breaking change and is reserved for a major
-release.
+Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue` (a
+value, below threshold, range folded or a clutter filter power status code, as the ICD encodes a gate). Adding a
+variant to an exhaustive enum is a breaking change and is reserved for a major release.
 
 ## Versioning and Releases
 

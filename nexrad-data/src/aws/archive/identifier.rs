@@ -18,8 +18,8 @@ const PREFIX_LEN: usize = 19;
 ///
 /// where `SSSS` is the four-character radar site identifier (ASCII uppercase letters and digits),
 /// `YYYYMMDD_HHMMSS` is the volume's UTC start time, `_Vnn` is the Archive II version suffix
-/// (absent on the earliest files), `_MDM` marks a metadata object rather than a volume file, and
-/// `.gz` marks a gzip-compressed object. For example: `KTLX20230520_201643_V06`,
+/// (absent on the earliest files), `_MDM` marks a model data object rather than a volume file
+/// (see [`is_model_data`](Self::is_model_data)), and `.gz` marks a gzip-compressed object. For example: `KTLX20230520_201643_V06`,
 /// `KDMX20220305_232324_V06_MDM`, `KTLX20100501_000444_V03.gz` and `KTLX19910605_162126.gz`.
 ///
 /// Equality, ordering and hashing use the name only. Within a site, name order is chronological.
@@ -28,7 +28,7 @@ pub struct Identifier {
     name: String,
     date_time: DateTime<Utc>,
     versioned: bool,
-    metadata: bool,
+    model_data: bool,
     gzip: bool,
 }
 
@@ -86,7 +86,7 @@ impl Identifier {
             rest = &suffix[2..];
         }
 
-        let metadata = match rest.strip_prefix("_MDM") {
+        let model_data = match rest.strip_prefix("_MDM") {
             Some(suffix) => {
                 rest = suffix;
                 true
@@ -110,7 +110,7 @@ impl Identifier {
             name: name.to_string(),
             date_time,
             versioned,
-            metadata,
+            model_data,
             gzip,
         })
     }
@@ -137,9 +137,16 @@ impl Identifier {
             .then(|| &self.name[PREFIX_LEN + 1..PREFIX_LEN + 4])
     }
 
-    /// Whether this names a metadata object (`_MDM` suffix) rather than a volume file.
-    pub fn is_metadata(&self) -> bool {
-        self.metadata
+    /// Whether this names a model data object (`_MDM` suffix) rather than a volume file.
+    ///
+    /// A model data object is a single bzip2-compressed LDM record with no Archive II volume
+    /// header, holding one message of type 29, which the Archive II ICD (2620010J §7.6.7) calls
+    /// the Model Data message ([`MessageType::ModelData`](nexrad_decode::messages::MessageType::ModelData)).
+    /// It is not the metadata record at the start of each volume. [`File::records`](crate::volume::File::records)
+    /// expects a volume header and so cannot read these objects; read the downloaded bytes with
+    /// [`realtime::Chunk::new`](crate::aws::realtime::Chunk::new) instead.
+    pub fn is_model_data(&self) -> bool {
+        self.model_data
     }
 
     /// Whether the name carries a `.gz` suffix, marking a gzip-compressed object.

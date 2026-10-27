@@ -149,7 +149,7 @@ fn decode_record(
 
     println!(
         "{:<25} | {:<25} | {:<13} | {:<13} | {:<13} | {:<8}",
-        format!("{}/{}", chunk_id.volume().as_number(), chunk_id.name()),
+        format!("{}/{}", chunk_id.volume().number(), chunk_id.name()),
         download_time.format("%Y-%m-%d %H:%M:%S%.3f"),
         aws_latency,
         first_radial_latency,

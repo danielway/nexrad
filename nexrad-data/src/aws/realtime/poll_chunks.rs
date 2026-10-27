@@ -166,21 +166,21 @@ async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
     let latest_chunk_id = get_latest_chunk(config.site(), latest_volume)
         .await?
         .ok_or(AwsError::LatestVolumeNotFound)?;
-    let latest = download_chunk(config.site(), &latest_chunk_id).await?;
+    let latest = download_chunk(&latest_chunk_id).await?;
 
     // Joined mid-volume: the Start chunk carries the VCP
     let start = if latest.identifier.chunk_type() == ChunkType::Start {
         None
     } else {
         let start_id = latest.identifier.with_sequence(1, ChunkType::Start);
-        Some(download_chunk(config.site(), &start_id).await?)
+        Some(download_chunk(&start_id).await?)
     };
 
     let state = ChunkStreamState::from_startup(config, latest, start)?;
     debug!(
         "Stream initialized for {} at volume {} with VCP {}",
         config.site(),
-        latest_volume.as_number(),
+        latest_volume.number(),
         state.vcp.header().vcp_number_raw()
     );
 
@@ -229,7 +229,7 @@ where
 
     // Download the chunk with retries
     let (attempts, result) = try_resiliently_with_policy(
-        || download_chunk(&state.site, &next_chunk_id),
+        || download_chunk(&next_chunk_id),
         &state.download_policy,
         sleep,
     )
@@ -373,7 +373,9 @@ mod tests {
             ChunkIdentifier::new(
                 "KDMX",
                 VolumeIndex::new(1).unwrap(),
-                NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+                NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S")
+                    .unwrap()
+                    .and_utc(),
                 sequence,
                 ChunkType::Intermediate,
                 Some(upload),
@@ -417,7 +419,9 @@ mod tests {
         let vcp = get_test_vcp();
         let elevation_mapper = ElevationChunkMapper::new(&vcp);
         let upload = Utc.with_ymd_and_hms(2022, 3, 5, 23, 30, 0).unwrap();
-        let prefix = NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap();
+        let prefix = NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S")
+            .unwrap()
+            .and_utc();
         let start = ChunkIdentifier::new(
             "KDMX",
             VolumeIndex::new(1).unwrap(),
@@ -475,7 +479,9 @@ mod tests {
         ChunkIdentifier::new(
             "KDMX",
             VolumeIndex::new(1).unwrap(),
-            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S")
+                .unwrap()
+                .and_utc(),
             sequence,
             chunk_type,
             Some(

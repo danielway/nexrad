@@ -26,7 +26,8 @@ fn test_no_data_available_message() {
 fn test_no_scan_at_message() {
     let datetime = nexrad::chrono::NaiveDate::from_ymd_opt(2023, 5, 20)
         .and_then(|date| date.and_hms_opt(20, 16, 43))
-        .expect("valid datetime");
+        .expect("valid datetime")
+        .and_utc();
     let err = nexrad::Error::NoScanAt {
         site: "KTLX".to_string(),
         datetime,
@@ -34,7 +35,7 @@ fn test_no_scan_at_message() {
 
     assert_eq!(
         err.to_string(),
-        "no scan for site KTLX overlaps 2023-05-20 20:16:43"
+        "no scan for site KTLX overlaps 2023-05-20 20:16:43 UTC"
     );
 }
 
@@ -120,7 +121,7 @@ fn test_decode_error_with_string_conversion() {
 #[test]
 fn test_data_error_conversion() {
     // Create a data error
-    let data_err = nexrad_data::result::Error::CompressedData;
+    let data_err = nexrad_data::result::Error::CompressedRecord;
 
     // Convert to unified error
     let unified_err: nexrad::Error = data_err.into();
@@ -221,13 +222,13 @@ fn test_decode_error_through_data_keeps_source() {
 #[cfg(feature = "data")]
 #[test]
 fn test_data_specific_error_keeps_source() {
-    let unified_err: nexrad::Error = nexrad_data::result::Error::CompressedData.into();
+    let unified_err: nexrad::Error = nexrad_data::result::Error::CompressedRecord.into();
 
     let source = unified_err
         .source()
         .expect("Expected error source to be available");
     assert!(
-        source.to_string().contains("compressed data"),
+        source.to_string().contains("compressed record"),
         "Expected the data error as the source, got: {}",
         source
     );
@@ -308,7 +309,7 @@ fn test_all_features_enabled() {
     let decode_err = nexrad_decode::result::Error::UnexpectedEof { offset: 0 };
     let _: nexrad::Error = decode_err.into();
 
-    let data_err = nexrad_data::result::Error::CompressedData;
+    let data_err = nexrad_data::result::Error::CompressedRecord;
     let _: nexrad::Error = data_err.into();
 }
 
@@ -331,7 +332,7 @@ fn test_all_features_including_render_and_process() {
     let decode_err = nexrad_decode::result::Error::UnexpectedEof { offset: 0 };
     let _: nexrad::Error = decode_err.into();
 
-    let data_err = nexrad_data::result::Error::CompressedData;
+    let data_err = nexrad_data::result::Error::CompressedRecord;
     let _: nexrad::Error = data_err.into();
 
     let render_err = nexrad_render::result::Error::InvalidDimensions;

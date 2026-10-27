@@ -2,7 +2,7 @@ use crate::{
     aws::realtime::{ChunkType, ElevationChunkMapper, VolumeIndex},
     result::{AwsError, Error, Result},
 };
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, SubsecRound, Utc};
 
 /// Identifies a volume chunk within the real-time NEXRAD data bucket. These chunks are uploaded
 /// every few seconds and contain a portion of the radar data for a specific volume.
@@ -11,7 +11,7 @@ pub struct ChunkIdentifier {
     // These three fields are the same for all chunks in a volume
     site: String,
     volume: VolumeIndex,
-    date_time_prefix: NaiveDateTime,
+    date_time_prefix: DateTime<Utc>,
 
     // These fields identify a specific chunk within the volume
     sequence: usize,
@@ -25,16 +25,18 @@ pub struct ChunkIdentifier {
 }
 
 impl ChunkIdentifier {
-    /// Creates a new chunk identifier. `date_time_prefix` is the scan's UTC date and time, as
-    /// it appears in the chunk name.
+    /// Creates a new chunk identifier. `date_time_prefix` is the scan's date and time, as it
+    /// appears in the chunk name. Chunk names carry whole seconds, so any fraction of a second is
+    /// dropped.
     pub fn new(
         site: impl Into<String>,
         volume: VolumeIndex,
-        date_time_prefix: NaiveDateTime,
+        date_time_prefix: DateTime<Utc>,
         sequence: usize,
         chunk_type: ChunkType,
         upload_date_time: Option<DateTime<Utc>>,
     ) -> Self {
+        let date_time_prefix = date_time_prefix.trunc_subsecs(0);
         let name = format!(
             "{}-{:03}-{}",
             date_time_prefix.format("%Y%m%d-%H%M%S"),
@@ -79,7 +81,8 @@ impl ChunkIdentifier {
             .get(..15)
             .ok_or_else(|| Error::Aws(AwsError::UnrecognizedChunkDateTime(name.clone())))?;
         let date_time_prefix = NaiveDateTime::parse_from_str(date_str, "%Y%m%d-%H%M%S")
-            .map_err(|_| Error::Aws(AwsError::UnrecognizedChunkDateTime(date_str.to_string())))?;
+            .map_err(|_| Error::Aws(AwsError::UnrecognizedChunkDateTime(date_str.to_string())))?
+            .and_utc();
 
         let sequence_str = name
             .get(16..19)
@@ -113,13 +116,13 @@ impl ChunkIdentifier {
     }
 
     /// The chunk's rotating volume index.
-    pub fn volume(&self) -> &VolumeIndex {
-        &self.volume
+    pub fn volume(&self) -> VolumeIndex {
+        self.volume
     }
 
-    /// The chunk's UTC date and time prefix, consistent across all chunks in a volume.
-    pub fn date_time_prefix(&self) -> &NaiveDateTime {
-        &self.date_time_prefix
+    /// The chunk's date and time prefix, consistent across all chunks in a volume.
+    pub fn date_time_prefix(&self) -> DateTime<Utc> {
+        self.date_time_prefix
     }
 
     /// The sequence number of this chunk within the volume.

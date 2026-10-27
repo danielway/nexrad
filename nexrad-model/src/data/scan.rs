@@ -140,12 +140,8 @@ impl Scan {
     /// Extract a [`SweepField`] for `product` from the first sweep that carries it.
     ///
     /// Returns the index of that sweep within [`sweeps`](Self::sweeps) alongside the field,
-    /// or `None` if no sweep has data for `product`.
-    ///
-    /// Split cuts, SAILS, MRLE and MPDA repeat elevations within a volume, so reflectivity and
-    /// velocity at one angle usually come from different sweeps and a product may appear
-    /// several times. Use [`elevation_cut`](Self::elevation_cut) and
-    /// [`sweeps_with_waveform`](Self::sweeps_with_waveform) to select sweeps by their cut.
+    /// or `None` if no sweep has data for `product`. A product may appear in several sweeps;
+    /// see [`fields`](Self::fields) for selecting sweeps by their cut.
     ///
     /// # Example
     ///

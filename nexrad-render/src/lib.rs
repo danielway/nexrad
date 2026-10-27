@@ -58,23 +58,10 @@
 //!
 //! # Crate Boundaries
 //!
-//! This crate provides **visualization and rendering** with the following responsibilities
-//! and constraints:
-//!
-//! ## Responsibilities
-//!
-//! - Render radar data to RGBA pixel buffers ([`RenderResult`])
-//! - Apply color scales to moment data
-//! - Handle geometric transformations (polar to Cartesian coordinates)
-//! - Consume `nexrad-model` field types (`SweepField`, `CartesianField`, `VerticalField`)
-//!
-//! ## Constraints
-//!
-//! - **No data access or network operations**
-//! - **No binary parsing or decoding**
-//!
-//! This crate can be used standalone or through the `nexrad` facade crate (re-exported
-//! via the `render` feature, which is enabled by default).
+//! This crate renders `nexrad-model` field types (`SweepField`, `CartesianField`,
+//! `VerticalField`) to RGBA pixel buffers, applying color scales and the polar-to-Cartesian
+//! mapping. It does no data access, network I/O or binary decoding. It is re-exported by the
+//! `nexrad` facade through the `render` feature, which is on by default.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]

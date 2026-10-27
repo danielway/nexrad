@@ -56,24 +56,8 @@
 //!
 //! # Crate Boundaries
 //!
-//! This crate is a **pure data model** with the following responsibilities and constraints:
-//!
-//! ## Responsibilities
-//!
-//! - ✓ Define domain types (Scan, Sweep, Radial, Site, MomentData)
-//! - ✓ Provide data transformations and validations
-//! - ✓ Support optional features (serde, chrono)
-//!
-//! ## Constraints
-//!
-//! - ✗ **No I/O operations** (file, network, stdio)
-//! - ✗ **No binary parsing or encoding**
-//! - ✗ **No rendering or visualization**
-//! - ✗ **No CLI or user interaction**
-//!
-//! This crate focuses solely on providing ergonomic data structures for working with
-//! NEXRAD radar data. All I/O, parsing, and rendering concerns are handled by separate
-//! crates in the NEXRAD library suite.
+//! This crate defines data types and the operations on them. It performs no I/O, no binary
+//! parsing and no rendering; those are in the other crates of the NEXRAD library suite.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]

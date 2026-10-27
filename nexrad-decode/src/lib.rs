@@ -41,12 +41,8 @@
 //!
 //! # Message Types
 //!
-//! The decoder handles several message types defined in the ICD:
-//!
-//! - **Digital Radar Data (Type 31)** - Primary radar measurements
-//! - **RDA Status Data (Type 2)** - Radar status and alarms
-//! - **Volume Coverage Pattern (Type 5)** - Scanning strategy details
-//! - **Clutter Filter Map (Type 15)** - Clutter suppression data
+//! [`MessageContents`] lists the decoded message types; any other type decodes as
+//! [`MessageContents::Other`] with its raw payload.
 //!
 //! # Accessor Naming
 //!
@@ -88,26 +84,9 @@
 //!
 //! # Crate Boundaries
 //!
-//! This crate provides **binary protocol parsing** with the following responsibilities
-//! and constraints:
-//!
-//! ## Responsibilities
-//!
-//! - ✓ Parse binary data per NOAA ICD 2620002AA specification
-//! - ✓ Convert raw bytes into structured message types
-//! - ✓ Provide conversion to `nexrad_model` types (when feature enabled)
-//! - ✓ Validate message structures
-//!
-//! ## Constraints
-//!
-//! - ✗ **No I/O operations** (operates on byte slices provided by caller)
-//! - ✗ **No file or network access**
-//! - ✗ **No rendering or visualization**
-//! - ✗ **No CLI or user interaction**
-//!
-//! This crate is purely concerned with parsing binary protocol data. It accepts byte
-//! slices as input and returns structured data types. All I/O operations (reading files,
-//! downloading from AWS, decompression) are handled by the `nexrad-data` crate.
+//! This crate performs no I/O and no decompression: it decodes byte slices the caller has
+//! already decompressed. Reading files, decompressing LDM records and downloading from AWS are
+//! done by `nexrad-data`.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]

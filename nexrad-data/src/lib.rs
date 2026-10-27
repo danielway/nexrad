@@ -72,30 +72,10 @@
 //!
 //! # Crate Boundaries
 //!
-//! This crate provides **data access and I/O operations** with the following
-//! responsibilities and constraints:
-//!
-//! ## Responsibilities
-//!
-//! - ✓ Read and parse Archive II volume files
-//! - ✓ Handle file I/O operations
-//! - ✓ Decompress bzip2-compressed LDM records
-//! - ✓ AWS S3 integration for archive and real-time data (when `aws` feature enabled)
-//! - ✓ Use `nexrad-decode` for message parsing and, with the `model` feature, for conversion to
-//!   `nexrad-model` types (`volume::File::scan` and `aws::realtime::assemble_volume` hand decoded
-//!   messages to `nexrad_decode::model::ScanBuilder`)
-//! - ✓ Orchestrate the data pipeline from raw bytes to structured models
-//!
-//! ## Constraints
-//!
-//! - ✗ **No protocol-to-model mapping** (that lives in `nexrad-decode`)
-//! - ✗ **No rendering or visualization**
-//! - ✗ **No CLI or user interaction**
-//!
-//! This crate serves as the **I/O boundary layer** for the NEXRAD library suite. It
-//! handles all file and network operations, decompression, and coordinates between
-//! the low-level binary parsing (`nexrad-decode`) and high-level data models
-//! (`nexrad-model`).
+//! This crate handles file and network I/O and decompression. Message parsing and conversion
+//! to `nexrad-model` types are done by `nexrad-decode` (`volume::File::scan` and
+//! `aws::realtime::assemble_volume` hand decoded messages to `nexrad_decode::model::ScanBuilder`);
+//! this crate does no protocol-to-model mapping of its own and no rendering.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]

@@ -1,9 +1,8 @@
 //!
 //! Unified error types for the NEXRAD facade crate.
 //!
-//! This module provides a unified error type [`Error`] that consolidates errors from all
-//! sub-crates (nexrad-model, nexrad-decode, nexrad-data, nexrad-render, nexrad-process) into a
-//! single error surface for users of the facade crate.
+//! [`Error`] gathers the errors of every sub-crate (nexrad-model, nexrad-decode, nexrad-data,
+//! nexrad-render, nexrad-process) into one type.
 //!
 //! ## Error Hierarchy
 //!
@@ -82,21 +81,14 @@
 
 use thiserror::Error as ThisError;
 
-/// A unified result type using the facade-level [`Error`].
-///
-/// This is a convenience type alias that uses the unified error type for all operations
-/// exposed through the nexrad facade crate.
+/// A result with the facade-level [`Error`].
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Unified error type for the NEXRAD facade crate.
 ///
-/// This error type consolidates errors from all sub-crates into a single error surface,
-/// making it easier to handle errors when using multiple sub-crates together.
-///
-/// Each wrapping variant names the layer the error originated in and preserves the wrapped
-/// error as its source. Decode, model and I/O errors that reach the facade through
-/// `nexrad_data` are flattened into `Error::Decode`, `Error::Model` and [`Error::Io`]; see the
-/// [module documentation](self) for details.
+/// Each wrapping variant names the layer the error originated in and returns the wrapped error
+/// as its source; see the [module documentation](self) for how `nexrad_data` errors are
+/// flattened.
 #[derive(ThisError, Debug)]
 #[non_exhaustive]
 pub enum Error {
@@ -105,8 +97,7 @@ pub enum Error {
     /// This variant is available when the `model` feature is enabled (default).
     ///
     /// Model errors typically indicate issues with data transformations or validations,
-    /// such as mismatched elevation angles when combining sweeps. Model errors raised
-    /// inside `nexrad_data` also surface here.
+    /// such as mismatched elevation angles when combining sweeps.
     #[cfg(feature = "model")]
     #[error("model error")]
     Model(#[from] nexrad_model::result::Error),
@@ -117,7 +108,7 @@ pub enum Error {
     ///
     /// Decode errors indicate issues parsing the binary NEXRAD Level II message format,
     /// such as truncated data, invalid message structures, or missing required fields like
-    /// collection timestamps. Decode errors raised inside `nexrad_data` also surface here.
+    /// collection timestamps.
     #[cfg(feature = "decode")]
     #[error("decode error")]
     Decode(#[from] nexrad_decode::result::Error),

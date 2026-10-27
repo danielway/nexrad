@@ -432,14 +432,11 @@ const MAX_VOLUME_DURATION: chrono::TimeDelta = chrono::TimeDelta::minutes(15);
 /// # Example
 ///
 /// ```no_run
-/// use nexrad::chrono::NaiveDateTime;
+/// use nexrad::chrono::{TimeZone, Utc};
 ///
 /// # async fn run() -> nexrad::Result<()> {
 /// // Download the scan that was being collected at 20:16:43 UTC
-/// let dt = NaiveDateTime::parse_from_str(
-///     "2023-05-20 20:16:43",
-///     "%Y-%m-%d %H:%M:%S"
-/// ).unwrap();
+/// let dt = Utc.with_ymd_and_hms(2023, 5, 20, 20, 16, 43).unwrap();
 /// let scan = nexrad::download_at("KTLX", dt).await?;
 /// # Ok(())
 /// # }
@@ -451,8 +448,11 @@ const MAX_VOLUME_DURATION: chrono::TimeDelta = chrono::TimeDelta::minutes(15);
 /// returns an error if listing or downloading fails, or if the file cannot be decompressed or
 /// decoded.
 #[cfg(feature = "aws")]
-pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<model::data::Scan> {
-    let date = datetime.date();
+pub async fn download_at(
+    site: &str,
+    datetime: chrono::DateTime<chrono::Utc>,
+) -> Result<model::data::Scan> {
+    let date = datetime.date_naive();
     let day = data::aws::archive::list_files(site, date).await?;
 
     let needs_previous_day = last_started_by(&day, datetime).is_none();
@@ -475,11 +475,9 @@ pub async fn download_at(site: &str, datetime: chrono::NaiveDateTime) -> Result<
 #[cfg(feature = "aws")]
 fn last_started_by(
     files: &[data::aws::archive::Identifier],
-    datetime: chrono::NaiveDateTime,
+    datetime: chrono::DateTime<chrono::Utc>,
 ) -> Option<&data::aws::archive::Identifier> {
-    files
-        .iter()
-        .rfind(|file| file.date_time().naive_utc() <= datetime)
+    files.iter().rfind(|file| file.date_time() <= datetime)
 }
 
 /// Selects the volume overlapping `datetime` from the volumes of its date and of the previous
@@ -489,17 +487,17 @@ fn last_started_by(
 fn scan_at<'a>(
     day: &'a [data::aws::archive::Identifier],
     previous_day: &'a [data::aws::archive::Identifier],
-    datetime: chrono::NaiveDateTime,
+    datetime: chrono::DateTime<chrono::Utc>,
 ) -> Option<&'a data::aws::archive::Identifier> {
     last_started_by(day, datetime)
         .or_else(|| last_started_by(previous_day, datetime))
-        .filter(|file| datetime - file.date_time().naive_utc() <= MAX_VOLUME_DURATION)
+        .filter(|file| datetime - file.date_time() <= MAX_VOLUME_DURATION)
 }
 
 /// List available scans for a site and date.
 ///
 /// Returns identifiers for all archive volume files available on the specified UTC date, in
-/// chronological order; metadata objects are not included.
+/// chronological order; model data (`_MDM`) objects are not included.
 /// These identifiers can be used to selectively download specific scans.
 ///
 /// # Example
@@ -724,7 +722,7 @@ struct VolumeAccumulator {
     chunks: Vec<data::aws::realtime::Chunk>,
     /// The scan time and sequence number of the last chunk added to `chunks`, or `None` when no
     /// volume is in progress.
-    last: Option<(chrono::NaiveDateTime, usize)>,
+    last: Option<(chrono::DateTime<chrono::Utc>, usize)>,
 }
 
 #[cfg(feature = "aws")]
@@ -751,7 +749,7 @@ impl VolumeAccumulator {
 
         let identifier = &downloaded.identifier;
         let chunk_type = identifier.chunk_type();
-        let position = (*identifier.date_time_prefix(), identifier.sequence());
+        let position = (identifier.date_time_prefix(), identifier.sequence());
         if chunk_type == ChunkType::Start {
             self.chunks.clear();
         } else {
@@ -812,12 +810,14 @@ pub use chrono;
 #[cfg(all(test, feature = "aws"))]
 mod tests {
     use super::*;
-    use chrono::NaiveDateTime;
+    use chrono::{DateTime, NaiveDateTime, Utc};
     use data::aws::archive::Identifier;
     use data::aws::realtime::{Chunk, ChunkIdentifier, ChunkType, DownloadedChunk, VolumeIndex};
 
-    fn datetime(value: &str) -> NaiveDateTime {
-        NaiveDateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S").expect("valid datetime")
+    fn datetime(value: &str) -> DateTime<Utc> {
+        NaiveDateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S")
+            .expect("valid datetime")
+            .and_utc()
     }
 
     fn identifiers(names: &[&str]) -> Vec<Identifier> {

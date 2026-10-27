@@ -166,12 +166,12 @@ mod tests {
     /// Runs the volume search over in-memory upload times, where `times[n - 1]` is volume `n`.
     async fn latest_of(times: &[Option<DateTime<Utc>>]) -> Option<usize> {
         find_latest_volume(|volume| {
-            let time = times[volume.as_number() - 1];
+            let time = times[volume.number() - 1];
             async move { Ok(time) }
         })
         .await
         .unwrap()
-        .map(|volume| volume.as_number())
+        .map(|volume| volume.number())
     }
 
     /// Upload times for a full bucket rotation whose newest volume is `newest`.

@@ -10,6 +10,10 @@
 //! real-time and once a full scan has been uploaded to a volume directory, those chunks are
 //! combined to create a full Archive II volume file which is uploaded to this archive bucket.
 //!
+//! Some volume files have a companion object with an `_MDM` suffix. It holds the Model Data
+//! message (message type 29) that follows the volume, as a single compressed LDM record without a
+//! volume header (see [`Identifier::is_model_data`]). [`list_files`] skips these objects.
+//!
 
 mod identifier;
 pub use identifier::Identifier;

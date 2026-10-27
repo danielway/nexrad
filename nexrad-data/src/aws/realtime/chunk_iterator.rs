@@ -74,6 +74,17 @@ enum IteratorState {
     Ready(ChunkIdentifier),
 }
 
+/// What the next [`ChunkIterator::try_next`] call fetches.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Step {
+    /// Download the current volume's Start chunk only to learn its VCP; the chunk is not yielded.
+    LoadCurrentVcp(ChunkIdentifier),
+    /// Download this chunk and yield it.
+    Chunk(ChunkIdentifier),
+    /// List this volume and yield its Start chunk once it holds a newer scan.
+    VolumeStart(VolumeIndex),
+}
+
 /// Pull-based iterator for real-time NEXRAD chunks.
 ///
 /// This iterator allows manual control over timing, making it suitable for
@@ -102,6 +113,9 @@ pub struct ChunkIterator {
     last_chunk_time: Option<DateTime<Utc>>,
     requests_made: usize,
     bytes_downloaded: u64,
+    /// Set when the current volume's Start chunk could not supply a VCP, so the rest of the
+    /// volume cannot be sequenced and the iterator waits for the next volume instead.
+    current_vcp_unavailable: bool,
 }
 
 impl ChunkIterator {
@@ -142,7 +156,7 @@ impl ChunkIterator {
         debug!(
             "ChunkIterator initialized for site {} at volume {}",
             config.site(),
-            volume.as_number()
+            volume.number()
         );
 
         let mut iterator = Self {
@@ -154,6 +168,7 @@ impl ChunkIterator {
             last_chunk_time: None,
             requests_made: latest.calls,
             bytes_downloaded: 0,
+            current_vcp_unavailable: false,
         };
 
         // Fetch the initial chunk(s)
@@ -166,20 +181,30 @@ impl ChunkIterator {
         })
     }
 
-    /// Creates a new chunk iterator starting at a specific chunk.
+    /// Creates a new chunk iterator that resumes after a specific chunk.
     ///
-    /// This is useful for resuming from a known position. Note that the VCP and
-    /// elevation mapper will not be available until a Start chunk is encountered.
+    /// This makes no network requests. `chunk_id` becomes the [current](Self::current) chunk, and
+    /// the next [`try_next`](Self::try_next) call returns the chunk that follows it.
+    ///
+    /// The iterator starts without a [VCP](Self::vcp), which it needs to know how many chunks the
+    /// volume has. The first [`try_next`](Self::try_next) call therefore also downloads the
+    /// current volume's Start chunk (sequence 1) to read the VCP, without yielding it, and then
+    /// fetches the next chunk. Until then, [`vcp`](Self::vcp),
+    /// [`next_expected_time`](Self::next_expected_time) and
+    /// [`projected_volume_end_time`](Self::projected_volume_end_time) return `None`. If that Start
+    /// chunk no longer exists or carries no VCP, the rest of the volume is skipped and the
+    /// iterator continues with the next volume's Start chunk.
     pub fn from_chunk(config: PollConfig, chunk_id: ChunkIdentifier) -> Self {
         Self {
             config,
+            last_chunk_time: chunk_id.upload_date_time(),
             state: IteratorState::Ready(chunk_id),
             elevation_mapper: None,
             vcp: None,
             timing_stats: ChunkTimingStats::new(),
-            last_chunk_time: None,
             requests_made: 0,
             bytes_downloaded: 0,
+            current_vcp_unavailable: false,
         }
     }
 
@@ -197,7 +222,7 @@ impl ChunkIterator {
         let latest_id = chunks
             .last()
             .ok_or(Error::Aws(AwsError::LatestVolumeNotFound))?;
-        let latest_chunk = download_chunk(self.config.site(), latest_id).await?;
+        let latest_chunk = download_chunk(latest_id).await?;
         self.requests_made += 1;
         self.bytes_downloaded += latest_chunk.chunk.data().len() as u64;
 
@@ -210,7 +235,7 @@ impl ChunkIterator {
             // Joined mid-volume: fetch the Start chunk for VCP
             let start_id = latest_chunk.identifier.with_sequence(1, ChunkType::Start);
 
-            if let Ok(downloaded) = download_chunk(self.config.site(), &start_id).await {
+            if let Ok(downloaded) = download_chunk(&start_id).await {
                 self.requests_made += 1;
                 self.bytes_downloaded += downloaded.chunk.data().len() as u64;
 
@@ -267,25 +292,72 @@ impl ChunkIterator {
     /// Returns an [`AwsError`] if a request failed; [`AwsError::is_transient`] tells whether
     /// polling again can succeed.
     pub async fn try_next(&mut self) -> Result<Option<DownloadedChunk>> {
-        match &self.state {
-            IteratorState::NeedVolumeStart(volume) => self.try_fetch_volume_start(*volume).await,
-            IteratorState::Ready(current) => {
-                let next = current
-                    .next_chunk(
-                        self.elevation_mapper
-                            .as_ref()
-                            .ok_or(AwsError::FailedToDetermineNextChunk)?,
-                    )
-                    .ok_or(AwsError::FailedToDetermineNextChunk)?;
-
-                match next {
-                    NextChunk::Sequence(next_id) => self.try_fetch_chunk(next_id).await,
-                    NextChunk::Volume(next_volume) => {
-                        self.try_fetch_volume_start(next_volume).await
-                    }
+        loop {
+            match self.next_step()? {
+                Step::LoadCurrentVcp(start_id) => {
+                    let fetched = self.fetch_current_start(&start_id).await?;
+                    self.accept_current_start(fetched.as_ref());
                 }
+                Step::Chunk(next_id) => return self.try_fetch_chunk(next_id).await,
+                Step::VolumeStart(volume) => return self.try_fetch_volume_start(volume).await,
             }
         }
+    }
+
+    /// Decides what the next [`try_next`](Self::try_next) call fetches. Without a VCP for the
+    /// current volume (after [`from_chunk`](Self::from_chunk)), that is the volume's Start chunk,
+    /// or the next volume once that Start chunk proved unusable.
+    fn next_step(&self) -> Result<Step> {
+        let current = match &self.state {
+            IteratorState::NeedVolumeStart(volume) => return Ok(Step::VolumeStart(*volume)),
+            IteratorState::Ready(current) => current,
+        };
+
+        let Some(mapper) = self.elevation_mapper.as_ref() else {
+            return Ok(if self.current_vcp_unavailable {
+                Step::VolumeStart(current.volume().next())
+            } else {
+                Step::LoadCurrentVcp(current.with_sequence(1, ChunkType::Start))
+            });
+        };
+
+        match current
+            .next_chunk(mapper)
+            .ok_or(AwsError::FailedToDetermineNextChunk)?
+        {
+            NextChunk::Sequence(next_id) => Ok(Step::Chunk(next_id)),
+            NextChunk::Volume(next_volume) => Ok(Step::VolumeStart(next_volume)),
+        }
+    }
+
+    /// Downloads the current volume's Start chunk to read its VCP. Returns `Ok(None)` if the chunk
+    /// no longer exists.
+    async fn fetch_current_start(
+        &mut self,
+        start_id: &ChunkIdentifier,
+    ) -> Result<Option<DownloadedChunk>> {
+        self.requests_made += 1;
+        match download_chunk(start_id).await {
+            Ok(downloaded) => {
+                self.bytes_downloaded += downloaded.chunk.data().len() as u64;
+                Ok(Some(downloaded))
+            }
+            Err(Error::Aws(AwsError::S3ObjectNotFound)) => {
+                debug!("Start chunk {} no longer available", start_id.name());
+                Ok(None)
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Loads the VCP from the current volume's Start chunk without changing the current chunk. If
+    /// the chunk is missing or carries no VCP, marks the current volume as unsequenceable so the
+    /// iterator moves on to the next volume.
+    fn accept_current_start(&mut self, fetched: Option<&DownloadedChunk>) {
+        if let Some(downloaded) = fetched {
+            self.refresh_vcp(&downloaded.chunk);
+        }
+        self.current_vcp_unavailable = self.elevation_mapper.is_none();
     }
 
     /// Makes a single attempt to fetch the Start chunk of a new volume.
@@ -308,6 +380,7 @@ impl ChunkIterator {
     fn accept_volume_start(&mut self, fetched: Option<DownloadedChunk>) -> Option<DownloadedChunk> {
         let downloaded = fetched?;
         self.refresh_vcp(&downloaded.chunk);
+        self.current_vcp_unavailable = false;
         self.record_arrival(&downloaded.identifier, downloaded.attempts);
         Some(downloaded)
     }
@@ -327,7 +400,7 @@ impl ChunkIterator {
         };
 
         self.requests_made += 1;
-        match download_chunk(self.config.site(), &start_id).await {
+        match download_chunk(&start_id).await {
             Ok(downloaded) => {
                 self.bytes_downloaded += downloaded.chunk.data().len() as u64;
                 Ok(Some(downloaded))
@@ -352,7 +425,7 @@ impl ChunkIterator {
     ) -> Result<Option<DownloadedChunk>> {
         self.requests_made += 1;
 
-        match download_chunk(self.config.site(), &chunk_id).await {
+        match download_chunk(&chunk_id).await {
             Ok(downloaded) => {
                 let identifier = &downloaded.identifier;
                 self.bytes_downloaded += downloaded.chunk.data().len() as u64;
@@ -546,7 +619,9 @@ mod timing_tests {
         ChunkIdentifier::new(
             "KDMX",
             VolumeIndex::new(1).unwrap(),
-            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S")
+                .unwrap()
+                .and_utc(),
             sequence,
             ChunkType::Intermediate,
             Some(upload),
@@ -604,7 +679,9 @@ mod timing_tests {
         ChunkIdentifier::new(
             "KDMX",
             VolumeIndex::new(1).unwrap(),
-            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S")
+                .unwrap()
+                .and_utc(),
             mapper.final_sequence(),
             ChunkType::End,
             Some(upload),
@@ -643,7 +720,9 @@ mod timing_tests {
         let start = ChunkIdentifier::new(
             "KDMX",
             VolumeIndex::new(2).unwrap(),
-            NaiveDateTime::parse_from_str("20220305_232852", "%Y%m%d_%H%M%S").unwrap(),
+            NaiveDateTime::parse_from_str("20220305_232852", "%Y%m%d_%H%M%S")
+                .unwrap()
+                .and_utc(),
             1,
             ChunkType::Start,
             Some(upload + Duration::seconds(9)),
@@ -655,6 +734,104 @@ mod timing_tests {
         assert_eq!(iterator.current(), Some(&start));
     }
 
+    fn resumed_at(sequence: usize) -> ChunkIterator {
+        let upload = Utc.with_ymd_and_hms(2022, 3, 5, 23, 30, 0).unwrap();
+        ChunkIterator::from_chunk(PollConfig::new("KDMX"), chunk_at(sequence, upload))
+    }
+
+    fn current_start(iterator: &ChunkIterator, record_index: usize) -> DownloadedChunk {
+        let start_id = iterator
+            .current()
+            .unwrap()
+            .with_sequence(1, ChunkType::Start);
+        DownloadedChunk::new(
+            start_id,
+            crate::aws::realtime::tests::start_chunk_from_test_volume(record_index),
+            1,
+        )
+    }
+
+    #[test]
+    fn from_chunk_first_loads_the_current_volume_vcp() {
+        let iterator = resumed_at(5);
+        assert!(iterator.vcp().is_none());
+        assert_eq!(iterator.next_expected_time(), None);
+
+        match iterator.next_step().unwrap() {
+            Step::LoadCurrentVcp(start_id) => {
+                assert_eq!(start_id.sequence(), 1);
+                assert_eq!(start_id.chunk_type(), ChunkType::Start);
+                assert_eq!(start_id.volume(), iterator.current().unwrap().volume());
+                assert_eq!(
+                    start_id.date_time_prefix(),
+                    iterator.current().unwrap().date_time_prefix()
+                );
+            }
+            other => panic!("expected to load the current VCP, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn from_chunk_continues_in_sequence_once_the_vcp_is_loaded() {
+        let mut iterator = resumed_at(5);
+        let resumed = iterator.current().cloned();
+        let start = current_start(&iterator, 0);
+
+        iterator.accept_current_start(Some(&start));
+
+        // The Start chunk only supplies the VCP: the iterator still resumes after chunk 5
+        assert_eq!(iterator.current().cloned(), resumed);
+        assert_eq!(iterator.vcp(), Some(&get_test_vcp()));
+        assert!(iterator.next_expected_time().is_some());
+        match iterator.next_step().unwrap() {
+            Step::Chunk(next) => {
+                assert_eq!(next.sequence(), 6);
+                assert_eq!(next.volume(), resumed.unwrap().volume());
+            }
+            other => panic!("expected the next chunk in sequence, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn from_chunk_moves_to_next_volume_without_a_usable_start() {
+        // The Start chunk is gone (404)
+        let mut iterator = resumed_at(5);
+        iterator.accept_current_start(None);
+        let next_volume = iterator.current().unwrap().volume().next();
+        assert_eq!(
+            iterator.next_step().unwrap(),
+            Step::VolumeStart(next_volume)
+        );
+
+        // The Start chunk carries no VCP
+        let mut iterator = resumed_at(5);
+        let start = current_start(&iterator, 1);
+        iterator.accept_current_start(Some(&start));
+        assert!(iterator.vcp().is_none());
+        assert_eq!(
+            iterator.next_step().unwrap(),
+            Step::VolumeStart(next_volume)
+        );
+
+        // The next volume's Start chunk supplies the VCP and the iterator sequences again
+        let next_start = ChunkIdentifier::new(
+            "KDMX",
+            next_volume,
+            NaiveDateTime::parse_from_str("20220305_232852", "%Y%m%d_%H%M%S")
+                .unwrap()
+                .and_utc(),
+            1,
+            ChunkType::Start,
+            None,
+        );
+        let chunk = crate::aws::realtime::tests::start_chunk_from_test_volume(0);
+        iterator.accept_volume_start(Some(DownloadedChunk::new(next_start, chunk, 1)));
+        match iterator.next_step().unwrap() {
+            Step::Chunk(next) => assert_eq!(next.sequence(), 2),
+            other => panic!("expected sequence 2 of the new volume, got {other:?}"),
+        }
+    }
+
     #[test]
     fn start_to_first_intermediate_hop_is_not_recorded() {
         let vcp = get_test_vcp();
@@ -663,7 +840,9 @@ mod timing_tests {
         let start = ChunkIdentifier::new(
             "KDMX",
             VolumeIndex::new(1).unwrap(),
-            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+            NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S")
+                .unwrap()
+                .and_utc(),
             1,
             ChunkType::Start,
             Some(upload),

@@ -12,27 +12,27 @@ const MINIMAL_BZ_RECORD: &[u8] = &[0, 0, 0, 0, b'B', b'Z', 0, 0, 0, 0];
 #[test]
 fn test_volume_index_creation() {
     let volume = VolumeIndex::new(1).unwrap();
-    assert_eq!(volume.as_number(), 1);
+    assert_eq!(volume.number(), 1);
 
     let volume = VolumeIndex::new(500).unwrap();
-    assert_eq!(volume.as_number(), 500);
+    assert_eq!(volume.number(), 500);
 
     let volume = VolumeIndex::new(999).unwrap();
-    assert_eq!(volume.as_number(), 999);
+    assert_eq!(volume.number(), 999);
 }
 
 #[test]
 fn test_volume_index_next() {
     // Normal progression
     let volume = VolumeIndex::new(1).unwrap();
-    assert_eq!(volume.next().as_number(), 2);
+    assert_eq!(volume.next().number(), 2);
 
     let volume = VolumeIndex::new(500).unwrap();
-    assert_eq!(volume.next().as_number(), 501);
+    assert_eq!(volume.next().number(), 501);
 
     // Wraparound at 999
     let volume = VolumeIndex::new(999).unwrap();
-    assert_eq!(volume.next().as_number(), 1);
+    assert_eq!(volume.next().number(), 1);
 }
 
 #[test]
@@ -41,7 +41,9 @@ fn test_volume_index_rejects_out_of_range() {
 
     for index in [0, 1000, usize::MAX] {
         match VolumeIndex::new(index) {
-            Err(Error::Aws(AwsError::InvalidVolumeIndex { index: rejected })) => {
+            Err(Error::Aws(AwsError::InvalidVolumeIndex {
+                index: rejected, ..
+            })) => {
                 assert_eq!(rejected, index)
             }
             other => panic!("{index} should be rejected, got {other:?}"),
@@ -97,8 +99,9 @@ fn test_chunk_type_roundtrip() {
 fn test_chunk_identifier_new() {
     let site = "KDMX".to_string();
     let volume = VolumeIndex::new(123).unwrap();
-    let date_time_prefix =
-        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap();
+    let date_time_prefix = NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S")
+        .unwrap()
+        .and_utc();
     let sequence = 42;
     let chunk_type = ChunkType::Intermediate;
 
@@ -112,7 +115,7 @@ fn test_chunk_identifier_new() {
     );
 
     assert_eq!(chunk_id.site(), "KDMX");
-    assert_eq!(chunk_id.volume().as_number(), 123);
+    assert_eq!(chunk_id.volume().number(), 123);
     assert_eq!(chunk_id.sequence(), 42);
     assert_eq!(chunk_id.chunk_type(), ChunkType::Intermediate);
     assert_eq!(chunk_id.name(), "20220305-232324-042-I");
@@ -122,7 +125,9 @@ fn test_chunk_identifier_new() {
 #[test]
 fn test_chunk_identifier_name_format() {
     let volume = VolumeIndex::new(1).unwrap();
-    let date_time = NaiveDateTime::parse_from_str("20220305_123456", "%Y%m%d_%H%M%S").unwrap();
+    let date_time = NaiveDateTime::parse_from_str("20220305_123456", "%Y%m%d_%H%M%S")
+        .unwrap()
+        .and_utc();
 
     // Test Start chunk name
     let chunk_id = ChunkIdentifier::new(
@@ -167,12 +172,14 @@ fn test_chunk_identifier_from_name() {
     let chunk_id = ChunkIdentifier::from_name(site.clone(), volume, name, None).unwrap();
 
     assert_eq!(chunk_id.site(), "KDMX");
-    assert_eq!(chunk_id.volume().as_number(), 456);
+    assert_eq!(chunk_id.volume().number(), 456);
     assert_eq!(chunk_id.sequence(), 42);
     assert_eq!(chunk_id.chunk_type(), ChunkType::Intermediate);
     assert_eq!(
         chunk_id.date_time_prefix(),
-        &NaiveDateTime::parse_from_str("20220305-232324", "%Y%m%d-%H%M%S").unwrap()
+        NaiveDateTime::parse_from_str("20220305-232324", "%Y%m%d-%H%M%S")
+            .unwrap()
+            .and_utc()
     );
 }
 
@@ -262,7 +269,9 @@ fn test_chunk_identifier_roundtrip() {
     let original = ChunkIdentifier::new(
         "KDMX".to_string(),
         VolumeIndex::new(789).unwrap(),
-        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S")
+            .unwrap()
+            .and_utc(),
         42,
         ChunkType::Intermediate,
         None,
@@ -270,7 +279,7 @@ fn test_chunk_identifier_roundtrip() {
 
     let name = original.name().to_string();
     let parsed =
-        ChunkIdentifier::from_name(original.site().to_string(), *original.volume(), name, None)
+        ChunkIdentifier::from_name(original.site().to_string(), original.volume(), name, None)
             .unwrap();
 
     assert_eq!(parsed.site(), original.site());
@@ -408,4 +417,25 @@ fn test_chunk_type_equality() {
     assert_ne!(ChunkType::Start, ChunkType::Intermediate);
     assert_ne!(ChunkType::Intermediate, ChunkType::End);
     assert_ne!(ChunkType::Start, ChunkType::End);
+}
+
+#[test]
+fn test_chunk_identifier_drops_fractional_seconds() {
+    use chrono::{TimeZone, Utc};
+
+    let prefix = Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap();
+    let with_fraction = prefix + chrono::Duration::milliseconds(750);
+    let id = ChunkIdentifier::new(
+        "KDMX",
+        VolumeIndex::new(1).unwrap(),
+        with_fraction,
+        1,
+        ChunkType::Start,
+        None,
+    );
+
+    assert_eq!(id.name(), "20220305-232324-001-S");
+    assert_eq!(id.date_time_prefix(), prefix);
+    let parsed = ChunkIdentifier::from_name("KDMX", id.volume(), id.name(), None).unwrap();
+    assert_eq!(parsed, id);
 }

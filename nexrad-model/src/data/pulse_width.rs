@@ -4,6 +4,9 @@ use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
 /// Radar pulse width configuration.
+///
+/// `nexrad_decode::messages::volume_coverage_pattern::PulseWidth` has the same variants and
+/// converts to and from this type without loss; it also maps each variant to its ICD code.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum PulseWidth {
@@ -11,8 +14,8 @@ pub enum PulseWidth {
     Short,
     /// Long pulse width.
     Long,
-    /// Unknown pulse width value.
-    Unknown,
+    /// A pulse width the ICD does not define, carrying the code the decoder read.
+    Unknown(u8),
 }
 
 impl Display for PulseWidth {
@@ -20,7 +23,7 @@ impl Display for PulseWidth {
         match self {
             PulseWidth::Short => write!(f, "Short"),
             PulseWidth::Long => write!(f, "Long"),
-            PulseWidth::Unknown => write!(f, "Unknown"),
+            PulseWidth::Unknown(code) => write!(f, "Unknown ({code})"),
         }
     }
 }

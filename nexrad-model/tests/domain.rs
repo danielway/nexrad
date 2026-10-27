@@ -11,18 +11,18 @@ use nexrad_model::meta::{registry, Site};
 use nexrad_model::result::Error;
 
 const KNOWN_VCPS: [(u16, VcpNumber); 12] = [
-    (11, VcpNumber::Vcp11),
-    (12, VcpNumber::Vcp12),
-    (21, VcpNumber::Vcp21),
-    (31, VcpNumber::Vcp31),
-    (32, VcpNumber::Vcp32),
-    (35, VcpNumber::Vcp35),
-    (112, VcpNumber::Vcp112),
-    (121, VcpNumber::Vcp121),
-    (211, VcpNumber::Vcp211),
-    (212, VcpNumber::Vcp212),
-    (215, VcpNumber::Vcp215),
-    (221, VcpNumber::Vcp221),
+    (11, VcpNumber::VCP_11),
+    (12, VcpNumber::VCP_12),
+    (21, VcpNumber::VCP_21),
+    (31, VcpNumber::VCP_31),
+    (32, VcpNumber::VCP_32),
+    (35, VcpNumber::VCP_35),
+    (112, VcpNumber::VCP_112),
+    (121, VcpNumber::VCP_121),
+    (211, VcpNumber::VCP_211),
+    (212, VcpNumber::VCP_212),
+    (215, VcpNumber::VCP_215),
+    (221, VcpNumber::VCP_221),
 ];
 
 #[test]
@@ -107,7 +107,7 @@ fn sweep(elevation_number: u8, elevation_angle_degrees: f32) -> Sweep {
 
 /// A split-cut scan: surveillance and Doppler cuts at 0.5 and 1.5 degrees, then a batch cut.
 fn split_cut_scan() -> Scan {
-    let vcp = VolumeCoveragePattern::builder(VcpNumber::Vcp212)
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::VCP_212)
         .elevation_cuts(vec![
             cut(0.5, WaveformType::ContiguousSurveillance),
             cut(
@@ -179,28 +179,17 @@ fn sweeps_with_waveform_selects_by_cut_in_scan_order() {
 }
 
 #[test]
-fn vcp_number_from_number_names_every_known_pattern() {
+fn vcp_number_constants_carry_their_numbers() {
     for (number, vcp) in KNOWN_VCPS {
-        assert_eq!(VcpNumber::from_number(number), vcp);
+        assert_eq!(VcpNumber::new(number), vcp);
         assert_eq!(vcp.number(), number);
         assert_eq!(u16::from(vcp), number);
-        assert_eq!(
-            vcp.to_string(),
-            format!("VCP {number} ({})", vcp.description())
-        );
+        assert_eq!(vcp.to_string(), format!("VCP {number}"));
     }
 
-    assert_eq!(VcpNumber::from_number(999), VcpNumber::Unknown(999));
-    assert_eq!(VcpNumber::Unknown(999).number(), 999);
-    assert_eq!(VcpNumber::Unknown(999).to_string(), "VCP 999");
-}
-
-#[test]
-fn vcp_number_describes_every_known_pattern() {
-    for (_, vcp) in KNOWN_VCPS {
-        assert!(!vcp.description().is_empty());
-        assert_ne!(vcp.description(), "Unknown", "{vcp:?}");
-    }
+    assert_eq!(VcpNumber::from(999), VcpNumber::new(999));
+    assert_eq!(VcpNumber::new(999).number(), 999);
+    assert_eq!(VcpNumber::new(999).to_string(), "VCP 999");
 }
 
 fn coordinate_system() -> RadarCoordinateSystem {

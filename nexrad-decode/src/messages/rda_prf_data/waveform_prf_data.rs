@@ -34,7 +34,7 @@ impl WaveformPrfData {
     /// The waveform type. A code that does not fit in a `u8` (only possible in malformed data)
     /// is reported as [`WaveformType::Unknown(u8::MAX)`](WaveformType::Unknown).
     pub fn waveform_type(&self) -> WaveformType {
-        WaveformType::from_raw(u8::try_from(self.waveform_type).unwrap_or(u8::MAX))
+        WaveformType::from_number(u8::try_from(self.waveform_type).unwrap_or(u8::MAX))
     }
 
     /// The raw PRF values as Integer4 values. Each value is scaled by 0.001 to get the PRF in Hz.

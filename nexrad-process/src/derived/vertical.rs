@@ -31,7 +31,7 @@ use nexrad_model::geo::RadarCoordinateSystem;
 /// #     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
 /// # )?;
 /// # let radial = Radial::builder(0, 200.0, 1, 0.5).moment(reflectivity).build()?;
-/// # let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+/// # let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212)).build();
 /// # let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
 /// # let scan = Scan::with_site(site, vcp, vec![Sweep::new(1, vec![radial])?]);
 ///

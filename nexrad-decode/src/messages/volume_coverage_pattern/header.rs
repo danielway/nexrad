@@ -42,7 +42,7 @@ impl<'a> Header<'a> {
 
     /// Volume coverage pattern number.
     pub fn vcp_number(&self) -> VcpNumber {
-        VcpNumber::from_number(self.inner.pattern_number.get())
+        VcpNumber::new(self.inner.pattern_number.get())
     }
 
     /// Number of elevation cuts in the complete volume scan
@@ -117,11 +117,7 @@ impl<'a> Header<'a> {
 
     /// Pulse width values.
     pub fn pulse_width(&self) -> PulseWidth {
-        match self.inner.pulse_width {
-            2 => PulseWidth::Short,
-            4 => PulseWidth::Long,
-            other => PulseWidth::Unknown(other),
-        }
+        PulseWidth::from_number(self.inner.pulse_width)
     }
 
     /// Number of elevations from VCP sequencing

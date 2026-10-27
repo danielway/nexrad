@@ -437,9 +437,12 @@ pub nexrad_decode::messages::digital_radar_data::RadialStatus::ElevationEnd
 pub nexrad_decode::messages::digital_radar_data::RadialStatus::ElevationStart
 pub nexrad_decode::messages::digital_radar_data::RadialStatus::ElevationStartVcpFinal
 pub nexrad_decode::messages::digital_radar_data::RadialStatus::IntermediateRadialData
+pub nexrad_decode::messages::digital_radar_data::RadialStatus::ScanEnd
+pub nexrad_decode::messages::digital_radar_data::RadialStatus::ScanStart
 pub nexrad_decode::messages::digital_radar_data::RadialStatus::Unknown(u8)
-pub nexrad_decode::messages::digital_radar_data::RadialStatus::VolumeScanEnd
-pub nexrad_decode::messages::digital_radar_data::RadialStatus::VolumeScanStart
+impl nexrad_decode::messages::digital_radar_data::RadialStatus
+pub fn nexrad_decode::messages::digital_radar_data::RadialStatus::from_number(u8) -> Self
+pub fn nexrad_decode::messages::digital_radar_data::RadialStatus::number(self) -> u8
 impl core::clone::Clone for nexrad_decode::messages::digital_radar_data::RadialStatus
 pub fn nexrad_decode::messages::digital_radar_data::RadialStatus::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::digital_radar_data::RadialStatus
@@ -447,12 +450,20 @@ impl core::cmp::PartialEq for nexrad_decode::messages::digital_radar_data::Radia
 pub fn nexrad_decode::messages::digital_radar_data::RadialStatus::eq(&self, &Self) -> bool
 impl core::convert::From<nexrad_decode::messages::digital_radar_data::RadialStatus> for nexrad_model::data::radial::RadialStatus
 pub fn nexrad_model::data::radial::RadialStatus::from(nexrad_decode::messages::digital_radar_data::RadialStatus) -> Self
+impl core::convert::From<nexrad_model::data::radial::RadialStatus> for nexrad_decode::messages::digital_radar_data::RadialStatus
+pub fn nexrad_decode::messages::digital_radar_data::RadialStatus::from(nexrad_model::data::radial::RadialStatus) -> Self
 impl core::fmt::Debug for nexrad_decode::messages::digital_radar_data::RadialStatus
+pub fn nexrad_decode::messages::digital_radar_data::RadialStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_decode::messages::digital_radar_data::RadialStatus
 pub fn nexrad_decode::messages::digital_radar_data::RadialStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for nexrad_decode::messages::digital_radar_data::RadialStatus
 pub fn nexrad_decode::messages::digital_radar_data::RadialStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for nexrad_decode::messages::digital_radar_data::RadialStatus
 impl core::marker::StructuralPartialEq for nexrad_decode::messages::digital_radar_data::RadialStatus
+impl serde_core::ser::Serialize for nexrad_decode::messages::digital_radar_data::RadialStatus
+pub fn nexrad_decode::messages::digital_radar_data::RadialStatus::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for nexrad_decode::messages::digital_radar_data::RadialStatus
+pub fn nexrad_decode::messages::digital_radar_data::RadialStatus::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for nexrad_decode::messages::digital_radar_data::RadialStatus
 impl core::marker::Send for nexrad_decode::messages::digital_radar_data::RadialStatus
 impl core::marker::Sync for nexrad_decode::messages::digital_radar_data::RadialStatus
@@ -2039,6 +2050,9 @@ pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::Cons
 pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::RandomPhase
 pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::Sz2Phase
 pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::Unknown(u8)
+impl nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
+pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::from_number(u8) -> Self
+pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::number(self) -> u8
 impl core::clone::Clone for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
@@ -2046,12 +2060,20 @@ impl core::cmp::PartialEq for nexrad_decode::messages::volume_coverage_pattern::
 pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::eq(&self, &Self) -> bool
 impl core::convert::From<nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration> for nexrad_model::data::channel_configuration::ChannelConfiguration
 pub fn nexrad_model::data::channel_configuration::ChannelConfiguration::from(nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration) -> Self
+impl core::convert::From<nexrad_model::data::channel_configuration::ChannelConfiguration> for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
+pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::from(nexrad_model::data::channel_configuration::ChannelConfiguration) -> Self
 impl core::fmt::Debug for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
+pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 impl core::marker::StructuralPartialEq for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
+impl serde_core::ser::Serialize for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
+pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
+pub fn nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 impl core::marker::Send for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 impl core::marker::Sync for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
@@ -2084,6 +2106,9 @@ pub enum nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 pub nexrad_decode::messages::volume_coverage_pattern::PulseWidth::Long
 pub nexrad_decode::messages::volume_coverage_pattern::PulseWidth::Short
 pub nexrad_decode::messages::volume_coverage_pattern::PulseWidth::Unknown(u8)
+impl nexrad_decode::messages::volume_coverage_pattern::PulseWidth
+pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::from_number(u8) -> Self
+pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::number(self) -> u8
 impl core::clone::Clone for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
@@ -2091,12 +2116,20 @@ impl core::cmp::PartialEq for nexrad_decode::messages::volume_coverage_pattern::
 pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::eq(&self, &Self) -> bool
 impl core::convert::From<nexrad_decode::messages::volume_coverage_pattern::PulseWidth> for nexrad_model::data::pulse_width::PulseWidth
 pub fn nexrad_model::data::pulse_width::PulseWidth::from(nexrad_decode::messages::volume_coverage_pattern::PulseWidth) -> Self
+impl core::convert::From<nexrad_model::data::pulse_width::PulseWidth> for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
+pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::from(nexrad_model::data::pulse_width::PulseWidth) -> Self
 impl core::fmt::Debug for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
+pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 impl core::marker::StructuralPartialEq for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
+impl serde_core::ser::Serialize for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
+pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
+pub fn nexrad_decode::messages::volume_coverage_pattern::PulseWidth::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 impl core::marker::Send for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 impl core::marker::Sync for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
@@ -2111,6 +2144,10 @@ pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::ContiguousDo
 pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::ContiguousSurveillance
 pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::StaggeredPulsePair
 pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::Unknown(u8)
+impl nexrad_decode::messages::volume_coverage_pattern::WaveformType
+pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::abbreviation(self) -> core::option::Option<&'static str>
+pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::from_number(u8) -> Self
+pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::number(self) -> u8
 impl core::clone::Clone for nexrad_decode::messages::volume_coverage_pattern::WaveformType
 pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_decode::messages::volume_coverage_pattern::WaveformType
@@ -2118,12 +2155,20 @@ impl core::cmp::PartialEq for nexrad_decode::messages::volume_coverage_pattern::
 pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::eq(&self, &Self) -> bool
 impl core::convert::From<nexrad_decode::messages::volume_coverage_pattern::WaveformType> for nexrad_model::data::waveform_type::WaveformType
 pub fn nexrad_model::data::waveform_type::WaveformType::from(nexrad_decode::messages::volume_coverage_pattern::WaveformType) -> Self
+impl core::convert::From<nexrad_model::data::waveform_type::WaveformType> for nexrad_decode::messages::volume_coverage_pattern::WaveformType
+pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::from(nexrad_model::data::waveform_type::WaveformType) -> Self
 impl core::fmt::Debug for nexrad_decode::messages::volume_coverage_pattern::WaveformType
+pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_decode::messages::volume_coverage_pattern::WaveformType
 pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for nexrad_decode::messages::volume_coverage_pattern::WaveformType
 pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for nexrad_decode::messages::volume_coverage_pattern::WaveformType
 impl core::marker::StructuralPartialEq for nexrad_decode::messages::volume_coverage_pattern::WaveformType
+impl serde_core::ser::Serialize for nexrad_decode::messages::volume_coverage_pattern::WaveformType
+pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
+impl<'de> serde_core::de::Deserialize<'de> for nexrad_decode::messages::volume_coverage_pattern::WaveformType
+pub fn nexrad_decode::messages::volume_coverage_pattern::WaveformType::deserialize<__D>(__D) -> core::result::Result<Self, <__D as serde_core::de::Deserializer>::Error> where __D: serde_core::de::Deserializer<'de>
 impl core::marker::Freeze for nexrad_decode::messages::volume_coverage_pattern::WaveformType
 impl core::marker::Send for nexrad_decode::messages::volume_coverage_pattern::WaveformType
 impl core::marker::Sync for nexrad_decode::messages::volume_coverage_pattern::WaveformType
@@ -2389,47 +2434,6 @@ impl core::marker::Unpin for nexrad_decode::messages::RedundantChannel
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::RedundantChannel
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::RedundantChannel
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::RedundantChannel
-#[non_exhaustive] pub enum nexrad_decode::messages::VcpNumber
-pub nexrad_decode::messages::VcpNumber::Unknown(u16)
-pub nexrad_decode::messages::VcpNumber::Vcp11
-pub nexrad_decode::messages::VcpNumber::Vcp112
-pub nexrad_decode::messages::VcpNumber::Vcp12
-pub nexrad_decode::messages::VcpNumber::Vcp121
-pub nexrad_decode::messages::VcpNumber::Vcp21
-pub nexrad_decode::messages::VcpNumber::Vcp211
-pub nexrad_decode::messages::VcpNumber::Vcp212
-pub nexrad_decode::messages::VcpNumber::Vcp215
-pub nexrad_decode::messages::VcpNumber::Vcp221
-pub nexrad_decode::messages::VcpNumber::Vcp31
-pub nexrad_decode::messages::VcpNumber::Vcp32
-pub nexrad_decode::messages::VcpNumber::Vcp35
-impl nexrad_decode::messages::VcpNumber
-pub fn nexrad_decode::messages::VcpNumber::from_number(u16) -> Self
-pub fn nexrad_decode::messages::VcpNumber::number(self) -> u16
-impl core::clone::Clone for nexrad_decode::messages::VcpNumber
-pub fn nexrad_decode::messages::VcpNumber::clone(&self) -> Self
-impl core::cmp::Eq for nexrad_decode::messages::VcpNumber
-impl core::cmp::PartialEq for nexrad_decode::messages::VcpNumber
-pub fn nexrad_decode::messages::VcpNumber::eq(&self, &Self) -> bool
-impl core::convert::From<nexrad_decode::messages::VcpNumber> for u16
-pub fn u16::from(nexrad_decode::messages::VcpNumber) -> Self
-impl core::convert::From<u16> for nexrad_decode::messages::VcpNumber
-pub fn nexrad_decode::messages::VcpNumber::from(u16) -> Self
-impl core::fmt::Debug for nexrad_decode::messages::VcpNumber
-pub fn nexrad_decode::messages::VcpNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::fmt::Display for nexrad_decode::messages::VcpNumber
-pub fn nexrad_decode::messages::VcpNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for nexrad_decode::messages::VcpNumber
-pub fn nexrad_decode::messages::VcpNumber::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for nexrad_decode::messages::VcpNumber
-impl core::marker::StructuralPartialEq for nexrad_decode::messages::VcpNumber
-impl core::marker::Freeze for nexrad_decode::messages::VcpNumber
-impl core::marker::Send for nexrad_decode::messages::VcpNumber
-impl core::marker::Sync for nexrad_decode::messages::VcpNumber
-impl core::marker::Unpin for nexrad_decode::messages::VcpNumber
-impl core::marker::UnsafeUnpin for nexrad_decode::messages::VcpNumber
-impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::VcpNumber
-impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::VcpNumber
 pub struct nexrad_decode::messages::Message<'a>
 impl<'a> nexrad_decode::Message<'a>
 pub fn nexrad_decode::Message<'a>::contents(&self) -> &nexrad_decode::MessageContents<'a>
@@ -2508,6 +2512,58 @@ impl<'a> core::marker::Unpin for nexrad_decode::messages::MessageIter<'a>
 impl<'a> core::marker::UnsafeUnpin for nexrad_decode::messages::MessageIter<'a>
 impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::MessageIter<'a>
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::MessageIter<'a>
+pub struct nexrad_decode::messages::VcpNumber(_)
+impl nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_11: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_112: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_12: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_121: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_21: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_211: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_212: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_215: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_221: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_31: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_32: nexrad_decode::messages::VcpNumber
+pub const nexrad_decode::messages::VcpNumber::VCP_35: nexrad_decode::messages::VcpNumber
+pub const fn nexrad_decode::messages::VcpNumber::new(u16) -> Self
+pub const fn nexrad_decode::messages::VcpNumber::number(self) -> u16
+impl core::clone::Clone for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::clone(&self) -> Self
+impl core::cmp::Eq for nexrad_decode::messages::VcpNumber
+impl core::cmp::Ord for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::cmp(&self, &Self) -> core::cmp::Ordering
+impl core::cmp::PartialEq for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::eq(&self, &Self) -> bool
+impl core::cmp::PartialOrd for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::partial_cmp(&self, &Self) -> core::option::Option<core::cmp::Ordering>
+impl core::convert::From<nexrad_decode::messages::VcpNumber> for nexrad_model::data::vcp_number::VcpNumber
+pub fn nexrad_model::data::vcp_number::VcpNumber::from(nexrad_decode::messages::VcpNumber) -> Self
+impl core::convert::From<nexrad_decode::messages::VcpNumber> for u16
+pub fn u16::from(nexrad_decode::messages::VcpNumber) -> Self
+impl core::convert::From<nexrad_model::data::vcp_number::VcpNumber> for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::from(nexrad_model::data::vcp_number::VcpNumber) -> Self
+impl core::convert::From<u16> for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::from(u16) -> Self
+impl core::fmt::Debug for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for nexrad_decode::messages::VcpNumber
+impl core::marker::StructuralPartialEq for nexrad_decode::messages::VcpNumber
+impl serde_core::ser::Serialize for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::serialize<S: serde_core::ser::Serializer>(&self, S) -> core::result::Result<<S as serde_core::ser::Serializer>::Ok, <S as serde_core::ser::Serializer>::Error>
+impl<'de> serde_core::de::Deserialize<'de> for nexrad_decode::messages::VcpNumber
+pub fn nexrad_decode::messages::VcpNumber::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
+impl core::marker::Freeze for nexrad_decode::messages::VcpNumber
+impl core::marker::Send for nexrad_decode::messages::VcpNumber
+impl core::marker::Sync for nexrad_decode::messages::VcpNumber
+impl core::marker::Unpin for nexrad_decode::messages::VcpNumber
+impl core::marker::UnsafeUnpin for nexrad_decode::messages::VcpNumber
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::VcpNumber
+impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::VcpNumber
 pub fn nexrad_decode::messages::decode_messages(&[u8]) -> nexrad_decode::result::Result<alloc::vec::Vec<nexrad_decode::Message<'_>>>
 pub fn nexrad_decode::messages::iter_messages(&[u8]) -> nexrad_decode::messages::MessageIter<'_>
 pub mod nexrad_decode::model

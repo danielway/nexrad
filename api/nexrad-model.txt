@@ -56,7 +56,7 @@ impl core::marker::Unpin for nexrad_model::data::ChannelConfiguration
 impl core::marker::UnsafeUnpin for nexrad_model::data::ChannelConfiguration
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::ChannelConfiguration
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::ChannelConfiguration
-pub enum nexrad_model::data::GateStatus
+#[non_exhaustive] pub enum nexrad_model::data::GateStatus
 pub nexrad_model::data::GateStatus::BelowThreshold
 pub nexrad_model::data::GateStatus::Filtered
 pub nexrad_model::data::GateStatus::NoData
@@ -883,7 +883,7 @@ pub nexrad_model::meta::registry::SiteEntry::id: &'static str
 pub nexrad_model::meta::registry::SiteEntry::latitude: f64
 pub nexrad_model::meta::registry::SiteEntry::longitude: f64
 pub nexrad_model::meta::registry::SiteEntry::site_elevation_meters: i16
-pub nexrad_model::meta::registry::SiteEntry::state: &'static str
+pub nexrad_model::meta::registry::SiteEntry::state: core::option::Option<&'static str>
 impl nexrad_model::meta::registry::SiteEntry
 pub fn nexrad_model::meta::registry::SiteEntry::to_site(&self) -> nexrad_model::result::Result<nexrad_model::meta::Site>
 impl core::clone::Clone for nexrad_model::meta::registry::SiteEntry

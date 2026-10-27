@@ -103,7 +103,7 @@ use nexrad_model::meta::registry;
 
 // Look up a site
 let site = registry::site_by_id("KTLX").unwrap();
-println!("{}: {}, {}", site.id, site.city, site.state);
+println!("{site}"); // KTLX (Oklahoma City, OK)
 
 // Find the nearest site to a location
 let nearest = registry::nearest_site(35.4676, -97.5164).unwrap();

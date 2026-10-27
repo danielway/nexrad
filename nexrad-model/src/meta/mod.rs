@@ -14,7 +14,7 @@
 //!
 //! // Look up a site by ICAO identifier
 //! let site = registry::site_by_id("KTLX").unwrap();
-//! println!("{}: {}, {}", site.id, site.city, site.state);
+//! println!("{site}"); // KTLX (Oklahoma City, OK)
 //!
 //! // Find the nearest radar to a location
 //! let nearest = registry::nearest_site(35.0, -97.0).unwrap();

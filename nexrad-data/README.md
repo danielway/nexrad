@@ -7,6 +7,14 @@
 Provides structure definitions and decoding functions for NEXRAD Archive II volume files, along with functions for
 downloading both archival and real-time data from open cloud providers like AWS OpenData.
 
+## Scope
+
+The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
+(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
+volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
+back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
+III products are out of scope.
+
 ## Volume Definitions
 
 The `nexrad_data::volume` module provides model definitions for the NEXRAD Archive II volume file format described in
@@ -18,14 +26,17 @@ With the `model` feature, `volume::File::scan` decompresses and decodes every re
 `nexrad_model::data::Scan`. The conversion itself is done by `nexrad-decode`'s `ScanBuilder`; this crate only handles
 I/O and decompression.
 
-```rust,ignore
+```rust,no_run
 use nexrad_data::volume::File;
 
-// Older archive files are gzip-wrapped; `scan` decompresses them itself. `decompress` does the same for
-// `records`, which borrows its records from the file, and returns other files as-is.
-let file = File::new(std::fs::read("KTLX20130520_201643_V06.ar2v")?);
-let scan = file.scan()?;
-println!("{} sweeps", scan.sweeps().len());
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Older archive files are gzip-wrapped; `scan` decompresses them itself. `decompress` does the same for
+    // `records`, which borrows its records from the file, and returns other files as-is.
+    let file = File::new(std::fs::read("KTLX20130520_201643_V06.ar2v")?);
+    let scan = file.scan()?;
+    println!("{} sweeps", scan.sweeps().len());
+    Ok(())
+}
 ```
 
 ## AWS Open Data

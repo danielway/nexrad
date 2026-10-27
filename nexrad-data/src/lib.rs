@@ -107,6 +107,11 @@
 #![deny(missing_docs)]
 #![warn(missing_debug_implementations)]
 
+// Compiles the README's code blocks as doc tests.
+#[cfg(all(doctest, feature = "model"))]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
+
 #[cfg(feature = "aws")]
 /// AWS S3 integration for downloading NEXRAD data from the cloud.
 pub mod aws;

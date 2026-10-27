@@ -46,6 +46,11 @@
 #![deny(missing_docs)]
 #![warn(missing_debug_implementations)]
 
+// Compiles the README's code blocks as doc tests.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
+
 mod azimuth;
 /// Derived products computed from radar scans.
 pub mod derived;
@@ -69,7 +74,7 @@ use nexrad_model::data::SweepField;
 /// Transforms one [`SweepField`] into another.
 ///
 /// This is the primary processing trait for single-sweep algorithms such as
-/// filtering, smoothing, and clutter removal. Processors are `Send + Sync`, so a
+/// thresholding, smoothing and correlation coefficient masking. Processors are `Send + Sync`, so a
 /// [`SweepPipeline`] can be shared across threads.
 pub trait SweepProcessor: Send + Sync {
     /// A human-readable name for this processor.

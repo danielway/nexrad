@@ -120,6 +120,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Scan::new` and `Scan::with_site` take the coverage pattern number and an `Option<VolumeCoveragePattern>`. With
   `serde`, `Scan` serializes a `coverage_pattern_number` field, and `coverage_pattern` is nullable and defaults to
   null when absent. (#208)
+- Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the
+  `Product` variants describe the quantity each moment holds, and `Product::value_range()` is documented as a display
+  default, stable for 1.x. (#209)
 
 ### Removed
 

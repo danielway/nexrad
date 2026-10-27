@@ -16,6 +16,15 @@
 //! The real-time functions return a `futures_core` `Stream`. To iterate it with
 //! `StreamExt::next`, add `futures-util` (or `futures`) to your own dependencies.
 //!
+//! ## Scope
+//!
+//! The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the
+//! RDA/RPG messages it carries (ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II
+//! volumes. The intended scope for 1.0 is the whole archive: volumes with legacy message 1
+//! radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
+//! back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive
+//! tarballs are not read, and Level III products are out of scope.
+//!
 //! ## Quick Start
 //!
 //! Load radar data with a single function call:
@@ -195,7 +204,7 @@
 //!   - ✓ Render radar data to in-memory images
 //!   - ✓ Apply color scales to moment data
 //!   - ✓ Consume `nexrad-model` types
-//!   - ✗ No I/O operations
+//!   - ✗ No I/O beyond encoding a rendered image to a writer or file path
 //!   - ✗ No data access or parsing
 //!
 //! ## Lower-Level APIs
@@ -289,6 +298,11 @@
 #![warn(unnameable_types)]
 #![deny(missing_docs)]
 #![warn(missing_debug_implementations)]
+
+// Compiles the README's code blocks as doc tests.
+#[cfg(all(doctest, feature = "data"))]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
 
 /// Unified error types for the NEXRAD facade crate.
 pub mod result;

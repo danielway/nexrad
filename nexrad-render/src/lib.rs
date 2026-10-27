@@ -86,6 +86,11 @@
 #![deny(missing_docs)]
 #![warn(missing_debug_implementations)]
 
+// Compiles the README's code blocks as doc tests.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
+
 mod color;
 pub use crate::color::*;
 

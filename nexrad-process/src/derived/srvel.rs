@@ -4,15 +4,26 @@ use nexrad_model::data::{GateStatus, Product, SweepField};
 
 /// Storm-relative velocity — subtracts a storm motion vector from radial velocity.
 ///
-/// This makes it easier to identify rotation signatures (mesocyclones) in storm
-/// systems by removing the bulk storm motion. The input field must hold
-/// [`Product::Velocity`]. The output field has the same geometry, is labelled
-/// "Storm-Relative Velocity" with unit "m/s", and has no [`product`](SweepField::product),
-/// since it is derived rather than a Level II moment.
+/// The input field must hold [`Product::Velocity`]. The output field has the same geometry,
+/// is labelled "Storm-Relative Velocity" with unit "m/s", and has no
+/// [`product`](SweepField::product), since it is derived rather than a Level II moment.
 ///
-/// The storm motion is specified as a direction (degrees from north) and speed (m/s).
-/// The component of the storm motion along each gate's radial direction is subtracted
-/// from the measured velocity.
+/// The storm motion is specified as a direction and a speed (m/s). The direction is the
+/// direction the storm moves **from**, in degrees clockwise from north, so `180.0` is a
+/// storm moving from the south toward the north. The processor turns it into a motion vector
+/// pointing toward `direction + 180°`, projects that vector onto each radial (the unit vector
+/// from the radar along the radial's azimuth) and subtracts the projection from every valid
+/// gate on the radial. Gates with any other status keep their value and status.
+///
+/// With positive input velocities meaning motion away from the radar, the sign consequence is:
+///
+/// - on the radial whose azimuth equals `direction + 180°` (the way the storm is heading),
+///   `storm_speed_mps` is subtracted;
+/// - on the radial whose azimuth equals `direction` (where the storm is coming from),
+///   `storm_speed_mps` is added;
+/// - on radials at right angles to the motion, values are unchanged.
+///
+/// Passing the direction the storm moves *toward* instead reverses the sign of the correction.
 ///
 /// # Example
 ///
@@ -46,8 +57,8 @@ impl StormRelativeVelocity {
     ///
     /// # Parameters
     ///
-    /// - `storm_direction_degrees` — Direction the storm is moving FROM, in degrees
-    ///   clockwise from north, in `0.0..360.0`.
+    /// - `storm_direction_degrees` — Direction the storm is moving from (not toward), in
+    ///   degrees clockwise from north, in `0.0..360.0`.
     /// - `storm_speed_mps` — Storm movement speed in m/s.
     ///
     /// # Errors
@@ -75,7 +86,7 @@ impl StormRelativeVelocity {
         })
     }
 
-    /// Direction the storm is moving FROM, in degrees clockwise from north.
+    /// Direction the storm is moving from (not toward), in degrees clockwise from north.
     pub fn storm_direction_degrees(&self) -> f32 {
         self.storm_direction_degrees
     }

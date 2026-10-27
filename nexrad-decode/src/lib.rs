@@ -69,8 +69,9 @@
 //! 4. Unit suffixes are `_degrees`, `_degrees_per_second`, `_km`, `_meters`, `_mps`, `_kw`,
 //!    `_watts`, `_bytes`, `_halfwords`, `_db`, `_dbm` and `_db_per_km`.
 //!
-//! The RDA adaptation data (Type 18) and performance/maintenance data (Type 3) accessors
-//! currently keep the ICD table mnemonics without unit suffixes.
+//! The RDA adaptation data (Type 18) and performance/maintenance data (Type 3) accessors are
+//! named after the ICD table mnemonics, without unit suffixes, and these names are fixed for
+//! 1.x. The ICD tables for those messages are the reference for each field's meaning and unit.
 //!
 //! # Features
 //!
@@ -118,6 +119,11 @@
 #![deny(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(unnameable_types)]
+
+// Compiles the README's code blocks as doc tests.
+#[cfg(all(doctest, feature = "model"))]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
 
 /// Wrapper type for binary data with debug formatting support.
 pub(crate) mod binary_data;

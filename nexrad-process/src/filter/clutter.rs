@@ -2,18 +2,14 @@ use crate::result::{check_finite, check_product, Error, Result};
 use crate::SweepProcessor;
 use nexrad_model::data::{GateStatus, Product, SweepField};
 
-/// Correlation coefficient-based clutter removal.
+/// Masks gates of a field where a correlation coefficient field is below a threshold.
 ///
 /// Masks gates in a target field (e.g., reflectivity) where the corresponding
 /// gate in a correlation coefficient (CC) field is not valid or falls below a threshold.
 /// Masked gates are marked [`GateStatus::Filtered`] and keep their values; gates that are
-/// not [`GateStatus::Valid`] in the target field pass through unchanged. This is
-/// a standard technique for removing non-meteorological echoes such as ground
-/// clutter, biological targets, and debris.
-///
-/// Typical CC thresholds range from 0.85 to 0.95. Pure precipitation has
-/// CC values near 1.0, while clutter and biological targets tend to have
-/// CC well below 0.9.
+/// not [`GateStatus::Valid`] in the target field pass through unchanged. The filter
+/// makes no judgement about what a low correlation coefficient means; the threshold
+/// is the caller's choice.
 ///
 /// The input field and the correlation coefficient field must share their azimuths, first gate
 /// range and gate interval, so that gates are compared at the same location. Their gate counts

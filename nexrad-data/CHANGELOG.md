@@ -101,6 +101,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   number taken from the radials. They fail only when no coverage pattern number is found, with `Error::Decode`
   carrying `MissingCoveragePatternNumber`, instead of `Error::MissingCoveragePattern`, which
   `File::coverage_pattern_message()` still returns. (#208)
+- Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the
+  real-time chunk counts and upload timings are documented as observed bucket behaviour, not a guarantee. (#209)
 
 ### Removed
 

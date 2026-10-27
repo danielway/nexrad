@@ -52,7 +52,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 
 - `volume_coverage_pattern::Message::to_model()` returns `Result`, because the model's `ElevationCutBuilder::build`
   and `VolumeCoveragePatternBuilder::build` validate; values decoded from a message always pass, and
-  `ScanBuilder::add_message` propagates the error. (#PRNUM)
+  `ScanBuilder::add_message` propagates the error. (#210)
 - The minimum supported Rust version is 1.88 (it was declared as 1.75, which was already incorrect). (#157)
 - `Error`, `messages::MessageContents`, `messages::MessageType`, `messages::RedundantChannel` and
   `digital_radar_data::DataBlockName` are `#[non_exhaustive]`; matches on them outside this crate need a wildcard

@@ -28,7 +28,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 
 - `CompositeReflectivity` follows `RadarCoordinateSystem::geo_to_polar` returning `Option`: a sweep whose beam does
   not pass over an output cell is skipped there, as its non-finite range already caused. Examples build moments with
-  `MomentData::builder`. (#PRNUM)
+  `MomentData::builder`. (#210)
 - The minimum supported Rust version is 1.88 (it was declared as 1.75, which was already incorrect). (#157)
 - `Error` is `#[non_exhaustive]`; matches on it outside this crate need a wildcard arm. (#155)
 - `ScanDerivedProduct::compute` drops the `&Scan` argument and takes a `CartesianGrid` instead of an extent and

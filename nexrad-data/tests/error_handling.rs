@@ -17,7 +17,9 @@ fn test_decompress_uncompressed_record_is_unchanged() {
     let record = nexrad_data::volume::Record::new(uncompressed_data.clone());
     assert!(!record.compressed());
 
-    let decompressed = record.decompress().expect("uncompressed record decompresses");
+    let decompressed = record
+        .decompress()
+        .expect("uncompressed record decompresses");
     assert_eq!(decompressed.data(), uncompressed_data.as_slice());
     assert_eq!(decompressed, record);
 }

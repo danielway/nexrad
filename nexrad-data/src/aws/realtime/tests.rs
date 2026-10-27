@@ -516,7 +516,9 @@ fn chunk_at(sequence: usize, chunk_type: ChunkType) -> ChunkIdentifier {
     ChunkIdentifier::new(
         "KDMX".to_string(),
         VolumeIndex::new(1).unwrap(),
-        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
+        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S")
+            .unwrap()
+            .and_utc(),
         sequence,
         chunk_type,
         None,
@@ -680,7 +682,9 @@ fn test_estimate_chunk_processing_time_without_stats_uses_physics_model() {
     let chunk = ChunkIdentifier::new(
         "KDMX".to_string(),
         VolumeIndex::new(1).unwrap(),
-        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
+        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S")
+            .unwrap()
+            .and_utc(),
         2,
         ChunkType::Intermediate,
         None,
@@ -801,7 +805,9 @@ fn anchor_chunk(sequence: usize, chunk_type: ChunkType) -> ChunkIdentifier {
     ChunkIdentifier::new(
         "KDMX",
         VolumeIndex::new(1).unwrap(),
-        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S").unwrap(),
+        NaiveDateTime::parse_from_str("20220305_232324", "%Y%m%d_%H%M%S")
+            .unwrap()
+            .and_utc(),
         sequence,
         chunk_type,
         Some(Utc.with_ymd_and_hms(2022, 3, 5, 23, 23, 24).unwrap()),
@@ -872,7 +878,9 @@ fn test_chunk_identifier_next_chunk_intermediate() {
     let chunk_id = ChunkIdentifier::new(
         "KDMX".to_string(),
         VolumeIndex::new(1).unwrap(),
-        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
+        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S")
+            .unwrap()
+            .and_utc(),
         2,
         ChunkType::Intermediate,
         None,
@@ -891,7 +899,9 @@ fn test_chunk_identifier_next_chunk_intermediate() {
     let chunk_id = ChunkIdentifier::new(
         "KDMX".to_string(),
         VolumeIndex::new(1).unwrap(),
-        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S").unwrap(),
+        NaiveDateTime::parse_from_str("20220305_120000", "%Y%m%d_%H%M%S")
+            .unwrap()
+            .and_utc(),
         final_seq,
         ChunkType::End,
         None,
@@ -916,7 +926,9 @@ fn volume_chunk(
     ChunkIdentifier::new(
         "KDMX",
         VolumeIndex::new(volume).unwrap(),
-        NaiveDateTime::parse_from_str(stamp, "%Y%m%d_%H%M%S").unwrap(),
+        NaiveDateTime::parse_from_str(stamp, "%Y%m%d_%H%M%S")
+            .unwrap()
+            .and_utc(),
         sequence,
         chunk_type,
         None,

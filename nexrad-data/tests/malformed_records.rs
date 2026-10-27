@@ -69,8 +69,8 @@ fn test_split_records_truncated_size_field() {
     assert!(result.is_err());
     match result.unwrap_err() {
         Error::TruncatedRecord {
-                expected, actual, ..
-            } => {
+            expected, actual, ..
+        } => {
             assert_eq!(expected, 4);
             assert_eq!(actual, 2);
         }
@@ -101,8 +101,8 @@ fn test_split_records_size_exceeds_data() {
     assert!(result.is_err());
     match result.unwrap_err() {
         Error::TruncatedRecord {
-                expected, actual, ..
-            } => {
+            expected, actual, ..
+        } => {
             assert!(expected > actual);
         }
         other => panic!("Expected TruncatedRecord error, got: {:?}", other),
@@ -158,7 +158,9 @@ fn test_decompress_uncompressed_data() {
     let record = Record::new(data);
     assert!(!record.compressed());
 
-    let decompressed = record.decompress().expect("uncompressed record is returned unchanged");
+    let decompressed = record
+        .decompress()
+        .expect("uncompressed record is returned unchanged");
     assert_eq!(decompressed, record);
 }
 

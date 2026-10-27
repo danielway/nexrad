@@ -1,5 +1,7 @@
 use crate::aws::realtime::{ChunkIdentifier, VolumeIndex, REALTIME_BUCKET};
 use crate::aws::s3::list_all_objects;
+use chrono::{DateTime, Utc};
+use log::warn;
 
 /// Lists the chunks of the newest scan generation in the specified radar site's volume, sorted by
 /// sequence.
@@ -7,6 +9,9 @@ use crate::aws::s3::list_all_objects;
 /// Volume numbers are reused after 999 while old chunks remain, so every listing page is read and
 /// only the chunks sharing the newest date-time prefix are returned. An empty result means the
 /// volume holds no chunks.
+///
+/// Object keys whose names do not parse as a chunk identifier (for example a chunk type other
+/// than `S`, `I` or `E`) are skipped with a `log` warning rather than failing the listing.
 ///
 /// # Errors
 ///
@@ -21,23 +26,34 @@ pub async fn list_chunks_in_volume(
 
     let metas = objects
         .iter()
-        .map(|object| {
-            let identifier_segment = object.key.split('/').next_back();
-            let identifier = identifier_segment
-                .unwrap_or_else(|| object.key.as_ref())
-                .to_string();
-
-            ChunkIdentifier::from_name(site, volume, identifier, object.last_modified)
-        })
-        .collect::<crate::result::Result<Vec<_>>>()?;
+        .filter_map(|object| parse_chunk_key(site, volume, &object.key, object.last_modified))
+        .collect();
 
     Ok(latest_generation(metas))
 }
 
+/// Parses a listed object key into a chunk identifier, or warns and returns `None` if its name is
+/// not a chunk name.
+fn parse_chunk_key(
+    site: &str,
+    volume: VolumeIndex,
+    key: &str,
+    last_modified: Option<DateTime<Utc>>,
+) -> Option<ChunkIdentifier> {
+    let name = key.rsplit('/').next().unwrap_or(key);
+    match ChunkIdentifier::from_name(site, volume, name, last_modified) {
+        Ok(identifier) => Some(identifier),
+        Err(error) => {
+            warn!("Skipping real-time object {key:?} whose name is not a chunk name: {error}");
+            None
+        }
+    }
+}
+
 // Select one scan generation before callers inspect chunk sequence numbers.
 fn latest_generation(mut chunks: Vec<ChunkIdentifier>) -> Vec<ChunkIdentifier> {
-    if let Some(newest) = chunks.iter().map(|id| *id.date_time_prefix()).max() {
-        chunks.retain(|id| *id.date_time_prefix() == newest);
+    if let Some(newest) = chunks.iter().map(|id| id.date_time_prefix()).max() {
+        chunks.retain(|id| id.date_time_prefix() == newest);
         chunks.sort_by_key(ChunkIdentifier::sequence);
     }
     chunks
@@ -46,6 +62,7 @@ fn latest_generation(mut chunks: Vec<ChunkIdentifier>) -> Vec<ChunkIdentifier> {
 #[cfg(test)]
 mod regression_tests {
     use super::*;
+    use crate::aws::realtime::ChunkType;
     fn id(name: &str) -> ChunkIdentifier {
         ChunkIdentifier::from_name("KBYX", VolumeIndex::new(589).unwrap(), name, None).unwrap()
     }
@@ -70,6 +87,38 @@ mod regression_tests {
         ]);
         assert_eq!(chunks.len(), 1);
         assert_eq!(chunks[0].sequence(), 3);
+    }
+    #[test]
+    fn unparseable_keys_are_skipped() {
+        let volume = VolumeIndex::new(589).unwrap();
+        let keys = [
+            "KBYX/589/20260912-140452-001-S",
+            "KBYX/589/20260912-140452-002-M",
+            "KBYX/589/20260912-140452-003-I",
+            "KBYX/589/not-a-chunk",
+            "KBYX/589/20260912-140452-xyz-I",
+            "KBYX/589/20260912-140452-004-E",
+        ];
+        let chunks: Vec<_> = keys
+            .iter()
+            .filter_map(|key| parse_chunk_key("KBYX", volume, key, None))
+            .collect();
+        let chunks = latest_generation(chunks);
+        assert_eq!(
+            chunks.iter().map(|c| c.name()).collect::<Vec<_>>(),
+            vec![
+                "20260912-140452-001-S",
+                "20260912-140452-003-I",
+                "20260912-140452-004-E"
+            ]
+        );
+        assert_eq!(
+            chunks
+                .iter()
+                .map(ChunkIdentifier::chunk_type)
+                .collect::<Vec<_>>(),
+            vec![ChunkType::Start, ChunkType::Intermediate, ChunkType::End]
+        );
     }
     #[test]
     fn empty_volume_stays_empty() {

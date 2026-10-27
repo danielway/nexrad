@@ -26,7 +26,8 @@ fn test_no_data_available_message() {
 fn test_no_scan_at_message() {
     let datetime = nexrad::chrono::NaiveDate::from_ymd_opt(2023, 5, 20)
         .and_then(|date| date.and_hms_opt(20, 16, 43))
-        .expect("valid datetime");
+        .expect("valid datetime")
+        .and_utc();
     let err = nexrad::Error::NoScanAt {
         site: "KTLX".to_string(),
         datetime,
@@ -34,7 +35,7 @@ fn test_no_scan_at_message() {
 
     assert_eq!(
         err.to_string(),
-        "no scan for site KTLX overlaps 2023-05-20 20:16:43"
+        "no scan for site KTLX overlaps 2023-05-20 20:16:43 UTC"
     );
 }
 

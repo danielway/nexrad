@@ -1,7 +1,6 @@
 //!
 //! This module contains models representing digital radar data collected by the NEXRAD weather
-//! radar network. These models and their APIs are intended to be ergonomic, understandable, and
-//! performant. They do not exactly match the encoded structure from common archival formats.
+//! radar network. They do not mirror the encoded structure of the archival formats.
 //!
 
 mod sweep;

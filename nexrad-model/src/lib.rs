@@ -50,8 +50,7 @@
 //!   Enables `collection_time()` returning `DateTime<Utc>` instead of raw timestamps.
 //!
 //! Accessors return plain numbers with the unit in the name (`elevation_angle_degrees()`,
-//! `gate_interval_km()`). Unit-typed accessors (for example with the `uom` crate) may be offered
-//! later as a separate crate or extension trait.
+//! `gate_interval_km()`).
 //!
 //! # Crate Boundaries
 //!

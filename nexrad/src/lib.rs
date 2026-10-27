@@ -19,11 +19,10 @@
 //! ## Scope
 //!
 //! The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the
-//! RDA/RPG messages it carries (ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II
-//! volumes. The intended scope for 1.0 is the whole archive: volumes with legacy message 1
-//! radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
-//! back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive
-//! tarballs are not read, and Level III products are out of scope.
+//! RDA/RPG messages it carries (ICD 2620002), from WSR-88D and TDWR radars. They read the whole
+//! archive, including volumes with legacy message 1 radials, volumes from before 2008 that carry
+//! no VCP message, and gzip-compressed volumes back to 1991. `_MDM` objects (Model Data, message
+//! type 29) and archive tarballs are not read, and Level III products are out of scope.
 //!
 //! ## Quick Start
 //!
@@ -94,8 +93,7 @@
 //!
 //! Every feature except `parallel` builds for `wasm32-unknown-unknown`.
 //!
-//! Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example
-//! with the `uom` crate) may be offered later as a separate crate or extension trait.
+//! Accessors return plain numbers with the unit in the name.
 //!
 //! `aws-rustls` (on by default) gives `aws` its TLS backend: rustls with the `aws-lc-rs` crypto
 //! provider, which compiles C code and needs a C compiler and, on Windows x86 targets, NASM. On

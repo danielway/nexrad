@@ -73,8 +73,7 @@
 //!
 //! - `model` (default) - Convert decoded messages to `nexrad_model` types
 //!
-//! Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example
-//! with the `uom` crate) may be offered later as a separate crate or extension trait.
+//! Accessors return plain numbers with the unit in the name.
 //!
 //! # Module Organization
 //!

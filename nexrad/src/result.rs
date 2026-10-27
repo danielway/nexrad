@@ -94,8 +94,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Error from the data model layer (nexrad-model).
     ///
-    /// This variant is available when the `model` feature is enabled (default).
-    ///
     /// Model errors typically indicate issues with data transformations or validations,
     /// such as mismatched elevation angles when combining sweeps.
     #[cfg(feature = "model")]
@@ -103,8 +101,6 @@ pub enum Error {
     Model(#[from] nexrad_model::result::Error),
 
     /// Error from binary protocol decoding (nexrad-decode).
-    ///
-    /// This variant is available when the `decode` feature is enabled (default).
     ///
     /// Decode errors indicate issues parsing the binary NEXRAD Level II message format,
     /// such as truncated data, invalid message structures, or missing required fields like
@@ -115,8 +111,6 @@ pub enum Error {
 
     /// Error specific to data access (nexrad-data).
     ///
-    /// This variant is available when the `data` feature is enabled (default).
-    ///
     /// Data errors cover decompression, Archive II volume and record layout, real-time chunk
     /// handling and AWS S3 operations. Decode, model and I/O errors from `nexrad_data` are
     /// not wrapped here; they surface as `Error::Decode`, `Error::Model` and `Error::Io`.
@@ -126,8 +120,6 @@ pub enum Error {
 
     /// Error from rendering and visualization (nexrad-render).
     ///
-    /// This variant is available when the `render` feature is enabled (default).
-    ///
     /// Render errors indicate issues with image rendering or failures in the underlying
     /// graphics backend.
     #[cfg(feature = "render")]
@@ -135,8 +127,6 @@ pub enum Error {
     Render(#[from] nexrad_render::result::Error),
 
     /// Error from radar data processing algorithms (nexrad-process).
-    ///
-    /// This variant is available when the `process` feature is enabled.
     ///
     /// Process errors indicate issues with processing algorithms, such as invalid
     /// field geometry, missing required data, or invalid parameter values.
@@ -154,8 +144,6 @@ pub enum Error {
 
     /// No archive volume is available for the requested site and date.
     ///
-    /// This variant is available when the `aws` feature is enabled (default).
-    ///
     /// `download_latest` returns this error, carrying the current UTC date, when neither that
     /// date nor the previous one has an archive volume for the site.
     #[cfg(feature = "aws")]
@@ -168,8 +156,6 @@ pub enum Error {
     },
 
     /// No archive volume overlaps the requested site and datetime.
-    ///
-    /// This variant is available when the `aws` feature is enabled (default).
     ///
     /// `download_at` returns this error when no volume started within the window before the
     /// requested datetime, for example because the radar was not operating then.

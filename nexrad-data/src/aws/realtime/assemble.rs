@@ -1,7 +1,7 @@
 //! Assembles real-time data chunks into a complete volume scan.
 
 use crate::aws::realtime::Chunk;
-use crate::volume::{add_record_to_scan, build_scan};
+use crate::volume::add_record_to_scan;
 use nexrad_decode::model::ScanBuilder;
 
 /// Assembles a collection of real-time data chunks into a [`Scan`](nexrad_model::data::Scan).
@@ -15,11 +15,15 @@ use nexrad_decode::model::ScanBuilder;
 ///
 /// # Errors
 ///
-/// Returns an error if:
-/// - No start chunk is found, so no volume coverage pattern was seen
-///   ([`Error::MissingCoveragePattern`](crate::result::Error::MissingCoveragePattern))
-/// - Decompression fails for any chunk, or any message in a chunk cannot be decoded
-///   ([`Error::Decode`](crate::result::Error::Decode), carrying the first decoding error)
+/// Returns an error if decompression fails for any chunk, or any message in a chunk cannot be
+/// decoded ([`Error::Decode`](crate::result::Error::Decode), carrying the first decoding error).
+/// The scan's coverage pattern and number are chosen as
+/// [`ScanBuilder::build`](nexrad_decode::model::ScanBuilder::build) describes: without a start
+/// chunk the scan has no
+/// [`coverage_pattern`](nexrad_model::data::Scan::coverage_pattern), and with no coverage
+/// pattern number in any chunk the result is [`Error::Decode`](crate::result::Error::Decode)
+/// carrying
+/// [`MissingCoveragePatternNumber`](nexrad_decode::result::Error::MissingCoveragePatternNumber).
 ///
 /// # Example
 ///
@@ -42,12 +46,12 @@ pub fn assemble_volume(
     for chunk in chunks {
         match chunk {
             Chunk::Start(file) => {
-                for record in file.records()? {
+                for record in file.inflated()?.records()? {
                     add_record_to_scan(&mut builder, &record)?;
                 }
             }
             Chunk::IntermediateOrEnd(record) => add_record_to_scan(&mut builder, &record)?,
         }
     }
-    build_scan(builder)
+    Ok(builder.build()?)
 }

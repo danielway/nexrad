@@ -85,7 +85,7 @@ fn scan() -> Scan {
         Sweep::new(1, vec![radial(1, 1, Some(28.5)), radial(2, 1, None)]).expect("valid sweep"),
         Sweep::new(2, vec![radial(1, 2, Some(26.0)), radial(2, 2, None)]).expect("valid sweep"),
     ];
-    Scan::with_site(site, vcp, sweeps)
+    Scan::with_site(site, vcp.pattern_number(), Some(vcp), sweeps)
 }
 
 fn sweep_field() -> SweepField {
@@ -162,6 +162,23 @@ fn scan_round_trips() {
     assert_eq!(radials[1].nyquist_velocity_mps(), None);
     assert!(radials[0].clutter_filter_power().is_some());
     assert_round_trips(&scan);
+}
+
+#[test]
+fn scan_without_coverage_pattern_round_trips() {
+    let scan = Scan::new(VcpNumber::from_number(21), None, scan().sweeps().to_vec());
+    assert_round_trips(&scan);
+
+    let mut document = to_json(&scan);
+    assert_eq!(document["coverage_pattern_number"], json!(21));
+    assert!(document["coverage_pattern"].is_null());
+
+    document
+        .as_object_mut()
+        .expect("scan serializes as an object")
+        .remove("coverage_pattern");
+    let parsed: Scan = serde_json::from_value(document).expect("coverage_pattern defaults");
+    assert_eq!(parsed, scan);
 }
 
 #[test]

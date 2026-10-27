@@ -59,10 +59,12 @@ pub enum Error {
         /// Offset where the expected segment should begin.
         offset: usize,
     },
-    /// No volume coverage pattern message was found while assembling a scan.
+    /// No coverage pattern number was found while assembling a scan: there was no volume
+    /// coverage pattern message (type 5), and no radar data message carried a non-zero coverage
+    /// pattern number.
     #[cfg(feature = "model")]
-    #[error("no volume coverage pattern message found")]
-    MissingCoveragePattern,
+    #[error("no coverage pattern number found in a volume coverage pattern message or any radial")]
+    MissingCoveragePatternNumber,
     /// A legacy digital radar data message (type 1) gives a negative range to its first gate and
     /// a zero gate interval, so none of its gates lies at a non-negative range.
     ///

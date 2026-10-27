@@ -111,7 +111,8 @@ fn analyze_scan(
     filename: &str,
     site: &str,
 ) -> Option<VolumeTiming> {
-    let vcp = scan.coverage_pattern();
+    // Volumes without a volume coverage pattern message (some legacy archives) are skipped.
+    let vcp = scan.coverage_pattern()?;
     let sweeps = scan.sweeps();
 
     if sweeps.is_empty() {

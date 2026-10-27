@@ -603,7 +603,10 @@ mod tests {
     fn first_gate_layout_keeps_non_negative_ranges() {
         assert_eq!(first_gate_layout(0, 1000).unwrap(), (0, 0));
         assert_eq!(first_gate_layout(2125, 250).unwrap(), (2125, 0));
-        assert_eq!(first_gate_layout(i16::MAX, 0).unwrap(), (i16::MAX as u16, 0));
+        assert_eq!(
+            first_gate_layout(i16::MAX, 0).unwrap(),
+            (i16::MAX as u16, 0)
+        );
     }
 
     #[test]
@@ -625,9 +628,16 @@ mod tests {
 
     #[test]
     fn legacy_moment_drops_gates_at_negative_range() {
-        let moment =
-            legacy_moment(Product::Velocity, 4, -375, 250, 2.0, 129.0, vec![10, 20, 30, 40])
-                .expect("builds moment");
+        let moment = legacy_moment(
+            Product::Velocity,
+            4,
+            -375,
+            250,
+            2.0,
+            129.0,
+            vec![10, 20, 30, 40],
+        )
+        .expect("builds moment");
         assert_eq!(moment.first_gate_range_meters(), 125);
         assert_eq!(moment.gate_interval_meters(), 250);
         assert_eq!(moment.gate_count(), 2);

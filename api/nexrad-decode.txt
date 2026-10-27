@@ -2536,8 +2536,10 @@ pub nexrad_decode::result::Error::InvalidDataBlockPointer::bytes: usize
 pub nexrad_decode::result::Error::InvalidDataBlockPointer::position: usize
 pub nexrad_decode::result::Error::MessageMissingDate
 pub nexrad_decode::result::Error::MessageMissingDate::message_type: nexrad_decode::MessageType
-pub nexrad_decode::result::Error::MissingCoveragePattern
+pub nexrad_decode::result::Error::MissingCoveragePatternNumber
 pub nexrad_decode::result::Error::Model(nexrad_model::result::Error)
+pub nexrad_decode::result::Error::NegativeFirstGateRange
+pub nexrad_decode::result::Error::NegativeFirstGateRange::range_meters: i16
 pub nexrad_decode::result::Error::SegmentOutOfSequence
 pub nexrad_decode::result::Error::SegmentOutOfSequence::expected_segment: u16
 pub nexrad_decode::result::Error::SegmentOutOfSequence::message_type: nexrad_decode::MessageType
@@ -2575,8 +2577,10 @@ pub nexrad_decode::Error::InvalidDataBlockPointer::bytes: usize
 pub nexrad_decode::Error::InvalidDataBlockPointer::position: usize
 pub nexrad_decode::Error::MessageMissingDate
 pub nexrad_decode::Error::MessageMissingDate::message_type: nexrad_decode::MessageType
-pub nexrad_decode::Error::MissingCoveragePattern
+pub nexrad_decode::Error::MissingCoveragePatternNumber
 pub nexrad_decode::Error::Model(nexrad_model::result::Error)
+pub nexrad_decode::Error::NegativeFirstGateRange
+pub nexrad_decode::Error::NegativeFirstGateRange::range_meters: i16
 pub nexrad_decode::Error::SegmentOutOfSequence
 pub nexrad_decode::Error::SegmentOutOfSequence::expected_segment: u16
 pub nexrad_decode::Error::SegmentOutOfSequence::message_type: nexrad_decode::MessageType

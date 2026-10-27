@@ -492,18 +492,18 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::RadialBuilder
 pub struct nexrad_model::data::Scan
 impl nexrad_model::data::Scan
 pub fn nexrad_model::data::Scan::coordinate_system(&self) -> core::option::Option<nexrad_model::geo::RadarCoordinateSystem>
-pub fn nexrad_model::data::Scan::coverage_pattern(&self) -> &nexrad_model::data::VolumeCoveragePattern
+pub fn nexrad_model::data::Scan::coverage_pattern(&self) -> core::option::Option<&nexrad_model::data::VolumeCoveragePattern>
 pub fn nexrad_model::data::Scan::coverage_pattern_number(&self) -> nexrad_model::data::VcpNumber
 pub fn nexrad_model::data::Scan::elevation_cut(&self, &nexrad_model::data::Sweep) -> core::option::Option<&nexrad_model::data::ElevationCut>
 pub fn nexrad_model::data::Scan::fields(&self, nexrad_model::data::Product) -> alloc::vec::Vec<nexrad_model::data::SweepField>
 pub fn nexrad_model::data::Scan::first_field(&self, nexrad_model::data::Product) -> core::option::Option<(usize, nexrad_model::data::SweepField)>
-pub fn nexrad_model::data::Scan::new(nexrad_model::data::VolumeCoveragePattern, alloc::vec::Vec<nexrad_model::data::Sweep>) -> Self
+pub fn nexrad_model::data::Scan::new(nexrad_model::data::VcpNumber, core::option::Option<nexrad_model::data::VolumeCoveragePattern>, alloc::vec::Vec<nexrad_model::data::Sweep>) -> Self
 pub fn nexrad_model::data::Scan::site(&self) -> core::option::Option<&nexrad_model::meta::Site>
 pub fn nexrad_model::data::Scan::sweeps(&self) -> &[nexrad_model::data::Sweep]
 pub fn nexrad_model::data::Scan::sweeps_at_elevation(&self, f32) -> impl core::iter::traits::iterator::Iterator<Item = &nexrad_model::data::Sweep>
 pub fn nexrad_model::data::Scan::sweeps_with_waveform(&self, nexrad_model::data::WaveformType) -> impl core::iter::traits::iterator::Iterator<Item = &nexrad_model::data::Sweep>
 pub fn nexrad_model::data::Scan::time_range(&self) -> core::option::Option<(chrono::datetime::DateTime<chrono::offset::utc::Utc>, chrono::datetime::DateTime<chrono::offset::utc::Utc>)>
-pub fn nexrad_model::data::Scan::with_site(nexrad_model::meta::Site, nexrad_model::data::VolumeCoveragePattern, alloc::vec::Vec<nexrad_model::data::Sweep>) -> Self
+pub fn nexrad_model::data::Scan::with_site(nexrad_model::meta::Site, nexrad_model::data::VcpNumber, core::option::Option<nexrad_model::data::VolumeCoveragePattern>, alloc::vec::Vec<nexrad_model::data::Sweep>) -> Self
 impl core::clone::Clone for nexrad_model::data::Scan
 pub fn nexrad_model::data::Scan::clone(&self) -> Self
 impl core::cmp::PartialEq for nexrad_model::data::Scan

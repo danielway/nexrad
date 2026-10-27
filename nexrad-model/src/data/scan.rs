@@ -14,32 +14,52 @@ use serde::{Deserialize, Serialize};
 /// A single radar scan composed of a series of sweeps at different elevations. The pattern of
 /// sweeps, including elevations and resolution, is determined by the scanning strategy of the
 /// radar. This is referred to as the Volume Coverage Pattern (VCP).
+///
+/// A scan always has a [`coverage_pattern_number`](Self::coverage_pattern_number). The full
+/// [`coverage_pattern`](Self::coverage_pattern) configuration is optional: volumes recorded
+/// before the volume coverage pattern message was archived (for example, early legacy Archive II
+/// files) identify their pattern only by number.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Scan {
     site: Option<Site>,
-    coverage_pattern: VolumeCoveragePattern,
+    coverage_pattern_number: VcpNumber,
+    #[cfg_attr(feature = "serde", serde(default))]
+    coverage_pattern: Option<VolumeCoveragePattern>,
     sweeps: Vec<Sweep>,
 }
 
 impl Scan {
-    /// Create a new radar scan with the given coverage pattern and sweeps.
-    pub fn new(coverage_pattern: VolumeCoveragePattern, sweeps: Vec<Sweep>) -> Self {
+    /// Create a new radar scan with the given coverage pattern number, optional coverage pattern,
+    /// and sweeps.
+    ///
+    /// `coverage_pattern_number` is stored as given, even when `coverage_pattern` carries a
+    /// different [`pattern_number`](VolumeCoveragePattern::pattern_number); some archived volumes
+    /// record a different number in each place.
+    pub fn new(
+        coverage_pattern_number: VcpNumber,
+        coverage_pattern: Option<VolumeCoveragePattern>,
+        sweeps: Vec<Sweep>,
+    ) -> Self {
         Self {
             site: None,
+            coverage_pattern_number,
             coverage_pattern,
             sweeps,
         }
     }
 
-    /// Create a new radar scan with site metadata, coverage pattern, and sweeps.
+    /// Create a new radar scan with site metadata, coverage pattern number, optional coverage
+    /// pattern, and sweeps. See [`new`](Self::new).
     pub fn with_site(
         site: Site,
-        coverage_pattern: VolumeCoveragePattern,
+        coverage_pattern_number: VcpNumber,
+        coverage_pattern: Option<VolumeCoveragePattern>,
         sweeps: Vec<Sweep>,
     ) -> Self {
         Self {
             site: Some(site),
+            coverage_pattern_number,
             coverage_pattern,
             sweeps,
         }
@@ -51,16 +71,22 @@ impl Scan {
     }
 
     /// This scan's coverage pattern number.
+    ///
+    /// Always present, including for scans without a [`coverage_pattern`](Self::coverage_pattern).
+    /// It may differ from the coverage pattern's own
+    /// [`pattern_number`](VolumeCoveragePattern::pattern_number); see [`new`](Self::new).
     pub fn coverage_pattern_number(&self) -> VcpNumber {
-        self.coverage_pattern.pattern_number()
+        self.coverage_pattern_number
     }
 
-    /// The coverage pattern configuration for this scan.
+    /// The coverage pattern configuration for this scan, if the source data included one.
     ///
     /// This contains detailed configuration about how the radar performs the scan, including
-    /// per-elevation settings, SAILS/MRLE/MPDA capabilities, and various thresholds.
-    pub fn coverage_pattern(&self) -> &VolumeCoveragePattern {
-        &self.coverage_pattern
+    /// per-elevation settings, SAILS/MRLE/MPDA capabilities, and various thresholds. Returns
+    /// `None` when the scan was built without one, such as from a volume file that carries no
+    /// volume coverage pattern message.
+    pub fn coverage_pattern(&self) -> Option<&VolumeCoveragePattern> {
+        self.coverage_pattern.as_ref()
     }
 
     /// The elevation sweeps comprising this scan.
@@ -92,7 +118,8 @@ impl Scan {
     /// let without_velocity = Radial::builder(0, 0.0, 1, 0.5).build()?;
     /// let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
     /// let scan = Scan::new(
-    ///     vcp,
+    ///     vcp.pattern_number(),
+    ///     Some(vcp),
     ///     vec![Sweep::new(1, vec![without_velocity])?, Sweep::new(2, vec![with_velocity])?],
     /// );
     ///
@@ -130,7 +157,8 @@ impl Scan {
     /// let without_velocity = Radial::builder(0, 0.0, 1, 0.5).build()?;
     /// let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
     /// let scan = Scan::new(
-    ///     vcp,
+    ///     vcp.pattern_number(),
+    ///     Some(vcp),
     ///     vec![Sweep::new(1, vec![without_velocity])?, Sweep::new(2, vec![with_velocity])?],
     /// );
     ///
@@ -159,11 +187,13 @@ impl Scan {
     /// let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
     /// let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
     ///
-    /// let scan = Scan::with_site(site, vcp.clone(), vec![]);
+    /// let scan = Scan::with_site(site, vcp.pattern_number(), Some(vcp.clone()), vec![]);
     /// let coords = scan.coordinate_system().unwrap();
     /// assert_eq!(coords.latitude(), 35.3331);
     ///
-    /// assert!(Scan::new(vcp, vec![]).coordinate_system().is_none());
+    /// assert!(Scan::new(vcp.pattern_number(), Some(vcp), vec![])
+    ///     .coordinate_system()
+    ///     .is_none());
     /// # Ok::<(), nexrad_model::result::Error>(())
     /// ```
     pub fn coordinate_system(&self) -> Option<RadarCoordinateSystem> {
@@ -192,7 +222,8 @@ impl Scan {
     ///
     /// The cut is the one whose 1-based position in
     /// [`VolumeCoveragePattern::elevation_cuts`] equals [`Sweep::elevation_number`]. Returns
-    /// `None` when the elevation number is zero or beyond the pattern's cuts.
+    /// `None` when the scan has no [`coverage_pattern`](Self::coverage_pattern) or the elevation
+    /// number is zero or beyond the pattern's cuts.
     ///
     /// # Example
     ///
@@ -207,7 +238,7 @@ impl Scan {
     ///     .elevation_cut(surveillance)
     ///     .build();
     /// let sweep = Sweep::new(1, vec![Radial::builder(0, 0.0, 1, 0.5).build()?])?;
-    /// let scan = Scan::new(vcp, vec![sweep]);
+    /// let scan = Scan::new(VcpNumber::Vcp212, Some(vcp), vec![sweep]);
     ///
     /// let cut = scan.elevation_cut(&scan.sweeps()[0]).unwrap();
     /// assert_eq!(cut.waveform_type(), WaveformType::ContiguousSurveillance);
@@ -215,13 +246,14 @@ impl Scan {
     /// ```
     pub fn elevation_cut(&self, sweep: &Sweep) -> Option<&ElevationCut> {
         let index = usize::from(sweep.elevation_number()).checked_sub(1)?;
-        self.coverage_pattern.elevation_cuts().get(index)
+        self.coverage_pattern.as_ref()?.elevation_cuts().get(index)
     }
 
     /// The sweeps whose [`elevation_cut`](Self::elevation_cut) uses `waveform_type`, in scan
     /// order.
     ///
-    /// Sweeps without a matching cut in the coverage pattern are skipped. Selecting
+    /// Sweeps without a matching cut in the coverage pattern are skipped, so a scan without a
+    /// [`coverage_pattern`](Self::coverage_pattern) yields none. Selecting
     /// [`WaveformType::ContiguousSurveillance`] yields the long-PRT surveillance halves of split
     /// cuts, which carry reflectivity with the greatest unambiguous range, while the Doppler
     /// waveforms yield the sweeps carrying velocity.
@@ -265,7 +297,7 @@ impl Display for Scan {
         write!(
             f,
             "Scan ({}, {} sweeps)",
-            self.coverage_pattern.pattern_number(),
+            self.coverage_pattern_number,
             self.sweeps.len()
         )
     }

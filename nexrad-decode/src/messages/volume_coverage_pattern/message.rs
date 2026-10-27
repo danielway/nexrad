@@ -56,7 +56,7 @@ impl<'a> Message<'a> {
     /// elevation cut.
     #[cfg(feature = "model")]
     pub fn to_model(&self) -> nexrad_model::data::VolumeCoveragePattern {
-        use nexrad_model::data::{ElevationCut, VcpNumber, VolumeCoveragePattern};
+        use nexrad_model::data::{ElevationCut, VolumeCoveragePattern};
 
         let header = &self.header;
         let elevation_cuts = self
@@ -95,7 +95,7 @@ impl<'a> Message<'a> {
             })
             .collect();
 
-        VolumeCoveragePattern::builder(VcpNumber::from_number(header.vcp_number_raw()))
+        VolumeCoveragePattern::builder(header.vcp_number().into())
             .version(header.version())
             .doppler_velocity_resolution_mps(header.doppler_velocity_resolution_mps())
             .pulse_width(header.pulse_width().into())

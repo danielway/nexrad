@@ -427,13 +427,16 @@ struct RadialRepr {
     clutter_filter_power: Option<MomentData>,
 }
 
-/// Describe a radial's position within the sequence of radials comprising a scan.
+/// A radial's position within its elevation sweep and scan.
+///
+/// `nexrad_decode::messages::digital_radar_data::RadialStatus` has the same variants and converts
+/// to and from this type without loss; it also maps each variant to its ICD code.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum RadialStatus {
-    /// First radial of an elevation sweep (not the first sweep in the scan).
+    /// First radial of an elevation sweep that is not the first sweep in the scan.
     ElevationStart,
-    /// A radial within an elevation sweep (not the first or last radial).
+    /// A radial within an elevation sweep that is not its first or last radial.
     IntermediateRadialData,
     /// Last radial of an elevation sweep.
     ElevationEnd,
@@ -441,8 +444,22 @@ pub enum RadialStatus {
     ScanStart,
     /// Last radial of the last elevation sweep in a scan.
     ScanEnd,
-    /// Start of new elevation which is the last in the VCP.
+    /// First radial of the last elevation sweep in the VCP.
     ElevationStartVcpFinal,
-    /// An unrecognized radial status value.
+    /// A radial status the ICD does not define, carrying the code the decoder read.
     Unknown(u8),
+}
+
+impl std::fmt::Display for RadialStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RadialStatus::ElevationStart => write!(f, "Elevation Start"),
+            RadialStatus::IntermediateRadialData => write!(f, "Intermediate Radial Data"),
+            RadialStatus::ElevationEnd => write!(f, "Elevation End"),
+            RadialStatus::ScanStart => write!(f, "Scan Start"),
+            RadialStatus::ScanEnd => write!(f, "Scan End"),
+            RadialStatus::ElevationStartVcpFinal => write!(f, "Elevation Start (Final in VCP)"),
+            RadialStatus::Unknown(code) => write!(f, "Unknown ({code})"),
+        }
+    }
 }

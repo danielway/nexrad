@@ -1,5 +1,6 @@
 /// The RDA system's performance check status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum PerformanceCheckStatus {
     /// No performance check command is pending.
     NoCommandPending,

@@ -72,7 +72,9 @@ fn declared_payload_size(header: &MessageHeader<'_>) -> usize {
 /// - [`Error::SegmentOutOfSequence`] if a segment of a multi-segment message is missing or out of
 ///   order.
 /// - [`Error::InvalidDataBlockPointer`] or [`Error::UnknownDataBlockType`] if a digital radar
-///   data message's data blocks cannot be located or identified.
+///   data message's data blocks cannot be located, or a block has an unrecognized name and a type
+///   byte other than `'R'` or `'D'`. Unrecognized blocks of either known type do not fail the
+///   decode.
 pub fn decode_messages(data: &[u8]) -> Result<Vec<Message<'_>>> {
     iter_messages(data).collect()
 }

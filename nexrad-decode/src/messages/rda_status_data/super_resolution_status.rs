@@ -1,5 +1,6 @@
 /// Whether the RDA system has super resolution enabled.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum SuperResolutionStatus {
     /// Super resolution is enabled.
     Enabled,

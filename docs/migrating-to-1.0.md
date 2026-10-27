@@ -87,9 +87,10 @@ use nexrad_data::{AwsError, Error, Result}; // nexrad_data::result::Error still 
 ```
 
 **2. Every `Error` enum is `#[non_exhaustive]`** (#155), as are `nexrad_data::AwsError`,
-`nexrad_model::data::{Product, VcpNumber}`, `nexrad_decode::messages::{MessageContents, MessageType, RedundantChannel,
-VcpNumber}`, `nexrad_decode::messages::digital_radar_data::DataBlockName` and `nexrad_render::Projection`. A `match`
-outside the defining crate needs a wildcard arm. The deliberately exhaustive enums are listed under
+`nexrad_model::data::Product`, `nexrad_decode::messages::{MessageContents, MessageType, RedundantChannel}`,
+`nexrad_decode::messages::digital_radar_data::DataBlockName` and `nexrad_render::Projection`. A `match` outside the
+defining crate needs a wildcard arm. `VcpNumber` (in both crates) is a `u16` newtype with associated constants rather
+than an enum (#205); a `match` on it needs a wildcard arm too. The deliberately exhaustive enums are listed under
 [Enum Stability](architecture.md#enum-stability).
 
 ```rust
@@ -99,6 +100,11 @@ match product {
     _ => product.unit(),
 }
 ```
+
+The ICD code enums in `nexrad-decode`'s message modules (every one with an `Unknown(n)` or `Reserved(n)` variant, such
+as `rda_status_data::RdaStatus` and `digital_radar_data::CompressionIndicator`) and `nexrad_render::{ColorScale,
+Interpolation}` are non-exhaustive too (#207). An `Unknown(n)` or `Reserved(n)` value may become a named variant in a
+minor release, so compare `number()` or the `*_raw()` accessor where you need the same answer across releases.
 
 **3. Acronyms are written as words** (#160), following Rust's RFC 430, and the terse waveform variants got descriptive
 names. The renames change the serialized form; see [Serialized data](#serialized-data).
@@ -180,6 +186,15 @@ offending argument:
 
 **Behaviour and type changes**
 
+- **`VcpNumber` is a `u16` newtype** (#205): match on the constants (`VcpNumber::VCP_212`) where you matched a
+  variant such as `VCPNumber::PrecipitationSz2_212`, build one with `VcpNumber::new(n)` or `n.into()` where you used
+  `from_number(n)` or `Unknown(n)`, and read the number with `number()`, which now takes `self`. `description()` is
+  removed, and `Display` prints only the number (`VCP 212`, not `VCP 212 (Precipitation, SZ-2)`). Values order by
+  number. The serialized form is unchanged.
+- **Unknown codes carry the code** (#205): `WaveformType`, `ChannelConfiguration` and `PulseWidth` have `Unknown(u8)`
+  instead of a unit `Unknown`, like `RadialStatus`, and match `nexrad-decode`'s copies variant for variant. Match
+  `Unknown(_)`. `Display` of an unknown value includes the code (`Unknown (7)`), and `RadialStatus` implements
+  `Display`.
 - **Coordinates and polar angles are `f64`** (#164): literals keep compiling; convert `f32` variables with
   `f64::from(x)`. The stored `*_degrees` angles on `Radial`, `Sweep`, `SweepField` and `ElevationCut` are `f32`
   (#182), so `Scan::sweeps_at_elevation` still takes `f32`.
@@ -279,7 +294,7 @@ for message in &messages {
 **Behaviour and type changes**
 
 - **Decoding is strict** (#190). `decode_messages` returns the error for the first message it cannot decode (truncated,
-  bad data block pointer, unknown data block name, missing segment) instead of logging and dropping it, or stopping
+  bad data block pointer, missing segment) instead of logging and dropping it, or stopping
   with what it had. A tail shorter than a message header (28 bytes) ends decoding cleanly when every byte is zero. To
   keep the messages before a failure:
 
@@ -298,14 +313,25 @@ for message in &messages {
   `MessageContents::message_type()` names any contents' type. Each type 0 frame (an unused metadata record slot) is its
   own `Other`, and maps from a legacy (pre-ORDA) RDA decode as `Other`: the type 15 clutter filter map with its legacy
   notch width layout (#190) and the type 13 bypass map, which decoded as an empty map (#191).
+- **Unrecognised data blocks do not fail the decode** (#207). A type 31 data moment block (type byte `'D'`) whose name
+  this version does not know is parsed with the generic layout and kept in
+  `digital_radar_data::Message::other_data_blocks()`; an unknown `'R'` block is skipped. Neither is part of `radial()`.
+  `Error::UnknownDataBlockType` is now returned only for a block whose type byte is neither `'R'` nor `'D'`, and by
+  `moment_data()` on one of the other data blocks.
 - **`DataBlock` no longer derefs** (#190): reach the block through `inner()` or `into_inner()`
   (`m.volume_data_block().map(|b| b.inner().vcp_number())`); `moment_data()` and `into_moment_data()` stay on the
   `DataBlock`.
 - **Multi-segment messages decode their full payload** (#190): type 13 bypass maps decode instead of being dropped,
   type 15 maps have 360 azimuth segments instead of 350, and type 18 fields past the first segment, such as
   `site_name()`, hold their real values.
-- **VCP numbers** (#163, #188): VCPs 11, 21, 32, 121, 211 and 221 no longer decode as `Unknown(n)`, the variants match
-  `nexrad_model::data::VcpNumber` one for one, and `VcpNumber` implements `Display` (`VCP 212`).
+- **VCP numbers** (#163, #188, #205): `VcpNumber` is a `u16` newtype with the same shape as
+  `nexrad_model::data::VcpNumber`. Match on its constants (`VcpNumber::VCP_212`); build one with `VcpNumber::new(n)`
+  or `n.into()`. It implements `Display` (`VCP 212`) and `Ord` by number, and with the new `serde` feature serializes
+  as the bare number.
+- **The VCP code enums match the model** (#205): `RadialStatus::VolumeScanStart` and `VolumeScanEnd` are `ScanStart`
+  and `ScanEnd`, the model's names. `WaveformType`, `ChannelConfiguration`, `PulseWidth` and `RadialStatus` gain
+  `from_number(u8)`, `number()` and `Display`, `WaveformType` gains `abbreviation()`, and the `From` conversions to the
+  model (feature `model`) keep the code of an `Unknown` value and also run from the model back to decode.
 - **Converted radials carry radar physics**: `digital_radar_data::Message::radial()`/`into_radial()` set the Nyquist
   velocity and unambiguous range from the radial data block, `None` when it is absent (#188); the legacy (type 1)
   conversion sets the unambiguous range (#188) and the Nyquist velocity, `None` when zero (#191), from its header.
@@ -321,8 +347,8 @@ for message in &messages {
   `f64`.
 - **Message type 29 is `MessageType::ModelData`** (#206), the Archive II ICD's Model Data message, where it was
   `Reserved(29)`; match `ModelData` where you matched `Reserved(29)`. Its contents still decode as `Other`.
-- **`MessageType` ordering** (#166): the derived `Ord` puts `Reserved(_)` after `RdaLogData`; compare `number()` to
-  order by wire number.
+- **`MessageType` ordering** (#166, #205): `Ord` compares `number()`, so `Reserved(14)` sorts between
+  `RpgLoopbackTest` (12) and `ClutterFilterMap` (15) instead of after `RdaLogData`.
 - **Lifetimes** (#166): `MessageHeaders::primary()`/`iter()` and `Message::header()` borrow from `self`, and
   `Message::contents()` returns `&MessageContents<'a>`. No public type implements zerocopy traits.
 
@@ -432,8 +458,10 @@ CC field whose geometry differs from the input; and `UnexpectedProduct { expecte
 wrong product (#193).
 
 **Constructors and builders** (#175, #193). Processors have private fields and validating constructors.
-`ScanDerivedProduct::compute` drops the `scan` argument and takes a `CartesianGrid`, in calls and in your own impls,
-which must be `Send + Sync`, as must `SweepProcessor` impls:
+`CompositeReflectivity::compute` drops the `scan` argument and takes a `CartesianGrid`. The `ScanDerivedProduct` trait is
+removed (#207): `compute` is an inherent method, so drop the import, build the product with
+`CompositeReflectivity::new()` (the unit struct is non-exhaustive) and replace your own impls with inherent methods or a
+trait of your own. `SweepProcessor` impls must be `Send + Sync`:
 
 ```rust
 // 1.0.0-rc.1
@@ -450,7 +478,7 @@ let pipeline = SweepPipeline::new()
     .then(MedianFilter::new(3, 3)?)
     .then(GaussianSmooth::new(1.0, 1.0)?);
 let grid = CartesianGrid::new(extent, 512, 512)?;
-let composite = CompositeReflectivity.compute(&fields, &coords, &grid)?;
+let composite = CompositeReflectivity::new().compute(&fields, &coords, &grid)?;
 let section = VerticalCrossSection::builder(200.0)
     .max_range_km(230.0)
     .max_altitude_meters(18000.0)
@@ -469,19 +497,21 @@ let section = VerticalCrossSection::builder(200.0)
 - **Masked gates are `Filtered`** (#187): `ThresholdFilter` and `CorrelationCoefficientFilter` mark removed gates
   `GateStatus::Filtered` and keep their values instead of setting `NoData` with `0.0`; look for `Filtered` where you
   looked for `NoData` (checks for `Valid` are unaffected). Smoothing and storm-relative velocity pass them through;
-  composite reflectivity, cross-sections and cell detection skip them.
+  composite reflectivity, cross-sections and threshold region detection skip them.
 - **Inputs are checked by product** (#193); build fields with `SweepField::from_radials` or set
   `SweepFieldBuilder::product`. `CompositeReflectivity::compute`, `VerticalCrossSection::compute` and
-  `StormCellDetector::detect` need `Product::Reflectivity`, `CorrelationCoefficientFilter::new` a
+  `ThresholdRegionDetector::detect` need `Product::Reflectivity`, `CorrelationCoefficientFilter::new` a
   `Product::CorrelationCoefficient` field and `StormRelativeVelocity` a `Product::Velocity` input; its output is
   labelled "Storm-Relative Velocity" with no product, so it no longer passes as a velocity moment.
 - **`VerticalCrossSection::compute` takes the coordinate system** (#188), for example `scan.coordinate_system()`: the
   vertical axis is altitude above mean sea level including the antenna height, and the horizontal axis is ground range.
 - `CorrelationCoefficientFilter` requires the input and CC fields to share azimuth angles, first gate range and gate
   interval (`Error::GeometryMismatch`); gate counts may differ (#193).
-- `StormCell::centroid()` is weighted by linear reflectivity factor rather than dBZ, moving it toward the most intense
+- **`StormCellDetector` and `StormCell` are `ThresholdRegionDetector` and `ThresholdRegion`** (#207), named for what
+  they compute: connected regions at or above one reflectivity threshold. Behaviour and methods are unchanged.
+- `ThresholdRegion::centroid()` is weighted by linear reflectivity factor rather than dBZ, moving it toward the most intense
   gates (#193).
-- `MedianFilter`, `GaussianSmooth` and `StormCellDetector` no longer wrap a sector field's azimuths across north (#193).
+- `MedianFilter`, `GaussianSmooth` and `ThresholdRegionDetector` no longer wrap a sector field's azimuths across north (#193).
 - The processors implement `Debug`, `Clone` and `PartialEq`, and `CompositeReflectivity` also `Copy` and `Default`
   (#175).
 
@@ -599,6 +629,7 @@ II source files.** There is no compatibility shim. The incompatible changes are:
 | `WaveformType` | Variants serialize as `"ContiguousSurveillance"`, `"ContiguousDopplerWithAmbiguityResolution"`, `"ContiguousDopplerWithoutAmbiguityResolution"`, `"Batch"`, `"StaggeredPulsePair"` instead of `"CS"`, `"CDW"`, `"CDWO"`, `"B"`, `"SPP"` | #160 |
 | `ChannelConfiguration` | `"Sz2Phase"` instead of `"SZ2Phase"` | #160 |
 | `RadialStatus` | `"ElevationStartVcpFinal"` instead of `"ElevationStartVCPFinal"` | #160 |
+| `WaveformType`, `ChannelConfiguration`, `PulseWidth` | An unknown value is `{"Unknown": n}` instead of `"Unknown"` | #205 |
 | `MomentData` | A struct with a `product` field next to the encoding fields, for every moment on a `Radial` including `clutter_filter_power`; it was `serde(transparent)` over an inner block | #170 |
 | `SweepField` | Gains a `product` field | #170 |
 | `Site` | `latitude` and `longitude` are `f64`; self-describing formats such as JSON still read old values, fixed-width binary formats such as bincode do not | #164 |
@@ -1068,13 +1099,15 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | 1.0.0-rc.2 | 1.0 | PR |
 |---|---|---|
 | `BinaryData<T>` (and its impls) | Not public; it appeared in no public signature | #162 |
-| `data::VCPNumber` | `data::VcpNumber`, `#[non_exhaustive]`, variants named by pattern number (below) | #155, #160, #188 |
+| `data::VCPNumber` | `data::VcpNumber`, a `u16` newtype with associated constants named by pattern number (below) | #155, #160, #188, #205 |
 | `data::CFPStatus` (variants unchanged) | `data::CfpStatus` | #160 |
 | `data::CFPMomentData` (`from_fixed_point`, `iter`, `values`, `DataMoment` impl) | `data::MomentData` with `Product::ClutterFilterPower` | #170 |
 | `data::CFPMomentValue::{Status, Value}` | `data::MomentValue::{CfpStatus, Value}` | #170 |
 | `data::DataMoment` trait (`data_word_size`, `first_gate_range`, `first_gate_range_km`, `gate_count`, `gate_interval`, `gate_interval_km`, `offset`, `raw_gate_values`, `raw_values`, `scale`) | Inherent methods on `MomentData`, same names and signatures; remove the import | #170 |
 | `data::ChannelConfiguration::SZ2Phase` | `Sz2Phase` | #160 |
-| `data::WaveformType::{CS, CDW, CDWO, B, SPP}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair}` | #160 |
+| `data::WaveformType::{CS, CDW, CDWO, B, SPP, Unknown}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair, Unknown(u8)}` | #160, #205 |
+| `data::ChannelConfiguration::Unknown`, `data::PulseWidth::Unknown` | `Unknown(u8)` | #205 |
+| `data::VCPNumber::number(&self)`, `from_number(u16)`, `description()` | `number(self)`, `VcpNumber::new(u16)` (or `From<u16>`); `description()` removed, and `Display` prints `VCP 212` without it | #205 |
 | `data::RadialStatus::ElevationStartVCPFinal` | `ElevationStartVcpFinal` | #160 |
 | `data::Product` | `#[non_exhaustive]` | #155 |
 | `data::Product::moment_data(&Radial)`, `cfp_moment_data(&Radial)` | `Radial::moment(Product)` | #170 |
@@ -1086,12 +1119,12 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `data::Radial::{azimuth, azimuth_spacing, elevation_angle}() -> uom::si::f32::Angle` | `-> uom::si::f64::Angle` | #164 |
 | `data::Sweep::elevation_angle() -> Option<uom::si::f32::Angle>` | `-> Option<uom::si::f64::Angle>` | #164 |
 | `data::Scan::coverage_pattern_number() -> VCPNumber` | `-> VcpNumber` | #160 |
-| `data::VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}`, as in `nexrad_decode::messages::VcpNumber`; `Unknown(11)`, `Unknown(21)`, `Unknown(121)`, `Unknown(211)`, `Unknown(221)` are `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` | #188 |
+| `data::VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | Constants `VcpNumber::{VCP_12, VCP_31, VCP_32, VCP_35, VCP_112, VCP_212, VCP_215}`, as in `nexrad_decode::messages::VcpNumber`, plus `VCP_11`, `VCP_21`, `VCP_121`, `VCP_211` and `VCP_221`; `Unknown(n)` is `VcpNumber::new(n)` | #188, #205 |
 | `data::Radial` (no PRF context) | Adds `nyquist_velocity_mps()`, `unambiguous_range_km() -> Option<f32>` (with `uom`, `nyquist_velocity()`, `unambiguous_range()`); `RadialBuilder::{nyquist_velocity_mps, unambiguous_range_km}` | #188 |
 | `data::Scan` | Adds `elevation_cut(&Sweep) -> Option<&ElevationCut>`, `sweeps_with_waveform(WaveformType) -> impl Iterator<Item = &Sweep>` | #188 |
 | `data::ElevationCut::new(f64, ChannelConfiguration, WaveformType, ..)` (22 arguments) | `ElevationCut::builder(f32, WaveformType, ChannelConfiguration)` → `ElevationCutBuilder`; note the argument order | #165, #182 |
 | `data::ElevationCut::elevation_angle_degrees() -> f64` | `-> f32` | #182 |
-| `data::VolumeCoveragePattern::new(u16, ..)` (14 arguments) | `VolumeCoveragePattern::builder(VcpNumber)` → `VolumeCoveragePatternBuilder`; convert a number with `VcpNumber::from_number(n)` | #165 |
+| `data::VolumeCoveragePattern::new(u16, ..)` (14 arguments) | `VolumeCoveragePattern::builder(VcpNumber)` → `VolumeCoveragePatternBuilder`; convert a number with `VcpNumber::new(n)` | #165, #205 |
 | `data::VolumeCoveragePattern::pattern_number() -> VCPNumber` | `-> VcpNumber` | #160 |
 | `data::SweepField::new_empty(label, unit, f32, Vec<f32>, f32, f64, f64, usize)` | `SweepField::builder(label, unit)` → `SweepFieldBuilder`, `build() -> Result<SweepField>`, which validates the geometry | #165, #185 |
 | `data::SweepField::value_at_polar(f32, f64)` | `value_at_polar(f64, f64)` | #164 |
@@ -1161,13 +1194,15 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `RedundantChannel::ORDASingleChannel`, `ORDARedundantChannel1`, `ORDARedundantChannel2` | `OrdaSingleChannel`, `OrdaRedundantChannel1`, `OrdaRedundantChannel2`; `#[non_exhaustive]` | #155, #160 |
 | `MessageHeader` (`#[repr(C)]`, public fields, zerocopy traits) | `MessageHeader<'a>` with accessors; `parse(bytes)?` replaces `ref_from_prefix`, `SIZE` replaces `size_of::<MessageHeader>()`, `into_owned()` gives `MessageHeader<'static>` | #166 |
 | `MessageHeaders::Single(&'a MessageHeader)`, `Multiple(Vec<&'a MessageHeader>)` | `Single(MessageHeader<'a>)`, `Multiple(Vec<MessageHeader<'a>>)` | #166 |
-| `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, VCP35, VCP112, VCP212, VCP215, Unknown}` | `VcpNumber::{Vcp11, Vcp12, Vcp21, Vcp31, Vcp32, Vcp35, Vcp112, Vcp121, Vcp211, Vcp212, Vcp215, Vcp221, Unknown}` | #160, #163, #188 |
+| `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, VCP35, VCP112, VCP212, VCP215, Unknown}` | `messages::VcpNumber`, a `u16` newtype: constants `VcpNumber::{VCP_11, VCP_12, VCP_21, VCP_31, VCP_32, VCP_35, VCP_112, VCP_121, VCP_211, VCP_212, VCP_215, VCP_221}`, and `VcpNumber::new(n)` for `Unknown(n)` | #160, #163, #188, #205 |
 | `digital_radar_data::DataMomentPointer`, `DataMomentPointerType`, `DataMomentGenericPointerType` | Removed | #166 |
 | `digital_radar_data::CompressionIndicator::CompressedBZIP2`, `CompressedZLIB`, `FutureUse` | `CompressedBzip2`, `CompressedZlib`, `Unknown(u8)` | #160, #191 |
 | `digital_radar_data::ProcessingStatus::RxRNoise`, `CBT`, `Other(u16)` | `RxrNoise`, `Cbt`, `Unknown(u16)` | #160, #191 |
 | `digital_radar_data::SpotBlankingStatus` | `SpotBlankingFlags` (`rda_status_data::SpotBlankingStatus` keeps its name) | #191 |
 | `digital_radar_data::RadialStatus::ElevationStartVCPFinal` | `ElevationStartVcpFinal` | #160 |
+| `digital_radar_data::RadialStatus::VolumeScanStart`, `VolumeScanEnd` | `ScanStart`, `ScanEnd`, as in `nexrad_model::data::RadialStatus` | #205 |
 | `digital_radar_data::DataBlockName` | `#[non_exhaustive]` | #155 |
+| The code enums with an `Unknown(n)` or `Reserved(n)` variant in `clutter_censor_zones`, `clutter_filter_map`, `digital_radar_data` (except `RadialStatus`), `rda_status_data` and `volume_coverage_pattern` (except `WaveformType`, `ChannelConfiguration`, `PulseWidth`) | `#[non_exhaustive]`; add a wildcard arm | #207 |
 | `rda_status_data::RDAStatus`, `RDABuildNumber`, `RMSControlStatus` | `RdaStatus`, `RdaBuildNumber`, `RmsControlStatus` | #160 |
 | `rda_status_data::RMSControlStatus::{NonRMS, RMSInControl, RDAInControl}` | `RmsControlStatus::{NonRms, RmsInControl, RdaInControl}` | #160 |
 | `rda_status_data::CommandAcknowledgement::RemoteVCPReceived` | `RemoteVcpReceived` | #160 |
@@ -1185,7 +1220,7 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `MissingCoveragePattern` (feature `model`), `SegmentOutOfSequence` and (feature `model`) `Model(nexrad_model::Error)` | #155, #169, #185, #190 |
 | `result::Error::Decoding(String)`, `InvalidMessageLength { message_type, delta }`, `DataSpansSegmentBoundary { position }` | Removed (never constructed) | #190 |
 | `result::Error::UnexpectedEof`, `MessageMissingDate` | `UnexpectedEof { offset }`, `MessageMissingDate { message_type }` | #190 |
-| `result::Error::UnknownDataBlockType { block_type: String }` | `UnknownDataBlockType { block_type: [u8; 3], offset }` | #190 |
+| `result::Error::UnknownDataBlockType { block_type: String }` | `UnknownDataBlockType { block_type: [u8; 3], offset }`, no longer returned by decoding for an unknown `'R'` or `'D'` block | #190, #207 |
 | `MessageContents::Other` | `MessageContents::Other { message_type: MessageType, data: Cow<'a, [u8]> }`; match `Other { .. }` | #190 |
 | `digital_radar_data::DataBlock<'a, T>: Deref<Target = T>` | No `Deref`; `inner()`, `into_inner()` (`block.inner().vcp_number()`) | #190 |
 | `decode_messages(&[u8]) -> Result<Vec<Message>>`, skipping undecodable messages | Same signature, returns the first error; also at `nexrad_decode::decode_messages` | #190 |
@@ -1338,8 +1373,10 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | 1.0.0-rc.1 | 1.0 | PR |
 |---|---|---|
 | `ScanProcessor` trait (`name`, `process_scan`) | Removed (no implementations); use a free function or your own trait | #175 |
-| `ScanDerivedProduct::compute(&self, &Scan, &[SweepField], &RadarCoordinateSystem, &GeoExtent, (usize, usize))` | `compute(&self, &[SweepField], &RadarCoordinateSystem, &CartesianGrid)` (also `CompositeReflectivity::compute`) | #175, #193 |
-| `trait SweepProcessor`, `trait ScanDerivedProduct` | `trait SweepProcessor: Send + Sync`, `trait ScanDerivedProduct: Send + Sync` | #193 |
+| `ScanDerivedProduct::compute(&self, &Scan, &[SweepField], &RadarCoordinateSystem, &GeoExtent, (usize, usize))` | Trait removed; inherent `CompositeReflectivity::compute(&self, &[SweepField], &RadarCoordinateSystem, &CartesianGrid)` | #175, #193, #207 |
+| `ScanDerivedProduct::name()` | Removed with the trait | #207 |
+| `trait SweepProcessor` | `trait SweepProcessor: Send + Sync` | #193 |
+| `derived::CompositeReflectivity` (unit struct literal) | `#[non_exhaustive]`; `CompositeReflectivity::new()` or `CompositeReflectivity::default()` | #207 |
 | (none) | `CartesianGrid::new(GeoExtent, usize, usize) -> Result<Self>`, `extent()`, `width()`, `height()` | #193 |
 | `pipeline::SweepPipeline` | `SweepPipeline` only; adds `len()`, `is_empty()`, `steps()` | #193 |
 | `filter::ThresholdFilter::{min, max}` fields | `ThresholdFilter::new(Option<f32>, Option<f32>) -> Result<Self>`, `min()`, `max()` | #175 |
@@ -1349,11 +1386,13 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `derived::StormRelativeVelocity::new(f32, f32) -> Result<Self>` | Same signature; adds `storm_direction_degrees()`, `storm_speed_mps()` | #193 |
 | `derived::VerticalCrossSection::new(f32, f64, f64, usize, usize)` | `VerticalCrossSection::builder(f64) -> VerticalCrossSectionBuilder`, setters `max_range_km(f64)`, `max_altitude_meters(f64)`, `width(usize)`, `height(usize)`, `build() -> Result<VerticalCrossSection>`; getters for all five | #164, #182, #193 |
 | `derived::VerticalCrossSection::compute(&self, &[SweepField])` | `compute(&self, &[SweepField], &RadarCoordinateSystem)` | #188 |
-| `detection::StormCell::elevation_degrees() -> f32` | `elevation_angle_degrees() -> f32` | #182 |
-| `detection::StormCell::max_reflectivity_azimuth_degrees() -> f32` | `max_reflectivity_azimuth_angle_degrees() -> f32` | #182 |
-| `detection::StormCell::bounds() -> &StormCellBounds` | `bounds() -> GeoExtent`; `bounds().min.latitude` for `min_latitude()`, and so on | #193 |
+| `detection::StormCell` | `detection::ThresholdRegion`, same methods | #207 |
+| `detection::StormCellDetector` | `detection::ThresholdRegionDetector`, same methods | #207 |
+| `detection::StormCell::elevation_degrees() -> f32` | `ThresholdRegion::elevation_angle_degrees() -> f32` | #182, #207 |
+| `detection::StormCell::max_reflectivity_azimuth_degrees() -> f32` | `ThresholdRegion::max_reflectivity_azimuth_angle_degrees() -> f32` | #182, #207 |
+| `detection::StormCell::bounds() -> &StormCellBounds` | `ThresholdRegion::bounds() -> GeoExtent`; `bounds().min.latitude` for `min_latitude()`, and so on | #193, #207 |
 | `detection::StormCellBounds` | Removed; use `nexrad_model::geo::GeoExtent` | #193 |
-| `detection::StormCellDetector::new(f32, usize) -> Result<Self>` | Same signature; adds `reflectivity_threshold_dbz()`, `min_gate_count()` | #193 |
+| `detection::StormCellDetector::new(f32, usize) -> Result<Self>` | `ThresholdRegionDetector::new(f32, usize) -> Result<Self>`; adds `reflectivity_threshold_dbz()`, `min_gate_count()` | #193, #207 |
 | `filter::{ThresholdFilter, CorrelationCoefficientFilter}` mask gates as `(0.0, GateStatus::NoData)` | Mask gates as `(value, GateStatus::Filtered)` | #187 |
 | `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `Model(nexrad_model::Error)`, `GeometryMismatch { parameter }`, `UnexpectedProduct { expected, actual }` | #155, #185, #193 |
 | `result::Error::{InvalidParameter, InvalidGeometry, MissingData}(String)` | `InvalidParameter { parameter, reason }`, `InvalidGeometry { parameter, reason }`, `MissingData { what }` | #193 |
@@ -1373,6 +1412,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `default_scale(Product) -> DiscreteColorScale` | `default_scale(Product) -> ColorScale` | #174 |
 | `ColorLookupTable::from_scale(&DiscreteColorScale, f32, f32, usize)`, `from_color_scale(&ColorScale, f32, f32, usize)` | `ColorLookupTable::new(&ColorScale, f32, f32, usize) -> Result<ColorLookupTable>`; convert a `DiscreteColorScale` with `.into()` | #174, #194 |
 | `ColorScaleLevel` private fields | `pub value: f32`, `pub color: Color` | #194 |
+| `ColorScale`, `Interpolation` | `#[non_exhaustive]`; add a wildcard arm | #207 |
 | `Color::to_rgba8` truncating | Rounds to nearest, clamps to `0.0..=1.0` | #194 |
 | `RenderOptions::new(usize, usize)`, `size() -> (usize, usize)` | `new(u32, u32)`, `size() -> (u32, u32)` | #174 |
 | `RenderOptions::transparent()`, `bilinear()` | Removed; `with_background(Color::TRANSPARENT)`, `with_interpolation(Interpolation::Bilinear)` | #194 |

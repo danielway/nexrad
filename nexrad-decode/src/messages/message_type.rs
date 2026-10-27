@@ -2,7 +2,12 @@
 ///
 /// Use [`MessageType::from_number`] to classify a message type number as it appears in the
 /// message header, and [`MessageType::number`] to recover it.
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy, Ord, PartialOrd)]
+///
+/// Values order by [`number`](MessageType::number), so the order does not depend on the order
+/// in which the variants are declared. A [`Reserved`](MessageType::Reserved) or
+/// [`Unknown`](MessageType::Unknown) value constructed with a number that another variant also
+/// reports sorts after that variant, so the order stays consistent with equality.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 #[non_exhaustive]
 pub enum MessageType {
     /// Message type 1. Replaced by message type 31.
@@ -136,9 +141,47 @@ impl MessageType {
     }
 }
 
+impl Ord for MessageType {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // Ties on the number only arise between a named variant and a hand-built `Reserved` or
+        // `Unknown` carrying the same number; rank them so `cmp` agrees with `Eq`.
+        fn rank(message_type: &MessageType) -> u8 {
+            match message_type {
+                MessageType::Reserved(_) => 1,
+                MessageType::Unknown(_) => 2,
+                _ => 0,
+            }
+        }
+
+        self.number()
+            .cmp(&other.number())
+            .then_with(|| rank(self).cmp(&rank(other)))
+    }
+}
+
+impl PartialOrd for MessageType {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::MessageType;
+
+    #[test]
+    fn orders_by_number() {
+        let mut types: Vec<MessageType> = (0..=u8::MAX).map(MessageType::from_number).collect();
+        types.reverse();
+        types.sort();
+        let numbers: Vec<u8> = types.iter().map(|t| t.number()).collect();
+        assert_eq!(numbers, (0..=u8::MAX).collect::<Vec<_>>());
+
+        assert!(MessageType::Reserved(14) < MessageType::ClutterFilterMap);
+        assert!(MessageType::RdaLogData < MessageType::Unknown(34));
+        assert!(MessageType::RdaStatusData < MessageType::Unknown(2));
+        assert!(MessageType::Reserved(2) < MessageType::Unknown(2));
+    }
 
     #[test]
     fn number_round_trips_for_every_value() {

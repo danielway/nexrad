@@ -1,5 +1,6 @@
 /// The possible RDA system auxiliary power generator states.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum AuxiliaryPowerGeneratorState {
     /// System is running on auxiliary power.
     SwitchedToAuxiliaryPower,

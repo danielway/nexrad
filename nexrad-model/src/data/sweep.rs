@@ -67,11 +67,13 @@ impl Sweep {
         })
     }
 
-    /// Create a new radar sweep from a list of radials by splitting them by elevation.
+    /// Split a list of radials into sweeps by elevation number.
     ///
     /// Consecutive radials with the same elevation number form one sweep, so every returned
-    /// sweep upholds the invariant checked by [`new`](Self::new).
-    pub fn from_radials(radials: Vec<Radial>) -> Vec<Self> {
+    /// sweep upholds the invariant checked by [`new`](Self::new). Radials are kept in order; a
+    /// run of radials that returns to an earlier elevation number starts a new sweep. An empty
+    /// list returns no sweeps.
+    pub fn split_by_elevation_number(radials: Vec<Radial>) -> Vec<Self> {
         let mut sweeps = Vec::new();
 
         let mut sweep_elevation_number = None;
@@ -155,9 +157,12 @@ impl Sweep {
     /// ```
     /// use nexrad_model::data::{MomentData, Product, Radial, Sweep};
     ///
-    /// let reflectivity = MomentData::from_fixed_point(
-    ///     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
-    /// )?;
+    /// let reflectivity = MomentData::builder(Product::Reflectivity, vec![100, 110, 120])
+    ///     .first_gate_range_meters(2000)
+    ///     .gate_interval_meters(250)
+    ///     .scale(2.0)
+    ///     .offset(66.0)
+    ///     .build()?;
     /// let radial = Radial::builder(0, 0.0, 1, 0.5).moment(reflectivity).build()?;
     /// let sweep = Sweep::new(1, vec![radial])?;
     ///

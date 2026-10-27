@@ -1,4 +1,5 @@
 use crate::data::{ElevationCut, PulseWidth, VcpNumber};
+use crate::result::{Error, Result};
 use std::fmt::Display;
 
 #[cfg(feature = "serde")]
@@ -8,8 +9,15 @@ use serde::{Deserialize, Serialize};
 ///
 /// The VCP defines the scanning strategy including the number of elevation cuts, the settings
 /// for each cut, and various special scanning modes like SAILS, MRLE, and MPDA.
+///
+/// Build one with [`VolumeCoveragePattern::builder`]. The Doppler velocity resolution is finite
+/// and not negative, and each elevation cut upholds the checks of
+/// [`ElevationCutBuilder::build`](crate::data::ElevationCutBuilder::build). The counts
+/// ([`sails_cut_count`](Self::sails_cut_count), [`mrle_cut_count`](Self::mrle_cut_count),
+/// [`base_tilt_count`](Self::base_tilt_count)) and enabled flags are recorded as given and are
+/// not checked against [`elevation_cuts`](Self::elevation_cuts).
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct VolumeCoveragePattern {
     pattern_number: VcpNumber,
     version: u8,
@@ -72,7 +80,8 @@ impl VolumeCoveragePattern {
         self.version
     }
 
-    /// Doppler velocity resolution in m/s (typically 0.5 or 1.0).
+    /// Doppler velocity resolution in m/s. The decoder reports 0.5 or 1.0, or 0.0 for a code
+    /// the ICD does not define.
     pub fn doppler_velocity_resolution_mps(&self) -> f32 {
         self.doppler_velocity_resolution_mps
     }
@@ -138,7 +147,7 @@ impl VolumeCoveragePattern {
     }
 
     /// The number of elevation cuts in this VCP.
-    pub fn number_of_elevation_cuts(&self) -> usize {
+    pub fn elevation_cut_count(&self) -> usize {
         self.elevation_cuts.len()
     }
 }
@@ -202,7 +211,8 @@ impl VolumeCoveragePatternBuilder {
         self
     }
 
-    /// Set the Doppler velocity resolution in m/s. Defaults to `0.5`.
+    /// Set the Doppler velocity resolution in m/s. Defaults to `0.5`. Must be finite and not
+    /// negative.
     pub fn doppler_velocity_resolution_mps(mut self, doppler_velocity_resolution_mps: f32) -> Self {
         self.vcp.doppler_velocity_resolution_mps = doppler_velocity_resolution_mps;
         self
@@ -282,8 +292,72 @@ impl VolumeCoveragePatternBuilder {
     }
 
     /// Build the [`VolumeCoveragePattern`].
-    #[must_use]
-    pub fn build(self) -> VolumeCoveragePattern {
-        self.vcp
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidCoveragePattern`] if the Doppler velocity resolution is not
+    /// finite or is negative. The elevation cuts were checked when they were built, and an
+    /// empty list of cuts is accepted.
+    pub fn build(self) -> Result<VolumeCoveragePattern> {
+        self.vcp.validate()?;
+        Ok(self.vcp)
     }
+}
+
+impl VolumeCoveragePattern {
+    /// Checks the invariants documented on [`VolumeCoveragePatternBuilder::build`].
+    fn validate(&self) -> Result<()> {
+        let resolution = self.doppler_velocity_resolution_mps;
+        if !resolution.is_finite() || resolution < 0.0 {
+            return Err(Error::InvalidCoveragePattern {
+                parameter: "doppler_velocity_resolution_mps",
+                reason: "must be finite and not negative",
+            });
+        }
+        Ok(())
+    }
+}
+
+/// Deserializes the derived field-by-field form, then applies the checks of
+/// [`VolumeCoveragePatternBuilder::build`]; each elevation cut is checked as it deserializes.
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for VolumeCoveragePattern {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        let vcp = VolumeCoveragePatternRepr::deserialize(deserializer)?;
+        vcp.validate().map_err(serde::de::Error::custom)?;
+        Ok(vcp)
+    }
+}
+
+/// The serialized form of [`VolumeCoveragePattern`], validated before it is returned.
+#[cfg(feature = "serde")]
+#[derive(Deserialize)]
+#[serde(remote = "VolumeCoveragePattern", rename = "VolumeCoveragePattern")]
+struct VolumeCoveragePatternRepr {
+    pattern_number: VcpNumber,
+    version: u8,
+    doppler_velocity_resolution_mps: f32,
+    pulse_width: PulseWidth,
+
+    // SAILS (Supplemental Adaptive Intra-volume Low-level Scan)
+    sails_enabled: bool,
+    sails_cut_count: u8,
+
+    // MRLE (Mid-volume Rescan of Low Elevation)
+    mrle_enabled: bool,
+    mrle_cut_count: u8,
+
+    // Other capabilities
+    mpda_enabled: bool,
+    base_tilt_enabled: bool,
+    base_tilt_count: u8,
+
+    // Sequencing
+    sequence_active: bool,
+    truncated: bool,
+
+    // Per-elevation configuration
+    elevation_cuts: Vec<ElevationCut>,
 }

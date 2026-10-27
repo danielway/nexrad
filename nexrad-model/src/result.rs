@@ -39,7 +39,7 @@ pub enum Error {
     /// A moment data encoding parameter is invalid, such as an unsupported `data_word_size` or a
     /// non-finite `scale`.
     ///
-    /// Returned by [`MomentData::from_fixed_point`](crate::data::MomentData::from_fixed_point).
+    /// Returned by [`MomentDataBuilder::build`](crate::data::MomentDataBuilder::build).
     #[error("invalid moment data: `{parameter}` {reason}")]
     InvalidMomentData {
         /// The name of the offending parameter.
@@ -50,13 +50,26 @@ pub enum Error {
 
     /// Moment data's encoded values do not hold exactly the declared number of gates.
     ///
-    /// Returned by [`MomentData::from_fixed_point`](crate::data::MomentData::from_fixed_point).
+    /// Returned by [`MomentDataBuilder::build`](crate::data::MomentDataBuilder::build).
     #[error("invalid moment data length: expected {expected} bytes for the gate count and word size, got {actual}")]
     MomentDataLength {
         /// The number of bytes `gate_count` gates of `data_word_size` bits occupy.
         expected: usize,
         /// The number of bytes provided.
         actual: usize,
+    },
+
+    /// A volume coverage pattern or elevation cut parameter is invalid, such as a non-finite
+    /// elevation angle or signal-to-noise threshold.
+    ///
+    /// Returned by [`ElevationCutBuilder::build`](crate::data::ElevationCutBuilder::build) and
+    /// [`VolumeCoveragePatternBuilder::build`](crate::data::VolumeCoveragePatternBuilder::build).
+    #[error("invalid coverage pattern: `{parameter}` {reason}")]
+    InvalidCoveragePattern {
+        /// The name of the offending parameter.
+        parameter: &'static str,
+        /// Why the parameter's value was rejected.
+        reason: &'static str,
     },
 
     /// Radar site metadata is invalid.

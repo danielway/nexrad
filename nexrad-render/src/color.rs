@@ -127,9 +127,15 @@ impl ColorScaleLevel {
 ///     ColorScaleLevel::new(0.0, Color::BLACK),
 ///     ColorScaleLevel::new(30.0, Color::rgb(0.0, 1.0, 0.0)),
 ///     ColorScaleLevel::new(50.0, Color::rgb(1.0, 0.0, 0.0)),
-/// ]);
+/// ])?;
 ///
 /// // Values >= 50 return red, >= 30 return green, >= 0 return black
+/// assert_eq!(scale.color(40.0), Color::rgb(0.0, 1.0, 0.0));
+///
+/// // A scale needs at least one level, and every threshold must be finite.
+/// assert!(DiscreteColorScale::new(vec![]).is_err());
+/// assert!(DiscreteColorScale::new(vec![ColorScaleLevel::new(f32::NAN, Color::BLACK)]).is_err());
+/// # Ok::<(), nexrad_render::Error>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct DiscreteColorScale {
@@ -139,8 +145,20 @@ pub struct DiscreteColorScale {
 impl DiscreteColorScale {
     /// Creates a new discrete color scale from the given levels.
     ///
-    /// Levels are automatically sorted from highest to lowest threshold.
-    pub fn new(mut levels: Vec<ColorScaleLevel>) -> Self {
+    /// Levels may be given in any order and are sorted from highest to lowest threshold. Two
+    /// levels may share a threshold; the one that comes first in `levels` is drawn and the other
+    /// is not. Colors are not checked.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidColorScale`] if `levels` is empty or a threshold is not finite.
+    pub fn new(levels: Vec<ColorScaleLevel>) -> Result<Self> {
+        check_scale_values(levels.iter().map(|level| level.value))?;
+        Ok(Self::from_levels(levels))
+    }
+
+    /// Builds a scale from levels known to be valid, as the built-in scales are.
+    fn from_levels(mut levels: Vec<ColorScaleLevel>) -> Self {
         levels.sort_by(|a, b| b.value.total_cmp(&a.value));
         Self { levels }
     }
@@ -204,10 +222,11 @@ impl ColorStop {
 ///     ColorStop::new(0.0, Color::rgb(0.0, 0.0, 1.0)),   // Blue at 0
 ///     ColorStop::new(50.0, Color::rgb(0.0, 1.0, 0.0)),  // Green at 50
 ///     ColorStop::new(100.0, Color::rgb(1.0, 0.0, 0.0)), // Red at 100
-/// ]);
+/// ])?;
 ///
 /// // Value 25 produces a blue-green blend
 /// let color = scale.color(25.0);
+/// # Ok::<(), nexrad_render::Error>(())
 /// ```
 #[derive(Debug, Clone)]
 pub struct ContinuousColorScale {
@@ -217,10 +236,16 @@ pub struct ContinuousColorScale {
 impl ContinuousColorScale {
     /// Creates a new continuous color scale from color stops.
     ///
-    /// Stops are automatically sorted by value (lowest to highest).
-    pub fn new(mut stops: Vec<ColorStop>) -> Self {
+    /// Stops may be given in any order and are sorted by value (lowest to highest). Two stops
+    /// may share a value, which makes a hard step between their colors. Colors are not checked.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidColorScale`] if `stops` is empty or a value is not finite.
+    pub fn new(mut stops: Vec<ColorStop>) -> Result<Self> {
+        check_scale_values(stops.iter().map(|stop| stop.value))?;
         stops.sort_by(|a, b| a.value.total_cmp(&b.value));
-        Self { stops }
+        Ok(Self { stops })
     }
 
     /// Returns the linearly interpolated color for the given value.
@@ -268,6 +293,25 @@ impl ContinuousColorScale {
     pub fn stops(&self) -> &[ColorStop] {
         &self.stops
     }
+}
+
+/// Checks the values of a color scale's levels or stops: at least one, and all finite.
+fn check_scale_values(values: impl Iterator<Item = f32>) -> Result<()> {
+    let mut count = 0;
+    for value in values {
+        if !value.is_finite() {
+            return Err(Error::InvalidColorScale {
+                reason: "every value must be finite",
+            });
+        }
+        count += 1;
+    }
+    if count == 0 {
+        return Err(Error::InvalidColorScale {
+            reason: "must have at least one level or stop",
+        });
+    }
+    Ok(())
 }
 
 /// A color scale that can be either discrete or continuous.
@@ -547,8 +591,8 @@ impl Steps {
 /// | 35-50 | Yellow/Orange |
 /// | 50-65 | Red/Magenta |
 /// | 65+ | Purple/White |
-pub fn nws_reflectivity_scale() -> DiscreteColorScale {
-    DiscreteColorScale::new(vec![
+pub fn reflectivity_scale() -> DiscreteColorScale {
+    DiscreteColorScale::from_levels(vec![
         ColorScaleLevel::new(0.0, Color::rgb(0.0000, 0.0000, 0.0000)),
         ColorScaleLevel::new(5.0, Color::rgb(0.0000, 1.0000, 1.0000)),
         ColorScaleLevel::new(10.0, Color::rgb(0.5294, 0.8078, 0.9216)),
@@ -588,7 +632,7 @@ pub fn nws_reflectivity_scale() -> DiscreteColorScale {
 /// | +32 to +48 | Red |
 /// | +48 to +64 | Dark Red |
 pub fn velocity_scale() -> DiscreteColorScale {
-    DiscreteColorScale::new(vec![
+    DiscreteColorScale::from_levels(vec![
         // Strong inbound (toward radar) - dark green
         ColorScaleLevel::new(-64.0, Color::rgb(0.0000, 0.3922, 0.0000)),
         ColorScaleLevel::new(-48.0, Color::rgb(0.0000, 0.5451, 0.0000)),
@@ -620,7 +664,7 @@ pub fn velocity_scale() -> DiscreteColorScale {
 /// | 20-25 | Orange |
 /// | 25-30 | Red |
 pub fn spectrum_width_scale() -> DiscreteColorScale {
-    DiscreteColorScale::new(vec![
+    DiscreteColorScale::from_levels(vec![
         ColorScaleLevel::new(0.0, Color::rgb(0.5020, 0.5020, 0.5020)),
         ColorScaleLevel::new(4.0, Color::rgb(0.0000, 0.0000, 0.8039)),
         ColorScaleLevel::new(8.0, Color::rgb(0.0000, 0.8039, 0.8039)),
@@ -647,7 +691,7 @@ pub fn spectrum_width_scale() -> DiscreteColorScale {
 /// | 2.5 to 4 | Orange |
 /// | 4 to 6 | Red |
 pub fn differential_reflectivity_scale() -> DiscreteColorScale {
-    DiscreteColorScale::new(vec![
+    DiscreteColorScale::from_levels(vec![
         // Negative
         ColorScaleLevel::new(-2.0, Color::rgb(0.5020, 0.0000, 0.5020)),
         ColorScaleLevel::new(-1.0, Color::rgb(0.0000, 0.0000, 0.8039)),
@@ -676,7 +720,7 @@ pub fn differential_reflectivity_scale() -> DiscreteColorScale {
 /// | 0.96-0.98 | Yellow |
 /// | 0.98-1.0 | White/Light Gray |
 pub fn correlation_coefficient_scale() -> DiscreteColorScale {
-    DiscreteColorScale::new(vec![
+    DiscreteColorScale::from_levels(vec![
         ColorScaleLevel::new(0.0, Color::rgb(0.0000, 0.0000, 0.0000)),
         ColorScaleLevel::new(0.2, Color::rgb(0.3922, 0.0000, 0.5882)),
         ColorScaleLevel::new(0.5, Color::rgb(0.0000, 0.0000, 0.8039)),
@@ -704,7 +748,7 @@ pub fn correlation_coefficient_scale() -> DiscreteColorScale {
 /// | 270-315 | Red |
 /// | 315-360 | Magenta |
 pub fn differential_phase_scale() -> DiscreteColorScale {
-    DiscreteColorScale::new(vec![
+    DiscreteColorScale::from_levels(vec![
         ColorScaleLevel::new(0.0, Color::rgb(0.5020, 0.0000, 0.5020)),
         ColorScaleLevel::new(45.0, Color::rgb(0.0000, 0.0000, 0.8039)),
         ColorScaleLevel::new(90.0, Color::rgb(0.0000, 0.8039, 0.8039)),
@@ -733,7 +777,7 @@ pub fn differential_phase_scale() -> DiscreteColorScale {
 /// | +5 to +10 | Red |
 /// | +10 to +20 | Dark Red |
 pub fn clutter_filter_power_scale() -> DiscreteColorScale {
-    DiscreteColorScale::new(vec![
+    DiscreteColorScale::from_levels(vec![
         ColorScaleLevel::new(-20.0, Color::rgb(0.0000, 0.0000, 0.5451)),
         ColorScaleLevel::new(-10.0, Color::rgb(0.0000, 0.0000, 0.8039)),
         ColorScaleLevel::new(-5.0, Color::rgb(0.6784, 0.8471, 0.9020)),
@@ -751,7 +795,7 @@ pub fn clutter_filter_power_scale() -> DiscreteColorScale {
 ///
 /// | Product | Scale |
 /// |---------|-------|
-/// | Reflectivity | [`nws_reflectivity_scale`] (-32 to 95 dBZ) |
+/// | Reflectivity | [`reflectivity_scale`] (-32 to 95 dBZ) |
 /// | Velocity | Divergent Green-Red (-64 to +64 m/s) |
 /// | SpectrumWidth | Sequential (0 to 30 m/s) |
 /// | DifferentialReflectivity | Divergent (-2 to +6 dB) |
@@ -775,7 +819,7 @@ pub fn clutter_filter_power_scale() -> DiscreteColorScale {
 /// ```
 pub fn default_scale(product: Product) -> ColorScale {
     match product {
-        Product::Reflectivity => nws_reflectivity_scale(),
+        Product::Reflectivity => reflectivity_scale(),
         Product::Velocity => velocity_scale(),
         Product::SpectrumWidth => spectrum_width_scale(),
         Product::DifferentialReflectivity => differential_reflectivity_scale(),
@@ -793,7 +837,7 @@ pub fn default_scale(product: Product) -> ColorScale {
 /// levels, so data remains visible without implying any meteorological meaning.
 fn fallback_scale(product: Product) -> DiscreteColorScale {
     let (min, max) = product.value_range();
-    DiscreteColorScale::new(vec![
+    DiscreteColorScale::from_levels(vec![
         ColorScaleLevel::new(min, Color::rgb(0.4, 0.4, 0.4)),
         ColorScaleLevel::new((min + max) / 2.0, Color::rgb(0.8, 0.8, 0.8)),
     ])

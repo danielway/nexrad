@@ -1,6 +1,6 @@
 [package]
 name = "nexrad"
-version = "1.0.0-rc.4"
+version = "1.0.0"
 description = "Load, download, decode, process and render NEXRAD weather radar data."
 authors.workspace = true
 edition.workspace = true

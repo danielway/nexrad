@@ -361,3 +361,95 @@ fn test_scan_radial_azimuth_coverage() {
         }
     }
 }
+
+/// A gzip-wrapped volume with type 31 radials and a volume coverage pattern message.
+const GZIP_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KTLX20140101_000624_V06.gz");
+/// A gzip-wrapped legacy volume with type 1 radials and no volume coverage pattern message.
+const LEGACY_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KTLX19910605_162126.gz");
+/// A gzip-wrapped legacy volume whose coverage pattern message is numbered 0 and whose radials
+/// are numbered 32.
+const LEGACY_ZERO_VCP_FILE: &[u8] = include_bytes!("../../downloads/KABR20050101_000745.gz");
+
+#[test]
+fn test_scan_decompresses_gzip_file() {
+    let file = volume::File::new(GZIP_NEXRAD_FILE.to_vec());
+    assert!(file.compressed());
+
+    let scan = file.scan().expect("scans a gzip-wrapped file");
+    let decompressed = file
+        .clone()
+        .decompress()
+        .expect("decompresses")
+        .scan()
+        .expect("scans the decompressed file");
+
+    assert_eq!(scan, decompressed);
+    assert_eq!(scan.coverage_pattern_number().number(), 32);
+    assert!(scan.coverage_pattern().is_some());
+    assert_eq!(scan.site().map(|site| site.identifier()), Some("KTLX"));
+}
+
+#[test]
+fn test_coverage_pattern_message_decompresses_gzip_file() {
+    let file = volume::File::new(GZIP_NEXRAD_FILE.to_vec());
+
+    let vcp = file
+        .coverage_pattern_message()
+        .expect("reads the coverage pattern of a gzip-wrapped file");
+    assert_eq!(vcp.header().vcp_number_raw(), 32);
+}
+
+#[test]
+fn test_records_of_gzip_file_require_decompress() {
+    let file = volume::File::new(GZIP_NEXRAD_FILE.to_vec());
+    assert!(matches!(
+        file.records(),
+        Err(nexrad_data::result::Error::CompressedFile)
+    ));
+}
+
+#[test]
+fn test_scan_without_coverage_pattern_message_uses_radial_number() {
+    let file = volume::File::new(LEGACY_NEXRAD_FILE.to_vec());
+    assert!(matches!(
+        file.coverage_pattern_message(),
+        Err(nexrad_data::result::Error::MissingCoveragePattern)
+    ));
+
+    let scan = file.scan().expect("scans a volume without message 5");
+    assert!(scan.coverage_pattern().is_none());
+    assert_eq!(scan.coverage_pattern_number().number(), 21);
+    assert!(scan.site().is_none());
+    assert_eq!(scan.sweeps().len(), 11);
+}
+
+#[test]
+fn test_scan_with_zero_coverage_pattern_message_uses_radial_number() {
+    let file = volume::File::new(LEGACY_ZERO_VCP_FILE.to_vec());
+
+    let scan = file.scan().expect("scans the volume");
+    let vcp = scan
+        .coverage_pattern()
+        .expect("keeps the message 5 contents");
+    assert_eq!(vcp.pattern_number().number(), 0);
+    assert!(vcp.elevation_cuts().is_empty());
+    assert_eq!(scan.coverage_pattern_number().number(), 32);
+}
+
+#[test]
+fn test_legacy_doppler_gates_start_at_first_non_negative_range() {
+    let scan = volume::File::new(LEGACY_NEXRAD_FILE.to_vec())
+        .scan()
+        .expect("scans the volume");
+
+    let velocity = scan
+        .sweeps()
+        .iter()
+        .flat_map(|sweep| sweep.radials())
+        .find_map(|radial| radial.velocity())
+        .expect("volume has velocity");
+    // The type 1 header places the first Doppler gate at -375 m with 250 m gates; the two
+    // gates behind the radar are dropped.
+    assert_eq!(velocity.first_gate_range_meters(), 125);
+    assert_eq!(velocity.gate_interval_meters(), 250);
+}

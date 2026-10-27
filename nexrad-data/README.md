@@ -21,8 +21,9 @@ I/O and decompression.
 ```rust,ignore
 use nexrad_data::volume::File;
 
-// Older archive files are gzip-wrapped; `decompress` unwraps them and returns other files as-is
-let file = File::new(std::fs::read("KTLX20130520_201643_V06.ar2v")?).decompress()?;
+// Older archive files are gzip-wrapped; `scan` decompresses them itself. `decompress` does the same for
+// `records`, which borrows its records from the file, and returns other files as-is.
+let file = File::new(std::fs::read("KTLX20130520_201643_V06.ar2v")?);
 let scan = file.scan()?;
 println!("{} sweeps", scan.sweeps().len());
 ```

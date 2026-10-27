@@ -3,11 +3,13 @@
 //! [`ScanBuilder`] collects decoded [`Message`]s and produces a complete
 //! [`Scan`]: digital radar data messages (types 1 and 31) become radials,
 //! the first volume coverage pattern message (type 5) becomes the scan's coverage pattern, and
-//! the first volume data block found identifies the radar site.
+//! the first volume data block found identifies the radar site. The scan's coverage pattern
+//! number comes from the type 5 message when it has a non-zero number, and otherwise from the
+//! radials.
 
 use crate::messages::{Message, MessageContents};
 use crate::result::{Error, Result};
-use nexrad_model::data::{Radial, Scan, Sweep, VolumeCoveragePattern};
+use nexrad_model::data::{Radial, Scan, Sweep, VcpNumber, VolumeCoveragePattern};
 use nexrad_model::meta::Site;
 
 /// Accumulates decoded messages into a [`Scan`].
@@ -33,8 +35,15 @@ use nexrad_model::meta::Site;
 #[derive(Debug, Default)]
 pub struct ScanBuilder {
     coverage_pattern: Option<VolumeCoveragePattern>,
+    /// The first non-zero coverage pattern number carried by a radar data message.
+    radial_coverage_pattern_number: Option<u16>,
     site: Option<Site>,
     radials: Vec<Radial>,
+}
+
+/// Converts a wire coverage pattern number to the model's.
+fn vcp_number(number: u16) -> VcpNumber {
+    VcpNumber::from(number)
 }
 
 impl ScanBuilder {
@@ -46,7 +55,9 @@ impl ScanBuilder {
     /// Adds a decoded message to the scan.
     ///
     /// Digital radar data messages (types 1 and 31) are converted to radials, and the first type
-    /// 31 message carrying a volume data block records the scan's site. The first volume
+    /// 31 message carrying a volume data block records the scan's site. The first non-zero
+    /// coverage pattern number in a radar data message (the type 1 header's, or the type 31
+    /// volume data block's) is recorded as a fallback for [`build`](Self::build). The first volume
     /// coverage pattern message is kept; later ones are ignored, as are all other message types.
     ///
     /// # Errors
@@ -60,9 +71,13 @@ impl ScanBuilder {
                 if self.site.is_none() {
                     self.site = message.site()?;
                 }
+                if let Some(volume) = message.volume_data_block() {
+                    self.record_radial_coverage_pattern_number(volume.inner().vcp_number_raw());
+                }
                 self.radials.push(message.into_radial()?);
             }
             MessageContents::DigitalRadarDataLegacy(message) => {
+                self.record_radial_coverage_pattern_number(message.vcp_number_raw());
                 self.radials.push(message.into_radial()?);
             }
             MessageContents::RdaVolumeCoveragePattern(message)
@@ -73,6 +88,12 @@ impl ScanBuilder {
             _ => {}
         }
         Ok(())
+    }
+
+    fn record_radial_coverage_pattern_number(&mut self, number: u16) {
+        if self.radial_coverage_pattern_number.is_none() && number != 0 {
+            self.radial_coverage_pattern_number = Some(number);
+        }
     }
 
     /// Adds each of the given messages in order. See [`add_message`](Self::add_message).
@@ -91,10 +112,14 @@ impl ScanBuilder {
     }
 
     /// Appends another builder's radials after this builder's, keeping this builder's coverage
-    /// pattern and site when set and otherwise taking the other's.
+    /// pattern, radial coverage pattern number and site when set and otherwise taking the
+    /// other's.
     pub fn merge(&mut self, other: ScanBuilder) {
         if self.coverage_pattern.is_none() {
             self.coverage_pattern = other.coverage_pattern;
+        }
+        if self.radial_coverage_pattern_number.is_none() {
+            self.radial_coverage_pattern_number = other.radial_coverage_pattern_number;
         }
         if self.site.is_none() {
             self.site = other.site;
@@ -104,15 +129,33 @@ impl ScanBuilder {
 
     /// Builds the scan, grouping radials into sweeps by elevation.
     ///
+    /// The scan's [`coverage_pattern`](Scan::coverage_pattern) is the first volume coverage
+    /// pattern message added, or `None` if there was none. Its
+    /// [`coverage_pattern_number`](Scan::coverage_pattern_number) is that message's pattern
+    /// number when it is non-zero, and otherwise the first non-zero number carried by a radar
+    /// data message. A volume coverage pattern message numbered zero is used as-is when no radar
+    /// data message carries a number.
+    ///
     /// # Errors
     ///
-    /// Returns [`Error::MissingCoveragePattern`] if no volume coverage pattern message was added.
+    /// Returns [`Error::MissingCoveragePatternNumber`] if no volume coverage pattern message was
+    /// added and no radar data message carried a non-zero coverage pattern number.
     pub fn build(self) -> Result<Scan> {
-        let coverage_pattern = self.coverage_pattern.ok_or(Error::MissingCoveragePattern)?;
+        let message_number = self
+            .coverage_pattern
+            .as_ref()
+            .map(|pattern| pattern.pattern_number().number());
+        let number = match (message_number, self.radial_coverage_pattern_number) {
+            (Some(number), _) if number != 0 => number,
+            (_, Some(number)) => number,
+            (Some(number), None) => number,
+            (None, None) => return Err(Error::MissingCoveragePatternNumber),
+        };
+        let number = vcp_number(number);
         let sweeps = Sweep::split_by_elevation_number(self.radials);
         Ok(match self.site {
-            Some(site) => Scan::with_site(site, coverage_pattern, sweeps),
-            None => Scan::new(coverage_pattern, sweeps),
+            Some(site) => Scan::with_site(site, number, self.coverage_pattern, sweeps),
+            None => Scan::new(number, self.coverage_pattern, sweeps),
         })
     }
 }
@@ -206,16 +249,105 @@ mod tests {
     }
 
     #[test]
-    fn build_without_coverage_pattern_fails() {
+    fn build_without_any_coverage_pattern_number_fails() {
+        assert!(matches!(
+            ScanBuilder::new().build(),
+            Err(Error::MissingCoveragePatternNumber)
+        ));
+    }
+
+    #[test]
+    fn build_without_coverage_pattern_uses_radial_number() {
+        let message = single_message(RADAR_DATA);
+        let MessageContents::DigitalRadarData(radar) = message.contents() else {
+            panic!("expected a digital radar data message");
+        };
+        let expected = radar
+            .volume_data_block()
+            .expect("message has a volume data block")
+            .inner()
+            .vcp_number_raw();
+        assert_ne!(expected, 0);
+
+        let mut builder = ScanBuilder::new();
+        builder.add_message(message).expect("adds radar data");
+        let scan = builder.build().expect("builds scan");
+
+        assert!(scan.coverage_pattern().is_none());
+        assert_eq!(scan.coverage_pattern_number().number(), expected);
+    }
+
+    #[test]
+    fn build_without_coverage_pattern_uses_legacy_radial_number() {
+        let message = single_message(LEGACY_RADAR_DATA);
+        let MessageContents::DigitalRadarDataLegacy(legacy) = message.contents() else {
+            panic!("expected a legacy digital radar data message");
+        };
+        let expected = legacy.vcp_number_raw();
+
         let mut builder = ScanBuilder::new();
         builder
-            .add_message(single_message(RADAR_DATA))
-            .expect("adds radar data");
+            .add_message(message)
+            .expect("adds legacy radar data");
+        let scan = builder.build();
 
-        assert!(matches!(
-            builder.build(),
-            Err(Error::MissingCoveragePattern)
-        ));
+        if expected == 0 {
+            assert!(matches!(scan, Err(Error::MissingCoveragePatternNumber)));
+        } else {
+            let scan = scan.expect("builds scan");
+            assert!(scan.coverage_pattern().is_none());
+            assert_eq!(scan.coverage_pattern_number().number(), expected);
+        }
+    }
+
+    #[test]
+    fn build_prefers_non_zero_message_number_over_radials() {
+        let vcp = VolumeCoveragePattern::builder(vcp_number(35))
+            .build()
+            .expect("builds coverage pattern");
+        let mut builder = ScanBuilder {
+            coverage_pattern: Some(vcp),
+            ..ScanBuilder::default()
+        };
+        builder.record_radial_coverage_pattern_number(32);
+
+        let scan = builder.build().expect("builds scan");
+        assert_eq!(scan.coverage_pattern_number().number(), 35);
+    }
+
+    #[test]
+    fn build_replaces_zero_message_number_with_radial_number() {
+        let vcp = VolumeCoveragePattern::builder(vcp_number(0))
+            .build()
+            .expect("builds coverage pattern");
+        let mut builder = ScanBuilder {
+            coverage_pattern: Some(vcp),
+            ..ScanBuilder::default()
+        };
+        builder.record_radial_coverage_pattern_number(0);
+        builder.record_radial_coverage_pattern_number(32);
+
+        let scan = builder.build().expect("builds scan");
+        assert_eq!(scan.coverage_pattern_number().number(), 32);
+        assert_eq!(
+            scan.coverage_pattern()
+                .map(|vcp| vcp.pattern_number().number()),
+            Some(0)
+        );
+    }
+
+    #[test]
+    fn build_keeps_zero_message_number_without_radial_number() {
+        let vcp = VolumeCoveragePattern::builder(vcp_number(0))
+            .build()
+            .expect("builds coverage pattern");
+        let builder = ScanBuilder {
+            coverage_pattern: Some(vcp),
+            ..ScanBuilder::default()
+        };
+
+        let scan = builder.build().expect("builds scan");
+        assert_eq!(scan.coverage_pattern_number().number(), 0);
     }
 
     #[test]

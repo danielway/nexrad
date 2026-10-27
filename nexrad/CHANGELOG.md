@@ -49,6 +49,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The package description covers loading, downloading, decoding, processing and rendering. (#196)
 - The `serde` feature also enables `nexrad-decode/serde`. (#205)
 - The `aws` feature's build requirements (a C compiler, and NASM on Windows x86 targets) are documented. (#196)
+- `load`, `load_file` and `download` return a scan for a volume without a volume coverage pattern message, such as a
+  pre-2008 legacy volume, with `Scan::coverage_pattern()` `None`; see `nexrad-model`. (#208)
 
 ### Removed
 

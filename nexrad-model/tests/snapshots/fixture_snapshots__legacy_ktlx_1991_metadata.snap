@@ -1,0 +1,103 @@
+---
+source: nexrad-model/tests/fixture_snapshots.rs
+expression: create_legacy_scan_snapshot(&scan)
+---
+site: ~
+coverage_pattern: ~
+metadata:
+  coverage_pattern_number: 21
+  sweep_count: 11
+  sweeps:
+    - elevation_number: 1
+      radial_count: 366
+      first_azimuth_degrees: 150.9961
+      elevation_angle_degrees: 0.3955078
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - REF
+    - elevation_number: 2
+      radial_count: 366
+      first_azimuth_degrees: 158.02734
+      elevation_angle_degrees: 0.43945313
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - VEL
+        - SW
+    - elevation_number: 3
+      radial_count: 366
+      first_azimuth_degrees: 168.17871
+      elevation_angle_degrees: 1.3623047
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - REF
+    - elevation_number: 4
+      radial_count: 366
+      first_azimuth_degrees: 175.12207
+      elevation_angle_degrees: 1.40625
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - VEL
+        - SW
+    - elevation_number: 5
+      radial_count: 366
+      first_azimuth_degrees: 184.39453
+      elevation_angle_degrees: 2.4169922
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - REF
+        - VEL
+        - SW
+    - elevation_number: 6
+      radial_count: 366
+      first_azimuth_degrees: 194.72168
+      elevation_angle_degrees: 3.2958984
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - REF
+        - VEL
+        - SW
+    - elevation_number: 7
+      radial_count: 366
+      first_azimuth_degrees: 206.01563
+      elevation_angle_degrees: 4.1748047
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - REF
+        - VEL
+        - SW
+    - elevation_number: 8
+      radial_count: 366
+      first_azimuth_degrees: 217.30957
+      elevation_angle_degrees: 5.9765625
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - REF
+        - VEL
+        - SW
+    - elevation_number: 9
+      radial_count: 365
+      first_azimuth_degrees: 238.0957
+      elevation_angle_degrees: 9.887695
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - REF
+        - VEL
+        - SW
+    - elevation_number: 10
+      radial_count: 363
+      first_azimuth_degrees: 258.48633
+      elevation_angle_degrees: 14.589844
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - REF
+        - VEL
+        - SW
+    - elevation_number: 11
+      radial_count: 361
+      first_azimuth_degrees: 282.1289
+      elevation_angle_degrees: 19.467773
+      azimuth_spacing_degrees: 1
+      moments_present:
+        - REF
+        - VEL
+        - SW

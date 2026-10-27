@@ -60,7 +60,7 @@ chrono = { workspace = true, optional = true }
 nexrad-model = { version = "1.0.0", path = "../nexrad-model", optional = true, default-features = false }
 nexrad-decode = { version = "1.0.0", path = "../nexrad-decode", optional = true, default-features = false }
 nexrad-data = { version = "1.0.0-rc.7", path = "../nexrad-data", optional = true, default-features = false }
-nexrad-render = { version = "1.0.0-rc.4", path = "../nexrad-render", optional = true, default-features = false }
+nexrad-render = { version = "1.0.0", path = "../nexrad-render", optional = true, default-features = false }
 nexrad-process = { version = "1.0.0", path = "../nexrad-process", optional = true, default-features = false }
 futures-util = { workspace = true, optional = true }
 

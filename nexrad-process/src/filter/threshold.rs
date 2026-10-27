@@ -184,7 +184,7 @@ mod tests {
             for gate in 0..5 {
                 let original_value = (az * 5 + gate) as f32 * 5.0;
                 let (_, status) = result.get(az, gate).unwrap();
-                if original_value < 15.0 || original_value > 50.0 {
+                if !(15.0..=50.0).contains(&original_value) {
                     assert_eq!(status, GateStatus::Filtered);
                 } else {
                     assert_eq!(status, GateStatus::Valid);

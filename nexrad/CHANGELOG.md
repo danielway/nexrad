@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Changes since `1.0.0-rc.4`, the last published release. Together they make up the 1.0.0 release. The re-exported
+## [1.0.0] - 2026-10-27
+
+Changes since `1.0.0-rc.4`, the last release candidate. The re-exported
 crates (`nexrad::model`, `nexrad::decode`, `nexrad::data`, `nexrad::process`, `nexrad::render`) carry their own
 breaking changes; see their CHANGELOGs.
 

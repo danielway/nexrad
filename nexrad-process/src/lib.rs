@@ -64,7 +64,7 @@ use nexrad_model::geo::RadarCoordinateSystem;
 /// Transforms one [`SweepField`] into another.
 ///
 /// This is the primary processing trait for single-sweep algorithms such as
-/// filtering, smoothing, and clutter removal. Processors are `Send + Sync`, so a
+/// thresholding, smoothing and correlation coefficient masking. Processors are `Send + Sync`, so a
 /// [`SweepPipeline`] can be shared across threads.
 pub trait SweepProcessor: Send + Sync {
     /// A human-readable name for this processor.

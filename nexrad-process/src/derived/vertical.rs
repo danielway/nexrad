@@ -419,7 +419,7 @@ mod tests {
             .gate_count(4)
             .build()
             .unwrap();
-        assert_eq!(
+        assert!(matches!(
             vcs.compute(
                 &[make_uniform_field(0.5, 30.0), velocity],
                 &coordinate_system()
@@ -428,7 +428,7 @@ mod tests {
                 expected: Product::Reflectivity,
                 actual: Some(Product::Velocity),
             })
-        );
+        ));
     }
 
     #[test]

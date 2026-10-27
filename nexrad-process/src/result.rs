@@ -3,7 +3,7 @@
 use nexrad_model::data::{Product, SweepField};
 
 /// Errors that can occur during processing.
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
     /// A constructor or builder parameter is outside its accepted range.
@@ -55,6 +55,10 @@ pub enum Error {
     /// extent outside valid latitudes and longitudes.
     #[error("model error")]
     Model(#[from] nexrad_model::result::Error),
+    /// A failure reported by a [`SweepProcessor`](crate::SweepProcessor) implemented outside
+    /// this crate, such as an I/O error while loading its parameters.
+    #[error(transparent)]
+    Custom(Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
 /// Result type for processing operations.

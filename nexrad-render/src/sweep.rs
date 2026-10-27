@@ -3,7 +3,7 @@
 use crate::options::Palette;
 use crate::{
     ColorScale, Error, Interpolation, Projection, RenderMetadata, RenderOptions, RenderResult,
-    Result, RgbaImage,
+    Result,
 };
 use nexrad_model::data::{GateStatus, SweepField};
 use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
@@ -53,7 +53,7 @@ use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 /// let scale = default_scale(Product::Reflectivity);
 /// let result = render_sweep(&field, &scale, &RenderOptions::new(800, 800))?;
 ///
-/// result.save("radar.png")?;
+/// result.save_png("radar.png")?;
 /// let meta = result.metadata();
 /// // Polar renders support range/pixel conversions.
 /// let ring_px = meta.km_to_pixel_distance(100.0);
@@ -105,7 +105,6 @@ fn finish(
     geo_extent: Option<GeoExtent>,
 ) -> Result<RenderResult> {
     let (width, height) = options.size;
-    let image = RgbaImage::from_raw(width, height, buffer).ok_or(Error::InvalidDimensions)?;
     let metadata = RenderMetadata::new(
         width,
         height,
@@ -113,7 +112,7 @@ fn finish(
         geo_extent,
         options.coord_system.clone(),
     );
-    Ok(RenderResult::new(image, metadata))
+    Ok(RenderResult::new(buffer, metadata))
 }
 
 /// Writes `color` to pixel `(x, y)` of a row-major RGBA buffer `width` pixels wide.

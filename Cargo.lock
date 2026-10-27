@@ -1302,7 +1302,6 @@ dependencies = [
  "byteorder-lite",
  "moxcms",
  "num-traits",
- "png",
 ]
 
 [[package]]
@@ -1766,6 +1765,7 @@ dependencies = [
  "nexrad-decode",
  "nexrad-model",
  "nexrad-process",
+ "png",
  "thiserror 2.0.21",
 ]
 

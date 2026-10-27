@@ -154,7 +154,7 @@ impl ScanBuilder {
         let number = vcp_number(number);
         let sweeps = Sweep::split_by_elevation_number(self.radials);
         Ok(match self.site {
-            Some(site) => Scan::with_site(site, number, self.coverage_pattern, sweeps),
+            Some(site) => Scan::new(number, self.coverage_pattern, sweeps).with_site(site),
             None => Scan::new(number, self.coverage_pattern, sweeps),
         })
     }

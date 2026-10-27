@@ -775,14 +775,14 @@ II source files.** There is no compatibility shim. The incompatible changes are:
 | `VolumeCoveragePattern` | `doppler_velocity_resolution`, `sails_cuts` and `mrle_cuts` are `doppler_velocity_resolution_mps`, `sails_cut_count` and `mrle_cut_count` | #182 |
 | `ElevationCut` | `elevation_angle_degrees` is `f32` (was `f64`) | #182 |
 | `PolarPoint` | `azimuth_degrees` and `elevation_degrees` are `azimuth_angle_degrees` and `elevation_angle_degrees` | #182 |
-| `MomentData` | `first_gate_range`, `gate_interval` and `values` are `first_gate_range_meters`, `gate_interval_meters` and `raw_values` | #189 |
-| `MomentData` | `raw_values` is a byte string (`serialize_bytes`); JSON and other formats without a bytes type still use an array of integers, MessagePack and CBOR write a binary string | #189 |
+| `MomentData` | `first_gate_range`, `gate_interval` and `values` are `first_gate_range_meters`, `gate_interval_meters` and `raw_bytes` | #189 |
+| `MomentData` | `raw_bytes` is a byte string (`serialize_bytes`); JSON and other formats without a bytes type still use an array of integers, MessagePack and CBOR write a binary string | #189 |
 | `SweepField`, `CartesianField`, `VerticalField` | `status` is `statuses` | #189 |
 | `Site` | `identifier` is the four-character string (`"KTLX"`) instead of four byte values (`[75, 84, 76, 88]`); only the string deserializes | #189 |
 | `CfpStatus` | Variants are PascalCase (`"FilterNotApplied"`, `{"Reserved": n}`) instead of snake_case (`"filter_not_applied"`) | #189 |
 | `ElevationCut` | `reflectivity_threshold_db`, `velocity_threshold_db`, `spectrum_width_threshold_db`, `differential_reflectivity_threshold_db`, `differential_phase_threshold_db` and `correlation_coefficient_threshold_db` are `*_snr_threshold_db` | #210 |
 | `ElevationCut`, `VolumeCoveragePattern` | Deserialization validates as the builders do: finite angles, azimuth rate and thresholds, and a finite, non-negative Doppler velocity resolution | #210 |
-| `SweepField`, `CartesianField`, `VerticalField`, `MomentData`, `Radial`, `Site`, `Sweep` | Deserialization validates as the constructors do: one `values` and `statuses` entry per cell, exactly `gate_count` gates of `data_word_size` bits in `raw_values`, each `Radial` moment under its own product's key, in-range `Site` coordinates, and one `elevation_number` across a `Sweep`'s radials | #189 |
+| `SweepField`, `CartesianField`, `VerticalField`, `MomentData`, `Radial`, `Site`, `Sweep` | Deserialization validates as the constructors do: one `values` and `statuses` entry per cell, exactly `gate_count` gates of `data_word_size` bits in `raw_bytes`, each `Radial` moment under its own product's key, in-range `Site` coordinates, and one `elevation_number` across a `Sweep`'s radials | #189 |
 
 Unchanged: `VcpNumber` serializes as its `u16` number, and the field names of `Scan` and `Sweep` are the same. From
 1.0, serialized field names equal accessor names, enum variants serialize as their PascalCase names, and the
@@ -845,7 +845,7 @@ requirement, so they work on any async runtime and build for `wasm32`. Real-time
 | `model::DataFile` (`volume_header()`, `elevation_scans()`) | `nexrad_model::data::Scan` (`site()`, `coverage_pattern()`, `sweeps()`); the volume header is `nexrad_data::volume::File::header()` |
 | `model::Message31` (`header()`, `reflectivity_data()`, `velocity_data()`, `sw_data()`, `zdr_data()`, `phi_data()`, `rho_data()`, `cfp_data()`, `volume_data()`, `elevation_data()`, `radial_data()`) | Model level: `nexrad_model::data::Radial` (`reflectivity()`, `velocity()`, `spectrum_width()`, `differential_reflectivity()`, `differential_phase()`, `correlation_coefficient()`, `clutter_filter_power()`, `moment(product)`). Protocol level: `nexrad_decode::messages::digital_radar_data::Message` (`header()`, `*_data_block()`) |
 | `model::Message31Header` (`azm()`, `elev()`, `elev_num()`, `radial_status()`, `ray_date()`, `ray_time()`, ...) | `Radial::azimuth_angle_degrees()`, `elevation_angle_degrees()`, `elevation_number()`, `radial_status()`, `collection_time()`; or `digital_radar_data::Header` accessors |
-| `model::DataMoment` / `GenericData` (`moment_data()`, `scale()`, `offset()`, `number_data_moment_gates()`, ...) | `nexrad_model::data::MomentData` (`iter()`/`values()` decode gates to `MomentValue`; `scale()`, `offset()`, `gate_count()`, `raw_values()`) |
+| `model::DataMoment` / `GenericData` (`moment_data()`, `scale()`, `offset()`, `number_data_moment_gates()`, ...) | `nexrad_model::data::MomentData` (`iter()`/`values()` decode gates to `MomentValue`; `scale()`, `offset()`, `gate_count()`, `raw_bytes()`) |
 | `model::VolumeData`, `ElevationData`, `RadialData` | `nexrad_decode::messages::digital_radar_data::{VolumeDataBlock, ElevationDataBlock, RadialDataBlock}`; site position is also `Scan::site()` |
 | `model::MessageHeader`, `VolumeHeaderRecord`, `DataBlockHeader` | `nexrad_decode::messages::MessageHeader`, `nexrad_data::volume::Header`, `digital_radar_data::DataBlockId` |
 | `result::Error::{FileError, DeserializationError, DecompressionError}` | `nexrad::Error::Io`, `Decode`, `Data` |
@@ -1241,7 +1241,7 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `data::CFPStatus` (variants unchanged) | `data::CfpStatus` | #160 |
 | `data::CFPMomentData` (`from_fixed_point`, `iter`, `values`, `DataMoment` impl) | `data::MomentData` with `Product::ClutterFilterPower` | #170 |
 | `data::CFPMomentValue::{Status, Value}` | `data::MomentValue::{CfpStatus, Value}` | #170 |
-| `data::DataMoment` trait (`data_word_size`, `first_gate_range`, `first_gate_range_km`, `gate_count`, `gate_interval`, `gate_interval_km`, `offset`, `raw_gate_values`, `raw_values`, `scale`) | Inherent methods on `MomentData`, same names and signatures; remove the import | #170 |
+| `data::DataMoment` trait (`data_word_size`, `first_gate_range`, `first_gate_range_km`, `gate_count`, `gate_interval`, `gate_interval_km`, `offset`, `raw_gate_values`, `raw_values`, `scale`) | Inherent methods on `MomentData`, same names and signatures except `raw_values`, which is `raw_bytes`; remove the import | #170 |
 | `data::ChannelConfiguration::SZ2Phase` | `Sz2Phase` | #160 |
 | `data::WaveformType::{CS, CDW, CDWO, B, SPP, Unknown}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair, Unknown(u8)}` | #160, #205 |
 | `data::ChannelConfiguration::Unknown`, `data::PulseWidth::Unknown` | `Unknown(u8)` | #205 |
@@ -1289,7 +1289,7 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `data::VolumeCoveragePattern::doppler_velocity_resolution() -> f32` | `doppler_velocity_resolution_mps() -> f32` | #182 |
 | `data::VolumeCoveragePattern::{sails_cuts, mrle_cuts}() -> u8` | `{sails_cut_count, mrle_cut_count}() -> u8` | #182 |
 | `geo::PolarPoint::{azimuth_degrees, elevation_degrees}: f32` | `{azimuth_angle_degrees, elevation_angle_degrees}: f64` | #164, #182 |
-| `geo::RadarCoordinateSystem::gate_location(f32, f32, usize, f64, f64)` | `gate_location(f64, f64, usize, f64, f64)` | #164 |
+| `geo::RadarCoordinateSystem::gate_location(f32, f32, usize, f64, f64)` | Removed; call `polar_to_geo` with `range_km = first_gate_km + gate_index * gate_interval_km` | #164, #PR |
 | `geo::RadarCoordinateSystem::geo_to_polar(GeoPoint, f32) -> PolarPoint` (flat-earth range) | `geo_to_polar(GeoPoint, f64) -> Option<PolarPoint>`, the exact inverse of `polar_to_geo`; ranges change, and `None` replaces a non-finite or negative range | #164, #188, #210 |
 | `geo::RadarCoordinateSystem` | Adds `beam_height_meters(f64, f64) -> f64`, `ground_range_km(f64, f64) -> f64` | #188 |
 | `meta::Site::new([u8; 4], f32, f32, i16, u16)` | `Site::builder([u8; 4], f64, f64)` → `SiteBuilder` with `site_elevation_meters`, `feedhorn_height_meters`, `build() -> Result<Site>` | #164, #165, #182, #185 |
@@ -1308,7 +1308,7 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `meta::registry::SiteEntry::to_site() -> Site` | `-> Result<Site>`; every registry entry is valid | #185 |
 | `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, reason }`, `MomentDataLength { expected, actual }`, `InvalidCoveragePattern { parameter, reason }`, `InvalidSite { parameter, reason }`, `IndexOutOfBounds { row, column, rows, columns }` | #155, #185, #210 |
 | `result::Error::ElevationMismatch` (unit variant) | `ElevationMismatch { expected: u8, actual: u8 }` | #185 |
-| serde: `data::MomentData` keys `first_gate_range`, `gate_interval`, `values` (a sequence of integers) | `first_gate_range_meters`, `gate_interval_meters`, `raw_values` (a byte string) | #189 |
+| serde: `data::MomentData` keys `first_gate_range`, `gate_interval`, `values` (a sequence of integers) | `first_gate_range_meters`, `gate_interval_meters`, `raw_bytes` (a byte string) | #189 |
 | serde: `data::{SweepField, CartesianField, VerticalField}` key `status` | `statuses` | #189 |
 | serde: `data::ElevationCut` keys `*_threshold_db` | `*_snr_threshold_db` | #210 |
 | serde: `meta::Site` key `identifier` as `[u8; 4]` (an array of four numbers) | A four-character string (`"KTLX"`) | #189 |

@@ -23,7 +23,7 @@ Radial {
             data_word_size: 8,
             scale: 2.0,
             offset: 66.0,
-            raw_values: BinaryData {
+            raw_bytes: BinaryData {
                 len: 460,
                 fnv1a: 0x1bab780211b61a6f,
                 head: [

@@ -170,7 +170,8 @@ impl RadarCoordinateSystem {
     ///
     /// The altitude is [`beam_height_meters`](Self::beam_height_meters) and the point lies
     /// [`ground_range_km`](Self::ground_range_km) from the radar along the great circle at the
-    /// given azimuth. [`geo_to_polar`](Self::geo_to_polar) is its exact inverse.
+    /// given azimuth. [`geo_to_polar`](Self::geo_to_polar) is its exact inverse. For gate `i` of a
+    /// radial, `range_km` is `first_gate_range_km + i * gate_interval_km`.
     pub fn polar_to_geo(&self, polar: PolarPoint) -> GeoPoint3D {
         let altitude_meters =
             self.beam_height_meters(polar.range_km, polar.elevation_angle_degrees);
@@ -313,23 +314,6 @@ impl RadarCoordinateSystem {
                 longitude: east.longitude,
             },
         }
-    }
-
-    /// Compute the geographic location of a specific gate in a radial.
-    pub fn gate_location(
-        &self,
-        azimuth_angle_degrees: f64,
-        elevation_angle_degrees: f64,
-        gate_index: usize,
-        first_gate_km: f64,
-        gate_interval_km: f64,
-    ) -> GeoPoint3D {
-        let range_km = first_gate_km + (gate_index as f64) * gate_interval_km;
-        self.polar_to_geo(PolarPoint {
-            azimuth_angle_degrees,
-            range_km,
-            elevation_angle_degrees,
-        })
     }
 }
 

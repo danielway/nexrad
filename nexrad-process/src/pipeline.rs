@@ -40,6 +40,7 @@ impl SweepPipeline {
     }
 
     /// Append a processing step to the pipeline.
+    #[must_use]
     pub fn then(mut self, processor: impl SweepProcessor + 'static) -> Self {
         self.steps.push(Box::new(processor));
         self

@@ -35,7 +35,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   ICD does not abbreviate, and for unknown values). (#205)
 - `Display` for `RadialStatus`. (#205)
 - `RadarCoordinateSystem::beam_height_meters` (above mean sea level) and `ground_range_km`. (#188)
-- `MomentData::builder(product, raw_values)` and `MomentDataBuilder`, with setters `gate_count`,
+- `MomentData::builder(product, raw_bytes)` and `MomentDataBuilder`, with setters `gate_count`,
   `first_gate_range_meters`, `gate_interval_meters`, `data_word_size`, `scale` and `offset`; the gate count defaults
   to the number of gates the raw values hold. (#210)
 - `Error::InvalidCoveragePattern { parameter, reason }`, from `ElevationCutBuilder::build` and

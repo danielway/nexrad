@@ -510,7 +510,7 @@ fn moment_data_exposes_constructor_units() {
 }
 
 #[test]
-fn unscaled_moment_decodes_sentinels_before_raw_values() {
+fn unscaled_moment_decodes_sentinels_before_raw_bytes() {
     // 16-bit, scale 0: raw 0 and 1 are sentinels, not the values 0.0 and 1.0.
     let moment = MomentData::builder(Product::DifferentialPhase, vec![0, 0, 0, 1, 0x01, 0x00])
         .first_gate_range_meters(2125)

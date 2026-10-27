@@ -147,7 +147,7 @@ fn test_decode_map_scan_sample_radials() {
     assert_eq!(radials.len(), SAMPLED_SWEEPS);
 
     assert_yaml_snapshot!("decode_map_scan_sample_radials", radials, {
-      ".**.raw_values" => insta::dynamic_redaction(|value, _path| redact_bytes_like(value)),
+      ".**.raw_bytes" => insta::dynamic_redaction(|value, _path| redact_bytes_like(value)),
     });
 }
 

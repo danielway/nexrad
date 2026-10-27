@@ -36,7 +36,9 @@ for message in &messages {
 
 With the `model` feature, `model::ScanBuilder` assembles decoded messages into a `nexrad_model::data::Scan`.
 Radar data messages (types 1 and 31) become radials, the first volume coverage pattern message (type 5) becomes the
-scan's coverage pattern, and the first volume data block identifies the site:
+scan's coverage pattern, and the first volume data block identifies the site. A volume without a type 5 message still
+builds, with `Scan::coverage_pattern()` returning `None`; `Scan::coverage_pattern_number()` comes from the type 5
+message when its number is non-zero and otherwise from the radials:
 
 ```rust,ignore
 use nexrad_decode::messages::decode_messages;

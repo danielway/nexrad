@@ -25,8 +25,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `volume_coverage_pattern::Message::to_model()`, `digital_radar_data::Message::site()`, and `From` impls from the
   decode `PulseWidth`, `ChannelConfiguration`, `WaveformType` and `RadialStatus` to the model's (feature `model`).
   (#169, #173)
-- `Error::MissingCoveragePattern` (feature `model`), from `ScanBuilder::build` when no type 5 message was seen. (#169,
-  #190)
+- `Error::MissingCoveragePatternNumber` (feature `model`), from `ScanBuilder::build` when there was no type 5 message
+  and no radial carried a non-zero coverage pattern number. (#169, #190, #208)
+- `Error::NegativeFirstGateRange` (feature `model`), for a legacy (type 1) radial whose first gate is at a negative
+  range with a zero gate interval. (#208)
 - `moment_data()` and `into_moment_data()` on a generic data block's `DataBlock` (feature `model`), taking the product
   from the block's data name. (#170)
 - `DataBlockName::product()` (feature `model`). (#173)
@@ -102,6 +104,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - A legacy (pre-ORDA) clutter filter bypass map (type 13) decodes as `Other` instead of an empty map. (#191)
 - docs.rs shows the feature each feature-gated item requires. (#196)
 - The published crate leaves out the tests and benchmarks that need files from outside it, and the fuzz targets. (#196)
+- `model::ScanBuilder::build` no longer requires a type 5 message. Without one the scan's `coverage_pattern()` is
+  `None`; its `coverage_pattern_number()` is the type 5 message's number when non-zero, and otherwise the first
+  non-zero number in a type 1 header or type 31 volume data block. (#208)
 
 ### Removed
 
@@ -137,3 +142,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   read from the right offsets. (#190)
 - A digital radar data (type 31) message that pads past its last data block, as TDWR radials do, no longer throws
   off the messages after it; decoding resumes at the message's declared end.
+- Legacy (type 1) radial conversion no longer mirrors a negative range to the first gate: the type 1 Doppler first gate
+  at -375 m was converted as +375 m, which moved every velocity and spectrum width gate 750 m outward. Leading gates at
+  a negative range are dropped and the moment starts at the first gate at a non-negative range (125 m, with 250 m
+  gates). (#208)

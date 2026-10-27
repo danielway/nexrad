@@ -54,9 +54,9 @@ A WASM application can therefore use `nexrad-model` and `nexrad-render` without 
 
 - **All conversion to model types lives in `nexrad-decode`**, behind its `model` feature (for example
   `nexrad_decode::model::ScanBuilder`).
-- **`nexrad-data` orchestrates I/O and decompression only.** `volume::File::scan`, `volume::Record::radials` and
-  `aws::realtime::assemble_volume` decompress records and hand their messages to `nexrad-decode`, with no
-  protocol-to-model mapping of their own.
+- **`nexrad-data` orchestrates I/O and decompression only.** `volume::File::scan` (which also inflates a gzip-wrapped
+  file), `volume::Record::radials` and `aws::realtime::assemble_volume` decompress records and hand their messages to
+  `nexrad-decode`, with no protocol-to-model mapping of their own.
 - **The facade contains re-exports and I/O entry points only** (`load`, `download`, `list_scans`, `stream` and their
   variants). Anything expressible as a method on a model type lives on the model type (`Sweep::field`), and the static
   site registry lives in `nexrad_model::meta::registry`.
@@ -83,7 +83,7 @@ let scan = nexrad::load_file("volume.ar2v")?;
 let field = scan.sweeps()[0].field(Product::Reflectivity);
 
 // Through sub-crates directly (fine-grained)
-let scan = nexrad_data::volume::File::new(bytes).decompress()?.scan()?;
+let scan = nexrad_data::volume::File::new(bytes).scan()?;
 ```
 
 ## Public API and Versioning Policy

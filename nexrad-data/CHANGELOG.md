@@ -72,6 +72,14 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The published crate leaves out the tests and benchmarks that need files from outside it, the fuzz targets and
   the `trim_fixture` maintainer example. (#196)
 - The `aws` feature's build requirements (a C compiler, and NASM on Windows x86 targets) are documented. (#196)
+- `volume::File::scan()` and `File::coverage_pattern_message()` inflate a gzip-wrapped file themselves instead of
+  returning `Error::CompressedFile`. `File::records()`, which borrows its records from the file, still needs
+  `File::decompress()` first. (#208)
+- `volume::File::scan()` and `aws::realtime::assemble_volume` return a scan whose `coverage_pattern()` is `None` when
+  no type 5 message was seen, such as for a legacy volume or chunks without a Start chunk, with the coverage pattern
+  number taken from the radials. They fail only when no coverage pattern number is found, with `Error::Decode`
+  carrying `MissingCoveragePatternNumber`, instead of `Error::MissingCoveragePattern`, which
+  `File::coverage_pattern_message()` still returns. (#208)
 
 ### Removed
 

@@ -221,6 +221,21 @@ offending argument:
   `first_field` and `sweeps_at_elevation` can return several sweeps per angle with reflectivity and velocity in
   different ones; select with `Scan::elevation_cut(&sweep)` or
   `Scan::sweeps_with_waveform(WaveformType::ContiguousSurveillance)`.
+- **`Scan::coverage_pattern()` returns `Option<&VolumeCoveragePattern>`** (#208). It is `None` for a scan built
+  without a volume coverage pattern message (type 5), such as a pre-2008 volume, and then `elevation_cut` returns
+  `None` and `sweeps_with_waveform` yields nothing. `Scan::coverage_pattern_number()` is stored on the scan and always
+  present; it can differ from the pattern's own `pattern_number()` (see nexrad-decode). `Scan::new` and
+  `Scan::with_site` take the number and the optional pattern:
+
+  ```rust
+  // 1.0.0-rc.2
+  let scan = Scan::with_site(site, vcp, sweeps);
+  let cuts = scan.coverage_pattern().elevation_cuts();
+
+  // 1.0
+  let scan = Scan::with_site(site, vcp.pattern_number(), Some(vcp), sweeps);
+  let cuts = scan.coverage_pattern().map(|vcp| vcp.elevation_cuts()).unwrap_or_default();
+  ```
 - **`Debug` output** prints the new names, `fnv1a: 0x...` instead of `sha256: "..."` for binary blobs, a `product` field
   on moments and `nyquist_velocity_mps`/`unambiguous_range_km` on `Radial`; update snapshot tests that capture it.
 
@@ -239,7 +254,10 @@ nexrad-decode = { version = "1.0", default-features = false, features = ["model"
 produced them, so handle I/O errors where you do the I/O. Variants carry offsets into the slice you passed to the
 decoder, including `InvalidDataBlockPointer`'s `position` (#190). New variants:
 
-- `MissingCoveragePattern` (feature `model`), from `ScanBuilder::build` when no type 5 message was seen (#169);
+- `MissingCoveragePatternNumber` (feature `model`), from `ScanBuilder::build` when there was no type 5 message and no
+  radial carried a non-zero coverage pattern number (#169, #208);
+- `NegativeFirstGateRange { range_meters }` (feature `model`), from the legacy (type 1) conversion when the first gate
+  is at a negative range and the gate interval is zero (#208);
 - `Model(nexrad_model::Error)` (feature `model`) when decoded values fail model validation: a moment whose gate count
   does not match its data, an out-of-range radial azimuth, or an invalid site identifier or location (#185); it
   displays `decoded data is invalid for the model` (#195);
@@ -309,6 +327,14 @@ for message in &messages {
 - **Converted radials carry radar physics**: `digital_radar_data::Message::radial()`/`into_radial()` set the Nyquist
   velocity and unambiguous range from the radial data block, `None` when it is absent (#188); the legacy (type 1)
   conversion sets the unambiguous range (#188) and the Nyquist velocity, `None` when zero (#191), from its header.
+- **Scans without a type 5 message build** (#208). `ScanBuilder::build` returns a scan whose `coverage_pattern()` is
+  `None` instead of failing. The scan's `coverage_pattern_number()` is the type 5 message's number when it is non-zero,
+  and otherwise the first non-zero number in a type 1 header or type 31 volume data block, so a 2005 volume whose type
+  5 message is numbered 0 reports its radials' VCP 32. It fails with `MissingCoveragePatternNumber` only when neither
+  source has a number.
+- **Legacy Doppler gates moved** (#208). The legacy (type 1) conversion turned the signed range to the first gate into
+  its absolute value, so the Doppler first gate at -375 m became +375 m and every velocity and spectrum width gate sat
+  750 m too far out. Gates at a negative range are now dropped: those moments start at 125 m and have two fewer gates.
 - **Fixed decodes**: negative VCP elevation and sector angles are negative instead of wrapped (359.8 for -0.2) (#146);
   spectrum width blocks are `DataBlockName::SpectrumWidth`, not `Unknown(*b"SW ")` (#173); with `uom`,
   `RadialDataBlock::unambiguous_range()` applies the ICD 0.1 km scale and is 10× smaller (#173); legacy radials with an
@@ -391,6 +417,14 @@ runtime's sleep function (#161).
 - **Real-time volume selection** (#149, #154): `get_latest_volume` no longer returns an older volume when the newest sits
   just after the wrap-around, and `ChunkIterator` waits instead of replaying an older scan left in the next volume
   directory.
+- **`File::scan` and `File::coverage_pattern_message` inflate gzip** (#208): they accept a gzip-wrapped file, so the
+  `File::new(bytes).decompress()?` step is needed only before `File::records()`, which still returns
+  `Error::CompressedFile` for a gzip-wrapped file. `File::new` stores the bytes as given, and `decompress` is unchanged.
+- **Volumes without a type 5 message scan** (#208): `File::scan` and `assemble_volume` return a scan with
+  `coverage_pattern()` `None` (see nexrad-decode) for a legacy volume or chunks without a Start chunk, where they
+  returned `Error::MissingCoveragePattern`. They fail only when no coverage pattern number is found, with
+  `Error::Decode(MissingCoveragePatternNumber)`. `File::coverage_pattern_message()` still returns
+  `Error::MissingCoveragePattern`.
 - **`File::scan` includes legacy (type 1) radials** (#169), as `Record::radials()` does, and `assemble_volume` accepts
   them; legacy-only volumes yield populated sweeps.
 - **A scan's `Site::identifier` comes from the type 31 message header** (#169), not the Archive II volume header ICAO;
@@ -558,6 +592,7 @@ II source files.** There is no compatibility shim. The incompatible changes are:
 | `WaveformType` | Variants serialize as `"ContiguousSurveillance"`, `"ContiguousDopplerWithAmbiguityResolution"`, `"ContiguousDopplerWithoutAmbiguityResolution"`, `"Batch"`, `"StaggeredPulsePair"` instead of `"CS"`, `"CDW"`, `"CDWO"`, `"B"`, `"SPP"` | #160 |
 | `ChannelConfiguration` | `"Sz2Phase"` instead of `"SZ2Phase"` | #160 |
 | `RadialStatus` | `"ElevationStartVcpFinal"` instead of `"ElevationStartVCPFinal"` | #160 |
+| `Scan` | New `coverage_pattern_number` field (the VCP number); `coverage_pattern` is nullable and defaults to null when absent | #208 |
 | `MomentData` | A struct with a `product` field next to the encoding fields, for every moment on a `Radial` including `clutter_filter_power`; it was `serde(transparent)` over an inner block | #170 |
 | `SweepField` | Gains a `product` field | #170 |
 | `Site` | `latitude` and `longitude` are `f64`; self-describing formats such as JSON still read old values, fixed-width binary formats such as bincode do not | #164 |
@@ -646,7 +681,7 @@ requirement, so they work on any async runtime and build for `wasm32`. Real-time
 | `MomentData::from_fixed_point(scale, offset, values)` | `MomentData::from_fixed_point(product, gate_count, first_gate_range, gate_interval, data_word_size, scale, offset, values)` |
 | `MomentData::values()` | Unchanged; `iter()` avoids the allocation. `MomentValue` gains `CfpStatus` |
 | `RadialStatus::{VolumeScanStart, VolumeScanEnd, ElevationStartVCPFinal}` | `ScanStart`, `ScanEnd`, `ElevationStartVcpFinal`; new `Unknown(u8)` |
-| `Scan::new(coverage_pattern_number: u16, sweeps)` | `Scan::new(VolumeCoveragePattern, sweeps)` or `Scan::with_site(site, vcp, sweeps)` |
+| `Scan::new(coverage_pattern_number: u16, sweeps)` | `Scan::new(VcpNumber, Option<VolumeCoveragePattern>, sweeps)` or `Scan::with_site(site, VcpNumber, Option<VolumeCoveragePattern>, sweeps)` |
 | `Scan::coverage_pattern_number() -> u16` | `-> VcpNumber`; `.number()` gives the `u16` |
 | `Scan::sweeps() -> &Vec<Sweep>`, `Sweep::radials() -> &Vec<Radial>` | Return slices |
 | `Site::new(id, lat: f32, lon: f32, height, feedhorn_height)` | `Site::builder(id, lat: f64, lon: f64).site_elevation_meters(..).feedhorn_height_meters(..).build()` |
@@ -1048,6 +1083,8 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `data::VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}`, as in `nexrad_decode::messages::VcpNumber`; `Unknown(11)`, `Unknown(21)`, `Unknown(121)`, `Unknown(211)`, `Unknown(221)` are `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` | #188 |
 | `data::Radial` (no PRF context) | Adds `nyquist_velocity_mps()`, `unambiguous_range_km() -> Option<f32>` (with `uom`, `nyquist_velocity()`, `unambiguous_range()`); `RadialBuilder::{nyquist_velocity_mps, unambiguous_range_km}` | #188 |
 | `data::Scan` | Adds `elevation_cut(&Sweep) -> Option<&ElevationCut>`, `sweeps_with_waveform(WaveformType) -> impl Iterator<Item = &Sweep>` | #188 |
+| `data::Scan::coverage_pattern() -> &VolumeCoveragePattern` | `-> Option<&VolumeCoveragePattern>` | #208 |
+| `data::Scan::new(VolumeCoveragePattern, Vec<Sweep>)`, `with_site(Site, VolumeCoveragePattern, Vec<Sweep>)` | `new(VcpNumber, Option<VolumeCoveragePattern>, Vec<Sweep>)`, `with_site(Site, VcpNumber, Option<VolumeCoveragePattern>, Vec<Sweep>)` | #208 |
 | `data::ElevationCut::new(f64, ChannelConfiguration, WaveformType, ..)` (22 arguments) | `ElevationCut::builder(f32, WaveformType, ChannelConfiguration)` → `ElevationCutBuilder`; note the argument order | #165, #182 |
 | `data::ElevationCut::elevation_angle_degrees() -> f64` | `-> f32` | #182 |
 | `data::VolumeCoveragePattern::new(u16, ..)` (14 arguments) | `VolumeCoveragePattern::builder(VcpNumber)` → `VolumeCoveragePatternBuilder`; convert a number with `VcpNumber::from_number(n)` | #165 |
@@ -1141,7 +1178,7 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `clutter_censor_zones::Message::regions() -> &[raw Region]` (public `Integer2`/`Code2` fields) | `-> &[clutter_censor_zones::Region<'a>]` with accessors and `OperatorSelectCode` | #166 |
 | `summarize` module (`messages`, `MessageSummary`, `MessageGroupSummary`, `VCPInfo`, `VCPElevationInfo`, `RDAStatusInfo`) | Removed; iterate `decode_messages(..)` and match on `message.contents()` | #168 |
 | `result::Error::Io(std::io::Error)`, `From<std::io::Error>` | Removed | #168 |
-| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `MissingCoveragePattern` (feature `model`), `SegmentOutOfSequence` and (feature `model`) `Model(nexrad_model::Error)` | #155, #169, #185, #190 |
+| `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `MissingCoveragePatternNumber` (feature `model`), `NegativeFirstGateRange` (feature `model`), `SegmentOutOfSequence` and (feature `model`) `Model(nexrad_model::Error)` | #155, #169, #185, #190, #208 |
 | `result::Error::Decoding(String)`, `InvalidMessageLength { message_type, delta }`, `DataSpansSegmentBoundary { position }` | Removed (never constructed) | #190 |
 | `result::Error::UnexpectedEof`, `MessageMissingDate` | `UnexpectedEof { offset }`, `MessageMissingDate { message_type }` | #190 |
 | `result::Error::UnknownDataBlockType { block_type: String }` | `UnknownDataBlockType { block_type: [u8; 3], offset }` | #190 |
@@ -1247,6 +1284,8 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `aws::archive::Identifier::{site() -> Option<&str>, date_time() -> Option<DateTime<Utc>>}` | `site() -> &str`, `date_time() -> DateTime<Utc>` | #192 |
 | (new) | `aws::archive::Identifier::{version, is_metadata, is_gzip}()`, `Display`, `Debug`; `aws::archive::list_files_with_sizes`, `ListedFile` | #186, #192 |
 | `aws::archive::list_files` returning every object | Volume files only | #192 |
+| `volume::File::scan()`, `coverage_pattern_message()` returning `Error::CompressedFile` for a gzip-wrapped file | Inflate the file themselves; `records()` still returns `CompressedFile` | #208 |
+| `volume::File::scan()`, `aws::realtime::assemble_volume` returning `Error::MissingCoveragePattern` without a type 5 message | Return a scan with `coverage_pattern()` `None`; `Error::Decode(MissingCoveragePatternNumber)` when no coverage pattern number is found | #208 |
 | `aws::realtime::VolumeIndex::new(usize) -> VolumeIndex` | `new(usize) -> Result<VolumeIndex>` | #192 |
 | `aws::realtime::list_chunks_in_volume(&str, VolumeIndex, usize)` | `list_chunks_in_volume(&str, VolumeIndex)` | #149, #192 |
 | `AwsError::S3GetObject(Option<String>)` | `S3GetObject { status: u16, body: Option<String> }` | #192 |

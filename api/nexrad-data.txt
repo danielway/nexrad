@@ -260,9 +260,9 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_data::aws::realtime::Ret
 impl core::panic::unwind_safe::UnwindSafe for nexrad_data::aws::realtime::RetryPolicy
 pub struct nexrad_data::aws::realtime::VolumeIndex(_)
 impl nexrad_data::aws::realtime::VolumeIndex
-pub fn nexrad_data::aws::realtime::VolumeIndex::as_number(&self) -> usize
 pub fn nexrad_data::aws::realtime::VolumeIndex::new(usize) -> nexrad_data::result::Result<Self>
 pub fn nexrad_data::aws::realtime::VolumeIndex::next(&self) -> Self
+pub fn nexrad_data::aws::realtime::VolumeIndex::number(&self) -> usize
 impl core::clone::Clone for nexrad_data::aws::realtime::VolumeIndex
 pub fn nexrad_data::aws::realtime::VolumeIndex::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_data::aws::realtime::VolumeIndex

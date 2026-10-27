@@ -409,7 +409,8 @@ runtime's sleep function (#161).
   callers.
 - **Real-time instants are `DateTime<Utc>`** (#206): `ChunkIdentifier::new` takes the date-time prefix as
   `DateTime<Utc>` (`naive.and_utc()`), and `date_time_prefix()` and `volume()` return values, so drop the `*` or `&`
-  around them. `download_chunk(&id)` drops the site argument; the identifier carries it.
+  around them. `download_chunk(&id)` drops the site argument; the identifier carries it. `VolumeIndex::as_number()`
+  is `number()`, matching the other `number()` accessors.
 - **`ChunkType` is `#[non_exhaustive]`** (#206): add a wildcard arm. `list_chunks_in_volume` skips, with a `log`
   warning, keys that do not parse as chunk names, so one odd key no longer fails `get_latest_volume`, `ChunkIterator`
   or `chunk_stream`.
@@ -1284,6 +1285,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `aws::realtime::download_chunk<'a>(&str, &ChunkIdentifier) -> Result<(ChunkIdentifier, Chunk<'a>)>` | `download_chunk(&ChunkIdentifier) -> Result<DownloadedChunk>`; read `d.identifier`, `d.chunk` | #167, #206 |
 | `aws::realtime::ChunkIdentifier::new(.., NaiveDateTime, ..)` | `new(.., DateTime<Utc>, ..)`; `naive.and_utc()` converts, and fractional seconds are dropped | #206 |
 | `aws::realtime::ChunkIdentifier::date_time_prefix() -> &NaiveDateTime`, `volume() -> &VolumeIndex` | `date_time_prefix() -> DateTime<Utc>`, `volume() -> VolumeIndex` | #206 |
+| `aws::realtime::VolumeIndex::as_number() -> usize` | `number() -> usize` | #206 |
 | `aws::realtime::ChunkType` | `#[non_exhaustive]` | #206 |
 | `aws::realtime::list_chunks_in_volume` failing on a key that does not parse | Skips the key with a `log` warning | #206 |
 | `aws::realtime::ChunkIterator::from_chunk(..)` whose `try_next` failed with `FailedToDetermineNextChunk` | The first `try_next` loads the VCP from the current volume's Start chunk, then returns the next chunk | #206 |

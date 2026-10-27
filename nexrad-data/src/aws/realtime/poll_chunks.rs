@@ -180,7 +180,7 @@ async fn init_stream_state(config: &PollConfig) -> Result<ChunkStreamState> {
     debug!(
         "Stream initialized for {} at volume {} with VCP {}",
         config.site(),
-        latest_volume.as_number(),
+        latest_volume.number(),
         state.vcp.header().vcp_number_raw()
     );
 

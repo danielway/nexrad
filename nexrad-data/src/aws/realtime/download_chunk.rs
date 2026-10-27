@@ -21,7 +21,7 @@ pub async fn download_chunk(chunk_id: &ChunkIdentifier) -> crate::result::Result
     let key = format!(
         "{}/{}/{}",
         chunk_id.site(),
-        chunk_id.volume().as_number(),
+        chunk_id.volume().number(),
         chunk_id.name()
     );
 

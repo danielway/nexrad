@@ -890,7 +890,7 @@ fn test_chunk_identifier_next_chunk_intermediate() {
         Some(NextChunk::Sequence(next)) => {
             assert_eq!(next.sequence(), 3);
             assert_eq!(next.site(), "KDMX");
-            assert_eq!(next.volume().as_number(), 1);
+            assert_eq!(next.volume().number(), 1);
         }
         _ => panic!("Expected NextChunk::Sequence for intermediate chunk"),
     }
@@ -909,7 +909,7 @@ fn test_chunk_identifier_next_chunk_intermediate() {
 
     match chunk_id.next_chunk(&mapper) {
         Some(NextChunk::Volume(next_volume)) => {
-            assert_eq!(next_volume.as_number(), 2);
+            assert_eq!(next_volume.number(), 2);
         }
         _ => panic!("Expected NextChunk::Volume for final chunk"),
     }
@@ -968,11 +968,11 @@ fn test_rollover_yields_start_chunk_then_continues_in_sequence() {
             other
         ),
     };
-    let listed = volume_listing(next_volume.as_number(), "20220305_232852", 7);
+    let listed = volume_listing(next_volume.number(), "20220305_232852", 7);
 
     // The Start chunk is fetched rather than the newest listed chunk
     let start = next_volume_start(Some(&end), &listed).expect("next volume has a newer scan");
-    assert_eq!(start.volume().as_number(), 42);
+    assert_eq!(start.volume().number(), 42);
     assert_eq!(start.sequence(), 1);
     assert_eq!(start.chunk_type(), ChunkType::Start);
     assert_eq!(start.name(), "20220305-232852-001-S");
@@ -980,7 +980,7 @@ fn test_rollover_yields_start_chunk_then_continues_in_sequence() {
     // Iteration then continues from sequence 2 of the new volume's scan
     match start.next_chunk(&mapper) {
         Some(NextChunk::Sequence(next)) => {
-            assert_eq!(next.volume().as_number(), 42);
+            assert_eq!(next.volume().number(), 42);
             assert_eq!(next.name(), "20220305-232852-002-I");
         }
         other => panic!(
@@ -1020,7 +1020,7 @@ fn test_rollover_across_volume_number_wrap() {
     let listed = volume_listing(1, "20220305_232852", 3);
 
     let start = next_volume_start(Some(&end), &listed).unwrap();
-    assert_eq!(start.volume().as_number(), 1);
+    assert_eq!(start.volume().number(), 1);
     assert_eq!(start.name(), "20220305-232852-001-S");
 }
 

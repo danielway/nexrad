@@ -156,7 +156,7 @@ impl ChunkIterator {
         debug!(
             "ChunkIterator initialized for site {} at volume {}",
             config.site(),
-            volume.as_number()
+            volume.number()
         );
 
         let mut iterator = Self {

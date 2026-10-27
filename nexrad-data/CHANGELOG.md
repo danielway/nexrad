@@ -37,6 +37,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The `nexrad-model` feature is renamed `model`, `aws-polling` is folded into `aws`, optional dependencies are no
   longer features, and `nexrad-decode`'s default features (including `uom`) are no longer enabled. (#156, #161)
 - `result::aws::AWSError` → `result::AwsError`, also at the crate root, and `Error::AWS` → `Error::Aws`. (#160, #171)
+- `aws::realtime::VolumeIndex::as_number()` → `number()`, matching the other `number()` accessors. (#206)
 - `AwsError::S3ListObjects`, `S3GetObjectRequest` and `S3Streaming` box the HTTP error instead of holding a
   `reqwest::Error`. (#171)
 - `Error` and `AwsError` no longer implement `UnwindSafe`/`RefUnwindSafe`. (#171)

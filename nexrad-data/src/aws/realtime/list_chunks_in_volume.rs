@@ -21,7 +21,7 @@ pub async fn list_chunks_in_volume(
     site: &str,
     volume: VolumeIndex,
 ) -> crate::result::Result<Vec<ChunkIdentifier>> {
-    let prefix = format!("{}/{}/", site, volume.as_number());
+    let prefix = format!("{}/{}/", site, volume.number());
     let objects = list_all_objects(REALTIME_BUCKET, &prefix).await?;
 
     let metas = objects

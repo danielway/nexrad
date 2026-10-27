@@ -56,8 +56,8 @@ async fn test_get_latest_volume_from_hint() {
     assert!(
         hinted == volume || hinted == volume.next(),
         "Expected {} or its successor, got {}",
-        volume.as_number(),
-        hinted.as_number()
+        volume.number(),
+        hinted.number()
     );
     assert!(
         from_hint.calls >= 2 && from_hint.calls <= 3,
@@ -78,7 +78,7 @@ async fn test_get_latest_volume_different_sites() {
         let latest = result.unwrap();
         if let Some(volume) = latest.volume {
             // Volume should be in valid range
-            assert!(volume.as_number() >= 1 && volume.as_number() <= 999);
+            assert!(volume.number() >= 1 && volume.number() <= 999);
         }
     }
 }
@@ -300,7 +300,7 @@ async fn test_complete_workflow() {
     assert!(latest.volume.is_some());
 
     let volume = latest.volume.unwrap();
-    println!("Latest volume for {}: {}", site, volume.as_number());
+    println!("Latest volume for {}: {}", site, volume.number());
 
     // Step 2: List chunks in that volume
     let chunks_result = realtime::list_chunks_in_volume(site, volume).await;
@@ -308,7 +308,7 @@ async fn test_complete_workflow() {
     let chunks = chunks_result.unwrap();
 
     if chunks.is_empty() {
-        println!("No chunks found in volume {}", volume.as_number());
+        println!("No chunks found in volume {}", volume.number());
         return;
     }
 
@@ -410,11 +410,11 @@ fn test_volume_index_boundaries() {
     let vol_min = VolumeIndex::new(1).unwrap();
     let vol_max = VolumeIndex::new(999).unwrap();
 
-    assert_eq!(vol_min.as_number(), 1);
-    assert_eq!(vol_max.as_number(), 999);
+    assert_eq!(vol_min.number(), 1);
+    assert_eq!(vol_max.number(), 999);
 
     // Test wraparound
-    assert_eq!(vol_max.next().as_number(), 1);
+    assert_eq!(vol_max.next().number(), 1);
 }
 
 #[tokio::test]

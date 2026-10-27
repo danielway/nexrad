@@ -12,27 +12,27 @@ const MINIMAL_BZ_RECORD: &[u8] = &[0, 0, 0, 0, b'B', b'Z', 0, 0, 0, 0];
 #[test]
 fn test_volume_index_creation() {
     let volume = VolumeIndex::new(1).unwrap();
-    assert_eq!(volume.as_number(), 1);
+    assert_eq!(volume.number(), 1);
 
     let volume = VolumeIndex::new(500).unwrap();
-    assert_eq!(volume.as_number(), 500);
+    assert_eq!(volume.number(), 500);
 
     let volume = VolumeIndex::new(999).unwrap();
-    assert_eq!(volume.as_number(), 999);
+    assert_eq!(volume.number(), 999);
 }
 
 #[test]
 fn test_volume_index_next() {
     // Normal progression
     let volume = VolumeIndex::new(1).unwrap();
-    assert_eq!(volume.next().as_number(), 2);
+    assert_eq!(volume.next().number(), 2);
 
     let volume = VolumeIndex::new(500).unwrap();
-    assert_eq!(volume.next().as_number(), 501);
+    assert_eq!(volume.next().number(), 501);
 
     // Wraparound at 999
     let volume = VolumeIndex::new(999).unwrap();
-    assert_eq!(volume.next().as_number(), 1);
+    assert_eq!(volume.next().number(), 1);
 }
 
 #[test]
@@ -115,7 +115,7 @@ fn test_chunk_identifier_new() {
     );
 
     assert_eq!(chunk_id.site(), "KDMX");
-    assert_eq!(chunk_id.volume().as_number(), 123);
+    assert_eq!(chunk_id.volume().number(), 123);
     assert_eq!(chunk_id.sequence(), 42);
     assert_eq!(chunk_id.chunk_type(), ChunkType::Intermediate);
     assert_eq!(chunk_id.name(), "20220305-232324-042-I");
@@ -172,7 +172,7 @@ fn test_chunk_identifier_from_name() {
     let chunk_id = ChunkIdentifier::from_name(site.clone(), volume, name, None).unwrap();
 
     assert_eq!(chunk_id.site(), "KDMX");
-    assert_eq!(chunk_id.volume().as_number(), 456);
+    assert_eq!(chunk_id.volume().number(), 456);
     assert_eq!(chunk_id.sequence(), 42);
     assert_eq!(chunk_id.chunk_type(), ChunkType::Intermediate);
     assert_eq!(

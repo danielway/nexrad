@@ -151,6 +151,7 @@ impl ChunkIdentifier {
     /// The sibling's [upload time](Self::upload_date_time) is `None` because it has not been
     /// downloaded. For example, `id.with_sequence(1, ChunkType::Start)` identifies the Start chunk
     /// of `id`'s scan.
+    #[must_use]
     pub fn with_sequence(&self, sequence: usize, chunk_type: ChunkType) -> ChunkIdentifier {
         ChunkIdentifier::new(
             self.site.clone(),

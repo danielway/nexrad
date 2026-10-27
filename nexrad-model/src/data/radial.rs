@@ -391,6 +391,7 @@ struct RadialRepr {
 /// to and from this type without loss; it also maps each variant to its ICD code.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[non_exhaustive]
 pub enum RadialStatus {
     /// First radial of an elevation sweep that is not the first sweep in the scan.
     ElevationStart,

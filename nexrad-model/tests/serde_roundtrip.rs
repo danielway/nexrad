@@ -95,7 +95,7 @@ fn scan() -> Scan {
         Sweep::new(1, vec![radial(1, 1, Some(28.5)), radial(2, 1, None)]).expect("valid sweep"),
         Sweep::new(2, vec![radial(1, 2, Some(26.0)), radial(2, 2, None)]).expect("valid sweep"),
     ];
-    Scan::with_site(site, vcp.pattern_number(), Some(vcp), sweeps)
+    Scan::new(vcp.pattern_number(), Some(vcp), sweeps).with_site(site)
 }
 
 fn sweep_field() -> SweepField {
@@ -208,11 +208,11 @@ fn keys_match_accessors() {
     for key in [
         "first_gate_range_meters",
         "gate_interval_meters",
-        "raw_values",
+        "raw_bytes",
     ] {
         assert!(document.get(key).is_some(), "missing `{key}`");
     }
-    assert!(document["raw_values"].is_array());
+    assert!(document["raw_bytes"].is_array());
 }
 
 #[test]
@@ -237,9 +237,9 @@ fn invalid_field_geometry_is_rejected() {
 #[test]
 fn moment_length_mismatch_is_rejected() {
     let mut document = to_json(&moment(Product::DifferentialReflectivity, 16));
-    document["raw_values"]
+    document["raw_bytes"]
         .as_array_mut()
-        .expect("raw_values is an array")
+        .expect("raw_bytes is an array")
         .pop();
     let error = serde_json::from_value::<MomentData>(document)
         .expect_err("odd byte count for 16-bit gates");

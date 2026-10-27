@@ -282,7 +282,7 @@ mod tests {
             .gate_count(4)
             .build()
             .unwrap();
-        assert_eq!(
+        assert!(matches!(
             CompositeReflectivity::new().compute(
                 &[make_uniform_field(0.5, 30.0), unlabelled],
                 &coord_sys,
@@ -292,7 +292,7 @@ mod tests {
                 expected: Product::Reflectivity,
                 actual: None,
             })
-        );
+        ));
 
         let velocity = SweepField::builder("Velocity", "m/s")
             .product(Product::Velocity)
@@ -301,12 +301,12 @@ mod tests {
             .gate_count(4)
             .build()
             .unwrap();
-        assert_eq!(
+        assert!(matches!(
             CompositeReflectivity::new().compute(&[velocity], &coord_sys, &grid),
             Err(Error::UnexpectedProduct {
                 expected: Product::Reflectivity,
                 actual: Some(Product::Velocity),
             })
-        );
+        ));
     }
 }

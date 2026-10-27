@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 /// converts to and from this type without loss; it also maps each variant to its ICD code.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[non_exhaustive]
 pub enum PulseWidth {
     /// Short pulse width.
     Short,

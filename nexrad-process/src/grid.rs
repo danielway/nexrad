@@ -143,14 +143,20 @@ mod tests {
     #[test]
     fn test_grid_rejects_zero_dimensions() {
         let e = extent((34.0, -99.0), (36.0, -97.0));
-        assert_eq!(
+        assert!(matches!(
             CartesianGrid::new(e, 0, 10),
-            Err(invalid_geometry("width", "must be greater than zero"))
-        );
-        assert_eq!(
+            Err(Error::InvalidGeometry {
+                parameter: "width",
+                reason: "must be greater than zero"
+            })
+        ));
+        assert!(matches!(
             CartesianGrid::new(e, 10, 0),
-            Err(invalid_geometry("height", "must be greater than zero"))
-        );
+            Err(Error::InvalidGeometry {
+                parameter: "height",
+                reason: "must be greater than zero"
+            })
+        ));
         assert!(CartesianGrid::new(e, usize::MAX, 2).is_err());
     }
 

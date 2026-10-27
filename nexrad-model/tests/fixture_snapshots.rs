@@ -168,6 +168,7 @@ fn hash_moment_values(values: &[nexrad_model::data::MomentValue]) -> String {
             MomentValue::CfpStatus(CfpStatus::Reserved(code)) => {
                 hasher.update([3u8, *code]);
             }
+            MomentValue::CfpStatus(other) => panic!("unexpected CFP status {other:?}"),
         }
     }
     hex::encode(hasher.finalize())

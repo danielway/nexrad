@@ -132,11 +132,14 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - An unrecognised type 31 data block no longer fails the decode: a `'D'` block is kept in `other_data_blocks()`
   and an `'R'` block is skipped, so `File::scan` reads volumes from a build that adds a moment.
   `Error::UnknownDataBlockType` is returned only for a block whose type byte is neither `'R'` nor `'D'`. (#207)
-- The code enums with an `Unknown(n)` or `Reserved(n)` variant in the message modules are `#[non_exhaustive]`, except
-  the VCP vocabulary types; an `Unknown(n)` value may become a named variant in a minor release. (#207)
+- The code enums with an `Unknown(n)` or `Reserved(n)` variant in the message modules are `#[non_exhaustive]`; an
+  `Unknown(n)` value may become a named variant in a minor release. (#207, #215)
 - `model::ScanBuilder::build` no longer requires a type 5 message. Without one the scan's `coverage_pattern()` is
   `None`; its `coverage_pattern_number()` is the type 5 message's number when non-zero, and otherwise the first
   non-zero number in a type 1 header or type 31 volume data block. (#208)
+- `WaveformType`, `ChannelConfiguration`, `PulseWidth` and `RadialStatus` are `#[non_exhaustive]` like the other code
+  enums; a variant only a newer `nexrad-model` names converts to `Unknown(255)`. (#215)
+- The struct-like variants of `Error` are `#[non_exhaustive]`: patterns outside this crate need `..`. (#215)
 
 ### Removed
 

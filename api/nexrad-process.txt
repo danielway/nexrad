@@ -225,24 +225,21 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::filter::Thresho
 impl core::panic::unwind_safe::UnwindSafe for nexrad_process::filter::ThresholdFilter
 pub mod nexrad_process::result
 #[non_exhaustive] pub enum nexrad_process::result::Error
-pub nexrad_process::result::Error::GeometryMismatch
+pub nexrad_process::result::Error::Custom(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
+#[non_exhaustive] pub nexrad_process::result::Error::GeometryMismatch
 pub nexrad_process::result::Error::GeometryMismatch::parameter: &'static str
-pub nexrad_process::result::Error::InvalidGeometry
+#[non_exhaustive] pub nexrad_process::result::Error::InvalidGeometry
 pub nexrad_process::result::Error::InvalidGeometry::parameter: &'static str
 pub nexrad_process::result::Error::InvalidGeometry::reason: &'static str
-pub nexrad_process::result::Error::InvalidParameter
+#[non_exhaustive] pub nexrad_process::result::Error::InvalidParameter
 pub nexrad_process::result::Error::InvalidParameter::parameter: &'static str
 pub nexrad_process::result::Error::InvalidParameter::reason: &'static str
-pub nexrad_process::result::Error::MissingData
+#[non_exhaustive] pub nexrad_process::result::Error::MissingData
 pub nexrad_process::result::Error::MissingData::what: &'static str
 pub nexrad_process::result::Error::Model(nexrad_model::result::Error)
-pub nexrad_process::result::Error::UnexpectedProduct
+#[non_exhaustive] pub nexrad_process::result::Error::UnexpectedProduct
 pub nexrad_process::result::Error::UnexpectedProduct::actual: core::option::Option<nexrad_model::data::product::Product>
 pub nexrad_process::result::Error::UnexpectedProduct::expected: nexrad_model::data::product::Product
-impl core::clone::Clone for nexrad_process::result::Error
-pub fn nexrad_process::result::Error::clone(&self) -> Self
-impl core::cmp::PartialEq for nexrad_process::result::Error
-pub fn nexrad_process::result::Error::eq(&self, &Self) -> bool
 impl core::convert::From<nexrad_model::result::Error> for nexrad_process::result::Error
 pub fn nexrad_process::result::Error::from(nexrad_model::result::Error) -> Self
 impl core::error::Error for nexrad_process::result::Error
@@ -251,34 +248,30 @@ impl core::fmt::Debug for nexrad_process::result::Error
 pub fn nexrad_process::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for nexrad_process::result::Error
 pub fn nexrad_process::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for nexrad_process::result::Error
 impl core::marker::Freeze for nexrad_process::result::Error
 impl core::marker::Send for nexrad_process::result::Error
 impl core::marker::Sync for nexrad_process::result::Error
 impl core::marker::Unpin for nexrad_process::result::Error
 impl core::marker::UnsafeUnpin for nexrad_process::result::Error
-impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::result::Error
-impl core::panic::unwind_safe::UnwindSafe for nexrad_process::result::Error
+impl !core::panic::unwind_safe::RefUnwindSafe for nexrad_process::result::Error
+impl !core::panic::unwind_safe::UnwindSafe for nexrad_process::result::Error
 pub type nexrad_process::result::Result<T> = core::result::Result<T, nexrad_process::result::Error>
 #[non_exhaustive] pub enum nexrad_process::Error
-pub nexrad_process::Error::GeometryMismatch
+pub nexrad_process::Error::Custom(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
+#[non_exhaustive] pub nexrad_process::Error::GeometryMismatch
 pub nexrad_process::Error::GeometryMismatch::parameter: &'static str
-pub nexrad_process::Error::InvalidGeometry
+#[non_exhaustive] pub nexrad_process::Error::InvalidGeometry
 pub nexrad_process::Error::InvalidGeometry::parameter: &'static str
 pub nexrad_process::Error::InvalidGeometry::reason: &'static str
-pub nexrad_process::Error::InvalidParameter
+#[non_exhaustive] pub nexrad_process::Error::InvalidParameter
 pub nexrad_process::Error::InvalidParameter::parameter: &'static str
 pub nexrad_process::Error::InvalidParameter::reason: &'static str
-pub nexrad_process::Error::MissingData
+#[non_exhaustive] pub nexrad_process::Error::MissingData
 pub nexrad_process::Error::MissingData::what: &'static str
 pub nexrad_process::Error::Model(nexrad_model::result::Error)
-pub nexrad_process::Error::UnexpectedProduct
+#[non_exhaustive] pub nexrad_process::Error::UnexpectedProduct
 pub nexrad_process::Error::UnexpectedProduct::actual: core::option::Option<nexrad_model::data::product::Product>
 pub nexrad_process::Error::UnexpectedProduct::expected: nexrad_model::data::product::Product
-impl core::clone::Clone for nexrad_process::result::Error
-pub fn nexrad_process::result::Error::clone(&self) -> Self
-impl core::cmp::PartialEq for nexrad_process::result::Error
-pub fn nexrad_process::result::Error::eq(&self, &Self) -> bool
 impl core::convert::From<nexrad_model::result::Error> for nexrad_process::result::Error
 pub fn nexrad_process::result::Error::from(nexrad_model::result::Error) -> Self
 impl core::error::Error for nexrad_process::result::Error
@@ -287,14 +280,13 @@ impl core::fmt::Debug for nexrad_process::result::Error
 pub fn nexrad_process::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for nexrad_process::result::Error
 pub fn nexrad_process::result::Error::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::StructuralPartialEq for nexrad_process::result::Error
 impl core::marker::Freeze for nexrad_process::result::Error
 impl core::marker::Send for nexrad_process::result::Error
 impl core::marker::Sync for nexrad_process::result::Error
 impl core::marker::Unpin for nexrad_process::result::Error
 impl core::marker::UnsafeUnpin for nexrad_process::result::Error
-impl core::panic::unwind_safe::RefUnwindSafe for nexrad_process::result::Error
-impl core::panic::unwind_safe::UnwindSafe for nexrad_process::result::Error
+impl !core::panic::unwind_safe::RefUnwindSafe for nexrad_process::result::Error
+impl !core::panic::unwind_safe::UnwindSafe for nexrad_process::result::Error
 pub struct nexrad_process::CartesianGrid
 impl nexrad_process::CartesianGrid
 pub fn nexrad_process::CartesianGrid::extent(&self) -> &nexrad_model::geo::GeoExtent

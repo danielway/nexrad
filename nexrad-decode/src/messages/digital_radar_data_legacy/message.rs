@@ -631,7 +631,7 @@ mod tests {
         assert_eq!(moment.first_gate_range_meters(), 125);
         assert_eq!(moment.gate_interval_meters(), 250);
         assert_eq!(moment.gate_count(), 2);
-        assert_eq!(moment.raw_values(), &[30, 40]);
+        assert_eq!(moment.raw_bytes(), &[30, 40]);
     }
 
     #[test]

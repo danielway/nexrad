@@ -77,6 +77,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   (#207)
 - A gate whose `GateStatus` is one a later `nexrad-model` release adds is drawn with the `NoData` status color.
   (#211)
+- The struct-like variants of `Error` are `#[non_exhaustive]`: patterns outside this crate need `..`. (#215)
+- `RenderOptions`'s `with_*` setters are `#[must_use]`. (#215)
 
 ### Removed
 

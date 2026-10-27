@@ -15,18 +15,21 @@ pub enum Error {
     /// A radar data message lacks the collection date/time needed to convert it to a model
     /// radial.
     #[error("message type {} is missing its collection date/time", .message_type.number())]
+    #[non_exhaustive]
     MessageMissingDate {
         /// The type of the message without a date/time.
         message_type: MessageType,
     },
     /// The input ended inside a structure being decoded.
     #[error("unexpected end of input reading the structure at offset {offset}")]
+    #[non_exhaustive]
     UnexpectedEof {
         /// Offset of the structure that extends past the end of the input.
         offset: usize,
     },
     /// A data block pointer points before the end of the data already read.
     #[error("invalid data block pointer: cannot rewind {bytes} bytes at offset {position}")]
+    #[non_exhaustive]
     InvalidDataBlockPointer {
         /// Number of bytes the pointer tried to rewind.
         bytes: usize,
@@ -45,6 +48,7 @@ pub enum Error {
         "unknown data block name {:?} at offset {offset}",
         String::from_utf8_lossy(.block_type)
     )]
+    #[non_exhaustive]
     UnknownDataBlockType {
         /// The unrecognized data block name.
         block_type: [u8; 3],
@@ -56,6 +60,7 @@ pub enum Error {
         "expected segment {expected_segment} of {segment_count} of message type {} at offset {offset}",
         .message_type.number()
     )]
+    #[non_exhaustive]
     SegmentOutOfSequence {
         /// The type of the multi-segment message being assembled.
         message_type: MessageType,
@@ -79,6 +84,7 @@ pub enum Error {
     /// leading gates at a negative range; with a zero interval every gate is at that range.
     #[cfg(feature = "model")]
     #[error("negative range to first gate ({range_meters} m) in a legacy radar data message")]
+    #[non_exhaustive]
     NegativeFirstGateRange {
         /// The range to the first gate in meters, as decoded.
         range_meters: i16,

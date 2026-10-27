@@ -606,13 +606,13 @@ mod tests {
             .build()
             .unwrap();
         let detector = ThresholdRegionDetector::new(35.0, 1).unwrap();
-        assert_eq!(
+        assert!(matches!(
             detector.detect(&velocity, &cs),
             Err(Error::UnexpectedProduct {
                 expected: Product::Reflectivity,
                 actual: Some(Product::Velocity),
             })
-        );
+        ));
     }
 
     #[test]

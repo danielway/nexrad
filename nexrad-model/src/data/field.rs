@@ -173,6 +173,7 @@ impl SweepField {
     /// but empty data.
     ///
     /// All values are initialized to `0.0` with [`GateStatus::NoData`].
+    #[must_use]
     pub fn new_like(&self, label: impl Into<String>, unit: impl Into<String>) -> Self {
         let total = self.values.len();
         Self {

@@ -33,6 +33,7 @@ impl VolumeIndex {
     }
 
     /// Returns the next volume index, wrapping from 999 back to 1.
+    #[must_use]
     pub fn next(&self) -> Self {
         if self.0 >= Self::LAST {
             Self(Self::FIRST)

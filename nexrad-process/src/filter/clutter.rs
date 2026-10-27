@@ -247,13 +247,13 @@ mod tests {
     #[test]
     fn test_cc_filter_requires_correlation_coefficient() {
         let (target, _) = make_fields(5);
-        assert_eq!(
+        assert!(matches!(
             CorrelationCoefficientFilter::new(0.9, target),
             Err(Error::UnexpectedProduct {
                 expected: Product::CorrelationCoefficient,
                 actual: None,
             })
-        );
+        ));
     }
 
     #[test]
@@ -358,11 +358,11 @@ mod tests {
         }
 
         let filter = CorrelationCoefficientFilter::new(0.90, cc).unwrap();
-        assert_eq!(
+        assert!(matches!(
             filter.process(&target),
             Err(Error::GeometryMismatch {
                 parameter: "azimuth_angles_degrees"
             })
-        );
+        ));
     }
 }

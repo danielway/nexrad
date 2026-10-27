@@ -35,7 +35,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   ICD does not abbreviate, and for unknown values). (#205)
 - `Display` for `RadialStatus`. (#205)
 - `RadarCoordinateSystem::beam_height_meters` (above mean sea level) and `ground_range_km`. (#188)
-- `MomentData::builder(product, raw_values)` and `MomentDataBuilder`, with setters `gate_count`,
+- `MomentData::builder(product, raw_bytes)` and `MomentDataBuilder`, with setters `gate_count`,
   `first_gate_range_meters`, `gate_interval_meters`, `data_word_size`, `scale` and `offset`; the gate count defaults
   to the number of gates the raw values hold. (#210)
 - `Error::InvalidCoveragePattern { parameter, reason }`, from `ElevationCutBuilder::build` and
@@ -125,6 +125,12 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the
   `Product` variants describe the quantity each moment holds, and `Product::value_range()` is documented as a display
   default, stable for 1.x. (#209)
+- `WaveformType`, `ChannelConfiguration`, `PulseWidth`, `RadialStatus` and `CfpStatus` are `#[non_exhaustive]`, so a
+  code a later ICD names can become a variant in a minor release; matches outside this crate need a wildcard arm. (#215)
+- The struct-like variants of `Error` are `#[non_exhaustive]`: patterns outside this crate need `..`, and only this
+  crate constructs them. (#215)
+- `MomentData::raw_values` is `raw_bytes`, as are the builder argument and the serialized field. (#215)
+- `Scan::with_site` is a setter: `Scan::new(number, pattern, sweeps).with_site(site)`. (#215)
 
 ### Removed
 
@@ -143,6 +149,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `VcpNumber::description()`, whose per-pattern summaries were operational characterisations rather than ICD
   definitions; it also disagreed with `nexrad-decode` on VCP 112, which the ICD lists with the MPDA scan strategy.
   (#205)
+- `RadarCoordinateSystem::gate_location`; call `polar_to_geo` with
+  `range_km = first_gate_km + index * interval_km`. (#215)
 
 ### Fixed
 

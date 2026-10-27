@@ -99,6 +99,7 @@ impl RenderOptions {
     /// Use [`Color::TRANSPARENT`] for a transparent background, so that multiple
     /// renders can be layered. A background with zero alpha leaves those pixels
     /// all-zero.
+    #[must_use]
     pub fn with_background(mut self, color: Color) -> Self {
         self.background = color;
         self
@@ -115,6 +116,7 @@ impl RenderOptions {
     /// [`render_cartesian`](crate::render_cartesian) and
     /// [`render_vertical`](crate::render_vertical) ignore this option: their fields
     /// carry their own extents.
+    #[must_use]
     pub fn with_extent(mut self, extent: GeoExtent) -> Self {
         self.extent = Some(extent);
         self
@@ -124,6 +126,7 @@ impl RenderOptions {
     ///
     /// This enables geographic metadata in the [`RenderResult`](crate::RenderResult), including
     /// pixel-to-geo and geo-to-pixel coordinate conversions.
+    #[must_use]
     pub fn with_coord_system(mut self, coord_system: RadarCoordinateSystem) -> Self {
         self.coord_system = Some(coord_system);
         self
@@ -133,6 +136,7 @@ impl RenderOptions {
     ///
     /// Default is [`Interpolation::Nearest`]. Use [`Interpolation::Bilinear`]
     /// for smoother output that blends neighboring data gates.
+    #[must_use]
     pub fn with_interpolation(mut self, interpolation: Interpolation) -> Self {
         self.interpolation = interpolation;
         self
@@ -147,6 +151,7 @@ impl RenderOptions {
     /// When unset, the range is the field's product range ([`Product::value_range`])
     /// if the field has a product, otherwise the range of the field's valid values,
     /// otherwise `-32.0..95.0`.
+    #[must_use]
     pub fn with_value_range(mut self, min: f32, max: f32) -> Self {
         self.value_range = Some((min, max));
         self
@@ -158,6 +163,7 @@ impl RenderOptions {
     /// By default such gates are drawn as the background. This setting is ignored for
     /// [`GateStatus::Valid`]: valid gates always take their color from the color
     /// scale.
+    #[must_use]
     pub fn with_status_color(mut self, status: GateStatus, color: Color) -> Self {
         if status == GateStatus::Valid {
             return self;

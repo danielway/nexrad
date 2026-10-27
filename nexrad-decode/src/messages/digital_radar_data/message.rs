@@ -1,13 +1,19 @@
 use super::raw;
 use super::{
-    DataBlock, DataBlockId, DataBlockName, ElevationDataBlock, GenericDataBlock, Header,
-    RadialDataBlock, VolumeDataBlock,
+    DataBlock, DataBlockId, DataBlockName, DataBlockType, ElevationDataBlock, GenericDataBlock,
+    Header, RadialDataBlock, VolumeDataBlock,
 };
 use crate::result::{Error, Result};
 use crate::slice_reader::SliceReader;
 
 /// The digital radar data message includes base radar data from a single radial for various
 /// products.
+///
+/// A data block whose name this version does not recognise does not fail the decode. A data
+/// moment block (type byte `'D'`) is parsed with the generic data block layout and kept in
+/// [`other_data_blocks`](Self::other_data_blocks); a metadata block (type byte `'R'`) is skipped,
+/// since the next block pointer gives its extent. Neither is included in
+/// [`radial`](Self::radial) or [`into_radial`](Self::into_radial).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message<'a> {
     /// The decoded digital radar data header.
@@ -42,6 +48,9 @@ pub struct Message<'a> {
 
     /// Clutter filter power (CFP) data if included in the message.
     clutter_filter_power_data_block: Option<DataBlock<'a, GenericDataBlock<'a>>>,
+
+    /// Data moment blocks with names this version does not recognise, in message order.
+    other_data_blocks: Vec<DataBlock<'a, GenericDataBlock<'a>>>,
 }
 
 impl<'a> Message<'a> {
@@ -72,6 +81,7 @@ impl<'a> Message<'a> {
             differential_phase_data_block: None,
             correlation_coefficient_data_block: None,
             clutter_filter_power_data_block: None,
+            other_data_blocks: Vec::new(),
         };
 
         for pointer in pointers {
@@ -136,12 +146,25 @@ impl<'a> Message<'a> {
                         ));
                     }
                 }
-                DataBlockName::Unknown(block_type) => {
-                    return Err(Error::UnknownDataBlockType {
-                        block_type,
-                        offset: block_offset,
-                    });
-                }
+                DataBlockName::Unknown(block_type) => match id.data_block_type() {
+                    DataBlockType::DataMoment => {
+                        let generic_block = GenericDataBlock::parse(reader)?;
+                        message.other_data_blocks.push(DataBlock::new(
+                            id,
+                            block_offset,
+                            generic_block,
+                        ));
+                    }
+                    // An unrecognised metadata block's layout is unknown; the next block pointer,
+                    // or the message's declared size, gives its extent.
+                    DataBlockType::Radial => {}
+                    DataBlockType::Unknown(_) => {
+                        return Err(Error::UnknownDataBlockType {
+                            block_type,
+                            offset: block_offset,
+                        });
+                    }
+                },
                 name => {
                     let generic_block = GenericDataBlock::parse(reader)?;
                     match name {
@@ -219,6 +242,11 @@ impl<'a> Message<'a> {
             clutter_filter_power_data_block: self
                 .clutter_filter_power_data_block
                 .map(|b| b.into_owned_with(|inner| inner.into_owned())),
+            other_data_blocks: self
+                .other_data_blocks
+                .into_iter()
+                .map(|b| b.into_owned_with(|inner| inner.into_owned()))
+                .collect(),
         }
     }
 
@@ -282,9 +310,19 @@ impl<'a> Message<'a> {
         self.clutter_filter_power_data_block.as_ref()
     }
 
+    /// Data moment blocks (type byte `'D'`) whose names this version does not recognise, in the
+    /// order they appear in the message. Each is parsed with the generic data block layout, so
+    /// its header and encoded gate values are available; its name is in
+    /// [`DataBlockId::data_block_name_raw`]. These blocks are not included in
+    /// [`radial`](Self::radial) or [`into_radial`](Self::into_radial).
+    pub fn other_data_blocks(&self) -> &[DataBlock<'a, GenericDataBlock<'a>>] {
+        &self.other_data_blocks
+    }
+
     /// Get a radial from this digital radar data message. This clones the underlying moment
     /// data; use [`into_radial`](Self::into_radial) to avoid the copy when the message is no
-    /// longer needed.
+    /// longer needed. The radial carries the recognised moments only;
+    /// [`other_data_blocks`](Self::other_data_blocks) are left out.
     ///
     /// # Errors
     ///

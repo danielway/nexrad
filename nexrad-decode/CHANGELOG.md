@@ -48,7 +48,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   were read as spare. (#191)
 - `rda_status_data::RdaBuildNumber::{raw, major, minor}` and `Display`. (#191)
 - `digital_radar_data::Message::other_data_blocks()`, the data moment blocks whose names this version does not
-  recognise, parsed with the generic data block layout. (#PRNUM)
+  recognise, parsed with the generic data block layout. (#207)
 
 ### Changed
 
@@ -106,9 +106,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The published crate leaves out the tests and benchmarks that need files from outside it, and the fuzz targets. (#196)
 - An unrecognised type 31 data block no longer fails the decode: a `'D'` block is kept in `other_data_blocks()`
   and an `'R'` block is skipped, so `File::scan` reads volumes from a build that adds a moment.
-  `Error::UnknownDataBlockType` is returned only for a block whose type byte is neither `'R'` nor `'D'`. (#PRNUM)
+  `Error::UnknownDataBlockType` is returned only for a block whose type byte is neither `'R'` nor `'D'`. (#207)
 - The code enums with an `Unknown(n)` or `Reserved(n)` variant in the message modules are `#[non_exhaustive]`, except
-  the VCP vocabulary types; an `Unknown(n)` value may become a named variant in a minor release. (#PRNUM)
+  the VCP vocabulary types; an `Unknown(n)` value may become a named variant in a minor release. (#207)
 
 ### Removed
 

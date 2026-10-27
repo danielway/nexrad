@@ -58,7 +58,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The `image` dependency enables only its `png` feature. (#194)
 - The published crate leaves out the benchmark, which needs files from outside it. (#196)
 - `ColorScale` and `Interpolation` are `#[non_exhaustive]`; matches on them outside this crate need a wildcard arm.
-  (#PRNUM)
+  (#207)
 
 ### Removed
 

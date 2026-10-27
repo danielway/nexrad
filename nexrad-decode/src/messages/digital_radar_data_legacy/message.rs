@@ -522,16 +522,14 @@ fn legacy_moment(
         first_gate_layout(first_gate_range_meters, gate_interval_meters)?;
     let gate_count = usize::from(gate_count).saturating_sub(skipped);
     gates.drain(..skipped.min(gates.len()));
-    Ok(nexrad_model::data::MomentData::from_fixed_point(
-        product,
-        gate_count,
-        first_gate_range_meters,
-        gate_interval_meters,
-        8,
-        scale,
-        offset,
-        gates,
-    )?)
+    Ok(nexrad_model::data::MomentData::builder(product, gates)
+        .gate_count(gate_count)
+        .first_gate_range_meters(first_gate_range_meters)
+        .gate_interval_meters(gate_interval_meters)
+        .data_word_size(8)
+        .scale(scale)
+        .offset(offset)
+        .build()?)
 }
 
 /// The first non-negative gate's range in meters, and the number of leading gates before it.

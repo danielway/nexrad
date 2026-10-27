@@ -3,7 +3,7 @@
 use nexrad_model::data::Product;
 use nexrad_render::{
     clutter_filter_power_scale, correlation_coefficient_scale, default_scale,
-    differential_phase_scale, differential_reflectivity_scale, nws_reflectivity_scale,
+    differential_phase_scale, differential_reflectivity_scale, reflectivity_scale,
     spectrum_width_scale, velocity_scale, Color, ColorLookupTable, ColorScale, ColorScaleLevel,
     ColorStop, ContinuousColorScale, DiscreteColorScale, Error,
 };
@@ -15,7 +15,8 @@ fn test_discrete_color_scale_ordering() {
         ColorScaleLevel::new(30.0, Color::rgb(0.0, 1.0, 0.0)),
         ColorScaleLevel::new(0.0, Color::BLACK),
         ColorScaleLevel::new(50.0, Color::rgb(1.0, 0.0, 0.0)),
-    ]);
+    ])
+    .unwrap();
 
     // Value >= 50 should get red
     let color = scale.color(50.0);
@@ -36,7 +37,8 @@ fn test_color_scale_boundary_values() {
         ColorScaleLevel::new(0.0, Color::BLACK),
         ColorScaleLevel::new(30.0, Color::rgb(0.0, 1.0, 0.0)),
         ColorScaleLevel::new(50.0, Color::rgb(1.0, 0.0, 0.0)),
-    ]);
+    ])
+    .unwrap();
 
     // Exactly at threshold should get that threshold's color
     assert_eq!(scale.color(50.0), Color::rgb(1.0, 0.0, 0.0));
@@ -50,7 +52,8 @@ fn test_color_scale_negative_values() {
         ColorScaleLevel::new(-10.0, Color::rgb(0.0, 0.0, 1.0)),
         ColorScaleLevel::new(0.0, Color::BLACK),
         ColorScaleLevel::new(30.0, Color::rgb(0.0, 1.0, 0.0)),
-    ]);
+    ])
+    .unwrap();
 
     // Negative value above -10 threshold
     assert_eq!(scale.color(-5.0), Color::rgb(0.0, 0.0, 1.0));
@@ -65,7 +68,8 @@ fn test_color_scale_high_values() {
     let scale = DiscreteColorScale::new(vec![
         ColorScaleLevel::new(0.0, Color::BLACK),
         ColorScaleLevel::new(50.0, Color::rgb(1.0, 0.0, 0.0)),
-    ]);
+    ])
+    .unwrap();
 
     // Value above highest threshold should still get highest color
     assert_eq!(scale.color(100.0), Color::rgb(1.0, 0.0, 0.0));
@@ -73,8 +77,8 @@ fn test_color_scale_high_values() {
 }
 
 #[test]
-fn test_nws_reflectivity_scale() {
-    let scale = nws_reflectivity_scale();
+fn test_reflectivity_scale() {
+    let scale = reflectivity_scale();
 
     // Very low values (near threshold) should return a color
     let color = scale.color(0.0);
@@ -97,7 +101,7 @@ fn test_nws_reflectivity_scale() {
 
 #[test]
 fn test_color_scale_clone() {
-    let scale = nws_reflectivity_scale();
+    let scale = reflectivity_scale();
     let cloned = scale.clone();
 
     // Both should produce same colors
@@ -107,7 +111,7 @@ fn test_color_scale_clone() {
 
 #[test]
 fn test_color_scale_debug() {
-    let scale = nws_reflectivity_scale();
+    let scale = reflectivity_scale();
     let debug_str = format!("{:?}", scale);
 
     // Should have some content and not panic
@@ -252,11 +256,11 @@ fn test_clutter_filter_power_scale() {
 #[test]
 fn test_default_scale_reflectivity() {
     let scale = default_scale(Product::Reflectivity);
-    let nws_scale = nws_reflectivity_scale();
+    let reflectivity = reflectivity_scale();
 
     // Should return the same colors as NWS reflectivity scale
-    assert_eq!(scale.color(30.0), nws_scale.color(30.0));
-    assert_eq!(scale.color(50.0), nws_scale.color(50.0));
+    assert_eq!(scale.color(30.0), reflectivity.color(30.0));
+    assert_eq!(scale.color(50.0), reflectivity.color(50.0));
 }
 
 #[test]
@@ -338,7 +342,8 @@ fn test_color_scale_level_fields() {
     let scale = DiscreteColorScale::new(vec![
         ColorScaleLevel::new(0.0, Color::BLACK),
         ColorScaleLevel::new(30.0, Color::WHITE),
-    ]);
+    ])
+    .unwrap();
     let legend: Vec<(f32, Color)> = scale
         .levels()
         .iter()
@@ -412,7 +417,7 @@ fn test_lookup_table_rejects_tiny_sizes() {
 /// Every built-in discrete scale with the product range it is used over.
 fn builtin_discrete_scales() -> Vec<(DiscreteColorScale, Product)> {
     vec![
-        (nws_reflectivity_scale(), Product::Reflectivity),
+        (reflectivity_scale(), Product::Reflectivity),
         (velocity_scale(), Product::Velocity),
         (spectrum_width_scale(), Product::SpectrumWidth),
         (
@@ -470,7 +475,7 @@ fn test_lookup_table_matches_discrete_scale_between_thresholds() {
     }
 
     // Just below a threshold keeps the lower level's color.
-    let scale = ColorScale::from(nws_reflectivity_scale());
+    let scale = ColorScale::from(reflectivity_scale());
     let lut = ColorLookupTable::new(&scale, -32.0, 95.0, 16).unwrap();
     let below = 20.0f32.next_down();
     assert_eq!(lut.color(below), scale.color(15.0).to_rgba8());
@@ -479,10 +484,13 @@ fn test_lookup_table_matches_discrete_scale_between_thresholds() {
 
 #[test]
 fn test_lookup_table_interpolates_continuous_scales() {
-    let scale = ColorScale::from(ContinuousColorScale::new(vec![
-        ColorStop::new(0.0, Color::BLACK),
-        ColorStop::new(100.0, Color::WHITE),
-    ]));
+    let scale = ColorScale::from(
+        ContinuousColorScale::new(vec![
+            ColorStop::new(0.0, Color::BLACK),
+            ColorStop::new(100.0, Color::WHITE),
+        ])
+        .unwrap(),
+    );
     let lut = ColorLookupTable::new(&scale, 0.0, 100.0, 256).unwrap();
 
     assert_eq!(lut.color(0.0), [0, 0, 0, 255]);
@@ -495,4 +503,67 @@ fn test_lookup_table_interpolates_continuous_scales() {
             "value {value}: {actual} vs {expected}"
         );
     }
+}
+
+#[test]
+fn test_scale_constructors_reject_empty_and_non_finite_values() {
+    let reason = |result: Result<(), Error>| match result {
+        Err(Error::InvalidColorScale { reason }) => reason,
+        other => panic!("expected InvalidColorScale, got {other:?}"),
+    };
+
+    assert_eq!(
+        reason(DiscreteColorScale::new(vec![]).map(|_| ())),
+        "must have at least one level or stop"
+    );
+    assert_eq!(
+        reason(ContinuousColorScale::new(vec![]).map(|_| ())),
+        "must have at least one level or stop"
+    );
+    for value in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        assert_eq!(
+            reason(
+                DiscreteColorScale::new(vec![
+                    ColorScaleLevel::new(0.0, Color::BLACK),
+                    ColorScaleLevel::new(value, Color::WHITE),
+                ])
+                .map(|_| ())
+            ),
+            "every value must be finite"
+        );
+        assert_eq!(
+            reason(
+                ContinuousColorScale::new(vec![
+                    ColorStop::new(0.0, Color::BLACK),
+                    ColorStop::new(value, Color::WHITE),
+                ])
+                .map(|_| ())
+            ),
+            "every value must be finite"
+        );
+    }
+}
+
+#[test]
+fn test_scale_constructors_accept_any_order_and_shared_values() {
+    let discrete = DiscreteColorScale::new(vec![
+        ColorScaleLevel::new(30.0, Color::WHITE),
+        ColorScaleLevel::new(0.0, Color::BLACK),
+        ColorScaleLevel::new(30.0, Color::rgb(1.0, 0.0, 0.0)),
+    ])
+    .unwrap();
+    let values: Vec<f32> = discrete.levels().iter().map(|level| level.value).collect();
+    assert_eq!(values, [30.0, 30.0, 0.0]);
+    // Of two levels at one threshold, the first given is drawn.
+    assert_eq!(discrete.color(40.0), Color::WHITE);
+
+    let continuous = ContinuousColorScale::new(vec![
+        ColorStop::new(10.0, Color::WHITE),
+        ColorStop::new(0.0, Color::BLACK),
+        ColorStop::new(10.0, Color::WHITE),
+    ])
+    .unwrap();
+    let values: Vec<f32> = continuous.stops().iter().map(|stop| stop.value).collect();
+    assert_eq!(values, [0.0, 10.0, 10.0]);
+    assert_eq!(continuous.color(20.0), Color::WHITE);
 }

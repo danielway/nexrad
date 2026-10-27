@@ -123,7 +123,7 @@ appear in public signatures:
 | `uom` | Unit-typed accessors | Opt-in `uom` feature |
 | `image` | `nexrad_render::RenderResult::into_rgba_image` only | Opt-in `image` feature of `nexrad-render` (and the facade), off by default and not in `full`. It tracks `image`'s own 0.x releases and is excluded from the semver promise. Without it, `RenderResult` exposes owned RGBA8 pixels (`pixels()`, `into_pixels()`) |
 | `futures_core` | The `Stream` returned by `nexrad_data::aws::realtime::chunk_stream` and `nexrad::stream` | Return type only |
-| `futures_util` | The facade | Re-exported as `nexrad::futures_util` (feature `aws`) for `StreamExt`; not in any signature |
+| `futures_util` | The facade, internally | Not re-exported and not in any signature; consumers depend on `futures-util` or `futures` themselves for `StreamExt` |
 
 Not allowed in public signatures: `reqwest`, `bzip2`, `png`, `zerocopy` traits, `tokio`, `once_cell`. HTTP failures are
 boxed inside `AwsError`, bzip2 failures surface as `Error::Io`, PNG encoder failures are boxed inside
@@ -210,7 +210,10 @@ same validation as the constructors and builders. The representation is stable w
   `Radial`, `Sweep` and `SweepField`) are `f32`; image dimensions are `u32`.
 - **Constructors**: types with invariants have private fields, and their constructors and builders validate the
   invariants and return a `Result` (`RadialBuilder::build`, `Sweep::new`); field indexing returns `Option`, and `set`
-  returns a `Result`. Configuration types (`RetryPolicy`, `PollConfig`) have constructors with `with_*` setters and
+  returns a `Result`. A builder whose type could gain an invariant returns a `Result` even when it checks little today
+  (`VolumeCoveragePatternBuilder::build`), because changing `T` to `Result<T>` later is breaking and adding an error
+  variant is not. Constructors with more than a few arguments, or with arguments of the same type that could be
+  swapped, are builders (`MomentData::builder`). Configuration types (`RetryPolicy`, `PollConfig`) have constructors with `with_*` setters and
   getters. Every `nexrad-process` processor with parameters has a validating `new` or builder.
 - **Lifetimes**: no public function returns a value with an unbounded output lifetime (`Record::decompress` returns
   `Record<'static>`).

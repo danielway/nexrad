@@ -1,8 +1,9 @@
 //! Tests for constructor validation, checked field indexing, and the field extraction fixes.
 
 use nexrad_model::data::{
-    CartesianField, GateStatus, MomentData, MomentValue, Product, Radial, Sweep, SweepField,
-    VerticalField,
+    CartesianField, ChannelConfiguration, ElevationCut, ElevationCutBuilder, GateStatus,
+    MomentData, MomentValue, Product, Radial, Sweep, SweepField, VcpNumber, VerticalField,
+    VolumeCoveragePattern, WaveformType,
 };
 use nexrad_model::geo::{GeoExtent, GeoPoint};
 use nexrad_model::meta::Site;
@@ -63,17 +64,13 @@ fn sweep_builder() -> nexrad_model::data::SweepFieldBuilder {
 }
 
 fn reflectivity(first_gate_range_meters: u16, raw: Vec<u8>) -> MomentData {
-    MomentData::from_fixed_point(
-        Product::Reflectivity,
-        raw.len(),
-        first_gate_range_meters,
-        250,
-        8,
-        2.0,
-        66.0,
-        raw,
-    )
-    .unwrap()
+    MomentData::builder(Product::Reflectivity, raw)
+        .first_gate_range_meters(first_gate_range_meters)
+        .gate_interval_meters(250)
+        .scale(2.0)
+        .offset(66.0)
+        .build()
+        .unwrap()
 }
 
 // --- Checked indexing ---
@@ -375,21 +372,19 @@ fn new_like_copies_validated_geometry() {
     assert_eq!(like.get(3, 0), None);
 }
 
-// --- MomentData::from_fixed_point ---
+// --- MomentDataBuilder ---
 
 #[test]
 fn moment_data_rejects_invalid_word_size() {
     let build = |word_size| {
-        MomentData::from_fixed_point(
-            Product::Reflectivity,
-            2,
-            2125,
-            250,
-            word_size,
-            2.0,
-            66.0,
-            vec![10, 20],
-        )
+        MomentData::builder(Product::Reflectivity, vec![10, 20])
+            .gate_count(2)
+            .first_gate_range_meters(2125)
+            .gate_interval_meters(250)
+            .data_word_size(word_size)
+            .scale(2.0)
+            .offset(66.0)
+            .build()
     };
 
     assert_eq!(
@@ -406,16 +401,14 @@ fn moment_data_rejects_invalid_word_size() {
 #[test]
 fn moment_data_rejects_mismatched_value_length() {
     let build = |gate_count, word_size, values| {
-        MomentData::from_fixed_point(
-            Product::DifferentialReflectivity,
-            gate_count,
-            2125,
-            250,
-            word_size,
-            16.0,
-            128.0,
-            values,
-        )
+        MomentData::builder(Product::DifferentialReflectivity, values)
+            .gate_count(gate_count)
+            .first_gate_range_meters(2125)
+            .gate_interval_meters(250)
+            .data_word_size(word_size)
+            .scale(16.0)
+            .offset(128.0)
+            .build()
     };
 
     assert_eq!(moment_length(build(3, 8, vec![1, 2])), (3, 2));
@@ -436,16 +429,12 @@ fn moment_data_rejects_mismatched_value_length() {
 #[test]
 fn moment_data_rejects_non_finite_scale_and_offset() {
     let build = |scale, offset| {
-        MomentData::from_fixed_point(
-            Product::Reflectivity,
-            1,
-            2125,
-            250,
-            8,
-            scale,
-            offset,
-            vec![10],
-        )
+        MomentData::builder(Product::Reflectivity, vec![10])
+            .first_gate_range_meters(2125)
+            .gate_interval_meters(250)
+            .scale(scale)
+            .offset(offset)
+            .build()
     };
 
     assert_eq!(
@@ -468,18 +457,44 @@ fn moment_data_rejects_non_finite_scale_and_offset() {
 }
 
 #[test]
+fn moment_data_builder_derives_the_gate_count() {
+    let eight_bit = MomentData::builder(Product::Reflectivity, vec![1, 2, 3])
+        .build()
+        .unwrap();
+    assert_eq!(eight_bit.gate_count(), 3);
+    assert_eq!(eight_bit.data_word_size(), 8);
+    assert_eq!(eight_bit.first_gate_range_meters(), 0);
+    assert_eq!(eight_bit.gate_interval_meters(), 0);
+    assert_eq!(eight_bit.scale(), 0.0);
+    assert_eq!(eight_bit.offset(), 0.0);
+
+    let sixteen_bit = MomentData::builder(Product::DifferentialPhase, vec![0, 2, 1, 0])
+        .data_word_size(16)
+        .build()
+        .unwrap();
+    assert_eq!(sixteen_bit.gate_count(), 2);
+    assert_eq!(sixteen_bit.raw_gate_values().collect::<Vec<_>>(), [2, 256]);
+
+    // Three bytes are not a whole number of 16-bit gates.
+    assert_eq!(
+        moment_length(
+            MomentData::builder(Product::DifferentialPhase, vec![0, 2, 1])
+                .data_word_size(16)
+                .build()
+        ),
+        (2, 3)
+    );
+}
+
+#[test]
 fn moment_data_exposes_constructor_units() {
-    let moment = MomentData::from_fixed_point(
-        Product::Velocity,
-        3,
-        2125,
-        250,
-        8,
-        2.0,
-        129.0,
-        vec![2, 3, 4],
-    )
-    .unwrap();
+    let moment = MomentData::builder(Product::Velocity, vec![2, 3, 4])
+        .first_gate_range_meters(2125)
+        .gate_interval_meters(250)
+        .scale(2.0)
+        .offset(129.0)
+        .build()
+        .unwrap();
 
     assert_eq!(moment.gate_count(), 3usize);
     assert_eq!(moment.first_gate_range_meters(), 2125);
@@ -491,17 +506,12 @@ fn moment_data_exposes_constructor_units() {
 #[test]
 fn unscaled_moment_decodes_sentinels_before_raw_values() {
     // 16-bit, scale 0: raw 0 and 1 are sentinels, not the values 0.0 and 1.0.
-    let moment = MomentData::from_fixed_point(
-        Product::DifferentialPhase,
-        3,
-        2125,
-        250,
-        16,
-        0.0,
-        0.0,
-        vec![0, 0, 0, 1, 0x01, 0x00],
-    )
-    .unwrap();
+    let moment = MomentData::builder(Product::DifferentialPhase, vec![0, 0, 0, 1, 0x01, 0x00])
+        .first_gate_range_meters(2125)
+        .gate_interval_meters(250)
+        .data_word_size(16)
+        .build()
+        .unwrap();
     assert_eq!(
         moment.values(),
         vec![
@@ -512,17 +522,11 @@ fn unscaled_moment_decodes_sentinels_before_raw_values() {
     );
 
     // Clutter filter power keeps its status codes when unscaled.
-    let cfp = MomentData::from_fixed_point(
-        Product::ClutterFilterPower,
-        2,
-        2125,
-        250,
-        8,
-        0.0,
-        0.0,
-        vec![1, 9],
-    )
-    .unwrap();
+    let cfp = MomentData::builder(Product::ClutterFilterPower, vec![1, 9])
+        .first_gate_range_meters(2125)
+        .gate_interval_meters(250)
+        .build()
+        .unwrap();
     assert!(matches!(cfp.values()[0], MomentValue::CfpStatus(_)));
     assert_eq!(cfp.values()[1], MomentValue::Value(9.0));
 
@@ -583,7 +587,7 @@ fn sweep_new_rejects_radials_from_other_elevations() {
     assert_eq!(Sweep::new(2, vec![radial(2)]).unwrap().radials().len(), 1);
 
     // Splitting by elevation upholds the invariant without an error path.
-    let sweeps = Sweep::from_radials(vec![radial(1), radial(1), radial(2)]);
+    let sweeps = Sweep::split_by_elevation_number(vec![radial(1), radial(1), radial(2)]);
     assert_eq!(sweeps.len(), 2);
     assert_eq!(sweeps[1].elevation_number(), 2);
 }
@@ -683,17 +687,13 @@ fn sweep_field_skips_radials_with_different_gate_geometry() {
             .build()
             .unwrap()
     };
-    let shifted_interval = MomentData::from_fixed_point(
-        Product::Reflectivity,
-        2,
-        2125,
-        1000,
-        8,
-        2.0,
-        66.0,
-        vec![200, 200],
-    )
-    .unwrap();
+    let shifted_interval = MomentData::builder(Product::Reflectivity, vec![200, 200])
+        .first_gate_range_meters(2125)
+        .gate_interval_meters(1000)
+        .scale(2.0)
+        .offset(66.0)
+        .build()
+        .unwrap();
     let radials = vec![
         radial(10.0, reflectivity(2125, vec![100, 110])),
         radial(11.0, reflectivity(4125, vec![200, 200])),
@@ -801,4 +801,101 @@ fn value_range_ignores_filtered_gates() {
     vertical.set(0, 0, 90.0, GateStatus::Filtered).unwrap();
     vertical.set(0, 1, 90.0, GateStatus::Filtered).unwrap();
     assert_eq!(vertical.value_range(), None);
+}
+
+// --- ElevationCutBuilder and VolumeCoveragePatternBuilder ---
+
+fn coverage_parameter(result: Result<impl std::fmt::Debug, Error>) -> &'static str {
+    match result {
+        Err(Error::InvalidCoveragePattern { parameter, .. }) => parameter,
+        other => panic!("expected InvalidCoveragePattern, got {other:?}"),
+    }
+}
+
+fn cut_builder(elevation_angle_degrees: f32) -> ElevationCutBuilder {
+    ElevationCut::builder(
+        elevation_angle_degrees,
+        WaveformType::ContiguousSurveillance,
+        ChannelConfiguration::ConstantPhase,
+    )
+}
+
+#[test]
+fn elevation_cut_builder_rejects_non_finite_values() {
+    for angle in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        assert_eq!(
+            coverage_parameter(cut_builder(angle).build()),
+            "elevation_angle_degrees"
+        );
+    }
+    assert_eq!(
+        coverage_parameter(
+            cut_builder(0.5)
+                .azimuth_rate_degrees_per_second(f64::NAN)
+                .build()
+        ),
+        "azimuth_rate_degrees_per_second"
+    );
+    type Setter = fn(ElevationCutBuilder, f32) -> ElevationCutBuilder;
+    let thresholds: [(Setter, &str); 6] = [
+        (
+            ElevationCutBuilder::reflectivity_snr_threshold_db,
+            "reflectivity_snr_threshold_db",
+        ),
+        (
+            ElevationCutBuilder::velocity_snr_threshold_db,
+            "velocity_snr_threshold_db",
+        ),
+        (
+            ElevationCutBuilder::spectrum_width_snr_threshold_db,
+            "spectrum_width_snr_threshold_db",
+        ),
+        (
+            ElevationCutBuilder::differential_reflectivity_snr_threshold_db,
+            "differential_reflectivity_snr_threshold_db",
+        ),
+        (
+            ElevationCutBuilder::differential_phase_snr_threshold_db,
+            "differential_phase_snr_threshold_db",
+        ),
+        (
+            ElevationCutBuilder::correlation_coefficient_snr_threshold_db,
+            "correlation_coefficient_snr_threshold_db",
+        ),
+    ];
+    for (set, parameter) in thresholds {
+        assert_eq!(
+            coverage_parameter(set(cut_builder(0.5), f32::NAN).build()),
+            parameter
+        );
+        assert!(set(cut_builder(0.5), -12.5).build().is_ok());
+    }
+    assert_eq!(
+        cut_builder(f32::NAN).build().unwrap_err().to_string(),
+        "invalid coverage pattern: `elevation_angle_degrees` must be finite"
+    );
+
+    // No range is imposed on finite angles.
+    assert!(cut_builder(-1.0).build().is_ok());
+    assert!(cut_builder(179.9).build().is_ok());
+}
+
+#[test]
+fn coverage_pattern_builder_rejects_invalid_doppler_resolution() {
+    let build = |resolution| {
+        VolumeCoveragePattern::builder(VcpNumber::new(212))
+            .doppler_velocity_resolution_mps(resolution)
+            .build()
+    };
+    for resolution in [f32::NAN, f32::INFINITY, -0.5] {
+        assert_eq!(
+            coverage_parameter(build(resolution)),
+            "doppler_velocity_resolution_mps"
+        );
+    }
+    // The decoder reports 0.0 for an undefined resolution code.
+    assert!(build(0.0).is_ok());
+    assert!(build(1.0).is_ok());
+    // An empty list of elevation cuts is accepted.
+    assert!(build(0.5).unwrap().elevation_cuts().is_empty());
 }

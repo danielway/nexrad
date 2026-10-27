@@ -96,6 +96,7 @@ fn cut(elevation_angle_degrees: f32, waveform_type: WaveformType) -> ElevationCu
         ChannelConfiguration::ConstantPhase,
     )
     .build()
+    .unwrap()
 }
 
 fn sweep(elevation_number: u8, elevation_angle_degrees: f32) -> Sweep {
@@ -121,7 +122,8 @@ fn split_cut_scan() -> Scan {
             ),
             cut(2.4, WaveformType::Batch),
         ])
-        .build();
+        .build()
+        .unwrap();
     let sweeps = vec![
         sweep(1, 0.5),
         sweep(2, 0.5),
@@ -227,7 +229,9 @@ fn geolocation_round_trips_at_long_range_and_steep_tilts() {
                     latitude: geo.latitude,
                     longitude: geo.longitude,
                 };
-                let back = coords.geo_to_polar(point, elevation_angle_degrees);
+                let back = coords
+                    .geo_to_polar(point, elevation_angle_degrees)
+                    .expect("a beam at this elevation passes over the point");
 
                 let range_error_m = (back.range_km - range_km).abs() * 1000.0;
                 assert!(

@@ -73,7 +73,7 @@ Built-in color scales follow standard meteorological conventions:
 
 | Function | Product | Range |
 |----------|---------|-------|
-| `nws_reflectivity_scale()` | Reflectivity | -32 to 95 dBZ |
+| `reflectivity_scale()` | Reflectivity | -32 to 95 dBZ |
 | `velocity_scale()` | Radial Velocity | -64 to +64 m/s |
 | `spectrum_width_scale()` | Spectrum Width | 0 to 30 m/s |
 | `differential_reflectivity_scale()` | ZDR | -2 to +6 dB |

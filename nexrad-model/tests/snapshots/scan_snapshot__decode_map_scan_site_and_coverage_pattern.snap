@@ -31,12 +31,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 1
       surveillance_prf_pulse_count: 15
-      reflectivity_threshold_db: 2
-      velocity_threshold_db: 2
-      spectrum_width_threshold_db: 2
-      differential_reflectivity_threshold_db: 2
-      differential_phase_threshold_db: 2
-      correlation_coefficient_threshold_db: 2
+      reflectivity_snr_threshold_db: 2
+      velocity_snr_threshold_db: 2
+      spectrum_width_snr_threshold_db: 2
+      differential_reflectivity_snr_threshold_db: 2
+      differential_phase_snr_threshold_db: 2
+      correlation_coefficient_snr_threshold_db: 2
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -53,12 +53,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: false
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -75,12 +75,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 1
       surveillance_prf_pulse_count: 15
-      reflectivity_threshold_db: 2
-      velocity_threshold_db: 2
-      spectrum_width_threshold_db: 2
-      differential_reflectivity_threshold_db: 2
-      differential_phase_threshold_db: 2
-      correlation_coefficient_threshold_db: 2
+      reflectivity_snr_threshold_db: 2
+      velocity_snr_threshold_db: 2
+      spectrum_width_snr_threshold_db: 2
+      differential_reflectivity_snr_threshold_db: 2
+      differential_phase_snr_threshold_db: 2
+      correlation_coefficient_snr_threshold_db: 2
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -97,12 +97,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: false
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -119,12 +119,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 2
       surveillance_prf_pulse_count: 15
-      reflectivity_threshold_db: 2
-      velocity_threshold_db: 2
-      spectrum_width_threshold_db: 2
-      differential_reflectivity_threshold_db: 2
-      differential_phase_threshold_db: 2
-      correlation_coefficient_threshold_db: 2
+      reflectivity_snr_threshold_db: 2
+      velocity_snr_threshold_db: 2
+      spectrum_width_snr_threshold_db: 2
+      differential_reflectivity_snr_threshold_db: 2
+      differential_phase_snr_threshold_db: 2
+      correlation_coefficient_snr_threshold_db: 2
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -141,12 +141,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: false
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -163,12 +163,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 3
       surveillance_prf_pulse_count: 3
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -185,12 +185,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 4
       surveillance_prf_pulse_count: 3
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -207,12 +207,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 5
       surveillance_prf_pulse_count: 3
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -229,12 +229,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 6
       surveillance_prf_pulse_count: 3
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -251,12 +251,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 6
       surveillance_prf_pulse_count: 3
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -273,12 +273,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 1
       surveillance_prf_pulse_count: 15
-      reflectivity_threshold_db: 2
-      velocity_threshold_db: 2
-      spectrum_width_threshold_db: 2
-      differential_reflectivity_threshold_db: 2
-      differential_phase_threshold_db: 2
-      correlation_coefficient_threshold_db: 2
+      reflectivity_snr_threshold_db: 2
+      velocity_snr_threshold_db: 2
+      spectrum_width_snr_threshold_db: 2
+      differential_reflectivity_snr_threshold_db: 2
+      differential_phase_snr_threshold_db: 2
+      correlation_coefficient_snr_threshold_db: 2
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: true
@@ -295,12 +295,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: false
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: true
@@ -317,12 +317,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 1
       surveillance_prf_pulse_count: 15
-      reflectivity_threshold_db: 2
-      velocity_threshold_db: 2
-      spectrum_width_threshold_db: 2
-      differential_reflectivity_threshold_db: 2
-      differential_phase_threshold_db: 2
-      correlation_coefficient_threshold_db: 2
+      reflectivity_snr_threshold_db: 2
+      velocity_snr_threshold_db: 2
+      spectrum_width_snr_threshold_db: 2
+      differential_reflectivity_snr_threshold_db: 2
+      differential_phase_snr_threshold_db: 2
+      correlation_coefficient_snr_threshold_db: 2
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: true
@@ -339,12 +339,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: false
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: true
@@ -361,12 +361,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 2
       surveillance_prf_pulse_count: 15
-      reflectivity_threshold_db: 2
-      velocity_threshold_db: 2
-      spectrum_width_threshold_db: 2
-      differential_reflectivity_threshold_db: 2
-      differential_phase_threshold_db: 2
-      correlation_coefficient_threshold_db: 2
+      reflectivity_snr_threshold_db: 2
+      velocity_snr_threshold_db: 2
+      spectrum_width_snr_threshold_db: 2
+      differential_reflectivity_snr_threshold_db: 2
+      differential_phase_snr_threshold_db: 2
+      correlation_coefficient_snr_threshold_db: 2
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: true
@@ -383,12 +383,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: false
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: true
@@ -405,12 +405,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 6
       surveillance_prf_pulse_count: 3
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -427,12 +427,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -449,12 +449,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -471,12 +471,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -493,12 +493,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false
@@ -515,12 +515,12 @@ expression: "(scan.site(), scan.coverage_pattern())"
       super_resolution_dual_pol_to_300km: true
       surveillance_prf_number: 0
       surveillance_prf_pulse_count: 0
-      reflectivity_threshold_db: 3.5
-      velocity_threshold_db: 3.5
-      spectrum_width_threshold_db: 3.5
-      differential_reflectivity_threshold_db: 3.5
-      differential_phase_threshold_db: 3.5
-      correlation_coefficient_threshold_db: 3.5
+      reflectivity_snr_threshold_db: 3.5
+      velocity_snr_threshold_db: 3.5
+      spectrum_width_snr_threshold_db: 3.5
+      differential_reflectivity_snr_threshold_db: 3.5
+      differential_phase_snr_threshold_db: 3.5
+      correlation_coefficient_snr_threshold_db: 3.5
       is_sails_cut: false
       sails_sequence_number: 0
       is_mrle_cut: false

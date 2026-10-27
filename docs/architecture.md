@@ -44,7 +44,7 @@ Each library crate owns exactly one concern:
 | `nexrad-model` | Domain types and the methods on them, site registry | I/O, parsing, rendering |
 | `nexrad-decode` | Binary protocol parsing per NOAA ICD, all protocol-to-model conversion (`model` feature) | File I/O, network access, decompression |
 | `nexrad-data` | Archive II file handling, decompression, AWS S3, real-time chunk polling | Protocol-to-model mapping, rendering, processing |
-| `nexrad-process` | Filtering, smoothing, derived products, storm cell detection | I/O, rendering |
+| `nexrad-process` | Filtering, smoothing, derived products, threshold region detection | I/O, rendering |
 | `nexrad-render` | Color mapping, image generation, pixel ↔ data coordinate mapping | Data access, parsing |
 | `nexrad` | Re-exports, I/O entry points, unified error type | New functionality |
 
@@ -252,15 +252,11 @@ Processing and rendering operate on three field types, all defined in `nexrad-mo
 
 ## Processing Architecture
 
-Processing algorithms are modeled as traits with two scopes:
-
-| Trait | Scope | Input → Output |
-|-------|-------|---------------|
-| `SweepProcessor` | Single sweep | `SweepField → SweepField` |
-| `ScanDerivedProduct` | Full scan → geographic surface | `[SweepField]` on a `CartesianGrid` → `CartesianField` |
-
-Filters such as `ThresholdFilter` are `SweepProcessor`s, and `CompositeReflectivity` is a `ScanDerivedProduct`;
-`VerticalCrossSection` and `StormCellDetector` stand alone. Processors with parameters are built with a validating
+Single-sweep algorithms implement the `SweepProcessor` trait (`SweepField → SweepField`); filters such as
+`ThresholdFilter` are `SweepProcessor`s. Products computed from the sweeps of a full scan have inherent `compute` methods
+rather than a shared trait: `CompositeReflectivity` returns a `CartesianField` on a `CartesianGrid` and
+`VerticalCrossSection` a `VerticalField`. A trait for scan products can be added in a minor release once more than one
+product shows its shape. `ThresholdRegionDetector` also stands alone. Processors with parameters are built with a validating
 `new` or builder that returns `Err(Error::InvalidParameter)`, so invalid configuration is reported at construction
 rather than by `process`.
 

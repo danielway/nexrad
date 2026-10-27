@@ -13,11 +13,9 @@ use nexrad_model::geo::RadarCoordinateSystem;
 /// The horizontal axis is ground range in kilometers and the vertical axis is altitude above
 /// mean sea level in meters.
 ///
-/// Unlike [`CompositeReflectivity`](super::CompositeReflectivity), this type does not
-/// implement [`ScanDerivedProduct`](crate::ScanDerivedProduct) because its output is a
-/// [`VerticalField`] (range vs. altitude) rather than a
-/// [`CartesianField`](nexrad_model::data::CartesianField). Its
-/// construction parameters (azimuth, range, altitude, dimensions) fully define the
+/// Unlike [`CompositeReflectivity`](super::CompositeReflectivity), whose output is a
+/// [`CartesianField`](nexrad_model::data::CartesianField), this type's output is a
+/// [`VerticalField`] (range vs. altitude). Its construction parameters (azimuth, range, altitude, dimensions) fully define the
 /// output grid; the radar's coordinate system supplies the beam geometry at compute time.
 ///
 /// # Example

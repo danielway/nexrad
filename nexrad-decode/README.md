@@ -18,10 +18,9 @@ One of the [nexrad crates](https://github.com/danielway/nexrad). Most programs d
 ## Scope
 
 The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
-(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
-volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
-back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
-III products are out of scope.
+(ICD 2620002), from WSR-88D and TDWR radars. They read the whole archive, including volumes with legacy message 1
+radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes back to 1991. `_MDM` objects
+(Model Data, message type 29) and archive tarballs are not read, and Level III products are out of scope.
 
 ## Usage
 
@@ -84,7 +83,7 @@ Builders filled independently (for example, one per record decoded in parallel) 
 | 2 | RDA Status Data | `RdaStatusData` |
 | 3 | Performance/Maintenance Data | `PerformanceMaintenanceData` |
 | 4, 10 | Console Message | `ConsoleMessage` |
-| 5 | Volume Coverage Pattern | `VolumeCoveragePattern` |
+| 5 | Volume Coverage Pattern | `RdaVolumeCoveragePattern` |
 | 6 | RDA Control Commands | `RdaControlCommands` |
 | 8 | Clutter Censor Zones | `ClutterCensorZones` |
 | 9 | Request for Data | `RequestForData` |
@@ -119,8 +118,7 @@ in full.
 |---------|---------|-------------|
 | `model` | Yes | Conversion of decoded messages to `nexrad-model` types (`ScanBuilder`, `into_radial`, `to_model`, `site`) |
 
-Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example with the `uom` crate)
-may be offered later as a separate crate or extension trait.
+Accessors return plain numbers with the unit in the name.
 
 ## Minimum Supported Rust Version
 

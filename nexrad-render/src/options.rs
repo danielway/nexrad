@@ -6,24 +6,18 @@ use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
 
 /// Interpolation method for rendering radar data.
 ///
-/// Controls how pixel values are sampled from the underlying data grid.
-/// The default is [`Nearest`](Interpolation::Nearest) for backward compatibility. The enum is
-/// non-exhaustive so that another sampling method can be added in a minor release.
+/// Controls how pixel values are sampled from the data grid. The default is
+/// [`Nearest`](Interpolation::Nearest). The enum is non-exhaustive so that another sampling
+/// method can be added in a minor release.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
 pub enum Interpolation {
-    /// Nearest-neighbor sampling (fastest, produces blocky/aliased output).
-    ///
-    /// Each output pixel takes the value of the single closest data gate.
-    /// This is the legacy behavior and the default.
+    /// Nearest-neighbor sampling: each output pixel takes the value of the nearest gate. This is
+    /// the default.
     #[default]
     Nearest,
-    /// Bilinear interpolation (smoother, anti-aliased output).
-    ///
-    /// Each output pixel blends the four surrounding data gates using
-    /// bilinear weights. Interpolation happens in **data value space**
-    /// (the f32 moment value), not in color space, ensuring scientifically
-    /// correct results.
+    /// Bilinear interpolation: each output pixel blends the four surrounding gates with bilinear
+    /// weights. Values are interpolated before color mapping, not in color space.
     ///
     /// Falls back to nearest-neighbor for any pixel where one or more of
     /// the four neighbors has a non-[`Valid`](nexrad_model::data::GateStatus::Valid) status.
@@ -85,10 +79,8 @@ impl RenderOptions {
 
     /// Creates render options sized for native resolution of a sweep field.
     ///
-    /// Sets both width and height to `gate_count * 2`, which ensures approximately
-    /// one pixel per gate at the outer edge of the sweep. This produces the highest
-    /// fidelity rendering without wasting pixels.
-    /// The size saturates at `u32::MAX` for implausibly large gate counts.
+    /// Sets width and height to `gate_count * 2`, about one pixel per gate at the edge of the
+    /// sweep, saturating at `u32::MAX`.
     pub fn native_for(field: &SweepField) -> Self {
         let size = u32::try_from(field.gate_count().saturating_mul(2)).unwrap_or(u32::MAX);
         Self::new(size, size)

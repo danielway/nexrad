@@ -2,8 +2,8 @@
 //!
 //! A Rust library for working with NEXRAD (Next Generation Weather Radar) data.
 //!
-//! This crate serves as the main entry point for the NEXRAD library suite, providing
-//! ergonomic top-level functions and re-exports from the underlying crates:
+//! This crate is the entry point for the NEXRAD library suite. It provides top-level functions
+//! and re-exports the underlying crates:
 //!
 //! - `nexrad-model` as `model` - Core data model types (Scan, Sweep, Radial, Site)
 //! - `nexrad-decode` as `decode` - Binary protocol decoding for Archive II format
@@ -19,15 +19,12 @@
 //! ## Scope
 //!
 //! The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the
-//! RDA/RPG messages it carries (ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II
-//! volumes. The intended scope for 1.0 is the whole archive: volumes with legacy message 1
-//! radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
-//! back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive
-//! tarballs are not read, and Level III products are out of scope.
+//! RDA/RPG messages it carries (ICD 2620002), from WSR-88D and TDWR radars. They read the whole
+//! archive, including volumes with legacy message 1 radials, volumes from before 2008 that carry
+//! no VCP message, and gzip-compressed volumes back to 1991. `_MDM` objects (Model Data, message
+//! type 29) and archive tarballs are not read, and Level III products are out of scope.
 //!
 //! ## Quick Start
-//!
-//! Load radar data with a single function call:
 //!
 //! ```no_run
 //! # #[cfg(feature = "data")]
@@ -96,8 +93,7 @@
 //!
 //! Every feature except `parallel` builds for `wasm32-unknown-unknown`.
 //!
-//! Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example
-//! with the `uom` crate) may be offered later as a separate crate or extension trait.
+//! Accessors return plain numbers with the unit in the name.
 //!
 //! `aws-rustls` (on by default) gives `aws` its TLS backend: rustls with the `aws-lc-rs` crypto
 //! provider, which compiles C code and needs a C compiler and, on Windows x86 targets, NASM. On
@@ -131,9 +127,8 @@
 //!
 //! ## Error Handling
 //!
-//! This crate provides unified error types via [`Error`] and [`Result<T>`]. All sub-crate
-//! errors automatically convert to the unified type via `From` traits, enabling seamless
-//! error propagation:
+//! [`Error`] and [`Result<T>`] are the unified error types. Every sub-crate error converts to
+//! [`Error`] via `From`, so `?` propagates it:
 //!
 //! ```no_run
 //! # #[cfg(feature = "data")]
@@ -155,61 +150,12 @@
 //!
 //! ## Crate Organization
 //!
-//! For more specialized use cases, you can depend on individual crates directly:
+//! Each re-exported crate can also be used directly. [docs/architecture.md] describes what each
+//! crate owns and the dependencies between them.
 //!
-//! | Crate | Purpose |
-//! |-------|---------|
-//! | `nexrad-model` | Domain types with optional serde/chrono support |
-//! | `nexrad-decode` | Low-level binary parsing per NOAA ICD 2620002AA |
-//! | `nexrad-data` | Archive II file handling and AWS S3 access |
-//! | `nexrad-process` | Radar data processing and derived products |
-//! | `nexrad-render` | Visualization and image rendering |
-//!
-//! ## Crate Responsibility Boundaries
-//!
-//! This facade crate enforces clear separation of concerns across the library suite:
-//!
-//! ### Re-exported Crates (Part of Public API)
-//!
-//! - **`nexrad-model`**: Pure data structures and transformations
-//!   - ✓ Domain types (Scan, Sweep, Radial, Site)
-//!   - ✓ Data transformations and validations
-//!   - ✗ No I/O operations (file, network, stdio)
-//!   - ✗ No binary parsing or encoding
-//!   - ✗ No rendering or visualization
-//!
-//! - **`nexrad-decode`**: Binary protocol parsing
-//!   - ✓ Parsing NEXRAD Level II message format (NOAA ICD 2620002AA)
-//!   - ✓ All conversion to model types, including `ScanBuilder` (`model` feature)
-//!   - ✗ No I/O operations (operates on byte slices)
-//!   - ✗ No file or network access
-//!   - ✗ No rendering or visualization
-//!
-//! - **`nexrad-data`**: File I/O and network access
-//!   - ✓ Archive II file handling (including limited volume header decoding)
-//!   - ✓ AWS S3 integration (when `aws` feature enabled)
-//!   - ✓ Decompression and format handling
-//!   - ✓ Uses `nexrad-decode` for message parsing and for conversion to `nexrad-model` types
-//!   - ✗ No protocol-to-model mapping of its own
-//!   - ✗ No rendering or visualization
-//!   - ✗ No CLI or user interaction
-//!
-//! - **`nexrad-process`**: Processing algorithms
-//!   - ✓ Filters, smoothing and derived products over `nexrad-model` fields
-//!   - ✓ Threshold region detection
-//!   - ✗ No I/O operations
-//!   - ✗ No rendering or visualization
-//!
-//! - **`nexrad-render`**: Visualization and image rendering
-//!   - ✓ Render radar data to in-memory images
-//!   - ✓ Apply color scales to moment data
-//!   - ✓ Consume `nexrad-model` types
-//!   - ✗ No I/O beyond encoding a rendered image to a writer or file path
-//!   - ✗ No data access or parsing
+//! [docs/architecture.md]: https://github.com/danielway/nexrad/blob/main/docs/architecture.md
 //!
 //! ## Lower-Level APIs
-//!
-//! For advanced use cases, the sub-crates provide finer-grained control.
 //!
 //! ### Direct File Access with nexrad-data
 //!
@@ -596,11 +542,7 @@ where
 /// site and sets the download and discovery retry policies. This is a wrapper around
 /// [`data::aws::realtime::chunk_stream`].
 ///
-/// The stream is runtime-agnostic: `sleep` is called with each duration the
-/// stream needs to wait and must return a future that completes after that
-/// duration. With tokio, pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a
-/// timer crate such as `gloo-timers` provides an equivalent sleep future. The
-/// stream is `Send` whenever `S` and `F` are `Send`.
+/// `sleep` is used as in [`stream`]. The stream is `Send` whenever `S` and `F` are `Send`.
 ///
 /// # Example
 ///
@@ -648,11 +590,7 @@ where
 /// the partial volume is discarded; the next Start chunk begins a new one. Only complete volumes
 /// are yielded.
 ///
-/// The stream is runtime-agnostic: `sleep` is called with each duration the
-/// stream needs to wait and must return a future that completes after that
-/// duration. With tokio, pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a
-/// timer crate such as `gloo-timers` provides an equivalent sleep future. The
-/// stream is `Send` whenever `S` and `F` are `Send`.
+/// `sleep` is used as in [`stream`]. The stream is `Send` whenever `S` and `F` are `Send`.
 ///
 /// # Example
 ///
@@ -686,16 +624,9 @@ where
 /// Like [`stream_scans`], but takes a [`PollConfig`](data::aws::realtime::PollConfig), which
 /// names the site and sets the download and discovery retry policies.
 ///
-/// Chunks received before the first Start chunk are skipped, so the volume in progress when the
-/// stream starts is not yielded. An error from the chunk stream is yielded as an error item and
-/// the partial volume is discarded; the next Start chunk begins a new one. Only complete volumes
-/// are yielded.
+/// Volumes are assembled and yielded as in [`stream_scans`].
 ///
-/// The stream is runtime-agnostic: `sleep` is called with each duration the
-/// stream needs to wait and must return a future that completes after that
-/// duration. With tokio, pass `|d| tokio::time::sleep(d)`. On `wasm32` targets, a
-/// timer crate such as `gloo-timers` provides an equivalent sleep future. The
-/// stream is `Send` whenever `S` and `F` are `Send`.
+/// `sleep` is used as in [`stream`]. The stream is `Send` whenever `S` and `F` are `Send`.
 ///
 /// # Example
 ///

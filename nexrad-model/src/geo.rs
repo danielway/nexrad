@@ -60,18 +60,14 @@ pub struct PolarPoint {
 /// Mean earth radius in meters, the radius of the spherical earth model.
 const EARTH_RADIUS_M: f64 = 6_371_000.0;
 
-/// Standard 4/3 effective earth radius in meters.
-///
-/// The standard atmosphere assumption uses 4/3 of the true earth radius to account
-/// for electromagnetic beam refraction. This is the standard meteorological convention
-/// used by the NWS and in radar meteorology textbooks.
+/// Effective earth radius for beam propagation in meters: 4/3 of `EARTH_RADIUS_M`, which
+/// accounts for refraction in a standard atmosphere.
 const EFFECTIVE_EARTH_RADIUS_M: f64 = EARTH_RADIUS_M * 4.0 / 3.0;
 
 /// Radar coordinate system for converting between polar and geographic coordinates.
 ///
-/// Uses a spherical earth of radius 6371 km with the standard 4/3 effective earth radius beam
-/// propagation model, which is the established meteorological convention for radar beam height
-/// and range calculations, and accounts for the antenna's height above mean sea level.
+/// Uses a spherical earth of radius 6371 km with the 4/3 effective earth radius beam propagation
+/// model, and accounts for the antenna's height above mean sea level.
 /// [`polar_to_geo`](Self::polar_to_geo) and [`geo_to_polar`](Self::geo_to_polar) are exact
 /// inverses under this model.
 #[derive(Debug, Clone, PartialEq)]

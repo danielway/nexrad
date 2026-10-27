@@ -53,13 +53,8 @@ impl CompositeReflectivity {
         Self
     }
 
-    /// Compute the composite from the reflectivity sweep fields of a scan.
-    ///
-    /// # Parameters
-    ///
-    /// - `fields` — Reflectivity sweep fields, one per elevation tilt
-    /// - `coordinate_system` — Radar coordinate system for geographic projection
-    /// - `grid` — Geographic extent and dimensions of the output field
+    /// Compute the composite on `grid` from the reflectivity sweep fields of a scan, one per
+    /// elevation tilt, placed with `coordinate_system`.
     ///
     /// # Errors
     ///

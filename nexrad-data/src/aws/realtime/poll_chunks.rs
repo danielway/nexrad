@@ -132,7 +132,6 @@ where
     futures_util::stream::unfold(
         (config, sleep, None),
         |(config, mut sleep, state): (PollConfig, S, Option<ChunkStreamState>)| async move {
-            // Initialize state if needed
             let mut state = match state {
                 Some(s) => s,
                 None => match init_stream_state(&config).await {
@@ -282,7 +281,6 @@ fn record_arrival(
         }
     }
 
-    // Update VCP if this is a start chunk
     if chunk_id.chunk_type() == ChunkType::Start {
         if let Chunk::Start(file) = chunk {
             match file.coverage_pattern_message() {
@@ -299,7 +297,6 @@ fn record_arrival(
         }
     }
 
-    // Update state for next iteration
     state.previous_chunk_time = chunk_id.upload_date_time();
     state.current_chunk = chunk_id.clone();
 }

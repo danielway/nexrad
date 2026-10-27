@@ -1,7 +1,6 @@
 //! Core data model for NEXRAD weather radar data.
 //!
-//! This crate provides an ergonomic API for working with NEXRAD radar data, documented
-//! for users who may not be familiar with the NOAA Archive II format.
+//! The types and their documentation assume no familiarity with the NOAA Archive II format.
 //!
 //! # Overview
 //!
@@ -51,29 +50,12 @@
 //!   Enables `collection_time()` returning `DateTime<Utc>` instead of raw timestamps.
 //!
 //! Accessors return plain numbers with the unit in the name (`elevation_angle_degrees()`,
-//! `gate_interval_km()`). Unit-typed accessors (for example with the `uom` crate) may be offered
-//! later as a separate crate or extension trait.
+//! `gate_interval_km()`).
 //!
 //! # Crate Boundaries
 //!
-//! This crate is a **pure data model** with the following responsibilities and constraints:
-//!
-//! ## Responsibilities
-//!
-//! - ✓ Define domain types (Scan, Sweep, Radial, Site, MomentData)
-//! - ✓ Provide data transformations and validations
-//! - ✓ Support optional features (serde, chrono)
-//!
-//! ## Constraints
-//!
-//! - ✗ **No I/O operations** (file, network, stdio)
-//! - ✗ **No binary parsing or encoding**
-//! - ✗ **No rendering or visualization**
-//! - ✗ **No CLI or user interaction**
-//!
-//! This crate focuses solely on providing ergonomic data structures for working with
-//! NEXRAD radar data. All I/O, parsing, and rendering concerns are handled by separate
-//! crates in the NEXRAD library suite.
+//! This crate defines data types and the operations on them. It performs no I/O, no binary
+//! parsing and no rendering; those are in the other crates of the NEXRAD library suite.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]

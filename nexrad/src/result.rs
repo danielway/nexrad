@@ -1,9 +1,8 @@
 //!
 //! Unified error types for the NEXRAD facade crate.
 //!
-//! This module provides a unified error type [`Error`] that consolidates errors from all
-//! sub-crates (nexrad-model, nexrad-decode, nexrad-data, nexrad-render, nexrad-process) into a
-//! single error surface for users of the facade crate.
+//! [`Error`] gathers the errors of every sub-crate (nexrad-model, nexrad-decode, nexrad-data,
+//! nexrad-render, nexrad-process) into one type.
 //!
 //! ## Error Hierarchy
 //!
@@ -54,7 +53,7 @@
 //!
 //! [`Error::Io`] is always available. Features that build on others enable them too (for
 //! example, `data` also enables `decode` and `model`), so the flattened variants always exist
-//! when `data` is enabled. All features are enabled by default.
+//! when `data` is enabled. The default features enable every variant except `Error::Process`.
 //!
 //! ## Error Source Chain
 //!
@@ -82,49 +81,35 @@
 
 use thiserror::Error as ThisError;
 
-/// A unified result type using the facade-level [`Error`].
-///
-/// This is a convenience type alias that uses the unified error type for all operations
-/// exposed through the nexrad facade crate.
+/// A result with the facade-level [`Error`].
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Unified error type for the NEXRAD facade crate.
 ///
-/// This error type consolidates errors from all sub-crates into a single error surface,
-/// making it easier to handle errors when using multiple sub-crates together.
-///
-/// Each wrapping variant names the layer the error originated in and preserves the wrapped
-/// error as its source. Decode, model and I/O errors that reach the facade through
-/// `nexrad_data` are flattened into `Error::Decode`, `Error::Model` and [`Error::Io`]; see the
-/// [module documentation](self) for details.
+/// Each wrapping variant names the layer the error originated in and returns the wrapped error
+/// as its source; see the [module documentation](self) for how `nexrad_data` errors are
+/// flattened.
 #[derive(ThisError, Debug)]
 #[non_exhaustive]
 pub enum Error {
     /// Error from the data model layer (nexrad-model).
     ///
-    /// This variant is available when the `model` feature is enabled (default).
-    ///
     /// Model errors typically indicate issues with data transformations or validations,
-    /// such as mismatched elevation angles when combining sweeps. Model errors raised
-    /// inside `nexrad_data` also surface here.
+    /// such as mismatched elevation angles when combining sweeps.
     #[cfg(feature = "model")]
     #[error("model error")]
     Model(#[from] nexrad_model::result::Error),
 
     /// Error from binary protocol decoding (nexrad-decode).
     ///
-    /// This variant is available when the `decode` feature is enabled (default).
-    ///
     /// Decode errors indicate issues parsing the binary NEXRAD Level II message format,
     /// such as truncated data, invalid message structures, or missing required fields like
-    /// collection timestamps. Decode errors raised inside `nexrad_data` also surface here.
+    /// collection timestamps.
     #[cfg(feature = "decode")]
     #[error("decode error")]
     Decode(#[from] nexrad_decode::result::Error),
 
     /// Error specific to data access (nexrad-data).
-    ///
-    /// This variant is available when the `data` feature is enabled (default).
     ///
     /// Data errors cover decompression, Archive II volume and record layout, real-time chunk
     /// handling and AWS S3 operations. Decode, model and I/O errors from `nexrad_data` are
@@ -135,8 +120,6 @@ pub enum Error {
 
     /// Error from rendering and visualization (nexrad-render).
     ///
-    /// This variant is available when the `render` feature is enabled (default).
-    ///
     /// Render errors indicate issues with image rendering or failures in the underlying
     /// graphics backend.
     #[cfg(feature = "render")]
@@ -144,8 +127,6 @@ pub enum Error {
     Render(#[from] nexrad_render::result::Error),
 
     /// Error from radar data processing algorithms (nexrad-process).
-    ///
-    /// This variant is available when the `process` feature is enabled (default).
     ///
     /// Process errors indicate issues with processing algorithms, such as invalid
     /// field geometry, missing required data, or invalid parameter values.
@@ -163,8 +144,6 @@ pub enum Error {
 
     /// No archive volume is available for the requested site and date.
     ///
-    /// This variant is available when the `aws` feature is enabled (default).
-    ///
     /// `download_latest` returns this error, carrying the current UTC date, when neither that
     /// date nor the previous one has an archive volume for the site.
     #[cfg(feature = "aws")]
@@ -178,8 +157,6 @@ pub enum Error {
     },
 
     /// No archive volume overlaps the requested site and datetime.
-    ///
-    /// This variant is available when the `aws` feature is enabled (default).
     ///
     /// `download_at` returns this error when no volume started within the window before the
     /// requested datetime, for example because the radar was not operating then.

@@ -14,26 +14,15 @@ use nexrad_model::geo::{GeoExtent, GeoPoint, PolarPoint, RadarCoordinateSystem};
 /// meteorological classification.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ThresholdRegion {
-    /// Unique identifier for this region within the detection run (0-based).
     id: u32,
-    /// Geographic centroid of the region, computed as the mean of all gate positions
-    /// weighted by linear reflectivity factor.
     centroid: GeoPoint,
-    /// Maximum reflectivity value (dBZ) observed in this region.
     max_reflectivity_dbz: f32,
-    /// Mean reflectivity value (dBZ) across all gates in this region.
     mean_reflectivity_dbz: f32,
-    /// Number of polar gates comprising this region.
     gate_count: usize,
-    /// Approximate area of the region in square kilometers.
     area_km2: f64,
-    /// Geographic bounding box of the region.
     bounds: GeoExtent,
-    /// Elevation angle of the sweep this region was detected on (degrees).
     elevation_angle_degrees: f32,
-    /// Azimuth of the gate with maximum reflectivity (degrees).
     max_reflectivity_azimuth_angle_degrees: f32,
-    /// Range of the gate with maximum reflectivity (km).
     max_reflectivity_range_km: f64,
 }
 
@@ -160,14 +149,8 @@ pub struct ThresholdRegionDetector {
 }
 
 impl ThresholdRegionDetector {
-    /// Create a new threshold region detector.
-    ///
-    /// # Parameters
-    ///
-    /// - `reflectivity_threshold_dbz` — Minimum reflectivity in dBZ. Gates
-    ///   at or above this value are candidates for region membership.
-    /// - `min_gate_count` — Minimum number of connected gates for a region
-    ///   to be reported. Smaller regions are discarded.
+    /// Create a detector for regions of gates at or above `reflectivity_threshold_dbz` that hold
+    /// at least `min_gate_count` connected gates; smaller regions are discarded.
     ///
     /// # Errors
     ///
@@ -197,18 +180,11 @@ impl ThresholdRegionDetector {
         self.min_gate_count
     }
 
-    /// Detect regions in the given reflectivity sweep field.
+    /// Detect regions in `field`, which must hold [`Product::Reflectivity`], using `coord_system`
+    /// for geographic positions.
     ///
-    /// # Parameters
-    ///
-    /// - `field` — A sweep field holding [`Product::Reflectivity`] (dBZ values).
-    /// - `coord_system` — The radar coordinate system for computing geographic
-    ///   positions.
-    ///
-    /// # Returns
-    ///
-    /// A vector of detected regions, sorted by descending maximum
-    /// reflectivity. Returns an empty vector if no regions are found.
+    /// Returns the regions sorted by descending maximum reflectivity, or an empty vector if none
+    /// are found.
     ///
     /// # Errors
     ///

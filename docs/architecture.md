@@ -123,7 +123,7 @@ appear in public signatures:
 | `std` | Everywhere | |
 | `chrono` | Timestamps and dates in model, decode, data and the facade | Re-exported from the facade as `nexrad::chrono` (feature `chrono`) |
 | `serde` | `Serialize`/`Deserialize` impls | Opt-in `serde` feature |
-| `image` | `nexrad_render::RenderResult::into_rgba_image` only | Opt-in `image` feature of `nexrad-render` (and the facade), off by default and not in `full`. It tracks `image`'s own 0.x releases and is excluded from the semver promise. Without it, `RenderResult` exposes owned RGBA8 pixels (`pixels()`, `into_pixels()`) |
+| `image` | `nexrad_render::RenderResult::into_rgba_image` only | Opt-in `image` feature of `nexrad-render` (and the facade), outside the semver promise (see [Feature Policy](#feature-policy)). Without it, `RenderResult` exposes owned RGBA8 pixels (`pixels()`, `into_pixels()`) |
 | `futures_core` | The `Stream` returned by `nexrad_data::aws::realtime::chunk_stream` and `nexrad::stream` | Return type only |
 | `futures_util` | The facade, internally | Not re-exported and not in any signature; consumers depend on `futures-util` or `futures` themselves for `StreamExt` |
 

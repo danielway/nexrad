@@ -228,11 +228,10 @@ impl Debug for Record<'_> {
 /// - **Legacy (CTM)**: Data is a series of uncompressed 2432-byte CTM frames. Each
 ///   frame's first 12 bytes are the `rpg_unknown` field of the `MessageHeader`, so
 ///   the frames can be passed directly to the message decoder without stripping.
-///   This format is used by older archive files (pre-~2016) and files with tape
-///   filename version 01-04.
+///   Older archive files use this format.
 ///
-/// The format is auto-detected by checking whether the first 4 bytes form a valid
-/// (non-zero) record size.
+/// The format is detected from the data, not from the tape filename version: data whose first
+/// 4 bytes are zero is read as legacy frames, and anything else as size-prefixed records.
 pub(crate) fn split_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
     if data.len() < 4 {
         // Not enough data for either format detection or a valid record.
@@ -264,7 +263,6 @@ fn split_ldm_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
             break;
         }
 
-        // Check bounds for reading record size
         if position + 4 > data.len() {
             return Err(Error::TruncatedRecord {
                 expected: position + 4,
@@ -284,7 +282,6 @@ fn split_ldm_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
             });
         }
 
-        // Check bounds for full record
         let record_end = position + record_size + 4;
         if record_end > data.len() {
             return Err(Error::TruncatedRecord {
@@ -302,8 +299,7 @@ fn split_ldm_records(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
 
 /// Returns legacy pre-LDM archive data as a single uncompressed record.
 ///
-/// Legacy archive files (pre-~2016, tape filename versions 01-06) store messages
-/// in a mixed format:
+/// Legacy archive files store messages in a mixed format:
 ///
 /// - **Overhead messages** (Types 2, 3, 5, 13, 15, 18, etc.) use fixed 2432-byte
 ///   frame-aligned segments, identical to modern LDM decompressed records.

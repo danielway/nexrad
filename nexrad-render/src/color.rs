@@ -1,7 +1,6 @@
 //! Color scales for radar data visualization.
 //!
-//! This module provides types for mapping radar moment values to colors.
-//! The primary type is [`DiscreteColorScale`], which maps value ranges to
+//! Color scales map radar moment values to colors. The primary type is [`DiscreteColorScale`], which maps value ranges to
 //! specific colors based on threshold levels. For rendering, the scale is
 //! converted to a [`ColorLookupTable`] which provides O(1) color lookups.
 
@@ -101,12 +100,7 @@ pub struct ColorScaleLevel {
 }
 
 impl ColorScaleLevel {
-    /// Creates a new color scale level.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The threshold value
-    /// * `color` - The color to use for values at or above this threshold
+    /// Creates a level that colors values at or above `value` with `color`.
     pub fn new(value: f32, color: Color) -> Self {
         Self { value, color }
     }
@@ -114,8 +108,7 @@ impl ColorScaleLevel {
 
 /// A discrete color scale that maps value ranges to colors.
 ///
-/// The scale works by finding the highest threshold that the input value
-/// exceeds, and returning the corresponding color. Levels are automatically
+/// A value takes the color of the highest threshold at or below it. Levels are
 /// sorted from highest to lowest threshold during construction.
 ///
 /// # Example
@@ -165,8 +158,8 @@ impl DiscreteColorScale {
 
     /// Returns the color for the given value.
     ///
-    /// Finds the highest threshold that the value exceeds and returns its color.
-    /// If the value is below all thresholds, returns the color of the lowest threshold.
+    /// Returns the color of the highest threshold at or below the value, or the color of the
+    /// lowest threshold if the value is below all of them.
     pub fn color(&self, value: f32) -> Color {
         let mut color = Color::BLACK;
 
@@ -411,14 +404,8 @@ struct Steps {
 const MAX_BUCKETS: usize = 4096;
 
 impl ColorLookupTable {
-    /// Creates a lookup table by sampling a color scale.
-    ///
-    /// # Arguments
-    ///
-    /// * `scale` - The color scale to sample from (discrete or continuous)
-    /// * `min` - The value mapped to the first entry
-    /// * `max` - The value mapped to the last entry
-    /// * `size` - The number of entries in the lookup table (256 recommended)
+    /// Creates a lookup table of `size` entries (256 is a typical size) by sampling `scale` from
+    /// `min` to `max`.
     ///
     /// Entry `i` holds the scale's color at `min + i / (size - 1) * (max - min)`.
     /// Values outside the `min..=max` range take the color at the nearer end.

@@ -12,14 +12,14 @@ pub enum Error {
     /// An I/O error occurred while reading or writing data.
     #[error("data file IO error")]
     Io(#[from] std::io::Error),
-    /// An AWS-related error occurred (requires `aws` feature).
+    /// An AWS-related error occurred.
     #[cfg(feature = "aws")]
     #[error(transparent)]
     Aws(#[from] AwsError),
     /// An error occurred during message decoding.
     #[error("error decoding NEXRAD data")]
     Decode(#[from] nexrad_decode::result::Error),
-    /// An error occurred in the common model layer (requires `model` feature).
+    /// An error occurred in the common model layer.
     #[cfg(feature = "model")]
     #[error("error in common model")]
     Model(#[from] nexrad_model::result::Error),
@@ -60,7 +60,7 @@ pub enum Error {
     },
 }
 
-/// Errors that can occur during AWS S3 operations (requires `aws` feature).
+/// Errors that can occur during AWS S3 operations.
 #[cfg(feature = "aws")]
 #[derive(ThisError, Debug)]
 #[non_exhaustive]

@@ -66,7 +66,6 @@ impl<'a> ElevationSegment<'a> {
         // Each radial has 32 halfwords (64 bytes)
         let byte_offset = (radial * HALFWORDS_PER_RADIAL * 2) + (halfword_index * 2);
 
-        // Read the big-endian halfword
         let hi = self.range_bins[byte_offset] as u16;
         let lo = self.range_bins[byte_offset + 1] as u16;
         let halfword = (hi << 8) | lo;

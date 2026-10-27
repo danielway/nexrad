@@ -61,6 +61,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Documentation only: the README and crate docs state the supported data scope (NEXRAD Level II in the Archive II
   format, including TDWR volumes; not `_MDM` model data objects, archive tarballs or Level III products), and the
   README's code blocks compile as doc tests. (#209)
+- `Error::NoDataAvailable` and `Error::NoScanAt` are `#[non_exhaustive]`: patterns need `..`. (#215)
 
 ### Removed
 

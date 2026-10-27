@@ -89,7 +89,10 @@ use nexrad_data::{AwsError, Error, Result}; // nexrad_data::result::Error still 
 **2. Every `Error` enum is `#[non_exhaustive]`** (#155), as are `nexrad_data::AwsError`,
 `nexrad_model::data::Product`, `nexrad_decode::messages::{MessageContents, MessageType, RedundantChannel}`,
 `nexrad_decode::messages::digital_radar_data::DataBlockName` and `nexrad_render::Projection`. A `match` outside the
-defining crate needs a wildcard arm. `VcpNumber` (in both crates) is a `u16` newtype with associated constants rather
+defining crate needs a wildcard arm. The struct-like variants of every crate's `Error` (such as
+`nexrad_model::Error::IndexOutOfBounds { row, column, rows, columns }`) are `#[non_exhaustive]` too (#206, #215):
+patterns outside the defining crate need `..`, and only the defining crate constructs them, so tests that built an
+error to compare against match it with `matches!` instead. `VcpNumber` (in both crates) is a `u16` newtype with associated constants rather
 than an enum (#205); a `match` on it needs a wildcard arm too. The deliberately exhaustive enums are listed under
 [Enum Stability](architecture.md#enum-stability).
 
@@ -320,8 +323,8 @@ offending argument:
 - **`Scan::coverage_pattern()` returns `Option<&VolumeCoveragePattern>`** (#208). It is `None` for a scan built
   without a volume coverage pattern message (type 5), such as a pre-2008 volume, and then `elevation_cut` returns
   `None` and `sweeps_with_waveform` yields nothing. `Scan::coverage_pattern_number()` is stored on the scan and always
-  present; it can differ from the pattern's own `pattern_number()` (see nexrad-decode). `Scan::new` and
-  `Scan::with_site` take the number and the optional pattern:
+  present; it can differ from the pattern's own `pattern_number()` (see nexrad-decode). `Scan::new` takes the number
+  and the optional pattern, and `with_site` is a setter on the result (#215):
 
   ```rust
   // 1.0.0-rc.2
@@ -329,7 +332,7 @@ offending argument:
   let cuts = scan.coverage_pattern().elevation_cuts();
 
   // 1.0
-  let scan = Scan::with_site(site, vcp.pattern_number(), Some(vcp), sweeps);
+  let scan = Scan::new(vcp.pattern_number(), Some(vcp), sweeps).with_site(site);
   let cuts = scan.coverage_pattern().map(|vcp| vcp.elevation_cuts()).unwrap_or_default();
   ```
 - **`Debug` output** prints the new names, `fnv1a: 0x...` instead of `sha256: "..."` for binary blobs, a `product` field
@@ -568,8 +571,9 @@ runtime's sleep function (#161).
 
 Renames and removals are in the [nexrad-process table](#nexrad-process-100-rc1-to-10).
 
-**Errors.** `Error` derives `Clone` and `PartialEq`, and its variants carry `&'static str` fields instead of a `String`
-(#193). `InvalidParameter` comes from the constructors rather than from `process`. New variants:
+**Errors.** Its variants carry `&'static str` fields instead of a `String` (#193). `Error::Custom(Box<dyn Error + Send +
+Sync>)` carries the error of a `SweepProcessor` you implement, so `Error` does not implement `Clone` or `PartialEq`
+(#215); compare errors with `matches!`. `InvalidParameter` comes from the constructors rather than from `process`. New variants:
 `Model(nexrad_model::Error)` when the model rejects an output, such as a `CompositeReflectivity::compute` extent
 outside valid latitudes and longitudes (#185; it displays `model error`, #195); `GeometryMismatch { parameter }` for a
 CC field whose geometry differs from the input; and `UnexpectedProduct { expected, actual }` for an input holding the
@@ -775,7 +779,7 @@ II source files.** There is no compatibility shim. The incompatible changes are:
 | `VolumeCoveragePattern` | `doppler_velocity_resolution`, `sails_cuts` and `mrle_cuts` are `doppler_velocity_resolution_mps`, `sails_cut_count` and `mrle_cut_count` | #182 |
 | `ElevationCut` | `elevation_angle_degrees` is `f32` (was `f64`) | #182 |
 | `PolarPoint` | `azimuth_degrees` and `elevation_degrees` are `azimuth_angle_degrees` and `elevation_angle_degrees` | #182 |
-| `MomentData` | `first_gate_range`, `gate_interval` and `values` are `first_gate_range_meters`, `gate_interval_meters` and `raw_bytes` | #189 |
+| `MomentData` | `first_gate_range`, `gate_interval` and `values` are `first_gate_range_meters`, `gate_interval_meters` and `raw_bytes` | #189, #215 |
 | `MomentData` | `raw_bytes` is a byte string (`serialize_bytes`); JSON and other formats without a bytes type still use an array of integers, MessagePack and CBOR write a binary string | #189 |
 | `SweepField`, `CartesianField`, `VerticalField` | `status` is `statuses` | #189 |
 | `Site` | `identifier` is the four-character string (`"KTLX"`) instead of four byte values (`[75, 84, 76, 88]`); only the string deserializes | #189 |
@@ -856,7 +860,7 @@ requirement, so they work on any async runtime and build for `wasm32`. Real-time
 | `MomentData::from_fixed_point(scale, offset, values)` | `MomentData::builder(product, values)` with `first_gate_range_meters`, `gate_interval_meters`, `data_word_size`, `scale`, `offset` and `build()` |
 | `MomentData::values()` | Unchanged; `iter()` avoids the allocation. `MomentValue` gains `CfpStatus` |
 | `RadialStatus::{VolumeScanStart, VolumeScanEnd, ElevationStartVCPFinal}` | `ScanStart`, `ScanEnd`, `ElevationStartVcpFinal`; new `Unknown(u8)` |
-| `Scan::new(coverage_pattern_number: u16, sweeps)` | `Scan::new(VcpNumber, Option<VolumeCoveragePattern>, sweeps)` or `Scan::with_site(site, VcpNumber, Option<VolumeCoveragePattern>, sweeps)` |
+| `Scan::new(coverage_pattern_number: u16, sweeps)` | `Scan::new(VcpNumber, Option<VolumeCoveragePattern>, sweeps)`, then `.with_site(site)` when the site is known |
 | `Scan::coverage_pattern_number() -> u16` | `-> VcpNumber`; `.number()` gives the `u16` |
 | `Scan::sweeps() -> &Vec<Sweep>`, `Sweep::radials() -> &Vec<Radial>` | Return slices |
 | `Site::new(id, lat: f32, lon: f32, height, feedhorn_height)` | `Site::builder(id, lat: f64, lon: f64).site_elevation_meters(..).feedhorn_height_meters(..).build()` |
@@ -1236,6 +1240,8 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 
 | 1.0.0-rc.2 | 1.0 | PR |
 |---|---|---|
+| `data::{WaveformType, ChannelConfiguration, PulseWidth, RadialStatus, CfpStatus}` | `#[non_exhaustive]`; add a wildcard arm | #215 |
+| `data::MomentData::raw_values()` | `raw_bytes()` | #215 |
 | `BinaryData<T>` (and its impls) | Not public; it appeared in no public signature | #162 |
 | `data::VCPNumber` | `data::VcpNumber`, a `u16` newtype with associated constants named by pattern number (below) | #155, #160, #188, #205 |
 | `data::CFPStatus` (variants unchanged) | `data::CfpStatus` | #160 |
@@ -1263,7 +1269,7 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `data::Radial` (no PRF context) | Adds `nyquist_velocity_mps()`, `unambiguous_range_km() -> Option<f32>`; `RadialBuilder::{nyquist_velocity_mps, unambiguous_range_km}` | #188 |
 | `data::Scan` | Adds `elevation_cut(&Sweep) -> Option<&ElevationCut>`, `sweeps_with_waveform(WaveformType) -> impl Iterator<Item = &Sweep>` | #188 |
 | `data::Scan::coverage_pattern() -> &VolumeCoveragePattern` | `-> Option<&VolumeCoveragePattern>` | #208 |
-| `data::Scan::new(VolumeCoveragePattern, Vec<Sweep>)`, `with_site(Site, VolumeCoveragePattern, Vec<Sweep>)` | `new(VcpNumber, Option<VolumeCoveragePattern>, Vec<Sweep>)`, `with_site(Site, VcpNumber, Option<VolumeCoveragePattern>, Vec<Sweep>)` | #208 |
+| `data::Scan::new(VolumeCoveragePattern, Vec<Sweep>)`, `with_site(Site, VolumeCoveragePattern, Vec<Sweep>)` | `new(VcpNumber, Option<VolumeCoveragePattern>, Vec<Sweep>)`; `with_site(self, Site)` is a setter on the result | #208, #215 |
 | `data::ElevationCut::new(f64, ChannelConfiguration, WaveformType, ..)` (22 arguments) | `ElevationCut::builder(f32, WaveformType, ChannelConfiguration)` → `ElevationCutBuilder`, `build() -> Result<ElevationCut>`; note the argument order | #165, #182, #210 |
 | `data::ElevationCut::{reflectivity, velocity, spectrum_width, differential_reflectivity, differential_phase, correlation_coefficient}_threshold_db()` | `{reflectivity, velocity, spectrum_width, differential_reflectivity, differential_phase, correlation_coefficient}_snr_threshold_db()`; the builder setters are renamed the same way | #210 |
 | `data::ElevationCut::elevation_angle_degrees() -> f64` | `-> f32` | #182 |
@@ -1289,7 +1295,7 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `data::VolumeCoveragePattern::doppler_velocity_resolution() -> f32` | `doppler_velocity_resolution_mps() -> f32` | #182 |
 | `data::VolumeCoveragePattern::{sails_cuts, mrle_cuts}() -> u8` | `{sails_cut_count, mrle_cut_count}() -> u8` | #182 |
 | `geo::PolarPoint::{azimuth_degrees, elevation_degrees}: f32` | `{azimuth_angle_degrees, elevation_angle_degrees}: f64` | #164, #182 |
-| `geo::RadarCoordinateSystem::gate_location(f32, f32, usize, f64, f64)` | Removed; call `polar_to_geo` with `range_km = first_gate_km + gate_index * gate_interval_km` | #164, #PR |
+| `geo::RadarCoordinateSystem::gate_location(f32, f32, usize, f64, f64)` | Removed; call `polar_to_geo` with `range_km = first_gate_km + gate_index * gate_interval_km` | #164, #215 |
 | `geo::RadarCoordinateSystem::geo_to_polar(GeoPoint, f32) -> PolarPoint` (flat-earth range) | `geo_to_polar(GeoPoint, f64) -> Option<PolarPoint>`, the exact inverse of `polar_to_geo`; ranges change, and `None` replaces a non-finite or negative range | #164, #188, #210 |
 | `geo::RadarCoordinateSystem` | Adds `beam_height_meters(f64, f64) -> f64`, `ground_range_km(f64, f64) -> f64` | #188 |
 | `meta::Site::new([u8; 4], f32, f32, i16, u16)` | `Site::builder([u8; 4], f64, f64)` → `SiteBuilder` with `site_elevation_meters`, `feedhorn_height_meters`, `build() -> Result<Site>` | #164, #165, #182, #185 |
@@ -1331,6 +1337,7 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 
 | 1.0.0-rc.3 | 1.0 | PR |
 |---|---|---|
+| `messages::volume_coverage_pattern::{WaveformType, ChannelConfiguration, PulseWidth}`, `messages::digital_radar_data::RadialStatus` | `#[non_exhaustive]`; add a wildcard arm | #215 |
 | `MessageType::RDAStatusData`, `RDAConsoleMessage`, `RDAVolumeCoveragePattern`, `RDAControlCommands`, `RDAAdaptationData`, `RDAPRFData`, `RDALogData` | `Rda...` (`RdaPrfData` for `RDAPRFData`) | #160 |
 | `MessageType::RDADigitalRadarDataGenericFormat`, `RDADigitalRadarData`, `RDAPerformanceMaintenanceData`, `RDAClutterFilterBypassMap`, `RDAClutterFilterMap` | `DigitalRadarData`, `DigitalRadarDataLegacy`, `PerformanceMaintenanceData`, `ClutterFilterBypassMap`, `ClutterFilterMap`, matching `MessageContents` | #191 |
 | `MessageType::RPGVolumeCoveragePattern`, `RPGConsoleMessage` | `RpgVolumeCoveragePattern`, `RpgConsoleMessage` | #160 |
@@ -1525,6 +1532,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 
 | 1.0.0-rc.1 | 1.0 | PR |
 |---|---|---|
+| `Error: Clone + PartialEq` | Neither; new `Error::Custom(Box<dyn Error + Send + Sync>)` | #215 |
 | `ScanProcessor` trait (`name`, `process_scan`) | Removed (no implementations); use a free function or your own trait | #175 |
 | `ScanDerivedProduct::compute(&self, &Scan, &[SweepField], &RadarCoordinateSystem, &GeoExtent, (usize, usize))` | Trait removed; inherent `CompositeReflectivity::compute(&self, &[SweepField], &RadarCoordinateSystem, &CartesianGrid)` | #175, #193, #207 |
 | `ScanDerivedProduct::name()` | Removed with the trait | #207 |

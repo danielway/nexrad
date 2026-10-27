@@ -1,6 +1,6 @@
 pub mod nexrad_model
 pub mod nexrad_model::data
-pub enum nexrad_model::data::CfpStatus
+#[non_exhaustive] pub enum nexrad_model::data::CfpStatus
 pub nexrad_model::data::CfpStatus::DualPolOnlyFilterApplied
 pub nexrad_model::data::CfpStatus::FilterNotApplied
 pub nexrad_model::data::CfpStatus::PointClutterFilterApplied
@@ -27,7 +27,7 @@ impl core::marker::Unpin for nexrad_model::data::CfpStatus
 impl core::marker::UnsafeUnpin for nexrad_model::data::CfpStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::CfpStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::CfpStatus
-pub enum nexrad_model::data::ChannelConfiguration
+#[non_exhaustive] pub enum nexrad_model::data::ChannelConfiguration
 pub nexrad_model::data::ChannelConfiguration::ConstantPhase
 pub nexrad_model::data::ChannelConfiguration::RandomPhase
 pub nexrad_model::data::ChannelConfiguration::Sz2Phase
@@ -154,7 +154,7 @@ impl core::marker::Unpin for nexrad_model::data::Product
 impl core::marker::UnsafeUnpin for nexrad_model::data::Product
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::Product
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::Product
-pub enum nexrad_model::data::PulseWidth
+#[non_exhaustive] pub enum nexrad_model::data::PulseWidth
 pub nexrad_model::data::PulseWidth::Long
 pub nexrad_model::data::PulseWidth::Short
 pub nexrad_model::data::PulseWidth::Unknown(u8)
@@ -182,7 +182,7 @@ impl core::marker::Unpin for nexrad_model::data::PulseWidth
 impl core::marker::UnsafeUnpin for nexrad_model::data::PulseWidth
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::PulseWidth
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::PulseWidth
-pub enum nexrad_model::data::RadialStatus
+#[non_exhaustive] pub enum nexrad_model::data::RadialStatus
 pub nexrad_model::data::RadialStatus::ElevationEnd
 pub nexrad_model::data::RadialStatus::ElevationStart
 pub nexrad_model::data::RadialStatus::ElevationStartVcpFinal
@@ -214,7 +214,7 @@ impl core::marker::Unpin for nexrad_model::data::RadialStatus
 impl core::marker::UnsafeUnpin for nexrad_model::data::RadialStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::RadialStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::RadialStatus
-pub enum nexrad_model::data::WaveformType
+#[non_exhaustive] pub enum nexrad_model::data::WaveformType
 pub nexrad_model::data::WaveformType::Batch
 pub nexrad_model::data::WaveformType::ContiguousDopplerWithAmbiguityResolution
 pub nexrad_model::data::WaveformType::ContiguousDopplerWithoutAmbiguityResolution
@@ -367,8 +367,8 @@ pub fn nexrad_model::data::MomentData::gate_interval_meters(&self) -> u16
 pub fn nexrad_model::data::MomentData::iter(&self) -> impl core::iter::traits::iterator::Iterator<Item = nexrad_model::data::MomentValue> + '_
 pub fn nexrad_model::data::MomentData::offset(&self) -> f32
 pub fn nexrad_model::data::MomentData::product(&self) -> nexrad_model::data::Product
+pub fn nexrad_model::data::MomentData::raw_bytes(&self) -> &[u8]
 pub fn nexrad_model::data::MomentData::raw_gate_values(&self) -> impl core::iter::traits::iterator::Iterator<Item = u16> + '_
-pub fn nexrad_model::data::MomentData::raw_values(&self) -> &[u8]
 pub fn nexrad_model::data::MomentData::scale(&self) -> f32
 pub fn nexrad_model::data::MomentData::values(&self) -> alloc::vec::Vec<nexrad_model::data::MomentValue>
 impl core::clone::Clone for nexrad_model::data::MomentData
@@ -482,7 +482,7 @@ pub fn nexrad_model::data::Scan::sweeps(&self) -> &[nexrad_model::data::Sweep]
 pub fn nexrad_model::data::Scan::sweeps_at_elevation(&self, f32) -> impl core::iter::traits::iterator::Iterator<Item = &nexrad_model::data::Sweep>
 pub fn nexrad_model::data::Scan::sweeps_with_waveform(&self, nexrad_model::data::WaveformType) -> impl core::iter::traits::iterator::Iterator<Item = &nexrad_model::data::Sweep>
 pub fn nexrad_model::data::Scan::time_range(&self) -> core::option::Option<(chrono::datetime::DateTime<chrono::offset::utc::Utc>, chrono::datetime::DateTime<chrono::offset::utc::Utc>)>
-pub fn nexrad_model::data::Scan::with_site(nexrad_model::meta::Site, nexrad_model::data::VcpNumber, core::option::Option<nexrad_model::data::VolumeCoveragePattern>, alloc::vec::Vec<nexrad_model::data::Sweep>) -> Self
+pub fn nexrad_model::data::Scan::with_site(self, nexrad_model::meta::Site) -> Self
 impl core::clone::Clone for nexrad_model::data::Scan
 pub fn nexrad_model::data::Scan::clone(&self) -> Self
 impl core::cmp::PartialEq for nexrad_model::data::Scan
@@ -841,7 +841,6 @@ pub struct nexrad_model::geo::RadarCoordinateSystem
 impl nexrad_model::geo::RadarCoordinateSystem
 pub fn nexrad_model::geo::RadarCoordinateSystem::antenna_height_meters(&self) -> f64
 pub fn nexrad_model::geo::RadarCoordinateSystem::beam_height_meters(&self, f64, f64) -> f64
-pub fn nexrad_model::geo::RadarCoordinateSystem::gate_location(&self, f64, f64, usize, f64, f64) -> nexrad_model::geo::GeoPoint3D
 pub fn nexrad_model::geo::RadarCoordinateSystem::geo_to_polar(&self, nexrad_model::geo::GeoPoint, f64) -> core::option::Option<nexrad_model::geo::PolarPoint>
 pub fn nexrad_model::geo::RadarCoordinateSystem::ground_range_km(&self, f64, f64) -> f64
 pub fn nexrad_model::geo::RadarCoordinateSystem::latitude(&self) -> f64
@@ -943,30 +942,30 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::meta::SiteBuilder
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::meta::SiteBuilder
 pub mod nexrad_model::result
 #[non_exhaustive] pub enum nexrad_model::result::Error
-pub nexrad_model::result::Error::ElevationMismatch
+#[non_exhaustive] pub nexrad_model::result::Error::ElevationMismatch
 pub nexrad_model::result::Error::ElevationMismatch::actual: u8
 pub nexrad_model::result::Error::ElevationMismatch::expected: u8
-pub nexrad_model::result::Error::IndexOutOfBounds
+#[non_exhaustive] pub nexrad_model::result::Error::IndexOutOfBounds
 pub nexrad_model::result::Error::IndexOutOfBounds::column: usize
 pub nexrad_model::result::Error::IndexOutOfBounds::columns: usize
 pub nexrad_model::result::Error::IndexOutOfBounds::row: usize
 pub nexrad_model::result::Error::IndexOutOfBounds::rows: usize
-pub nexrad_model::result::Error::InvalidCoveragePattern
+#[non_exhaustive] pub nexrad_model::result::Error::InvalidCoveragePattern
 pub nexrad_model::result::Error::InvalidCoveragePattern::parameter: &'static str
 pub nexrad_model::result::Error::InvalidCoveragePattern::reason: &'static str
-pub nexrad_model::result::Error::InvalidGeometry
+#[non_exhaustive] pub nexrad_model::result::Error::InvalidGeometry
 pub nexrad_model::result::Error::InvalidGeometry::parameter: &'static str
 pub nexrad_model::result::Error::InvalidGeometry::reason: &'static str
-pub nexrad_model::result::Error::InvalidMomentData
+#[non_exhaustive] pub nexrad_model::result::Error::InvalidMomentData
 pub nexrad_model::result::Error::InvalidMomentData::parameter: &'static str
 pub nexrad_model::result::Error::InvalidMomentData::reason: &'static str
-pub nexrad_model::result::Error::InvalidSite
+#[non_exhaustive] pub nexrad_model::result::Error::InvalidSite
 pub nexrad_model::result::Error::InvalidSite::parameter: &'static str
 pub nexrad_model::result::Error::InvalidSite::reason: &'static str
-pub nexrad_model::result::Error::MomentDataLength
+#[non_exhaustive] pub nexrad_model::result::Error::MomentDataLength
 pub nexrad_model::result::Error::MomentDataLength::actual: usize
 pub nexrad_model::result::Error::MomentDataLength::expected: usize
-pub nexrad_model::result::Error::UnknownProduct
+#[non_exhaustive] pub nexrad_model::result::Error::UnknownProduct
 pub nexrad_model::result::Error::UnknownProduct::name: alloc::string::String
 impl core::clone::Clone for nexrad_model::result::Error
 pub fn nexrad_model::result::Error::clone(&self) -> Self
@@ -987,30 +986,30 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::result::Error
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::result::Error
 pub type nexrad_model::result::Result<T> = core::result::Result<T, nexrad_model::result::Error>
 #[non_exhaustive] pub enum nexrad_model::Error
-pub nexrad_model::Error::ElevationMismatch
+#[non_exhaustive] pub nexrad_model::Error::ElevationMismatch
 pub nexrad_model::Error::ElevationMismatch::actual: u8
 pub nexrad_model::Error::ElevationMismatch::expected: u8
-pub nexrad_model::Error::IndexOutOfBounds
+#[non_exhaustive] pub nexrad_model::Error::IndexOutOfBounds
 pub nexrad_model::Error::IndexOutOfBounds::column: usize
 pub nexrad_model::Error::IndexOutOfBounds::columns: usize
 pub nexrad_model::Error::IndexOutOfBounds::row: usize
 pub nexrad_model::Error::IndexOutOfBounds::rows: usize
-pub nexrad_model::Error::InvalidCoveragePattern
+#[non_exhaustive] pub nexrad_model::Error::InvalidCoveragePattern
 pub nexrad_model::Error::InvalidCoveragePattern::parameter: &'static str
 pub nexrad_model::Error::InvalidCoveragePattern::reason: &'static str
-pub nexrad_model::Error::InvalidGeometry
+#[non_exhaustive] pub nexrad_model::Error::InvalidGeometry
 pub nexrad_model::Error::InvalidGeometry::parameter: &'static str
 pub nexrad_model::Error::InvalidGeometry::reason: &'static str
-pub nexrad_model::Error::InvalidMomentData
+#[non_exhaustive] pub nexrad_model::Error::InvalidMomentData
 pub nexrad_model::Error::InvalidMomentData::parameter: &'static str
 pub nexrad_model::Error::InvalidMomentData::reason: &'static str
-pub nexrad_model::Error::InvalidSite
+#[non_exhaustive] pub nexrad_model::Error::InvalidSite
 pub nexrad_model::Error::InvalidSite::parameter: &'static str
 pub nexrad_model::Error::InvalidSite::reason: &'static str
-pub nexrad_model::Error::MomentDataLength
+#[non_exhaustive] pub nexrad_model::Error::MomentDataLength
 pub nexrad_model::Error::MomentDataLength::actual: usize
 pub nexrad_model::Error::MomentDataLength::expected: usize
-pub nexrad_model::Error::UnknownProduct
+#[non_exhaustive] pub nexrad_model::Error::UnknownProduct
 pub nexrad_model::Error::UnknownProduct::name: alloc::string::String
 impl core::clone::Clone for nexrad_model::result::Error
 pub fn nexrad_model::result::Error::clone(&self) -> Self

@@ -105,6 +105,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `File::coverage_pattern_message()` still returns. (#208)
 - Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the
   real-time chunk counts and upload timings are documented as observed bucket behaviour, not a guarantee. (#209)
+- The `with_*` setters of `RetryPolicy` and `PollConfig`, `VolumeIndex::next` and `ChunkIdentifier::with_sequence` are
+  `#[must_use]`. (#215)
 
 ### Removed
 

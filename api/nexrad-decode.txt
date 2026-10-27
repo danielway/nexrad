@@ -431,7 +431,7 @@ impl core::marker::Unpin for nexrad_decode::messages::digital_radar_data::Proces
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::digital_radar_data::ProcessingStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::digital_radar_data::ProcessingStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::ProcessingStatus
-pub enum nexrad_decode::messages::digital_radar_data::RadialStatus
+#[non_exhaustive] pub enum nexrad_decode::messages::digital_radar_data::RadialStatus
 pub nexrad_decode::messages::digital_radar_data::RadialStatus::ElevationEnd
 pub nexrad_decode::messages::digital_radar_data::RadialStatus::ElevationStart
 pub nexrad_decode::messages::digital_radar_data::RadialStatus::ElevationStartVcpFinal
@@ -2025,7 +2025,7 @@ impl<'a> core::marker::UnsafeUnpin for nexrad_decode::messages::request_for_data
 impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::request_for_data::Message<'a>
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::request_for_data::Message<'a>
 pub mod nexrad_decode::messages::volume_coverage_pattern
-pub enum nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
+#[non_exhaustive] pub enum nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::ConstantPhase
 pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::RandomPhase
 pub nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration::Sz2Phase
@@ -2082,7 +2082,7 @@ impl core::marker::Unpin for nexrad_decode::messages::volume_coverage_pattern::P
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::volume_coverage_pattern::PatternType
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::volume_coverage_pattern::PatternType
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::volume_coverage_pattern::PatternType
-pub enum nexrad_decode::messages::volume_coverage_pattern::PulseWidth
+#[non_exhaustive] pub enum nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 pub nexrad_decode::messages::volume_coverage_pattern::PulseWidth::Long
 pub nexrad_decode::messages::volume_coverage_pattern::PulseWidth::Short
 pub nexrad_decode::messages::volume_coverage_pattern::PulseWidth::Unknown(u8)
@@ -2117,7 +2117,7 @@ impl core::marker::Unpin for nexrad_decode::messages::volume_coverage_pattern::P
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::volume_coverage_pattern::PulseWidth
-pub enum nexrad_decode::messages::volume_coverage_pattern::WaveformType
+#[non_exhaustive] pub enum nexrad_decode::messages::volume_coverage_pattern::WaveformType
 pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::Batch
 pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::ContiguousDopplerWithAmbiguityResolution
 pub nexrad_decode::messages::volume_coverage_pattern::WaveformType::ContiguousDopplerWithoutAmbiguityResolution
@@ -2566,23 +2566,23 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::model::ScanBuild
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::model::ScanBuilder
 pub mod nexrad_decode::result
 #[non_exhaustive] pub enum nexrad_decode::result::Error
-pub nexrad_decode::result::Error::InvalidDataBlockPointer
+#[non_exhaustive] pub nexrad_decode::result::Error::InvalidDataBlockPointer
 pub nexrad_decode::result::Error::InvalidDataBlockPointer::bytes: usize
 pub nexrad_decode::result::Error::InvalidDataBlockPointer::position: usize
-pub nexrad_decode::result::Error::MessageMissingDate
+#[non_exhaustive] pub nexrad_decode::result::Error::MessageMissingDate
 pub nexrad_decode::result::Error::MessageMissingDate::message_type: nexrad_decode::MessageType
 pub nexrad_decode::result::Error::MissingCoveragePatternNumber
 pub nexrad_decode::result::Error::Model(nexrad_model::result::Error)
-pub nexrad_decode::result::Error::NegativeFirstGateRange
+#[non_exhaustive] pub nexrad_decode::result::Error::NegativeFirstGateRange
 pub nexrad_decode::result::Error::NegativeFirstGateRange::range_meters: i16
-pub nexrad_decode::result::Error::SegmentOutOfSequence
+#[non_exhaustive] pub nexrad_decode::result::Error::SegmentOutOfSequence
 pub nexrad_decode::result::Error::SegmentOutOfSequence::expected_segment: u16
 pub nexrad_decode::result::Error::SegmentOutOfSequence::message_type: nexrad_decode::MessageType
 pub nexrad_decode::result::Error::SegmentOutOfSequence::offset: usize
 pub nexrad_decode::result::Error::SegmentOutOfSequence::segment_count: u16
-pub nexrad_decode::result::Error::UnexpectedEof
+#[non_exhaustive] pub nexrad_decode::result::Error::UnexpectedEof
 pub nexrad_decode::result::Error::UnexpectedEof::offset: usize
-pub nexrad_decode::result::Error::UnknownDataBlockType
+#[non_exhaustive] pub nexrad_decode::result::Error::UnknownDataBlockType
 pub nexrad_decode::result::Error::UnknownDataBlockType::block_type: [u8; 3]
 pub nexrad_decode::result::Error::UnknownDataBlockType::offset: usize
 impl core::clone::Clone for nexrad_decode::result::Error
@@ -2607,23 +2607,23 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::result::Error
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::result::Error
 pub type nexrad_decode::result::Result<T> = core::result::Result<T, nexrad_decode::result::Error>
 #[non_exhaustive] pub enum nexrad_decode::Error
-pub nexrad_decode::Error::InvalidDataBlockPointer
+#[non_exhaustive] pub nexrad_decode::Error::InvalidDataBlockPointer
 pub nexrad_decode::Error::InvalidDataBlockPointer::bytes: usize
 pub nexrad_decode::Error::InvalidDataBlockPointer::position: usize
-pub nexrad_decode::Error::MessageMissingDate
+#[non_exhaustive] pub nexrad_decode::Error::MessageMissingDate
 pub nexrad_decode::Error::MessageMissingDate::message_type: nexrad_decode::MessageType
 pub nexrad_decode::Error::MissingCoveragePatternNumber
 pub nexrad_decode::Error::Model(nexrad_model::result::Error)
-pub nexrad_decode::Error::NegativeFirstGateRange
+#[non_exhaustive] pub nexrad_decode::Error::NegativeFirstGateRange
 pub nexrad_decode::Error::NegativeFirstGateRange::range_meters: i16
-pub nexrad_decode::Error::SegmentOutOfSequence
+#[non_exhaustive] pub nexrad_decode::Error::SegmentOutOfSequence
 pub nexrad_decode::Error::SegmentOutOfSequence::expected_segment: u16
 pub nexrad_decode::Error::SegmentOutOfSequence::message_type: nexrad_decode::MessageType
 pub nexrad_decode::Error::SegmentOutOfSequence::offset: usize
 pub nexrad_decode::Error::SegmentOutOfSequence::segment_count: u16
-pub nexrad_decode::Error::UnexpectedEof
+#[non_exhaustive] pub nexrad_decode::Error::UnexpectedEof
 pub nexrad_decode::Error::UnexpectedEof::offset: usize
-pub nexrad_decode::Error::UnknownDataBlockType
+#[non_exhaustive] pub nexrad_decode::Error::UnknownDataBlockType
 pub nexrad_decode::Error::UnknownDataBlockType::block_type: [u8; 3]
 pub nexrad_decode::Error::UnknownDataBlockType::offset: usize
 impl core::clone::Clone for nexrad_decode::result::Error

@@ -3,14 +3,14 @@ pub mod nexrad_render::result
 #[non_exhaustive] pub enum nexrad_render::result::Error
 pub nexrad_render::result::Error::EmptyField
 pub nexrad_render::result::Error::Encode(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
-pub nexrad_render::result::Error::InvalidColorScale
+#[non_exhaustive] pub nexrad_render::result::Error::InvalidColorScale
 pub nexrad_render::result::Error::InvalidColorScale::reason: &'static str
 pub nexrad_render::result::Error::InvalidDimensions
 pub nexrad_render::result::Error::InvalidExtent
-pub nexrad_render::result::Error::InvalidRange
+#[non_exhaustive] pub nexrad_render::result::Error::InvalidRange
 pub nexrad_render::result::Error::InvalidRange::max: f32
 pub nexrad_render::result::Error::InvalidRange::min: f32
-pub nexrad_render::result::Error::InvalidTableSize
+#[non_exhaustive] pub nexrad_render::result::Error::InvalidTableSize
 pub nexrad_render::result::Error::InvalidTableSize::size: usize
 pub nexrad_render::result::Error::Io(core::io::error::Error)
 pub nexrad_render::result::Error::MissingCoordinateSystem
@@ -53,14 +53,14 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_render::ColorScale
 #[non_exhaustive] pub enum nexrad_render::Error
 pub nexrad_render::Error::EmptyField
 pub nexrad_render::Error::Encode(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
-pub nexrad_render::Error::InvalidColorScale
+#[non_exhaustive] pub nexrad_render::Error::InvalidColorScale
 pub nexrad_render::Error::InvalidColorScale::reason: &'static str
 pub nexrad_render::Error::InvalidDimensions
 pub nexrad_render::Error::InvalidExtent
-pub nexrad_render::Error::InvalidRange
+#[non_exhaustive] pub nexrad_render::Error::InvalidRange
 pub nexrad_render::Error::InvalidRange::max: f32
 pub nexrad_render::Error::InvalidRange::min: f32
-pub nexrad_render::Error::InvalidTableSize
+#[non_exhaustive] pub nexrad_render::Error::InvalidTableSize
 pub nexrad_render::Error::InvalidTableSize::size: usize
 pub nexrad_render::Error::Io(core::io::error::Error)
 pub nexrad_render::Error::MissingCoordinateSystem

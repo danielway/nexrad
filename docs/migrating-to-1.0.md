@@ -87,9 +87,10 @@ use nexrad_data::{AwsError, Error, Result}; // nexrad_data::result::Error still 
 ```
 
 **2. Every `Error` enum is `#[non_exhaustive]`** (#155), as are `nexrad_data::AwsError`,
-`nexrad_model::data::{Product, VcpNumber}`, `nexrad_decode::messages::{MessageContents, MessageType, RedundantChannel,
-VcpNumber}`, `nexrad_decode::messages::digital_radar_data::DataBlockName` and `nexrad_render::Projection`. A `match`
-outside the defining crate needs a wildcard arm. The deliberately exhaustive enums are listed under
+`nexrad_model::data::Product`, `nexrad_decode::messages::{MessageContents, MessageType, RedundantChannel}`,
+`nexrad_decode::messages::digital_radar_data::DataBlockName` and `nexrad_render::Projection`. A `match` outside the
+defining crate needs a wildcard arm. `VcpNumber` (in both crates) is a `u16` newtype with associated constants rather
+than an enum (#205); a `match` on it needs a wildcard arm too. The deliberately exhaustive enums are listed under
 [Enum Stability](architecture.md#enum-stability).
 
 ```rust
@@ -180,6 +181,15 @@ offending argument:
 
 **Behaviour and type changes**
 
+- **`VcpNumber` is a `u16` newtype** (#205): match on the constants (`VcpNumber::VCP_212`) where you matched a
+  variant such as `VCPNumber::PrecipitationSz2_212`, build one with `VcpNumber::new(n)` or `n.into()` where you used
+  `from_number(n)` or `Unknown(n)`, and read the number with `number()`, which now takes `self`. `description()` is
+  removed, and `Display` prints only the number (`VCP 212`, not `VCP 212 (Precipitation, SZ-2)`). Values order by
+  number. The serialized form is unchanged.
+- **Unknown codes carry the code** (#205): `WaveformType`, `ChannelConfiguration` and `PulseWidth` have `Unknown(u8)`
+  instead of a unit `Unknown`, like `RadialStatus`, and match `nexrad-decode`'s copies variant for variant. Match
+  `Unknown(_)`. `Display` of an unknown value includes the code (`Unknown (7)`), and `RadialStatus` implements
+  `Display`.
 - **Coordinates and polar angles are `f64`** (#164): literals keep compiling; convert `f32` variables with
   `f64::from(x)`. The stored `*_degrees` angles on `Radial`, `Sweep`, `SweepField` and `ElevationCut` are `f32`
   (#182), so `Scan::sweeps_at_elevation` still takes `f32`.
@@ -304,8 +314,14 @@ for message in &messages {
 - **Multi-segment messages decode their full payload** (#190): type 13 bypass maps decode instead of being dropped,
   type 15 maps have 360 azimuth segments instead of 350, and type 18 fields past the first segment, such as
   `site_name()`, hold their real values.
-- **VCP numbers** (#163, #188): VCPs 11, 21, 32, 121, 211 and 221 no longer decode as `Unknown(n)`, the variants match
-  `nexrad_model::data::VcpNumber` one for one, and `VcpNumber` implements `Display` (`VCP 212`).
+- **VCP numbers** (#163, #188, #205): `VcpNumber` is a `u16` newtype with the same shape as
+  `nexrad_model::data::VcpNumber`. Match on its constants (`VcpNumber::VCP_212`); build one with `VcpNumber::new(n)`
+  or `n.into()`. It implements `Display` (`VCP 212`) and `Ord` by number, and with the new `serde` feature serializes
+  as the bare number.
+- **The VCP code enums match the model** (#205): `RadialStatus::VolumeScanStart` and `VolumeScanEnd` are `ScanStart`
+  and `ScanEnd`, the model's names. `WaveformType`, `ChannelConfiguration`, `PulseWidth` and `RadialStatus` gain
+  `from_number(u8)`, `number()` and `Display`, `WaveformType` gains `abbreviation()`, and the `From` conversions to the
+  model (feature `model`) keep the code of an `Unknown` value and also run from the model back to decode.
 - **Converted radials carry radar physics**: `digital_radar_data::Message::radial()`/`into_radial()` set the Nyquist
   velocity and unambiguous range from the radial data block, `None` when it is absent (#188); the legacy (type 1)
   conversion sets the unambiguous range (#188) and the Nyquist velocity, `None` when zero (#191), from its header.
@@ -319,8 +335,8 @@ for message in &messages {
   build ordering (`build >= RdaBuildNumber::from_raw(2000)`) replace the `Build12_0`..`Build24_0` variants.
 - **VCP and azimuth indexing angles are `f32`** (#191), matching the model; `azimuth_rate_degrees_per_second()` stays
   `f64`.
-- **`MessageType` ordering** (#166): the derived `Ord` puts `Reserved(_)` after `RdaLogData`; compare `number()` to
-  order by wire number.
+- **`MessageType` ordering** (#166, #205): `Ord` compares `number()`, so `Reserved(14)` sorts between
+  `RpgLoopbackTest` (12) and `ClutterFilterMap` (15) instead of after `RdaLogData`.
 - **Lifetimes** (#166): `MessageHeaders::primary()`/`iter()` and `Message::header()` borrow from `self`, and
   `Message::contents()` returns `&MessageContents<'a>`. No public type implements zerocopy traits.
 
@@ -576,6 +592,7 @@ II source files.** There is no compatibility shim. The incompatible changes are:
 | `WaveformType` | Variants serialize as `"ContiguousSurveillance"`, `"ContiguousDopplerWithAmbiguityResolution"`, `"ContiguousDopplerWithoutAmbiguityResolution"`, `"Batch"`, `"StaggeredPulsePair"` instead of `"CS"`, `"CDW"`, `"CDWO"`, `"B"`, `"SPP"` | #160 |
 | `ChannelConfiguration` | `"Sz2Phase"` instead of `"SZ2Phase"` | #160 |
 | `RadialStatus` | `"ElevationStartVcpFinal"` instead of `"ElevationStartVCPFinal"` | #160 |
+| `WaveformType`, `ChannelConfiguration`, `PulseWidth` | An unknown value is `{"Unknown": n}` instead of `"Unknown"` | #205 |
 | `MomentData` | A struct with a `product` field next to the encoding fields, for every moment on a `Radial` including `clutter_filter_power`; it was `serde(transparent)` over an inner block | #170 |
 | `SweepField` | Gains a `product` field | #170 |
 | `Site` | `latitude` and `longitude` are `f64`; self-describing formats such as JSON still read old values, fixed-width binary formats such as bincode do not | #164 |
@@ -1045,13 +1062,15 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | 1.0.0-rc.2 | 1.0 | PR |
 |---|---|---|
 | `BinaryData<T>` (and its impls) | Not public; it appeared in no public signature | #162 |
-| `data::VCPNumber` | `data::VcpNumber`, `#[non_exhaustive]`, variants named by pattern number (below) | #155, #160, #188 |
+| `data::VCPNumber` | `data::VcpNumber`, a `u16` newtype with associated constants named by pattern number (below) | #155, #160, #188, #205 |
 | `data::CFPStatus` (variants unchanged) | `data::CfpStatus` | #160 |
 | `data::CFPMomentData` (`from_fixed_point`, `iter`, `values`, `DataMoment` impl) | `data::MomentData` with `Product::ClutterFilterPower` | #170 |
 | `data::CFPMomentValue::{Status, Value}` | `data::MomentValue::{CfpStatus, Value}` | #170 |
 | `data::DataMoment` trait (`data_word_size`, `first_gate_range`, `first_gate_range_km`, `gate_count`, `gate_interval`, `gate_interval_km`, `offset`, `raw_gate_values`, `raw_values`, `scale`) | Inherent methods on `MomentData`, same names and signatures; remove the import | #170 |
 | `data::ChannelConfiguration::SZ2Phase` | `Sz2Phase` | #160 |
-| `data::WaveformType::{CS, CDW, CDWO, B, SPP}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair}` | #160 |
+| `data::WaveformType::{CS, CDW, CDWO, B, SPP, Unknown}` | `{ContiguousSurveillance, ContiguousDopplerWithAmbiguityResolution, ContiguousDopplerWithoutAmbiguityResolution, Batch, StaggeredPulsePair, Unknown(u8)}` | #160, #205 |
+| `data::ChannelConfiguration::Unknown`, `data::PulseWidth::Unknown` | `Unknown(u8)` | #205 |
+| `data::VCPNumber::number(&self)`, `from_number(u16)`, `description()` | `number(self)`, `VcpNumber::new(u16)` (or `From<u16>`); `description()` removed, and `Display` prints `VCP 212` without it | #205 |
 | `data::RadialStatus::ElevationStartVCPFinal` | `ElevationStartVcpFinal` | #160 |
 | `data::Product` | `#[non_exhaustive]` | #155 |
 | `data::Product::moment_data(&Radial)`, `cfp_moment_data(&Radial)` | `Radial::moment(Product)` | #170 |
@@ -1063,12 +1082,12 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `data::Radial::{azimuth, azimuth_spacing, elevation_angle}() -> uom::si::f32::Angle` | `-> uom::si::f64::Angle` | #164 |
 | `data::Sweep::elevation_angle() -> Option<uom::si::f32::Angle>` | `-> Option<uom::si::f64::Angle>` | #164 |
 | `data::Scan::coverage_pattern_number() -> VCPNumber` | `-> VcpNumber` | #160 |
-| `data::VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}`, as in `nexrad_decode::messages::VcpNumber`; `Unknown(11)`, `Unknown(21)`, `Unknown(121)`, `Unknown(211)`, `Unknown(221)` are `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` | #188 |
+| `data::VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | Constants `VcpNumber::{VCP_12, VCP_31, VCP_32, VCP_35, VCP_112, VCP_212, VCP_215}`, as in `nexrad_decode::messages::VcpNumber`, plus `VCP_11`, `VCP_21`, `VCP_121`, `VCP_211` and `VCP_221`; `Unknown(n)` is `VcpNumber::new(n)` | #188, #205 |
 | `data::Radial` (no PRF context) | Adds `nyquist_velocity_mps()`, `unambiguous_range_km() -> Option<f32>` (with `uom`, `nyquist_velocity()`, `unambiguous_range()`); `RadialBuilder::{nyquist_velocity_mps, unambiguous_range_km}` | #188 |
 | `data::Scan` | Adds `elevation_cut(&Sweep) -> Option<&ElevationCut>`, `sweeps_with_waveform(WaveformType) -> impl Iterator<Item = &Sweep>` | #188 |
 | `data::ElevationCut::new(f64, ChannelConfiguration, WaveformType, ..)` (22 arguments) | `ElevationCut::builder(f32, WaveformType, ChannelConfiguration)` → `ElevationCutBuilder`; note the argument order | #165, #182 |
 | `data::ElevationCut::elevation_angle_degrees() -> f64` | `-> f32` | #182 |
-| `data::VolumeCoveragePattern::new(u16, ..)` (14 arguments) | `VolumeCoveragePattern::builder(VcpNumber)` → `VolumeCoveragePatternBuilder`; convert a number with `VcpNumber::from_number(n)` | #165 |
+| `data::VolumeCoveragePattern::new(u16, ..)` (14 arguments) | `VolumeCoveragePattern::builder(VcpNumber)` → `VolumeCoveragePatternBuilder`; convert a number with `VcpNumber::new(n)` | #165, #205 |
 | `data::VolumeCoveragePattern::pattern_number() -> VCPNumber` | `-> VcpNumber` | #160 |
 | `data::SweepField::new_empty(label, unit, f32, Vec<f32>, f32, f64, f64, usize)` | `SweepField::builder(label, unit)` → `SweepFieldBuilder`, `build() -> Result<SweepField>`, which validates the geometry | #165, #185 |
 | `data::SweepField::value_at_polar(f32, f64)` | `value_at_polar(f64, f64)` | #164 |
@@ -1138,12 +1157,13 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `RedundantChannel::ORDASingleChannel`, `ORDARedundantChannel1`, `ORDARedundantChannel2` | `OrdaSingleChannel`, `OrdaRedundantChannel1`, `OrdaRedundantChannel2`; `#[non_exhaustive]` | #155, #160 |
 | `MessageHeader` (`#[repr(C)]`, public fields, zerocopy traits) | `MessageHeader<'a>` with accessors; `parse(bytes)?` replaces `ref_from_prefix`, `SIZE` replaces `size_of::<MessageHeader>()`, `into_owned()` gives `MessageHeader<'static>` | #166 |
 | `MessageHeaders::Single(&'a MessageHeader)`, `Multiple(Vec<&'a MessageHeader>)` | `Single(MessageHeader<'a>)`, `Multiple(Vec<MessageHeader<'a>>)` | #166 |
-| `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, VCP35, VCP112, VCP212, VCP215, Unknown}` | `VcpNumber::{Vcp11, Vcp12, Vcp21, Vcp31, Vcp32, Vcp35, Vcp112, Vcp121, Vcp211, Vcp212, Vcp215, Vcp221, Unknown}` | #160, #163, #188 |
+| `digital_radar_data::VolumeCoveragePattern::{VCP12, VCP31, VCP35, VCP112, VCP212, VCP215, Unknown}` | `messages::VcpNumber`, a `u16` newtype: constants `VcpNumber::{VCP_11, VCP_12, VCP_21, VCP_31, VCP_32, VCP_35, VCP_112, VCP_121, VCP_211, VCP_212, VCP_215, VCP_221}`, and `VcpNumber::new(n)` for `Unknown(n)` | #160, #163, #188, #205 |
 | `digital_radar_data::DataMomentPointer`, `DataMomentPointerType`, `DataMomentGenericPointerType` | Removed | #166 |
 | `digital_radar_data::CompressionIndicator::CompressedBZIP2`, `CompressedZLIB`, `FutureUse` | `CompressedBzip2`, `CompressedZlib`, `Unknown(u8)` | #160, #191 |
 | `digital_radar_data::ProcessingStatus::RxRNoise`, `CBT`, `Other(u16)` | `RxrNoise`, `Cbt`, `Unknown(u16)` | #160, #191 |
 | `digital_radar_data::SpotBlankingStatus` | `SpotBlankingFlags` (`rda_status_data::SpotBlankingStatus` keeps its name) | #191 |
 | `digital_radar_data::RadialStatus::ElevationStartVCPFinal` | `ElevationStartVcpFinal` | #160 |
+| `digital_radar_data::RadialStatus::VolumeScanStart`, `VolumeScanEnd` | `ScanStart`, `ScanEnd`, as in `nexrad_model::data::RadialStatus` | #205 |
 | `digital_radar_data::DataBlockName` | `#[non_exhaustive]` | #155 |
 | `rda_status_data::RDAStatus`, `RDABuildNumber`, `RMSControlStatus` | `RdaStatus`, `RdaBuildNumber`, `RmsControlStatus` | #160 |
 | `rda_status_data::RMSControlStatus::{NonRMS, RMSInControl, RDAInControl}` | `RmsControlStatus::{NonRms, RmsInControl, RdaInControl}` | #160 |

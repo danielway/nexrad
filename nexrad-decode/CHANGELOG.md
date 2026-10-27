@@ -14,7 +14,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 ### Added
 
 - `Error` and `Result` are re-exported at the crate root; the `result` module remains. (#158)
-- `messages::VcpNumber`, one VCP number enum for every message type. (#163)
+- `messages::VcpNumber`, one VCP number type for every message type. (#163)
 - `rda_status_data::VcpSelection` and `VcpSource`, returned by `rda_status_data::Message::vcp_number()`. (#163)
 - `MessageHeader::parse`, `MessageHeader::SIZE`, `MessageHeader::into_owned()` and accessors for every header field.
   (#166, #173)
@@ -34,7 +34,15 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   (#173)
 - `Error::Model(nexrad_model::Error)` (feature `model`) for decoded values that fail a model constructor's validation;
   it displays only its layer, with the model error as its `source()`. (#185, #195)
-- `messages::VcpNumber::{Vcp11, Vcp21, Vcp121, Vcp211, Vcp221}`, matching `nexrad_model::data::VcpNumber`. (#188)
+- `messages::VcpNumber` constants for VCPs 11, 21, 121, 211 and 221, matching `nexrad_model::data::VcpNumber`. (#188,
+  #205)
+- `from_number(u8)`, `number()` and `Display` on `volume_coverage_pattern::{WaveformType, ChannelConfiguration,
+  PulseWidth}` and `digital_radar_data::RadialStatus`, and `WaveformType::abbreviation()` (the ICD's `CS`, `CD/W`,
+  `CD/WO` or `B`). (#205)
+- `From` conversions from the model's `WaveformType`, `ChannelConfiguration`, `PulseWidth`, `RadialStatus` and
+  `VcpNumber` to decode's, and from decode's `VcpNumber` to the model's (feature `model`). (#205)
+- Feature `serde`, which serializes `WaveformType`, `ChannelConfiguration`, `PulseWidth`, `RadialStatus` and
+  `VcpNumber` exactly as their `nexrad-model` counterparts. (#205)
 - `iter_messages(data)` and `MessageIter`, which yield one `Result` per message and stop after the first error;
   `MessageIter::offset()` reports where. (#190)
 - Crate-root re-exports of `decode_messages`, `iter_messages`, `Message`, `MessageContents`, `MessageIter` and
@@ -77,7 +85,14 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `digital_radar_data::Message::site()` returns `Result<Option<Site>>`, failing with `Error::Model`, which
   `model::ScanBuilder::add_message` propagates. (#185)
 - Moment and radial conversions return `Error::Model` for data the model rejects. (#185)
-- VCP numbers 11, 21, 121, 211 and 221 decode as their named `VcpNumber` variants. (#188)
+- `messages::VcpNumber` is a `u16` newtype with `new`, `number()`, `From` both ways, `Ord` by number and associated
+  constants (`VcpNumber::VCP_212`) in place of the `Vcp212` and `Unknown(n)` variants; constants work as `match`
+  patterns, and a constant added later cannot change how an existing value matches. (#188, #205)
+- `digital_radar_data::RadialStatus::VolumeScanStart` and `VolumeScanEnd` are `ScanStart` and `ScanEnd`, the names
+  `nexrad_model::data::RadialStatus` uses. (#205)
+- The conversions to the model's `WaveformType`, `ChannelConfiguration` and `PulseWidth` keep the code of an `Unknown`
+  value. (#205)
+- `MessageType` orders by `number()` instead of by declaration order. (#205)
 - Converted radials carry the Nyquist velocity and unambiguous range (type 31) or the unambiguous range (type 1), and
   the `Radial` `Debug` output gains both fields. (#188)
 - `decode_messages` is strict: it returns the first decoding error instead of skipping the message. An all-zero tail

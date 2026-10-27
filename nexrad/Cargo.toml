@@ -28,7 +28,7 @@ render = ["dep:nexrad-render", "model"]
 process = ["dep:nexrad-process", "model"]
 
 # Pass-through features from sub-crates
-serde = ["nexrad-model?/serde"]
+serde = ["nexrad-model?/serde", "nexrad-decode?/serde"]
 uom = ["nexrad-model?/uom", "nexrad-decode?/uom"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
 parallel = ["data", "nexrad-data/parallel"]

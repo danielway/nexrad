@@ -31,7 +31,7 @@ pub enum nexrad_model::data::ChannelConfiguration
 pub nexrad_model::data::ChannelConfiguration::ConstantPhase
 pub nexrad_model::data::ChannelConfiguration::RandomPhase
 pub nexrad_model::data::ChannelConfiguration::Sz2Phase
-pub nexrad_model::data::ChannelConfiguration::Unknown
+pub nexrad_model::data::ChannelConfiguration::Unknown(u8)
 impl core::clone::Clone for nexrad_model::data::ChannelConfiguration
 pub fn nexrad_model::data::ChannelConfiguration::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_model::data::ChannelConfiguration
@@ -149,7 +149,7 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::Product
 pub enum nexrad_model::data::PulseWidth
 pub nexrad_model::data::PulseWidth::Long
 pub nexrad_model::data::PulseWidth::Short
-pub nexrad_model::data::PulseWidth::Unknown
+pub nexrad_model::data::PulseWidth::Unknown(u8)
 impl core::clone::Clone for nexrad_model::data::PulseWidth
 pub fn nexrad_model::data::PulseWidth::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_model::data::PulseWidth
@@ -189,6 +189,8 @@ impl core::cmp::PartialEq for nexrad_model::data::RadialStatus
 pub fn nexrad_model::data::RadialStatus::eq(&self, &Self) -> bool
 impl core::fmt::Debug for nexrad_model::data::RadialStatus
 pub fn nexrad_model::data::RadialStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_model::data::RadialStatus
+pub fn nexrad_model::data::RadialStatus::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for nexrad_model::data::RadialStatus
 pub fn nexrad_model::data::RadialStatus::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for nexrad_model::data::RadialStatus
@@ -204,59 +206,15 @@ impl core::marker::Unpin for nexrad_model::data::RadialStatus
 impl core::marker::UnsafeUnpin for nexrad_model::data::RadialStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::RadialStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::RadialStatus
-#[non_exhaustive] pub enum nexrad_model::data::VcpNumber
-pub nexrad_model::data::VcpNumber::Unknown(u16)
-pub nexrad_model::data::VcpNumber::Vcp11
-pub nexrad_model::data::VcpNumber::Vcp112
-pub nexrad_model::data::VcpNumber::Vcp12
-pub nexrad_model::data::VcpNumber::Vcp121
-pub nexrad_model::data::VcpNumber::Vcp21
-pub nexrad_model::data::VcpNumber::Vcp211
-pub nexrad_model::data::VcpNumber::Vcp212
-pub nexrad_model::data::VcpNumber::Vcp215
-pub nexrad_model::data::VcpNumber::Vcp221
-pub nexrad_model::data::VcpNumber::Vcp31
-pub nexrad_model::data::VcpNumber::Vcp32
-pub nexrad_model::data::VcpNumber::Vcp35
-impl nexrad_model::data::VcpNumber
-pub fn nexrad_model::data::VcpNumber::description(&self) -> &'static str
-pub fn nexrad_model::data::VcpNumber::from_number(u16) -> Self
-pub fn nexrad_model::data::VcpNumber::number(&self) -> u16
-impl core::clone::Clone for nexrad_model::data::VcpNumber
-pub fn nexrad_model::data::VcpNumber::clone(&self) -> Self
-impl core::cmp::Eq for nexrad_model::data::VcpNumber
-impl core::cmp::PartialEq for nexrad_model::data::VcpNumber
-pub fn nexrad_model::data::VcpNumber::eq(&self, &Self) -> bool
-impl core::convert::From<nexrad_model::data::VcpNumber> for u16
-pub fn u16::from(nexrad_model::data::VcpNumber) -> Self
-impl core::convert::From<u16> for nexrad_model::data::VcpNumber
-pub fn nexrad_model::data::VcpNumber::from(u16) -> Self
-impl core::fmt::Debug for nexrad_model::data::VcpNumber
-pub fn nexrad_model::data::VcpNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::fmt::Display for nexrad_model::data::VcpNumber
-pub fn nexrad_model::data::VcpNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::hash::Hash for nexrad_model::data::VcpNumber
-pub fn nexrad_model::data::VcpNumber::hash<__H: core::hash::Hasher>(&self, &mut __H)
-impl core::marker::Copy for nexrad_model::data::VcpNumber
-impl core::marker::StructuralPartialEq for nexrad_model::data::VcpNumber
-impl serde_core::ser::Serialize for nexrad_model::data::VcpNumber
-pub fn nexrad_model::data::VcpNumber::serialize<S: serde_core::ser::Serializer>(&self, S) -> core::result::Result<<S as serde_core::ser::Serializer>::Ok, <S as serde_core::ser::Serializer>::Error>
-impl<'de> serde_core::de::Deserialize<'de> for nexrad_model::data::VcpNumber
-pub fn nexrad_model::data::VcpNumber::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
-impl core::marker::Freeze for nexrad_model::data::VcpNumber
-impl core::marker::Send for nexrad_model::data::VcpNumber
-impl core::marker::Sync for nexrad_model::data::VcpNumber
-impl core::marker::Unpin for nexrad_model::data::VcpNumber
-impl core::marker::UnsafeUnpin for nexrad_model::data::VcpNumber
-impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::VcpNumber
-impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::VcpNumber
 pub enum nexrad_model::data::WaveformType
 pub nexrad_model::data::WaveformType::Batch
 pub nexrad_model::data::WaveformType::ContiguousDopplerWithAmbiguityResolution
 pub nexrad_model::data::WaveformType::ContiguousDopplerWithoutAmbiguityResolution
 pub nexrad_model::data::WaveformType::ContiguousSurveillance
 pub nexrad_model::data::WaveformType::StaggeredPulsePair
-pub nexrad_model::data::WaveformType::Unknown
+pub nexrad_model::data::WaveformType::Unknown(u8)
+impl nexrad_model::data::WaveformType
+pub fn nexrad_model::data::WaveformType::abbreviation(self) -> core::option::Option<&'static str>
 impl core::clone::Clone for nexrad_model::data::WaveformType
 pub fn nexrad_model::data::WaveformType::clone(&self) -> Self
 impl core::cmp::Eq for nexrad_model::data::WaveformType
@@ -621,6 +579,54 @@ impl core::marker::Unpin for nexrad_model::data::SweepFieldBuilder
 impl core::marker::UnsafeUnpin for nexrad_model::data::SweepFieldBuilder
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::SweepFieldBuilder
 impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::SweepFieldBuilder
+pub struct nexrad_model::data::VcpNumber(_)
+impl nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_11: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_112: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_12: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_121: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_21: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_211: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_212: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_215: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_221: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_31: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_32: nexrad_model::data::VcpNumber
+pub const nexrad_model::data::VcpNumber::VCP_35: nexrad_model::data::VcpNumber
+pub const fn nexrad_model::data::VcpNumber::new(u16) -> Self
+pub const fn nexrad_model::data::VcpNumber::number(self) -> u16
+impl core::clone::Clone for nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::VcpNumber::clone(&self) -> Self
+impl core::cmp::Eq for nexrad_model::data::VcpNumber
+impl core::cmp::Ord for nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::VcpNumber::cmp(&self, &Self) -> core::cmp::Ordering
+impl core::cmp::PartialEq for nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::VcpNumber::eq(&self, &Self) -> bool
+impl core::cmp::PartialOrd for nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::VcpNumber::partial_cmp(&self, &Self) -> core::option::Option<core::cmp::Ordering>
+impl core::convert::From<nexrad_model::data::VcpNumber> for u16
+pub fn u16::from(nexrad_model::data::VcpNumber) -> Self
+impl core::convert::From<u16> for nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::VcpNumber::from(u16) -> Self
+impl core::fmt::Debug for nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::VcpNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::VcpNumber::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::VcpNumber::hash<__H: core::hash::Hasher>(&self, &mut __H)
+impl core::marker::Copy for nexrad_model::data::VcpNumber
+impl core::marker::StructuralPartialEq for nexrad_model::data::VcpNumber
+impl serde_core::ser::Serialize for nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::VcpNumber::serialize<S: serde_core::ser::Serializer>(&self, S) -> core::result::Result<<S as serde_core::ser::Serializer>::Ok, <S as serde_core::ser::Serializer>::Error>
+impl<'de> serde_core::de::Deserialize<'de> for nexrad_model::data::VcpNumber
+pub fn nexrad_model::data::VcpNumber::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
+impl core::marker::Freeze for nexrad_model::data::VcpNumber
+impl core::marker::Send for nexrad_model::data::VcpNumber
+impl core::marker::Sync for nexrad_model::data::VcpNumber
+impl core::marker::Unpin for nexrad_model::data::VcpNumber
+impl core::marker::UnsafeUnpin for nexrad_model::data::VcpNumber
+impl core::panic::unwind_safe::RefUnwindSafe for nexrad_model::data::VcpNumber
+impl core::panic::unwind_safe::UnwindSafe for nexrad_model::data::VcpNumber
 pub struct nexrad_model::data::VerticalField
 impl nexrad_model::data::VerticalField
 pub fn nexrad_model::data::VerticalField::altitude_range_meters(&self) -> (f64, f64)

@@ -72,6 +72,11 @@ The split keeps the model's dependencies minimal (`thiserror`, and optionally `s
 new protocol parsing, and keeps wire-format details out of the model's public API: the model evolves with user-facing
 requirements, the decoder with the ICD.
 
+Five types exist in both crates: `WaveformType`, `ChannelConfiguration`, `PulseWidth`, `RadialStatus` and `VcpNumber`.
+The two copies of each have the same variants, names, payloads, `Display` and `serde` form, and the `From` impls between
+them (decode's `model` feature) convert every value in both directions. Only the decode copy knows the ICD codes
+(`from_number`/`number`); the model's `Unknown(u8)` carries the code the decoder read without interpreting it.
+
 ### Facade Pattern
 
 The `nexrad` crate re-exports every sub-crate and provides the top-level I/O entry points and a unified `nexrad::Error`
@@ -186,7 +191,8 @@ is excluded from the `wasm` feature set.
 ## Serialization
 
 With the `serde` feature, `nexrad-model` types serialize with field names equal to their accessor names, enum variants
-as their PascalCase names, `VcpNumber` as its number and raw gate bytes as a byte string. Deserialization applies the
+as their PascalCase names, `VcpNumber` as its number and raw gate bytes as a byte string. `nexrad-decode`'s `serde`
+feature covers only the five types it shares with the model, in the same form. Deserialization applies the
 same validation as the constructors and builders. The representation is stable within a major version.
 
 ## Naming Conventions
@@ -321,8 +327,12 @@ is not a breaking change. Code outside the defining crate must include a wildcar
 inside the defining crate keeps exhaustive matches so the compiler flags every place a new variant must be handled.
 
 Non-exhaustive: every crate's `Error` enum and `nexrad_data::result::AwsError`, and enums over sets that grow with the
-ICD or the library, such as message types, products and volume coverage patterns (`MessageContents`, `Product`,
-`VcpNumber`) and render projections (`Projection`).
+ICD or the library, such as message types and products (`MessageContents`, `Product`) and render projections
+(`Projection`).
+
+`VcpNumber` is not an enum: it is a `u16` newtype with associated constants (`VcpNumber::VCP_212`) that work as `match`
+patterns. Naming a further pattern adds a constant, which cannot change how an existing value matches, compares or
+serializes.
 
 Non-exhaustive structs and enum variants (fields may be added in minor releases, so code outside the defining crate
 cannot construct them with a literal and must use `..` in struct patterns): `nexrad_model::meta::registry::SiteEntry`,

@@ -19,7 +19,7 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 
 [dependencies]
 thiserror = { workspace = true }
-nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model" }
+nexrad-model = { version = "1.0.0", path = "../nexrad-model" }
 
 [dev-dependencies]
 nexrad-data = { version = "1.0.0-rc.7", path = "../nexrad-data" }

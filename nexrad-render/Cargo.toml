@@ -27,7 +27,7 @@ image = ["dep:image"]
 
 [dependencies]
 thiserror = { workspace = true }
-nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model" }
+nexrad-model = { version = "1.0.0", path = "../nexrad-model" }
 png = "0.18"
 image = { version = "0.25", default-features = false, optional = true }
 

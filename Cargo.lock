@@ -1734,7 +1734,7 @@ dependencies = [
 
 [[package]]
 name = "nexrad-model"
-version = "1.0.0-rc.2"
+version = "1.0.0"
 dependencies = [
  "bincode",
  "chrono",

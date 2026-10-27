@@ -35,7 +35,7 @@ serde = ["dep:serde", "nexrad-model?/serde"]
 [dependencies]
 thiserror = { workspace = true }
 chrono = { workspace = true }
-nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model", optional = true }
+nexrad-model = { version = "1.0.0", path = "../nexrad-model", optional = true }
 serde = { workspace = true, optional = true }
 zerocopy = { workspace = true }
 

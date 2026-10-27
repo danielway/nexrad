@@ -238,7 +238,7 @@ impl Scan {
     ///     .elevation_cut(surveillance)
     ///     .build();
     /// let sweep = Sweep::new(1, vec![Radial::builder(0, 0.0, 1, 0.5).build()?])?;
-    /// let scan = Scan::new(VcpNumber::Vcp212, Some(vcp), vec![sweep]);
+    /// let scan = Scan::new(VcpNumber::VCP_212, Some(vcp), vec![sweep]);
     ///
     /// let cut = scan.elevation_cut(&scan.sweeps()[0]).unwrap();
     /// assert_eq!(cut.waveform_type(), WaveformType::ContiguousSurveillance);

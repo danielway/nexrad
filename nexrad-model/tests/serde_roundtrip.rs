@@ -166,7 +166,7 @@ fn scan_round_trips() {
 
 #[test]
 fn scan_without_coverage_pattern_round_trips() {
-    let scan = Scan::new(VcpNumber::from_number(21), None, scan().sweeps().to_vec());
+    let scan = Scan::new(VcpNumber::new(21), None, scan().sweeps().to_vec());
     assert_round_trips(&scan);
 
     let mut document = to_json(&scan);

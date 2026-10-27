@@ -61,38 +61,52 @@
 //!
 //! ## Features
 //!
-//! All features are enabled by default through the `full` feature. Each feature enables the
-//! features it depends on, listed under "Implies":
+//! The default features, `data`, `aws`, `aws-rustls` and `render`, load local files, download
+//! from AWS and render images. `full` enables every feature. Each feature enables the features
+//! it depends on, listed under "Implies":
 //!
-//! | Feature | Description | Implies | Notable dependencies | WASM-compatible |
-//! |---------|-------------|---------|----------------------|-----------------|
-//! | `model` | Core data model types | | | Yes |
-//! | `decode` | Protocol decoding | `model` | zerocopy | Yes |
-//! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model` | bzip2 | Yes |
-//! | `render` | Visualization and rendering | `model` | image | Yes |
-//! | `process` | Radar data processing algorithms | `model` | | Yes |
-//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) and the `futures_util` re-export | `data`, `chrono` | reqwest, futures-util | Yes |
-//! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
-//! | `serde` | Serialization support for model types | | serde | Yes |
-//! | `uom` | Type-safe units of measure | | uom | Yes |
-//! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono | Yes |
-//! | `wasm` | All WASM-compatible features | `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, `chrono` | | Yes |
-//! | `full` | Enable all features (default) | `wasm`, `parallel` | | No |
+//! | Feature | Description | Implies | Notable dependencies |
+//! |---------|-------------|---------|----------------------|
+//! | `model` | Core data model types | | |
+//! | `decode` | Protocol decoding | `model` | zerocopy |
+//! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model`, `chrono` | bzip2 |
+//! | `render` | Visualization and rendering | `model` | image |
+//! | `process` | Radar data processing algorithms | `model` | |
+//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) and the `futures_util` re-export, without a TLS backend | `data` | reqwest, futures-util |
+//! | `aws-rustls` | `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS backend | `aws` | rustls, aws-lc-rs |
+//! | `parallel` | Parallel record decompression and decoding | `data` | rayon |
+//! | `serde` | Serialization support for model types | | serde |
+//! | `uom` | Type-safe units of measure | | uom |
+//! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono |
+//! | `full` | Every feature above | all of them | |
 //!
-//! The `aws` feature's TLS stack (rustls with the `aws-lc-rs` crypto provider) compiles C code,
-//! which needs a C compiler and, on Windows x86 targets, NASM.
+//! Every feature except `parallel` builds for `wasm32-unknown-unknown`.
+//!
+//! On `wasm32`, `aws` sends requests through the JavaScript `fetch` API and needs no TLS feature.
+//! On native targets, `aws` alone builds but has no TLS backend, so requests to the HTTPS
+//! endpoints fail at runtime. Enable `aws-rustls` (on by default), or enable a TLS feature of
+//! `reqwest` 0.13 in your own manifest. `aws-rustls` compiles C code, which needs a C compiler
+//! and, on Windows x86 targets, NASM.
 //!
 //! ### Common Configurations
 //!
 //! ```toml
+//! # Load, download and render (the default)
+//! nexrad = "1.0"
+//!
 //! # Minimal - local file processing only (no rendering, no networking)
 //! nexrad = { version = "1.0", default-features = false, features = ["data"] }
 //!
-//! # With AWS S3 downloads
-//! nexrad = { version = "1.0", default-features = false, features = ["aws"] }
+//! # AWS S3 downloads without rendering
+//! nexrad = { version = "1.0", default-features = false, features = ["aws-rustls"] }
 //! tokio = { version = "1", features = ["full"] }
 //!
-//! # Full feature set
+//! # WebAssembly: every feature except `parallel`
+//! nexrad = { version = "1.0", default-features = false, features = [
+//!     "data", "render", "process", "aws", "serde", "uom", "chrono",
+//! ] }
+//!
+//! # Every feature (native only)
 //! nexrad = { version = "1.0", features = ["full"] }
 //! ```
 //!

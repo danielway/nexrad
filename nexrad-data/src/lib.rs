@@ -59,7 +59,11 @@
 //! # Features
 //!
 //! - `aws` (default) - Enable AWS S3 data access, including `aws::realtime::chunk_stream` for polling
-//!   real-time data (requires an async runtime; WASM-compatible)
+//!   real-time data (requires an async runtime). It includes no TLS backend: on `wasm32` requests go
+//!   through the JavaScript `fetch` API and need none, while on native targets requests to the HTTPS
+//!   endpoints fail at runtime unless `aws-rustls` or a TLS feature of `reqwest` is enabled
+//! - `aws-rustls` (default) - `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS
+//!   backend; needs a C compiler and, on Windows x86 targets, NASM
 //! - `model` (default) - Enable conversion to the high-level `Scan` model (`volume::File::scan`,
 //!   `aws::realtime::assemble_volume`)
 //! - `parallel` - Parallelize LDM record decompression and decoding using Rayon

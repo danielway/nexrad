@@ -88,23 +88,26 @@ overlaps the datetime passed to `download_at`. Wrapping variants name only the l
 
 ## Features
 
-All features are enabled by default through `full`. Each feature also enables the features it
+The default features, `data`, `aws`, `aws-rustls` and `render`, load local files, download from
+AWS and render images. `full` enables every feature. Each feature also enables the features it
 depends on, so `data` alone is enough for local file loading.
 
-| Feature | Description | Implies | WASM |
-|---------|-------------|---------|------|
-| `model` | Core data types | | Yes |
-| `decode` | Protocol decoding | `model` | Yes |
-| `data` | Local file I/O (`load`, `load_file`) | `decode`, `model` | Yes |
-| `render` | Image rendering | `model` | Yes |
-| `process` | Processing algorithms | `model` | Yes |
-| `aws` | AWS S3 archive downloads and real-time streaming | `data`, `chrono` | Yes |
-| `serde` | Serialization support | | Yes |
-| `uom` | Type-safe units of measure | | Yes |
-| `chrono` | DateTime type support | | Yes |
-| `parallel` | Parallel decompression (requires rayon) | `data` | No |
-| `wasm` | All WASM-compatible features | all features marked Yes | Yes |
-| `full` | All features (default) | `wasm`, `parallel` | No |
+| Feature | Description | Implies |
+|---------|-------------|---------|
+| `model` | Core data types | |
+| `decode` | Protocol decoding | `model` |
+| `data` | Local file I/O (`load`, `load_file`) | `decode`, `model`, `chrono` |
+| `render` | Image rendering | `model` |
+| `process` | Processing algorithms | `model` |
+| `aws` | AWS S3 archive downloads and real-time streaming, without a TLS backend | `data` |
+| `aws-rustls` | `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS backend | `aws` |
+| `parallel` | Parallel decompression (requires rayon) | `data` |
+| `serde` | Serialization support | |
+| `uom` | Type-safe units of measure | |
+| `chrono` | DateTime type support | |
+| `full` | Every feature above | all of them |
+
+Every feature except `parallel` builds for `wasm32-unknown-unknown`.
 
 For local file processing without rendering or networking:
 
@@ -112,16 +115,27 @@ For local file processing without rendering or networking:
 nexrad = { version = "1.0", default-features = false, features = ["data"] }
 ```
 
+### TLS
+
+On native targets, `aws` alone builds but has no TLS backend, so requests to the HTTPS endpoints
+fail at runtime. `aws-rustls` (on by default) adds rustls with the `aws-lc-rs` crypto provider,
+which compiles C code and needs a C compiler and, on Windows x86 targets, NASM. To use a different
+TLS backend, disable the default features, enable `aws`, and enable a TLS feature of `reqwest` 0.13
+in your own manifest.
+
 ## WASM Support
 
-For WebAssembly targets, use the `wasm` feature which enables all WASM-compatible functionality:
+Every feature except `parallel` builds for `wasm32-unknown-unknown`. On `wasm32`, `aws` sends
+requests through the JavaScript `fetch` API and needs no TLS feature:
 
 ```toml
-nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
+nexrad = { version = "1.0", default-features = false, features = [
+    "data", "render", "process", "aws", "serde", "uom", "chrono",
+] }
 ```
 
-The `parallel` feature requires a native thread pool (rayon) and is not WASM-compatible. Real-time
-streaming is part of `aws` and is runtime-agnostic, so it works on WASM with any sleep future.
+The `parallel` feature requires a native thread pool (rayon). Real-time streaming is part of `aws`
+and is runtime-agnostic, so it works on WASM with any sleep future.
 
 ## Minimum Supported Rust Version
 

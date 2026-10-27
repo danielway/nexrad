@@ -5,7 +5,7 @@
 //!
 //! Run with:
 //! ```bash
-//! cargo run --example download_latest --features nexrad/aws -- KTLX
+//! cargo run --example download_latest -- KTLX
 //! ```
 
 use std::env;

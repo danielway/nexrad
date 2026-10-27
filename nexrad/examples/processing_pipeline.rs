@@ -9,7 +9,7 @@
 //!
 //! Run with:
 //! ```bash
-//! cargo run --example processing_pipeline --features "render,process" -- \
+//! cargo run --example processing_pipeline --features process -- \
 //!     tests/fixtures/convective/KDMX20220305_232324.bin
 //! ```
 

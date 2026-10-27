@@ -15,7 +15,7 @@
 //!
 //! Run with:
 //! ```bash
-//! cargo run --example showcase --release
+//! cargo run --example showcase --features process --release
 //! ```
 //!
 //! Output images are saved to `renders/`.

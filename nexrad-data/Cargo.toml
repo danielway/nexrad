@@ -29,9 +29,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 
 [features]
-default = ["aws", "model"]
-# AWS S3 access, including real-time polling (WASM-compatible)
+default = ["aws", "aws-rustls", "model"]
+# AWS S3 access, including real-time polling, without a TLS backend. On wasm32 requests go
+# through the browser's fetch API and need no TLS feature; native targets need a TLS backend,
+# such as `aws-rustls`, to reach the HTTPS endpoints.
 aws = ["dep:reqwest", "dep:xml", "dep:futures-util"]
+# `aws` with rustls and the aws-lc-rs crypto provider as the TLS backend
+aws-rustls = ["aws", "reqwest/rustls"]
 # Parallel decompression and decoding using rayon
 parallel = ["dep:rayon"]
 # Conversion of volume files and real-time chunks into `nexrad-model` types
@@ -63,12 +67,12 @@ criterion = { workspace = true }
 [[example]]
 name = "realtime"
 path = "examples/realtime.rs"
-required-features = ["aws"]
+required-features = ["aws-rustls"]
 
 [[example]]
 name = "chunk_iterator"
 path = "examples/chunk_iterator.rs"
-required-features = ["aws"]
+required-features = ["aws-rustls"]
 
 [[bench]]
 name = "scan"

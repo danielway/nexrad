@@ -65,14 +65,17 @@ feature, `realtime::assemble_volume` turns a volume's chunks into a `Scan`.
 ## Features
 
 The APIs in this crate should be configured to require only the dependencies they need, leaving the consumer to include
-as much or little as they desire. By default, the `aws` and `model` features are enabled. Decoding of volume headers
-and LDM records' NEXRAD messages via `nexrad-decode` is always available. The following named features are helpful
-groupings of dependencies/behavior:
+as much or little as they desire. By default, the `aws`, `aws-rustls` and `model` features are enabled. Decoding of
+volume headers and LDM records' NEXRAD messages via `nexrad-decode` is always available. The following named features
+are helpful groupings of dependencies/behavior:
 
 - `aws` (default) - Enables accessing archive and real-time NEXRAD data from AWS Open Data, including
-  `realtime::chunk_stream`, an async stream that polls for new real-time chunks. WASM-compatible. Its TLS stack
-  (rustls with the `aws-lc-rs` crypto provider) compiles C code, which needs a C compiler and, on Windows x86 targets,
-  NASM.
+  `realtime::chunk_stream`, an async stream that polls for new real-time chunks. It includes no TLS backend. On
+  `wasm32` targets requests go through the JavaScript `fetch` API and need none. On native targets `aws` alone builds,
+  but requests to the HTTPS endpoints fail at runtime unless a TLS backend is enabled, through `aws-rustls` or a TLS
+  feature of `reqwest` 0.13 in your own manifest.
+- `aws-rustls` (default) - `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS backend. aws-lc-rs compiles
+  C code, which needs a C compiler and, on Windows x86 targets, NASM.
 - `model` (default) - Provides mappings to a common radar data model, particularly for mapping `volume::File` into a
   `Scan`.
 - `parallel` - Parallelize LDM record decompression and decoding using Rayon.

@@ -18,12 +18,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 
 [features]
-default = ["full"]
+# Load, download and render
+default = ["data", "aws", "aws-rustls", "render"]
 
 # Core crate features
 model = ["dep:nexrad-model"]
 decode = ["dep:nexrad-decode", "model", "nexrad-decode/model"]
-data = ["dep:nexrad-data", "decode", "nexrad-data/model"]
+data = ["dep:nexrad-data", "decode", "chrono", "nexrad-data/model"]
 render = ["dep:nexrad-render", "model"]
 process = ["dep:nexrad-process", "model"]
 
@@ -32,13 +33,25 @@ serde = ["nexrad-model?/serde"]
 uom = ["nexrad-model?/uom", "nexrad-decode?/uom"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
 parallel = ["data", "nexrad-data/parallel"]
-# AWS S3 access, including real-time streaming (WASM-compatible)
-aws = ["data", "chrono", "nexrad-data/aws", "dep:futures-util"]
+# AWS S3 access, including real-time streaming, without a TLS backend (see `aws-rustls`)
+aws = ["data", "nexrad-data/aws", "dep:futures-util"]
+# `aws` with rustls and the aws-lc-rs crypto provider as the TLS backend
+aws-rustls = ["aws", "nexrad-data/aws-rustls"]
 
-# All WASM-compatible features
-wasm = ["model", "decode", "data", "render", "process", "aws", "serde", "uom", "chrono"]
-# Convenience feature for everything (includes native-only `parallel`, not WASM-compatible)
-full = ["wasm", "parallel"]
+# Every feature. `parallel` does not build for wasm32-unknown-unknown.
+full = [
+    "model",
+    "decode",
+    "data",
+    "render",
+    "process",
+    "aws",
+    "aws-rustls",
+    "serde",
+    "uom",
+    "chrono",
+    "parallel",
+]
 
 [dependencies]
 thiserror = { workspace = true }
@@ -59,7 +72,7 @@ required-features = ["model", "data"]
 
 [[example]]
 name = "download_latest"
-required-features = ["aws", "model"]
+required-features = ["aws-rustls"]
 
 [[example]]
 name = "render_reflectivity"
@@ -75,5 +88,5 @@ required-features = ["render", "data", "process", "chrono"]
 
 [[example]]
 name = "timing_analysis"
-required-features = ["aws", "model", "chrono"]
+required-features = ["aws-rustls"]
 

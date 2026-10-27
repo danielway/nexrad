@@ -7,6 +7,10 @@ on:
     branches: [main]
   workflow_call:
 
+env:
+  # Every facade feature except `parallel`, which does not build for wasm32-unknown-unknown.
+  NEXRAD_WASM_FEATURES: model,decode,data,render,process,aws,aws-rustls,serde,uom,chrono
+
 jobs:
   formatting:
     name: Formatting check
@@ -158,6 +162,44 @@ jobs:
       - name: Run tests
         run: cargo test --all-features --workspace
 
+  test-feature-sets:
+    name: Test facade feature sets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+
+      - name: Test without default features
+        run: cargo test -p nexrad --no-default-features
+
+      - name: Test the WASM-compatible feature set on native
+        run: cargo test -p nexrad --no-default-features --features ${{ env.NEXRAD_WASM_FEATURES }}
+
+      - name: Test nexrad-data without default features
+        run: cargo test -p nexrad-data --no-default-features
+
+  windows:
+    name: Windows build check
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          system-deps: "false"
+
+      # aws-rustls builds aws-lc-sys, which needs NASM on Windows x86 targets.
+      - name: Install NASM
+        uses: ilammy/setup-nasm@v1
+
+      - name: Check workspace
+        run: cargo check --workspace --all-features --all-targets
+
   public-api:
     name: Public API baselines
     runs-on: ubuntu-latest
@@ -234,5 +276,9 @@ jobs:
       - name: Check nexrad-data with aws (WASM)
         run: cargo check --target wasm32-unknown-unknown -p nexrad-data --no-default-features --features aws
 
+      - name: Check nexrad-data with aws-rustls (WASM)
+        run: cargo check --target wasm32-unknown-unknown -p nexrad-data --no-default-features --features aws-rustls
+
+      # Every facade feature except `parallel`, which needs threads.
       - name: Check nexrad facade (WASM)
-        run: cargo check --target wasm32-unknown-unknown -p nexrad --no-default-features --features wasm
+        run: cargo check --target wasm32-unknown-unknown -p nexrad --no-default-features --features ${{ env.NEXRAD_WASM_FEATURES }}

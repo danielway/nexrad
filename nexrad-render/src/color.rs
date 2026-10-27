@@ -530,19 +530,20 @@ impl Steps {
     }
 }
 
-/// Returns the standard NWS (National Weather Service) reflectivity color scale.
+/// Returns a discrete reflectivity color scale.
 ///
-/// This scale uses colors commonly seen in weather radar displays, ranging
-/// from cyan/blue for light precipitation to magenta/white for extreme values.
+/// The scale steps every 5 dBZ from black at 0 dBZ through cyan and blue, greens,
+/// yellow and orange, reds and purple to magenta and white at 75 dBZ and above.
+/// Values below 0 dBZ take the first color.
 ///
-/// | dBZ Range | Color | Meaning |
-/// |-----------|-------|---------|
-/// | 0-5 | Black | Below detection threshold |
-/// | 5-20 | Cyan/Blue | Light precipitation |
-/// | 20-35 | Green | Light to moderate precipitation |
-/// | 35-50 | Yellow/Orange | Moderate to heavy precipitation |
-/// | 50-65 | Red/Magenta | Heavy precipitation, possible hail |
-/// | 65+ | Purple/White | Extreme precipitation, likely hail |
+/// | dBZ Range | Color |
+/// |-----------|-------|
+/// | 0-5 | Black |
+/// | 5-20 | Cyan/Blue |
+/// | 20-35 | Green |
+/// | 35-50 | Yellow/Orange |
+/// | 50-65 | Red/Magenta |
+/// | 65+ | Purple/White |
 pub fn nws_reflectivity_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         ColorScaleLevel::new(0.0, Color::rgb(0.0000, 0.0000, 0.0000)),
@@ -566,21 +567,23 @@ pub fn nws_reflectivity_scale() -> DiscreteColorScale {
 
 /// Returns a color scale for radial velocity data.
 ///
-/// This divergent scale uses green for motion toward the radar (negative values)
-/// and red for motion away from the radar (positive values), with gray near zero.
-/// Range: -64 to +64 m/s (standard precipitation mode Doppler velocity).
+/// This divergent scale uses greens for negative values (toward the radar) and
+/// reds for positive values (away from the radar), with gray near zero.
+/// Range: -64 to +64 m/s, which covers the -63.5 to +63.0 m/s that an 8-bit
+/// velocity value encodes at 0.5 m/s resolution (ICD 2620002). Data encoded at
+/// 1.0 m/s resolution can exceed it and takes the end colors.
 ///
-/// | Velocity (m/s) | Color | Meaning |
-/// |----------------|-------|---------|
-/// | -64 to -48 | Dark Green | Strong inbound |
-/// | -48 to -32 | Green | Moderate inbound |
-/// | -32 to -16 | Light Green | Light inbound |
-/// | -16 to -4 | Pale Green | Very light inbound |
-/// | -4 to +4 | Gray | Near zero / RF |
-/// | +4 to +16 | Pale Red | Very light outbound |
-/// | +16 to +32 | Light Red/Pink | Light outbound |
-/// | +32 to +48 | Red | Moderate outbound |
-/// | +48 to +64 | Dark Red | Strong outbound |
+/// | Velocity (m/s) | Color |
+/// |----------------|-------|
+/// | -64 to -48 | Dark Green |
+/// | -48 to -32 | Green |
+/// | -32 to -16 | Light Green |
+/// | -16 to -4 | Pale Green |
+/// | -4 to +4 | Gray |
+/// | +4 to +16 | Pale Red |
+/// | +16 to +32 | Light Red/Pink |
+/// | +32 to +48 | Red |
+/// | +48 to +64 | Dark Red |
 pub fn velocity_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         // Strong inbound (toward radar) - dark green
@@ -601,18 +604,18 @@ pub fn velocity_scale() -> DiscreteColorScale {
 
 /// Returns a color scale for spectrum width data.
 ///
-/// This sequential scale ranges from cool colors (low turbulence) to warm colors
-/// (high turbulence). Range: 0 to 30 m/s.
+/// This sequential scale runs from gray and cool colors for small widths to warm
+/// colors for large widths. Range: 0 to 30 m/s.
 ///
-/// | Width (m/s) | Color | Meaning |
-/// |-------------|-------|---------|
-/// | 0-4 | Gray | Very low turbulence |
-/// | 4-8 | Blue | Low turbulence |
-/// | 8-12 | Cyan | Light turbulence |
-/// | 12-16 | Green | Moderate turbulence |
-/// | 16-20 | Yellow | Moderate-high turbulence |
-/// | 20-25 | Orange | High turbulence |
-/// | 25-30 | Red | Very high turbulence |
+/// | Width (m/s) | Color |
+/// |-------------|-------|
+/// | 0-4 | Gray |
+/// | 4-8 | Blue |
+/// | 8-12 | Cyan |
+/// | 12-16 | Green |
+/// | 16-20 | Yellow |
+/// | 20-25 | Orange |
+/// | 25-30 | Red |
 pub fn spectrum_width_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         ColorScaleLevel::new(0.0, Color::rgb(0.5020, 0.5020, 0.5020)),
@@ -627,28 +630,27 @@ pub fn spectrum_width_scale() -> DiscreteColorScale {
 
 /// Returns a color scale for differential reflectivity (ZDR) data.
 ///
-/// This divergent scale shows negative values (vertically-oriented particles) in
-/// blue/purple, near-zero in gray, and positive values (horizontally-oriented
-/// particles like large raindrops) in yellow/orange/red.
+/// This divergent scale shows negative values in purple and blue, values near
+/// zero in gray, and positive values in green, yellow, orange and red.
 /// Range: -2 to +6 dB.
 ///
-/// | ZDR (dB) | Color | Meaning |
-/// |----------|-------|---------|
-/// | -2 to -1 | Purple | Vertically oriented |
-/// | -1 to 0 | Blue | Slightly vertical |
-/// | 0 to 0.5 | Gray | Spherical particles |
-/// | 0.5 to 1.5 | Light Green | Slightly oblate |
-/// | 1.5 to 2.5 | Yellow | Oblate drops |
-/// | 2.5 to 4 | Orange | Large oblate drops |
-/// | 4 to 6 | Red | Very large drops/hail |
+/// | ZDR (dB) | Color |
+/// |----------|-------|
+/// | -2 to -1 | Purple |
+/// | -1 to 0 | Blue |
+/// | 0 to 0.5 | Gray |
+/// | 0.5 to 1.5 | Light Green |
+/// | 1.5 to 2.5 | Yellow |
+/// | 2.5 to 4 | Orange |
+/// | 4 to 6 | Red |
 pub fn differential_reflectivity_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
-        // Negative (vertically oriented)
+        // Negative
         ColorScaleLevel::new(-2.0, Color::rgb(0.5020, 0.0000, 0.5020)),
         ColorScaleLevel::new(-1.0, Color::rgb(0.0000, 0.0000, 0.8039)),
-        // Near zero (spherical)
+        // Near zero
         ColorScaleLevel::new(0.0, Color::rgb(0.6627, 0.6627, 0.6627)),
-        // Positive (horizontally oriented / oblate)
+        // Positive
         ColorScaleLevel::new(0.5, Color::rgb(0.5647, 0.9333, 0.5647)),
         ColorScaleLevel::new(1.5, Color::rgb(0.9333, 0.9333, 0.0000)),
         ColorScaleLevel::new(2.5, Color::rgb(1.0000, 0.6471, 0.0000)),
@@ -658,30 +660,26 @@ pub fn differential_reflectivity_scale() -> DiscreteColorScale {
 
 /// Returns a color scale for correlation coefficient (CC/RhoHV) data.
 ///
-/// This sequential scale emphasizes high values (0.9-1.0) which indicate
-/// meteorological targets. Lower values may indicate non-meteorological
-/// echoes, mixed precipitation, or tornadic debris.
-/// Range: 0.0 to 1.0.
+/// This sequential scale uses narrower steps above 0.85, so values close to 1.0
+/// are told apart more finely than low values. Range: 0.0 to 1.0; values above
+/// 1.0 take the last color.
 ///
-/// | CC | Color | Meaning |
-/// |----|-------|---------|
-/// | 0.0-0.7 | Purple/Blue | Non-met or debris |
-/// | 0.7-0.85 | Cyan/Teal | Mixed phase/melting |
-/// | 0.85-0.92 | Light Green | Possible hail/graupel |
-/// | 0.92-0.96 | Green | Rain/snow mix |
-/// | 0.96-0.98 | Yellow | Pure rain or snow |
-/// | 0.98-1.0 | White/Light Gray | Uniform precipitation |
+/// | CC | Color |
+/// |----|-------|
+/// | 0.0-0.7 | Black/Purple/Blue |
+/// | 0.7-0.85 | Cyan/Teal |
+/// | 0.85-0.92 | Light Green |
+/// | 0.92-0.96 | Green |
+/// | 0.96-0.98 | Yellow |
+/// | 0.98-1.0 | White/Light Gray |
 pub fn correlation_coefficient_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
-        // Low CC - non-meteorological or debris
         ColorScaleLevel::new(0.0, Color::rgb(0.0000, 0.0000, 0.0000)),
         ColorScaleLevel::new(0.2, Color::rgb(0.3922, 0.0000, 0.5882)),
         ColorScaleLevel::new(0.5, Color::rgb(0.0000, 0.0000, 0.8039)),
         ColorScaleLevel::new(0.7, Color::rgb(0.0000, 0.5451, 0.5451)),
-        // Medium CC - mixed precipitation
         ColorScaleLevel::new(0.85, Color::rgb(0.0000, 0.8039, 0.4000)),
         ColorScaleLevel::new(0.92, Color::rgb(0.0000, 0.8039, 0.0000)),
-        // High CC - pure meteorological
         ColorScaleLevel::new(0.96, Color::rgb(0.9333, 0.9333, 0.0000)),
         ColorScaleLevel::new(0.98, Color::rgb(0.9020, 0.9020, 0.9020)),
     ])
@@ -689,8 +687,7 @@ pub fn correlation_coefficient_scale() -> DiscreteColorScale {
 
 /// Returns a color scale for differential phase (PhiDP) data.
 ///
-/// This sequential scale covers the full 0-360 degree range. Differential
-/// phase increases with propagation through precipitation.
+/// This sequential scale covers the full 0-360 degree range in 45 degree steps.
 /// Range: 0 to 360 degrees.
 ///
 /// | PhiDP (deg) | Color |
@@ -723,15 +720,15 @@ pub fn differential_phase_scale() -> DiscreteColorScale {
 /// values in reds.
 /// Default range: -20 to +20 dB.
 ///
-/// | CFP (dB) | Color | Meaning |
-/// |----------|-------|---------|
-/// | -20 to -10 | Dark Blue | Strong filtering |
-/// | -10 to -5 | Blue | Moderate filtering |
-/// | -5 to -1 | Light Blue | Light filtering |
-/// | -1 to +1 | Gray | Near zero |
-/// | +1 to +5 | Light Red | Slight increase |
-/// | +5 to +10 | Red | Moderate increase |
-/// | +10 to +20 | Dark Red | Strong increase |
+/// | CFP (dB) | Color |
+/// |----------|-------|
+/// | -20 to -10 | Dark Blue |
+/// | -10 to -5 | Blue |
+/// | -5 to -1 | Light Blue |
+/// | -1 to +1 | Gray |
+/// | +1 to +5 | Light Red |
+/// | +5 to +10 | Red |
+/// | +10 to +20 | Dark Red |
 pub fn clutter_filter_power_scale() -> DiscreteColorScale {
     DiscreteColorScale::new(vec![
         ColorScaleLevel::new(-20.0, Color::rgb(0.0000, 0.0000, 0.5451)),
@@ -747,12 +744,11 @@ pub fn clutter_filter_power_scale() -> DiscreteColorScale {
 
 /// Returns the default color scale for a given product.
 ///
-/// This function selects an appropriate color scale based on the product type,
-/// using standard meteorological conventions.
+/// This function selects the crate's built-in color scale for the product type.
 ///
 /// | Product | Scale |
 /// |---------|-------|
-/// | Reflectivity | NWS Reflectivity (dBZ) |
+/// | Reflectivity | [`nws_reflectivity_scale`] (-32 to 95 dBZ) |
 /// | Velocity | Divergent Green-Red (-64 to +64 m/s) |
 /// | SpectrumWidth | Sequential (0 to 30 m/s) |
 /// | DifferentialReflectivity | Divergent (-2 to +6 dB) |

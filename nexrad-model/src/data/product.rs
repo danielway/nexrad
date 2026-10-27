@@ -11,27 +11,35 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[non_exhaustive]
 pub enum Product {
-    /// Base reflectivity (dBZ). Measures the intensity of precipitation.
+    /// Reflectivity (dBZ): returned power expressed in dBZ.
     Reflectivity,
-    /// Radial velocity (m/s). Measures motion toward or away from the radar.
+    /// Radial velocity (m/s): the component of target velocity along the beam, toward or
+    /// away from the radar.
     Velocity,
-    /// Spectrum width (m/s). Measures turbulence within the radar beam.
+    /// Spectrum width (m/s): the spread of radial velocities within the sample volume.
     SpectrumWidth,
-    /// Differential reflectivity (dB). Compares horizontal and vertical reflectivity.
+    /// Differential reflectivity (dB): the ratio of the horizontally to the vertically
+    /// polarized reflectivity, in dB.
     DifferentialReflectivity,
-    /// Differential phase (degrees). Phase difference between polarizations.
+    /// Differential phase (degrees): the phase difference between the horizontally and
+    /// vertically polarized returns.
     DifferentialPhase,
-    /// Correlation coefficient. Correlation between polarizations (0-1).
+    /// Correlation coefficient (unitless): the correlation between the horizontally and
+    /// vertically polarized returns.
     CorrelationCoefficient,
-    /// Clutter filter power (CFP). Difference between clutter-filtered and unfiltered reflectivity.
+    /// Clutter filter power (dB): the difference between clutter-filtered and unfiltered
+    /// reflectivity.
     ClutterFilterPower,
 }
 
 impl Product {
-    /// Returns the typical value range `(min, max)` for this product.
+    /// Returns the display range `(min, max)` for this product.
     ///
-    /// These ranges cover the expected data values for each product type and are
-    /// used for color mapping and normalization.
+    /// This is a display default: the range a renderer normalizes the product's values to
+    /// when no other range is given (`nexrad-render` builds its color lookup table over it).
+    /// It is not the physical or encodable range of the moment, and decoded values can fall
+    /// outside it (for example correlation coefficients above 1.0); `nexrad-render` clamps
+    /// them to the ends of the range. The ranges are stable for 1.x.
     pub fn value_range(&self) -> (f32, f32) {
         match self {
             Product::Reflectivity => (-32.0, 95.0),

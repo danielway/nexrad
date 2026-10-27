@@ -99,7 +99,7 @@ overlaps the datetime passed to `download_at`. Wrapping variants name only the l
 
 ## Features
 
-All features are enabled by default through `full`. Each feature also enables the features it
+All features except `image` are enabled by default through `full`. Each feature also enables the features it
 depends on, so `data` alone is enough for local file loading.
 
 | Feature | Description | Implies | WASM |
@@ -114,8 +114,13 @@ depends on, so `data` alone is enough for local file loading.
 | `uom` | Type-safe units of measure | | Yes |
 | `chrono` | DateTime type support | | Yes |
 | `parallel` | Parallel decompression (requires rayon) | `data` | No |
+| `image` | `RenderResult::into_rgba_image` interop (opt-in, outside the semver promise) | `render` | Yes |
 | `wasm` | All WASM-compatible features | all features marked Yes | Yes |
 | `full` | All features (default) | `wasm`, `parallel` | No |
+
+The `image` feature is not part of `wasm` or `full`. It tracks the `image` crate's own 0.x releases and is
+excluded from the semver promise: a minor or patch release may move it to a newer, incompatible `image` version.
+Without it, rendered images are plain RGBA8 pixel buffers with `write_png` and `save_png`.
 
 For local file processing without rendering or networking:
 

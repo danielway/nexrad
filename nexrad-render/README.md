@@ -36,7 +36,7 @@ fn render(sweep: &Sweep) -> nexrad_render::Result<()> {
     let field = sweep.field(Product::Reflectivity).unwrap();
     let scale = default_scale(Product::Reflectivity);
     let result = render_sweep(&field, &scale, &RenderOptions::new(800, 800))?;
-    result.save("reflectivity.png")?;
+    result.save_png("reflectivity.png")?;
     Ok(())
 }
 ```
@@ -106,7 +106,8 @@ entries. `entries()` exposes the RGBA table (for example as a 1-D GPU texture), 
 
 ## RenderResult and Metadata
 
-`render_sweep`, `render_cartesian`, and `render_vertical` return a `RenderResult` that bundles the image with spatial metadata:
+`render_sweep`, `render_cartesian`, and `render_vertical` return a `RenderResult` that bundles
+the rendered pixels with spatial metadata:
 
 ```rust
 use nexrad_model::data::SweepField;
@@ -121,10 +122,14 @@ fn render(
 ) -> nexrad_render::Result<()> {
     let result = render_sweep(field, color_scale, options)?;
 
-    // Save the image, or encode it into memory
-    result.save("radar.png")?;
+    // Raw RGBA8 pixels, row-major (for a GPU texture or another image library)
+    let (width, height) = (result.width(), result.height());
+    let rgba: &[u8] = result.pixels();
+
+    // Save as PNG, or encode PNG into memory
+    result.save_png("radar.png")?;
     let mut png = Vec::new();
-    result.write_to(&mut png, nexrad_render::image::ImageFormat::Png)?;
+    result.write_png(&mut png)?;
 
     // Query data values at specific coordinates (pass the field that was rendered)
     let meta = result.metadata();
@@ -148,16 +153,23 @@ fn render(
 
 Conversions a projection does not support return `None`.
 
-## The `image` dependency
+## Pixels, PNG and the `image` feature
 
-Images are `image::RgbaImage` values and I/O failures surface as `Error::Image(image::ImageError)`,
-so the `image` crate is part of the public API and is re-exported as `nexrad_render::image`.
-A major version bump of `image` is a major version bump of `nexrad-render`.
+A `RenderResult` owns its pixels as 8-bit RGBA, row-major with no row padding: `pixels()` borrows
+them and `into_pixels()` hands over the `Vec<u8>`. No image-library type appears in the API.
+`write_png` and `save_png` encode PNG with a private encoder; encoding failures surface as
+`Error::Encode` (with the encoder's error as its source) and write failures as `Error::Io`. For
+other formats, pass the pixels to the image library of your choice.
 
-Only the `image` PNG codec is enabled. To `save` or `write_to` other formats, enable the matching
-feature on your own `image` dependency (for example
-`image = { version = "0.25", default-features = false, features = ["jpeg"] }`); Cargo's feature
-unification makes the codec available to `nexrad-render`.
+The opt-in `image` feature adds `RenderResult::into_rgba_image()`, which converts a result into an
+`image::RgbaImage`:
+
+```toml
+nexrad-render = { version = "1.0", features = ["image"] }
+```
+
+This feature tracks the `image` crate's own 0.x releases and is excluded from the semver promise:
+a minor or patch release of `nexrad-render` may move it to a newer, incompatible `image` version.
 
 ## Minimum Supported Rust Version
 

@@ -48,9 +48,8 @@ fn create_gradient_sweep() -> Vec<Radial> {
 }
 
 /// Get pixel color at (x, y).
-fn get_pixel(image: &nexrad_render::RgbaImage, x: u32, y: u32) -> [u8; 4] {
-    let pixel = image.get_pixel(x, y);
-    [pixel[0], pixel[1], pixel[2], pixel[3]]
+fn get_pixel(result: &nexrad_render::RenderResult, x: u32, y: u32) -> [u8; 4] {
+    result.pixel(x, y).expect("pixel is inside the image")
 }
 
 // ---------------------------------------------------------------------------
@@ -71,8 +70,8 @@ fn test_bilinear_sweep_produces_different_output() {
     let nearest_result = render_sweep(&field, &scale, &nearest_opts).expect("nearest renders");
     let bilinear_result = render_sweep(&field, &scale, &bilinear_opts).expect("bilinear renders");
 
-    let nearest_img = nearest_result.image();
-    let bilinear_img = bilinear_result.image();
+    let nearest_img = &nearest_result;
+    let bilinear_img = &bilinear_result;
 
     // At least some pixels should differ between nearest and bilinear
     let mut differ_count = 0u32;
@@ -107,7 +106,7 @@ fn test_bilinear_sweep_preserves_gap_detection() {
         .with_interpolation(nexrad_render::Interpolation::Bilinear);
 
     let result = render_sweep(&field, &scale, &options).expect("renders");
-    let image = result.image();
+    let image = &result;
 
     // Pixel in covered region (~90 degrees east)
     let covered_pixel = get_pixel(image, 130, 100);
@@ -175,8 +174,8 @@ fn test_nearest_sweep_unchanged() {
     for y in 0..200 {
         for x in 0..200 {
             assert_eq!(
-                get_pixel(explicit_result.image(), x, y),
-                get_pixel(default_result.image(), x, y),
+                get_pixel(&explicit_result, x, y),
+                get_pixel(&default_result, x, y),
                 "Explicit Nearest and default should produce identical output at ({}, {})",
                 x,
                 y
@@ -226,7 +225,7 @@ fn test_bilinear_cartesian_smooth() {
     let mut differ_count = 0u32;
     for y in 0..16 {
         for x in 0..16 {
-            if get_pixel(nearest_result.image(), x, y) != get_pixel(bilinear_result.image(), x, y) {
+            if get_pixel(&nearest_result, x, y) != get_pixel(&bilinear_result, x, y) {
                 differ_count += 1;
             }
         }
@@ -297,7 +296,7 @@ fn test_bilinear_vertical_smooth() {
     let mut differ_count = 0u32;
     for y in 0..16 {
         for x in 0..16 {
-            if get_pixel(nearest_result.image(), x, y) != get_pixel(bilinear_result.image(), x, y) {
+            if get_pixel(&nearest_result, x, y) != get_pixel(&bilinear_result, x, y) {
                 differ_count += 1;
             }
         }

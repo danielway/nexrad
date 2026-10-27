@@ -13,7 +13,7 @@ use crate::slice_reader::SliceReader;
 /// moment block (type byte `'D'`) is parsed with the generic data block layout and kept in
 /// [`other_data_blocks`](Self::other_data_blocks); a metadata block (type byte `'R'`) is skipped,
 /// since the next block pointer gives its extent. Neither is included in
-/// [`radial`](Self::radial) or [`into_radial`](Self::into_radial).
+/// `radial` or `into_radial` (both available with the `model` feature).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message<'a> {
     /// The decoded digital radar data header.
@@ -314,7 +314,7 @@ impl<'a> Message<'a> {
     /// order they appear in the message. Each is parsed with the generic data block layout, so
     /// its header and encoded gate values are available; its name is in
     /// [`DataBlockId::data_block_name_raw`]. These blocks are not included in
-    /// [`radial`](Self::radial) or [`into_radial`](Self::into_radial).
+    /// `radial` or `into_radial` (both available with the `model` feature).
     pub fn other_data_blocks(&self) -> &[DataBlock<'a, GenericDataBlock<'a>>] {
         &self.other_data_blocks
     }

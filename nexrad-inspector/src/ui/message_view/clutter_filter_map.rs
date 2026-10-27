@@ -76,7 +76,7 @@ pub fn parse_clutter_filter_map(data: &[u8]) -> String {
                     nexrad_decode::messages::clutter_filter_map::OpCode::BypassFilter => {
                         forced_bypass += 1
                     }
-                    nexrad_decode::messages::clutter_filter_map::OpCode::Unknown(_) => {
+                    nexrad_decode::messages::clutter_filter_map::OpCode::Unknown(_) | _ => {
                         unknown_op += 1
                     }
                 }

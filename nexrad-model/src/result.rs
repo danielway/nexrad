@@ -87,4 +87,14 @@ pub enum Error {
         /// The number of columns in the field.
         columns: usize,
     },
+
+    /// A string does not name a known [`Product`](crate::data::Product).
+    ///
+    /// Returned by [`Product`'s `FromStr`](crate::data::Product#impl-FromStr-for-Product)
+    /// implementation.
+    #[error("unknown product name `{name}`")]
+    UnknownProduct {
+        /// The string that failed to parse.
+        name: String,
+    },
 }

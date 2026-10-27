@@ -28,7 +28,7 @@ use nexrad::process::derived::{
 use nexrad::process::filter::{
     CorrelationCoefficientFilter, GaussianSmooth, MedianFilter, ThresholdFilter,
 };
-use nexrad::process::{CartesianGrid, ScanDerivedProduct, SweepPipeline, SweepProcessor};
+use nexrad::process::{CartesianGrid, SweepPipeline, SweepProcessor};
 use nexrad::render::{
     default_scale, render_cartesian, render_sweep, render_vertical, Color, Projection,
     RenderOptions,
@@ -401,7 +401,7 @@ fn main() -> nexrad::Result<()> {
             extent.min.latitude, extent.min.longitude, extent.max.latitude, extent.max.longitude
         );
 
-        let cref = CompositeReflectivity;
+        let cref = CompositeReflectivity::new();
 
         // Full-range composite at native resolution
         let grid = CartesianGrid::new(extent, native_size, native_size)?;

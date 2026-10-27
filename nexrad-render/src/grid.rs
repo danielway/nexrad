@@ -29,7 +29,7 @@ use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 /// ```no_run
 /// use nexrad_render::{render_cartesian, default_scale, RenderOptions};
 /// use nexrad_model::data::Product;
-/// use nexrad_process::{CartesianGrid, ScanDerivedProduct, derived::CompositeReflectivity};
+/// use nexrad_process::{CartesianGrid, derived::CompositeReflectivity};
 /// # let site = nexrad_model::meta::Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
 /// # let coord_sys = nexrad_model::geo::RadarCoordinateSystem::new(&site);
 /// # let lowest_tilt = nexrad_model::data::SweepField::builder("Reflectivity", "dBZ")
@@ -44,7 +44,7 @@ use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 ///
 /// // Compute composite reflectivity from all elevation tilts
 /// let grid = CartesianGrid::new(coord_sys.sweep_extent(230.0), 800, 800)?;
-/// let cartesian = CompositeReflectivity.compute(&ref_fields, &coord_sys, &grid)?;
+/// let cartesian = CompositeReflectivity::new().compute(&ref_fields, &coord_sys, &grid)?;
 ///
 /// // Render the cartesian field
 /// let scale = default_scale(Product::Reflectivity);

@@ -33,7 +33,14 @@ pub enum Error {
         /// Offset of the read position when the pointer was followed.
         position: usize,
     },
-    /// A digital radar data message contains a data block with an unrecognized name.
+    /// A digital radar data block has an unrecognized name and cannot be handled.
+    ///
+    /// Decoding returns this only for a block whose name is unrecognized and whose type byte is
+    /// neither `'R'` nor `'D'`, which indicates a malformed message or a misplaced block pointer;
+    /// unrecognized `'D'` blocks are kept in
+    /// [`Message::other_data_blocks`](crate::messages::digital_radar_data::Message::other_data_blocks)
+    /// and unrecognized `'R'` blocks are skipped. Converting one of those other data blocks to
+    /// moment data with `DataBlock::moment_data` also returns it, since no model product matches.
     #[error(
         "unknown data block name {:?} at offset {offset}",
         String::from_utf8_lossy(.block_type)

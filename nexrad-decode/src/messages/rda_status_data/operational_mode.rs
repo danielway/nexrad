@@ -1,5 +1,6 @@
 /// The possible RDA system operational modes.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum OperationalMode {
     /// Normal operational mode.
     Operational,

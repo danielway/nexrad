@@ -16,8 +16,8 @@
 use nexrad::model::data::Product;
 use nexrad::process::derived::CompositeReflectivity;
 use nexrad::process::filter::ThresholdFilter;
+use nexrad::process::CartesianGrid;
 use nexrad::process::SweepPipeline;
-use nexrad::process::{CartesianGrid, ScanDerivedProduct};
 use nexrad::render::{default_scale, render_sweep, ColorScale, RenderOptions};
 use std::env;
 
@@ -78,7 +78,7 @@ fn main() -> nexrad::Result<()> {
     let extent = coord_sys.sweep_extent(ref_fields[0].max_range_km());
 
     let grid = CartesianGrid::new(extent, 800, 800)?;
-    let composite = CompositeReflectivity.compute(&ref_fields, &coord_sys, &grid)?;
+    let composite = CompositeReflectivity::new().compute(&ref_fields, &coord_sys, &grid)?;
 
     let cart_result =
         nexrad::render::render_cartesian(&composite, &color_scale, &RenderOptions::new(800, 800))?;

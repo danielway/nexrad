@@ -18,17 +18,14 @@ fn create_test_radial(azimuth_degrees: f32, raw_value: u8) -> Radial {
     let offset = 66.0;
 
     let values = vec![raw_value; gate_count];
-    let moment_data = MomentData::from_fixed_point(
-        Product::Reflectivity,
-        gate_count,
-        first_gate_range_m,
-        gate_interval_m,
-        8,
-        scale,
-        offset,
-        values,
-    )
-    .unwrap();
+    let moment_data = MomentData::builder(Product::Reflectivity, values)
+        .gate_count(gate_count)
+        .first_gate_range_meters(first_gate_range_m)
+        .gate_interval_meters(gate_interval_m)
+        .scale(scale)
+        .offset(offset)
+        .build()
+        .unwrap();
 
     Radial::builder(0, azimuth_degrees, 1, 0.5)
         .moment(moment_data)
@@ -62,7 +59,7 @@ fn test_bilinear_sweep_produces_different_output() {
     let radials = create_gradient_sweep();
     let field =
         SweepField::from_radials(&radials, Product::Reflectivity).expect("field is created");
-    let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
+    let scale = ColorScale::from(nexrad_render::reflectivity_scale());
 
     let nearest_opts = RenderOptions::new(200, 200);
     let bilinear_opts =
@@ -99,7 +96,7 @@ fn test_bilinear_sweep_preserves_gap_detection() {
 
     let field =
         SweepField::from_radials(&radials, Product::Reflectivity).expect("field is created");
-    let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
+    let scale = ColorScale::from(nexrad_render::reflectivity_scale());
 
     let background = [128, 128, 128, 255];
     let options = RenderOptions::new(200, 200)
@@ -142,7 +139,7 @@ fn test_bilinear_fallback_at_invalid_gates() {
         .set(mid_az, mid_gate + 1, 0.0, GateStatus::NoData)
         .unwrap();
 
-    let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
+    let scale = ColorScale::from(nexrad_render::reflectivity_scale());
     let background = [0, 0, 0, 255];
     let options = RenderOptions::new(200, 200)
         .with_background(background.into())
@@ -162,7 +159,7 @@ fn test_nearest_sweep_unchanged() {
     let radials = create_gradient_sweep();
     let field =
         SweepField::from_radials(&radials, Product::Reflectivity).expect("field is created");
-    let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
+    let scale = ColorScale::from(nexrad_render::reflectivity_scale());
 
     let explicit_nearest =
         RenderOptions::new(200, 200).with_interpolation(nexrad_render::Interpolation::Nearest);
@@ -212,7 +209,7 @@ fn test_bilinear_cartesian_smooth() {
         }
     }
 
-    let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
+    let scale = ColorScale::from(nexrad_render::reflectivity_scale());
 
     let nearest_opts = RenderOptions::new(16, 16);
     let bilinear_opts =
@@ -259,7 +256,7 @@ fn test_bilinear_cartesian_with_nodata_border() {
     field.set(2, 1, 40.0, GateStatus::Valid).unwrap();
     field.set(2, 2, 50.0, GateStatus::Valid).unwrap();
 
-    let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
+    let scale = ColorScale::from(nexrad_render::reflectivity_scale());
     let options =
         RenderOptions::new(16, 16).with_interpolation(nexrad_render::Interpolation::Bilinear);
 
@@ -284,7 +281,7 @@ fn test_bilinear_vertical_smooth() {
         }
     }
 
-    let scale = ColorScale::from(nexrad_render::nws_reflectivity_scale());
+    let scale = ColorScale::from(nexrad_render::reflectivity_scale());
 
     let nearest_opts = RenderOptions::new(16, 16);
     let bilinear_opts =

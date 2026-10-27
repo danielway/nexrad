@@ -43,9 +43,12 @@ use nexrad_model::geo::{GeoExtent, GeoPoint, RadarCoordinateSystem};
 /// use nexrad_model::data::Product;
 /// use nexrad_render::{default_scale, render_sweep, RenderOptions};
 /// # use nexrad_model::data::{MomentData, Radial, Sweep};
-/// # let reflectivity = MomentData::from_fixed_point(
-/// #     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
-/// # )?;
+/// # let reflectivity = MomentData::builder(Product::Reflectivity, vec![100, 110, 120])
+/// #     .first_gate_range_meters(2000)
+/// #     .gate_interval_meters(250)
+/// #     .scale(2.0)
+/// #     .offset(66.0)
+/// #     .build()?;
 /// # let radial = Radial::builder(0, 0.0, 1, 0.5).moment(reflectivity).build()?;
 /// # let sweep = Sweep::new(1, vec![radial])?;
 ///
@@ -239,13 +242,15 @@ fn render_geographic(
         let latitude = max.latitude - (y as f64 + 0.5) / height as f64 * lat_span;
 
         for (x, &longitude) in longitudes.iter().enumerate() {
-            let polar = coord_system.geo_to_polar(
+            let Some(polar) = coord_system.geo_to_polar(
                 GeoPoint {
                     latitude,
                     longitude,
                 },
                 elevation,
-            );
+            ) else {
+                continue;
+            };
             let range_km = polar.range_km;
             if !(range_km >= first_gate_km && range_km < max_range_km) {
                 continue;

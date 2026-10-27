@@ -121,6 +121,7 @@ fn gradient() -> ColorScale {
         ColorStop::new(-32.0, Color::BLACK),
         ColorStop::new(150.0, Color::WHITE),
     ])
+    .unwrap()
     .into()
 }
 

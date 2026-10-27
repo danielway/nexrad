@@ -13,6 +13,7 @@ fn test_vcp(pattern_number: u16) -> VolumeCoveragePattern {
         .doppler_velocity_resolution_mps(0.5)
         .pulse_width(PulseWidth::Short)
         .build()
+        .unwrap()
 }
 
 #[test]
@@ -136,9 +137,14 @@ fn test_sweep_merge_different_elevation() {
 #[test]
 fn test_moment_data_creation() {
     let values = vec![0, 1, 50, 100, 150, 200, 255];
-    let moment =
-        MomentData::from_fixed_point(Product::Reflectivity, 7, 500, 250, 8, 2.0, 33.0, values)
-            .unwrap();
+    let moment = MomentData::builder(Product::Reflectivity, values)
+        .gate_count(7)
+        .first_gate_range_meters(500)
+        .gate_interval_meters(250)
+        .scale(2.0)
+        .offset(33.0)
+        .build()
+        .unwrap();
 
     assert_eq!(moment.product(), Product::Reflectivity);
     assert_eq!(moment.gate_count(), 7);
@@ -164,9 +170,14 @@ fn test_moment_data_values_with_scale() {
     // raw=100 -> (100 - 33) / 2 = 33.5
 
     let values = vec![0, 1, 50, 100];
-    let moment =
-        MomentData::from_fixed_point(Product::Reflectivity, 4, 500, 250, 8, 2.0, 33.0, values)
-            .unwrap();
+    let moment = MomentData::builder(Product::Reflectivity, values)
+        .gate_count(4)
+        .first_gate_range_meters(500)
+        .gate_interval_meters(250)
+        .scale(2.0)
+        .offset(33.0)
+        .build()
+        .unwrap();
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 4);
@@ -192,9 +203,12 @@ fn test_moment_data_values_without_scale() {
     // When scale=0.0, raw values 0 and 1 are still the below-threshold and range-folded
     // sentinels; larger raw values are passed through directly.
     let values = vec![0, 1, 50, 100];
-    let moment =
-        MomentData::from_fixed_point(Product::Reflectivity, 4, 500, 250, 8, 0.0, 0.0, values)
-            .unwrap();
+    let moment = MomentData::builder(Product::Reflectivity, values)
+        .gate_count(4)
+        .first_gate_range_meters(500)
+        .gate_interval_meters(250)
+        .build()
+        .unwrap();
 
     assert_eq!(
         moment.values(),
@@ -212,9 +226,15 @@ fn test_moment_data_values_16bit_with_scale() {
     // Two 16-bit big-endian values: 20 and 30
     // With scale=2.0, offset=10.0 => 5.0 and 10.0
     let values = vec![0x00, 0x14, 0x00, 0x1E];
-    let moment =
-        MomentData::from_fixed_point(Product::Reflectivity, 2, 500, 250, 16, 2.0, 10.0, values)
-            .unwrap();
+    let moment = MomentData::builder(Product::Reflectivity, values)
+        .gate_count(2)
+        .first_gate_range_meters(500)
+        .gate_interval_meters(250)
+        .data_word_size(16)
+        .scale(2.0)
+        .offset(10.0)
+        .build()
+        .unwrap();
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 2);
@@ -236,9 +256,14 @@ fn test_moment_data_values_16bit_with_scale() {
 fn test_moment_data_values_16bit_special_values() {
     // 16-bit raw values 0 and 1 should map to special cases when scale != 0.
     let values = vec![0x00, 0x00, 0x00, 0x01];
-    let moment =
-        MomentData::from_fixed_point(Product::Reflectivity, 2, 500, 250, 16, 2.0, 0.0, values)
-            .unwrap();
+    let moment = MomentData::builder(Product::Reflectivity, values)
+        .gate_count(2)
+        .first_gate_range_meters(500)
+        .gate_interval_meters(250)
+        .data_word_size(16)
+        .scale(2.0)
+        .build()
+        .unwrap();
 
     let decoded_values = moment.values();
     assert_eq!(decoded_values.len(), 2);
@@ -249,17 +274,13 @@ fn test_moment_data_values_16bit_special_values() {
 #[test]
 fn test_cfp_moment_values_status_and_data() {
     let values = vec![0, 1, 2, 3, 7, 8, 10];
-    let moment = MomentData::from_fixed_point(
-        Product::ClutterFilterPower,
-        7,
-        500,
-        250,
-        8,
-        1.0,
-        0.0,
-        values,
-    )
-    .unwrap();
+    let moment = MomentData::builder(Product::ClutterFilterPower, values)
+        .gate_count(7)
+        .first_gate_range_meters(500)
+        .gate_interval_meters(250)
+        .scale(1.0)
+        .build()
+        .unwrap();
 
     let decoded = moment.values();
     assert_eq!(
@@ -284,17 +305,12 @@ fn test_cfp_moment_values_status_and_data() {
 fn test_cfp_moment_values_without_scale() {
     // Status codes take precedence over the unscaled passthrough.
     let values = vec![0, 7, 8, 42];
-    let moment = MomentData::from_fixed_point(
-        Product::ClutterFilterPower,
-        4,
-        500,
-        250,
-        8,
-        0.0,
-        0.0,
-        values,
-    )
-    .unwrap();
+    let moment = MomentData::builder(Product::ClutterFilterPower, values)
+        .gate_count(4)
+        .first_gate_range_meters(500)
+        .gate_interval_meters(250)
+        .build()
+        .unwrap();
 
     let decoded = moment.values();
     assert_eq!(
@@ -310,8 +326,13 @@ fn test_cfp_moment_values_without_scale() {
 fn test_non_cfp_moment_values_have_no_status_codes() {
     // Raw values 2-7 are ordinary values for every product other than CFP.
     let values = vec![2, 7];
-    let moment =
-        MomentData::from_fixed_point(Product::Velocity, 2, 500, 250, 8, 1.0, 0.0, values).unwrap();
+    let moment = MomentData::builder(Product::Velocity, values)
+        .gate_count(2)
+        .first_gate_range_meters(500)
+        .gate_interval_meters(250)
+        .scale(1.0)
+        .build()
+        .unwrap();
 
     assert_eq!(
         moment.values(),
@@ -407,17 +428,13 @@ fn test_radial_builder_defaults() {
 fn test_radial_builder_setters() {
     use nexrad_model::data::{Radial, RadialStatus};
 
-    let moment = MomentData::from_fixed_point(
-        Product::Reflectivity,
-        3,
-        2000,
-        250,
-        8,
-        2.0,
-        66.0,
-        vec![100, 110, 120],
-    )
-    .unwrap();
+    let moment = MomentData::builder(Product::Reflectivity, vec![100, 110, 120])
+        .first_gate_range_meters(2000)
+        .gate_interval_meters(250)
+        .scale(2.0)
+        .offset(66.0)
+        .build()
+        .unwrap();
     let radial = Radial::builder(1, 0.25, 1, 0.5)
         .collection_timestamp_millis(1_700_000_000_000)
         .azimuth_spacing_degrees(0.5)
@@ -451,7 +468,12 @@ fn test_radial_builder_moment_stores_by_product() {
     let mut builder = Radial::builder(1, 0.25, 1, 0.5);
     for (i, product) in products.iter().enumerate() {
         builder = builder.moment(
-            MomentData::from_fixed_point(*product, 1, 2000, 250, 8, 2.0, 66.0, vec![100 + i as u8])
+            MomentData::builder(*product, vec![100 + i as u8])
+                .first_gate_range_meters(2000)
+                .gate_interval_meters(250)
+                .scale(2.0)
+                .offset(66.0)
+                .build()
                 .unwrap(),
         );
     }
@@ -487,7 +509,8 @@ fn test_elevation_cut_builder_defaults() {
     )
     .is_sails_cut(true)
     .sails_sequence_number(1)
-    .build();
+    .build()
+    .unwrap();
 
     assert_eq!(cut.elevation_angle_degrees(), 0.5);
     assert_eq!(cut.waveform_type(), WaveformType::ContiguousSurveillance);
@@ -495,7 +518,7 @@ fn test_elevation_cut_builder_defaults() {
     assert_eq!(cut.azimuth_rate_degrees_per_second(), 0.0);
     assert!(!cut.super_resolution_half_degree_azimuth());
     assert_eq!(cut.surveillance_prf_number(), 0);
-    assert_eq!(cut.reflectivity_threshold_db(), 0.0);
+    assert_eq!(cut.reflectivity_snr_threshold_db(), 0.0);
     assert!(cut.is_sails_cut());
     assert_eq!(cut.sails_sequence_number(), 1);
     assert!(!cut.is_mrle_cut());
@@ -510,9 +533,12 @@ fn test_vcp_builder_defaults_and_cuts() {
         WaveformType::ContiguousSurveillance,
         ChannelConfiguration::ConstantPhase,
     )
-    .build();
+    .build()
+    .unwrap();
 
-    let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+    let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212))
+        .build()
+        .unwrap();
     assert_eq!(vcp.pattern_number(), VcpNumber::from_number(212));
     assert_eq!(vcp.version(), 0);
     assert_eq!(vcp.doppler_velocity_resolution_mps(), 0.5);
@@ -523,14 +549,16 @@ fn test_vcp_builder_defaults_and_cuts() {
     let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212))
         .elevation_cut(cut.clone())
         .elevation_cut(cut.clone())
-        .build();
-    assert_eq!(vcp.number_of_elevation_cuts(), 2);
+        .build()
+        .unwrap();
+    assert_eq!(vcp.elevation_cut_count(), 2);
 
     let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212))
         .elevation_cut(cut.clone())
         .elevation_cuts(vec![cut])
-        .build();
-    assert_eq!(vcp.number_of_elevation_cuts(), 1);
+        .build()
+        .unwrap();
+    assert_eq!(vcp.elevation_cut_count(), 1);
 }
 
 #[test]
@@ -611,17 +639,12 @@ fn test_sweep_field_product() {
     use nexrad_model::data::{Radial, SweepField};
 
     // CFP raw values 0-7 are status codes and become NoData gates in the field.
-    let cfp = MomentData::from_fixed_point(
-        Product::ClutterFilterPower,
-        3,
-        2000,
-        250,
-        8,
-        1.0,
-        0.0,
-        vec![1, 8, 12],
-    )
-    .unwrap();
+    let cfp = MomentData::builder(Product::ClutterFilterPower, vec![1, 8, 12])
+        .first_gate_range_meters(2000)
+        .gate_interval_meters(250)
+        .scale(1.0)
+        .build()
+        .unwrap();
     let radials = vec![Radial::builder(0, 0.0, 1, 0.5).moment(cfp).build().unwrap()];
 
     let field = SweepField::from_radials(&radials, Product::ClutterFilterPower).expect("cfp data");
@@ -668,7 +691,13 @@ fn sweep_with_moments(elevation_number: u8, moments: Vec<MomentData>) -> Sweep {
 
 /// Helper to create a moment with one gate per raw value.
 fn test_moment(product: Product, values: Vec<u8>) -> MomentData {
-    MomentData::from_fixed_point(product, values.len(), 2000, 250, 8, 2.0, 66.0, values).unwrap()
+    MomentData::builder(product, values)
+        .first_gate_range_meters(2000)
+        .gate_interval_meters(250)
+        .scale(2.0)
+        .offset(66.0)
+        .build()
+        .unwrap()
 }
 
 #[test]

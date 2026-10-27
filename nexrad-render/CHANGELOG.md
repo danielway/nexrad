@@ -34,6 +34,12 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 
 ### Changed
 
+- `nws_reflectivity_scale()` is `reflectivity_scale()`, matching `velocity_scale()` and the other scale functions; the
+  name claimed an NWS source that nothing cites. (#PRNUM)
+- `DiscreteColorScale::new` and `ContinuousColorScale::new` return `Result` and reject an empty list or a value that
+  is not finite, with the new `Error::InvalidColorScale { reason }`. (#PRNUM)
+- `RenderMetadata::geo_to_pixel` and `query_geo` return `None` for a polar render when no beam at the sweep's
+  elevation passes over the point. (#PRNUM)
 - The minimum supported Rust version is 1.88 (it was declared as 1.75, which was already incorrect). (#157)
 - `Error` is `#[non_exhaustive]`; matches on it outside this crate need a wildcard arm. (#155)
 - Angle accessors use the `nexrad-model` stems `azimuth_angle_degrees` and `elevation_angle_degrees`, and polar angles

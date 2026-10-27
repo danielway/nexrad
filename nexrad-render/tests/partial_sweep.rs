@@ -4,7 +4,7 @@
 //! pixels in uncovered azimuth sectors should remain the background color.
 
 use nexrad_model::data::{MomentData, Product, Radial, SweepField};
-use nexrad_render::{nws_reflectivity_scale, render_sweep, ColorScale, RenderOptions};
+use nexrad_render::{reflectivity_scale, render_sweep, ColorScale, RenderOptions};
 
 /// Creates a test radial at the given azimuth angle with uniform reflectivity data.
 fn create_test_radial(azimuth_degrees: f32, reflectivity_value: u8) -> Radial {
@@ -17,17 +17,17 @@ fn create_test_radial(azimuth_degrees: f32, reflectivity_value: u8) -> Radial {
     let offset = 66.0;
 
     let values = vec![reflectivity_value; gate_count];
-    let moment_data = MomentData::from_fixed_point(
-        Product::Reflectivity,
-        gate_count,
-        first_gate_range_m,
-        gate_interval_m,
-        8, // data_word_size: 8-bit encoding
-        scale,
-        offset,
-        values,
-    )
-    .unwrap();
+    let moment_data = MomentData::builder(Product::Reflectivity, values)
+        .gate_count(gate_count)
+        .first_gate_range_meters(first_gate_range_m)
+        .gate_interval_meters(gate_interval_m)
+        .scale(
+            // data_word_size: 8-bit encoding
+            scale,
+        )
+        .offset(offset)
+        .build()
+        .unwrap();
 
     Radial::builder(0, azimuth_degrees, 1, 0.5)
         .moment(moment_data)
@@ -54,7 +54,7 @@ fn create_partial_sweep(
 /// Renders reflectivity from the given radials through `SweepField` and `render_sweep`.
 fn render(radials: &[Radial], options: &RenderOptions) -> nexrad_render::RgbaImage {
     let field = SweepField::from_radials(radials, Product::Reflectivity).expect("field is created");
-    let scale = ColorScale::from(nws_reflectivity_scale());
+    let scale = ColorScale::from(reflectivity_scale());
     render_sweep(&field, &scale, options)
         .expect("renders successfully")
         .into_image()

@@ -21,7 +21,14 @@ fn moment(product: Product, word_size: u8) -> MomentData {
     let values = (0..GATES * bytes_per_gate)
         .map(|i| u8::try_from(i * 7 % 256).expect("fits in a byte"))
         .collect();
-    MomentData::from_fixed_point(product, GATES, 2125, 250, word_size, 2.0, 66.0, values)
+    MomentData::builder(product, values)
+        .gate_count(GATES)
+        .first_gate_range_meters(2125)
+        .gate_interval_meters(250)
+        .data_word_size(word_size)
+        .scale(2.0)
+        .offset(66.0)
+        .build()
         .expect("valid moment data")
 }
 
@@ -67,11 +74,13 @@ fn scan() -> Scan {
         )
         .azimuth_rate_degrees_per_second(21.15)
         .super_resolution_half_degree_azimuth(true)
-        .build(),
+        .build()
+        .unwrap(),
         ElevationCut::builder(1.0, WaveformType::Batch, ChannelConfiguration::Sz2Phase)
             .is_sails_cut(true)
             .sails_sequence_number(1)
-            .build(),
+            .build()
+            .unwrap(),
     ];
     let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212))
         .version(1)
@@ -80,7 +89,8 @@ fn scan() -> Scan {
         .sails_enabled(true)
         .sails_cut_count(1)
         .elevation_cuts(cuts)
-        .build();
+        .build()
+        .unwrap();
     let sweeps = vec![
         Sweep::new(1, vec![radial(1, 1, Some(28.5)), radial(2, 1, None)]).expect("valid sweep"),
         Sweep::new(2, vec![radial(1, 2, Some(26.0)), radial(2, 2, None)]).expect("valid sweep"),
@@ -224,6 +234,36 @@ fn moment_length_mismatch_is_rejected() {
 }
 
 #[test]
+fn elevation_cut_keys_name_snr_thresholds() {
+    let document = to_json(&scan());
+    let cut = &document["coverage_pattern"]["elevation_cuts"][0];
+    for key in [
+        "reflectivity_snr_threshold_db",
+        "velocity_snr_threshold_db",
+        "spectrum_width_snr_threshold_db",
+        "differential_reflectivity_snr_threshold_db",
+        "differential_phase_snr_threshold_db",
+        "correlation_coefficient_snr_threshold_db",
+    ] {
+        assert!(cut.get(key).is_some(), "missing `{key}`");
+    }
+    assert!(cut.get("reflectivity_threshold_db").is_none());
+}
+
+#[test]
+fn invalid_coverage_pattern_is_rejected() {
+    let mut document = to_json(&scan());
+    document["coverage_pattern"]["doppler_velocity_resolution_mps"] = json!(-0.5);
+    let error = serde_json::from_value::<Scan>(document).expect_err("negative resolution");
+    assert!(
+        error
+            .to_string()
+            .contains("doppler_velocity_resolution_mps"),
+        "{error}"
+    );
+}
+
+#[test]
 fn moment_under_another_products_key_is_rejected() {
     let mut document = to_json(&radial(1, 1, None));
     document["velocity"] = document["reflectivity"].clone();
@@ -301,17 +341,14 @@ fn moment_bytes_are_a_byte_string_in_bincode() {
     let raw: Vec<u8> = (0..gate_count)
         .map(|i| u8::try_from(i % 256).expect("fits in a byte"))
         .collect();
-    let moment = MomentData::from_fixed_point(
-        Product::Reflectivity,
-        gate_count,
-        2125,
-        250,
-        8,
-        2.0,
-        66.0,
-        raw.clone(),
-    )
-    .expect("valid moment data");
+    let moment = MomentData::builder(Product::Reflectivity, raw.clone())
+        .gate_count(gate_count)
+        .first_gate_range_meters(2125)
+        .gate_interval_meters(250)
+        .scale(2.0)
+        .offset(66.0)
+        .build()
+        .expect("valid moment data");
 
     let bytes = bincode::serialize(&moment).expect("serializes to bincode");
     // The raw bytes end the encoding as one run behind a little-endian u64 length prefix.

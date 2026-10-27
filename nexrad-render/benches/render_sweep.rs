@@ -4,7 +4,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use nexrad_decode::messages::MessageContents;
 use nexrad_model::data::Product;
 use nexrad_model::data::{Radial, SweepField};
-use nexrad_render::{nws_reflectivity_scale, render_sweep, ColorScale, RenderOptions};
+use nexrad_render::{reflectivity_scale, render_sweep, ColorScale, RenderOptions};
 
 const VOLUME_FILE: &[u8] =
     include_bytes!("../../tests/fixtures/convective/KDMX20220305_232324.bin");
@@ -35,7 +35,7 @@ fn benchmark_render_sweep(c: &mut Criterion) {
     let radials = extract_radials(VOLUME_FILE, 1);
     let field =
         SweepField::from_radials(&radials, Product::Reflectivity).expect("field is created");
-    let color_scale = ColorScale::from(nws_reflectivity_scale());
+    let color_scale = ColorScale::from(reflectivity_scale());
 
     let mut group = c.benchmark_group("render_sweep");
     group

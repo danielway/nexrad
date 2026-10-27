@@ -31,6 +31,13 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Scan::elevation_cut(&Sweep)` and `Scan::sweeps_with_waveform(WaveformType)`. (#188)
 - `VcpNumber::{Vcp11, Vcp21, Vcp121, Vcp211, Vcp221}`, formerly `Unknown(n)`. (#188)
 - `RadarCoordinateSystem::beam_height_meters` (above mean sea level) and `ground_range_km`. (#188)
+- `MomentData::builder(product, raw_values)` and `MomentDataBuilder`, with setters `gate_count`,
+  `first_gate_range_meters`, `gate_interval_meters`, `data_word_size`, `scale` and `offset`; the gate count defaults
+  to the number of gates the raw values hold. (#PRNUM)
+- `Error::InvalidCoveragePattern { parameter, reason }`, from `ElevationCutBuilder::build` and
+  `VolumeCoveragePatternBuilder::build`. (#PRNUM)
+- The site registry documents its contract: entries, including sites of other radar kinds such as TDWR, may be added
+  in minor releases, and `nearest_site` returns the nearest listed site. (#PRNUM)
 
 ### Changed
 
@@ -78,6 +85,20 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - With `serde`, `CfpStatus` variants serialize as their PascalCase names, like every other model enum. (#189)
 - With `serde`, deserialization applies the constructors' and builders' validation and fails with its message. (#189)
 - docs.rs shows the feature each feature-gated item requires. (#196)
+- `VolumeCoveragePattern::number_of_elevation_cuts()` is `elevation_cut_count()`, like `sails_cut_count()` and
+  `mrle_cut_count()`. (#PRNUM)
+- `Sweep::from_radials(Vec<Radial>) -> Vec<Sweep>` is `Sweep::split_by_elevation_number`, since it returns several
+  sweeps. (#PRNUM)
+- `ElevationCut`'s threshold accessors and `ElevationCutBuilder` setters name the signal-to-noise threshold:
+  `reflectivity_threshold_db` is `reflectivity_snr_threshold_db`, and likewise for velocity, spectrum width,
+  differential reflectivity, differential phase and correlation coefficient. Serde keys follow. (#PRNUM)
+- `ElevationCutBuilder::build` returns `Result` and rejects a non-finite elevation angle, azimuth rate or
+  signal-to-noise threshold. (#PRNUM)
+- `VolumeCoveragePatternBuilder::build` returns `Result` and rejects a Doppler velocity resolution that is not finite
+  or is negative; an empty list of elevation cuts is accepted. (#PRNUM)
+- With `serde`, `ElevationCut` and `VolumeCoveragePattern` deserialization applies the builders' validation. (#PRNUM)
+- `RadarCoordinateSystem::geo_to_polar` returns `Option<PolarPoint>`: `None` when no beam at the elevation passes over
+  the point, or an input is not finite, instead of a non-finite or negative range. (#PRNUM)
 - The crates.io categories are `science` and `data-structures`; `parsing` is dropped. (#196)
 - The published crate leaves out the fixture tests that need files from outside it and the site registry's source
   CSV. (#196)
@@ -89,6 +110,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The `DataMoment` trait; its methods are inherent on `MomentData`. (#170)
 - `Product::moment_data` and `Product::cfp_moment_data`; use `Radial::moment`. (#170)
 - `Site::identifier_string()`. (#185)
+- `MomentData::from_fixed_point`, whose eight positional arguments included two swappable pairs; use
+  `MomentData::builder`. (#PRNUM)
 
 ### Fixed
 

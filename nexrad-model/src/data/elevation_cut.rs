@@ -1,4 +1,5 @@
 use crate::data::{ChannelConfiguration, WaveformType};
+use crate::result::{Error, Result};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -6,9 +7,12 @@ use serde::{Deserialize, Serialize};
 /// Configuration for a single elevation cut in a volume coverage pattern.
 ///
 /// Each elevation cut defines the radar settings used when scanning at a particular elevation
-/// angle, including waveform type, PRF settings, and various thresholds.
+/// angle, including waveform type, PRF settings, and signal-to-noise thresholds.
+///
+/// Build one with [`ElevationCut::builder`]. Every floating-point property is finite, which
+/// [`ElevationCutBuilder::build`] and deserialization check.
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct ElevationCut {
     elevation_angle_degrees: f32,
     channel_configuration: ChannelConfiguration,
@@ -25,13 +29,13 @@ pub struct ElevationCut {
     surveillance_prf_number: u8,
     surveillance_prf_pulse_count: u16,
 
-    // SNR thresholds (dB)
-    reflectivity_threshold_db: f32,
-    velocity_threshold_db: f32,
-    spectrum_width_threshold_db: f32,
-    differential_reflectivity_threshold_db: f32,
-    differential_phase_threshold_db: f32,
-    correlation_coefficient_threshold_db: f32,
+    // Signal-to-noise ratio thresholds (dB)
+    reflectivity_snr_threshold_db: f32,
+    velocity_snr_threshold_db: f32,
+    spectrum_width_snr_threshold_db: f32,
+    differential_reflectivity_snr_threshold_db: f32,
+    differential_phase_snr_threshold_db: f32,
+    correlation_coefficient_snr_threshold_db: f32,
 
     // Special cut flags
     is_sails_cut: bool,
@@ -63,12 +67,12 @@ impl ElevationCut {
                 super_resolution_dual_pol_to_300km: false,
                 surveillance_prf_number: 0,
                 surveillance_prf_pulse_count: 0,
-                reflectivity_threshold_db: 0.0,
-                velocity_threshold_db: 0.0,
-                spectrum_width_threshold_db: 0.0,
-                differential_reflectivity_threshold_db: 0.0,
-                differential_phase_threshold_db: 0.0,
-                correlation_coefficient_threshold_db: 0.0,
+                reflectivity_snr_threshold_db: 0.0,
+                velocity_snr_threshold_db: 0.0,
+                spectrum_width_snr_threshold_db: 0.0,
+                differential_reflectivity_snr_threshold_db: 0.0,
+                differential_phase_snr_threshold_db: 0.0,
+                correlation_coefficient_snr_threshold_db: 0.0,
                 is_sails_cut: false,
                 sails_sequence_number: 0,
                 is_mrle_cut: false,
@@ -130,33 +134,33 @@ impl ElevationCut {
     }
 
     /// Signal to noise ratio threshold for reflectivity in dB.
-    pub fn reflectivity_threshold_db(&self) -> f32 {
-        self.reflectivity_threshold_db
+    pub fn reflectivity_snr_threshold_db(&self) -> f32 {
+        self.reflectivity_snr_threshold_db
     }
 
     /// Signal to noise ratio threshold for velocity in dB.
-    pub fn velocity_threshold_db(&self) -> f32 {
-        self.velocity_threshold_db
+    pub fn velocity_snr_threshold_db(&self) -> f32 {
+        self.velocity_snr_threshold_db
     }
 
     /// Signal to noise ratio threshold for spectrum width in dB.
-    pub fn spectrum_width_threshold_db(&self) -> f32 {
-        self.spectrum_width_threshold_db
+    pub fn spectrum_width_snr_threshold_db(&self) -> f32 {
+        self.spectrum_width_snr_threshold_db
     }
 
     /// Signal to noise ratio threshold for differential reflectivity in dB.
-    pub fn differential_reflectivity_threshold_db(&self) -> f32 {
-        self.differential_reflectivity_threshold_db
+    pub fn differential_reflectivity_snr_threshold_db(&self) -> f32 {
+        self.differential_reflectivity_snr_threshold_db
     }
 
     /// Signal to noise ratio threshold for differential phase in dB.
-    pub fn differential_phase_threshold_db(&self) -> f32 {
-        self.differential_phase_threshold_db
+    pub fn differential_phase_snr_threshold_db(&self) -> f32 {
+        self.differential_phase_snr_threshold_db
     }
 
     /// Signal to noise ratio threshold for correlation coefficient in dB.
-    pub fn correlation_coefficient_threshold_db(&self) -> f32 {
-        self.correlation_coefficient_threshold_db
+    pub fn correlation_coefficient_snr_threshold_db(&self) -> f32 {
+        self.correlation_coefficient_snr_threshold_db
     }
 
     /// Whether this is a SAILS (Supplemental Adaptive Intra-volume Low-level Scan) cut.
@@ -202,12 +206,12 @@ impl ElevationCut {
 /// - `super_resolution_dual_pol_to_300km`: `false`
 /// - `surveillance_prf_number`: `0`
 /// - `surveillance_prf_pulse_count`: `0`
-/// - `reflectivity_threshold_db`: `0.0`
-/// - `velocity_threshold_db`: `0.0`
-/// - `spectrum_width_threshold_db`: `0.0`
-/// - `differential_reflectivity_threshold_db`: `0.0`
-/// - `differential_phase_threshold_db`: `0.0`
-/// - `correlation_coefficient_threshold_db`: `0.0`
+/// - `reflectivity_snr_threshold_db`: `0.0`
+/// - `velocity_snr_threshold_db`: `0.0`
+/// - `spectrum_width_snr_threshold_db`: `0.0`
+/// - `differential_reflectivity_snr_threshold_db`: `0.0`
+/// - `differential_phase_snr_threshold_db`: `0.0`
+/// - `correlation_coefficient_snr_threshold_db`: `0.0`
 /// - `is_sails_cut`: `false`
 /// - `sails_sequence_number`: `0`
 /// - `is_mrle_cut`: `false`
@@ -277,44 +281,49 @@ impl ElevationCutBuilder {
     }
 
     /// Set the signal to noise ratio threshold for reflectivity in dB. Defaults to `0.0`.
-    pub fn reflectivity_threshold_db(mut self, reflectivity_threshold_db: f32) -> Self {
-        self.cut.reflectivity_threshold_db = reflectivity_threshold_db;
+    pub fn reflectivity_snr_threshold_db(mut self, reflectivity_snr_threshold_db: f32) -> Self {
+        self.cut.reflectivity_snr_threshold_db = reflectivity_snr_threshold_db;
         self
     }
 
     /// Set the signal to noise ratio threshold for velocity in dB. Defaults to `0.0`.
-    pub fn velocity_threshold_db(mut self, velocity_threshold_db: f32) -> Self {
-        self.cut.velocity_threshold_db = velocity_threshold_db;
+    pub fn velocity_snr_threshold_db(mut self, velocity_snr_threshold_db: f32) -> Self {
+        self.cut.velocity_snr_threshold_db = velocity_snr_threshold_db;
         self
     }
 
     /// Set the signal to noise ratio threshold for spectrum width in dB. Defaults to `0.0`.
-    pub fn spectrum_width_threshold_db(mut self, spectrum_width_threshold_db: f32) -> Self {
-        self.cut.spectrum_width_threshold_db = spectrum_width_threshold_db;
+    pub fn spectrum_width_snr_threshold_db(mut self, spectrum_width_snr_threshold_db: f32) -> Self {
+        self.cut.spectrum_width_snr_threshold_db = spectrum_width_snr_threshold_db;
         self
     }
 
     /// Set the signal to noise ratio threshold for differential reflectivity in dB. Defaults to `0.0`.
-    pub fn differential_reflectivity_threshold_db(
+    pub fn differential_reflectivity_snr_threshold_db(
         mut self,
-        differential_reflectivity_threshold_db: f32,
+        differential_reflectivity_snr_threshold_db: f32,
     ) -> Self {
-        self.cut.differential_reflectivity_threshold_db = differential_reflectivity_threshold_db;
+        self.cut.differential_reflectivity_snr_threshold_db =
+            differential_reflectivity_snr_threshold_db;
         self
     }
 
     /// Set the signal to noise ratio threshold for differential phase in dB. Defaults to `0.0`.
-    pub fn differential_phase_threshold_db(mut self, differential_phase_threshold_db: f32) -> Self {
-        self.cut.differential_phase_threshold_db = differential_phase_threshold_db;
+    pub fn differential_phase_snr_threshold_db(
+        mut self,
+        differential_phase_snr_threshold_db: f32,
+    ) -> Self {
+        self.cut.differential_phase_snr_threshold_db = differential_phase_snr_threshold_db;
         self
     }
 
     /// Set the signal to noise ratio threshold for correlation coefficient in dB. Defaults to `0.0`.
-    pub fn correlation_coefficient_threshold_db(
+    pub fn correlation_coefficient_snr_threshold_db(
         mut self,
-        correlation_coefficient_threshold_db: f32,
+        correlation_coefficient_snr_threshold_db: f32,
     ) -> Self {
-        self.cut.correlation_coefficient_threshold_db = correlation_coefficient_threshold_db;
+        self.cut.correlation_coefficient_snr_threshold_db =
+            correlation_coefficient_snr_threshold_db;
         self
     }
 
@@ -355,8 +364,113 @@ impl ElevationCutBuilder {
     }
 
     /// Build the [`ElevationCut`].
-    #[must_use]
-    pub fn build(self) -> ElevationCut {
-        self.cut
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidCoveragePattern`] if the elevation angle, the azimuth rate or a
+    /// signal-to-noise threshold is not finite. No range is imposed on the elevation angle: the
+    /// ICD's angle encoding spans -180 to 180 degrees and the model passes decoded values on.
+    pub fn build(self) -> Result<ElevationCut> {
+        self.cut.validate()?;
+        Ok(self.cut)
     }
+}
+
+impl ElevationCut {
+    /// Checks the invariants documented on [`ElevationCutBuilder::build`].
+    fn validate(&self) -> Result<()> {
+        if !self.elevation_angle_degrees.is_finite() {
+            return Err(Error::InvalidCoveragePattern {
+                parameter: "elevation_angle_degrees",
+                reason: "must be finite",
+            });
+        }
+        if !self.azimuth_rate_degrees_per_second.is_finite() {
+            return Err(Error::InvalidCoveragePattern {
+                parameter: "azimuth_rate_degrees_per_second",
+                reason: "must be finite",
+            });
+        }
+        for (parameter, value) in [
+            (
+                "reflectivity_snr_threshold_db",
+                self.reflectivity_snr_threshold_db,
+            ),
+            ("velocity_snr_threshold_db", self.velocity_snr_threshold_db),
+            (
+                "spectrum_width_snr_threshold_db",
+                self.spectrum_width_snr_threshold_db,
+            ),
+            (
+                "differential_reflectivity_snr_threshold_db",
+                self.differential_reflectivity_snr_threshold_db,
+            ),
+            (
+                "differential_phase_snr_threshold_db",
+                self.differential_phase_snr_threshold_db,
+            ),
+            (
+                "correlation_coefficient_snr_threshold_db",
+                self.correlation_coefficient_snr_threshold_db,
+            ),
+        ] {
+            if !value.is_finite() {
+                return Err(Error::InvalidCoveragePattern {
+                    parameter,
+                    reason: "must be finite",
+                });
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Deserializes the derived field-by-field form, then applies the checks of
+/// [`ElevationCutBuilder::build`].
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for ElevationCut {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        let cut = ElevationCutRepr::deserialize(deserializer)?;
+        cut.validate().map_err(serde::de::Error::custom)?;
+        Ok(cut)
+    }
+}
+
+/// The serialized form of [`ElevationCut`], validated before it is returned.
+#[cfg(feature = "serde")]
+#[derive(Deserialize)]
+#[serde(remote = "ElevationCut", rename = "ElevationCut")]
+struct ElevationCutRepr {
+    elevation_angle_degrees: f32,
+    channel_configuration: ChannelConfiguration,
+    waveform_type: WaveformType,
+    azimuth_rate_degrees_per_second: f64,
+
+    // Super resolution flags
+    super_resolution_half_degree_azimuth: bool,
+    super_resolution_quarter_km_reflectivity: bool,
+    super_resolution_doppler_to_300km: bool,
+    super_resolution_dual_pol_to_300km: bool,
+
+    // PRF settings
+    surveillance_prf_number: u8,
+    surveillance_prf_pulse_count: u16,
+
+    // Signal-to-noise ratio thresholds (dB)
+    reflectivity_snr_threshold_db: f32,
+    velocity_snr_threshold_db: f32,
+    spectrum_width_snr_threshold_db: f32,
+    differential_reflectivity_snr_threshold_db: f32,
+    differential_phase_snr_threshold_db: f32,
+    correlation_coefficient_snr_threshold_db: f32,
+
+    // Special cut flags
+    is_sails_cut: bool,
+    sails_sequence_number: u8,
+    is_mrle_cut: bool,
+    mrle_sequence_number: u8,
+    is_mpda_cut: bool,
+    is_base_tilt_cut: bool,
 }

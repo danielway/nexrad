@@ -54,8 +54,15 @@ impl<'a> Message<'a> {
 
     /// Convert this message into the common model's volume coverage pattern, including every
     /// elevation cut.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Model`](crate::result::Error::Model) if the model rejects a value, as
+    /// [`ElevationCutBuilder::build`](nexrad_model::data::ElevationCutBuilder::build) and
+    /// [`VolumeCoveragePatternBuilder::build`](nexrad_model::data::VolumeCoveragePatternBuilder::build)
+    /// describe. Values decoded from this message are always accepted.
     #[cfg(feature = "model")]
-    pub fn to_model(&self) -> nexrad_model::data::VolumeCoveragePattern {
+    pub fn to_model(&self) -> Result<nexrad_model::data::VolumeCoveragePattern> {
         use nexrad_model::data::{ElevationCut, VcpNumber, VolumeCoveragePattern};
 
         let header = &self.header;
@@ -77,14 +84,16 @@ impl<'a> Message<'a> {
                 .super_resolution_dual_pol_to_300km(elev.super_resolution_dual_pol_to_300km())
                 .surveillance_prf_number(elev.surveillance_prf_number())
                 .surveillance_prf_pulse_count(elev.surveillance_prf_pulse_count_radial())
-                .reflectivity_threshold_db(elev.reflectivity_threshold_db())
-                .velocity_threshold_db(elev.velocity_threshold_db())
-                .spectrum_width_threshold_db(elev.spectrum_width_threshold_db())
-                .differential_reflectivity_threshold_db(
+                .reflectivity_snr_threshold_db(elev.reflectivity_threshold_db())
+                .velocity_snr_threshold_db(elev.velocity_threshold_db())
+                .spectrum_width_snr_threshold_db(elev.spectrum_width_threshold_db())
+                .differential_reflectivity_snr_threshold_db(
                     elev.differential_reflectivity_threshold_db(),
                 )
-                .differential_phase_threshold_db(elev.differential_phase_threshold_db())
-                .correlation_coefficient_threshold_db(elev.correlation_coefficient_threshold_db())
+                .differential_phase_snr_threshold_db(elev.differential_phase_threshold_db())
+                .correlation_coefficient_snr_threshold_db(
+                    elev.correlation_coefficient_threshold_db(),
+                )
                 .is_sails_cut(elev.is_sails_cut())
                 .sails_sequence_number(elev.sails_sequence_number())
                 .is_mrle_cut(elev.is_mrle_cut())
@@ -93,22 +102,24 @@ impl<'a> Message<'a> {
                 .is_base_tilt_cut(elev.is_base_tilt_cut())
                 .build()
             })
-            .collect();
+            .collect::<std::result::Result<Vec<_>, _>>()?;
 
-        VolumeCoveragePattern::builder(VcpNumber::from_number(header.vcp_number_raw()))
-            .version(header.version())
-            .doppler_velocity_resolution_mps(header.doppler_velocity_resolution_mps())
-            .pulse_width(header.pulse_width().into())
-            .sails_enabled(header.is_sails_vcp())
-            .sails_cut_count(header.sails_cut_count())
-            .mrle_enabled(header.is_mrle_vcp())
-            .mrle_cut_count(header.mrle_cut_count())
-            .mpda_enabled(header.is_mpda_vcp())
-            .base_tilt_enabled(header.is_base_tilt_vcp())
-            .base_tilt_count(header.base_tilt_count())
-            .sequence_active(header.vcp_sequencing_sequence_active())
-            .truncated(header.vcp_sequencing_truncated())
-            .elevation_cuts(elevation_cuts)
-            .build()
+        Ok(
+            VolumeCoveragePattern::builder(VcpNumber::from_number(header.vcp_number_raw()))
+                .version(header.version())
+                .doppler_velocity_resolution_mps(header.doppler_velocity_resolution_mps())
+                .pulse_width(header.pulse_width().into())
+                .sails_enabled(header.is_sails_vcp())
+                .sails_cut_count(header.sails_cut_count())
+                .mrle_enabled(header.is_mrle_vcp())
+                .mrle_cut_count(header.mrle_cut_count())
+                .mpda_enabled(header.is_mpda_vcp())
+                .base_tilt_enabled(header.is_base_tilt_vcp())
+                .base_tilt_count(header.base_tilt_count())
+                .sequence_active(header.vcp_sequencing_sequence_active())
+                .truncated(header.vcp_sequencing_truncated())
+                .elevation_cuts(elevation_cuts)
+                .build()?,
+        )
     }
 }

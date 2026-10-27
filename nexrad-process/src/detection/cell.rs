@@ -682,7 +682,9 @@ mod tests {
         assert!(centroid.latitude.is_finite() && centroid.longitude.is_finite());
 
         // Equal weights put the centroid at the geometric middle of the run.
-        let polar = cs.geo_to_polar(centroid, cells[0].elevation_angle_degrees() as f64);
+        let polar = cs
+            .geo_to_polar(centroid, cells[0].elevation_angle_degrees() as f64)
+            .unwrap();
         let mid_range = field.first_gate_range_km() + 42.5 * field.gate_interval_km();
         assert!(
             (polar.range_km - mid_range).abs() < 0.01,
@@ -709,10 +711,12 @@ mod tests {
 
         let cells = StormCellDetector::new(-15.0, 3)?.detect(&field, &cs)?;
         assert_eq!(cells.len(), 1);
-        let polar = cs.geo_to_polar(
-            cells[0].centroid(),
-            cells[0].elevation_angle_degrees() as f64,
-        );
+        let polar = cs
+            .geo_to_polar(
+                cells[0].centroid(),
+                cells[0].elevation_angle_degrees() as f64,
+            )
+            .unwrap();
         let first = field.first_gate_range_km();
         let interval = field.gate_interval_km();
         let mid_range = first + 42.5 * interval;
@@ -883,10 +887,12 @@ mod tests {
         // The weighted centroid should be shifted toward the high-end (gate 43-45)
         // meaning further from the radar than the geometric midpoint
         let centroid_range_km = {
-            let polar = cs.geo_to_polar(
-                cells[0].centroid(),
-                cells[0].elevation_angle_degrees() as f64,
-            );
+            let polar = cs
+                .geo_to_polar(
+                    cells[0].centroid(),
+                    cells[0].elevation_angle_degrees() as f64,
+                )
+                .unwrap();
             polar.range_km
         };
 

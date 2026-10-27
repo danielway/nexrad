@@ -32,6 +32,14 @@ pub enum Error {
         /// The size that was given.
         size: usize,
     },
+    /// A color scale was given no levels or stops, or a value that is not finite, by
+    /// [`DiscreteColorScale::new`](crate::DiscreteColorScale::new) or
+    /// [`ContinuousColorScale::new`](crate::ContinuousColorScale::new).
+    #[error("invalid color scale: {reason}")]
+    InvalidColorScale {
+        /// Why the scale was rejected.
+        reason: &'static str,
+    },
     /// A geographic extent was not finite and ordered (`min < max` in both latitude
     /// and longitude).
     #[error("invalid geographic extent: must be finite with min < max")]

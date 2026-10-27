@@ -2,6 +2,8 @@
 
 Interactive TUI for inspecting NEXRAD Archive II volume files.
 
+![The parsed view of a type 31 message](../docs/images/inspector.png)
+
 ## Features
 
 - Browse and open local NEXRAD Archive II files
@@ -13,8 +15,10 @@ Interactive TUI for inspecting NEXRAD Archive II volume files.
 
 ## Installation
 
+The inspector is not published to crates.io. Install it from the repository:
+
 ```bash
-cargo install nexrad-inspector
+cargo install --git https://github.com/danielway/nexrad nexrad-inspector
 ```
 
 ## Usage

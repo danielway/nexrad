@@ -1,11 +1,19 @@
-# NEXRAD Decode
+# nexrad-decode
 
 [![Crates.io](https://img.shields.io/crates/v/nexrad-decode)](https://crates.io/crates/nexrad-decode)
 [![Docs.rs](https://docs.rs/nexrad-decode/badge.svg)](https://docs.rs/nexrad-decode)
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![MSRV](https://img.shields.io/crates/msrv/nexrad-decode)](https://github.com/danielway/nexrad#installation)
+[![License](https://img.shields.io/crates/l/nexrad-decode)](https://github.com/danielway/nexrad/blob/main/LICENSE)
 
-Decoding functions and models for NEXRAD weather radar data. Decoder and struct definitions are in accordance with
-NOAA's WSR-88D Interface Control Document for the RDA/RPG "ICD 2620002AA".
+Decodes the RDA/RPG messages in NEXRAD Level II data, following NOAA's WSR-88D Interface Control Document for the
+RDA/RPG (ICD 2620002AA).
+
+![A decoded type 31 message in nexrad-inspector](https://raw.githubusercontent.com/danielway/nexrad/nexrad-decode@1.0.0/docs/images/inspector.png)
+
+*A type 31 (Digital Radar Data) message decoded by this crate and shown in [nexrad-inspector](https://github.com/danielway/nexrad/tree/main/nexrad-inspector).*
+
+One of the [nexrad crates](https://github.com/danielway/nexrad). Most programs depend on [`nexrad`](https://crates.io/crates/nexrad), which re-exports this crate.
 
 ## Scope
 

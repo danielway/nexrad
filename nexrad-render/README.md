@@ -1,11 +1,18 @@
-# NEXRAD Render
+# nexrad-render
 
 [![Crates.io](https://img.shields.io/crates/v/nexrad-render)](https://crates.io/crates/nexrad-render)
 [![Docs.rs](https://docs.rs/nexrad-render/badge.svg)](https://docs.rs/nexrad-render)
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![MSRV](https://img.shields.io/crates/msrv/nexrad-render)](https://github.com/danielway/nexrad#installation)
+[![License](https://img.shields.io/crates/l/nexrad-render)](https://github.com/danielway/nexrad/blob/main/LICENSE)
 
-Functions for rendering NEXRAD weather radar data into visual images. Supports multiple radar
-products including reflectivity, velocity, and spectrum width with configurable color scales.
+Renders NEXRAD sweeps, composite grids and vertical cross-sections to RGBA images and PNG files.
+
+![Six products from one KDMX volume](https://raw.githubusercontent.com/danielway/nexrad/nexrad-render@1.0.0/docs/images/products.png)
+
+*The lowest tilt of six products from KDMX (Des Moines, Iowa), 5 March 2022 23:23 UTC, each drawn with its `default_scale`. Top row: reflectivity, velocity, spectrum width. Bottom row: differential reflectivity, correlation coefficient, differential phase.*
+
+One of the [nexrad crates](https://github.com/danielway/nexrad). Most programs depend on [`nexrad`](https://crates.io/crates/nexrad), which re-exports this crate.
 
 ## Scope
 

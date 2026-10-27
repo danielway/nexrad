@@ -1,10 +1,18 @@
-# NEXRAD Process
+# nexrad-process
 
 [![Crates.io](https://img.shields.io/crates/v/nexrad-process)](https://crates.io/crates/nexrad-process)
 [![Docs.rs](https://docs.rs/nexrad-process/badge.svg)](https://docs.rs/nexrad-process)
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![MSRV](https://img.shields.io/crates/msrv/nexrad-process)](https://github.com/danielway/nexrad#installation)
+[![License](https://img.shields.io/crates/l/nexrad-process)](https://github.com/danielway/nexrad/blob/main/LICENSE)
 
-Processing algorithms for NEXRAD weather radar data.
+Filters and derived products for NEXRAD weather radar sweeps.
+
+![Reflectivity before and after filtering](https://raw.githubusercontent.com/danielway/nexrad/nexrad-process@1.0.0/docs/images/processing.png)
+
+*Left: lowest-tilt reflectivity from KDMX (Des Moines, Iowa), 5 March 2022 23:23 UTC. Right: the same sweep after `CorrelationCoefficientFilter` removes gates with a correlation coefficient below 0.8 and `MedianFilter` applies a 3×3 median.*
+
+One of the [nexrad crates](https://github.com/danielway/nexrad). Most programs depend on [`nexrad`](https://crates.io/crates/nexrad), which re-exports this crate.
 
 ## Scope
 

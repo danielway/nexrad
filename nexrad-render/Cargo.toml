@@ -34,7 +34,7 @@ image = { version = "0.25", default-features = false, optional = true }
 [dev-dependencies]
 nexrad-decode = { version = "1.0.0", path = "../nexrad-decode" }
 nexrad-data = { version = "1.0.0-rc.7", path = "../nexrad-data" }
-nexrad-process = { version = "1.0.0-rc.1", path = "../nexrad-process" }
+nexrad-process = { version = "1.0.0", path = "../nexrad-process" }
 criterion = { workspace = true }
 
 [[bench]]

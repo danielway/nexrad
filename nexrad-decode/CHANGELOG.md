@@ -19,6 +19,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `MessageHeader::parse`, `MessageHeader::SIZE`, `MessageHeader::into_owned()` and accessors for every header field.
   (#166, #173)
 - `MessageType::number()` and `MessageType::from_number(u8)`. (#166)
+- `MessageType::ModelData` (29), the Archive II ICD's Model Data message, which was `Reserved(29)`; its contents
+  decode as `MessageContents::Other`. (#206)
 - `clutter_censor_zones::Region<'a>` with typed accessors, and `clutter_censor_zones::OperatorSelectCode`. (#166)
 - Module `model` (feature `model`) with `ScanBuilder`, which assembles decoded messages into a `Scan`; all
   protocol-to-model conversion now lives in this crate. (#169)

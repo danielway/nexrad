@@ -20,7 +20,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `stream_scans(site, sleep)` and `stream_scans_with(config, sleep)`, which yield one `Scan` per complete real-time
   volume; chunks before the first Start chunk are skipped, and a stream error discards the partial volume. (#195)
 - `nexrad::futures_util` re-exports `futures_util` (feature `aws`), for `StreamExt` on the real-time streams. (#195)
-- `Error::NoScanAt { site, datetime }` (feature `aws`), from `download_at`. (#195)
+- `Error::NoScanAt { site, datetime }` (feature `aws`), from `download_at`; `datetime` is a `DateTime<Utc>`. (#195,
+  #206)
 
 ### Changed
 
@@ -34,6 +35,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   (#195)
 - `download_latest(site)` downloads the newest archived volume of the current or previous UTC date. (#195)
 - `download_at` returns the volume whose collection overlaps `datetime`, or `Error::NoScanAt`. (#195)
+- `download_at` takes the datetime as `DateTime<Utc>` instead of `NaiveDateTime`. (#206)
 - `list_scans`, `download_latest` and `download_at` see archive volume files only. (#192)
 - Errors from `nexrad-data` are flattened by layer: its decode, model and I/O errors become `Error::Decode`,
   `Error::Model` and `Error::Io`, and other data errors stay `Error::Data`. (#176)

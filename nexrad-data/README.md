@@ -60,7 +60,10 @@ feature, `realtime::assemble_volume` turns a volume's chunks into a `Scan`.
 
 `Error` and `Result` are re-exported at the crate root, as is `AwsError` with the `aws` feature. Both enums are
 `#[non_exhaustive]`. HTTP failures are boxed inside `AwsError` rather than exposing the HTTP client's error type, and
-`AwsError::is_transient()` reports whether a failed request is worth retrying.
+`AwsError::is_transient()` reports whether a failed request is worth retrying: transport failures, timeouts and the
+HTTP statuses 408, 429 and 5xx are transient, and other 4xx statuses are terminal. On native targets the shared HTTP
+client applies a 30 s connect timeout, a 60 s read timeout and a 300 s request timeout; on wasm32 the browser's `fetch`
+limits apply instead.
 
 ## Features
 

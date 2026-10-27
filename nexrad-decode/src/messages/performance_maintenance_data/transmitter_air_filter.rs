@@ -1,5 +1,6 @@
 /// Transmitter air filter condition.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum TransmitterAirFilter {
     /// Air filter is dirty.
     Dirty,

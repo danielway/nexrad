@@ -1,5 +1,6 @@
 /// Site power source.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum PowerSource {
     /// Running on utility power.
     Utility,

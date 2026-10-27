@@ -1,5 +1,6 @@
 /// The possible RDA system control authorizations.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum ControlAuthorization {
     /// No control action requested.
     NoAction,

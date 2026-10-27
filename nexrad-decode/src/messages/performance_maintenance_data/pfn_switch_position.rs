@@ -1,5 +1,6 @@
 /// PFN (Pulse Forming Network) switch position.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum PfnSwitchPosition {
     /// Short pulse mode.
     ShortPulse,

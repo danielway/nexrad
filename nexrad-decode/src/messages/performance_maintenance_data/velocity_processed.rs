@@ -1,5 +1,6 @@
 /// Velocity processing calibration status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum VelocityProcessed {
     /// Velocity processing is good.
     Good,

@@ -1,5 +1,6 @@
 /// RCP (Radar Control Processor) status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum RcpStatus {
     /// RCP is operating normally.
     Ok,

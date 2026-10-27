@@ -1,5 +1,6 @@
 /// The type category of a data block.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum DataBlockType {
     /// Radial-type data block containing volume, elevation, or radial metadata ('R').
     Radial,

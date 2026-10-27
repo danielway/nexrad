@@ -1,5 +1,6 @@
 /// Transmitter recycling summary status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum TransmitterRecyclingSummary {
     /// Normal operation.
     Normal,

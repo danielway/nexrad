@@ -1,5 +1,6 @@
 /// Pedestal interlock switch position.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum PedestalInterlockSwitch {
     /// Switch is in operational position.
     Operational,

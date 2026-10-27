@@ -1,5 +1,6 @@
 /// Indicates whether the message is compressed and what type of compression was used.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum CompressionIndicator {
     /// Data is not compressed.
     Uncompressed,

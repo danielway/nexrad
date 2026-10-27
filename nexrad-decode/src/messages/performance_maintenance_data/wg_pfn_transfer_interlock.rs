@@ -1,5 +1,6 @@
 /// Waveguide/PFN transfer interlock status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum WgPfnTransferInterlock {
     /// Interlock is OK.
     Ok,

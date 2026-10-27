@@ -1,5 +1,6 @@
 /// Loop back test status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum LoopBackTestStatus {
     /// Test passed.
     Pass,

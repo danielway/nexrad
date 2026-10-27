@@ -12,8 +12,9 @@
 //! - `nexrad-render` as `render` - Visualization and rendering
 //! - `chrono` as `chrono` - Date and time types, re-exported because `download_at` and
 //!   `list_scans` take them
-//! - `futures_util` as `futures_util` (with `aws`) - Stream utilities, re-exported because the
-//!   real-time functions return a `Stream`, whose `StreamExt::next` lives there
+//!
+//! The real-time functions return a `futures_core` `Stream`. To iterate it with
+//! `StreamExt::next`, add `futures-util` (or `futures`) to your own dependencies.
 //!
 //! ## Quick Start
 //!
@@ -71,7 +72,7 @@
 //! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model` | bzip2 | Yes |
 //! | `render` | Visualization and rendering | `model` | png | Yes |
 //! | `process` | Radar data processing algorithms | `model` | | Yes |
-//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) and the `futures_util` re-export | `data`, `chrono` | reqwest, futures-util | Yes |
+//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) | `data`, `chrono` | reqwest, futures-util | Yes |
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
 //! | `serde` | Serialization support for model types | | serde | Yes |
 //! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono | Yes |
@@ -170,7 +171,7 @@
 //!
 //! - **`nexrad-process`**: Processing algorithms
 //!   - ✓ Filters, smoothing and derived products over `nexrad-model` fields
-//!   - ✓ Storm cell detection
+//!   - ✓ Threshold region detection
 //!   - ✗ No I/O operations
 //!   - ✗ No rendering or visualization
 //!
@@ -537,7 +538,7 @@ pub async fn list_scans(
 /// # Example
 ///
 /// ```no_run
-/// use nexrad::futures_util::StreamExt;
+/// use futures_util::StreamExt;
 ///
 /// # async fn run() -> nexrad::Result<()> {
 /// let stream = nexrad::stream("KTLX", |d| tokio::time::sleep(d));
@@ -577,7 +578,7 @@ where
 ///
 /// ```no_run
 /// use nexrad::data::aws::realtime::{PollConfig, RetryPolicy};
-/// use nexrad::futures_util::StreamExt;
+/// use futures_util::StreamExt;
 /// use std::time::Duration;
 ///
 /// # async fn run() -> nexrad::Result<()> {
@@ -628,7 +629,7 @@ where
 /// # Example
 ///
 /// ```no_run
-/// use nexrad::futures_util::StreamExt;
+/// use futures_util::StreamExt;
 ///
 /// # async fn run() -> nexrad::Result<()> {
 /// let scans = nexrad::stream_scans("KTLX", |d| tokio::time::sleep(d));
@@ -672,7 +673,7 @@ where
 ///
 /// ```no_run
 /// use nexrad::data::aws::realtime::PollConfig;
-/// use nexrad::futures_util::StreamExt;
+/// use futures_util::StreamExt;
 ///
 /// # async fn run() -> nexrad::Result<()> {
 /// let scans = nexrad::stream_scans_with(PollConfig::new("KTLX"), |d| tokio::time::sleep(d));
@@ -795,11 +796,6 @@ pub use nexrad_process as process;
 /// Re-export of `chrono`, because `download_at` and `list_scans` take chrono types.
 #[cfg(feature = "chrono")]
 pub use chrono;
-
-/// Re-export of `futures_util`, because the real-time functions return a `Stream`, whose
-/// `StreamExt::next` lives there.
-#[cfg(feature = "aws")]
-pub use futures_util;
 
 #[cfg(all(test, feature = "aws"))]
 mod tests {

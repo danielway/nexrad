@@ -398,6 +398,7 @@ Message {
                     },
                 },
             ),
+            other_data_blocks: [],
         },
     ),
     offset: 0,

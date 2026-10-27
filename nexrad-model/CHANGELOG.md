@@ -28,14 +28,26 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   (#187)
 - Per-radial `Radial::nyquist_velocity_mps()` and `unambiguous_range_km()` and their `RadialBuilder` setters, which reject values that are not finite and positive. (#188)
 - `Scan::elevation_cut(&Sweep)` and `Scan::sweeps_with_waveform(WaveformType)`. (#188)
-- `VcpNumber::{Vcp11, Vcp21, Vcp121, Vcp211, Vcp221}`, formerly `Unknown(n)`. (#188)
+- `VcpNumber` constants for VCPs 11, 21, 121, 211 and 221, formerly `Unknown(n)`. (#188, #205)
+- `WaveformType::abbreviation()`, the ICD's `CS`, `CD/W`, `CD/WO` or `B` (`None` for staggered pulse pair, which the
+  ICD does not abbreviate, and for unknown values). (#205)
+- `Display` for `RadialStatus`. (#205)
 - `RadarCoordinateSystem::beam_height_meters` (above mean sea level) and `ground_range_km`. (#188)
+- `MomentData::builder(product, raw_values)` and `MomentDataBuilder`, with setters `gate_count`,
+  `first_gate_range_meters`, `gate_interval_meters`, `data_word_size`, `scale` and `offset`; the gate count defaults
+  to the number of gates the raw values hold. (#210)
+- `Error::InvalidCoveragePattern { parameter, reason }`, from `ElevationCutBuilder::build` and
+  `VolumeCoveragePatternBuilder::build`. (#210)
+- The site registry documents its contract: entries, including sites of other radar kinds such as TDWR, may be added
+  in minor releases, and `nearest_site` returns the nearest listed site. (#210)
+- `Product::ALL`, `Product::as_str()` (a stable snake_case name), `Product::data_block_name()` (the ICD block name),
+  `Display` (the stable name) and `FromStr`, which accepts the stable name or the block name. (#207)
+- `Error::UnknownProduct`, from parsing an unrecognised product name. (#207)
 
 ### Changed
 
 - The minimum supported Rust version is 1.88 (it was declared as 1.75, which was already incorrect). (#157)
-- `Error`, `data::Product` and `data::VcpNumber` are `#[non_exhaustive]`; matches on them outside this crate need a
-  wildcard arm. (#155)
+- `Error` and `data::Product` are `#[non_exhaustive]`; matches on them outside this crate need a wildcard arm. (#155)
 - Acronyms in type and variant names are UpperCamelCase words (`VcpNumber`, `CfpStatus`, `Sz2Phase`,
   `ElevationStartVcpFinal`), and `WaveformType` variants have descriptive names; serde uses the new names. (#160)
 - Geographic coordinates and polar angles are `f64`; the `*_degrees` angles stored on
@@ -66,8 +78,13 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Site::identifier()` returns `&str`. (#185)
 - `Error::ElevationMismatch` carries the `expected` and `actual` elevation numbers. (#185)
 - `GateStatus` implements `From<MomentValue>` instead of `From<&MomentValue>`. (#187)
-- `VcpNumber` variants are named by pattern number (`Precipitation12` → `Vcp12`), matching `nexrad-decode`;
-  `description()` and the serialized `u16` are unchanged. (#188)
+- `VcpNumber` is a `u16` newtype with `new`, `number(self)`, `From` both ways, `Ord` by number and associated constants
+  named by pattern number (`Precipitation12` → `VcpNumber::VCP_12`), matching `nexrad-decode`; constants work as
+  `match` patterns, and `VcpNumber::new(n)` replaces `from_number(n)` and `Unknown(n)`. `Display` prints `VCP 212`
+  without a description. The serialized `u16` is unchanged. (#188, #205)
+- `WaveformType`, `ChannelConfiguration` and `PulseWidth` carry the code in `Unknown(u8)`, like `RadialStatus`, so the
+  model and `nexrad-decode` copies have the same variants; with `serde` an unknown value is `{"Unknown": n}`. `Display`
+  of an unknown value includes the code (`Unknown (7)`). (#205)
 - The `geo` module uses one documented earth model (spherical, 4/3 effective-radius refraction, antenna height above
   mean sea level) where the docs claimed WGS-84; `polar_to_geo` moves by under a metre at 300 km. (#188)
 - With `serde`, the representation is stable within 1.x, and serialized field names equal accessor names. (#189)
@@ -77,6 +94,20 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - With `serde`, `CfpStatus` variants serialize as their PascalCase names, like every other model enum. (#189)
 - With `serde`, deserialization applies the constructors' and builders' validation and fails with its message. (#189)
 - docs.rs shows the feature each feature-gated item requires. (#196)
+- `VolumeCoveragePattern::number_of_elevation_cuts()` is `elevation_cut_count()`, like `sails_cut_count()` and
+  `mrle_cut_count()`. (#210)
+- `Sweep::from_radials(Vec<Radial>) -> Vec<Sweep>` is `Sweep::split_by_elevation_number`, since it returns several
+  sweeps. (#210)
+- `ElevationCut`'s threshold accessors and `ElevationCutBuilder` setters name the signal-to-noise threshold:
+  `reflectivity_threshold_db` is `reflectivity_snr_threshold_db`, and likewise for velocity, spectrum width,
+  differential reflectivity, differential phase and correlation coefficient. Serde keys follow. (#210)
+- `ElevationCutBuilder::build` returns `Result` and rejects a non-finite elevation angle, azimuth rate or
+  signal-to-noise threshold. (#210)
+- `VolumeCoveragePatternBuilder::build` returns `Result` and rejects a Doppler velocity resolution that is not finite
+  or is negative; an empty list of elevation cuts is accepted. (#210)
+- With `serde`, `ElevationCut` and `VolumeCoveragePattern` deserialization applies the builders' validation. (#210)
+- `RadarCoordinateSystem::geo_to_polar` returns `Option<PolarPoint>`: `None` when no beam at the elevation passes over
+  the point, or an input is not finite, instead of a non-finite or negative range. (#210)
 - The crates.io categories are `science` and `data-structures`; `parsing` is dropped. (#196)
 - The published crate leaves out the fixture tests that need files from outside it and the site registry's source
   CSV. (#196)
@@ -93,6 +124,11 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Site::{site_elevation, feedhorn_height}`), and the `uom` dependency. `uom` is pre-1.0 and would tie this crate's
   major version to its own; use the unit-suffixed accessors (`elevation_angle_degrees()`, `gate_interval_km()`, ...).
   Unit-typed accessors may come later as a separate crate or extension trait. (#202)
+- `MomentData::from_fixed_point`, whose eight positional arguments included two swappable pairs; use
+  `MomentData::builder`. (#210)
+- `VcpNumber::description()`, whose per-pattern summaries were operational characterisations rather than ICD
+  definitions; it also disagreed with `nexrad-decode` on VCP 112, which the ICD lists with the MPDA scan strategy.
+  (#205)
 
 ### Fixed
 

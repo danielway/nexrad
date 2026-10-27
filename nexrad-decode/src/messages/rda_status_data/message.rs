@@ -305,7 +305,7 @@ impl<'a> Message<'a> {
 
     /// The VCP number currently in use, downloaded from the RPG.
     pub fn downloaded_pattern_number(&self) -> VcpNumber {
-        VcpNumber::from_number(self.inner.downloaded_pattern_number.get())
+        VcpNumber::new(self.inner.downloaded_pattern_number.get())
     }
 
     /// Version of status message.

@@ -131,7 +131,7 @@ impl<'a> Header<'a> {
 
     /// The radial's status within the larger scan.
     pub fn radial_status(&self) -> RadialStatus {
-        RadialStatus::from_raw(self.inner.radial_status)
+        RadialStatus::from_number(self.inner.radial_status)
     }
 
     /// The spot blanking status for the current radial, elevation, and volume scan.

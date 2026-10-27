@@ -19,7 +19,6 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `stream_with(config, sleep)`, which streams with a `PollConfig`. (#195)
 - `stream_scans(site, sleep)` and `stream_scans_with(config, sleep)`, which yield one `Scan` per complete real-time
   volume; chunks before the first Start chunk are skipped, and a stream error discards the partial volume. (#195)
-- `nexrad::futures_util` re-exports `futures_util` (feature `aws`), for `StreamExt` on the real-time streams. (#195)
 - `Error::NoScanAt { site, datetime }` (feature `aws`), from `download_at`. (#195)
 - An opt-in `image` feature enabling `nexrad-render/image` (`RenderResult::into_rgba_image`). It is not part of `wasm`
   or `full`, tracks the `image` crate's own 0.x releases and is excluded from the semver promise. (#203)
@@ -46,6 +45,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   wrapped error as their `source()`. (#195)
 - docs.rs shows the feature each feature-gated item requires. (#196)
 - The package description covers loading, downloading, decoding, processing and rendering. (#196)
+- The `serde` feature also enables `nexrad-decode/serde`. (#205)
 - The `aws` feature's build requirements (a C compiler, and NASM on Windows x86 targets) are documented. (#196)
 
 ### Removed

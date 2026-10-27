@@ -1,5 +1,6 @@
 /// Flags indicating special control features.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum ControlFlags {
     /// No special control features applied.
     None,

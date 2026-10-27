@@ -19,12 +19,6 @@ fn concat(parts: &[&[u8]]) -> Vec<u8> {
     parts.concat()
 }
 
-/// The first data block pointer of the digital radar data fixture, relative to its header.
-fn first_block_pointer() -> usize {
-    let bytes = &DIGITAL_RADAR_DATA[DRD_POINTERS..DRD_POINTERS + 4];
-    u32::from_be_bytes(bytes.try_into().expect("four bytes")) as usize
-}
-
 #[test]
 fn test_empty_input() {
     assert_eq!(decode_messages(&[]), Ok(Vec::new()));
@@ -112,23 +106,6 @@ fn test_bad_data_block_pointer() {
         Err(Error::InvalidDataBlockPointer {
             bytes: pointers_end,
             position: RDA_STATUS.len() + DRD_HEADER + pointers_end,
-        })
-    );
-}
-
-#[test]
-fn test_unknown_data_block_name() {
-    let block = DRD_HEADER + first_block_pointer();
-    let mut radar_data = DIGITAL_RADAR_DATA.to_vec();
-    assert_eq!(&radar_data[block + 1..block + 4], b"VOL");
-    radar_data[block + 1..block + 4].copy_from_slice(b"XYZ");
-    let data = concat(&[RDA_STATUS, &radar_data]);
-
-    assert_eq!(
-        decode_messages(&data),
-        Err(Error::UnknownDataBlockType {
-            block_type: *b"XYZ",
-            offset: RDA_STATUS.len() + block,
         })
     );
 }

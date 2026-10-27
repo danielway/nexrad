@@ -56,8 +56,8 @@ Each field stores parallel `f32` and `GateStatus` arrays in row-major order for 
 
 ## Constructing Model Types
 
-Types with invariants have private fields and are built with builders: `Radial::builder`, `ElevationCut::builder`,
-`VolumeCoveragePattern::builder`, `SweepField::builder` and `Site::builder`. Each takes the required values up front
+Types with invariants have private fields and are built with builders: `Radial::builder`, `MomentData::builder`,
+`ElevationCut::builder`, `VolumeCoveragePattern::builder`, `SweepField::builder` and `Site::builder`. Each takes the required values up front
 and has a setter per optional field:
 
 ```rust
@@ -77,7 +77,7 @@ let field = SweepField::builder("Reflectivity", "dBZ")
 ```
 
 Constructors and builders with invariants (such as `SiteBuilder::build`, `SweepFieldBuilder::build`,
-`RadialBuilder::build` and `MomentData::from_fixed_point`) validate their input and return `nexrad_model::Result`;
+`RadialBuilder::build`, `MomentDataBuilder::build` and `ElevationCutBuilder::build`) validate their input and return `nexrad_model::Result`;
 field indexing (`get`, the row accessors) returns `Option`. `Error` and `Result` are
 re-exported at the crate root.
 

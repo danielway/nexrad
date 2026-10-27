@@ -13,11 +13,9 @@ use nexrad_model::geo::RadarCoordinateSystem;
 /// The horizontal axis is ground range in kilometers and the vertical axis is altitude above
 /// mean sea level in meters.
 ///
-/// Unlike [`CompositeReflectivity`](super::CompositeReflectivity), this type does not
-/// implement [`ScanDerivedProduct`](crate::ScanDerivedProduct) because its output is a
-/// [`VerticalField`] (range vs. altitude) rather than a
-/// [`CartesianField`](nexrad_model::data::CartesianField). Its
-/// construction parameters (azimuth, range, altitude, dimensions) fully define the
+/// Unlike [`CompositeReflectivity`](super::CompositeReflectivity), whose output is a
+/// [`CartesianField`](nexrad_model::data::CartesianField), this type's output is a
+/// [`VerticalField`] (range vs. altitude). Its construction parameters (azimuth, range, altitude, dimensions) fully define the
 /// output grid; the radar's coordinate system supplies the beam geometry at compute time.
 ///
 /// # Example
@@ -27,11 +25,14 @@ use nexrad_model::geo::RadarCoordinateSystem;
 /// use nexrad_model::data::{SweepField, Product};
 /// # use nexrad_model::data::{MomentData, Radial, Scan, Sweep, VcpNumber, VolumeCoveragePattern};
 /// # use nexrad_model::meta::Site;
-/// # let reflectivity = MomentData::from_fixed_point(
-/// #     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
-/// # )?;
+/// # let reflectivity = MomentData::builder(Product::Reflectivity, vec![100, 110, 120])
+/// #     .first_gate_range_meters(2000)
+/// #     .gate_interval_meters(250)
+/// #     .scale(2.0)
+/// #     .offset(66.0)
+/// #     .build()?;
 /// # let radial = Radial::builder(0, 200.0, 1, 0.5).moment(reflectivity).build()?;
-/// # let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+/// # let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212)).build()?;
 /// # let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
 /// # let scan = Scan::with_site(site, vcp, vec![Sweep::new(1, vec![radial])?]);
 ///

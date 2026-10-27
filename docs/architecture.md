@@ -44,7 +44,7 @@ Each library crate owns exactly one concern:
 | `nexrad-model` | Domain types and the methods on them, site registry | I/O, parsing, rendering |
 | `nexrad-decode` | Binary protocol parsing per NOAA ICD, all protocol-to-model conversion (`model` feature) | File I/O, network access, decompression |
 | `nexrad-data` | Archive II file handling, decompression, AWS S3, real-time chunk polling | Protocol-to-model mapping, rendering, processing |
-| `nexrad-process` | Filtering, smoothing, derived products, storm cell detection | I/O, rendering |
+| `nexrad-process` | Filtering, smoothing, derived products, threshold region detection | I/O, rendering |
 | `nexrad-render` | Color mapping, image generation, pixel ↔ data coordinate mapping | Data access, parsing |
 | `nexrad` | Re-exports, I/O entry points, unified error type | New functionality |
 
@@ -71,6 +71,11 @@ A WASM application can therefore use `nexrad-model` and `nexrad-render` without 
 The split keeps the model's dependencies minimal (`thiserror`, and optionally `serde`, `chrono`) and untouched by
 new protocol parsing, and keeps wire-format details out of the model's public API: the model evolves with user-facing
 requirements, the decoder with the ICD.
+
+Five types exist in both crates: `WaveformType`, `ChannelConfiguration`, `PulseWidth`, `RadialStatus` and `VcpNumber`.
+The two copies of each have the same variants, names, payloads, `Display` and `serde` form, and the `From` impls between
+them (decode's `model` feature) convert every value in both directions. Only the decode copy knows the ICD codes
+(`from_number`/`number`); the model's `Unknown(u8)` carries the code the decoder read without interpreting it.
 
 ### Facade Pattern
 
@@ -117,7 +122,7 @@ appear in public signatures:
 | `serde` | `Serialize`/`Deserialize` impls | Opt-in `serde` feature |
 | `image` | `nexrad_render::RenderResult::into_rgba_image` only | Opt-in `image` feature of `nexrad-render` (and the facade), off by default and not in `full`. It tracks `image`'s own 0.x releases and is excluded from the semver promise. Without it, `RenderResult` exposes owned RGBA8 pixels (`pixels()`, `into_pixels()`) |
 | `futures_core` | The `Stream` returned by `nexrad_data::aws::realtime::chunk_stream` and `nexrad::stream` | Return type only |
-| `futures_util` | The facade | Re-exported as `nexrad::futures_util` (feature `aws`) for `StreamExt`; not in any signature |
+| `futures_util` | The facade, internally | Not re-exported and not in any signature; consumers depend on `futures-util` or `futures` themselves for `StreamExt` |
 
 Not allowed in public signatures: `reqwest`, `bzip2`, `png`, `zerocopy` traits, `tokio`, `once_cell`. HTTP failures are
 boxed inside `AwsError`, bzip2 failures surface as `Error::Io`, PNG encoder failures are boxed inside
@@ -187,7 +192,8 @@ is excluded from the `wasm` feature set.
 ## Serialization
 
 With the `serde` feature, `nexrad-model` types serialize with field names equal to their accessor names, enum variants
-as their PascalCase names, `VcpNumber` as its number and raw gate bytes as a byte string. Deserialization applies the
+as their PascalCase names, `VcpNumber` as its number and raw gate bytes as a byte string. `nexrad-decode`'s `serde`
+feature covers only the five types it shares with the model, in the same form. Deserialization applies the
 same validation as the constructors and builders. The representation is stable within a major version.
 
 ## Naming Conventions
@@ -205,7 +211,10 @@ same validation as the constructors and builders. The representation is stable w
   `Radial`, `Sweep` and `SweepField`) are `f32`; image dimensions are `u32`.
 - **Constructors**: types with invariants have private fields, and their constructors and builders validate the
   invariants and return a `Result` (`RadialBuilder::build`, `Sweep::new`); field indexing returns `Option`, and `set`
-  returns a `Result`. Configuration types (`RetryPolicy`, `PollConfig`) have constructors with `with_*` setters and
+  returns a `Result`. A builder whose type could gain an invariant returns a `Result` even when it checks little today
+  (`VolumeCoveragePatternBuilder::build`), because changing `T` to `Result<T>` later is breaking and adding an error
+  variant is not. Constructors with more than a few arguments, or with arguments of the same type that could be
+  swapped, are builders (`MomentData::builder`). Configuration types (`RetryPolicy`, `PollConfig`) have constructors with `with_*` setters and
   getters. Every `nexrad-process` processor with parameters has a validating `new` or builder.
 - **Lifetimes**: no public function returns a value with an unbounded output lifetime (`Record::decompress` returns
   `Record<'static>`).
@@ -255,15 +264,11 @@ Processing and rendering operate on three field types, all defined in `nexrad-mo
 
 ## Processing Architecture
 
-Processing algorithms are modeled as traits with two scopes:
-
-| Trait | Scope | Input → Output |
-|-------|-------|---------------|
-| `SweepProcessor` | Single sweep | `SweepField → SweepField` |
-| `ScanDerivedProduct` | Full scan → geographic surface | `[SweepField]` on a `CartesianGrid` → `CartesianField` |
-
-Filters such as `ThresholdFilter` are `SweepProcessor`s, and `CompositeReflectivity` is a `ScanDerivedProduct`;
-`VerticalCrossSection` and `StormCellDetector` stand alone. Processors with parameters are built with a validating
+Single-sweep algorithms implement the `SweepProcessor` trait (`SweepField → SweepField`); filters such as
+`ThresholdFilter` are `SweepProcessor`s. Products computed from the sweeps of a full scan have inherent `compute` methods
+rather than a shared trait: `CompositeReflectivity` returns a `CartesianField` on a `CartesianGrid` and
+`VerticalCrossSection` a `VerticalField`. A trait for scan products can be added in a minor release once more than one
+product shows its shape. `ThresholdRegionDetector` also stands alone. Processors with parameters are built with a validating
 `new` or builder that returns `Err(Error::InvalidParameter)`, so invalid configuration is reported at construction
 rather than by `process`.
 
@@ -322,16 +327,27 @@ is not a breaking change. Code outside the defining crate must include a wildcar
 inside the defining crate keeps exhaustive matches so the compiler flags every place a new variant must be handled.
 
 Non-exhaustive: every crate's `Error` enum and `nexrad_data::result::AwsError`, and enums over sets that grow with the
-ICD or the library, such as message types, products and volume coverage patterns (`MessageContents`, `Product`,
-`VcpNumber`) and render projections (`Projection`).
+ICD or the library, such as message types and products (`MessageContents`, `Product`) and render projections
+(`Projection`).
+
+`VcpNumber` is not an enum: it is a `u16` newtype with associated constants (`VcpNumber::VCP_212`) that work as `match`
+patterns. Naming a further pattern adds a constant, which cannot change how an existing value matches, compares or
+serializes.
 
 Non-exhaustive structs and enum variants (fields may be added in minor releases, so code outside the defining crate
 cannot construct them with a literal and must use `..` in struct patterns): `nexrad_model::meta::registry::SiteEntry`,
 `nexrad_render::PointQuery`, and the `Projection::Polar`, `Geographic` and `Vertical` variants.
 
+The ICD code enums in the `nexrad-decode` message modules that carry an `Unknown(n)` or `Reserved(n)` variant (the
+status, mode and code enums of the RDA status, clutter, radar data and VCP messages) are also non-exhaustive, as are
+`ColorScale` and `Interpolation` in `nexrad-render` and the unit struct `nexrad_process::derived::CompositeReflectivity`.
+An `Unknown(n)` or `Reserved(n)` value may be promoted to a named variant in a minor release when a later ICD names that
+code; code that needs a stable result across releases should compare the raw code (`number()` or the `*_raw()`
+accessor) rather than match on `Unknown(n)`.
+
 Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue`,
-`GateStatus`, the status and code enums in the `nexrad-decode` message modules, `ChunkType` and `ColorScale`. Adding a
-variant to an exhaustive enum is a breaking change and is reserved for a major release.
+`GateStatus` and `ChunkType`. Adding a variant to an exhaustive enum is a breaking change and is reserved for a major
+release.
 
 ## Versioning and Releases
 

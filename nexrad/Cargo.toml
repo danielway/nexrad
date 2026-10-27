@@ -28,7 +28,7 @@ render = ["dep:nexrad-render", "model"]
 process = ["dep:nexrad-process", "model"]
 
 # Pass-through features from sub-crates
-serde = ["nexrad-model?/serde"]
+serde = ["nexrad-model?/serde", "nexrad-decode?/serde"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
 parallel = ["data", "nexrad-data/parallel"]
 # `RenderResult::into_rgba_image`; tracks the `image` crate's 0.x releases and is excluded
@@ -51,6 +51,9 @@ nexrad-data = { version = "1.0.0-rc.7", path = "../nexrad-data", optional = true
 nexrad-render = { version = "1.0.0-rc.4", path = "../nexrad-render", optional = true, default-features = false }
 nexrad-process = { version = "1.0.0-rc.1", path = "../nexrad-process", optional = true, default-features = false }
 futures-util = { workspace = true, optional = true }
+
+[dev-dependencies]
+futures-util = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true }

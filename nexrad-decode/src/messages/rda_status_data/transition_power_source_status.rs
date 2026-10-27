@@ -1,5 +1,6 @@
 /// The possible RDA system transition power source statuses.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum TransitionPowerSourceStatus {
     /// Transition power source is not installed.
     NotInstalled,

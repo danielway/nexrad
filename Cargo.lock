@@ -1715,7 +1715,6 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "tokio",
- "uom",
  "zerocopy",
 ]
 
@@ -1747,7 +1746,6 @@ dependencies = [
  "serde_json",
  "sha2 0.11.1",
  "thiserror 2.0.21",
- "uom",
 ]
 
 [[package]]
@@ -3246,16 +3244,6 @@ name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
-
-[[package]]
-name = "uom"
-version = "0.38.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a739f83872836c82a4f2527d4e54b37007b3de68cafe7edde95fd695968bf4b9"
-dependencies = [
- "num-traits",
- "typenum",
-]
 
 [[package]]
 name = "url"

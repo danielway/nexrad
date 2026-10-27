@@ -299,6 +299,8 @@ impl Palette {
             GateStatus::RangeFolded => self.range_folded,
             GateStatus::NoData => self.no_data,
             GateStatus::Filtered => self.filtered,
+            // A status added in a later nexrad-model release is drawn like a gate with no data.
+            _ => self.no_data,
         }
     }
 }

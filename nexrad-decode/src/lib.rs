@@ -66,10 +66,7 @@
 //!    accessor is `<stem>_<unit>()` if the field has a unit (`azimuth_angle_degrees()`), and
 //!    the bare stem for dimensionless numbers, versions and flags (`azimuth_number()`).
 //!    Counts are `<thing>_count()` (`data_block_count()`, `elevation_cut_count()`).
-//! 4. With the `uom` feature, `<stem>()` with no suffix returns an `f64` `uom` quantity
-//!    (`azimuth_angle()`, `unambiguous_range()`). Where the bare stem already names an enum
-//!    (`azimuth_resolution_spacing()`), there is no `uom` accessor.
-//! 5. Unit suffixes are `_degrees`, `_degrees_per_second`, `_km`, `_meters`, `_mps`, `_kw`,
+//! 4. Unit suffixes are `_degrees`, `_degrees_per_second`, `_km`, `_meters`, `_mps`, `_kw`,
 //!    `_watts`, `_bytes`, `_halfwords`, `_db`, `_dbm` and `_db_per_km`.
 //!
 //! The RDA adaptation data (Type 18) and performance/maintenance data (Type 3) accessors
@@ -78,7 +75,9 @@
 //! # Features
 //!
 //! - `model` (default) - Convert decoded messages to `nexrad_model` types
-//! - `uom` - Type-safe units of measure for physical quantities
+//!
+//! Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example
+//! with the `uom` crate) may be offered later as a separate crate or extension trait.
 //!
 //! # Module Organization
 //!

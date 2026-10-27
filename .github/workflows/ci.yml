@@ -9,7 +9,7 @@ on:
 
 env:
   # Every facade feature except `parallel`, which does not build for wasm32-unknown-unknown.
-  NEXRAD_WASM_FEATURES: model,decode,data,render,process,aws,aws-rustls,serde,uom,chrono
+  NEXRAD_WASM_FEATURES: model,decode,data,render,process,aws,aws-rustls,serde,chrono
 
 jobs:
   formatting:

@@ -192,14 +192,6 @@ impl<'a> Message<'a> {
         self.nyquist_velocity_raw() as f32 * 0.01
     }
 
-    /// Nyquist velocity.
-    #[cfg(feature = "uom")]
-    pub fn nyquist_velocity(&self) -> uom::si::f64::Velocity {
-        uom::si::f64::Velocity::new::<uom::si::velocity::meter_per_second>(
-            self.nyquist_velocity_raw() as f64 * 0.01,
-        )
-    }
-
     /// Atmospheric attenuation factor in thousandths of a dB/km (raw scaled value). See
     /// [`atmospheric_attenuation_db_per_km()`](Self::atmospheric_attenuation_db_per_km) for the
     /// decoded value.

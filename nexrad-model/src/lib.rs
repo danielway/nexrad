@@ -43,15 +43,16 @@
 //!
 //! Optional features provide additional functionality:
 //!
-//! - `uom` - Type-safe units of measure via the [`uom`](https://docs.rs/uom) crate.
-//!   Enables methods like `first_gate_range()` returning `Length` instead of raw km values.
-//!
 //! - `serde` - Serialization/deserialization support via [`serde`](https://docs.rs/serde).
 //!   The data, geometry and site types implement `Serialize` and `Deserialize`; the builders,
 //!   `SiteEntry` and `Error` do not.
 //!
 //! - `chrono` - Date/time support via [`chrono`](https://docs.rs/chrono).
 //!   Enables `collection_time()` returning `DateTime<Utc>` instead of raw timestamps.
+//!
+//! Accessors return plain numbers with the unit in the name (`elevation_angle_degrees()`,
+//! `gate_interval_km()`). Unit-typed accessors (for example with the `uom` crate) may be offered
+//! later as a separate crate or extension trait.
 //!
 //! # Crate Boundaries
 //!
@@ -61,7 +62,7 @@
 //!
 //! - ✓ Define domain types (Scan, Sweep, Radial, Site, MomentData)
 //! - ✓ Provide data transformations and validations
-//! - ✓ Support optional features (serde, chrono, uom)
+//! - ✓ Support optional features (serde, chrono)
 //!
 //! ## Constraints
 //!

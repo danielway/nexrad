@@ -5,9 +5,6 @@ use crate::result::{Error, Result};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "uom")]
-use uom::si::{f64::Length, length::kilometer};
-
 /// CFP status codes for clutter filter power moments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -118,21 +115,9 @@ impl MomentData {
         self.first_gate_range_meters as f64 * 0.001
     }
 
-    /// The range to the center of the first gate.
-    #[cfg(feature = "uom")]
-    pub fn first_gate_range(&self) -> Length {
-        Length::new::<kilometer>(self.first_gate_range_meters as f64 * 0.001)
-    }
-
     /// The range between the centers of consecutive gates in kilometers.
     pub fn gate_interval_km(&self) -> f64 {
         self.gate_interval_meters as f64 * 0.001
-    }
-
-    /// The range between the centers of consecutive gates.
-    #[cfg(feature = "uom")]
-    pub fn gate_interval(&self) -> Length {
-        Length::new::<kilometer>(self.gate_interval_meters as f64 * 0.001)
     }
 
     /// Number of bits per gate (8 or 16).
@@ -374,6 +359,9 @@ struct MomentDataRepr {
 /// The data moment value for a product in a radial's gate. The value may be a floating-point
 /// number or a special case such as "below threshold", "range folded", or a clutter filter
 /// power status code.
+///
+/// This enum is exhaustive: its variants are the cases of the ICD's gate encoding, so a new
+/// variant would only follow a change to that encoding and is reserved for a major release.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum MomentValue {
@@ -393,8 +381,13 @@ pub enum MomentValue {
 /// Used alongside `f32` values in field types ([`SweepField`](crate::data::SweepField),
 /// [`CartesianField`](crate::data::CartesianField), [`VerticalField`](crate::data::VerticalField))
 /// to indicate whether each gate contains a valid measurement or a special condition.
+///
+/// This enum is `#[non_exhaustive]`: [`Filtered`](Self::Filtered) and [`NoData`](Self::NoData)
+/// are set by processing steps rather than by the data encoding, and a later processing step may
+/// add a status in a minor release. Matches outside this crate need a wildcard (`_`) arm.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[non_exhaustive]
 pub enum GateStatus {
     /// The gate contains a valid floating-point value.
     Valid,

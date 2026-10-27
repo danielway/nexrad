@@ -68,7 +68,7 @@ A WASM application can therefore use `nexrad-model` and `nexrad-render` without 
 - **nexrad-decode** implements NOAA ICD 2620002AA. Its types mirror the binary wire format for developers working at the
   protocol level, and its `model` feature converts them to model types.
 
-The split keeps the model's dependencies minimal (`thiserror`, and optionally `serde`, `chrono`, `uom`) and untouched by
+The split keeps the model's dependencies minimal (`thiserror`, and optionally `serde`, `chrono`) and untouched by
 new protocol parsing, and keeps wire-format details out of the model's public API: the model evolves with user-facing
 requirements, the decoder with the ICD.
 
@@ -120,7 +120,6 @@ appear in public signatures:
 | `std` | Everywhere | |
 | `chrono` | Timestamps and dates in model, decode, data and the facade | Re-exported from the facade as `nexrad::chrono` (feature `chrono`) |
 | `serde` | `Serialize`/`Deserialize` impls | Opt-in `serde` feature |
-| `uom` | Unit-typed accessors | Opt-in `uom` feature |
 | `image` | `nexrad_render::RenderResult::into_rgba_image` only | Opt-in `image` feature of `nexrad-render` (and the facade), off by default and not in `full`. It tracks `image`'s own 0.x releases and is excluded from the semver promise. Without it, `RenderResult` exposes owned RGBA8 pixels (`pixels()`, `into_pixels()`) |
 | `futures_core` | The `Stream` returned by `nexrad_data::aws::realtime::chunk_stream` and `nexrad::stream` | Return type only |
 | `futures_util` | The facade, internally | Not re-exported and not in any signature; consumers depend on `futures-util` or `futures` themselves for `StreamExt` |
@@ -155,14 +154,16 @@ are named for what they enable, not for the crate they pull in.
 
 | Crate | Features (defaults in bold) |
 |-------|-----------------------------|
-| `nexrad-model` | `serde`, `chrono`, `uom` |
-| `nexrad-decode` | **`model`** (conversion to `nexrad-model` types), `serde` (the code enums and `VcpNumber`), `uom` |
+| `nexrad-model` | `serde`, `chrono` |
+| `nexrad-decode` | **`model`** (conversion to `nexrad-model` types), `serde` (the code enums and `VcpNumber`) |
 | `nexrad-data` | **`aws`** (S3 archive and real-time access, without a TLS backend), **`aws-rustls`** (`aws` with rustls and the aws-lc-rs provider), **`model`** (`File::scan`, `Record::radials`, `assemble_volume`; enables `nexrad-decode/model`), `parallel` (rayon) |
 | `nexrad-process` | none |
 | `nexrad-render` | `image` (`RenderResult::into_rgba_image`; outside the semver promise) |
 | `nexrad` | **`data`**, **`aws`**, **`aws-rustls`**, **`render`**, `full` for every feature except `image`, and `image`; see the feature table in the crate docs |
 
-`uom` is off by default in every crate; the facade turns it on only through `uom` or `full`.
+No crate exposes unit-typed quantities: accessors return plain numbers with the unit in the name. `uom` was removed
+before 1.0 because it is pre-1.0 itself and would tie our major version to its own; unit-typed accessors may come later
+as a separate crate or extension trait.
 
 ### Feature Policy
 
@@ -220,8 +221,8 @@ same validation as the constructors and builders. The representation is stable w
 - **Acronyms are UpperCamelCase words**: `VcpNumber`, `AwsError`.
 - **Decoded-message accessors** in `nexrad-decode` follow "Accessor Naming" in its crate docs: the stem is the ICD
   field name; `<stem>_raw()` exists only when the wire encoding differs from the decoded value; a decoded plain number
-  is `<stem>_<unit>()` (`azimuth_angle_degrees()`); a decoded enum or struct is the bare stem (`radial_status()`); and
-  feature-gated `uom` accessors take the bare stem (`azimuth_angle()`).
+  is `<stem>_<unit>()` (`azimuth_angle_degrees()`); and a decoded enum or struct is the bare stem
+  (`radial_status()`).
 - **Model types** keep unit suffixes on plain numbers. Angles use the stems `azimuth_angle_degrees` and
   `elevation_angle_degrees` (a slice of azimuths is `azimuth_angles_degrees`); lengths end in `_meters` or `_km`,
   velocities in `_mps`, and timestamps in `_millis`. `site_elevation_meters` is the ground elevation above mean sea
@@ -347,7 +348,8 @@ inside the defining crate keeps exhaustive matches so the compiler flags every p
 
 Non-exhaustive: every crate's `Error` enum and `nexrad_data::result::AwsError`, and enums over sets that grow with the
 ICD or the library, such as message types and products (`MessageContents`, `Product`) and render projections
-(`Projection`).
+(`Projection`). `nexrad_model::data::GateStatus` is non-exhaustive because some of its variants (`Filtered`, `NoData`)
+are set by processing steps rather than by the data encoding, and a later processing step may add a status.
 
 `VcpNumber` is not an enum: it is a `u16` newtype with associated constants (`VcpNumber::VCP_212`) that work as `match`
 patterns. Naming a further pattern adds a constant, which cannot change how an existing value matches, compares or
@@ -368,9 +370,9 @@ An `Unknown(n)` or `Reserved(n)` value may be promoted to a named variant in a m
 code; code that needs a stable result across releases should compare the raw code (`number()` or the `*_raw()`
 accessor) rather than match on `Unknown(n)`.
 
-Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue` and
-`GateStatus`. Adding a variant to an exhaustive enum is a breaking change and is reserved for a major
-release.
+Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue` (a
+value, below threshold, range folded or a clutter filter power status code, as the ICD encodes a gate). Adding a
+variant to an exhaustive enum is a breaking change and is reserved for a major release.
 
 ## Versioning and Releases
 

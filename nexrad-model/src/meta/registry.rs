@@ -33,8 +33,9 @@ pub struct SiteEntry {
     pub id: &'static str,
     /// City or location name (e.g., "Oklahoma City").
     pub city: &'static str,
-    /// Two-letter state/territory abbreviation (e.g., "OK").
-    pub state: &'static str,
+    /// Two-letter state or territory abbreviation (e.g., `Some("OK")`), or `None` for a site
+    /// outside the United States.
+    pub state: Option<&'static str>,
     /// Latitude in degrees.
     pub latitude: f64,
     /// Longitude in degrees.
@@ -75,7 +76,10 @@ impl SiteEntry {
 
 impl std::fmt::Display for SiteEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} ({}, {})", self.id, self.city, self.state)
+        match self.state {
+            Some(state) => write!(f, "{} ({}, {})", self.id, self.city, state),
+            None => write!(f, "{} ({})", self.id, self.city),
+        }
     }
 }
 
@@ -96,7 +100,7 @@ pub fn sites() -> &'static [SiteEntry] {
 ///
 /// let site = registry::site_by_id("KTLX").unwrap();
 /// assert_eq!(site.city, "Oklahoma City");
-/// assert_eq!(site.state, "OK");
+/// assert_eq!(site.state, Some("OK"));
 /// ```
 pub fn site_by_id(id: &str) -> Option<&'static SiteEntry> {
     let id_upper = id.to_uppercase();
@@ -147,7 +151,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KBMX",
         city: "Birmingham",
-        state: "AL",
+        state: Some("AL"),
         latitude: 33.1722,
         longitude: -86.7698,
         site_elevation_meters: 197,
@@ -155,7 +159,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KEOX",
         city: "Fort Rucker",
-        state: "AL",
+        state: Some("AL"),
         latitude: 31.4606,
         longitude: -85.4592,
         site_elevation_meters: 132,
@@ -163,7 +167,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KHTX",
         city: "Huntsville",
-        state: "AL",
+        state: Some("AL"),
         latitude: 34.9306,
         longitude: -86.0833,
         site_elevation_meters: 536,
@@ -171,7 +175,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMOB",
         city: "Mobile",
-        state: "AL",
+        state: Some("AL"),
         latitude: 30.6794,
         longitude: -88.2397,
         site_elevation_meters: 63,
@@ -179,7 +183,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMXX",
         city: "Maxwell AFB",
-        state: "AL",
+        state: Some("AL"),
         latitude: 32.5367,
         longitude: -85.7897,
         site_elevation_meters: 122,
@@ -188,7 +192,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PABC",
         city: "Bethel",
-        state: "AK",
+        state: Some("AK"),
         latitude: 60.7919,
         longitude: -161.8764,
         site_elevation_meters: 48,
@@ -196,7 +200,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PACG",
         city: "Sitka",
-        state: "AK",
+        state: Some("AK"),
         latitude: 56.8525,
         longitude: -135.5294,
         site_elevation_meters: 63,
@@ -204,7 +208,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PAEC",
         city: "Nome",
-        state: "AK",
+        state: Some("AK"),
         latitude: 64.5114,
         longitude: -165.295,
         site_elevation_meters: 16,
@@ -212,7 +216,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PAHG",
         city: "Anchorage",
-        state: "AK",
+        state: Some("AK"),
         latitude: 60.7258,
         longitude: -151.3514,
         site_elevation_meters: 74,
@@ -220,7 +224,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PAIH",
         city: "Middleton Island",
-        state: "AK",
+        state: Some("AK"),
         latitude: 59.4614,
         longitude: -146.3031,
         site_elevation_meters: 20,
@@ -228,7 +232,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PAKC",
         city: "King Salmon",
-        state: "AK",
+        state: Some("AK"),
         latitude: 58.6794,
         longitude: -156.6297,
         site_elevation_meters: 19,
@@ -236,7 +240,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PAPD",
         city: "Fairbanks",
-        state: "AK",
+        state: Some("AK"),
         latitude: 65.0351,
         longitude: -147.5014,
         site_elevation_meters: 825,
@@ -245,7 +249,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KEMX",
         city: "Tucson",
-        state: "AZ",
+        state: Some("AZ"),
         latitude: 31.8939,
         longitude: -110.6303,
         site_elevation_meters: 1586,
@@ -253,7 +257,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KFSX",
         city: "Flagstaff",
-        state: "AZ",
+        state: Some("AZ"),
         latitude: 34.5744,
         longitude: -111.1983,
         site_elevation_meters: 2261,
@@ -261,7 +265,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KIWA",
         city: "Phoenix",
-        state: "AZ",
+        state: Some("AZ"),
         latitude: 33.2892,
         longitude: -111.67,
         site_elevation_meters: 413,
@@ -269,7 +273,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KYUX",
         city: "Yuma",
-        state: "AZ",
+        state: Some("AZ"),
         latitude: 32.4953,
         longitude: -114.6567,
         site_elevation_meters: 53,
@@ -278,7 +282,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLZK",
         city: "Little Rock",
-        state: "AR",
+        state: Some("AR"),
         latitude: 34.8364,
         longitude: -92.2622,
         site_elevation_meters: 173,
@@ -286,7 +290,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KSRX",
         city: "Fort Smith",
-        state: "AR",
+        state: Some("AR"),
         latitude: 35.2906,
         longitude: -94.3619,
         site_elevation_meters: 195,
@@ -295,7 +299,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KBBX",
         city: "Beale AFB",
-        state: "CA",
+        state: Some("CA"),
         latitude: 39.4961,
         longitude: -121.6317,
         site_elevation_meters: 53,
@@ -303,7 +307,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KBHX",
         city: "Eureka",
-        state: "CA",
+        state: Some("CA"),
         latitude: 40.4986,
         longitude: -124.2922,
         site_elevation_meters: 767,
@@ -311,7 +315,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KEYX",
         city: "Edwards AFB",
-        state: "CA",
+        state: Some("CA"),
         latitude: 35.0978,
         longitude: -117.5608,
         site_elevation_meters: 840,
@@ -319,7 +323,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KHNX",
         city: "Hanford",
-        state: "CA",
+        state: Some("CA"),
         latitude: 36.3142,
         longitude: -119.6322,
         site_elevation_meters: 74,
@@ -327,7 +331,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMUX",
         city: "San Francisco",
-        state: "CA",
+        state: Some("CA"),
         latitude: 37.1553,
         longitude: -121.8983,
         site_elevation_meters: 1057,
@@ -335,7 +339,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KNKX",
         city: "San Diego",
-        state: "CA",
+        state: Some("CA"),
         latitude: 32.9189,
         longitude: -117.0419,
         site_elevation_meters: 291,
@@ -343,7 +347,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KSOX",
         city: "Santa Ana Mountains",
-        state: "CA",
+        state: Some("CA"),
         latitude: 33.8178,
         longitude: -117.6358,
         site_elevation_meters: 923,
@@ -351,7 +355,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KVBX",
         city: "Vandenberg AFB",
-        state: "CA",
+        state: Some("CA"),
         latitude: 34.8383,
         longitude: -120.3978,
         site_elevation_meters: 373,
@@ -359,7 +363,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KVTX",
         city: "Los Angeles",
-        state: "CA",
+        state: Some("CA"),
         latitude: 34.4114,
         longitude: -119.1794,
         site_elevation_meters: 831,
@@ -367,7 +371,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDAX",
         city: "Sacramento",
-        state: "CA",
+        state: Some("CA"),
         latitude: 38.5011,
         longitude: -121.6778,
         site_elevation_meters: 9,
@@ -376,7 +380,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KFTG",
         city: "Denver",
-        state: "CO",
+        state: Some("CO"),
         latitude: 39.7867,
         longitude: -104.5458,
         site_elevation_meters: 1675,
@@ -384,7 +388,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KGJX",
         city: "Grand Junction",
-        state: "CO",
+        state: Some("CO"),
         latitude: 39.0622,
         longitude: -108.2139,
         site_elevation_meters: 3045,
@@ -392,7 +396,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KPUX",
         city: "Pueblo",
-        state: "CO",
+        state: Some("CO"),
         latitude: 38.4594,
         longitude: -104.1817,
         site_elevation_meters: 1600,
@@ -401,7 +405,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDOX",
         city: "Dover AFB",
-        state: "DE",
+        state: Some("DE"),
         latitude: 38.8258,
         longitude: -75.4401,
         site_elevation_meters: 50,
@@ -410,7 +414,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KOKX",
         city: "Upton",
-        state: "NY",
+        state: Some("NY"),
         latitude: 40.8656,
         longitude: -72.8639,
         site_elevation_meters: 26,
@@ -419,7 +423,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KAMX",
         city: "Miami",
-        state: "FL",
+        state: Some("FL"),
         latitude: 25.6111,
         longitude: -80.4128,
         site_elevation_meters: 4,
@@ -427,7 +431,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KEVX",
         city: "Eglin AFB",
-        state: "FL",
+        state: Some("FL"),
         latitude: 30.5644,
         longitude: -85.9214,
         site_elevation_meters: 43,
@@ -435,7 +439,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KJAX",
         city: "Jacksonville",
-        state: "FL",
+        state: Some("FL"),
         latitude: 30.4847,
         longitude: -81.7019,
         site_elevation_meters: 10,
@@ -443,7 +447,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMLB",
         city: "Melbourne",
-        state: "FL",
+        state: Some("FL"),
         latitude: 28.1133,
         longitude: -80.6542,
         site_elevation_meters: 11,
@@ -451,7 +455,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KTBW",
         city: "Tampa Bay",
-        state: "FL",
+        state: Some("FL"),
         latitude: 27.7056,
         longitude: -82.4017,
         site_elevation_meters: 13,
@@ -459,7 +463,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KTLH",
         city: "Tallahassee",
-        state: "FL",
+        state: Some("FL"),
         latitude: 30.3975,
         longitude: -84.3289,
         site_elevation_meters: 19,
@@ -467,7 +471,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KBYX",
         city: "Key West",
-        state: "FL",
+        state: Some("FL"),
         latitude: 24.5975,
         longitude: -81.7031,
         site_elevation_meters: 3,
@@ -476,7 +480,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KFFC",
         city: "Atlanta",
-        state: "GA",
+        state: Some("GA"),
         latitude: 33.3636,
         longitude: -84.5658,
         site_elevation_meters: 262,
@@ -484,7 +488,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KJGX",
         city: "Robins AFB",
-        state: "GA",
+        state: Some("GA"),
         latitude: 32.6756,
         longitude: -83.3511,
         site_elevation_meters: 159,
@@ -492,7 +496,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KVAX",
         city: "Moody AFB",
-        state: "GA",
+        state: Some("GA"),
         latitude: 30.8900,
         longitude: -83.0019,
         site_elevation_meters: 54,
@@ -501,7 +505,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PHKI",
         city: "South Kauai",
-        state: "HI",
+        state: Some("HI"),
         latitude: 21.8939,
         longitude: -159.5522,
         site_elevation_meters: 55,
@@ -509,7 +513,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PHKM",
         city: "Kamuela",
-        state: "HI",
+        state: Some("HI"),
         latitude: 20.1253,
         longitude: -155.7781,
         site_elevation_meters: 1161,
@@ -517,7 +521,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PHMO",
         city: "Molokai",
-        state: "HI",
+        state: Some("HI"),
         latitude: 21.1328,
         longitude: -157.1803,
         site_elevation_meters: 416,
@@ -525,7 +529,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PHWA",
         city: "South Shore",
-        state: "HI",
+        state: Some("HI"),
         latitude: 19.0950,
         longitude: -155.5689,
         site_elevation_meters: 421,
@@ -534,7 +538,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KCBX",
         city: "Boise",
-        state: "ID",
+        state: Some("ID"),
         latitude: 43.4908,
         longitude: -116.2358,
         site_elevation_meters: 933,
@@ -542,7 +546,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KSFX",
         city: "Pocatello",
-        state: "ID",
+        state: Some("ID"),
         latitude: 43.1058,
         longitude: -112.6861,
         site_elevation_meters: 1364,
@@ -551,7 +555,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KILX",
         city: "Lincoln",
-        state: "IL",
+        state: Some("IL"),
         latitude: 40.1506,
         longitude: -89.3369,
         site_elevation_meters: 177,
@@ -559,7 +563,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLOT",
         city: "Chicago",
-        state: "IL",
+        state: Some("IL"),
         latitude: 41.6044,
         longitude: -88.0847,
         site_elevation_meters: 202,
@@ -568,7 +572,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KIND",
         city: "Indianapolis",
-        state: "IN",
+        state: Some("IN"),
         latitude: 39.7075,
         longitude: -86.2803,
         site_elevation_meters: 241,
@@ -576,7 +580,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KIWX",
         city: "Fort Wayne",
-        state: "IN",
+        state: Some("IN"),
         latitude: 41.3586,
         longitude: -85.7000,
         site_elevation_meters: 293,
@@ -584,7 +588,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KVWX",
         city: "Evansville",
-        state: "IN",
+        state: Some("IN"),
         latitude: 38.2603,
         longitude: -87.7247,
         site_elevation_meters: 155,
@@ -593,7 +597,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDMX",
         city: "Des Moines",
-        state: "IA",
+        state: Some("IA"),
         latitude: 41.7311,
         longitude: -93.7228,
         site_elevation_meters: 299,
@@ -601,7 +605,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDVN",
         city: "Davenport",
-        state: "IA",
+        state: Some("IA"),
         latitude: 41.6117,
         longitude: -90.5808,
         site_elevation_meters: 230,
@@ -610,7 +614,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDDC",
         city: "Dodge City",
-        state: "KS",
+        state: Some("KS"),
         latitude: 37.7608,
         longitude: -99.9689,
         site_elevation_meters: 790,
@@ -618,7 +622,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KGLD",
         city: "Goodland",
-        state: "KS",
+        state: Some("KS"),
         latitude: 39.3669,
         longitude: -101.7003,
         site_elevation_meters: 1113,
@@ -626,7 +630,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KICT",
         city: "Wichita",
-        state: "KS",
+        state: Some("KS"),
         latitude: 37.6544,
         longitude: -97.4428,
         site_elevation_meters: 407,
@@ -634,7 +638,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KTWX",
         city: "Topeka",
-        state: "KS",
+        state: Some("KS"),
         latitude: 38.9969,
         longitude: -96.2325,
         site_elevation_meters: 417,
@@ -643,7 +647,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KHPX",
         city: "Fort Campbell",
-        state: "KY",
+        state: Some("KY"),
         latitude: 36.7369,
         longitude: -87.2850,
         site_elevation_meters: 177,
@@ -651,7 +655,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KJKL",
         city: "Jackson",
-        state: "KY",
+        state: Some("KY"),
         latitude: 37.5908,
         longitude: -83.3131,
         site_elevation_meters: 415,
@@ -659,7 +663,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLVX",
         city: "Louisville",
-        state: "KY",
+        state: Some("KY"),
         latitude: 37.9753,
         longitude: -85.9439,
         site_elevation_meters: 219,
@@ -667,7 +671,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KPAH",
         city: "Paducah",
-        state: "KY",
+        state: Some("KY"),
         latitude: 37.0683,
         longitude: -88.7722,
         site_elevation_meters: 119,
@@ -676,7 +680,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KHGX",
         city: "Houston",
-        state: "TX",
+        state: Some("TX"),
         latitude: 29.4719,
         longitude: -95.0792,
         site_elevation_meters: 5,
@@ -684,7 +688,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLCH",
         city: "Lake Charles",
-        state: "LA",
+        state: Some("LA"),
         latitude: 30.1253,
         longitude: -93.2158,
         site_elevation_meters: 4,
@@ -692,7 +696,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KHDC",
         city: "Hammond",
-        state: "LA",
+        state: Some("LA"),
         latitude: 30.5193,
         longitude: -90.4074,
         site_elevation_meters: 13,
@@ -700,7 +704,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KPOE",
         city: "Fort Polk",
-        state: "LA",
+        state: Some("LA"),
         latitude: 31.1556,
         longitude: -92.9756,
         site_elevation_meters: 124,
@@ -708,7 +712,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KSHV",
         city: "Shreveport",
-        state: "LA",
+        state: Some("LA"),
         latitude: 32.4508,
         longitude: -93.8411,
         site_elevation_meters: 83,
@@ -717,7 +721,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KCBW",
         city: "Caribou",
-        state: "ME",
+        state: Some("ME"),
         latitude: 46.0392,
         longitude: -67.8067,
         site_elevation_meters: 227,
@@ -725,7 +729,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KGYX",
         city: "Portland",
-        state: "ME",
+        state: Some("ME"),
         latitude: 43.8914,
         longitude: -70.2567,
         site_elevation_meters: 125,
@@ -734,7 +738,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLWX",
         city: "Sterling",
-        state: "VA",
+        state: Some("VA"),
         latitude: 38.9753,
         longitude: -77.4778,
         site_elevation_meters: 83,
@@ -743,7 +747,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KBOX",
         city: "Boston",
-        state: "MA",
+        state: Some("MA"),
         latitude: 41.9558,
         longitude: -71.1369,
         site_elevation_meters: 36,
@@ -752,7 +756,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KAPX",
         city: "Gaylord",
-        state: "MI",
+        state: Some("MI"),
         latitude: 44.9072,
         longitude: -84.7197,
         site_elevation_meters: 446,
@@ -760,7 +764,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDTX",
         city: "Detroit",
-        state: "MI",
+        state: Some("MI"),
         latitude: 42.6997,
         longitude: -83.4717,
         site_elevation_meters: 327,
@@ -768,7 +772,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KGRR",
         city: "Grand Rapids",
-        state: "MI",
+        state: Some("MI"),
         latitude: 42.8939,
         longitude: -85.5447,
         site_elevation_meters: 237,
@@ -776,7 +780,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMQT",
         city: "Marquette",
-        state: "MI",
+        state: Some("MI"),
         latitude: 46.5314,
         longitude: -87.5486,
         site_elevation_meters: 430,
@@ -785,7 +789,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDLH",
         city: "Duluth",
-        state: "MN",
+        state: Some("MN"),
         latitude: 46.8369,
         longitude: -92.2097,
         site_elevation_meters: 435,
@@ -793,7 +797,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMPX",
         city: "Minneapolis",
-        state: "MN",
+        state: Some("MN"),
         latitude: 44.8489,
         longitude: -93.5653,
         site_elevation_meters: 288,
@@ -802,7 +806,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDGX",
         city: "Brandon",
-        state: "MS",
+        state: Some("MS"),
         latitude: 32.2800,
         longitude: -89.9844,
         site_elevation_meters: 149,
@@ -810,7 +814,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KGWX",
         city: "Columbus AFB",
-        state: "MS",
+        state: Some("MS"),
         latitude: 33.8967,
         longitude: -88.3289,
         site_elevation_meters: 145,
@@ -819,7 +823,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KEAX",
         city: "Kansas City",
-        state: "MO",
+        state: Some("MO"),
         latitude: 38.8103,
         longitude: -94.2644,
         site_elevation_meters: 303,
@@ -827,7 +831,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLSX",
         city: "St. Louis",
-        state: "MO",
+        state: Some("MO"),
         latitude: 38.6986,
         longitude: -90.6828,
         site_elevation_meters: 185,
@@ -835,7 +839,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KSGF",
         city: "Springfield",
-        state: "MO",
+        state: Some("MO"),
         latitude: 37.2353,
         longitude: -93.4006,
         site_elevation_meters: 390,
@@ -844,7 +848,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KBLX",
         city: "Billings",
-        state: "MT",
+        state: Some("MT"),
         latitude: 45.8536,
         longitude: -108.6069,
         site_elevation_meters: 1097,
@@ -852,7 +856,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KGGW",
         city: "Glasgow",
-        state: "MT",
+        state: Some("MT"),
         latitude: 48.2064,
         longitude: -106.6253,
         site_elevation_meters: 694,
@@ -860,7 +864,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMSX",
         city: "Missoula",
-        state: "MT",
+        state: Some("MT"),
         latitude: 47.0411,
         longitude: -113.9864,
         site_elevation_meters: 2394,
@@ -868,7 +872,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KTFX",
         city: "Great Falls",
-        state: "MT",
+        state: Some("MT"),
         latitude: 47.4597,
         longitude: -111.3853,
         site_elevation_meters: 1132,
@@ -877,7 +881,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLNX",
         city: "North Platte",
-        state: "NE",
+        state: Some("NE"),
         latitude: 41.9578,
         longitude: -100.5761,
         site_elevation_meters: 906,
@@ -885,7 +889,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KOAX",
         city: "Omaha",
-        state: "NE",
+        state: Some("NE"),
         latitude: 41.3203,
         longitude: -96.3667,
         site_elevation_meters: 350,
@@ -893,7 +897,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KUEX",
         city: "Hastings",
-        state: "NE",
+        state: Some("NE"),
         latitude: 40.3208,
         longitude: -98.4419,
         site_elevation_meters: 602,
@@ -902,7 +906,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLRX",
         city: "Elko",
-        state: "NV",
+        state: Some("NV"),
         latitude: 40.7400,
         longitude: -116.8025,
         site_elevation_meters: 2056,
@@ -910,7 +914,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KESX",
         city: "Las Vegas",
-        state: "NV",
+        state: Some("NV"),
         latitude: 35.7011,
         longitude: -114.8914,
         site_elevation_meters: 1483,
@@ -918,7 +922,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KRGX",
         city: "Reno",
-        state: "NV",
+        state: Some("NV"),
         latitude: 39.7542,
         longitude: -119.4622,
         site_elevation_meters: 2530,
@@ -927,7 +931,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KABX",
         city: "Albuquerque",
-        state: "NM",
+        state: Some("NM"),
         latitude: 35.1497,
         longitude: -106.8239,
         site_elevation_meters: 1789,
@@ -935,7 +939,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KFDX",
         city: "Cannon AFB",
-        state: "NM",
+        state: Some("NM"),
         latitude: 34.6350,
         longitude: -103.6189,
         site_elevation_meters: 1417,
@@ -943,7 +947,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KHDX",
         city: "Holloman AFB",
-        state: "NM",
+        state: Some("NM"),
         latitude: 33.0769,
         longitude: -106.12,
         site_elevation_meters: 1287,
@@ -952,7 +956,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KBGM",
         city: "Binghamton",
-        state: "NY",
+        state: Some("NY"),
         latitude: 42.1997,
         longitude: -75.9847,
         site_elevation_meters: 490,
@@ -960,7 +964,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KBUF",
         city: "Buffalo",
-        state: "NY",
+        state: Some("NY"),
         latitude: 42.9486,
         longitude: -78.7369,
         site_elevation_meters: 211,
@@ -968,7 +972,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KENX",
         city: "Albany",
-        state: "NY",
+        state: Some("NY"),
         latitude: 42.5864,
         longitude: -74.0639,
         site_elevation_meters: 557,
@@ -976,7 +980,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KTYX",
         city: "Montague",
-        state: "NY",
+        state: Some("NY"),
         latitude: 43.7558,
         longitude: -75.6800,
         site_elevation_meters: 562,
@@ -985,7 +989,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMHX",
         city: "Morehead City",
-        state: "NC",
+        state: Some("NC"),
         latitude: 34.7761,
         longitude: -76.8764,
         site_elevation_meters: 9,
@@ -993,7 +997,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KRAX",
         city: "Raleigh",
-        state: "NC",
+        state: Some("NC"),
         latitude: 35.6656,
         longitude: -78.4903,
         site_elevation_meters: 106,
@@ -1001,7 +1005,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLTX",
         city: "Wilmington",
-        state: "NC",
+        state: Some("NC"),
         latitude: 33.9892,
         longitude: -78.4292,
         site_elevation_meters: 19,
@@ -1010,7 +1014,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KBIS",
         city: "Bismarck",
-        state: "ND",
+        state: Some("ND"),
         latitude: 46.7708,
         longitude: -100.7603,
         site_elevation_meters: 505,
@@ -1018,7 +1022,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMVX",
         city: "Fargo",
-        state: "ND",
+        state: Some("ND"),
         latitude: 47.5281,
         longitude: -97.3256,
         site_elevation_meters: 301,
@@ -1026,7 +1030,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMBX",
         city: "Minot AFB",
-        state: "ND",
+        state: Some("ND"),
         latitude: 48.3925,
         longitude: -100.8644,
         site_elevation_meters: 455,
@@ -1035,7 +1039,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KCLE",
         city: "Cleveland",
-        state: "OH",
+        state: Some("OH"),
         latitude: 41.4131,
         longitude: -81.8597,
         site_elevation_meters: 233,
@@ -1043,7 +1047,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KILN",
         city: "Wilmington",
-        state: "OH",
+        state: Some("OH"),
         latitude: 39.4203,
         longitude: -83.8217,
         site_elevation_meters: 322,
@@ -1052,7 +1056,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KFDR",
         city: "Frederick",
-        state: "OK",
+        state: Some("OK"),
         latitude: 34.3622,
         longitude: -98.9764,
         site_elevation_meters: 386,
@@ -1060,7 +1064,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KINX",
         city: "Tulsa",
-        state: "OK",
+        state: Some("OK"),
         latitude: 36.1750,
         longitude: -95.5647,
         site_elevation_meters: 204,
@@ -1068,7 +1072,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KTLX",
         city: "Oklahoma City",
-        state: "OK",
+        state: Some("OK"),
         latitude: 35.3331,
         longitude: -97.2778,
         site_elevation_meters: 370,
@@ -1076,7 +1080,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KVNX",
         city: "Vance AFB",
-        state: "OK",
+        state: Some("OK"),
         latitude: 36.7406,
         longitude: -98.1278,
         site_elevation_meters: 369,
@@ -1085,7 +1089,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMAX",
         city: "Medford",
-        state: "OR",
+        state: Some("OR"),
         latitude: 42.0811,
         longitude: -122.7167,
         site_elevation_meters: 2290,
@@ -1093,7 +1097,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KPDT",
         city: "Pendleton",
-        state: "OR",
+        state: Some("OR"),
         latitude: 45.6906,
         longitude: -118.8528,
         site_elevation_meters: 462,
@@ -1101,7 +1105,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KRTX",
         city: "Portland",
-        state: "OR",
+        state: Some("OR"),
         latitude: 45.7150,
         longitude: -122.9653,
         site_elevation_meters: 479,
@@ -1110,7 +1114,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KCCX",
         city: "State College",
-        state: "PA",
+        state: Some("PA"),
         latitude: 40.9231,
         longitude: -78.0039,
         site_elevation_meters: 733,
@@ -1118,7 +1122,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDIX",
         city: "Philadelphia",
-        state: "PA",
+        state: Some("PA"),
         latitude: 39.9469,
         longitude: -74.4108,
         site_elevation_meters: 45,
@@ -1126,7 +1130,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KPBZ",
         city: "Pittsburgh",
-        state: "PA",
+        state: Some("PA"),
         latitude: 40.5317,
         longitude: -80.2179,
         site_elevation_meters: 361,
@@ -1135,7 +1139,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "TJUA",
         city: "San Juan",
-        state: "PR",
+        state: Some("PR"),
         latitude: 18.1156,
         longitude: -66.0781,
         site_elevation_meters: 867,
@@ -1144,7 +1148,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KCAE",
         city: "Columbia",
-        state: "SC",
+        state: Some("SC"),
         latitude: 33.9486,
         longitude: -81.1186,
         site_elevation_meters: 70,
@@ -1152,7 +1156,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KCLX",
         city: "Charleston",
-        state: "SC",
+        state: Some("SC"),
         latitude: 32.6556,
         longitude: -81.0425,
         site_elevation_meters: 30,
@@ -1160,7 +1164,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KGSP",
         city: "Greenville",
-        state: "SC",
+        state: Some("SC"),
         latitude: 34.8833,
         longitude: -82.2200,
         site_elevation_meters: 296,
@@ -1169,7 +1173,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KABR",
         city: "Aberdeen",
-        state: "SD",
+        state: Some("SD"),
         latitude: 45.4558,
         longitude: -98.4131,
         site_elevation_meters: 397,
@@ -1177,7 +1181,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KUDX",
         city: "Rapid City",
-        state: "SD",
+        state: Some("SD"),
         latitude: 44.1250,
         longitude: -102.8297,
         site_elevation_meters: 919,
@@ -1185,7 +1189,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KFSD",
         city: "Sioux Falls",
-        state: "SD",
+        state: Some("SD"),
         latitude: 43.5878,
         longitude: -96.7289,
         site_elevation_meters: 436,
@@ -1194,7 +1198,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMRX",
         city: "Knoxville",
-        state: "TN",
+        state: Some("TN"),
         latitude: 36.1686,
         longitude: -83.4017,
         site_elevation_meters: 408,
@@ -1202,7 +1206,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KNQA",
         city: "Memphis",
-        state: "TN",
+        state: Some("TN"),
         latitude: 35.3447,
         longitude: -89.8733,
         site_elevation_meters: 86,
@@ -1210,7 +1214,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KOHX",
         city: "Nashville",
-        state: "TN",
+        state: Some("TN"),
         latitude: 36.2472,
         longitude: -86.5625,
         site_elevation_meters: 176,
@@ -1219,7 +1223,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KAMA",
         city: "Amarillo",
-        state: "TX",
+        state: Some("TX"),
         latitude: 35.2333,
         longitude: -101.7092,
         site_elevation_meters: 1093,
@@ -1227,7 +1231,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KBRO",
         city: "Brownsville",
-        state: "TX",
+        state: Some("TX"),
         latitude: 25.9158,
         longitude: -97.4189,
         site_elevation_meters: 7,
@@ -1235,7 +1239,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KCRP",
         city: "Corpus Christi",
-        state: "TX",
+        state: Some("TX"),
         latitude: 27.7842,
         longitude: -97.5111,
         site_elevation_meters: 14,
@@ -1243,7 +1247,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDFX",
         city: "Laughlin AFB",
-        state: "TX",
+        state: Some("TX"),
         latitude: 29.2722,
         longitude: -100.2803,
         site_elevation_meters: 345,
@@ -1251,7 +1255,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KDYX",
         city: "Dyess AFB",
-        state: "TX",
+        state: Some("TX"),
         latitude: 32.5386,
         longitude: -99.2544,
         site_elevation_meters: 463,
@@ -1259,7 +1263,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KEPZ",
         city: "El Paso",
-        state: "TX",
+        state: Some("TX"),
         latitude: 31.8731,
         longitude: -106.6978,
         site_elevation_meters: 1251,
@@ -1267,7 +1271,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KEWX",
         city: "San Antonio",
-        state: "TX",
+        state: Some("TX"),
         latitude: 29.7039,
         longitude: -98.0286,
         site_elevation_meters: 193,
@@ -1275,7 +1279,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KFWS",
         city: "Dallas/Fort Worth",
-        state: "TX",
+        state: Some("TX"),
         latitude: 32.5731,
         longitude: -97.3031,
         site_elevation_meters: 208,
@@ -1283,7 +1287,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KGRK",
         city: "Fort Hood",
-        state: "TX",
+        state: Some("TX"),
         latitude: 30.7217,
         longitude: -97.3828,
         site_elevation_meters: 164,
@@ -1291,7 +1295,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLBB",
         city: "Lubbock",
-        state: "TX",
+        state: Some("TX"),
         latitude: 33.6542,
         longitude: -101.8142,
         site_elevation_meters: 993,
@@ -1299,7 +1303,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMAF",
         city: "Midland/Odessa",
-        state: "TX",
+        state: Some("TX"),
         latitude: 31.9433,
         longitude: -102.1892,
         site_elevation_meters: 874,
@@ -1307,7 +1311,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KSJT",
         city: "San Angelo",
-        state: "TX",
+        state: Some("TX"),
         latitude: 31.3714,
         longitude: -100.4925,
         site_elevation_meters: 576,
@@ -1316,7 +1320,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KICX",
         city: "Cedar City",
-        state: "UT",
+        state: Some("UT"),
         latitude: 37.5911,
         longitude: -112.8622,
         site_elevation_meters: 3231,
@@ -1324,7 +1328,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMTX",
         city: "Salt Lake City",
-        state: "UT",
+        state: Some("UT"),
         latitude: 41.2628,
         longitude: -112.4478,
         site_elevation_meters: 1969,
@@ -1333,7 +1337,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KCXX",
         city: "Burlington",
-        state: "VT",
+        state: Some("VT"),
         latitude: 44.5111,
         longitude: -73.1667,
         site_elevation_meters: 97,
@@ -1342,7 +1346,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KAKQ",
         city: "Wakefield",
-        state: "VA",
+        state: Some("VA"),
         latitude: 36.9839,
         longitude: -77.0072,
         site_elevation_meters: 34,
@@ -1350,7 +1354,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KFCX",
         city: "Roanoke",
-        state: "VA",
+        state: Some("VA"),
         latitude: 37.0242,
         longitude: -80.2744,
         site_elevation_meters: 874,
@@ -1359,7 +1363,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KATX",
         city: "Seattle",
-        state: "WA",
+        state: Some("WA"),
         latitude: 48.1944,
         longitude: -122.4958,
         site_elevation_meters: 151,
@@ -1367,7 +1371,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KLGX",
         city: "Langley Hill",
-        state: "WA",
+        state: Some("WA"),
         latitude: 47.1169,
         longitude: -124.1067,
         site_elevation_meters: 112,
@@ -1375,7 +1379,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KOTX",
         city: "Spokane",
-        state: "WA",
+        state: Some("WA"),
         latitude: 47.6806,
         longitude: -117.6267,
         site_elevation_meters: 728,
@@ -1384,7 +1388,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KRLX",
         city: "Charleston",
-        state: "WV",
+        state: Some("WV"),
         latitude: 38.3111,
         longitude: -81.7231,
         site_elevation_meters: 329,
@@ -1393,7 +1397,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KARX",
         city: "La Crosse",
-        state: "WI",
+        state: Some("WI"),
         latitude: 43.8228,
         longitude: -91.1911,
         site_elevation_meters: 389,
@@ -1401,7 +1405,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KGRB",
         city: "Green Bay",
-        state: "WI",
+        state: Some("WI"),
         latitude: 44.4986,
         longitude: -88.1111,
         site_elevation_meters: 208,
@@ -1409,7 +1413,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KMKX",
         city: "Milwaukee",
-        state: "WI",
+        state: Some("WI"),
         latitude: 42.9678,
         longitude: -88.5506,
         site_elevation_meters: 292,
@@ -1418,7 +1422,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KCYS",
         city: "Cheyenne",
-        state: "WY",
+        state: Some("WY"),
         latitude: 41.1519,
         longitude: -104.8061,
         site_elevation_meters: 1868,
@@ -1426,7 +1430,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "KRIW",
         city: "Riverton",
-        state: "WY",
+        state: Some("WY"),
         latitude: 43.0661,
         longitude: -108.4772,
         site_elevation_meters: 1697,
@@ -1435,7 +1439,7 @@ static SITES: &[SiteEntry] = &[
     SiteEntry {
         id: "PGUA",
         city: "Andersen AFB",
-        state: "GU",
+        state: Some("GU"),
         latitude: 13.4544,
         longitude: 144.8111,
         site_elevation_meters: 78,

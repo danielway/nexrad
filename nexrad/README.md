@@ -103,12 +103,14 @@ features it depends on, so `data` alone is enough for local file loading.
 | `aws-rustls` | `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS backend | `aws` |
 | `parallel` | Parallel decompression (requires rayon) | `data` |
 | `serde` | Serialization support | |
-| `uom` | Type-safe units of measure | |
 | `chrono` | DateTime type support | |
 | `image` | `RenderResult::into_rgba_image` interop (opt-in, outside the semver promise) | `render` |
 | `full` | Every feature above except `image` | all of them except `image` |
 
 Every feature except `parallel` builds for `wasm32-unknown-unknown`.
+
+Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example with the `uom` crate) may
+be offered later as a separate crate or extension trait.
 
 The `image` feature is not part of `full`. It tracks the `image` crate's own 0.x releases and is
 excluded from the semver promise: a minor or patch release may move it to a newer, incompatible `image` version.
@@ -137,7 +139,7 @@ requests through the JavaScript `fetch` API and needs no TLS feature:
 
 ```toml
 nexrad = { version = "1.0", default-features = false, features = [
-    "data", "render", "process", "aws", "serde", "uom", "chrono",
+    "data", "render", "process", "aws", "serde", "chrono",
 ] }
 ```
 

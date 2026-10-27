@@ -65,3 +65,5 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `coordinate_system_required`; use the methods on `Sweep` and `Scan`. (#172)
 - The site registry wrappers `sites`, `site` and `nearest_site`; use `nexrad::model::meta::registry`. (#164, #172)
 - `Error::MissingSiteMetadata`, which only `coordinate_system_required` produced. (#172)
+- The `uom` feature, also dropped from `wasm` and `full`; `nexrad-model` and `nexrad-decode` no longer expose `uom`
+  quantities. Use their unit-suffixed accessors. (#202)

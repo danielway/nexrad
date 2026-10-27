@@ -2,11 +2,6 @@ use crate::messages::clutter_filter_map::raw;
 use crate::messages::clutter_filter_map::OpCode;
 use std::borrow::Cow;
 
-#[cfg(feature = "uom")]
-use uom::si::f64::Length;
-#[cfg(feature = "uom")]
-use uom::si::length::kilometer;
-
 /// Defines a range segment of a particular elevation and azimuth with an operation type describing
 /// the clutter filter map behavior for the segment.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -42,13 +37,6 @@ impl<'a> RangeZone<'a> {
             2 => OpCode::ForceFilter,
             other => OpCode::Unknown(other),
         }
-    }
-
-    /// Stop range per zone. There are 20 possible zones and not all need to be defined. The last
-    /// zone must have an end range of 511km.
-    #[cfg(feature = "uom")]
-    pub fn end_range(&self) -> Length {
-        Length::new::<kilometer>(self.inner.end_range.get() as f64)
     }
 
     /// Convert this range zone to an owned version with `'static` lifetime.

@@ -71,8 +71,8 @@ nexrad = "1.0"
 ```
 
 The default features cover local file loading, AWS downloads and real-time streaming, and rendering. Processing
-(`process`), serialization (`serde`), units of measure (`uom`), parallel decoding (`parallel`) and `image` crate
-interop (`image`) are opt-in, and `full` enables every feature except `image`.
+(`process`), serialization (`serde`), parallel decoding (`parallel`) and `image` crate interop (`image`) are
+opt-in, and `full` enables every feature except `image`.
 
 **Common configurations:**
 
@@ -184,7 +184,6 @@ the features listed under "Implies".
 | `aws-rustls` | `aws` with rustls (aws-lc-rs provider) as the TLS backend | `aws` | rustls, aws-lc-rs |
 | `parallel` | Parallel decompression | `data` | rayon |
 | `serde` | Serialization support | | serde |
-| `uom` | Type-safe units of measure | | uom |
 | `chrono` | DateTime type support | | chrono |
 | `image` | `RenderResult::into_rgba_image` (opt-in, not in `full`, outside the semver promise) | `render` | image |
 | `full` | Every feature above except `image` | All above except `image` | All above |
@@ -199,7 +198,7 @@ JavaScript `fetch` API and needs no TLS feature:
 
 ```toml
 nexrad = { version = "1.0", default-features = false, features = [
-    "data", "render", "process", "aws", "serde", "uom", "chrono",
+    "data", "render", "process", "aws", "serde", "chrono",
 ] }
 ```
 

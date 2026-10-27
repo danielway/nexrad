@@ -30,7 +30,6 @@ process = ["dep:nexrad-process", "model"]
 
 # Pass-through features from sub-crates
 serde = ["nexrad-model?/serde", "nexrad-decode?/serde"]
-uom = ["nexrad-model?/uom", "nexrad-decode?/uom"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
 parallel = ["data", "nexrad-data/parallel"]
 # AWS S3 access, including real-time streaming, without a TLS backend (see `aws-rustls`)
@@ -51,7 +50,6 @@ full = [
     "aws",
     "aws-rustls",
     "serde",
-    "uom",
     "chrono",
     "parallel",
 ]

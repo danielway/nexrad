@@ -27,12 +27,10 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 [features]
 serde = ["dep:serde"]
 chrono = ["dep:chrono"]
-uom = ["dep:uom"]
 
 [dependencies]
 thiserror = { workspace = true }
 chrono = { workspace = true, optional = true }
-uom = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 
 [dev-dependencies]

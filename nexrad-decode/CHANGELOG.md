@@ -71,8 +71,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Error`, `messages::MessageContents`, `messages::MessageType`, `messages::RedundantChannel` and
   `digital_radar_data::DataBlockName` are `#[non_exhaustive]`; matches on them outside this crate need a wildcard
   arm. (#155)
-- The `nexrad-model` feature is renamed `model`, `uom` is no longer a default feature, and optional dependencies are
-  no longer features. (#156)
+- The `nexrad-model` feature is renamed `model` and optional dependencies are no longer features. (#156)
 - Acronyms in type and variant names are UpperCamelCase words (`RdaStatus`, `RdaPrfData`, `OrdaSingleChannel`,
   `CompressedBzip2`), and `WaveformType` variants have descriptive names. (#160)
 - `VolumeDataBlock::volume_coverage_pattern()` → `vcp_number()`, returning `VcpNumber`, which decodes VCP 32 instead of
@@ -87,7 +86,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   (#166)
 - No public type implements `zerocopy` traits. (#166)
 - Accessors on decoded messages follow one naming convention ("Accessor Naming" in the crate docs): plain numbers carry
-  a unit suffix, `<stem>_raw()` replaces `raw_<stem>()`, and decoded enums and `uom` quantities take the bare stem.
+  a unit suffix, `<stem>_raw()` replaces `raw_<stem>()`, and decoded enums take the bare stem.
   (#173)
 - `Debug` output prints the new names (#160, #173, #191) and `fnv1a: 0x...` hashes for binary blobs (#162), and shows a
   `DataBlock`'s input `offset` and the `message_type` that records a console or loopback message's direction (#190).
@@ -147,6 +146,15 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - With `uom`, `digital_radar_data::Header::azimuth_resolution_spacing() -> Angle`; use
   `azimuth_resolution_spacing_degrees()`. (#173)
 - The `sha2` and `hex` dependencies. (#162)
+- The `uom` feature, the `uom` dependency and every accessor returning a `uom` quantity: `MessageHeader::{message_size,
+  segment_size}`, `digital_radar_data::Header::{azimuth_angle, elevation_angle, azimuth_indexing_mode, radial_length}`,
+  `lrtup` on `VolumeDataBlock`, `ElevationDataBlock` and `RadialDataBlock`, `VolumeDataBlock::{latitude, longitude,
+  site_height, tower_height, horizontal_shv_tx_power, vertical_shv_tx_power, initial_system_differential_phase}`,
+  `RadialDataBlock::{unambiguous_range, nyquist_velocity}`, `GenericDataBlockHeader::{data_moment_range,
+  data_moment_range_sample_interval, moment_size}`, `digital_radar_data_legacy::Message::nyquist_velocity` and
+  `clutter_filter_map::RangeZone::end_range`. `uom` is pre-1.0 and would tie this crate's major version to its own;
+  each has a unit-suffixed sibling (`azimuth_angle_degrees()`, `unambiguous_range_km()`, `lrtup_bytes()`, ...).
+  Unit-typed accessors may come later as a separate crate or extension trait. (#202)
 - `Error::Decoding`, `Error::InvalidMessageLength` and `Error::DataSpansSegmentBoundary`, which nothing constructed.
   (#190)
 - `rda_adaptation_data::Message`'s raw readers (`raw_data`, `read_*_at`, `total_size`); use the typed accessors. (#190)
@@ -161,8 +169,6 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - VCP elevation, sector edge and EBC angles with the sign bit set decode as negative instead of wrapped to 360 degrees.
   (#146)
 - `DataBlockId::data_block_name()` returns `DataBlockName::SpectrumWidth` for the `"SW "` block. (#173)
-- With `uom`, `RadialDataBlock::unambiguous_range()` applies the ICD 0.1 km scale; it was 10× too large. (#173)
-- With `uom`, `MessageHeader::segment_size()` no longer overflows `u16` for segments over 32767 halfwords. (#173)
 - A legacy (type 1) message with an unknown radial status converts to `RadialStatus::Unknown(v)`. (#173)
 - Multi-segment messages read each segment's full payload, so clutter filter bypass maps (type 13) decode, clutter
   filter maps (type 15) have 360 azimuth segments, and RDA adaptation data (type 18) fields past the first segment are

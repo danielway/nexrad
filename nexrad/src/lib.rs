@@ -77,7 +77,6 @@
 //! | `aws-rustls` | `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS backend | `aws` | rustls, aws-lc-rs |
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon |
 //! | `serde` | Serialization support for model types and the decode code enums | | serde |
-//! | `uom` | Type-safe units of measure | | uom |
 //! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono |
 //! | `image` | `RenderResult::into_rgba_image` interop (opt-in, not in `full`; see below) | `render` | image |
 //! | `full` | Every feature above except `image` | all of them except `image` | |
@@ -88,13 +87,16 @@
 //!
 //! Every feature except `parallel` builds for `wasm32-unknown-unknown`.
 //!
-//! On native targets, `aws` alone compiles but has no TLS backend, so every HTTPS request fails at
-//! run time with reqwest's `invalid URL, scheme is not http` connect error. A TLS feature of
-//! `reqwest` 0.13 (for example `native-tls`) enabled by any other crate in the build also provides
-//! one, since Cargo unifies features. On `wasm32`, `aws` sends requests through the JavaScript
-//! `fetch` API and needs no TLS feature because the browser performs TLS. Enable `aws-rustls` (on by default), or enable a TLS feature of
-//! `reqwest` 0.13 in your own manifest. `aws-rustls` compiles C code, which needs a C compiler
-//! and, on Windows x86 targets, NASM.
+//! Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example
+//! with the `uom` crate) may be offered later as a separate crate or extension trait.
+//!
+//! `aws-rustls` (on by default) gives `aws` its TLS backend: rustls with the `aws-lc-rs` crypto
+//! provider, which compiles C code and needs a C compiler and, on Windows x86 targets, NASM. On
+//! `wasm32`, `aws` sends requests through the JavaScript `fetch` API and needs no TLS feature,
+//! because the browser performs TLS. On native targets, `aws` alone compiles but every HTTPS
+//! request fails at run time with reqwest's `invalid URL, scheme is not http` connect error,
+//! unless a TLS feature of `reqwest` 0.13 (for example `native-tls`) is enabled in your own
+//! manifest or by any other crate in the build, since Cargo unifies features.
 //!
 //! ### Common Configurations
 //!
@@ -111,7 +113,7 @@
 //!
 //! # WebAssembly: every feature except `parallel`
 //! nexrad = { version = "1.0", default-features = false, features = [
-//!     "data", "render", "process", "aws", "serde", "uom", "chrono",
+//!     "data", "render", "process", "aws", "serde", "chrono",
 //! ] }
 //!
 //! # Every feature except `image` (native only)
@@ -148,7 +150,7 @@
 //!
 //! | Crate | Purpose |
 //! |-------|---------|
-//! | `nexrad-model` | Domain types with optional serde/chrono/uom support |
+//! | `nexrad-model` | Domain types with optional serde/chrono support |
 //! | `nexrad-decode` | Low-level binary parsing per NOAA ICD 2620002AA |
 //! | `nexrad-data` | Archive II file handling and AWS S3 access |
 //! | `nexrad-process` | Radar data processing and derived products |

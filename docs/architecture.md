@@ -178,8 +178,9 @@ are named for what they enable, not for the crate they pull in.
   the JavaScript `fetch` API and needs none. `aws-rustls` (default) selects rustls with the aws-lc-rs provider, which
   needs a C compiler and, on Windows x86 targets, NASM. Other backends can be added later as further `aws-*` features
   (for example `aws-rustls-ring` or `aws-native-tls`) without breaking anyone. On native targets, `aws` without any
-  TLS backend builds but its HTTPS requests fail at runtime; users who bring their own backend enable a TLS feature of
-  `reqwest` in their own manifest.
+  TLS backend compiles, but every HTTPS request fails at run time with reqwest's `invalid URL, scheme is not http`
+  connect error; a TLS feature of `reqwest` (for example `native-tls`) enabled by the user's manifest or any other
+  crate in the build satisfies it, since Cargo unifies features.
 
 ### Facade Feature Gating
 

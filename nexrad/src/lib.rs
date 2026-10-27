@@ -88,9 +88,11 @@
 //!
 //! Every feature except `parallel` builds for `wasm32-unknown-unknown`.
 //!
-//! On `wasm32`, `aws` sends requests through the JavaScript `fetch` API and needs no TLS feature.
-//! On native targets, `aws` alone builds but has no TLS backend, so requests to the HTTPS
-//! endpoints fail at runtime. Enable `aws-rustls` (on by default), or enable a TLS feature of
+//! On native targets, `aws` alone compiles but has no TLS backend, so every HTTPS request fails at
+//! run time with reqwest's `invalid URL, scheme is not http` connect error. A TLS feature of
+//! `reqwest` 0.13 (for example `native-tls`) enabled by any other crate in the build also provides
+//! one, since Cargo unifies features. On `wasm32`, `aws` sends requests through the JavaScript
+//! `fetch` API and needs no TLS feature because the browser performs TLS. Enable `aws-rustls` (on by default), or enable a TLS feature of
 //! `reqwest` 0.13 in your own manifest. `aws-rustls` compiles C code, which needs a C compiler
 //! and, on Windows x86 targets, NASM.
 //!

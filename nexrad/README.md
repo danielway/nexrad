@@ -122,8 +122,10 @@ nexrad = { version = "1.0", default-features = false, features = ["data"] }
 
 ### TLS
 
-On native targets, `aws` alone builds but has no TLS backend, so requests to the HTTPS endpoints
-fail at runtime. `aws-rustls` (on by default) adds rustls with the `aws-lc-rs` crypto provider,
+On native targets, `aws` alone compiles but has no TLS backend, so every HTTPS request fails at run
+time with reqwest's `invalid URL, scheme is not http` connect error. A TLS feature of `reqwest` 0.13
+(for example `native-tls`) enabled by any other crate in the build also provides one, since Cargo
+unifies features. `wasm32` needs no TLS backend because the browser performs TLS. `aws-rustls` (on by default) adds rustls with the `aws-lc-rs` crypto provider,
 which compiles C code and needs a C compiler and, on Windows x86 targets, NASM. To use a different
 TLS backend, disable the default features, enable `aws`, and enable a TLS feature of `reqwest` 0.13
 in your own manifest.

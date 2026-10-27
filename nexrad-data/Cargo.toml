@@ -30,9 +30,11 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 
 [features]
 default = ["aws", "aws-rustls", "model"]
-# AWS S3 access, including real-time polling, without a TLS backend. On wasm32 requests go
-# through the browser's fetch API and need no TLS feature; native targets need a TLS backend,
-# such as `aws-rustls`, to reach the HTTPS endpoints.
+# AWS S3 access, including real-time polling, without a TLS backend. On native targets `aws`
+# alone compiles, but every HTTPS request fails at run time with reqwest's "invalid URL, scheme
+# is not http" connect error unless a TLS backend is enabled: `aws-rustls`, or a reqwest TLS
+# feature (for example `native-tls`) enabled by any crate in the build, since Cargo unifies
+# features. wasm32 needs none because the browser performs TLS.
 aws = ["dep:reqwest", "dep:xml", "dep:futures-util"]
 # `aws` with rustls and the aws-lc-rs crypto provider as the TLS backend
 aws-rustls = ["aws", "reqwest/rustls"]

@@ -11,8 +11,9 @@ Before running the release workflow for a crate, confirm on `main`:
       and check that every user-visible change since the last release is listed.
 - [ ] `cargo run -p xtask -- public-api --check` passes, i.e. the `Public API baselines` CI job is green and
       `api/<crate>.txt` describes exactly what will be published.
-- [ ] The `Semver checks` CI job output has been reviewed. The version type you choose must match what it reports:
-      any breaking change needs a major bump.
+- [ ] The `Semver checks` CI job is green on `main`. It compares each crate with its latest release on crates.io and
+      fails on a breaking change, so a breaking change can only ship in a major release. Choose between minor (new
+      API) and patch (fixes only) from the CHANGELOG.
 - [ ] `cargo publish --dry-run -p <crate>` succeeds for the crate. When releasing several crates, dry-run them in
       dependency order (see [Release Order](#release-order)); a dependent's dry run only succeeds once the version it
       requires is on crates.io.
@@ -51,8 +52,9 @@ before running the version bump. A release that doesn't change an image can keep
        - `major` for breaking changes (x.0.0)
        - `minor` for new features (0.x.0)
        - `patch` for bug fixes (0.0.x)
-       - `rc` for release candidates (0.0.x-rc.1)
-       - `custom` for arbitrary versions (e.g., 1.0.0-rc.1)
+       - `rc` for release candidates (x.y.z-rc.1)
+       - `custom` for arbitrary versions (e.g., 1.1.0-rc.1). To go from a release candidate to its final version,
+         use `custom` with that version: `major` on `1.1.0-rc.1` would produce `2.0.0`
      - If using `custom`, enter the exact version string in the "Custom version" field
 
 2. **Review Draft Release**
@@ -62,7 +64,7 @@ before running the version bump. A release that doesn't change an image can keep
      - Create a draft GitHub release
    - Go to the "Releases" page
    - Find the draft release
-   - Edit the release notes: paste the crate's CHANGELOG section for this version
+   - Edit the release notes: a few short lines on the main changes, linking the crate's CHANGELOG for the details
    - Ensure the tag name follows the format: `crate-name@x.y.z`
 
 3. **Publish Release**
@@ -112,22 +114,6 @@ When releasing multiple crates, follow this order:
    bumping the next
 3. **nexrad-data** - depends on nexrad-decode and nexrad-model
 4. **nexrad** - facade crate, depends on all others
-
-### The 1.0.0 Release
-
-All six library crates release 1.0.0 together. On the day of release:
-
-- [ ] In one PR to `main`, finalize every crate's CHANGELOG as the first [pre-release checklist](#pre-release-checklist)
-      item describes, with `1.0.0` as the version.
-- [ ] Release the crates one at a time in [release order](#release-order). For each crate, run the rest of the
-      pre-release checklist and the [release steps](#release-steps), choosing the `custom` version type and `1.0.0`
-      (`major` would produce `2.0.0`). Check that the bump commit makes the changes
-      [Automatic Dependency Updates](#automatic-dependency-updates) describes; no requirement needs a manual edit.
-      Wait for the Publish Crate workflow to finish before bumping the next crate.
-- [ ] After `nexrad` 1.0.0 is published, remove `continue-on-error: true` and the comment above it from the
-      `Semver checks` job in `.github/workflows/ci.yml`, so semver violations against the 1.0.0 releases fail CI.
-- [ ] Confirm `cargo run -p xtask -- public-api --check` passes on `main` after the last bump commit. The baselines
-      under `api/` and `api/README.md` record no versions and need no change.
 
 ### Automatic Dependency Updates
 

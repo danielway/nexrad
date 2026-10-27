@@ -227,9 +227,6 @@ jobs:
   semver-checks:
     name: Semver checks
     runs-on: ubuntu-latest
-    # Every crate is still on the 1.0.0-rc series, whose published releases predate
-    # intentional breaking changes. Make this job blocking once 1.0.0 has been released.
-    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

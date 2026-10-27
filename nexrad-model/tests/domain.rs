@@ -309,3 +309,51 @@ fn nearest_site_wraps_across_the_antimeridian() {
     let site = registry::nearest_site(60.0, -179.5).unwrap();
     assert_eq!(site.id, "PAEC");
 }
+
+#[test]
+fn waveform_abbreviations_follow_the_icd_legend() {
+    assert_eq!(
+        WaveformType::ContiguousSurveillance.abbreviation(),
+        Some("CS")
+    );
+    assert_eq!(
+        WaveformType::ContiguousDopplerWithAmbiguityResolution.abbreviation(),
+        Some("CD/W")
+    );
+    assert_eq!(
+        WaveformType::ContiguousDopplerWithoutAmbiguityResolution.abbreviation(),
+        Some("CD/WO")
+    );
+    assert_eq!(WaveformType::Batch.abbreviation(), Some("B"));
+    assert_eq!(WaveformType::StaggeredPulsePair.abbreviation(), None);
+    assert_eq!(WaveformType::Unknown(9).abbreviation(), None);
+}
+
+#[test]
+fn unknown_codes_display_their_code() {
+    assert_eq!(WaveformType::Unknown(9).to_string(), "Unknown (9)");
+    assert_eq!(ChannelConfiguration::Unknown(3).to_string(), "Unknown (3)");
+    assert_eq!(
+        nexrad_model::data::PulseWidth::Unknown(1).to_string(),
+        "Unknown (1)"
+    );
+    assert_eq!(
+        nexrad_model::data::RadialStatus::Unknown(6).to_string(),
+        "Unknown (6)"
+    );
+    assert_eq!(
+        nexrad_model::data::RadialStatus::ScanStart.to_string(),
+        "Scan Start"
+    );
+}
+
+#[test]
+fn vcp_numbers_order_by_number() {
+    assert!(VcpNumber::VCP_35 < VcpNumber::VCP_112);
+    assert!(VcpNumber::new(7) < VcpNumber::VCP_11);
+    let label = match VcpNumber::new(212) {
+        VcpNumber::VCP_212 => "212",
+        _ => "other",
+    };
+    assert_eq!(label, "212");
+}

@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 /// see [`from_number`](Self::from_number) and [`number`](Self::number).
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[non_exhaustive]
 pub enum ChannelConfiguration {
     /// Constant phase (code 0).
     ConstantPhase,
@@ -78,6 +79,8 @@ impl From<nexrad_model::data::ChannelConfiguration> for ChannelConfiguration {
             Model::RandomPhase => Self::RandomPhase,
             Model::Sz2Phase => Self::Sz2Phase,
             Model::Unknown(code) => Self::Unknown(code),
+            // A variant named by a newer nexrad-model than this nexrad-decode was built for.
+            _ => Self::Unknown(u8::MAX),
         }
     }
 }

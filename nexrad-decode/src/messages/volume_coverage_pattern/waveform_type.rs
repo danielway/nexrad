@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 /// [`from_number`](Self::from_number) and [`number`](Self::number).
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[non_exhaustive]
 pub enum WaveformType {
     /// Contiguous Surveillance (code 1).
     ContiguousSurveillance,
@@ -119,6 +120,8 @@ impl From<nexrad_model::data::WaveformType> for WaveformType {
             Model::Batch => Self::Batch,
             Model::StaggeredPulsePair => Self::StaggeredPulsePair,
             Model::Unknown(code) => Self::Unknown(code),
+            // A variant named by a newer nexrad-model than this nexrad-decode was built for.
+            _ => Self::Unknown(u8::MAX),
         }
     }
 }

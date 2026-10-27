@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 /// [`from_number`](Self::from_number) and [`number`](Self::number).
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[non_exhaustive]
 pub enum RadialStatus {
     /// First radial of an elevation sweep that is not the first sweep in the volume scan
     /// (code 0, "start of new elevation").
@@ -103,6 +104,8 @@ impl From<nexrad_model::data::RadialStatus> for RadialStatus {
             Model::ScanEnd => Self::ScanEnd,
             Model::ElevationStartVcpFinal => Self::ElevationStartVcpFinal,
             Model::Unknown(code) => Self::Unknown(code),
+            // A variant named by a newer nexrad-model than this nexrad-decode was built for.
+            _ => Self::Unknown(u8::MAX),
         }
     }
 }

@@ -28,7 +28,7 @@ impl VolumeIndex {
     }
 
     /// Returns the volume index as a number.
-    pub fn as_number(&self) -> usize {
+    pub fn number(&self) -> usize {
         self.0
     }
 

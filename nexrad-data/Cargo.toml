@@ -63,6 +63,7 @@ futures-util = { workspace = true }
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true }
 criterion = { workspace = true }
+http = { workspace = true }
 
 [[example]]
 name = "realtime"

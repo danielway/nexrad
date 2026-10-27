@@ -380,6 +380,8 @@ for message in &messages {
   build ordering (`build >= RdaBuildNumber::from_raw(2000)`) replace the `Build12_0`..`Build24_0` variants.
 - **VCP and azimuth indexing angles are `f32`** (#191), matching the model; `azimuth_rate_degrees_per_second()` stays
   `f64`.
+- **Message type 29 is `MessageType::ModelData`** (#206), the Archive II ICD's Model Data message, where it was
+  `Reserved(29)`; match `ModelData` where you matched `Reserved(29)`. Its contents still decode as `Other`.
 - **`MessageType` ordering** (#166, #205): `Ord` compares `number()`, so `Reserved(14)` sorts between
   `RpgLoopbackTest` (12) and `ClutterFilterMap` (15) instead of after `RdaLogData`.
 - **Lifetimes** (#166): `MessageHeaders::primary()`/`iter()` and `Message::header()` borrow from `self`, and
@@ -405,8 +407,11 @@ nexrad-data = { version = "1.0", default-features = false, features = ["aws-rust
 
 **Errors.** `AwsError` moved to the crate root, and its HTTP variants box the error instead of holding a
 `reqwest::Error` (#160, #171). `is_transient()` says whether a failure is worth retrying (#171); `HttpClient` reports a
-failure to build the HTTP client, and none of the variants added in #192 is transient. `Error` and `AwsError` no longer
-implement `UnwindSafe`/`RefUnwindSafe`; wrap them in `AssertUnwindSafe` if you need that.
+failure to build the HTTP client, and none of the variants added in #192 is transient. `is_transient()` is true for
+transport failures, timeouts and the HTTP statuses 408, 429 and 5xx only; 400, 403 and other 4xx statuses are terminal
+(#206). The struct-like variants (`TruncatedRecord`, `InvalidRecordSize`, `InvalidIdentifier`, `InvalidVolumeIndex`,
+`S3GetObject`) are `#[non_exhaustive]`, so add `..` to patterns that list their fields (#206). `Error` and `AwsError` no
+longer implement `UnwindSafe`/`RefUnwindSafe`; wrap them in `AssertUnwindSafe` if you need that.
 
 ```rust
 // 1.0.0-rc.7
@@ -462,6 +467,23 @@ runtime's sleep function (#161).
   they agree for well-formed files, and a missing ICAO no longer produces `[0, 0, 0, 0]`.
 - **`File::records()` returns `Error::TruncatedRecord`** instead of panicking on data shorter than the 24-byte volume
   header (#171).
+- **Record decompression is idempotent** (#206): `Record::decompress` returns an uncompressed record unchanged, so drop
+  any `compressed()` check or `UncompressedData` arm around it. `CompressedData` is `CompressedRecord`.
+- **`Record::radials()` is all-or-nothing** (#206): one radial that fails to convert fails the record, and a legacy
+  volume is one record. `Record::iter_radials()` yields one `Result<Radial>` per radar data message for lenient
+  callers.
+- **Real-time instants are `DateTime<Utc>`** (#206): `ChunkIdentifier::new` takes the date-time prefix as
+  `DateTime<Utc>` (`naive.and_utc()`), and `date_time_prefix()` and `volume()` return values, so drop the `*` or `&`
+  around them. `download_chunk(&id)` drops the site argument; the identifier carries it. `VolumeIndex::as_number()`
+  is `number()`, matching the other `number()` accessors.
+- **`ChunkType` is `#[non_exhaustive]`** (#206): add a wildcard arm. `list_chunks_in_volume` skips, with a `log`
+  warning, keys that do not parse as chunk names, so one odd key no longer fails `get_latest_volume`, `ChunkIterator`
+  or `chunk_stream`.
+- **`ChunkIterator::from_chunk` iterates** (#206): its first `try_next` downloads the current volume's Start chunk to
+  learn the VCP (not yielded), then returns the next chunk; if the Start chunk is gone or has no VCP, it continues with
+  the next volume.
+- **Native HTTP timeouts** (#206): requests fail with a transient transport error after 30 s without a connection, 60 s
+  without response bytes, or 300 s in total. wasm32 builds use the browser's limits.
 
 ### nexrad-process from 1.0.0-rc.1
 
@@ -648,7 +670,8 @@ match nexrad::load_file(path) {
 **I/O entry points** (#195). `download_latest(site)` downloads the newest archived volume; for the last volume of a
 date, `list_scans(site, date)` and `download` the last identifier. `download_at` returns the volume that started at
 most 15 minutes before `datetime`, searching the previous UTC date when `datetime` precedes the date's first volume,
-and `Error::NoScanAt` otherwise.
+and `Error::NoScanAt` otherwise. `download_at` takes a `DateTime<Utc>` (#206); convert a `NaiveDateTime` you
+know to be UTC with `.and_utc()`.
 
 ### Serialized data
 
@@ -786,8 +809,8 @@ requirement, so they work on any async runtime and build for `wasm32`. Real-time
 | `ChunkIdentifier::date_time()` | `upload_date_time()`; `date_time_prefix()` for the time encoded in the name |
 | `ChunkIdentifier::sequence() -> Option<usize>`, `chunk_type() -> Option<ChunkType>` | Return `usize` and `ChunkType` |
 | `ChunkIdentifier::with_sequence(n)`, `next_chunk()`, `name_prefix()` | `with_sequence(n, chunk_type)`; sequencing is handled by `ChunkIterator` and `chunk_stream` |
-| `download_chunk(site, &id) -> Result<(ChunkIdentifier, Chunk)>` | `-> Result<DownloadedChunk>` |
-| `result::Error::{FileError, CompressedDataError, UncompressedDataError, AWS}` | `Error::{Io, CompressedData, UncompressedData, Aws}` |
+| `download_chunk(site, &id) -> Result<(ChunkIdentifier, Chunk)>` | `download_chunk(&id) -> Result<DownloadedChunk>` |
+| `result::Error::{FileError, CompressedDataError, UncompressedDataError, AWS}` | `Error::{Io, CompressedRecord, Aws}`; `Record::decompress` returns an uncompressed record unchanged |
 | `result::Error::{DeserializationError, DecompressionError}` | Removed |
 | `result::aws::AWSError::*Error` variants (`S3ListObjectsError`, `DateTimeError`, ...) | `AwsError::*` without the suffix (`S3ListObjects`, `DateTime`, ...); `PollingAsyncError` removed |
 
@@ -1226,7 +1249,7 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `MessageType::RPGClutterCensorZones`, `RPGRequestForData` | `ClutterCensorZones`, `RequestForData` | #191 |
 | `MessageType::RDALoopBackTest`, `RPGLoopBackTest` | `RdaLoopbackTest`, `RpgLoopbackTest` | #191 |
 | `MessageContents::VolumeCoveragePattern` | `RdaVolumeCoveragePattern` (`MessageType` keeps `RdaVolumeCoveragePattern`, type 5, apart from `RpgVolumeCoveragePattern`, type 7) | #191 |
-| `MessageType::Spare1` (14), `ReservedFAARMSOnly1..5` (16, 17, 24, 25, 26), `Reserved1..5` (20–23, 29) | `MessageType::Reserved(u8)` holding the type number | #166 |
+| `MessageType::Spare1` (14), `ReservedFAARMSOnly1..5` (16, 17, 24, 25, 26), `Reserved1..5` (20–23, 29) | `MessageType::Reserved(u8)` holding the type number; 29 is `MessageType::ModelData` | #166, #206 |
 | `MessageType` with `#[repr(u8)]` discriminants | No discriminants; `number()` replaces `as u8`, `from_number(u8)`; `#[non_exhaustive]` | #155, #166 |
 | `MessageContents::RDAStatusData`, `RDAControlCommands`, `RDAPRFData`, `RDALogData`, `RDAAdaptationData` | `RdaStatusData`, `RdaControlCommands`, `RdaPrfData`, `RdaLogData`, `RdaAdaptationData`; `#[non_exhaustive]` | #155, #160 |
 | `RedundantChannel::ORDASingleChannel`, `ORDARedundantChannel1`, `ORDARedundantChannel2` | `OrdaSingleChannel`, `OrdaRedundantChannel1`, `OrdaRedundantChannel2`; `#[non_exhaustive]` | #155, #160 |
@@ -1359,7 +1382,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `aws::archive::download_file(Identifier)` | `download_file(&Identifier)` | #171 |
 | `aws::archive::Identifier::new(String) -> Identifier` | `Identifier::parse(&str) -> Result<Identifier>`, `impl FromStr` | #192 |
 | `aws::archive::Identifier::{site() -> Option<&str>, date_time() -> Option<DateTime<Utc>>}` | `site() -> &str`, `date_time() -> DateTime<Utc>` | #192 |
-| (new) | `aws::archive::Identifier::{version, is_metadata, is_gzip}()`, `Display`, `Debug`; `aws::archive::list_files_with_sizes`, `ListedFile` | #186, #192 |
+| (new) | `aws::archive::Identifier::{version, is_model_data, is_gzip}()`, `Display`, `Debug`; `aws::archive::list_files_with_sizes`, `ListedFile` | #186, #192, #206 |
 | `aws::archive::list_files` returning every object | Volume files only | #192 |
 | `aws::realtime::VolumeIndex::new(usize) -> VolumeIndex` | `new(usize) -> Result<VolumeIndex>` | #192 |
 | `aws::realtime::list_chunks_in_volume(&str, VolumeIndex, usize)` | `list_chunks_in_volume(&str, VolumeIndex)` | #149, #192 |
@@ -1373,7 +1396,17 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `aws::realtime::ChunkIteratorInit`, `LatestVolumeResult` | `#[non_exhaustive]` | #167 |
 | `aws::realtime::assemble_volume<'a>(impl IntoIterator<Item = Chunk<'a>>)` | `assemble_volume(impl IntoIterator<Item = Chunk>)` | #167 |
 | `aws::realtime::chunk_stream(PollConfig)` | `chunk_stream(PollConfig, S) where S: Fn(Duration) -> F, F: Future<Output = ()>`, for example `\|d\| tokio::time::sleep(d)` | #161 |
-| `aws::realtime::download_chunk<'a>(&str, &ChunkIdentifier) -> Result<(ChunkIdentifier, Chunk<'a>)>` | `download_chunk(&str, &ChunkIdentifier) -> Result<DownloadedChunk>`; read `d.identifier`, `d.chunk` | #167 |
+| `aws::realtime::download_chunk<'a>(&str, &ChunkIdentifier) -> Result<(ChunkIdentifier, Chunk<'a>)>` | `download_chunk(&ChunkIdentifier) -> Result<DownloadedChunk>`; read `d.identifier`, `d.chunk` | #167, #206 |
+| `aws::realtime::ChunkIdentifier::new(.., NaiveDateTime, ..)` | `new(.., DateTime<Utc>, ..)`; `naive.and_utc()` converts, and fractional seconds are dropped | #206 |
+| `aws::realtime::ChunkIdentifier::date_time_prefix() -> &NaiveDateTime`, `volume() -> &VolumeIndex` | `date_time_prefix() -> DateTime<Utc>`, `volume() -> VolumeIndex` | #206 |
+| `aws::realtime::VolumeIndex::as_number() -> usize` | `number() -> usize` | #206 |
+| `aws::realtime::ChunkType` | `#[non_exhaustive]` | #206 |
+| `aws::realtime::list_chunks_in_volume` failing on a key that does not parse | Skips the key with a `log` warning | #206 |
+| `aws::realtime::ChunkIterator::from_chunk(..)` whose `try_next` failed with `FailedToDetermineNextChunk` | The first `try_next` loads the VCP from the current volume's Start chunk, then returns the next chunk | #206 |
+| `result::Error::UncompressedData` from `Record::decompress` on an uncompressed record | Removed; the record is returned unchanged | #206 |
+| `result::Error::CompressedData` | `Error::CompressedRecord` | #206 |
+| `Error::{TruncatedRecord, InvalidRecordSize}`, `AwsError::{InvalidIdentifier, InvalidVolumeIndex, S3GetObject}` | `#[non_exhaustive]` variants: patterns need `..` | #206 |
+| (new) | `volume::Record::iter_radials() -> RadialIter`, one `Result<Radial>` per radar data message (feature `model`) | #206 |
 | `aws::realtime::ChunkIdentifier::new(String, ..)`, `from_name(String, VolumeIndex, String, ..)` | `new(impl Into<String>, ..)`, `from_name(impl Into<String>, VolumeIndex, impl Into<String>, ..)` | #167 |
 | `aws::realtime::ChunkIdentifier::next_chunk(&ElevationChunkMapper)`, `NextChunk::{Sequence, Volume}` | Removed; `ChunkIterator` and `chunk_stream` sequence chunks, and `ChunkIdentifier::with_sequence(usize, ChunkType)` names a sibling chunk | #167 |
 | `aws::realtime::ChunkIterator::start_with_policies(&str, RetryPolicy, RetryPolicy)` | `start_with(PollConfig::new(site).with_download_policy(..).with_discovery_policy(..))` | #167 |
@@ -1481,7 +1514,8 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `download(Identifier)` | `download(&Identifier)` | #176 |
 | `load(&[u8])` | `load(Vec<u8>)` | #195 |
 | `download_latest(&str, NaiveDate)` | `download_latest(&str)`; for a given date, `list_scans` then `download` | #195 |
-| `download_at` miss: `Error::NoDataAvailable` | `Error::NoScanAt { site, datetime }`; the previous UTC date is searched too | #195 |
+| `download_at(&str, NaiveDateTime)` | `download_at(&str, DateTime<Utc>)`; `naive.and_utc()` converts | #206 |
+| `download_at` miss: `Error::NoDataAvailable` | `Error::NoScanAt { site, datetime: DateTime<Utc> }`; the previous UTC date is searched too | #195, #206 |
 | `stream(&str)` | `stream(&str, S) where S: Fn(Duration) -> F, F: Future<Output = ()>` | #161 |
 | (new) | `stream_with(PollConfig, S)`, `stream_scans(&str, S)`, `stream_scans_with(PollConfig, S)` | #195 |
 | (your own `chrono` dependency) | `nexrad::chrono` (feature `chrono`, implied by `data`) | #176, #204 |

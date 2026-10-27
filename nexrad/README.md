@@ -65,8 +65,8 @@ Access sub-crate APIs through module re-exports:
 - `nexrad::render` — Visualization (`render_sweep`, color scales, `RenderOptions`)
 
 `nexrad::chrono` re-exports `chrono` (with the `chrono` feature, implied by `data`) because
-`list_scans` and `download_at` take `NaiveDate`/`NaiveDateTime`, so you don't need a separate
-`chrono` dependency to call them. The real-time streams implement `futures_core::Stream`; add
+`list_scans` takes a `NaiveDate` (a UTC calendar date) and `download_at` a `DateTime<Utc>`, so you
+don't need a separate `chrono` dependency to call them. The real-time streams implement `futures_core::Stream`; add
 `futures-util` (or `futures`) to your own dependencies for `StreamExt::next`.
 
 Helpers that only need model types live on those types: `sweep.field(product)`,

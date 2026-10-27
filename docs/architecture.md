@@ -354,7 +354,11 @@ serializes.
 
 Non-exhaustive structs and enum variants (fields may be added in minor releases, so code outside the defining crate
 cannot construct them with a literal and must use `..` in struct patterns): `nexrad_model::meta::registry::SiteEntry`,
-`nexrad_render::PointQuery`, and the `Projection::Polar`, `Geographic` and `Vertical` variants.
+`nexrad_render::PointQuery`, the `Projection::Polar`, `Geographic` and `Vertical` variants, and every struct-like
+variant of `nexrad_data`'s `Error` and `AwsError` (such as `AwsError::S3GetObject { status, body }`).
+
+`nexrad_data::aws::realtime::ChunkType` is non-exhaustive as well: the Archive II ICD defines a fourth LDM key type,
+`M` (Model Data), that the real-time bucket does not use today.
 
 The ICD code enums in the `nexrad-decode` message modules that carry an `Unknown(n)` or `Reserved(n)` variant (the
 status, mode and code enums of the RDA status, clutter, radar data and VCP messages) are also non-exhaustive, as are
@@ -363,8 +367,8 @@ An `Unknown(n)` or `Reserved(n)` value may be promoted to a named variant in a m
 code; code that needs a stable result across releases should compare the raw code (`number()` or the `*_raw()`
 accessor) rather than match on `Unknown(n)`.
 
-Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue`,
-`GateStatus` and `ChunkType`. Adding a variant to an exhaustive enum is a breaking change and is reserved for a major
+Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue` and
+`GateStatus`. Adding a variant to an exhaustive enum is a breaking change and is reserved for a major
 release.
 
 ## Versioning and Releases

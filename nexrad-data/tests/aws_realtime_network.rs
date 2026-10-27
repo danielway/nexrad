@@ -56,8 +56,8 @@ async fn test_get_latest_volume_from_hint() {
     assert!(
         hinted == volume || hinted == volume.next(),
         "Expected {} or its successor, got {}",
-        volume.as_number(),
-        hinted.as_number()
+        volume.number(),
+        hinted.number()
     );
     assert!(
         from_hint.calls >= 2 && from_hint.calls <= 3,
@@ -78,7 +78,7 @@ async fn test_get_latest_volume_different_sites() {
         let latest = result.unwrap();
         if let Some(volume) = latest.volume {
             // Volume should be in valid range
-            assert!(volume.as_number() >= 1 && volume.as_number() <= 999);
+            assert!(volume.number() >= 1 && volume.number() <= 999);
         }
     }
 }
@@ -111,7 +111,7 @@ async fn test_list_chunks_in_volume_basic() {
         // All chunks should be for the requested site and volume
         for chunk in &chunks {
             assert_eq!(chunk.site(), site);
-            assert_eq!(chunk.volume(), &volume);
+            assert_eq!(chunk.volume(), volume);
         }
 
         // Chunks should be ordered by sequence
@@ -194,7 +194,7 @@ async fn test_download_chunk_basic() {
 
     // Download the first chunk
     let first_chunk_id = &chunks[0];
-    let download_result = realtime::download_chunk(site, first_chunk_id).await;
+    let download_result = realtime::download_chunk(first_chunk_id).await;
 
     assert!(
         download_result.is_ok(),
@@ -208,7 +208,7 @@ async fn test_download_chunk_basic() {
 
     // Verify chunk identifier matches
     assert_eq!(returned_chunk_id.site(), site);
-    assert_eq!(returned_chunk_id.volume(), &volume);
+    assert_eq!(returned_chunk_id.volume(), volume);
     assert_eq!(returned_chunk_id.sequence(), first_chunk_id.sequence());
 
     // Verify chunk has data
@@ -251,7 +251,7 @@ async fn test_download_chunk_has_upload_time() {
 
     // Download a chunk
     let chunk_id = &chunks[0];
-    let download_result = realtime::download_chunk(site, chunk_id).await;
+    let download_result = realtime::download_chunk(chunk_id).await;
     assert!(download_result.is_ok());
 
     let returned_chunk_id = download_result.unwrap().identifier;
@@ -273,13 +273,15 @@ async fn test_download_nonexistent_chunk() {
     let nonexistent_chunk = ChunkIdentifier::new(
         site.to_string(),
         VolumeIndex::new(999).unwrap(),
-        NaiveDateTime::parse_from_str("20990101_000000", "%Y%m%d_%H%M%S").unwrap(),
+        NaiveDateTime::parse_from_str("20990101_000000", "%Y%m%d_%H%M%S")
+            .unwrap()
+            .and_utc(),
         1,
         ChunkType::Start,
         None,
     );
 
-    let result = realtime::download_chunk(site, &nonexistent_chunk).await;
+    let result = realtime::download_chunk(&nonexistent_chunk).await;
 
     // Should return an error for non-existent chunk
     assert!(result.is_err(), "Expected error for non-existent chunk");
@@ -298,7 +300,7 @@ async fn test_complete_workflow() {
     assert!(latest.volume.is_some());
 
     let volume = latest.volume.unwrap();
-    println!("Latest volume for {}: {}", site, volume.as_number());
+    println!("Latest volume for {}: {}", site, volume.number());
 
     // Step 2: List chunks in that volume
     let chunks_result = realtime::list_chunks_in_volume(site, volume).await;
@@ -306,7 +308,7 @@ async fn test_complete_workflow() {
     let chunks = chunks_result.unwrap();
 
     if chunks.is_empty() {
-        println!("No chunks found in volume {}", volume.as_number());
+        println!("No chunks found in volume {}", volume.number());
         return;
     }
 
@@ -314,7 +316,7 @@ async fn test_complete_workflow() {
 
     // Step 3: Download the first chunk
     let first_chunk = &chunks[0];
-    let download_result = realtime::download_chunk(site, first_chunk).await;
+    let download_result = realtime::download_chunk(first_chunk).await;
     assert!(download_result.is_ok());
 
     let downloaded = download_result.unwrap();
@@ -330,7 +332,7 @@ async fn test_complete_workflow() {
     // Verify the chunk is valid
     assert!(!chunk.data().is_empty());
     assert_eq!(chunk_id.site(), site);
-    assert_eq!(chunk_id.volume(), &volume);
+    assert_eq!(chunk_id.volume(), volume);
 }
 
 #[tokio::test]
@@ -408,11 +410,11 @@ fn test_volume_index_boundaries() {
     let vol_min = VolumeIndex::new(1).unwrap();
     let vol_max = VolumeIndex::new(999).unwrap();
 
-    assert_eq!(vol_min.as_number(), 1);
-    assert_eq!(vol_max.as_number(), 999);
+    assert_eq!(vol_min.number(), 1);
+    assert_eq!(vol_max.number(), 999);
 
     // Test wraparound
-    assert_eq!(vol_max.next().as_number(), 1);
+    assert_eq!(vol_max.next().number(), 1);
 }
 
 #[tokio::test]
@@ -439,7 +441,7 @@ async fn test_download_intermediate_and_end_chunks() {
 
     // Download a few chunks of different types
     for chunk_id in chunks.iter().take(3) {
-        let download_result = realtime::download_chunk(site, chunk_id).await;
+        let download_result = realtime::download_chunk(chunk_id).await;
         assert!(
             download_result.is_ok(),
             "Failed to download chunk sequence {}",

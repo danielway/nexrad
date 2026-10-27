@@ -1155,6 +1155,7 @@ impl App {
                 MessageType::ClutterFilterBypassMap => "Clutter Bypass",
                 MessageType::ClutterFilterMap => "Clutter Map",
                 MessageType::RdaAdaptationData => "Adaptation",
+                MessageType::ModelData => "Model Data",
                 MessageType::RdaPrfData => "PRF",
                 MessageType::RdaLogData => "Log",
                 _ => "Other",

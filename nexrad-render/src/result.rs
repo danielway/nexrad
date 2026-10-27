@@ -49,7 +49,11 @@ pub enum Error {
     /// [`RenderOptions::with_coord_system`](crate::RenderOptions::with_coord_system).
     #[error("rendering into a geographic extent requires a coordinate system")]
     MissingCoordinateSystem,
-    /// An error from the [`image`] crate, such as failing to encode or save an image.
-    #[error("image error")]
-    Image(#[from] image::ImageError),
+    /// Writing an encoded image failed, for example because the output file could not
+    /// be created.
+    #[error("I/O error")]
+    Io(#[from] std::io::Error),
+    /// The image could not be encoded. The source is the encoder's error.
+    #[error("error encoding image")]
+    Encode(#[source] Box<dyn std::error::Error + Send + Sync + 'static>),
 }

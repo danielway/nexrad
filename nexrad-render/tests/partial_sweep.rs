@@ -52,18 +52,15 @@ fn create_partial_sweep(
 }
 
 /// Renders reflectivity from the given radials through `SweepField` and `render_sweep`.
-fn render(radials: &[Radial], options: &RenderOptions) -> nexrad_render::RgbaImage {
+fn render(radials: &[Radial], options: &RenderOptions) -> nexrad_render::RenderResult {
     let field = SweepField::from_radials(radials, Product::Reflectivity).expect("field is created");
     let scale = ColorScale::from(reflectivity_scale());
-    render_sweep(&field, &scale, options)
-        .expect("renders successfully")
-        .into_image()
+    render_sweep(&field, &scale, options).expect("renders successfully")
 }
 
 /// Get the pixel color at a specific (x, y) coordinate from the image.
-fn get_pixel(image: &nexrad_render::RgbaImage, x: u32, y: u32) -> [u8; 4] {
-    let pixel = image.get_pixel(x, y);
-    [pixel[0], pixel[1], pixel[2], pixel[3]]
+fn get_pixel(result: &nexrad_render::RenderResult, x: u32, y: u32) -> [u8; 4] {
+    result.pixel(x, y).expect("pixel is inside the image")
 }
 
 /// Convert pixel coordinates to azimuth angle (0 = North, clockwise).

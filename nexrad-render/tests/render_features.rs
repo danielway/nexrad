@@ -4,7 +4,6 @@
 use nexrad_model::data::{CartesianField, GateStatus, Product, SweepField, VerticalField};
 use nexrad_model::geo::{GeoExtent, GeoPoint, PolarPoint, RadarCoordinateSystem};
 use nexrad_model::meta::Site;
-use nexrad_render::image::ImageFormat;
 use nexrad_render::{
     default_scale, render_cartesian, render_sweep, render_vertical, Color, ColorLookupTable,
     ColorScale, ColorStop, ContinuousColorScale, Error, Interpolation, Projection, RenderOptions,
@@ -51,8 +50,10 @@ fn reflectivity_color(scale: &ColorScale, value: f32) -> [u8; 4] {
         .color(value)
 }
 
-fn pixel(image: &nexrad_render::RgbaImage, x: f64, y: f64) -> [u8; 4] {
-    image.get_pixel(x as u32, y as u32).0
+fn pixel(result: &nexrad_render::RenderResult, x: f64, y: f64) -> [u8; 4] {
+    result
+        .pixel(x as u32, y as u32)
+        .expect("pixel is inside the image")
 }
 
 #[test]
@@ -73,21 +74,21 @@ fn status_colors_paint_non_valid_gates() {
 
     let meta = folded.metadata();
     let (x, y) = meta.polar_to_pixel(90.0, 150.0).expect("polar image");
-    assert_eq!(pixel(plain.image(), x, y), BACKGROUND);
-    assert_eq!(pixel(folded.image(), x, y), PURPLE);
+    assert_eq!(pixel(&plain, x, y), BACKGROUND);
+    assert_eq!(pixel(&folded, x, y), PURPLE);
 
     // Valid gates are unaffected by the status color.
     let valid = reflectivity_color(&scale, 20.0);
     let (x, y) = meta.polar_to_pixel(270.0, 150.0).expect("polar image");
-    assert_eq!(pixel(plain.image(), x, y), valid);
-    assert_eq!(pixel(folded.image(), x, y), valid);
+    assert_eq!(pixel(&plain, x, y), valid);
+    assert_eq!(pixel(&folded, x, y), valid);
 
     // Valid gates also keep their color with bilinear interpolation.
     let bilinear = options.with_interpolation(Interpolation::Bilinear);
     let smooth = render_sweep(&field, &scale, &bilinear).expect("renders");
-    assert_eq!(pixel(smooth.image(), x, y), valid);
+    assert_eq!(pixel(&smooth, x, y), valid);
     let (x, y) = meta.polar_to_pixel(90.0, 150.0).expect("polar image");
-    assert_eq!(pixel(smooth.image(), x, y), PURPLE);
+    assert_eq!(pixel(&smooth, x, y), PURPLE);
 }
 
 #[test]
@@ -110,9 +111,15 @@ fn status_colors_apply_to_grids() {
         .with_status_color(GateStatus::RangeFolded, Color::from_rgba8(PURPLE));
 
     let result = render_cartesian(&cartesian, &scale, &options).expect("renders");
-    assert_eq!(result.image().get_pixel(0, 0).0, PURPLE);
+    assert_eq!(
+        result.pixel(0, 0).expect("pixel is inside the image"),
+        PURPLE
+    );
     // NoData has no status color, so it stays background.
-    assert_eq!(result.image().get_pixel(3, 3).0, BACKGROUND);
+    assert_eq!(
+        result.pixel(3, 3).expect("pixel is inside the image"),
+        BACKGROUND
+    );
 }
 
 /// A continuous gradient so the lookup-table range is visible in the output.
@@ -149,8 +156,8 @@ fn value_range_defaults_to_the_product_range() {
     let field_range =
         render_sweep(&field, &scale, &options.with_value_range(100.0, 120.0)).expect("renders");
 
-    assert_eq!(default.image(), product.image());
-    assert_ne!(default.image(), field_range.image());
+    assert_eq!(default.pixels(), product.pixels());
+    assert_ne!(default.pixels(), field_range.pixels());
 }
 
 #[test]
@@ -203,10 +210,7 @@ fn sweep_renders_into_a_geographic_extent() {
         longitude: gate.longitude,
     };
     let (x, y) = meta.geo_to_pixel(&gate).expect("geographic image");
-    assert_eq!(
-        pixel(result.image(), x, y),
-        reflectivity_color(&scale, 60.0)
-    );
+    assert_eq!(pixel(&result, x, y), reflectivity_color(&scale, 60.0));
 
     // The opposite gate keeps the sweep's base value, and the corners are outside range.
     let (x2, y2) = meta
@@ -222,11 +226,11 @@ fn sweep_renders_into_a_geographic_extent() {
             }
         })
         .expect("geographic image");
+    assert_eq!(pixel(&result, x2, y2), reflectivity_color(&scale, 20.0));
     assert_eq!(
-        pixel(result.image(), x2, y2),
-        reflectivity_color(&scale, 20.0)
+        result.pixel(0, 0).expect("pixel is inside the image"),
+        BACKGROUND
     );
-    assert_eq!(result.image().get_pixel(0, 0).0, BACKGROUND);
 
     let query = meta.query_geo(&field, &gate).expect("inside the field");
     assert_eq!((query.value, query.status), (60.0, GateStatus::Valid));
@@ -257,10 +261,7 @@ fn geographic_sweep_render_supports_bilinear() {
             longitude: -96.5,
         })
         .expect("geographic image");
-    assert_eq!(
-        pixel(result.image(), x, y),
-        reflectivity_color(&scale, 20.0)
-    );
+    assert_eq!(pixel(&result, x, y), reflectivity_color(&scale, 20.0));
 }
 
 #[test]
@@ -287,7 +288,7 @@ fn full_range_sweep_renders_into_an_extent() {
     let scale = default_scale(Product::Reflectivity);
     let result = render_sweep(&field, &scale, &options).expect("renders");
     assert_eq!(
-        result.image().get_pixel(256, 256).0,
+        result.pixel(256, 256).expect("pixel is inside the image"),
         reflectivity_color(&scale, 30.0)
     );
 }
@@ -358,10 +359,7 @@ fn query_cartesian_reads_the_rendered_cell() {
         Some((0.0, GateStatus::NoData))
     );
     assert_eq!(meta.query_cartesian(&field, 41.0, 5.0), None);
-    assert_eq!(
-        pixel(result.image(), 35.0, 15.0),
-        reflectivity_color(&scale, 42.0)
-    );
+    assert_eq!(pixel(&result, 35.0, 15.0), reflectivity_color(&scale, 42.0));
 }
 
 #[test]
@@ -381,10 +379,7 @@ fn query_vertical_reads_the_rendered_cell() {
         meta.query_vertical(&field, x, y),
         Some((55.0, GateStatus::Valid))
     );
-    assert_eq!(
-        pixel(result.image(), x, y),
-        reflectivity_color(&scale, 55.0)
-    );
+    assert_eq!(pixel(&result, x, y), reflectivity_color(&scale, 55.0));
     assert_eq!(
         meta.query_vertical(&field, 5.0, 45.0),
         Some((0.0, GateStatus::NoData))
@@ -393,19 +388,69 @@ fn query_vertical_reads_the_rendered_cell() {
 }
 
 #[test]
-fn write_to_encodes_png() {
+fn write_png_round_trips_pixels() {
     let scale = default_scale(Product::Reflectivity);
     let result =
-        render_sweep(&coarse_sweep(), &scale, &RenderOptions::new(32, 32)).expect("renders");
+        render_sweep(&coarse_sweep(), &scale, &RenderOptions::new(32, 24)).expect("renders");
+    assert_eq!((result.width(), result.height()), (32, 24));
+    assert_eq!(result.pixels().len(), 32 * 24 * 4);
 
-    let mut png = Vec::new();
-    result
-        .write_to(&mut png, ImageFormat::Png)
-        .expect("encodes");
-    assert!(png.starts_with(&[0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n']));
+    let mut encoded = Vec::new();
+    result.write_png(&mut encoded).expect("encodes");
+    assert!(encoded.starts_with(&[0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n']));
 
-    let decoded = nexrad_render::image::load_from_memory_with_format(&png, ImageFormat::Png)
-        .expect("decodes")
-        .to_rgba8();
-    assert_eq!(&decoded, result.image());
+    let mut reader = png::Decoder::new(std::io::Cursor::new(&encoded))
+        .read_info()
+        .expect("reads header");
+    let mut decoded = vec![0; reader.output_buffer_size().expect("buffer size")];
+    let info = reader.next_frame(&mut decoded).expect("decodes");
+    assert_eq!((info.width, info.height), (32, 24));
+    assert_eq!(info.color_type, png::ColorType::Rgba);
+    assert_eq!(&decoded[..info.buffer_size()], result.pixels());
+}
+
+#[test]
+fn save_png_writes_a_file() {
+    let scale = default_scale(Product::Reflectivity);
+    let result =
+        render_sweep(&coarse_sweep(), &scale, &RenderOptions::new(16, 16)).expect("renders");
+    let path =
+        std::env::temp_dir().join(format!("nexrad-render-save-png-{}.png", std::process::id()));
+    result.save_png(&path).expect("saves");
+    let mut written = Vec::new();
+    result.write_png(&mut written).expect("encodes");
+    let saved = std::fs::read(&path).expect("reads back");
+    let _ = std::fs::remove_file(&path);
+    assert_eq!(saved, written);
+}
+
+#[test]
+fn save_png_reports_io_errors() {
+    let scale = default_scale(Product::Reflectivity);
+    let result = render_sweep(&coarse_sweep(), &scale, &RenderOptions::new(8, 8)).expect("renders");
+    let path = std::env::temp_dir()
+        .join("nexrad-render-no-such-directory")
+        .join("out.png");
+    assert!(matches!(result.save_png(&path), Err(Error::Io(_))));
+}
+
+#[test]
+fn pixel_is_none_outside_the_image() {
+    let scale = default_scale(Product::Reflectivity);
+    let result = render_sweep(&coarse_sweep(), &scale, &RenderOptions::new(8, 4)).expect("renders");
+    assert!(result.pixel(7, 3).is_some());
+    assert_eq!(result.pixel(8, 0), None);
+    assert_eq!(result.pixel(0, 4), None);
+}
+
+#[cfg(feature = "image")]
+#[test]
+fn into_rgba_image_keeps_pixels() {
+    let scale = default_scale(Product::Reflectivity);
+    let result =
+        render_sweep(&coarse_sweep(), &scale, &RenderOptions::new(16, 8)).expect("renders");
+    let pixels = result.pixels().to_vec();
+    let image = result.into_rgba_image();
+    assert_eq!((image.width(), image.height()), (16, 8));
+    assert_eq!(image.into_raw(), pixels);
 }

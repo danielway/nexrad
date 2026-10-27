@@ -70,7 +70,7 @@
 //! | `model` | Core data model types | | | Yes |
 //! | `decode` | Protocol decoding | `model` | zerocopy | Yes |
 //! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model` | bzip2 | Yes |
-//! | `render` | Visualization and rendering | `model` | image | Yes |
+//! | `render` | Visualization and rendering | `model` | png | Yes |
 //! | `process` | Radar data processing algorithms | `model` | | Yes |
 //! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) | `data`, `chrono` | reqwest, futures-util | Yes |
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
@@ -79,6 +79,11 @@
 //! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono | Yes |
 //! | `wasm` | All WASM-compatible features | `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, `chrono` | | Yes |
 //! | `full` | Enable all features (default) | `wasm`, `parallel` | | No |
+//! | `image` | `RenderResult::into_rgba_image` interop (opt-in, not in `full`; see below) | `render` | image | Yes |
+//!
+//! The `image` feature tracks the `image` crate's own 0.x releases and is excluded from the
+//! semver promise: a minor or patch release may move it to a newer, incompatible `image`
+//! version. Without it, rendered images are plain RGBA8 pixel buffers.
 //!
 //! The `aws` feature's TLS stack (rustls with the `aws-lc-rs` crypto provider) compiles C code,
 //! which needs a C compiler and, on Windows x86 targets, NASM.
@@ -252,7 +257,7 @@
 //! let color_scale = default_scale(Product::Reflectivity);
 //!
 //! let result = render_sweep(&field, &color_scale, &options)?;
-//! result.save("output.png")?;
+//! result.save_png("output.png")?;
 //! # Ok(())
 //! # }
 //! ```

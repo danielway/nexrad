@@ -1,10 +1,8 @@
 pub mod nexrad_render
-pub use nexrad_render::RgbaImage
-pub use nexrad_render::image
 pub mod nexrad_render::result
 #[non_exhaustive] pub enum nexrad_render::result::Error
 pub nexrad_render::result::Error::EmptyField
-pub nexrad_render::result::Error::Image(image::error::ImageError)
+pub nexrad_render::result::Error::Encode(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
 pub nexrad_render::result::Error::InvalidColorScale
 pub nexrad_render::result::Error::InvalidColorScale::reason: &'static str
 pub nexrad_render::result::Error::InvalidDimensions
@@ -14,9 +12,10 @@ pub nexrad_render::result::Error::InvalidRange::max: f32
 pub nexrad_render::result::Error::InvalidRange::min: f32
 pub nexrad_render::result::Error::InvalidTableSize
 pub nexrad_render::result::Error::InvalidTableSize::size: usize
+pub nexrad_render::result::Error::Io(core::io::error::Error)
 pub nexrad_render::result::Error::MissingCoordinateSystem
-impl core::convert::From<image::error::ImageError> for nexrad_render::result::Error
-pub fn nexrad_render::result::Error::from(image::error::ImageError) -> Self
+impl core::convert::From<core::io::error::Error> for nexrad_render::result::Error
+pub fn nexrad_render::result::Error::from(core::io::error::Error) -> Self
 impl core::error::Error for nexrad_render::result::Error
 pub fn nexrad_render::result::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
 impl core::fmt::Debug for nexrad_render::result::Error
@@ -53,7 +52,7 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_render::ColorScale
 impl core::panic::unwind_safe::UnwindSafe for nexrad_render::ColorScale
 #[non_exhaustive] pub enum nexrad_render::Error
 pub nexrad_render::Error::EmptyField
-pub nexrad_render::Error::Image(image::error::ImageError)
+pub nexrad_render::Error::Encode(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
 pub nexrad_render::Error::InvalidColorScale
 pub nexrad_render::Error::InvalidColorScale::reason: &'static str
 pub nexrad_render::Error::InvalidDimensions
@@ -63,9 +62,10 @@ pub nexrad_render::Error::InvalidRange::max: f32
 pub nexrad_render::Error::InvalidRange::min: f32
 pub nexrad_render::Error::InvalidTableSize
 pub nexrad_render::Error::InvalidTableSize::size: usize
+pub nexrad_render::Error::Io(core::io::error::Error)
 pub nexrad_render::Error::MissingCoordinateSystem
-impl core::convert::From<image::error::ImageError> for nexrad_render::result::Error
-pub fn nexrad_render::result::Error::from(image::error::ImageError) -> Self
+impl core::convert::From<core::io::error::Error> for nexrad_render::result::Error
+pub fn nexrad_render::result::Error::from(core::io::error::Error) -> Self
 impl core::error::Error for nexrad_render::result::Error
 pub fn nexrad_render::result::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
 impl core::fmt::Debug for nexrad_render::result::Error
@@ -331,11 +331,16 @@ impl core::panic::unwind_safe::RefUnwindSafe for nexrad_render::RenderOptions
 impl core::panic::unwind_safe::UnwindSafe for nexrad_render::RenderOptions
 pub struct nexrad_render::RenderResult
 impl nexrad_render::RenderResult
-pub fn nexrad_render::RenderResult::image(&self) -> &image::images::buffer::RgbaImage
-pub fn nexrad_render::RenderResult::into_image(self) -> image::images::buffer::RgbaImage
+pub fn nexrad_render::RenderResult::height(&self) -> u32
+pub fn nexrad_render::RenderResult::into_parts(self) -> (alloc::vec::Vec<u8>, nexrad_render::RenderMetadata)
+pub fn nexrad_render::RenderResult::into_pixels(self) -> alloc::vec::Vec<u8>
+pub fn nexrad_render::RenderResult::into_rgba_image(self) -> image::images::buffer::RgbaImage
 pub fn nexrad_render::RenderResult::metadata(&self) -> &nexrad_render::RenderMetadata
-pub fn nexrad_render::RenderResult::save<P: core::convert::AsRef<std::path::Path>>(&self, P) -> nexrad_render::result::Result<()>
-pub fn nexrad_render::RenderResult::write_to(&self, &mut impl core::io::write::Write, image::io::format::ImageFormat) -> nexrad_render::result::Result<()>
+pub fn nexrad_render::RenderResult::pixel(&self, u32, u32) -> core::option::Option<[u8; 4]>
+pub fn nexrad_render::RenderResult::pixels(&self) -> &[u8]
+pub fn nexrad_render::RenderResult::save_png<P: core::convert::AsRef<std::path::Path>>(&self, P) -> nexrad_render::result::Result<()>
+pub fn nexrad_render::RenderResult::width(&self) -> u32
+pub fn nexrad_render::RenderResult::write_png<W: core::io::write::Write>(&self, W) -> nexrad_render::result::Result<()>
 impl core::fmt::Debug for nexrad_render::RenderResult
 pub fn nexrad_render::RenderResult::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for nexrad_render::RenderResult

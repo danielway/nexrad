@@ -15,7 +15,7 @@ pub nexrad::result::Error::NoDataAvailable
 pub nexrad::result::Error::NoDataAvailable::date: chrono::naive::date::NaiveDate
 pub nexrad::result::Error::NoDataAvailable::site: alloc::string::String
 pub nexrad::result::Error::NoScanAt
-pub nexrad::result::Error::NoScanAt::datetime: chrono::naive::datetime::NaiveDateTime
+pub nexrad::result::Error::NoScanAt::datetime: chrono::datetime::DateTime<chrono::offset::utc::Utc>
 pub nexrad::result::Error::NoScanAt::site: alloc::string::String
 pub nexrad::result::Error::Process(nexrad_process::result::Error)
 pub nexrad::result::Error::Render(nexrad_render::result::Error)
@@ -54,7 +54,7 @@ pub nexrad::Error::NoDataAvailable
 pub nexrad::Error::NoDataAvailable::date: chrono::naive::date::NaiveDate
 pub nexrad::Error::NoDataAvailable::site: alloc::string::String
 pub nexrad::Error::NoScanAt
-pub nexrad::Error::NoScanAt::datetime: chrono::naive::datetime::NaiveDateTime
+pub nexrad::Error::NoScanAt::datetime: chrono::datetime::DateTime<chrono::offset::utc::Utc>
 pub nexrad::Error::NoScanAt::site: alloc::string::String
 pub nexrad::Error::Process(nexrad_process::result::Error)
 pub nexrad::Error::Render(nexrad_render::result::Error)
@@ -84,7 +84,7 @@ impl core::marker::UnsafeUnpin for nexrad::result::Error
 impl !core::panic::unwind_safe::RefUnwindSafe for nexrad::result::Error
 impl !core::panic::unwind_safe::UnwindSafe for nexrad::result::Error
 pub async fn nexrad::download(&nexrad_data::aws::archive::identifier::Identifier) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
-pub async fn nexrad::download_at(&str, chrono::naive::datetime::NaiveDateTime) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
+pub async fn nexrad::download_at(&str, chrono::datetime::DateTime<chrono::offset::utc::Utc>) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
 pub async fn nexrad::download_latest(&str) -> nexrad::result::Result<nexrad_model::data::scan::Scan>
 pub async fn nexrad::list_scans(&str, chrono::naive::date::NaiveDate) -> nexrad::result::Result<alloc::vec::Vec<nexrad_data::aws::archive::identifier::Identifier>>
 pub fn nexrad::load(alloc::vec::Vec<u8>) -> nexrad::result::Result<nexrad_model::data::scan::Scan>

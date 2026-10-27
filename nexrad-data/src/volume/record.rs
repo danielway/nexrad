@@ -50,18 +50,20 @@ impl<'a> Record<'a> {
 
     /// Decompresses this LDM record's data.
     ///
+    /// Returns a new record containing the decompressed data. If the record is not compressed,
+    /// returns an owned copy of it unchanged, as
+    /// [`File::decompress`](crate::volume::File::decompress) does for a file, so calling this on a
+    /// record of unknown state is safe.
+    ///
     /// # Errors
     ///
-    /// Returns [`Error::UncompressedData`](crate::result::Error::UncompressedData) if the record is
-    /// not compressed and [`Error::Io`](crate::result::Error::Io) if the bzip2 data cannot be
-    /// decompressed.
+    /// Returns [`Error::Io`](crate::result::Error::Io) if the bzip2 data cannot be decompressed.
     pub fn decompress(&self) -> crate::result::Result<Record<'static>> {
-        use crate::result::Error;
         use bzip2::read::BzDecoder;
         use std::io::Read;
 
         if !self.compressed() {
-            return Err(Error::UncompressedData);
+            return Ok(Record::new(self.data().to_vec()));
         }
 
         // Skip the four-byte record size prefix
@@ -81,7 +83,7 @@ impl<'a> Record<'a> {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::CompressedData`](crate::result::Error::CompressedData) if the record is
+    /// Returns [`Error::CompressedRecord`](crate::result::Error::CompressedRecord) if the record is
     /// still compressed, or [`Error::Decode`](crate::result::Error::Decode) with the error for the
     /// first message that cannot be decoded.
     pub fn messages(&self) -> crate::result::Result<Vec<nexrad_decode::messages::Message<'_>>> {
@@ -89,7 +91,7 @@ impl<'a> Record<'a> {
         use nexrad_decode::messages::decode_messages;
 
         if self.compressed() {
-            return Err(Error::CompressedData);
+            return Err(Error::CompressedRecord);
         }
 
         Ok(decode_messages(self.data())?)
@@ -103,6 +105,11 @@ impl<'a> Record<'a> {
     ///
     /// The record must be decompressed before calling this method.
     ///
+    /// Decoding is all-or-nothing: if any message fails to decode, or any radar data message fails
+    /// to convert to a radial, the call returns that first error and no radials. A legacy volume
+    /// is a single record, so one bad radial fails the whole volume here. To keep the radials that
+    /// do convert, use [`iter_radials`](Self::iter_radials).
+    ///
     /// # Errors
     ///
     /// Returns the errors of [`messages`](Self::messages), and
@@ -110,19 +117,87 @@ impl<'a> Record<'a> {
     /// to a radial.
     #[cfg(feature = "model")]
     pub fn radials(&self) -> crate::result::Result<Vec<nexrad_model::data::Radial>> {
-        use nexrad_decode::messages::MessageContents;
+        self.iter_radials().collect()
+    }
 
-        let mut radials = Vec::new();
-        for message in self.messages()? {
-            match message.into_contents() {
-                MessageContents::DigitalRadarData(m) => radials.push(m.into_radial()?),
-                MessageContents::DigitalRadarDataLegacy(m) => radials.push(m.into_radial()?),
-                _ => {}
-            }
+    /// Iterates over the radar radials contained in this LDM record, yielding one result per
+    /// radar data message.
+    ///
+    /// Like [`radials`](Self::radials), this converts digital radar data messages (types 31 and 1)
+    /// and ignores other messages, but it reports failures per item, so a caller can skip a
+    /// radial that does not convert and keep the rest:
+    ///
+    /// - A radar data message that decodes but cannot be converted to a radial yields
+    ///   [`Error::Decode`](crate::result::Error::Decode), and iteration continues with the next
+    ///   message.
+    /// - A message that cannot be decoded at all yields
+    ///   [`Error::Decode`](crate::result::Error::Decode) and ends the iteration, since it gives no
+    ///   reliable offset for the next message (see [`nexrad_decode::iter_messages`]).
+    /// - A record that is still compressed yields a single
+    ///   [`Error::CompressedRecord`](crate::result::Error::CompressedRecord).
+    ///
+    /// Collecting the iterator into a `Result<Vec<_>>` is equivalent to [`radials`](Self::radials).
+    ///
+    /// ```no_run
+    /// # fn example(record: &nexrad_data::volume::Record<'_>) {
+    /// let radials: Vec<_> = record
+    ///     .iter_radials()
+    ///     .filter_map(|radial| radial.inspect_err(|error| eprintln!("{error}")).ok())
+    ///     .collect();
+    /// # }
+    /// ```
+    #[cfg(feature = "model")]
+    pub fn iter_radials(&self) -> RadialIter<'_> {
+        let compressed = self.compressed();
+        RadialIter {
+            messages: (!compressed).then(|| nexrad_decode::iter_messages(self.data())),
+            compressed,
         }
-        Ok(radials)
     }
 }
+
+/// An iterator over the radials in an LDM record, created by [`Record::iter_radials`].
+///
+/// Yields one result per radar data message; see [`Record::iter_radials`] for when it continues
+/// after an error and when it stops.
+#[cfg(feature = "model")]
+#[derive(Debug, Clone)]
+pub struct RadialIter<'a> {
+    messages: Option<nexrad_decode::messages::MessageIter<'a>>,
+    compressed: bool,
+}
+
+#[cfg(feature = "model")]
+impl Iterator for RadialIter<'_> {
+    type Item = crate::result::Result<nexrad_model::data::Radial>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        use nexrad_decode::messages::MessageContents;
+
+        if self.compressed {
+            self.compressed = false;
+            return Some(Err(crate::result::Error::CompressedRecord));
+        }
+
+        let messages = self.messages.as_mut()?;
+        for message in messages.by_ref() {
+            let message = match message {
+                Ok(message) => message,
+                Err(error) => return Some(Err(error.into())),
+            };
+            let radial = match message.into_contents() {
+                MessageContents::DigitalRadarData(m) => m.into_radial(),
+                MessageContents::DigitalRadarDataLegacy(m) => m.into_radial(),
+                _ => continue,
+            };
+            return Some(radial.map_err(Into::into));
+        }
+        None
+    }
+}
+
+#[cfg(feature = "model")]
+impl std::iter::FusedIterator for RadialIter<'_> {}
 
 impl Debug for Record<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -154,6 +154,7 @@ fn format_message_type(msg_type: &MessageType) -> &'static str {
         MessageType::ClutterFilterBypassMap => "RDA Clutter Bypass",
         MessageType::ClutterFilterMap => "RDA Clutter Map",
         MessageType::RdaAdaptationData => "RDA Adaptation",
+        MessageType::ModelData => "Model Data",
         MessageType::Reserved(_) => "Reserved",
         MessageType::DigitalRadarData => "Digital Radar Data",
         MessageType::RdaPrfData => "RDA PRF",

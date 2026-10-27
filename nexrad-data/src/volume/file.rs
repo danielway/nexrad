@@ -19,11 +19,11 @@ const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
 ///   unchanged. `scan` and [`coverage_pattern_message`](Self::coverage_pattern_message) inflate
 ///   a gzip-wrapped file themselves.
 /// - **Record (bzip2).** Each LDM [`Record`] is normally bzip2-compressed. While
-///   [`Record::compressed`] is true, [`Record::messages`] and `Record::radials` return
-///   [`Error::CompressedData`](crate::result::Error::CompressedData).
-///   [`Record::decompress`] inflates the record, and returns
-///   [`Error::UncompressedData`](crate::result::Error::UncompressedData) for a record that is
-///   not compressed. `scan` and
+///   [`Record::compressed`] is true, [`Record::messages`], `Record::radials` and
+///   `Record::iter_radials` return
+///   [`Error::CompressedRecord`](crate::result::Error::CompressedRecord).
+///   [`Record::decompress`] inflates the record, and returns an uncompressed record
+///   unchanged. `scan` and
 ///   [`coverage_pattern_message`](Self::coverage_pattern_message) decompress records
 ///   themselves.
 #[derive(Clone, PartialEq, Eq, Hash)]

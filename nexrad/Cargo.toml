@@ -37,8 +37,11 @@ parallel = ["data", "nexrad-data/parallel"]
 aws = ["data", "nexrad-data/aws", "dep:futures-util"]
 # `aws` with rustls and the aws-lc-rs crypto provider as the TLS backend
 aws-rustls = ["aws", "nexrad-data/aws-rustls"]
+# `RenderResult::into_rgba_image`; tracks the `image` crate's 0.x releases and is excluded
+# from the semver promise, so it is not part of `full`
+image = ["render", "nexrad-render/image"]
 
-# Every feature. `parallel` does not build for wasm32-unknown-unknown.
+# Every feature except `image`. `parallel` does not build for wasm32-unknown-unknown.
 full = [
     "model",
     "decode",

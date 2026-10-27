@@ -3,7 +3,7 @@
 use crate::options::Palette;
 use crate::{
     ColorScale, Error, Interpolation, Projection, RenderMetadata, RenderOptions, RenderResult,
-    Result, RgbaImage,
+    Result,
 };
 use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 
@@ -49,7 +49,7 @@ use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 /// // Render the cartesian field
 /// let scale = default_scale(Product::Reflectivity);
 /// let result = render_cartesian(&cartesian, &scale, &RenderOptions::new(800, 800))?;
-/// result.save("composite_reflectivity.png")?;
+/// result.save_png("composite_reflectivity.png")?;
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub fn render_cartesian(
@@ -58,7 +58,7 @@ pub fn render_cartesian(
     options: &RenderOptions,
 ) -> Result<RenderResult> {
     let palette = options.palette(color_scale, None, field.value_range())?;
-    let image = render_grid(
+    let pixels = render_grid(
         field.width(),
         field.height(),
         |row, col| field.get(row, col),
@@ -67,15 +67,16 @@ pub fn render_cartesian(
     )?;
 
     let extent = *field.extent();
+    let (width, height) = options.size;
     let metadata = RenderMetadata::new(
-        image.width(),
-        image.height(),
+        width,
+        height,
         Projection::Geographic { extent },
         Some(extent),
         options.coord_system.clone(),
     );
 
-    Ok(RenderResult::new(image, metadata))
+    Ok(RenderResult::new(pixels, metadata))
 }
 
 /// Renders a [`VerticalField`] (RHI / cross-section display) to an image with metadata.
@@ -123,7 +124,7 @@ pub fn render_cartesian(
 /// // Render the vertical field
 /// let scale = default_scale(Product::Reflectivity);
 /// let result = render_vertical(&vertical, &scale, &RenderOptions::new(1200, 600))?;
-/// result.save("vertical_cross_section.png")?;
+/// result.save_png("vertical_cross_section.png")?;
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub fn render_vertical(
@@ -132,7 +133,7 @@ pub fn render_vertical(
     options: &RenderOptions,
 ) -> Result<RenderResult> {
     let palette = options.palette(color_scale, None, field.value_range())?;
-    let image = render_grid(
+    let pixels = render_grid(
         field.width(),
         field.height(),
         |row, col| field.get(row, col),
@@ -144,15 +145,16 @@ pub fn render_vertical(
         distance_range_km: field.distance_range_km(),
         altitude_range_meters: field.altitude_range_meters(),
     };
+    let (width, height) = options.size;
     let metadata = RenderMetadata::new(
-        image.width(),
-        image.height(),
+        width,
+        height,
         projection,
         None,
         options.coord_system.clone(),
     );
 
-    Ok(RenderResult::new(image, metadata))
+    Ok(RenderResult::new(pixels, metadata))
 }
 
 /// Rasterise a row-major grid of `field_width` x `field_height` cells, stretching it
@@ -163,10 +165,9 @@ fn render_grid(
     get: impl Fn(usize, usize) -> Option<(f32, GateStatus)>,
     palette: &Palette,
     options: &RenderOptions,
-) -> Result<RgbaImage> {
-    let (image_width, image_height) = options.size;
+) -> Result<Vec<u8>> {
     let mut buffer = options.background_buffer()?;
-    let (width, height) = (image_width as usize, image_height as usize);
+    let (width, height) = (options.size.0 as usize, options.size.1 as usize);
 
     if field_width == 0 || field_height == 0 {
         return Err(Error::EmptyField);
@@ -211,7 +212,7 @@ fn render_grid(
         }
     }
 
-    RgbaImage::from_raw(image_width, image_height, buffer).ok_or(Error::InvalidDimensions)
+    Ok(buffer)
 }
 
 /// Sample a row-major grid using bilinear interpolation in data-value space.

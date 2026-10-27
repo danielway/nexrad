@@ -1,23 +1,38 @@
 //! Render result types with metadata for geographic placement and data inspection.
 //!
-//! The [`RenderResult`] type bundles a rendered image with all the metadata a consuming
-//! application needs to accurately place it on a map, draw overlays, and inspect data values.
+//! The [`RenderResult`] type bundles a rendered RGBA pixel buffer with all the metadata a
+//! consuming application needs to accurately place it on a map, draw overlays, and inspect
+//! data values.
 
-use crate::RgbaImage;
 use nexrad_model::data::{CartesianField, GateStatus, SweepField, VerticalField};
 use nexrad_model::geo::{GeoExtent, GeoPoint, GeoPoint3D, PolarPoint, RadarCoordinateSystem};
-use std::io::{Cursor, Write};
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use std::path::Path;
 
 /// The result of a render operation.
 ///
-/// Bundles the rendered RGBA image with metadata describing the pixel-to-coordinate
-/// mapping, enabling a consuming application to accurately place the image on a map,
-/// draw overlays, and query data values.
-#[derive(Debug)]
+/// Bundles the rendered pixels (8-bit RGBA, see [`pixels`](Self::pixels)) with
+/// metadata describing the pixel-to-coordinate mapping, enabling a consuming
+/// application to accurately place the image on a map, draw overlays, and query data
+/// values.
+///
+/// The result owns its pixel buffer: [`into_pixels`](Self::into_pixels) hands it over
+/// for upload to a texture or another image library, and
+/// [`write_png`](Self::write_png) and [`save_png`](Self::save_png) encode it as PNG.
 pub struct RenderResult {
-    image: RgbaImage,
+    pixels: Vec<u8>,
     metadata: RenderMetadata,
+}
+
+impl std::fmt::Debug for RenderResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // The pixel buffer is summarised by its length rather than printed.
+        f.debug_struct("RenderResult")
+            .field("pixels", &format_args!("[u8; {}]", self.pixels.len()))
+            .field("metadata", &self.metadata)
+            .finish()
+    }
 }
 
 /// How image pixels map to the coordinate space of the rendered data.
@@ -89,19 +104,51 @@ pub struct PointQuery {
 }
 
 impl RenderResult {
-    /// Create a new render result from an image and metadata.
-    pub(crate) fn new(image: RgbaImage, metadata: RenderMetadata) -> Self {
-        Self { image, metadata }
+    /// Create a new render result from an RGBA8 pixel buffer and metadata.
+    ///
+    /// `pixels` must hold `metadata.width() * metadata.height() * 4` bytes.
+    pub(crate) fn new(pixels: Vec<u8>, metadata: RenderMetadata) -> Self {
+        debug_assert_eq!(
+            pixels.len(),
+            metadata.width as usize * metadata.height as usize * 4
+        );
+        Self { pixels, metadata }
     }
 
-    /// The rendered RGBA image.
-    pub fn image(&self) -> &RgbaImage {
-        &self.image
+    /// Width of the rendered image in pixels.
+    pub fn width(&self) -> u32 {
+        self.metadata.width
     }
 
-    /// Consume the result and return the image.
-    pub fn into_image(self) -> RgbaImage {
-        self.image
+    /// Height of the rendered image in pixels.
+    pub fn height(&self) -> u32 {
+        self.metadata.height
+    }
+
+    /// The rendered pixels: 8-bit RGBA, row-major from the top-left pixel, with no
+    /// padding between rows.
+    ///
+    /// The slice holds `width() * height() * 4` bytes; the pixel at `(x, y)` starts at
+    /// byte `(y * width() + x) * 4`. Alpha is straight (not premultiplied).
+    pub fn pixels(&self) -> &[u8] {
+        &self.pixels
+    }
+
+    /// The RGBA8 value of the pixel at `(x, y)`, or `None` outside the image.
+    pub fn pixel(&self, x: u32, y: u32) -> Option<[u8; 4]> {
+        if x >= self.width() || y >= self.height() {
+            return None;
+        }
+        let start = (y as usize * self.width() as usize + x as usize) * 4;
+        let mut pixel = [0; 4];
+        pixel.copy_from_slice(&self.pixels[start..start + 4]);
+        Some(pixel)
+    }
+
+    /// Consume the result and return the pixel buffer in the layout described by
+    /// [`pixels`](Self::pixels).
+    pub fn into_pixels(self) -> Vec<u8> {
+        self.pixels
     }
 
     /// Metadata describing the pixel-to-coordinate mapping.
@@ -109,40 +156,37 @@ impl RenderResult {
         &self.metadata
     }
 
-    /// Save the rendered image to a file.
+    /// Consume the result and return the pixel buffer and its metadata.
+    pub fn into_parts(self) -> (Vec<u8>, RenderMetadata) {
+        (self.pixels, self.metadata)
+    }
+
+    /// Encode the rendered image as PNG and save it to `path`, creating or truncating
+    /// the file.
     ///
-    /// The output format is inferred from the file extension and must be one whose
-    /// [`image`] codec is compiled in. This crate enables only the `png` feature of
-    /// `image`; for other formats (`.jpg`, `.webp`, ...) enable the matching feature
-    /// on your own `image` dependency (for example
-    /// `image = { version = "0.25", default-features = false, features = ["jpeg"] }`),
-    /// which Cargo's feature unification makes available here.
+    /// The PNG is 8-bit RGBA whatever the file extension.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Image`](crate::Error::Image) if the file cannot be written or
-    /// the format is unsupported.
-    pub fn save<P: AsRef<Path>>(&self, path: P) -> crate::result::Result<()> {
-        self.image.save(path)?;
+    /// Returns [`Error::Io`](crate::Error::Io) if the file cannot be created or
+    /// written, or [`Error::Encode`](crate::Error::Encode) if PNG encoding fails.
+    pub fn save_png<P: AsRef<Path>>(&self, path: P) -> crate::result::Result<()> {
+        let mut writer = BufWriter::new(File::create(path)?);
+        self.write_png(&mut writer)?;
+        writer.flush()?;
         Ok(())
     }
 
-    /// Encode the rendered image in `format` and write it to `writer`, without touching
-    /// the filesystem.
-    ///
-    /// As with [`save`](Self::save), the format's [`image`] codec must be compiled in:
-    /// [`ImageFormat::Png`](image::ImageFormat::Png) always is, other formats need the
-    /// matching feature enabled on your own `image` dependency.
+    /// Encode the rendered image as an 8-bit RGBA PNG and write it to `writer`.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Image`](crate::Error::Image) if the format is unsupported or
-    /// encoding or writing fails.
+    /// Returns [`Error::Io`](crate::Error::Io) if writing fails, or
+    /// [`Error::Encode`](crate::Error::Encode) if PNG encoding fails.
     ///
     /// # Example
     ///
     /// ```
-    /// use nexrad_render::image::ImageFormat;
     /// # use nexrad_model::data::Product;
     /// # use nexrad_render::{default_scale, render_sweep, RenderOptions};
     /// # let field = nexrad_model::data::SweepField::builder("Reflectivity", "dBZ")
@@ -154,24 +198,39 @@ impl RenderResult {
     /// #     .gate_count(400)
     /// #     .build()?;
     /// # let result = render_sweep(&field, &default_scale(Product::Reflectivity), &RenderOptions::new(64, 64))?;
-    ///
     /// let mut png = Vec::new();
-    /// result.write_to(&mut png, ImageFormat::Png)?;
+    /// result.write_png(&mut png)?;
     /// # assert!(png.starts_with(b"\x89PNG"));
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn write_to(
-        &self,
-        writer: &mut impl Write,
-        format: image::ImageFormat,
-    ) -> crate::result::Result<()> {
-        // Some encoders need to seek, so encode into memory first.
-        let mut encoded = Cursor::new(Vec::new());
-        self.image.write_to(&mut encoded, format)?;
-        writer
-            .write_all(encoded.get_ref())
-            .map_err(image::ImageError::IoError)?;
+    pub fn write_png<W: Write>(&self, writer: W) -> crate::result::Result<()> {
+        fn convert(error: png::EncodingError) -> crate::Error {
+            match error {
+                png::EncodingError::IoError(error) => crate::Error::Io(error),
+                other => crate::Error::Encode(Box::new(other)),
+            }
+        }
+
+        let mut encoder = png::Encoder::new(writer, self.width(), self.height());
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut png_writer = encoder.write_header().map_err(convert)?;
+        png_writer.write_image_data(&self.pixels).map_err(convert)?;
+        png_writer.finish().map_err(convert)?;
         Ok(())
+    }
+
+    /// Consume the result and return its pixels as an [`image::RgbaImage`].
+    ///
+    /// Available with the `image` feature. That feature tracks the `image` crate's own
+    /// 0.x releases and is excluded from this crate's semver promise: a release of
+    /// this crate may move it to a newer `image` version without a major version bump.
+    #[cfg(feature = "image")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "image")))]
+    pub fn into_rgba_image(self) -> image::RgbaImage {
+        let (width, height) = (self.width(), self.height());
+        image::RgbaImage::from_raw(width, height, self.pixels)
+            .unwrap_or_else(|| unreachable!("pixel buffer length matches the dimensions"))
     }
 }
 

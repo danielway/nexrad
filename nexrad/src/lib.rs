@@ -62,15 +62,15 @@
 //! ## Features
 //!
 //! The default features, `data`, `aws`, `aws-rustls` and `render`, load local files, download
-//! from AWS and render images. `full` enables every feature. Each feature enables the features
-//! it depends on, listed under "Implies":
+//! from AWS and render images. `full` enables every feature except `image`. Each feature enables
+//! the features it depends on, listed under "Implies":
 //!
 //! | Feature | Description | Implies | Notable dependencies |
 //! |---------|-------------|---------|----------------------|
 //! | `model` | Core data model types | | |
 //! | `decode` | Protocol decoding | `model` | zerocopy |
 //! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model`, `chrono` | bzip2 |
-//! | `render` | Visualization and rendering | `model` | image |
+//! | `render` | Visualization and rendering | `model` | png |
 //! | `process` | Radar data processing algorithms | `model` | |
 //! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) and the `futures_util` re-export, without a TLS backend | `data` | reqwest, futures-util |
 //! | `aws-rustls` | `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS backend | `aws` | rustls, aws-lc-rs |
@@ -78,7 +78,12 @@
 //! | `serde` | Serialization support for model types | | serde |
 //! | `uom` | Type-safe units of measure | | uom |
 //! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono |
-//! | `full` | Every feature above | all of them | |
+//! | `image` | `RenderResult::into_rgba_image` interop (opt-in, not in `full`; see below) | `render` | image |
+//! | `full` | Every feature above except `image` | all of them except `image` | |
+//!
+//! The `image` feature tracks the `image` crate's own 0.x releases and is excluded from the
+//! semver promise: a minor or patch release may move it to a newer, incompatible `image`
+//! version. Without it, rendered images are plain RGBA8 pixel buffers.
 //!
 //! Every feature except `parallel` builds for `wasm32-unknown-unknown`.
 //!
@@ -106,7 +111,7 @@
 //!     "data", "render", "process", "aws", "serde", "uom", "chrono",
 //! ] }
 //!
-//! # Every feature (native only)
+//! # Every feature except `image` (native only)
 //! nexrad = { version = "1.0", features = ["full"] }
 //! ```
 //!
@@ -265,7 +270,7 @@
 //! let color_scale = default_scale(Product::Reflectivity);
 //!
 //! let result = render_sweep(&field, &color_scale, &options)?;
-//! result.save("output.png")?;
+//! result.save_png("output.png")?;
 //! # Ok(())
 //! # }
 //! ```

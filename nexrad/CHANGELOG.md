@@ -21,6 +21,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   volume; chunks before the first Start chunk are skipped, and a stream error discards the partial volume. (#195)
 - `nexrad::futures_util` re-exports `futures_util` (feature `aws`), for `StreamExt` on the real-time streams. (#195)
 - `Error::NoScanAt { site, datetime }` (feature `aws`), from `download_at`. (#195)
+- An opt-in `image` feature enabling `nexrad-render/image` (`RenderResult::into_rgba_image`). It is not part of
+  `full`, tracks the `image` crate's own 0.x releases and is excluded from the semver promise. (#203)
 
 ### Changed
 
@@ -29,7 +31,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The `tokio` and `aws-polling` features are removed, sub-crates are depended on without their default features, and
   each facade feature enables the features it builds on. (#156, #161)
 - The default features are `data`, `aws`, `aws-rustls` and `render` instead of `full`, and `full` enables every
-  feature. (#204)
+  feature except `image`. (#204)
 - `aws` no longer includes a TLS backend; the new `aws-rustls` feature (default) adds rustls with the aws-lc-rs
   provider, which `aws` enabled before. On `wasm32`, `aws` alone is enough. (#204)
 - `data` implies `chrono`, and `aws` no longer names it directly. (#204)
@@ -43,6 +45,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Errors from `nexrad-data` are flattened by layer: its decode, model and I/O errors become `Error::Decode`,
   `Error::Model` and `Error::Io`, and other data errors stay `Error::Data`. (#176)
 - `Error::NoDataAvailable` requires the `aws` feature, and its `date` is a `chrono::NaiveDate`. (#176)
+- The `render` feature no longer pulls in the `image` crate; `nexrad::render` results are owned RGBA8 pixel buffers.
+  (#203)
 - The wrapping variants `Model`, `Decode`, `Data`, `Render`, `Process` and `Io` display only their layer, with the
   wrapped error as their `source()`. (#195)
 - docs.rs shows the feature each feature-gated item requires. (#196)

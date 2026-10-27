@@ -188,8 +188,14 @@ fn filtered_gates_render_as_background() {
     const BACKGROUND: [u8; 4] = [1, 2, 3, 255];
     let scale = default_scale(Product::Reflectivity);
     let options = RenderOptions::new(100, 100).with_background(BACKGROUND.into());
-    let all_background =
-        |image: &nexrad_render::RgbaImage| image.pixels().all(|p| p.0 == BACKGROUND);
+    let all_background = |result: &nexrad_render::RenderResult| {
+        result
+            .pixels()
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .all(|p| *p == BACKGROUND)
+    };
 
     let mut sweep = sweep_field();
     for az in 0..sweep.azimuth_count() {
@@ -198,7 +204,7 @@ fn filtered_gates_render_as_background() {
         }
     }
     let result = render_sweep(&sweep, &scale, &options).expect("renders");
-    assert!(all_background(result.image()));
+    assert!(all_background(&result));
 
     let query = result
         .metadata()
@@ -216,7 +222,7 @@ fn filtered_gates_render_as_background() {
         }
     }
     let result = render_cartesian(&cartesian, &scale, &options).expect("renders");
-    assert!(all_background(result.image()));
+    assert!(all_background(&result));
     let result = render_vertical(&vertical, &scale, &options).expect("renders");
-    assert!(all_background(result.image()));
+    assert!(all_background(&result));
 }

@@ -71,8 +71,8 @@ nexrad = "1.0"
 ```
 
 The default features cover local file loading, AWS downloads and real-time streaming, and rendering. Processing
-(`process`), serialization (`serde`), units of measure (`uom`) and parallel decoding (`parallel`) are opt-in, and
-`full` enables every feature.
+(`process`), serialization (`serde`), units of measure (`uom`), parallel decoding (`parallel`) and `image` crate
+interop (`image`) are opt-in, and `full` enables every feature except `image`.
 
 **Common configurations:**
 
@@ -84,7 +84,7 @@ nexrad = { version = "1.0", default-features = false, features = ["data"] }
 nexrad = { version = "1.0", default-features = false, features = ["aws-rustls"] }
 tokio = { version = "1", features = ["full"] }
 
-# Every feature (native only)
+# Every feature except `image` (native only)
 nexrad = { version = "1.0", features = ["full"] }
 ```
 
@@ -163,7 +163,7 @@ fn main() -> nexrad::Result<()> {
     let color_scale = default_scale(Product::Reflectivity);
 
     let result = render_sweep(&field, &color_scale, &options)?;
-    result.save("reflectivity.png")?;
+    result.save_png("reflectivity.png")?;
     Ok(())
 }
 ```
@@ -178,7 +178,7 @@ the features listed under "Implies".
 | `model` | Core data types (Scan, Sweep, Radial) | | Pure Rust |
 | `decode` | Binary protocol decoding | `model` | chrono, zerocopy |
 | `data` | Local file I/O | `decode`, `model`, `chrono` | bzip2 |
-| `render` | Image rendering | `model` | image |
+| `render` | Image rendering | `model` | png |
 | `process` | Processing algorithms | `model` | nexrad-model |
 | `aws` | AWS S3 downloads and real-time streaming, without a TLS backend | `data` | reqwest, futures-util |
 | `aws-rustls` | `aws` with rustls (aws-lc-rs provider) as the TLS backend | `aws` | rustls, aws-lc-rs |
@@ -186,7 +186,8 @@ the features listed under "Implies".
 | `serde` | Serialization support | | serde |
 | `uom` | Type-safe units of measure | | uom |
 | `chrono` | DateTime type support | | chrono |
-| `full` | Every feature above | All above | All above |
+| `image` | `RenderResult::into_rgba_image` (opt-in, not in `full`, outside the semver promise) | `render` | image |
+| `full` | Every feature above except `image` | All above except `image` | All above |
 
 On native targets `aws` needs a TLS backend to reach the HTTPS endpoints; `aws-rustls` provides one and needs a C
 compiler and, on Windows x86 targets, NASM.

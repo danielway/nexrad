@@ -89,8 +89,8 @@ overlaps the datetime passed to `download_at`. Wrapping variants name only the l
 ## Features
 
 The default features, `data`, `aws`, `aws-rustls` and `render`, load local files, download from
-AWS and render images. `full` enables every feature. Each feature also enables the features it
-depends on, so `data` alone is enough for local file loading.
+AWS and render images. `full` enables every feature except `image`. Each feature also enables the
+features it depends on, so `data` alone is enough for local file loading.
 
 | Feature | Description | Implies |
 |---------|-------------|---------|
@@ -105,9 +105,14 @@ depends on, so `data` alone is enough for local file loading.
 | `serde` | Serialization support | |
 | `uom` | Type-safe units of measure | |
 | `chrono` | DateTime type support | |
-| `full` | Every feature above | all of them |
+| `image` | `RenderResult::into_rgba_image` interop (opt-in, outside the semver promise) | `render` |
+| `full` | Every feature above except `image` | all of them except `image` |
 
 Every feature except `parallel` builds for `wasm32-unknown-unknown`.
+
+The `image` feature is not part of `full`. It tracks the `image` crate's own 0.x releases and is
+excluded from the semver promise: a minor or patch release may move it to a newer, incompatible `image` version.
+Without it, rendered images are plain RGBA8 pixel buffers with `write_png` and `save_png`.
 
 For local file processing without rendering or networking:
 

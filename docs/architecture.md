@@ -116,12 +116,13 @@ appear in public signatures:
 | `chrono` | Timestamps and dates in model, decode, data and the facade | Re-exported from the facade as `nexrad::chrono` (feature `chrono`) |
 | `serde` | `Serialize`/`Deserialize` impls | Opt-in `serde` feature |
 | `uom` | Unit-typed accessors | Opt-in `uom` feature |
-| `image` | `nexrad-render` (`RgbaImage`, `Error::Image(ImageError)`) | Accepted coupling: `pub use image;` re-exports the crate, and an `image` major bump is a `nexrad-render` major bump. Only the `png` codec is enabled; consumers enable other codecs on their own `image` dependency |
+| `image` | `nexrad_render::RenderResult::into_rgba_image` only | Opt-in `image` feature of `nexrad-render` (and the facade), off by default and not in `full`. It tracks `image`'s own 0.x releases and is excluded from the semver promise. Without it, `RenderResult` exposes owned RGBA8 pixels (`pixels()`, `into_pixels()`) |
 | `futures_core` | The `Stream` returned by `nexrad_data::aws::realtime::chunk_stream` and `nexrad::stream` | Return type only |
 | `futures_util` | The facade | Re-exported as `nexrad::futures_util` (feature `aws`) for `StreamExt`; not in any signature |
 
-Not allowed in public signatures: `reqwest`, `bzip2`, `zerocopy` traits, `tokio`, `once_cell`. HTTP failures are boxed
-inside `AwsError`, bzip2 failures surface as `Error::Io`, and the `#[repr(C)]` wire structs of `nexrad-decode` and
+Not allowed in public signatures: `reqwest`, `bzip2`, `png`, `zerocopy` traits, `tokio`, `once_cell`. HTTP failures are
+boxed inside `AwsError`, bzip2 failures surface as `Error::Io`, PNG encoder failures are boxed inside
+`nexrad_render::Error::Encode`, and the `#[repr(C)]` wire structs of `nexrad-decode` and
 `nexrad-data` stay private.
 
 ### Minimum Supported Rust Version
@@ -138,8 +139,8 @@ CHANGELOGs.
 | `Public API baselines` | `api/<crate>.txt` matches each library crate's public API. Regenerate with `cargo run -p xtask -- public-api`; compare with `cargo run -p xtask -- public-api --check`. A PR that changes a public API updates the baselines in the same PR |
 | `Semver checks` | `cargo semver-checks` against the latest release on crates.io. Advisory (`continue-on-error: true`) until 1.0.0 is published, then blocking |
 | `Fuzz target build check` | The fuzz targets in `nexrad-decode/fuzz` and `nexrad-data/fuzz` (outside the workspace) still build |
-| `WASM compatibility check` | Each library crate, and the facade with every feature except `parallel`, builds for `wasm32-unknown-unknown` |
-| `Feature set tests` | `cargo test -p nexrad` with no default features and with every feature except `parallel` |
+| `WASM compatibility check` | Each library crate, and the facade with every feature except `parallel` and `image`, builds for `wasm32-unknown-unknown` |
+| `Feature set tests` | `cargo test -p nexrad` with no default features and with every feature except `parallel` and `image` |
 | `Windows build` | `cargo check --workspace --all-features --all-targets` on Windows, which builds the `aws-rustls` TLS stack (aws-lc-rs with NASM) |
 
 ## Feature Architecture
@@ -153,18 +154,21 @@ are named for what they enable, not for the crate they pull in.
 | `nexrad-decode` | **`model`** (conversion to `nexrad-model` types), `uom` |
 | `nexrad-data` | **`aws`** (S3 archive and real-time access, without a TLS backend), **`aws-rustls`** (`aws` with rustls and the aws-lc-rs provider), **`model`** (`File::scan`, `Record::radials`, `assemble_volume`; enables `nexrad-decode/model`), `parallel` (rayon) |
 | `nexrad-process` | none |
-| `nexrad-render` | none |
-| `nexrad` | **`data`**, **`aws`**, **`aws-rustls`**, **`render`**, and `full` for every feature; see the feature table in the crate docs |
+| `nexrad-render` | `image` (`RenderResult::into_rgba_image`; outside the semver promise) |
+| `nexrad` | **`data`**, **`aws`**, **`aws-rustls`**, **`render`**, `full` for every feature except `image`, and `image`; see the feature table in the crate docs |
 
 `uom` is off by default in every crate; the facade turns it on only through `uom` or `full`.
 
 ### Feature Policy
 
 - **Defaults are a working set, not everything.** The facade's default is "load, download, render" (`data`, `aws`,
-  `aws-rustls`, `render`). `full` enables every feature. Removing a feature, or removing one from a default set, is a
-  breaking change, while adding one is not, so the defaults stay small.
+  `aws-rustls`, `render`). `full` enables every feature except `image`. Removing a feature, or removing one from a
+  default set, is a breaking change, while adding one is not, so the defaults stay small.
 - **No target-named feature sets.** Every feature except `parallel` builds for `wasm32-unknown-unknown`, and a WASM
   build lists the features it uses. CI checks that set for `wasm32` and tests it on native.
+- **Interop outside the semver promise stays opt-in.** `image` (`RenderResult::into_rgba_image`) tracks the `image`
+  crate's own 0.x releases and may move to a newer, incompatible `image` version in a minor or patch release, so it
+  is in neither the default set nor `full`.
 - **TLS backends are separate features.** `aws` is the HTTP client machinery with no TLS backend; on `wasm32` it uses
   the JavaScript `fetch` API and needs none. `aws-rustls` (default) selects rustls with the aws-lc-rs provider, which
   needs a C compiler and, on Windows x86 targets, NASM. Other backends can be added later as further `aws-*` features
@@ -190,8 +194,9 @@ does not build for WASM.
 - Every crate defines its errors in a public `result` module and re-exports `Error` and `Result` at its root;
   `nexrad-data` also re-exports `AwsError` (feature `aws`).
 - Every `Error` enum, and `nexrad_data::result::AwsError`, is `#[non_exhaustive]`.
-- No error carries a 0.x dependency's error type as a payload. HTTP errors are boxed as
-  `Box<dyn std::error::Error + Send + Sync>`, which `source()` returns.
+- No error carries a 0.x dependency's error type as a payload. HTTP errors (`nexrad_data::AwsError`) and image
+  encoder errors (`nexrad_render::Error::Encode`) are boxed as `Box<dyn std::error::Error + Send + Sync>`, which
+  `source()` returns; I/O failures while writing an image are `nexrad_render::Error::Io(std::io::Error)`.
 - `nexrad_data::Error::Decode`, `Model` and `Io` wrap the decode, model and I/O errors raised while reading data.
 - The facade's `From<nexrad_data::Error>` flattens those three into `nexrad::Error::Decode`, `Model` and `Io`, so each
   facade variant names the layer an error came from; every other data error (decompression, record layout, AWS)
@@ -246,7 +251,7 @@ SweepField (2D polar grid of f32 + GateStatus)
     │    SweepField, CartesianField, or VerticalField
     │
     └──▶ nexrad-render: color map + rasterize
-         RenderResult (RgbaImage + RenderMetadata)
+         RenderResult (RGBA8 pixels + RenderMetadata)
 ```
 
 ### Moment Data
@@ -305,14 +310,14 @@ Three rendering entry points match the three field types:
 
 | Function | Input | Output | Projection |
 |----------|-------|--------|------------|
-| `render_sweep` | `SweepField` | `RenderResult` (image + metadata) | `Projection::Polar`; `Projection::Geographic` with `RenderOptions::with_extent` (each pixel mapped through the coordinate system to the sweep) |
+| `render_sweep` | `SweepField` | `RenderResult` (pixels + metadata) | `Projection::Polar`; `Projection::Geographic` with `RenderOptions::with_extent` (each pixel mapped through the coordinate system to the sweep) |
 | `render_cartesian` | `CartesianField` | `RenderResult` | `Projection::Geographic` |
 | `render_vertical` | `VerticalField` | `RenderResult` | `Projection::Vertical` |
 
-`RenderResult` bundles the image with `RenderMetadata`, whose `projection()` describes how pixels map back to data
-coordinates. Conversions a projection supports return `Some` and the rest `None`. Data value queries live on
-`RenderMetadata` and take the field that was rendered (`query_pixel` for sweeps, `query_cartesian` for grids, and so
-on).
+`RenderResult` bundles an owned RGBA8 pixel buffer (`pixels()`, `into_pixels()`, `write_png`, `save_png`) with
+`RenderMetadata`, whose `projection()` describes how pixels map back to data coordinates. Conversions a projection
+supports return `Some` and the rest `None`. Data value queries live on `RenderMetadata` and take the field that was
+rendered (`query_pixel` for sweeps, `query_cartesian` for grids, and so on).
 
 ## Realtime Subsystem
 

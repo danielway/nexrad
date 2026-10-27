@@ -57,7 +57,7 @@ fn main() -> nexrad::Result<()> {
 
     // Render the image and save it to file
     let result = render_sweep(&field, &color_scale, &options)?;
-    result.save(output_path)?;
+    result.save_png(output_path)?;
 
     println!("Saved reflectivity image to: {}", output_path);
 

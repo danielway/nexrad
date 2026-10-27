@@ -114,8 +114,7 @@ impl ColorScaleLevel {
 
 /// A discrete color scale that maps value ranges to colors.
 ///
-/// The scale works by finding the highest threshold that the input value
-/// exceeds, and returning the corresponding color. Levels are automatically
+/// A value takes the color of the highest threshold at or below it. Levels are
 /// sorted from highest to lowest threshold during construction.
 ///
 /// # Example
@@ -165,8 +164,8 @@ impl DiscreteColorScale {
 
     /// Returns the color for the given value.
     ///
-    /// Finds the highest threshold that the value exceeds and returns its color.
-    /// If the value is below all thresholds, returns the color of the lowest threshold.
+    /// Returns the color of the highest threshold at or below the value, or the color of the
+    /// lowest threshold if the value is below all of them.
     pub fn color(&self, value: f32) -> Color {
         let mut color = Color::BLACK;
 

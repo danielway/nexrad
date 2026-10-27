@@ -684,8 +684,8 @@ impl SweepFieldBuilder {
 
 /// A 2D Cartesian grid of values on a geographic extent.
 ///
-/// Used for scan-derived products like composite reflectivity, echo tops, and VIL
-/// where data from multiple elevations is combined into a single geographic surface.
+/// Used for products that combine data from several elevations into one geographic
+/// surface, such as composite reflectivity.
 ///
 /// Layout: `values[row * width + col]`, row 0 = north edge.
 #[derive(Debug, Clone, PartialEq)]

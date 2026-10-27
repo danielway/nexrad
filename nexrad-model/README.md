@@ -58,7 +58,7 @@ For processing and rendering, moment data is extracted into flat 2D grids:
 | Type | Axes | Use Case |
 |------|------|----------|
 | `SweepField` | azimuth × range (polar) | Single-sweep PPI display, filtering |
-| `CartesianField` | lat × lon (geographic) | Composite reflectivity, echo tops |
+| `CartesianField` | lat × lon (geographic) | Composite reflectivity |
 | `VerticalField` | range × altitude | RHI / vertical cross-sections |
 
 Each field stores parallel `f32` and `GateStatus` arrays in row-major order for efficient numerical processing.

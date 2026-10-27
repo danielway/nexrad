@@ -9,8 +9,8 @@ use nexrad_model::data::{CartesianField, GateStatus, VerticalField};
 
 /// Renders a [`CartesianField`] (geographic grid) to an image with metadata.
 ///
-/// This renders volume-derived products like composite reflectivity, echo tops,
-/// and VIL — data that is already projected onto a geographic grid.
+/// Renders data already on a geographic grid, such as composite reflectivity from
+/// `nexrad-process`.
 ///
 /// # Arguments
 ///

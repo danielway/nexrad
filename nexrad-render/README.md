@@ -84,7 +84,7 @@ fn options(field: &SweepField, extent: GeoExtent, coord_system: RadarCoordinateS
 ```
 
 Without `with_value_range`, the color lookup range is the field's product range, else the
-range of its valid values. Gates with a non-`Valid` status are drawn as the background unless
+range of its valid values, else `-32.0..95.0`. Gates with a non-`Valid` status are drawn as the background unless
 `with_status_color` sets a color for that status. `render_cartesian` and `render_vertical`
 ignore the extent: their fields carry their own.
 

@@ -150,7 +150,7 @@ impl SweepProcessor for MedianFilter {
 /// Gaussian smoothing filter in polar coordinates.
 ///
 /// Applies a 2D Gaussian kernel over the azimuth x range grid. The sigma values
-/// control the smoothing width in each dimension (in number of gates). Only valid
+/// set the smoothing width in radials in azimuth and in gates in range. Only valid
 /// gates contribute to the weighted average; gates that are not [`GateStatus::Valid`]
 /// (including [`GateStatus::Filtered`]) are left unchanged.
 ///

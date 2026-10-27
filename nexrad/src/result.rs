@@ -54,7 +54,7 @@
 //!
 //! [`Error::Io`] is always available. Features that build on others enable them too (for
 //! example, `data` also enables `decode` and `model`), so the flattened variants always exist
-//! when `data` is enabled. All features are enabled by default.
+//! when `data` is enabled. The default features enable every variant except `Error::Process`.
 //!
 //! ## Error Source Chain
 //!
@@ -145,7 +145,7 @@ pub enum Error {
 
     /// Error from radar data processing algorithms (nexrad-process).
     ///
-    /// This variant is available when the `process` feature is enabled (default).
+    /// This variant is available when the `process` feature is enabled.
     ///
     /// Process errors indicate issues with processing algorithms, such as invalid
     /// field geometry, missing required data, or invalid parameter values.

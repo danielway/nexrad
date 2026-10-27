@@ -84,7 +84,7 @@ Builders filled independently (for example, one per record decoded in parallel) 
 | 2 | RDA Status Data | `RdaStatusData` |
 | 3 | Performance/Maintenance Data | `PerformanceMaintenanceData` |
 | 4, 10 | Console Message | `ConsoleMessage` |
-| 5 | Volume Coverage Pattern | `VolumeCoveragePattern` |
+| 5 | Volume Coverage Pattern | `RdaVolumeCoveragePattern` |
 | 6 | RDA Control Commands | `RdaControlCommands` |
 | 8 | Clutter Censor Zones | `ClutterCensorZones` |
 | 9 | Request for Data | `RequestForData` |

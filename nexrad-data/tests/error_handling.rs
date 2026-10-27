@@ -12,25 +12,16 @@ fn test_error_display_formatting() {
 }
 
 #[test]
-fn test_uncompressed_data_error() {
+fn test_decompress_uncompressed_record_is_unchanged() {
     let uncompressed_data = vec![0, 1, 2, 3, 4, 5, 6, 7];
-    let record = nexrad_data::volume::Record::new(uncompressed_data);
+    let record = nexrad_data::volume::Record::new(uncompressed_data.clone());
     assert!(!record.compressed());
 
-    let decompress_result = record.decompress();
-    assert!(
-        decompress_result.is_err(),
-        "Should fail to decompress uncompressed data"
-    );
-
-    let error = decompress_result.unwrap_err();
-    match error {
-        result::Error::UncompressedData => {
-            let display = format!("{}", error);
-            assert!(display.contains("error decompressing uncompressed data"));
-        }
-        _ => panic!("Expected UncompressedData, got: {:?}", error),
-    }
+    let decompressed = record
+        .decompress()
+        .expect("uncompressed record decompresses");
+    assert_eq!(decompressed.data(), uncompressed_data.as_slice());
+    assert_eq!(decompressed, record);
 }
 
 #[test]
@@ -53,10 +44,10 @@ fn test_compressed_data_decode_error() {
 
     let error = messages_result.unwrap_err();
     match error {
-        result::Error::CompressedData => {
+        result::Error::CompressedRecord => {
             let display = format!("{}", error);
-            assert!(display.contains("compressed data cannot be decoded"));
+            assert!(display.contains("compressed record must be decompressed"));
         }
-        _ => panic!("Expected CompressedData, got: {:?}", error),
+        _ => panic!("Expected CompressedRecord, got: {:?}", error),
     }
 }

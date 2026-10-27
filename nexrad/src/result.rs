@@ -187,8 +187,8 @@ pub enum Error {
     NoScanAt {
         /// The radar site identifier (e.g., "KTLX").
         site: String,
-        /// The requested UTC datetime.
-        datetime: chrono::NaiveDateTime,
+        /// The requested datetime.
+        datetime: chrono::DateTime<chrono::Utc>,
     },
 }
 

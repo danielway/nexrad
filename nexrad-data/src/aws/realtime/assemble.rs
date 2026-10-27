@@ -46,7 +46,7 @@ pub fn assemble_volume(
     for chunk in chunks {
         match chunk {
             Chunk::Start(file) => {
-                for record in file.inflated()?.records()? {
+                for record in file.decompressed()?.records()? {
                     add_record_to_scan(&mut builder, &record)?;
                 }
             }

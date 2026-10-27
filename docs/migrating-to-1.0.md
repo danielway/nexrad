@@ -483,8 +483,8 @@ runtime's sleep function (#161).
 - **Real-time volume selection** (#149, #154): `get_latest_volume` no longer returns an older volume when the newest sits
   just after the wrap-around, and `ChunkIterator` waits instead of replaying an older scan left in the next volume
   directory.
-- **`File::scan` and `File::coverage_pattern_message` inflate gzip** (#208): they accept a gzip-wrapped file, so the
-  `File::new(bytes).decompress()?` step is needed only before `File::records()`, which still returns
+- **`File::scan` and `File::coverage_pattern_message` decompress gzip-wrapped files** (#208): they accept a gzip-wrapped
+  file, so the `File::new(bytes).decompress()?` step is needed only before `File::records()`, which still returns
   `Error::CompressedFile` for a gzip-wrapped file. `File::new` stores the bytes as given, and `decompress` is unchanged.
 - **Volumes without a type 5 message scan** (#208): `File::scan` and `assemble_volume` return a scan with
   `coverage_pattern()` `None` (see nexrad-decode) for a legacy volume or chunks without a Start chunk, where they
@@ -1406,7 +1406,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `aws::archive::Identifier::{site() -> Option<&str>, date_time() -> Option<DateTime<Utc>>}` | `site() -> &str`, `date_time() -> DateTime<Utc>` | #192 |
 | (new) | `aws::archive::Identifier::{version, is_model_data, is_gzip}()`, `Display`, `Debug`; `aws::archive::list_files_with_sizes`, `ListedFile` | #186, #192, #206 |
 | `aws::archive::list_files` returning every object | Volume files only | #192 |
-| `volume::File::scan()`, `coverage_pattern_message()` returning `Error::CompressedFile` for a gzip-wrapped file | Inflate the file themselves; `records()` still returns `CompressedFile` | #208 |
+| `volume::File::scan()`, `coverage_pattern_message()` returning `Error::CompressedFile` for a gzip-wrapped file | Decompress the file themselves; `records()` still returns `CompressedFile` | #208 |
 | `volume::File::scan()`, `aws::realtime::assemble_volume` returning `Error::MissingCoveragePattern` without a type 5 message | Return a scan with `coverage_pattern()` `None`; `Error::Decode(MissingCoveragePatternNumber)` when no coverage pattern number is found | #208 |
 | `aws::realtime::VolumeIndex::new(usize) -> VolumeIndex` | `new(usize) -> Result<VolumeIndex>` | #192 |
 | `aws::realtime::list_chunks_in_volume(&str, VolumeIndex, usize)` | `list_chunks_in_volume(&str, VolumeIndex)` | #149, #192 |

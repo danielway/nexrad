@@ -405,7 +405,7 @@ fn create_legacy_scan_snapshot(scan: &Scan) -> LegacyScanSnapshot {
 
 #[test]
 fn test_legacy_ktlx_1991_metadata_snapshot() {
-    // Loaded without an explicit decompress: `File::scan` inflates the gzip wrapper itself.
+    // Loaded without an explicit decompress: `File::scan` decompresses the gzip wrapper itself.
     let scan = load_scan(LEGACY_KTLX_1991);
     assert!(scan.coverage_pattern().is_none());
     assert_eq!(scan.coverage_pattern_number().number(), 21);

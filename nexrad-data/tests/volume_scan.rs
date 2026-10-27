@@ -371,7 +371,7 @@ const LEGACY_NEXRAD_FILE: &[u8] = include_bytes!("../../downloads/KTLX19910605_1
 const LEGACY_ZERO_VCP_FILE: &[u8] = include_bytes!("../../downloads/KABR20050101_000745.gz");
 
 #[test]
-fn test_scan_inflates_gzip_file() {
+fn test_scan_decompresses_gzip_file() {
     let file = volume::File::new(GZIP_NEXRAD_FILE.to_vec());
     assert!(file.compressed());
 
@@ -390,7 +390,7 @@ fn test_scan_inflates_gzip_file() {
 }
 
 #[test]
-fn test_coverage_pattern_message_inflates_gzip_file() {
+fn test_coverage_pattern_message_decompresses_gzip_file() {
     let file = volume::File::new(GZIP_NEXRAD_FILE.to_vec());
 
     let vcp = file

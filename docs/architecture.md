@@ -54,7 +54,7 @@ A WASM application can therefore use `nexrad-model` and `nexrad-render` without 
 
 - **All conversion to model types lives in `nexrad-decode`**, behind its `model` feature (for example
   `nexrad_decode::model::ScanBuilder`).
-- **`nexrad-data` orchestrates I/O and decompression only.** `volume::File::scan` (which also inflates a gzip-wrapped
+- **`nexrad-data` orchestrates I/O and decompression only.** `volume::File::scan` (which also decompresses a gzip-wrapped
   file), `volume::Record::radials` and `aws::realtime::assemble_volume` decompress records and hand their messages to
   `nexrad-decode`, with no protocol-to-model mapping of their own.
 - **The facade contains re-exports and I/O entry points only** (`load`, `download`, `list_scans`, `stream` and their

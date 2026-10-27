@@ -15,14 +15,14 @@ const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
 ///   [`compressed`](Self::compressed) is true, [`records`](Self::records), which borrows its
 ///   records from the file, returns
 ///   [`Error::CompressedFile`](crate::result::Error::CompressedFile).
-///   [`decompress`](Self::decompress) inflates the file, and returns an uncompressed file
-///   unchanged. `scan` and [`coverage_pattern_message`](Self::coverage_pattern_message) inflate
+///   [`decompress`](Self::decompress) decompresses the file, and returns an uncompressed file
+///   unchanged. `scan` and [`coverage_pattern_message`](Self::coverage_pattern_message) decompress
 ///   a gzip-wrapped file themselves.
 /// - **Record (bzip2).** Each LDM [`Record`] is normally bzip2-compressed. While
 ///   [`Record::compressed`] is true, [`Record::messages`], `Record::radials` and
 ///   `Record::iter_radials` return
 ///   [`Error::CompressedRecord`](crate::result::Error::CompressedRecord).
-///   [`Record::decompress`] inflates the record, and returns an uncompressed record
+///   [`Record::decompress`] decompresses the record, and returns an uncompressed record
 ///   unchanged. `scan` and
 ///   [`coverage_pattern_message`](Self::coverage_pattern_message) decompress records
 ///   themselves.
@@ -60,17 +60,17 @@ impl File {
             return Ok(self);
         }
 
-        Ok(File(inflate_gzip(&self.0)?))
+        Ok(File(decompress_gzip(&self.0)?))
     }
 
-    /// This file with any gzip wrapping inflated: the file itself when it is not compressed,
+    /// This file with any gzip wrapping decompressed: the file itself when it is not compressed,
     /// or a decompressed copy when it is.
-    pub(crate) fn inflated(&self) -> crate::result::Result<Cow<'_, File>> {
+    pub(crate) fn decompressed(&self) -> crate::result::Result<Cow<'_, File>> {
         if !self.compressed() {
             return Ok(Cow::Borrowed(self));
         }
 
-        Ok(Cow::Owned(File(inflate_gzip(&self.0)?)))
+        Ok(Cow::Owned(File(decompress_gzip(&self.0)?)))
     }
 
     /// The file's raw data.
@@ -113,16 +113,16 @@ impl File {
 
     /// Decodes this file's volume coverage pattern (message type 5).
     ///
-    /// Searches the file's LDM records in order, inflating a gzip-wrapped file and decompressing
-    /// each compressed record, and returns the first volume coverage pattern message found as an
+    /// Searches the file's LDM records in order, decompressing a gzip-wrapped file and each
+    /// compressed record, and returns the first volume coverage pattern message found as an
     /// owned message. For a real-time Start chunk, this is the message that describes the
     /// volume's elevation cuts.
     ///
     /// # Errors
     ///
     /// Returns [`Error::MissingCoveragePattern`](crate::result::Error::MissingCoveragePattern) if
-    /// no record carries one, and propagates gzip inflation, record splitting, decompression, and
-    /// decoding errors otherwise.
+    /// no record carries one, and propagates gzip decompression, record splitting, record
+    /// decompression and decoding errors otherwise.
     pub fn coverage_pattern_message(
         &self,
     ) -> crate::result::Result<nexrad_decode::messages::volume_coverage_pattern::Message<'static>>
@@ -130,7 +130,7 @@ impl File {
         use crate::result::Error;
         use nexrad_decode::messages::MessageContents;
 
-        let file = self.inflated()?;
+        let file = self.decompressed()?;
         for mut record in file.records()? {
             if record.compressed() {
                 record = record.decompress()?;
@@ -149,7 +149,7 @@ impl File {
     /// Decodes this volume file into a common model scan containing sweeps and radials with moment
     /// data.
     ///
-    /// A gzip-wrapped file is inflated first, and compressed records are decompressed. Both
+    /// A gzip-wrapped file and its compressed records are decompressed first. Both
     /// modern (message type 31) and legacy (message type 1) radials are included. The scan's
     /// coverage pattern and coverage pattern number are chosen as
     /// [`ScanBuilder::build`](nexrad_decode::model::ScanBuilder::build) describes, so a volume
@@ -158,8 +158,8 @@ impl File {
     ///
     /// # Errors
     ///
-    /// Propagates gzip inflation, record splitting and decompression errors. Any message that
-    /// cannot be decoded or converted fails the whole scan with
+    /// Propagates gzip decompression, record splitting and record decompression errors. Any
+    /// message that cannot be decoded or converted fails the whole scan with
     /// [`Error::Decode`](crate::result::Error::Decode) carrying the first such error, as does a
     /// volume with no coverage pattern number in a volume coverage pattern message or any radial
     /// ([`MissingCoveragePatternNumber`](nexrad_decode::result::Error::MissingCoveragePatternNumber)).
@@ -167,7 +167,7 @@ impl File {
     pub fn scan(&self) -> crate::result::Result<nexrad_model::data::Scan> {
         use nexrad_decode::model::ScanBuilder;
 
-        let file = self.inflated()?;
+        let file = self.decompressed()?;
         let records = file.records()?;
 
         let decode_record = |record: Record<'_>| -> crate::result::Result<ScanBuilder> {
@@ -199,8 +199,8 @@ impl File {
     }
 }
 
-/// Inflates gzip-compressed data.
-fn inflate_gzip(data: &[u8]) -> crate::result::Result<Vec<u8>> {
+/// Decompresses gzip-compressed data.
+fn decompress_gzip(data: &[u8]) -> crate::result::Result<Vec<u8>> {
     use flate2::read::GzDecoder;
     use std::io::Read;
 

@@ -147,7 +147,7 @@ CHANGELOGs.
 |--------|----------------|
 | `MSRV check` | `cargo check --workspace --all-features --all-targets` and `cargo hack check --workspace --each-feature --optional-deps` on Rust 1.88.0 |
 | `Public API baselines` | `api/<crate>.txt` matches each library crate's public API. Regenerate with `cargo run -p xtask -- public-api`; compare with `cargo run -p xtask -- public-api --check`. A PR that changes a public API updates the baselines in the same PR |
-| `Semver checks` | `cargo semver-checks` against the latest release on crates.io. Advisory (`continue-on-error: true`) until 1.0.0 is published, then blocking |
+| `Semver checks` | `cargo semver-checks` against the latest release of each crate on crates.io. A breaking change fails CI unless the crate's version has a major bump |
 | `Fuzz target build check` | The fuzz targets in `nexrad-decode/fuzz` and `nexrad-data/fuzz` (outside the workspace) still build |
 | `WASM compatibility check` | Each library crate, and the facade with every feature except `parallel` and `image`, builds for `wasm32-unknown-unknown` |
 | `Feature set tests` | `cargo test -p nexrad` with no default features and with every feature except `parallel` and `image` |

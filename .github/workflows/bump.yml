@@ -24,7 +24,7 @@ on:
           - rc
           - custom
       custom_version:
-        description: "Custom version (only used when version_type is 'custom', e.g., 1.0.0-rc.1)"
+        description: "Custom version (only used when version_type is 'custom', e.g., 1.1.0-rc.1)"
         required: false
         type: string
 

@@ -26,8 +26,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   `Error` implements `Clone` and `PartialEq`. (#185)
 - `GateStatus::Filtered`, for a gate whose valid value a processing step removed; exhaustive matches need a new arm.
   (#187)
-- Per-radial `Radial::nyquist_velocity_mps()` and `unambiguous_range_km()` (with `uom`, `nyquist_velocity()` and
-  `unambiguous_range()`) and their `RadialBuilder` setters, which reject values that are not finite and positive. (#188)
+- Per-radial `Radial::nyquist_velocity_mps()` and `unambiguous_range_km()` and their `RadialBuilder` setters, which reject values that are not finite and positive. (#188)
 - `Scan::elevation_cut(&Sweep)` and `Scan::sweeps_with_waveform(WaveformType)`. (#188)
 - `VcpNumber::{Vcp11, Vcp21, Vcp121, Vcp211, Vcp221}`, formerly `Unknown(n)`. (#188)
 - `RadarCoordinateSystem::beam_height_meters` (above mean sea level) and `ground_range_km`. (#188)
@@ -39,7 +38,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   wildcard arm. (#155)
 - Acronyms in type and variant names are UpperCamelCase words (`VcpNumber`, `CfpStatus`, `Sz2Phase`,
   `ElevationStartVcpFinal`), and `WaveformType` variants have descriptive names; serde uses the new names. (#160)
-- Geographic coordinates and polar angles are `f64`, as are the `uom` quantities; the `*_degrees` angles stored on
+- Geographic coordinates and polar angles are `f64`; the `*_degrees` angles stored on
   `Radial`, `Sweep` and `SweepField` stay `f32`. (#164)
 - Builders replace the long positional constructors `Radial::new`, `ElevationCut::new` (the builder takes the waveform
   before the channel configuration), `VolumeCoveragePattern::new`, `Site::new` and `SweepField::new_empty`. (#165,
@@ -89,6 +88,11 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The `DataMoment` trait; its methods are inherent on `MomentData`. (#170)
 - `Product::moment_data` and `Product::cfp_moment_data`; use `Radial::moment`. (#170)
 - `Site::identifier_string()`. (#185)
+- The `uom` feature and the accessors it enabled (`Radial::{azimuth, azimuth_spacing, elevation_angle,
+  nyquist_velocity, unambiguous_range}`, `Sweep::elevation_angle`, `MomentData::{first_gate_range, gate_interval}`,
+  `Site::{site_elevation, feedhorn_height}`), and the `uom` dependency. `uom` is pre-1.0 and would tie this crate's
+  major version to its own; use the unit-suffixed accessors (`elevation_angle_degrees()`, `gate_interval_km()`, ...).
+  Unit-typed accessors may come later as a separate crate or extension trait. (#PRNUM)
 
 ### Fixed
 

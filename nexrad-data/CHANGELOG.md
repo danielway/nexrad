@@ -31,7 +31,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The minimum supported Rust version is 1.88 (it was declared as 1.75, which was already incorrect). (#157)
 - `Error` and `AwsError` are `#[non_exhaustive]`; matches on them outside this crate need a wildcard arm. (#155)
 - The `nexrad-model` feature is renamed `model`, `aws-polling` is folded into `aws`, optional dependencies are no
-  longer features, and `nexrad-decode`'s default features (including `uom`) are no longer enabled. (#156, #161)
+  longer features, and `nexrad-decode`'s default features are no longer enabled. (#156, #161)
 - `result::aws::AWSError` → `result::AwsError`, also at the crate root, and `Error::AWS` → `Error::Aws`. (#160, #171)
 - `AwsError::S3ListObjects`, `S3GetObjectRequest` and `S3Streaming` box the HTTP error instead of holding a
   `reqwest::Error`. (#171)

@@ -29,6 +29,17 @@ Before running the release workflow for a crate, confirm on `main`:
   `CHANGELOG.md` with an `## [Unreleased]` section and `### Added`, `### Changed`, `### Deprecated`, `### Removed`
   and `### Fixed` subsections as needed.
 
+## README Images
+
+Each crate README links its image by absolute URL at the crate's release tag, for example
+`https://raw.githubusercontent.com/danielway/nexrad/nexrad-render@1.0.0/docs/images/products.png`. crates.io needs
+absolute URLs, and the tag keeps a published README showing the image it was released with even after `main` changes.
+The link 404s until that tag exists.
+
+To change an image, regenerate it (`cargo run -p xtask -- readme-images`), and in the same PR point the README links
+of the crates that show it at the tag of their next release. Each crate's tag must contain the image, so merge that PR
+before running the version bump. A release that doesn't change an image can keep linking the older tag.
+
 ## Release Steps
 
 1. **Initiate Version Bump**

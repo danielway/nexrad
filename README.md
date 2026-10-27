@@ -1,8 +1,16 @@
-# NEXRAD
+# nexrad
 
+[![Crates.io](https://img.shields.io/crates/v/nexrad)](https://crates.io/crates/nexrad)
+[![Docs.rs](https://docs.rs/nexrad/badge.svg)](https://docs.rs/nexrad)
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![MSRV](https://img.shields.io/crates/msrv/nexrad)](#installation)
+[![License](https://img.shields.io/crates/l/nexrad)](LICENSE)
 
-A suite of tools for working with NEXRAD WSR-88D weather radar data.
+Rust crates for loading, downloading, decoding, processing and rendering NEXRAD WSR-88D weather radar data.
+
+![Reflectivity from the lowest tilt of a KDMX volume](docs/images/reflectivity.png)
+
+*Lowest-tilt reflectivity from KDMX (Des Moines, Iowa), 5 March 2022 23:23 UTC, drawn by `nexrad-render`.*
 
 ## Scope
 
@@ -12,56 +20,32 @@ volumes with legacy message 1 radials, volumes from before 2008 that carry no VC
 back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
 III products are out of scope.
 
-## `nexrad`
+## Crates
 
-[![Crate](https://img.shields.io/crates/v/nexrad.svg)](https://crates.io/crates/nexrad)
-[![Docs.rs](https://docs.rs/nexrad/badge.svg)](https://docs.rs/nexrad)
+| Crate | What it does |
+|-------|--------------|
+| [`nexrad`](nexrad) [![Crates.io](https://img.shields.io/crates/v/nexrad)](https://crates.io/crates/nexrad) | The entry point: loading, downloading and rendering in one dependency, with the other crates re-exported. |
+| [`nexrad-model`](nexrad-model) [![Crates.io](https://img.shields.io/crates/v/nexrad-model)](https://crates.io/crates/nexrad-model) | Scan, sweep and radial types, documented for readers who don't know the Archive II format. |
+| [`nexrad-decode`](nexrad-decode) [![Crates.io](https://img.shields.io/crates/v/nexrad-decode)](https://crates.io/crates/nexrad-decode) | Decodes RDA/RPG messages as laid out in NOAA's ICD 2620002AA. |
+| [`nexrad-data`](nexrad-data) [![Crates.io](https://img.shields.io/crates/v/nexrad-data)](https://crates.io/crates/nexrad-data) | Archive II files, decompression, and downloads from NOAA's buckets on AWS. |
+| [`nexrad-process`](nexrad-process) [![Crates.io](https://img.shields.io/crates/v/nexrad-process)](https://crates.io/crates/nexrad-process) | Filters and derived products such as composite reflectivity. |
+| [`nexrad-render`](nexrad-render) [![Crates.io](https://img.shields.io/crates/v/nexrad-render)](https://crates.io/crates/nexrad-render) | Renders fields to RGBA images and PNG files. |
+| [`nexrad-inspector`](nexrad-inspector) | A terminal tool for browsing the records and messages in a volume file. Not published; run it from the repository. |
 
-Ergonomic APIs for accessing, decoding, and processing NEXRAD weather radar data.
+[docs/architecture.md](docs/architecture.md) shows how the crates depend on each other.
 
-## `nexrad-model`
+![Six products from one KDMX volume](docs/images/products.png)
 
-[![Crate](https://img.shields.io/crates/v/nexrad-model.svg)](https://crates.io/crates/nexrad-model)
-[![Docs.rs](https://docs.rs/nexrad-model/badge.svg)](https://docs.rs/nexrad-model)
+*The lowest tilt of six products from the same volume, each drawn with `nexrad-render`'s `default_scale`. Top row:
+reflectivity, velocity, spectrum width. Bottom row: differential reflectivity, correlation coefficient, differential
+phase.*
 
-A common model for representing NEXRAD weather radar data. Provides an ergonomic API which is documented for an audience
-who is not necessarily familiar with the NOAA Archive II format.
+### Inspector
 
-## `nexrad-decode`
+![A decoded type 31 message in nexrad-inspector](docs/images/inspector.png)
 
-[![Crate](https://img.shields.io/crates/v/nexrad-decode.svg)](https://crates.io/crates/nexrad-decode)
-[![Docs.rs](https://docs.rs/nexrad-decode/badge.svg)](https://docs.rs/nexrad-decode)
-
-Decoding functions and models for NEXRAD weather radar data. Decoder and struct definitions are in accordance with
-NOAA's WSR-88D Interface Control Document for the RDA/RPG "ICD 2620002AA".
-
-## `nexrad-data`
-
-[![Crate](https://img.shields.io/crates/v/nexrad-data.svg)](https://crates.io/crates/nexrad-data)
-[![Docs.rs](https://docs.rs/nexrad-data/badge.svg)](https://docs.rs/nexrad-data)
-
-Download and processing functions for NEXRAD weather radar data.
-
-## `nexrad-process`
-
-[![Crate](https://img.shields.io/crates/v/nexrad-process.svg)](https://crates.io/crates/nexrad-process)
-[![Docs.rs](https://docs.rs/nexrad-process/badge.svg)](https://docs.rs/nexrad-process)
-
-Processing algorithms for NEXRAD weather radar data.
-
-## `nexrad-render`
-
-[![Crate](https://img.shields.io/crates/v/nexrad-render.svg)](https://crates.io/crates/nexrad-render)
-[![Docs.rs](https://docs.rs/nexrad-render/badge.svg)](https://docs.rs/nexrad-render)
-
-Functions for rendering NEXRAD weather radar data into visual images.
-
-## `nexrad-inspector`
-
-Interactive TUI for inspecting NEXRAD Archive II volume files. Browse local files or download directly
-from AWS, decompress LDM records, and inspect individual radar messages with hex and parsed views.
-
-This can be run from the repository with:
+`nexrad-inspector` opens local volume files or downloads them from AWS, decompresses LDM records, and shows each message
+as hex or as decoded fields:
 
 ```bash
 cargo run -p nexrad-inspector
@@ -270,6 +254,19 @@ cargo run -p xtask -- update-radar-sites
 
 See [Radar site registry maintenance](docs/radar-site-registry.md) for the audit
 policy, failure behavior, and complete update workflow.
+
+## README Images
+
+The images under [docs/images](docs/images) are rendered from one public KDMX volume through the crates' own API.
+To regenerate them, run:
+
+```bash
+cargo run -p xtask -- readme-images
+```
+
+The inspector screenshot is captured by hand. Crate READMEs link the images at their crate's release tag (for example
+`nexrad-render@1.0.0`), so the README on crates.io keeps the image it was published with; see
+[Releasing](docs/releasing.md#readme-images).
 
 ## Acknowledgements
 

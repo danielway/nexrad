@@ -1,10 +1,16 @@
-# NEXRAD
+# nexrad
 
-[![Crate](https://img.shields.io/crates/v/nexrad.svg)](https://crates.io/crates/nexrad)
+[![Crates.io](https://img.shields.io/crates/v/nexrad)](https://crates.io/crates/nexrad)
 [![Docs.rs](https://docs.rs/nexrad/badge.svg)](https://docs.rs/nexrad)
-[![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![MSRV](https://img.shields.io/crates/msrv/nexrad)](https://github.com/danielway/nexrad#installation)
+[![License](https://img.shields.io/crates/l/nexrad)](https://github.com/danielway/nexrad/blob/main/LICENSE)
 
-Ergonomic APIs for accessing, decoding, processing, and rendering NEXRAD weather radar data.
+Load, download, decode, process and render NEXRAD weather radar data.
+
+![Reflectivity from the lowest tilt of a KDMX volume](https://raw.githubusercontent.com/danielway/nexrad/nexrad@1.0.0/docs/images/reflectivity.png)
+
+*Lowest-tilt reflectivity from KDMX (Des Moines, Iowa), 5 March 2022 23:23 UTC, drawn by this crate's `render` feature.*
 
 This is the main entry point for the NEXRAD library suite. It re-exports the underlying crates
 (`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`) and provides

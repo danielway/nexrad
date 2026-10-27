@@ -23,6 +23,8 @@ enum Command {
         #[arg(long)]
         check: bool,
     },
+    /// Render the README images into docs/images/ (downloads one volume from NOAA's bucket).
+    ReadmeImages,
 }
 
 #[tokio::main]
@@ -41,5 +43,6 @@ async fn main() -> xtask::Result<()> {
         Command::UpdateRadarSites => xtask::update_radar_sites().await,
         Command::PublicApi { check: false } => xtask::public_api::update(),
         Command::PublicApi { check: true } => xtask::public_api::check(),
+        Command::ReadmeImages => xtask::readme_images::generate().await,
     }
 }

@@ -3683,7 +3683,9 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "clap",
+ "nexrad",
  "nexrad-model",
+ "png",
  "reqwest",
  "tokio",
 ]

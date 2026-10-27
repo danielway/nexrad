@@ -1,4 +1,5 @@
 pub mod public_api;
+pub mod readme_images;
 
 use chrono::{NaiveDate, Utc};
 use nexrad_model::meta::registry;

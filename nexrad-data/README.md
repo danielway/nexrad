@@ -1,11 +1,14 @@
-# NEXRAD Data
+# nexrad-data
 
 [![Crates.io](https://img.shields.io/crates/v/nexrad-data)](https://crates.io/crates/nexrad-data)
 [![Docs.rs](https://docs.rs/nexrad-data/badge.svg)](https://docs.rs/nexrad-data)
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![MSRV](https://img.shields.io/crates/msrv/nexrad-data)](https://github.com/danielway/nexrad#installation)
+[![License](https://img.shields.io/crates/l/nexrad-data)](https://github.com/danielway/nexrad/blob/main/LICENSE)
 
-Provides structure definitions and decoding functions for NEXRAD Archive II volume files, along with functions for
-downloading both archival and real-time data from open cloud providers like AWS OpenData.
+Reads NEXRAD Archive II volume files and downloads archived and real-time volumes from NOAA's open data buckets on AWS.
+
+One of the [nexrad crates](https://github.com/danielway/nexrad). Most programs depend on [`nexrad`](https://crates.io/crates/nexrad), which re-exports this crate.
 
 ## Scope
 

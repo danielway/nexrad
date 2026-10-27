@@ -1,11 +1,15 @@
-# NEXRAD Model
+# nexrad-model
 
 [![Crates.io](https://img.shields.io/crates/v/nexrad-model)](https://crates.io/crates/nexrad-model)
 [![Docs.rs](https://docs.rs/nexrad-model/badge.svg)](https://docs.rs/nexrad-model)
 [![Rust CI](https://github.com/danielway/nexrad/actions/workflows/ci.yml/badge.svg)](https://github.com/danielway/nexrad/actions/workflows/ci.yml)
+[![MSRV](https://img.shields.io/crates/msrv/nexrad-model)](https://github.com/danielway/nexrad#installation)
+[![License](https://img.shields.io/crates/l/nexrad-model)](https://github.com/danielway/nexrad/blob/main/LICENSE)
 
-A common model for representing NEXRAD weather radar data. Provides an ergonomic API which is documented for an audience
-who is not necessarily familiar with the NOAA Archive II format.
+Types for NEXRAD weather radar data: scans, sweeps, radials and their moments, documented for readers who don't know
+the Archive II format.
+
+One of the [nexrad crates](https://github.com/danielway/nexrad). Most programs depend on [`nexrad`](https://crates.io/crates/nexrad), which re-exports this crate.
 
 ## Scope
 

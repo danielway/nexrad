@@ -332,16 +332,13 @@ impl<'a> Message<'a> {
         let reflectivity = self
             .reflectivity_gates
             .map(|gates| {
-                MomentData::from_fixed_point(
-                    Product::Reflectivity,
-                    usize::from(surveillance_gate_count),
-                    surv_first_range,
-                    surv_interval,
-                    8,
-                    2.0,
-                    66.0,
-                    gates.into_owned(),
-                )
+                MomentData::builder(Product::Reflectivity, gates.into_owned())
+                    .gate_count(usize::from(surveillance_gate_count))
+                    .first_gate_range_meters(surv_first_range)
+                    .gate_interval_meters(surv_interval)
+                    .scale(2.0)
+                    .offset(66.0)
+                    .build()
             })
             .transpose()?;
 
@@ -349,32 +346,26 @@ impl<'a> Message<'a> {
             .velocity_gates
             .map(|gates| {
                 let scale = if vel_resolution > 0.9 { 1.0 } else { 2.0 };
-                MomentData::from_fixed_point(
-                    Product::Velocity,
-                    usize::from(doppler_gate_count),
-                    dopp_first_range,
-                    dopp_interval,
-                    8,
-                    scale,
-                    129.0,
-                    gates.into_owned(),
-                )
+                MomentData::builder(Product::Velocity, gates.into_owned())
+                    .gate_count(usize::from(doppler_gate_count))
+                    .first_gate_range_meters(dopp_first_range)
+                    .gate_interval_meters(dopp_interval)
+                    .scale(scale)
+                    .offset(129.0)
+                    .build()
             })
             .transpose()?;
 
         let spectrum_width = self
             .spectrum_width_gates
             .map(|gates| {
-                MomentData::from_fixed_point(
-                    Product::SpectrumWidth,
-                    usize::from(doppler_gate_count),
-                    dopp_first_range,
-                    dopp_interval,
-                    8,
-                    2.0,
-                    129.0,
-                    gates.into_owned(),
-                )
+                MomentData::builder(Product::SpectrumWidth, gates.into_owned())
+                    .gate_count(usize::from(doppler_gate_count))
+                    .first_gate_range_meters(dopp_first_range)
+                    .gate_interval_meters(dopp_interval)
+                    .scale(2.0)
+                    .offset(129.0)
+                    .build()
             })
             .transpose()?;
 
@@ -415,16 +406,15 @@ impl<'a> Message<'a> {
 
         let reflectivity = reflectivity_gates
             .map(|gates| {
-                MomentData::from_fixed_point(
-                    Product::Reflectivity,
-                    usize::from(msg.surveillance_gate_count()),
-                    msg.surveillance_first_gate_range_meters().unsigned_abs(),
-                    msg.surveillance_gate_interval_meters(),
-                    8,
-                    2.0,
-                    66.0,
-                    gates,
-                )
+                MomentData::builder(Product::Reflectivity, gates)
+                    .gate_count(usize::from(msg.surveillance_gate_count()))
+                    .first_gate_range_meters(
+                        msg.surveillance_first_gate_range_meters().unsigned_abs(),
+                    )
+                    .gate_interval_meters(msg.surveillance_gate_interval_meters())
+                    .scale(2.0)
+                    .offset(66.0)
+                    .build()
             })
             .transpose()?;
 
@@ -435,31 +425,25 @@ impl<'a> Message<'a> {
                 } else {
                     (2.0, 129.0)
                 };
-                MomentData::from_fixed_point(
-                    Product::Velocity,
-                    usize::from(msg.doppler_gate_count()),
-                    msg.doppler_first_gate_range_meters().unsigned_abs(),
-                    msg.doppler_gate_interval_meters(),
-                    8,
-                    scale,
-                    offset,
-                    gates,
-                )
+                MomentData::builder(Product::Velocity, gates)
+                    .gate_count(usize::from(msg.doppler_gate_count()))
+                    .first_gate_range_meters(msg.doppler_first_gate_range_meters().unsigned_abs())
+                    .gate_interval_meters(msg.doppler_gate_interval_meters())
+                    .scale(scale)
+                    .offset(offset)
+                    .build()
             })
             .transpose()?;
 
         let spectrum_width = spectrum_width_gates
             .map(|gates| {
-                MomentData::from_fixed_point(
-                    Product::SpectrumWidth,
-                    usize::from(msg.doppler_gate_count()),
-                    msg.doppler_first_gate_range_meters().unsigned_abs(),
-                    msg.doppler_gate_interval_meters(),
-                    8,
-                    2.0,
-                    129.0,
-                    gates,
-                )
+                MomentData::builder(Product::SpectrumWidth, gates)
+                    .gate_count(usize::from(msg.doppler_gate_count()))
+                    .first_gate_range_meters(msg.doppler_first_gate_range_meters().unsigned_abs())
+                    .gate_interval_meters(msg.doppler_gate_interval_meters())
+                    .scale(2.0)
+                    .offset(129.0)
+                    .build()
             })
             .transpose()?;
 

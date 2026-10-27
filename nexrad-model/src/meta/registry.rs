@@ -5,6 +5,15 @@
 //! [NOAA Radar Operations Center](https://www.roc.noaa.gov/build-loaded.php), with location data
 //! from the [NCEI station report](https://www.ncei.noaa.gov/access/homr/file/nexrad-stations.txt).
 //!
+//! # Stability
+//!
+//! The list of sites is data, not API. Minor releases may add, correct or remove entries, and
+//! may add sites of other radar kinds, such as Terminal Doppler Weather Radar (TDWR) sites, so
+//! code should not assume that every entry is a WSR-88D or that the number of entries is fixed.
+//! [`sites`] returns whatever the registry lists, and [`nearest_site`] returns the nearest
+//! listed site. [`SiteEntry`] is `#[non_exhaustive]`, so fields can be added in a minor release
+//! as well; read its fields rather than constructing or destructuring it exhaustively.
+//!
 //! The registry carries no feedhorn height. A scan's own [`Scan::site`](crate::data::Scan::site),
 //! decoded from the volume data block, carries both the site elevation and the feedhorn height
 //! and is the preferred source for a [`RadarCoordinateSystem`](crate::geo::RadarCoordinateSystem).
@@ -12,6 +21,11 @@
 use crate::result::{Error, Result};
 
 /// Metadata for a NEXRAD radar site in the static registry.
+///
+/// This struct is `#[non_exhaustive]`: minor releases may add fields, so it cannot be built
+/// with a struct expression or matched without `..` outside this crate. Entries come from
+/// [`sites`], [`site_by_id`] and [`nearest_site`]. See the [module documentation](self) for
+/// how the set of entries may change.
 #[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub struct SiteEntry {
@@ -65,7 +79,10 @@ impl std::fmt::Display for SiteEntry {
     }
 }
 
-/// Returns all NEXRAD radar sites in the registry.
+/// Returns every site in the registry, in no particular order.
+///
+/// Minor releases may add, correct or remove entries, including sites of other radar kinds
+/// such as TDWR; see the [module documentation](self).
 pub fn sites() -> &'static [SiteEntry] {
     SITES
 }
@@ -86,11 +103,13 @@ pub fn site_by_id(id: &str) -> Option<&'static SiteEntry> {
     SITES.iter().find(|s| s.id == id_upper)
 }
 
-/// Find the nearest NEXRAD site to a given latitude/longitude.
+/// Find the listed site nearest to a given latitude/longitude.
 ///
 /// Compares great-circle (haversine) distances on a spherical earth, so the result is correct
-/// across the antimeridian and near the poles. Returns `None` only if the registry is empty
-/// (which should never happen).
+/// across the antimeridian and near the poles. The result is the nearest entry of [`sites`],
+/// so it can change when a minor release adds, corrects or removes entries, including when
+/// sites of another radar kind are added; see the [module documentation](self). Returns `None`
+/// only if the registry is empty.
 ///
 /// # Example
 ///

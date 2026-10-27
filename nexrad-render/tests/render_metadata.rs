@@ -12,17 +12,13 @@ use nexrad_render::{
 fn sweep_field() -> SweepField {
     let radials: Vec<Radial> = (0..360)
         .map(|az| {
-            let moment = MomentData::from_fixed_point(
-                Product::Reflectivity,
-                100,
-                2000,
-                250,
-                8,
-                2.0,
-                66.0,
-                vec![100; 100],
-            )
-            .unwrap();
+            let moment = MomentData::builder(Product::Reflectivity, vec![100; 100])
+                .first_gate_range_meters(2000)
+                .gate_interval_meters(250)
+                .scale(2.0)
+                .offset(66.0)
+                .build()
+                .unwrap();
             Radial::builder(0, az as f32, 1, 0.5)
                 .moment(moment)
                 .build()

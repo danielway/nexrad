@@ -25,11 +25,14 @@ use nexrad_model::geo::RadarCoordinateSystem;
 /// use nexrad_model::data::{SweepField, Product};
 /// # use nexrad_model::data::{MomentData, Radial, Scan, Sweep, VcpNumber, VolumeCoveragePattern};
 /// # use nexrad_model::meta::Site;
-/// # let reflectivity = MomentData::from_fixed_point(
-/// #     Product::Reflectivity, 3, 2000, 250, 8, 2.0, 66.0, vec![100, 110, 120],
-/// # )?;
+/// # let reflectivity = MomentData::builder(Product::Reflectivity, vec![100, 110, 120])
+/// #     .first_gate_range_meters(2000)
+/// #     .gate_interval_meters(250)
+/// #     .scale(2.0)
+/// #     .offset(66.0)
+/// #     .build()?;
 /// # let radial = Radial::builder(0, 200.0, 1, 0.5).moment(reflectivity).build()?;
-/// # let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212)).build();
+/// # let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212)).build()?;
 /// # let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
 /// # let scan = Scan::with_site(site, vcp, vec![Sweep::new(1, vec![radial])?]);
 ///

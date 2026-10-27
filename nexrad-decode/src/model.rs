@@ -52,7 +52,8 @@ impl ScanBuilder {
     /// # Errors
     ///
     /// Returns an error if a radar data message cannot be converted to a radial or its site
-    /// metadata is invalid.
+    /// metadata is invalid, or a volume coverage pattern message cannot be converted to the
+    /// model.
     pub fn add_message(&mut self, message: Message<'_>) -> Result<()> {
         match message.into_contents() {
             MessageContents::DigitalRadarData(message) => {
@@ -67,7 +68,7 @@ impl ScanBuilder {
             MessageContents::RdaVolumeCoveragePattern(message)
                 if self.coverage_pattern.is_none() =>
             {
-                self.coverage_pattern = Some(message.to_model());
+                self.coverage_pattern = Some(message.to_model()?);
             }
             _ => {}
         }
@@ -108,7 +109,7 @@ impl ScanBuilder {
     /// Returns [`Error::MissingCoveragePattern`] if no volume coverage pattern message was added.
     pub fn build(self) -> Result<Scan> {
         let coverage_pattern = self.coverage_pattern.ok_or(Error::MissingCoveragePattern)?;
-        let sweeps = Sweep::from_radials(self.radials);
+        let sweeps = Sweep::split_by_elevation_number(self.radials);
         Ok(match self.site {
             Some(site) => Scan::with_site(site, coverage_pattern, sweeps),
             None => Scan::new(coverage_pattern, sweeps),
@@ -146,13 +147,13 @@ mod tests {
             panic!("expected a volume coverage pattern message");
         };
 
-        let model = vcp.to_model();
+        let model = vcp.to_model().unwrap();
         assert_eq!(model.pattern_number().number(), 212);
         assert_eq!(model.version(), vcp.header().version());
         assert_eq!(model.pulse_width(), nexrad_model::data::PulseWidth::Short);
         assert!(model.mrle_enabled());
         assert_eq!(model.mrle_cut_count(), 3);
-        assert_eq!(model.number_of_elevation_cuts(), vcp.elevations().len());
+        assert_eq!(model.elevation_cut_count(), vcp.elevations().len());
 
         let first = &model.elevation_cuts()[0];
         assert_eq!(first.elevation_angle_degrees(), 0.483_398_44);

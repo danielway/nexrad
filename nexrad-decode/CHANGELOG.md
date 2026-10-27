@@ -122,7 +122,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   data_moment_range_sample_interval, moment_size}`, `digital_radar_data_legacy::Message::nyquist_velocity` and
   `clutter_filter_map::RangeZone::end_range`. `uom` is pre-1.0 and would tie this crate's major version to its own;
   each has a unit-suffixed sibling (`azimuth_angle_degrees()`, `unambiguous_range_km()`, `lrtup_bytes()`, ...).
-  Unit-typed accessors may come later as a separate crate or extension trait. (#PRNUM)
+  Unit-typed accessors may come later as a separate crate or extension trait. (#202)
 - `Error::Decoding`, `Error::InvalidMessageLength` and `Error::DataSpansSegmentBoundary`, which nothing constructed.
   (#190)
 - `rda_adaptation_data::Message`'s raw readers (`raw_data`, `read_*_at`, `total_size`); use the typed accessors. (#190)

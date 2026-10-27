@@ -131,7 +131,7 @@ while let Some(cause) = source {
 }
 ```
 
-**6. The `uom` feature and its accessors are removed** (#PRNUM). `uom` has no 1.0 release, and its quantity types in
+**6. The `uom` feature and its accessors are removed** (#202). `uom` has no 1.0 release, and its quantity types in
 public signatures would tie the major version of these crates to `uom`'s. `nexrad-model`, `nexrad-decode` and `nexrad`
 no longer have a `uom` feature; drop it from your `features` lists. Every removed accessor has a sibling that returns a
 plain number with the unit in its name, so switch to that, or build the quantity yourself if you want `uom` types.
@@ -269,7 +269,7 @@ offending argument:
 
 Renames and removals are in the [nexrad-decode tables](#nexrad-decode-100-rc3-to-10).
 
-**Features** (#156, #PRNUM). `nexrad-model` is now `model` (still default), and **`uom` is removed**: switch to the
+**Features** (#156, #202). `nexrad-model` is now `model` (still default), and **`uom` is removed**: switch to the
 unit-suffixed accessors (see [change 6](#changes-that-apply-to-every-crate)).
 
 ```toml
@@ -564,7 +564,7 @@ Renames and removals are in the [nexrad table](#nexrad-100-rc4-to-10).
 on without default features, and each facade feature enables what it needs: `decode` implies `model`, `data` implies
 `decode` and `model`, `parallel` implies `data`, `aws` implies `data` and `chrono`. `full` (the default) is `wasm` +
 `parallel`, and a minimal local-file build (`features = ["data"]`) no longer compiles reqwest. The
-`uom` feature is removed (#PRNUM); see [change 6](#changes-that-apply-to-every-crate).
+`uom` feature is removed (#202); see [change 6](#changes-that-apply-to-every-crate).
 
 ```toml
 nexrad = { version = "1.0", default-features = false, features = ["aws"] } # was ["aws-polling"]
@@ -1084,9 +1084,9 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `data::Radial::new(i64, u16, f32, f32, RadialStatus, u8, f32, Option<MomentData> × 6, Option<CFPMomentData>)` | `Radial::builder(u16, f32, u8, f32)` → `RadialBuilder` with `collection_timestamp_millis`, `azimuth_spacing_degrees`, `radial_status`, `moment(data)` (replacing the per-product setters), `build() -> Result<Radial>` | #165, #170, #185 |
 | `data::Sweep::new(u8, Vec<Radial>) -> Self` | `-> Result<Self>` | #185 |
 | `data::Radial::clutter_filter_power() -> Option<&CFPMomentData>` | `-> Option<&MomentData>` | #170 |
-| `data::Radial::{azimuth, azimuth_spacing, elevation_angle}() -> uom::si::f32::Angle` | Removed; `azimuth_angle_degrees()`, `azimuth_spacing_degrees()`, `elevation_angle_degrees()` | #164, #PRNUM |
-| `data::Sweep::elevation_angle() -> Option<uom::si::f32::Angle>` | Removed; `elevation_angle_degrees()` | #164, #PRNUM |
-| `data::DataMoment::{first_gate_range, gate_interval}() -> uom::si::f64::Length` | Removed; `MomentData::{first_gate_range_km, gate_interval_km}()` | #170, #PRNUM |
+| `data::Radial::{azimuth, azimuth_spacing, elevation_angle}() -> uom::si::f32::Angle` | Removed; `azimuth_angle_degrees()`, `azimuth_spacing_degrees()`, `elevation_angle_degrees()` | #164, #202 |
+| `data::Sweep::elevation_angle() -> Option<uom::si::f32::Angle>` | Removed; `elevation_angle_degrees()` | #164, #202 |
+| `data::DataMoment::{first_gate_range, gate_interval}() -> uom::si::f64::Length` | Removed; `MomentData::{first_gate_range_km, gate_interval_km}()` | #170, #202 |
 | `data::Scan::coverage_pattern_number() -> VCPNumber` | `-> VcpNumber` | #160 |
 | `data::VCPNumber::{Precipitation12, ClearAirLongPulse31, ClearAirShortPulse32, ClearAir35, PrecipitationMpda112, PrecipitationSz2_212, GeneralSurveillance215}` | `{Vcp12, Vcp31, Vcp32, Vcp35, Vcp112, Vcp212, Vcp215}`, as in `nexrad_decode::messages::VcpNumber`; `Unknown(11)`, `Unknown(21)`, `Unknown(121)`, `Unknown(211)`, `Unknown(221)` are `Vcp11`, `Vcp21`, `Vcp121`, `Vcp211`, `Vcp221` | #188 |
 | `data::Radial` (no PRF context) | Adds `nyquist_velocity_mps()`, `unambiguous_range_km() -> Option<f32>`; `RadialBuilder::{nyquist_velocity_mps, unambiguous_range_km}` | #188 |
@@ -1122,8 +1122,8 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `meta::Site::{latitude, longitude}() -> f32` | `-> f64` | #164 |
 | `meta::Site::height_meters() -> i16` | `site_elevation_meters() -> i16`, above mean sea level | #182 |
 | `meta::Site::tower_height_meters() -> u16` | `feedhorn_height_meters() -> u16`, above ground level | #182 |
-| `meta::Site::{height, tower_height}() -> uom::si::f32::Length` | Removed; `site_elevation_meters()`, `feedhorn_height_meters()` | #164, #182, #PRNUM |
-| Feature `uom` | Removed | #PRNUM |
+| `meta::Site::{height, tower_height}() -> uom::si::f32::Length` | Removed; `site_elevation_meters()`, `feedhorn_height_meters()` | #164, #182, #202 |
+| Feature `uom` | Removed | #202 |
 | `meta::registry::SiteEntry` | `#[non_exhaustive]` | #182 |
 | `meta::registry::SiteEntry::{latitude, longitude}: f32` | `f64` | #164 |
 | `meta::registry::SiteEntry::elevation_meters: i16` | `site_elevation_meters: i16` | #182 |
@@ -1226,9 +1226,9 @@ All paths are under `nexrad_decode::messages` unless they start with `result` or
 | `volume_coverage_pattern::Header` | `message_size()`, `doppler_velocity_resolution()` | `message_size_halfwords()`, `doppler_velocity_resolution_mps()` | #173 |
 | `volume_coverage_pattern::ElevationDataBlock` | `elevation_angle()`, `azimuth_rate()`, `sector_1_edge_angle()`, `sector_2_edge_angle()`, `sector_3_edge_angle()`, `ebc_angle()` | `elevation_angle_degrees()`, `azimuth_rate_degrees_per_second()`, `sector_N_edge_angle_degrees()`, `ebc_angle_degrees()` | #173 |
 | `volume_coverage_pattern::ElevationDataBlock` | `reflectivity_threshold()`, `velocity_threshold()`, `spectrum_width_threshold()`, `differential_reflectivity_threshold()`, `differential_phase_threshold()`, `correlation_coefficient_threshold()` | `..._threshold_db()` | #173 |
-| `clutter_filter_map::RangeZone` | `raw_op_code()`, `end_range() -> u16`, `end_range_uom()` | `op_code_raw()`, `end_range_km() -> u16`; `end_range_uom()` removed | #173, #PRNUM |
+| `clutter_filter_map::RangeZone` | `raw_op_code()`, `end_range() -> u16`, `end_range_uom()` | `op_code_raw()`, `end_range_km() -> u16`; `end_range_uom()` removed | #173, #202 |
 | `request_for_data::Message` | `raw_data_request_type()` | `data_request_type_raw()` | #173 |
-| `MessageHeader`, `digital_radar_data::{Header, VolumeDataBlock, ElevationDataBlock, RadialDataBlock, GenericDataBlockHeader}` | `uom` accessors (feature `uom`): `message_size()`, `segment_size()`, `azimuth_angle()`, `elevation_angle()`, `azimuth_indexing_mode()`, `radial_length()`, `lrtup()`, `latitude()`, `longitude()`, `site_height()`, `tower_height()`, `horizontal_shv_tx_power()`, `vertical_shv_tx_power()`, `initial_system_differential_phase()`, `unambiguous_range()`, `nyquist_velocity()`, `data_moment_range()`, `data_moment_range_sample_interval()`, `moment_size()`; feature `uom` | Removed; the unit-suffixed siblings listed in [change 6](#changes-that-apply-to-every-crate) | #PRNUM |
+| `MessageHeader`, `digital_radar_data::{Header, VolumeDataBlock, ElevationDataBlock, RadialDataBlock, GenericDataBlockHeader}` | `uom` accessors (feature `uom`): `message_size()`, `segment_size()`, `azimuth_angle()`, `elevation_angle()`, `azimuth_indexing_mode()`, `radial_length()`, `lrtup()`, `latitude()`, `longitude()`, `site_height()`, `tower_height()`, `horizontal_shv_tx_power()`, `vertical_shv_tx_power()`, `initial_system_differential_phase()`, `unambiguous_range()`, `nyquist_velocity()`, `data_moment_range()`, `data_moment_range_sample_interval()`, `moment_size()`; feature `uom` | Removed; the unit-suffixed siblings listed in [change 6](#changes-that-apply-to-every-crate) | #202 |
 | `rda_status_data::Message` | `raw_rda_status()`, `raw_operability_status()`, `raw_control_status()`, `raw_auxiliary_power_generator_state()`, `raw_horizontal_reflectivity_calibration_correction()`, `raw_data_transmission_enabled()`, `raw_rda_control_authorization()`, `raw_operational_mode()`, `raw_super_resolution_status()`, `raw_clutter_mitigation_decision_status()`, `raw_rda_scan_and_data_flags()`, `raw_rda_alarm_summary()`, `raw_command_acknowledgement()`, `raw_channel_control_status()`, `raw_spot_blanking_status()`, `raw_vertical_reflectivity_calibration_correction()`, `raw_transition_power_source_status()`, `raw_rms_control_status()`, `raw_performance_check_status()`, `raw_alarm_codes()`, `raw_signal_processor_options()` | The same stems with a `_raw` suffix (`rda_status_raw()`, ..., `signal_processor_options_raw()`) | #173 |
 | `rda_status_data::Message` | `raw_rda_build_number()` | `build_number_raw()` | #173 |
 | `rda_status_data::Message` | `raw_volume_coverage_pattern()`, `volume_coverage_pattern()` | `vcp_number_raw()`, `vcp_number()` (`Option<VcpSelection>` instead of `Option<VolumeCoveragePatternNumber>`) | #163, #191 |
@@ -1411,7 +1411,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `Error::{Model, Decode, Data, Render, Process, Io}` `Display` `"<layer> error: <message>"` | `"<layer> error"`; the message comes from `source()` | #176, #195 |
 | `Error` | `#[non_exhaustive]` | #155 |
 | Features `aws-polling`, `tokio` | Removed; use `aws` | #156, #161 |
-| Feature `uom` | Removed; use the unit-suffixed accessors | #PRNUM |
+| Feature `uom` | Removed; use the unit-suffixed accessors | #202 |
 
 </details>
 

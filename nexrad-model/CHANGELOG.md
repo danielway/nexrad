@@ -92,7 +92,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   nyquist_velocity, unambiguous_range}`, `Sweep::elevation_angle`, `MomentData::{first_gate_range, gate_interval}`,
   `Site::{site_elevation, feedhorn_height}`), and the `uom` dependency. `uom` is pre-1.0 and would tie this crate's
   major version to its own; use the unit-suffixed accessors (`elevation_angle_degrees()`, `gate_interval_km()`, ...).
-  Unit-typed accessors may come later as a separate crate or extension trait. (#PRNUM)
+  Unit-typed accessors may come later as a separate crate or extension trait. (#202)
 
 ### Fixed
 

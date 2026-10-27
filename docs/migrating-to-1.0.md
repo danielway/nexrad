@@ -229,9 +229,9 @@ offending argument:
 - **Exhaustive enums gained variants**: `MomentValue::CfpStatus(CfpStatus)`, produced only for
   `Product::ClutterFilterPower` and mapped to `GateStatus::NoData`, and `GateStatus::Filtered` (#187), a gate whose
   valid value a processing step removed, keeping the value. Exhaustive matches need the new arms.
-- **`GateStatus` is `#[non_exhaustive]`** (#NNN): its `Filtered` and `NoData` statuses are set by processing steps, and
+- **`GateStatus` is `#[non_exhaustive]`** (#211): its `Filtered` and `NoData` statuses are set by processing steps, and
   a later step may add one. Add a wildcard (`_`) arm to matches on it. `MomentValue` stays exhaustive.
-- **`SiteEntry::state` is `Option<&'static str>`** (#NNN), so the registry can list sites outside the United States.
+- **`SiteEntry::state` is `Option<&'static str>`** (#211), so the registry can list sites outside the United States.
   Every current entry is `Some`; compare with `Some("OK")` or use `site.state.unwrap_or_default()` where you used the
   string. `Display` prints `KTLX (Oklahoma City, OK)` as before and omits the state when it is `None`.
 - **Constructors validate** (#185). `SweepFieldBuilder::build` requires non-empty, finite, strictly ascending azimuths
@@ -1189,7 +1189,7 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `data::VerticalField::get(usize, usize) -> (f32, GateStatus)`, `set(..)` | `get -> Option<(f32, GateStatus)>`, `set -> Result<()>` | #185 |
 | `data::GateStatus::{Valid, BelowThreshold, RangeFolded, NoData}` | Adds `Filtered` | #187 |
 | `impl From<&data::MomentValue> for data::GateStatus` | `impl From<data::MomentValue> for data::GateStatus` | #187 |
-| `data::GateStatus` | `#[non_exhaustive]`; add a wildcard arm | #NNN |
+| `data::GateStatus` | `#[non_exhaustive]`; add a wildcard arm | #211 |
 | `data::Radial::collection_timestamp() -> i64` | `collection_timestamp_millis() -> i64`, milliseconds since the Unix epoch, UTC | #182 |
 | `data::VolumeCoveragePattern::doppler_velocity_resolution() -> f32` | `doppler_velocity_resolution_mps() -> f32` | #182 |
 | `data::VolumeCoveragePattern::{sails_cuts, mrle_cuts}() -> u8` | `{sails_cut_count, mrle_cut_count}() -> u8` | #182 |
@@ -1207,7 +1207,7 @@ changed it. Added items that replace nothing are in the CHANGELOGs.
 | `meta::registry::SiteEntry` | `#[non_exhaustive]` | #182 |
 | `meta::registry::SiteEntry::{latitude, longitude}: f32` | `f64` | #164 |
 | `meta::registry::SiteEntry::elevation_meters: i16` | `site_elevation_meters: i16` | #182 |
-| `meta::registry::SiteEntry::state: &'static str` | `Option<&'static str>`, `None` for a site outside the United States | #NNN |
+| `meta::registry::SiteEntry::state: &'static str` | `Option<&'static str>`, `None` for a site outside the United States | #211 |
 | `meta::registry::nearest_site(f32, f32)` | `nearest_site(f64, f64)` | #164 |
 | `meta::registry::SiteEntry::to_site() -> Site` | `-> Result<Site>`; every registry entry is valid | #185 |
 | `result::Error` | `#[non_exhaustive]`, `Clone`, `PartialEq`; new `InvalidGeometry { parameter, reason }`, `InvalidMomentData { parameter, reason }`, `MomentDataLength { expected, actual }`, `InvalidCoveragePattern { parameter, reason }`, `InvalidSite { parameter, reason }`, `IndexOutOfBounds { row, column, rows, columns }` | #155, #185, #210 |

@@ -70,9 +70,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `ElevationCut`'s elevation angle is `f32`, like the other stored angles. (#182)
 - `meta::registry::SiteEntry` is `#[non_exhaustive]`. (#182)
 - `meta::registry::SiteEntry::state` is `Option<&'static str>`, `None` for a site outside the United States; every
-  current entry is `Some`. `Display` omits the state when it is `None`. (#NNN)
+  current entry is `Some`. `Display` omits the state when it is `None`. (#211)
 - `data::GateStatus` is `#[non_exhaustive]`, as `Filtered` and `NoData` come from processing steps and a later step
-  may add a status; matches outside this crate need a wildcard arm. `MomentValue` stays exhaustive. (#NNN)
+  may add a status; matches outside this crate need a wildcard arm. `MomentValue` stays exhaustive. (#211)
 - `Debug` output prints renamed items under their new names (#160), binary blobs as `fnv1a: 0x...` hashes (#162),
   moments with a `product` field instead of a nested `inner` block (#170), and the fields renamed for serde (#189).
 - Field indexing is checked: `get` and the row accessors return `Option`, and `set` returns `Result`. (#185)

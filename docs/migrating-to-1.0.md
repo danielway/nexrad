@@ -119,7 +119,7 @@ nexrad-data = { version = "1.0", default-features = false, features = ["model", 
 
 **5. Wrapping error variants display only their layer** (#195). `nexrad::Error::{Model, Decode, Data, Render, Process,
 Io}`, `nexrad_data::Error::{Io, Decode, Model}`, `nexrad_decode::Error::Model`, `nexrad_process::Error::Model` and
-`nexrad_render::Error::Image` display a layer name (`decode error`) and return the wrapped error from `source()`;
+`nexrad_render::Error::Encode` display a layer name (`decode error`) and return the wrapped error from `source()`;
 `nexrad_data::Error::Aws` displays the `AwsError` itself. Walk the source chain to print the whole cause:
 
 ```rust
@@ -490,11 +490,30 @@ let section = VerticalCrossSection::builder(200.0)
 Renames and removals are in the [nexrad-render table](#nexrad-render-100-rc4-to-10).
 
 **Errors** (#174, #194). `NoRadials` is `EmptyField`, also returned for Cartesian or vertical fields with no rows or
-columns, and `InvalidDimensions` is also returned for a zero width or height. `Image(image::ImageError)` replaces
-`ImageSave(String)` and displays `image error` (#195). `ColorLookupTable::new` and an invalid
-`RenderOptions::with_value_range` return `InvalidRange { min, max }` or `InvalidTableSize { size }`, and `render_sweep`
-with an extent returns `InvalidExtent` or `MissingCoordinateSystem`. Because `image::ImageError` is not `UnwindSafe`,
-neither is `Error`.
+columns, and `InvalidDimensions` is also returned for a zero width or height. `ImageSave(String)` is replaced by
+`Io(std::io::Error)` and `Encode(Box<dyn Error + Send + Sync>)`, which displays `error encoding image` (#195, #203).
+`ColorLookupTable::new` and an invalid `RenderOptions::with_value_range` return `InvalidRange { min, max }` or
+`InvalidTableSize { size }`, and `render_sweep` with an extent returns `InvalidExtent` or `MissingCoordinateSystem`.
+Because the boxed encoder error is not `UnwindSafe`, neither is `Error`.
+
+**Pixels instead of `image` types** (#203). `RenderResult` owns its pixels as 8-bit RGBA, row-major with no row
+padding; no `image` type is in the API. `image()` and `into_image()` become `pixels()` and `into_pixels()` (with
+`width()` and `height()`), and `save(path)` becomes `save_png(path)`, which writes PNG whatever the extension;
+`write_png(writer)` encodes into memory. The `RgbaImage` re-export is removed. To keep using `image`, enable the opt-in
+`image` feature (`nexrad-render = { version = "1.0", features = ["image"] }`, or the facade's `image` feature) and call
+`into_rgba_image()`; that feature tracks `image`'s 0.x releases and is outside the semver promise. For formats other
+than PNG, pass the pixels to the image library of your choice:
+
+```rust
+// 1.0.0-rc.4
+result.save("radar.png")?;
+let image: RgbaImage = result.into_image();
+
+// 1.0
+let (width, height) = (result.width(), result.height());
+result.save_png("radar.png")?;
+let rgba: Vec<u8> = result.into_pixels();
+```
 
 **Render through a `SweepField`** (#174):
 
@@ -506,7 +525,7 @@ let image = render_radials(sweep.radials(), Product::Reflectivity, &nws_reflecti
 let field = sweep
     .field(Product::Reflectivity)
     .ok_or_else(|| std::io::Error::other("no reflectivity"))?;
-let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options)?.into_image();
+let pixels = render_sweep(&field, &default_scale(Product::Reflectivity), &options)?.into_pixels();
 ```
 
 **Behaviour and type changes**
@@ -532,9 +551,8 @@ let image = render_sweep(&field, &default_scale(Product::Reflectivity), &options
   extent into the metadata. `render_cartesian` and `render_vertical` ignore it.
 - **Non-valid gates** are drawn as the background unless `RenderOptions::with_status_color(status, color)` gives them a
   colour, such as purple for `GateStatus::RangeFolded` (#194).
-- **`image` codecs are opt-in** (#194): only `png` is enabled. For other formats in `save` and the new `write_to`, enable
-  the codec on your own `image = { version = "0.25", default-features = false, features = ["jpeg"] }`; otherwise saving
-  a `.jpg` fails with `Error::Image`. `nexrad_render::image` re-exports the crate.
+- **PNG only** (#194, #203): `save_png` and `write_png` encode PNG; `save` no longer infers a format from the file
+  extension. Encode other formats from `pixels()` with your own image library.
 - **Queries on a sector sweep** return `None` beyond the covered azimuths instead of the far end's value (#185).
   `EmptyField` is unreachable for Cartesian and vertical fields built with `new`, which rejects zero dimensions.
 
@@ -1028,7 +1046,7 @@ fn main() -> nexrad::Result<()> {
     let scale = default_scale(Product::Reflectivity); // a ColorScale; nws_reflectivity_scale().into() is the same
     let options = RenderOptions::new(1024, 1024);
     let result = render_sweep(&field, &scale, &options)?;
-    result.save("reflectivity.png")?;
+    result.save_png("reflectivity.png")?;
 
     if let Some(px) = result.metadata().km_to_pixel_distance(100.0) {
         println!("100 km is {px} pixels");
@@ -1349,7 +1367,7 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 
 | 1.0.0-rc.4 | 1.0 | PR |
 |---|---|---|
-| `render_radials(&[Radial], Product, &DiscreteColorScale, &RenderOptions) -> Result<RgbaImage>` | Removed; `render_sweep(&SweepField::from_radials(radials, product)?, &scale.into(), &options)?.into_image()` | #174 |
+| `render_radials(&[Radial], Product, &DiscreteColorScale, &RenderOptions) -> Result<RgbaImage>` | Removed; `render_sweep(&SweepField::from_radials(radials, product)?, &scale.into(), &options)?.into_pixels()` | #174, #203 |
 | `render_radials_default(&[Radial], Product, &RenderOptions) -> Result<RgbaImage>` | Removed; `render_sweep` with `default_scale(product)` | #174 |
 | `default_color_scale(Product) -> ColorScale` | Removed; `default_scale` | #174 |
 | `default_scale(Product) -> DiscreteColorScale` | `default_scale(Product) -> ColorScale` | #174 |
@@ -1360,19 +1378,22 @@ The `rda_adaptation_data` (type 18) and `performance_maintenance_data` (type 3) 
 | `RenderOptions::transparent()`, `bilinear()` | Removed; `with_background(Color::TRANSPARENT)`, `with_interpolation(Interpolation::Bilinear)` | #194 |
 | `RenderOptions::with_background([u8; 4])`, `background() -> Option<[u8; 4]>` | `with_background(Color)` (`Color::from_rgba8(rgba)` or `rgba.into()`), `background() -> Option<Color>` (`None` when fully transparent) | #194 |
 | `RenderResult::new(RgbaImage, RenderMetadata)` | Crate-private | #174 |
+| `RenderResult::image() -> &RgbaImage`, `into_image() -> RgbaImage` | `pixels() -> &[u8]`, `into_pixels() -> Vec<u8>` (RGBA8, row-major) with `width()`, `height()`; `into_rgba_image()` with the opt-in `image` feature | #203 |
+| `RenderResult::save(path)` (format from the extension) | `save_png(path)`; `write_png(impl Write)` encodes into memory | #203 |
+| `nexrad_render::RgbaImage` (re-export of `image::RgbaImage`) | Removed; `image` is not in the API without the opt-in `image` feature | #203 |
 | `RenderResult::query_pixel(&SweepField, f64, f64)`, `query_geo(&SweepField, &GeoPoint)` | `RenderMetadata::query_pixel`, `RenderMetadata::query_geo` (`result.metadata().query_pixel(..)`) | #194 |
 | `RenderResult::query_polar(&SweepField, f32, f64)` | `RenderMetadata::query_polar(&SweepField, f64, f64)` | #164, #194 |
 | `nexrad_render::Product` (re-export) | Removed; `nexrad_model::data::Product` (or `nexrad::model::data::Product`) | #194 |
-| `image` dependency with default features | `image` with only `png`; enable other codecs on your own `image` dependency | #194 |
+| `image` dependency with default features | No `image` dependency (PNG through a private encoder); opt-in `image` feature for `into_rgba_image()` | #194, #203 |
 | `RenderMetadata::center_pixel() -> (f64, f64)` | `-> Option<(f64, f64)>`, `Some` only for polar renders | #174 |
 | `RenderMetadata::{pixels_per_km, max_range_km}() -> f64` | `-> Option<f64>` | #174 |
 | `RenderMetadata::{pixel_distance_to_km, km_to_pixel_distance}(f64) -> f64` | `-> Option<f64>` | #174 |
 | `RenderMetadata::polar_to_pixel(f32, f64) -> (f64, f64)` | `polar_to_pixel(f64, f64) -> Option<(f64, f64)>` | #164, #174 |
 | `RenderMetadata::elevation_degrees() -> Option<f32>` | `elevation_angle_degrees() -> Option<f64>` | #164, #182 |
 | `PointQuery` | `#[non_exhaustive]`; read it from `RenderMetadata::query_*`, its `polar` a `PolarPoint` with `azimuth_angle_degrees` and `elevation_angle_degrees` | #182 |
-| `result::Error::{NoRadials, ImageSave(String), ProductNotFound}` | `EmptyField`, `Image(image::ImageError)`, removed (only `render_radials` produced it) | #174, #195 |
+| `result::Error::{NoRadials, ImageSave(String), ProductNotFound}` | `EmptyField`, `Io(std::io::Error)` or `Encode(Box<dyn Error + Send + Sync>)`, removed (only `render_radials` produced it) | #174, #195, #203 |
 | `result::Error` | `#[non_exhaustive]`; new `InvalidRange { min, max }`, `InvalidTableSize { size }`, `InvalidExtent`, `MissingCoordinateSystem` | #155, #194 |
-| `result::Error`: `UnwindSafe`, `RefUnwindSafe` | Neither (`image::ImageError` is not) | #174 |
+| `result::Error`: `UnwindSafe`, `RefUnwindSafe` | Neither (the boxed encoder error in `Encode` is not) | #174, #203 |
 
 </details>
 

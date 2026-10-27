@@ -20,10 +20,16 @@ rustdoc-args = ["--cfg", "docsrs"]
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 
+[features]
+# Adds `RenderResult::into_rgba_image`. Tracks the `image` crate's own 0.x releases and
+# is excluded from this crate's semver promise.
+image = ["dep:image"]
+
 [dependencies]
 thiserror = { workspace = true }
 nexrad-model = { version = "1.0.0-rc.2", path = "../nexrad-model" }
-image = { version = "0.25", default-features = false, features = ["png"] }
+png = "0.18"
+image = { version = "0.25", default-features = false, optional = true }
 
 [dev-dependencies]
 nexrad-decode = { version = "1.0.0-rc.3", path = "../nexrad-decode" }

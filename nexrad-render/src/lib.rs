@@ -1,8 +1,9 @@
 //! Rendering functions for NEXRAD weather radar data.
 //!
 //! This crate provides functions to render radar data into visual images. It converts
-//! radar moment data (reflectivity, velocity, etc.) into color-mapped images that can
-//! be saved to common formats like PNG.
+//! radar moment data (reflectivity, velocity, etc.) into color-mapped RGBA pixel
+//! buffers that can be uploaded as textures, handed to another image library, or
+//! encoded as PNG.
 //!
 //! # Example
 //!
@@ -22,8 +23,12 @@
 //!     let scale = default_scale(Product::Reflectivity);
 //!     let result = render_sweep(&field, &scale, &RenderOptions::new(800, 800))?;
 //!
-//!     // Save directly to PNG
-//!     result.save("radar.png")?;
+//!     // Raw RGBA8 pixels, row-major
+//!     let (width, height) = (result.width(), result.height());
+//!     assert_eq!(result.pixels().len(), (width * height * 4) as usize);
+//!
+//!     // Or encode as PNG
+//!     result.save_png("radar.png")?;
 //!
 //!     // Metadata maps pixels back to radar coordinates
 //!     let ring_px = result.metadata().km_to_pixel_distance(100.0);
@@ -36,17 +41,20 @@
 //! the same way; [`RenderMetadata::projection`] reports how each image's pixels map
 //! back to data coordinates.
 //!
-//! # The `image` dependency
+//! # Pixels and encoding
 //!
-//! Rendered images are [`image::RgbaImage`] values and image I/O failures surface as
-//! [`Error::Image`], so the [`image`] crate is part of this crate's public API. It is
-//! re-exported as [`nexrad_render::image`](crate::image) so callers can use the
-//! matching version without a separate dependency. A major version bump of `image`
-//! is therefore a major version bump of `nexrad-render`.
+//! A [`RenderResult`] owns its pixels as a `Vec<u8>` of 8-bit RGBA, row-major with no
+//! row padding ([`RenderResult::pixels`], [`RenderResult::into_pixels`]). No image
+//! library type appears in this crate's API. [`RenderResult::write_png`] and
+//! [`RenderResult::save_png`] encode PNG with a private encoder; for other formats,
+//! pass the pixels to the image library of your choice.
 //!
-//! Only the `image` PNG codec is enabled. [`RenderResult::save`] and
-//! [`RenderResult::write_to`] support other formats once the consumer enables the
-//! matching feature on its own `image` dependency (Cargo unifies the features).
+//! # Features
+//!
+//! - `image` (off by default): adds `RenderResult::into_rgba_image`, which converts
+//!   the result into an `image::RgbaImage`. This feature tracks the `image` crate's own
+//!   0.x releases and is excluded from this crate's semver promise: a minor or patch
+//!   release of this crate may move it to a newer, incompatible `image` version.
 //!
 //! # Crate Boundaries
 //!
@@ -55,7 +63,7 @@
 //!
 //! ## Responsibilities
 //!
-//! - Render radar data to images ([`image::RgbaImage`])
+//! - Render radar data to RGBA pixel buffers ([`RenderResult`])
 //! - Apply color scales to moment data
 //! - Handle geometric transformations (polar to Cartesian coordinates)
 //! - Consume `nexrad-model` field types (`SweepField`, `CartesianField`, `VerticalField`)
@@ -77,9 +85,6 @@
 #![warn(unnameable_types)]
 #![deny(missing_docs)]
 #![warn(missing_debug_implementations)]
-
-pub use image;
-pub use image::RgbaImage;
 
 mod color;
 pub use crate::color::*;

@@ -24,7 +24,8 @@ pub struct LatestVolumeResult {
 }
 
 /// Identifies the volume index with the most recent data for the specified radar site. Real-time
-/// NEXRAD data is uploaded to a series of rotating volumes `1..=999`, each containing ~55 chunks.
+/// NEXRAD data is uploaded to a series of rotating volumes `1..=999`, each holding the chunks of
+/// one radar volume (about 55 in observed data; the count is not fixed).
 /// This function performs a binary search to find the volume with the most recent upload time.
 ///
 /// The result's `volume` is `None` if none of the site's volumes contain any chunks.
@@ -73,8 +74,9 @@ where
 ///
 /// This is the fast path for a client that persisted the last volume it saw. Starting at `hint`,
 /// it walks forward one volume at a time while the next volume holds a newer upload than the
-/// current one, and returns the last volume reached. When the hint is minutes old this typically
-/// takes 1 to 3 list calls, compared with the logarithmic search of [`get_latest_volume`].
+/// current one, and returns the last volume reached. With a hint a few minutes old this has taken
+/// 1 to 3 list calls in observed use (not a guarantee), compared with the logarithmic search of
+/// [`get_latest_volume`].
 ///
 /// If the hint volume has no chunks (or no upload time), this falls back to
 /// [`get_latest_volume`] and returns its result, with `calls` including the probe of the hint.

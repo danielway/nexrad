@@ -1,13 +1,18 @@
 //!
 //! # Real-time NEXRAD Data
-//! Near real-time (within seconds) NEXRAD radar data is uploaded to an AWS S3 bucket by NOAA. This
-//! data is organized into a series of "volumes", each containing ~55 "chunks". This module provides
-//! functions for identifying the most recent volume with data for a specified radar site and
-//! downloading the chunks within that volume.
+//! Near real-time NEXRAD radar data is uploaded to an AWS S3 bucket by NOAA. This data is
+//! organized into a series of "volumes", each made up of "chunks". This module provides functions
+//! for identifying the most recent volume with data for a specified radar site and downloading the
+//! chunks within that volume.
 //!
 //! A fixed number (999) volumes exist in the S3 bucket which are rotated through in a round-robin
-//! fashion. Chunks are added to each volume approximately every 4-12 seconds with little latency
-//! from the data's collection time (usually approximately 15 seconds from collection time).
+//! fashion.
+//!
+//! The following figures are observed behaviour of the bucket, not a guarantee from NOAA or from
+//! this crate, and they vary with the volume coverage pattern and the site: a volume has held
+//! about 55 chunks, a new chunk has appeared every 4 to 12 seconds, a chunk has become available
+//! about 15 seconds after its data was collected, and an elevation cut has spanned 3 chunks (6 for
+//! a super-resolution cut). Code should not depend on them.
 //!
 //! There may be gaps in the volume data, as illustrated in the real example below from KDMX:
 //! ```text

@@ -4,7 +4,6 @@ use crate::util::get_datetime;
 use chrono::{DateTime, Duration, Utc};
 use std::borrow::Cow;
 
-
 /// The digital radar data message header block precedes base data information for a particular
 /// radial and includes parameters for that radial and information about the following data blocks.
 #[derive(Clone, PartialEq, Debug)]

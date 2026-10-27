@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
 
-
 /// A single radar sweep composed of a series of radials. This represents a full rotation of the
 /// radar at some elevation angle and contains the Level II data (reflectivity, velocity, and
 /// spectrum width) for each azimuth angle in that sweep. The resolution of the sweep dictates the

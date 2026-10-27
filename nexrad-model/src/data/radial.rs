@@ -4,7 +4,6 @@ use crate::result::{Error, Result};
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
 
-
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

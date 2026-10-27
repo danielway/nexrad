@@ -3,7 +3,6 @@ use super::ProcessingStatus;
 use crate::messages::VcpNumber;
 use std::borrow::Cow;
 
-
 /// Internal representation of the volume data block, supporting both legacy and modern formats.
 ///
 /// The format expanded at Build 20.0 (ICD 2620002U, July 2021).

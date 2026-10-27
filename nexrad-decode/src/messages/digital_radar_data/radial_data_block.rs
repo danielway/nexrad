@@ -1,7 +1,6 @@
 use super::raw;
 use std::borrow::Cow;
 
-
 /// Internal representation of the radial data block, supporting both legacy and modern formats.
 ///
 /// The format expanded from 20 to 28 bytes at Build 12.0 (ICD 2620002K, July 2011),
@@ -141,5 +140,4 @@ impl<'a> RadialDataBlock<'a> {
     pub fn nyquist_velocity_mps(&self) -> f32 {
         self.nyquist_velocity_raw() as f32 * 0.01
     }
-
 }

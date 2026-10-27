@@ -2,7 +2,6 @@ use crate::messages::clutter_filter_map::raw;
 use crate::messages::clutter_filter_map::OpCode;
 use std::borrow::Cow;
 
-
 /// Defines a range segment of a particular elevation and azimuth with an operation type describing
 /// the clutter filter map behavior for the segment.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

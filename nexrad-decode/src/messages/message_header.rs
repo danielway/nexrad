@@ -7,7 +7,6 @@ use std::borrow::Cow;
 use std::fmt::{self, Debug};
 use zerocopy::FromBytes;
 
-
 /// Message and system configuration information appended to the beginning of all messages.
 ///
 /// Use [`is_fixed_frame()`](Self::is_fixed_frame) to determine the framing mode, and
@@ -183,7 +182,6 @@ impl<'a> MessageHeader<'a> {
             (high << 16) | low
         }
     }
-
 }
 
 #[cfg(test)]

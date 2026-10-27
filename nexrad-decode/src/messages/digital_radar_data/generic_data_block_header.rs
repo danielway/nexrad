@@ -2,7 +2,6 @@ use super::raw;
 use super::{ControlFlags, DataWordSize};
 use std::borrow::Cow;
 
-
 /// A generic data moment block's decoded header.
 #[derive(Clone, PartialEq, Debug)]
 pub struct GenericDataBlockHeader<'a> {
@@ -118,5 +117,4 @@ impl<'a> GenericDataBlockHeader<'a> {
     pub fn moment_size_bytes(&self) -> u32 {
         self.inner.data_moment_gate_count.get() as u32 * self.inner.data_word_size as u32 / 8
     }
-
 }

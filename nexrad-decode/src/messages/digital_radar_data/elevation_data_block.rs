@@ -1,7 +1,6 @@
 use super::raw;
 use std::borrow::Cow;
 
-
 /// An elevation data block.
 #[derive(Clone, PartialEq, Debug)]
 pub struct ElevationDataBlock<'a> {

@@ -4,7 +4,6 @@ use std::fmt::Display;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-
 /// A radar site's metadata including a variety of infrequently-changing properties.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
@@ -58,7 +57,6 @@ impl Site {
     pub fn feedhorn_height_meters(&self) -> u16 {
         self.feedhorn_height_meters
     }
-
 }
 
 /// Builder for [`Site`], created with [`Site::builder`].

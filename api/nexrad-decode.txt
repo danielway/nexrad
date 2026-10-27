@@ -218,7 +218,6 @@ impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::cl
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::clutter_filter_map::Message<'a>
 pub struct nexrad_decode::messages::clutter_filter_map::RangeZone<'a>
 impl<'a> nexrad_decode::messages::clutter_filter_map::RangeZone<'a>
-pub fn nexrad_decode::messages::clutter_filter_map::RangeZone<'a>::end_range(&self) -> uom::si::f64::Length
 pub fn nexrad_decode::messages::clutter_filter_map::RangeZone<'a>::end_range_km(&self) -> u16
 pub fn nexrad_decode::messages::clutter_filter_map::RangeZone<'a>::into_owned(self) -> nexrad_decode::messages::clutter_filter_map::RangeZone<'static>
 pub fn nexrad_decode::messages::clutter_filter_map::RangeZone<'a>::op_code(&self) -> nexrad_decode::messages::clutter_filter_map::OpCode
@@ -513,7 +512,6 @@ pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::atmo
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::atmospheric_attenuation_raw(&self) -> i16
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::calibration_constant_db(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'static>
-pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::lrtup(&self) -> uom::si::f64::Information
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::lrtup_bytes(&self) -> u16
 impl<'a> core::clone::Clone for nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>
 pub fn nexrad_decode::messages::digital_radar_data::ElevationDataBlock<'a>::clone(&self) -> Self
@@ -553,16 +551,13 @@ impl<'a> nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::control_flags(&self) -> nexrad_decode::messages::digital_radar_data::ControlFlags
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::control_flags_raw(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_gate_count(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_range(&self) -> uom::si::f64::Length
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_range_km(&self) -> f64
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_range_raw(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_range_sample_interval(&self) -> uom::si::f64::Length
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_range_sample_interval_km(&self) -> f64
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_moment_range_sample_interval_raw(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_word_size(&self) -> nexrad_decode::messages::digital_radar_data::DataWordSize
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::data_word_size_raw(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'static>
-pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::moment_size(&self) -> uom::si::f64::Information
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::moment_size_bytes(&self) -> u32
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::offset(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>::scale(&self) -> f32
@@ -586,9 +581,7 @@ impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::di
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::GenericDataBlockHeader<'a>
 pub struct nexrad_decode::messages::digital_radar_data::Header<'a>
 impl<'a> nexrad_decode::messages::digital_radar_data::Header<'a>
-pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_angle(&self) -> uom::si::f64::Angle
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_angle_degrees(&self) -> f32
-pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_indexing_mode(&self) -> core::option::Option<uom::si::f64::Angle>
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_indexing_mode_degrees(&self) -> core::option::Option<f32>
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_indexing_mode_raw(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::azimuth_number(&self) -> u16
@@ -601,13 +594,11 @@ pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::cut_sector_numbe
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::data_block_count(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::date_raw(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
-pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::elevation_angle(&self) -> uom::si::f64::Angle
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::elevation_angle_degrees(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::elevation_number(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::Header<'static>
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radar_identifier(&self) -> core::option::Option<&str>
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radar_identifier_raw(&self) -> &[u8; 4]
-pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_length(&self) -> uom::si::f64::Information
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_length_bytes(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_spot_blanking_status(&self) -> nexrad_decode::messages::digital_radar_data::SpotBlankingFlags
 pub fn nexrad_decode::messages::digital_radar_data::Header<'a>::radial_spot_blanking_status_raw(&self) -> u8
@@ -665,13 +656,10 @@ impl<'a> nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::horizontal_channel_calibration_constant_db(&self) -> core::option::Option<f32>
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::horizontal_channel_noise_level_dbm(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::RadialDataBlock<'static>
-pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::lrtup(&self) -> uom::si::f64::Information
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::lrtup_bytes(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::nyquist_velocity(&self) -> uom::si::f64::Velocity
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::nyquist_velocity_mps(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::nyquist_velocity_raw(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::radial_flags_raw(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::unambiguous_range(&self) -> uom::si::f64::Length
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::unambiguous_range_km(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::unambiguous_range_raw(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>::vertical_channel_calibration_constant_db(&self) -> core::option::Option<f32>
@@ -716,29 +704,21 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_r
 pub struct nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>
 impl<'a> nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::calibration_constant_db(&self) -> f32
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::horizontal_shv_tx_power(&self) -> uom::si::f64::Power
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::horizontal_shv_tx_power_kw(&self) -> f32
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::initial_system_differential_phase(&self) -> uom::si::f64::Angle
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::initial_system_differential_phase_degrees(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'static>
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::latitude(&self) -> uom::si::f64::Angle
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::latitude_degrees(&self) -> f32
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::longitude(&self) -> uom::si::f64::Angle
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::longitude_degrees(&self) -> f32
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::lrtup(&self) -> uom::si::f64::Information
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::lrtup_bytes(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::major_version_number(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::minor_version_number(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::processing_status(&self) -> nexrad_decode::messages::digital_radar_data::ProcessingStatus
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::processing_status_raw(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::site_height(&self) -> uom::si::f64::Length
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::site_height_meters(&self) -> i16
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::system_differential_reflectivity_db(&self) -> f32
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::tower_height(&self) -> uom::si::f64::Length
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::tower_height_meters(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::vcp_number(&self) -> nexrad_decode::messages::VcpNumber
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::vcp_number_raw(&self) -> u16
-pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::vertical_shv_tx_power(&self) -> uom::si::f64::Power
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::vertical_shv_tx_power_kw(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::zdr_bias_estimate_weighted_mean_db(&self) -> core::option::Option<f32>
 pub fn nexrad_decode::messages::digital_radar_data::VolumeDataBlock<'a>::zdr_bias_estimate_weighted_mean_raw(&self) -> core::option::Option<u16>
@@ -773,7 +753,6 @@ pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::elevatio
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::elevation_number(&self) -> u8
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data_legacy::Message<'static>
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::into_radial(self) -> nexrad_decode::result::Result<nexrad_model::data::radial::Radial>
-pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::nyquist_velocity(&self) -> uom::si::f64::Velocity
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::nyquist_velocity_mps(&self) -> f32
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::nyquist_velocity_raw(&self) -> u16
 pub fn nexrad_decode::messages::digital_radar_data_legacy::Message<'a>::radial(&self) -> nexrad_decode::result::Result<nexrad_model::data::radial::Radial>
@@ -2460,7 +2439,6 @@ pub const nexrad_decode::messages::MessageHeader<'a>::SIZE: usize
 pub fn nexrad_decode::messages::MessageHeader<'a>::date_time(&self) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::utc::Utc>>
 pub fn nexrad_decode::messages::MessageHeader<'a>::into_owned(self) -> nexrad_decode::messages::MessageHeader<'static>
 pub fn nexrad_decode::messages::MessageHeader<'a>::is_fixed_frame(&self) -> bool
-pub fn nexrad_decode::messages::MessageHeader<'a>::message_size(&self) -> uom::si::f64::Information
 pub fn nexrad_decode::messages::MessageHeader<'a>::message_size_bytes(&self) -> u32
 pub fn nexrad_decode::messages::MessageHeader<'a>::message_type(&self) -> nexrad_decode::MessageType
 pub fn nexrad_decode::messages::MessageHeader<'a>::message_type_raw(&self) -> u8
@@ -2469,7 +2447,6 @@ pub fn nexrad_decode::messages::MessageHeader<'a>::redundant_channel(&self) -> n
 pub fn nexrad_decode::messages::MessageHeader<'a>::redundant_channel_raw(&self) -> u8
 pub fn nexrad_decode::messages::MessageHeader<'a>::segment_count(&self) -> core::option::Option<u16>
 pub fn nexrad_decode::messages::MessageHeader<'a>::segment_number(&self) -> core::option::Option<u16>
-pub fn nexrad_decode::messages::MessageHeader<'a>::segment_size(&self) -> core::option::Option<uom::si::f64::Information>
 pub fn nexrad_decode::messages::MessageHeader<'a>::segment_size_bytes(&self) -> core::option::Option<u32>
 pub fn nexrad_decode::messages::MessageHeader<'a>::segment_size_raw(&self) -> u16
 pub fn nexrad_decode::messages::MessageHeader<'a>::sequence_number(&self) -> u16

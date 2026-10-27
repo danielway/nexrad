@@ -72,6 +72,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The published crate leaves out the tests and benchmarks that need files from outside it, the fuzz targets and
   the `trim_fixture` maintainer example. (#196)
 - The `aws` feature's build requirements (a C compiler, and NASM on Windows x86 targets) are documented. (#196)
+- Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the
+  real-time chunk counts and upload timings are documented as observed bucket behaviour, not a guarantee. (#PR)
 
 ### Removed
 

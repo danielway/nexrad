@@ -81,6 +81,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The crates.io categories are `science` and `data-structures`; `parsing` is dropped. (#196)
 - The published crate leaves out the fixture tests that need files from outside it and the site registry's source
   CSV. (#196)
+- Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the
+  `Product` variants describe the quantity each moment holds, and `Product::value_range()` is documented as a display
+  default, stable for 1.x. (#PR)
 
 ### Removed
 

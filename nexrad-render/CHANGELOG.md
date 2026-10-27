@@ -57,6 +57,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Color::to_rgba8` clamps and rounds to the nearest byte instead of truncating. (#194)
 - The `image` dependency enables only its `png` feature. (#194)
 - The published crate leaves out the benchmark, which needs files from outside it. (#196)
+- Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the color
+  scale docs list value ranges and colors without interpreting them. (#PR)
 
 ### Removed
 

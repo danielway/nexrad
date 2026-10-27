@@ -132,7 +132,7 @@ fn split_cut_scan() -> Scan {
         sweep(5, 2.4),
         sweep(6, 3.4),
     ];
-    Scan::new(vcp, sweeps)
+    Scan::new(vcp.pattern_number(), Some(vcp), sweeps)
 }
 
 #[test]

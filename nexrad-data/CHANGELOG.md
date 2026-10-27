@@ -93,6 +93,14 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `aws` no longer includes a TLS backend; the new `aws-rustls` feature (default) adds rustls with the aws-lc-rs
   provider, which `aws` enabled before. On `wasm32`, `aws` alone is enough; on native targets, `aws` without a TLS
   backend builds but its HTTPS requests fail. (#204)
+- `volume::File::scan()` and `File::coverage_pattern_message()` decompress a gzip-wrapped file themselves instead of
+  returning `Error::CompressedFile`. `File::records()`, which borrows its records from the file, still needs
+  `File::decompress()` first. (#208)
+- `volume::File::scan()` and `aws::realtime::assemble_volume` return a scan whose `coverage_pattern()` is `None` when
+  no type 5 message was seen, such as for a legacy volume or chunks without a Start chunk, with the coverage pattern
+  number taken from the radials. They fail only when no coverage pattern number is found, with `Error::Decode`
+  carrying `MissingCoveragePatternNumber`, instead of `Error::MissingCoveragePattern`, which
+  `File::coverage_pattern_message()` still returns. (#208)
 
 ### Removed
 

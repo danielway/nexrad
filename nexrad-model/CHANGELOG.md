@@ -112,6 +112,11 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The crates.io categories are `science` and `data-structures`; `parsing` is dropped. (#196)
 - The published crate leaves out the fixture tests that need files from outside it and the site registry's source
   CSV. (#196)
+- `Scan::coverage_pattern()` returns `Option<&VolumeCoveragePattern>`, `None` for a scan built without a volume
+  coverage pattern message, and `Scan::coverage_pattern_number()` is stored on the scan, so it is present either way.
+  `Scan::new` and `Scan::with_site` take the coverage pattern number and an `Option<VolumeCoveragePattern>`. With
+  `serde`, `Scan` serializes a `coverage_pattern_number` field, and `coverage_pattern` is nullable and defaults to
+  null when absent. (#208)
 
 ### Removed
 

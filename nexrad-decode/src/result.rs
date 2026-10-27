@@ -63,6 +63,17 @@ pub enum Error {
     #[cfg(feature = "model")]
     #[error("no volume coverage pattern message found")]
     MissingCoveragePattern,
+    /// A legacy digital radar data message (type 1) gives a negative range to its first gate and
+    /// a zero gate interval, so none of its gates lies at a non-negative range.
+    ///
+    /// The ICD defines the range to the first gate as signed. Conversion to a model radial drops
+    /// leading gates at a negative range; with a zero interval every gate is at that range.
+    #[cfg(feature = "model")]
+    #[error("negative range to first gate ({range_meters} m) in a legacy radar data message")]
+    NegativeFirstGateRange {
+        /// The range to the first gate in meters, as decoded.
+        range_meters: i16,
+    },
     /// Decoded values were rejected by a [`nexrad_model`] constructor, such as moment data
     /// whose gate count does not match its encoded data or a radial with an out-of-range
     /// azimuth.

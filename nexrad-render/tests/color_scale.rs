@@ -409,7 +409,7 @@ fn test_lookup_table_rejects_tiny_sizes() {
     for size in [0, 1] {
         assert!(matches!(
             ColorLookupTable::new(&scale, 0.0, 70.0, size),
-            Err(Error::InvalidTableSize { size: s }) if s == size
+            Err(Error::InvalidTableSize { size: s, .. }) if s == size
         ));
     }
 }
@@ -508,7 +508,7 @@ fn test_lookup_table_interpolates_continuous_scales() {
 #[test]
 fn test_scale_constructors_reject_empty_and_non_finite_values() {
     let reason = |result: Result<(), Error>| match result {
-        Err(Error::InvalidColorScale { reason }) => reason,
+        Err(Error::InvalidColorScale { reason, .. }) => reason,
         other => panic!("expected InvalidColorScale, got {other:?}"),
     };
 

@@ -8,6 +8,7 @@ use nexrad_model::data::{Product, SweepField};
 pub enum Error {
     /// A constructor or builder parameter is outside its accepted range.
     #[error("invalid parameter: `{parameter}` {reason}")]
+    #[non_exhaustive]
     InvalidParameter {
         /// The name of the offending parameter.
         parameter: &'static str,
@@ -17,6 +18,7 @@ pub enum Error {
 
     /// An input field or output grid has invalid geometry for this algorithm.
     #[error("invalid geometry: `{parameter}` {reason}")]
+    #[non_exhaustive]
     InvalidGeometry {
         /// The name of the offending geometry parameter.
         parameter: &'static str,
@@ -30,6 +32,7 @@ pub enum Error {
     /// [`CorrelationCoefficientFilter`](crate::filter::CorrelationCoefficientFilter) when the
     /// input field and the correlation coefficient field are not registered gate for gate.
     #[error("geometry mismatch: `{parameter}` differs between the input and the reference field")]
+    #[non_exhaustive]
     GeometryMismatch {
         /// The name of the [`SweepField`] geometry accessor whose values differ.
         parameter: &'static str,
@@ -37,6 +40,7 @@ pub enum Error {
 
     /// A field holds a different radar product than the algorithm requires.
     #[error("unexpected product: expected {expected:?}, got {actual:?}")]
+    #[non_exhaustive]
     UnexpectedProduct {
         /// The product the algorithm requires.
         expected: Product,
@@ -46,6 +50,7 @@ pub enum Error {
 
     /// The algorithm requires data that is not present.
     #[error("missing required data: {what}")]
+    #[non_exhaustive]
     MissingData {
         /// A description of the missing data.
         what: &'static str,

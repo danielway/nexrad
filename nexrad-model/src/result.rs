@@ -15,6 +15,7 @@ pub enum Error {
     /// differs from the sweep's, and by [`Sweep::merge`](crate::data::Sweep::merge) when the two
     /// sweeps' elevation numbers differ.
     #[error("elevation number mismatch: expected {expected}, got {actual}")]
+    #[non_exhaustive]
     ElevationMismatch {
         /// The elevation number of the sweep.
         expected: u8,
@@ -29,6 +30,7 @@ pub enum Error {
     /// [`SweepFieldBuilder::build`](crate::data::SweepFieldBuilder::build), and
     /// [`RadialBuilder::build`](crate::data::RadialBuilder::build).
     #[error("invalid geometry: `{parameter}` {reason}")]
+    #[non_exhaustive]
     InvalidGeometry {
         /// The name of the offending parameter.
         parameter: &'static str,
@@ -41,6 +43,7 @@ pub enum Error {
     ///
     /// Returned by [`MomentDataBuilder::build`](crate::data::MomentDataBuilder::build).
     #[error("invalid moment data: `{parameter}` {reason}")]
+    #[non_exhaustive]
     InvalidMomentData {
         /// The name of the offending parameter.
         parameter: &'static str,
@@ -52,6 +55,7 @@ pub enum Error {
     ///
     /// Returned by [`MomentDataBuilder::build`](crate::data::MomentDataBuilder::build).
     #[error("invalid moment data length: expected {expected} bytes for the gate count and word size, got {actual}")]
+    #[non_exhaustive]
     MomentDataLength {
         /// The number of bytes `gate_count` gates of `data_word_size` bits occupy.
         expected: usize,
@@ -65,6 +69,7 @@ pub enum Error {
     /// Returned by [`ElevationCutBuilder::build`](crate::data::ElevationCutBuilder::build) and
     /// [`VolumeCoveragePatternBuilder::build`](crate::data::VolumeCoveragePatternBuilder::build).
     #[error("invalid coverage pattern: `{parameter}` {reason}")]
+    #[non_exhaustive]
     InvalidCoveragePattern {
         /// The name of the offending parameter.
         parameter: &'static str,
@@ -76,6 +81,7 @@ pub enum Error {
     ///
     /// Returned by [`SiteBuilder::build`](crate::meta::SiteBuilder::build).
     #[error("invalid site: `{parameter}` {reason}")]
+    #[non_exhaustive]
     InvalidSite {
         /// The name of the offending parameter.
         parameter: &'static str,
@@ -90,6 +96,7 @@ pub enum Error {
     #[error(
         "index ({row}, {column}) out of bounds for a field of {rows} rows and {columns} columns"
     )]
+    #[non_exhaustive]
     IndexOutOfBounds {
         /// The requested row index.
         row: usize,
@@ -106,6 +113,7 @@ pub enum Error {
     /// Returned by [`Product`'s `FromStr`](crate::data::Product#impl-FromStr-for-Product)
     /// implementation.
     #[error("unknown product name `{name}`")]
+    #[non_exhaustive]
     UnknownProduct {
         /// The string that failed to parse.
         name: String,

@@ -234,11 +234,10 @@ mod tests {
 
     #[test]
     fn model_errors_convert_into_decode_errors() {
-        let error: Error = nexrad_model::result::Error::InvalidSite {
-            parameter: "latitude",
-            reason: "must be finite and within -90.0..=90.0",
-        }
-        .into();
+        let error: Error = nexrad_model::meta::Site::builder(*b"KDMX", f64::NAN, 0.0)
+            .build()
+            .expect_err("NaN latitude")
+            .into();
         assert!(matches!(
             error,
             Error::Model(nexrad_model::result::Error::InvalidSite {

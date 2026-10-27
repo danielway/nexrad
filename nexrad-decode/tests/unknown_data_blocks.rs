@@ -185,13 +185,10 @@ fn unknown_block_between_known_blocks_is_skipped() {
 fn unknown_block_type_byte_is_an_error() {
     let data = with_extra_block(&renamed_moment_block(b'Q', b"XYZ"));
     let block_offset = DRD_HEADER + *pointers(&data).last().expect("a block");
-    assert_eq!(
+    assert!(matches!(
         decode_messages(&data),
-        Err(Error::UnknownDataBlockType {
-            block_type: *b"XYZ",
-            offset: block_offset,
-        })
-    );
+        Err(Error::UnknownDataBlockType { block_type, offset, .. }) if block_type == *b"XYZ" && offset == block_offset
+    ));
 }
 
 #[test]

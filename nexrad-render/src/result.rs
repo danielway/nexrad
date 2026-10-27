@@ -20,6 +20,7 @@ pub enum Error {
     /// passed to [`ColorLookupTable::new`](crate::ColorLookupTable::new) or
     /// [`RenderOptions::with_value_range`](crate::RenderOptions::with_value_range).
     #[error("invalid value range {min}..{max}: must be finite with min < max")]
+    #[non_exhaustive]
     InvalidRange {
         /// The lower bound that was given.
         min: f32,
@@ -28,6 +29,7 @@ pub enum Error {
     },
     /// A color lookup table was requested with fewer than 2 entries.
     #[error("invalid color lookup table size {size}: must be at least 2")]
+    #[non_exhaustive]
     InvalidTableSize {
         /// The size that was given.
         size: usize,
@@ -36,6 +38,7 @@ pub enum Error {
     /// [`DiscreteColorScale::new`](crate::DiscreteColorScale::new) or
     /// [`ContinuousColorScale::new`](crate::ContinuousColorScale::new).
     #[error("invalid color scale: {reason}")]
+    #[non_exhaustive]
     InvalidColorScale {
         /// Why the scale was rejected.
         reason: &'static str,

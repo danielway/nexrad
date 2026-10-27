@@ -15,10 +15,9 @@ Rust crates for loading, downloading, decoding, processing and rendering NEXRAD 
 ## Scope
 
 The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
-(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
-volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
-back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
-III products are out of scope.
+(ICD 2620002), from WSR-88D and TDWR radars. They read the whole archive, including volumes with legacy message 1
+radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes back to 1991. `_MDM` objects
+(Model Data, message type 29) and archive tarballs are not read, and Level III products are out of scope.
 
 ## Crates
 
@@ -162,26 +161,8 @@ fn main() -> nexrad::Result<()> {
 
 ### Feature Reference
 
-The default features of the `nexrad` crate are `data`, `aws`, `aws-rustls` and `render`. Each feature also enables
-the features listed under "Implies".
-
-| Feature | Description | Implies | Dependencies |
-|---------|-------------|---------|--------------|
-| `model` | Core data types (Scan, Sweep, Radial) | | Pure Rust |
-| `decode` | Binary protocol decoding | `model` | chrono, zerocopy |
-| `data` | Local file I/O | `decode`, `model`, `chrono` | bzip2 |
-| `render` | Image rendering | `model` | png |
-| `process` | Processing algorithms | `model` | nexrad-model |
-| `aws` | AWS S3 downloads and real-time streaming, without a TLS backend | `data` | reqwest, futures-util |
-| `aws-rustls` | `aws` with rustls (aws-lc-rs provider) as the TLS backend | `aws` | rustls, aws-lc-rs |
-| `parallel` | Parallel decompression | `data` | rayon |
-| `serde` | Serialization support | | serde |
-| `chrono` | DateTime type support | | chrono |
-| `image` | `RenderResult::into_rgba_image` (opt-in, not in `full`, outside the semver promise) | `render` | image |
-| `full` | Every feature above except `image` | All above except `image` | All above |
-
-On native targets `aws` needs a TLS backend to reach the HTTPS endpoints; `aws-rustls` provides one and needs a C
-compiler and, on Windows x86 targets, NASM.
+The [`nexrad` crate README](nexrad/README.md#features) lists every feature, what each one implies, and the TLS
+backend options.
 
 ### WASM Support
 
@@ -220,16 +201,8 @@ cargo run -p nexrad --example showcase --features process --release
 
 ### Lower-Level APIs
 
-For advanced use cases, you can use the sub-crates directly:
-
-- **`nexrad-decode`** - Parse individual NEXRAD messages from byte slices
-- **`nexrad-data`** - Handle Archive II file decompression and AWS S3 access
-- **`nexrad-model`** - Work directly with domain types
-- **`nexrad-process`** - Filter sweeps and compute derived products
-- **`nexrad-render`** - Render fields to images
-
-See each crate's documentation for detailed API information, and [docs/architecture.md](docs/architecture.md) for how
-the crates fit together and the API stability rules they follow.
+Each crate in the [Crates](#crates) table can be used on its own. See each crate's documentation for its API, and
+[docs/architecture.md](docs/architecture.md) for how the crates fit together and the API stability rules they follow.
 
 ### Changelogs
 

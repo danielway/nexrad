@@ -13,11 +13,8 @@ One of the [nexrad crates](https://github.com/danielway/nexrad). Most programs d
 
 ## Scope
 
-The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
-(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
-volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
-back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
-III products are out of scope.
+The [repository README](https://github.com/danielway/nexrad#scope) describes which Level II data the nexrad crates
+read.
 
 ## Data Model
 
@@ -132,7 +129,6 @@ let nearest = registry::nearest_site(35.4676, -97.5164).unwrap();
 - `chrono`: Use the `chrono` crate for date and time types. Enables `collection_time()` returning `DateTime<Utc>` instead of raw timestamps.
 
 Accessors return plain numbers with the unit in the name (`elevation_angle_degrees()`, `gate_interval_km()`).
-Unit-typed accessors (for example with the `uom` crate) may be offered later as a separate crate or extension trait.
 
 ## Minimum Supported Rust Version
 

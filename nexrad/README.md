@@ -19,10 +19,9 @@ top-level convenience functions for common tasks.
 ## Scope
 
 The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
-(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
-volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
-back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
-III products are out of scope.
+(ICD 2620002), from WSR-88D and TDWR radars. They read the whole archive, including volumes with legacy message 1
+radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes back to 1991. `_MDM` objects
+(Model Data, message type 29) and archive tarballs are not read, and Level III products are out of scope.
 
 ## Quick Start
 
@@ -124,14 +123,11 @@ features it depends on, so `data` alone is enough for local file loading.
 | `image` | `RenderResult::into_rgba_image` interop (opt-in, outside the semver promise) | `render` |
 | `full` | Every feature above except `image` | all of them except `image` |
 
-Every feature except `parallel` builds for `wasm32-unknown-unknown`.
+The `image` feature tracks the `image` crate's own 0.x releases and is excluded from the semver promise: a minor or
+patch release may move it to a newer, incompatible `image` version. Without it, rendered images are plain RGBA8 pixel
+buffers with `write_png` and `save_png`.
 
-Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example with the `uom` crate) may
-be offered later as a separate crate or extension trait.
-
-The `image` feature is not part of `full`. It tracks the `image` crate's own 0.x releases and is
-excluded from the semver promise: a minor or patch release may move it to a newer, incompatible `image` version.
-Without it, rendered images are plain RGBA8 pixel buffers with `write_png` and `save_png`.
+Accessors return plain numbers with the unit in the name.
 
 For local file processing without rendering or networking:
 
@@ -141,13 +137,14 @@ nexrad = { version = "1.0", default-features = false, features = ["data"] }
 
 ### TLS
 
-On native targets, `aws` alone compiles but has no TLS backend, so every HTTPS request fails at run
-time with reqwest's `invalid URL, scheme is not http` connect error. A TLS feature of `reqwest` 0.13
-(for example `native-tls`) enabled by any other crate in the build also provides one, since Cargo
-unifies features. `wasm32` needs no TLS backend because the browser performs TLS. `aws-rustls` (on by default) adds rustls with the `aws-lc-rs` crypto provider,
-which compiles C code and needs a C compiler and, on Windows x86 targets, NASM. To use a different
-TLS backend, disable the default features, enable `aws`, and enable a TLS feature of `reqwest` 0.13
-in your own manifest.
+`aws-rustls` (on by default) gives `aws` its TLS backend: rustls with the `aws-lc-rs` crypto provider, which compiles
+C code and needs a C compiler and, on Windows x86 targets, NASM. To use a different backend, disable the default
+features, enable `aws`, and enable a TLS feature of `reqwest` 0.13 in your own manifest.
+
+On native targets, `aws` alone compiles but every HTTPS request fails at run time with reqwest's `invalid URL, scheme
+is not http` connect error, unless a TLS feature of `reqwest` 0.13 (for example `native-tls`) is enabled by your
+manifest or any other crate in the build, since Cargo unifies features. `wasm32` needs no TLS backend because the
+browser performs TLS.
 
 ## WASM Support
 
@@ -160,8 +157,8 @@ nexrad = { version = "1.0", default-features = false, features = [
 ] }
 ```
 
-The `parallel` feature requires a native thread pool (rayon). Real-time streaming is part of `aws`
-and is runtime-agnostic, so it works on WASM with any sleep future.
+`parallel` needs native threads (rayon). Real-time streaming is part of `aws` and takes a caller-supplied sleep
+function, so it works on WASM.
 
 ## Minimum Supported Rust Version
 

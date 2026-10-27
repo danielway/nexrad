@@ -13,10 +13,9 @@ One of the [nexrad crates](https://github.com/danielway/nexrad). Most programs d
 ## Scope
 
 The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
-(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
-volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
-back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
-III products are out of scope.
+(ICD 2620002), from WSR-88D and TDWR radars. They read the whole archive, including volumes with legacy message 1
+radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes back to 1991. `_MDM` objects
+(Model Data, message type 29) and archive tarballs are not read, and Level III products are out of scope.
 
 ## Volume Definitions
 

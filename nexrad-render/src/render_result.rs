@@ -402,7 +402,8 @@ impl RenderMetadata {
     /// Convert geographic coordinates to a pixel coordinate.
     ///
     /// For [`Projection::Polar`] this requires a coordinate system and returns `None`
-    /// without one. For [`Projection::Geographic`] the point is mapped linearly
+    /// without one, or when no beam at the sweep's elevation passes over the point
+    /// (see [`RadarCoordinateSystem::geo_to_polar`](nexrad_model::geo::RadarCoordinateSystem::geo_to_polar)). For [`Projection::Geographic`] the point is mapped linearly
     /// through the extent; points outside the extent map to pixels outside the
     /// image. For [`Projection::Vertical`] it always returns `None`.
     pub fn geo_to_pixel(&self, point: &GeoPoint) -> Option<(f64, f64)> {
@@ -412,7 +413,7 @@ impl RenderMetadata {
                 ..
             } => {
                 let coord_system = self.coord_system.as_ref()?;
-                let polar = coord_system.geo_to_polar(*point, *elevation_angle_degrees);
+                let polar = coord_system.geo_to_polar(*point, *elevation_angle_degrees)?;
                 self.polar_to_pixel(polar.azimuth_angle_degrees, polar.range_km)
             }
             Projection::Geographic { extent } => {
@@ -525,11 +526,12 @@ impl RenderMetadata {
     /// `field` must be the field that was rendered with
     /// [`render_sweep`](crate::render_sweep). Requires a coordinate system and a
     /// [`Polar`](Projection::Polar) or [`Geographic`](Projection::Geographic)
-    /// projection. Returns `None` otherwise, or if the point is outside the field.
+    /// projection. Returns `None` otherwise, if no beam at the sweep's elevation passes over the
+    /// point, or if the point is outside the field.
     pub fn query_geo(&self, field: &SweepField, point: &GeoPoint) -> Option<PointQuery> {
         let elevation = self.sweep_elevation(field)?;
         let coord_system = self.coord_system.as_ref()?;
-        let polar = coord_system.geo_to_polar(*point, elevation);
+        let polar = coord_system.geo_to_polar(*point, elevation)?;
         self.build_query(field, polar)
     }
 

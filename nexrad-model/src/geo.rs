@@ -207,9 +207,35 @@ impl RadarCoordinateSystem {
     /// [`beam_height_meters`](Self::beam_height_meters) for the symbols. This is the exact
     /// inverse of [`polar_to_geo`](Self::polar_to_geo).
     ///
-    /// The range is not finite or is negative when no beam at that elevation passes over the
-    /// point (`theta + phi` of 90 degrees or more).
-    pub fn geo_to_polar(&self, point: GeoPoint, elevation_angle_degrees: f64) -> PolarPoint {
+    /// Returns `None` when no beam at that elevation passes over the point (`theta + phi` of 90
+    /// degrees or more, which includes elevations above 90 degrees and points more than a
+    /// quarter of the effective earth's circumference away) or when an input is not finite.
+    /// At the radar's own location the range is `0.0` and the azimuth `0.0`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use nexrad_model::geo::{GeoPoint, RadarCoordinateSystem};
+    /// use nexrad_model::meta::Site;
+    ///
+    /// let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
+    /// let coords = RadarCoordinateSystem::new(&site);
+    ///
+    /// // A point about 185 km due north.
+    /// let north = GeoPoint { latitude: 37.0, longitude: -97.2778 };
+    /// let polar = coords.geo_to_polar(north, 0.5).unwrap();
+    /// assert!(polar.azimuth_angle_degrees < 0.01);
+    /// assert!(polar.range_km > 180.0 && polar.range_km < 190.0);
+    ///
+    /// // A beam at 89 degrees passes over no point that far away.
+    /// assert!(coords.geo_to_polar(north, 89.0).is_none());
+    /// # Ok::<(), nexrad_model::result::Error>(())
+    /// ```
+    pub fn geo_to_polar(
+        &self,
+        point: GeoPoint,
+        elevation_angle_degrees: f64,
+    ) -> Option<PolarPoint> {
         let lat1 = self.latitude.to_radians();
         let lon1 = self.longitude.to_radians();
         let lat2 = point.latitude.to_radians();
@@ -233,14 +259,21 @@ impl RadarCoordinateSystem {
         let central_angle = ground_range_m / EFFECTIVE_EARTH_RADIUS_M;
         let elevation_rad = elevation_angle_degrees.to_radians();
         let antenna_radius_m = EFFECTIVE_EARTH_RADIUS_M + self.antenna_height_meters;
-        let range_m =
-            antenna_radius_m * central_angle.sin() / (elevation_rad + central_angle).cos();
+        let beam_angle_cos = (elevation_rad + central_angle).cos();
+        if beam_angle_cos.is_nan() || beam_angle_cos <= 0.0 {
+            // No beam at this elevation reaches the point, or an input was NaN.
+            return None;
+        }
+        let range_m = antenna_radius_m * central_angle.sin() / beam_angle_cos;
+        if !range_m.is_finite() || !azimuth_angle_degrees.is_finite() {
+            return None;
+        }
 
-        PolarPoint {
+        Some(PolarPoint {
             azimuth_angle_degrees,
             range_km: range_m / 1000.0,
             elevation_angle_degrees,
-        }
+        })
     }
 
     /// Compute the geographic bounding box of a radar sweep at the given maximum range.
@@ -312,6 +345,65 @@ mod tests {
             .feedhorn_height_meters(10)
             .build()
             .unwrap()
+    }
+
+    #[test]
+    fn test_geo_to_polar_at_the_radar() {
+        let cs = RadarCoordinateSystem::new(&test_site());
+        let here = GeoPoint {
+            latitude: cs.latitude(),
+            longitude: cs.longitude(),
+        };
+        for elevation in [-1.0, 0.5, 19.5, 90.0] {
+            let polar = cs.geo_to_polar(here, elevation).unwrap();
+            assert_eq!(polar.range_km, 0.0, "elevation {elevation}");
+            assert_eq!(polar.azimuth_angle_degrees, 0.0);
+            assert_eq!(polar.elevation_angle_degrees, elevation);
+        }
+    }
+
+    #[test]
+    fn test_geo_to_polar_none_when_no_beam_reaches_the_point() {
+        let cs = RadarCoordinateSystem::new(&test_site());
+        // About 185 km north: the central angle is about 1.25 degrees.
+        let point = GeoPoint {
+            latitude: 37.0,
+            longitude: cs.longitude(),
+        };
+        assert!(cs.geo_to_polar(point, 88.5).is_some());
+        assert!(cs.geo_to_polar(point, 89.0).is_none());
+        assert!(cs.geo_to_polar(point, 90.0).is_none());
+        assert!(cs.geo_to_polar(point, 120.0).is_none());
+
+        // The antipode lies 135 degrees around the effective earth, beyond any beam.
+        let antipode = GeoPoint {
+            latitude: -cs.latitude(),
+            longitude: cs.longitude() + 180.0,
+        };
+        assert!(cs.geo_to_polar(antipode, 0.0).is_none());
+        assert!(cs.geo_to_polar(antipode, -10.0).is_none());
+    }
+
+    #[test]
+    fn test_geo_to_polar_none_for_non_finite_input() {
+        let cs = RadarCoordinateSystem::new(&test_site());
+        let point = GeoPoint {
+            latitude: 36.0,
+            longitude: -97.0,
+        };
+        assert!(cs.geo_to_polar(point, f64::NAN).is_none());
+        assert!(cs.geo_to_polar(point, f64::INFINITY).is_none());
+        for (latitude, longitude) in [(f64::NAN, -97.0), (36.0, f64::NAN), (f64::INFINITY, -97.0)] {
+            assert!(cs
+                .geo_to_polar(
+                    GeoPoint {
+                        latitude,
+                        longitude
+                    },
+                    0.5
+                )
+                .is_none());
+        }
     }
 
     #[test]

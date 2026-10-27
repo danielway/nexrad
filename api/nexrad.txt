@@ -2,7 +2,6 @@ pub mod nexrad
 pub use nexrad::chrono
 pub use nexrad::data
 pub use nexrad::decode
-pub use nexrad::futures_util
 pub use nexrad::model
 pub use nexrad::process
 pub use nexrad::render

@@ -2289,7 +2289,7 @@ impl<'a> nexrad_decode::messages::volume_coverage_pattern::Message<'a>
 pub fn nexrad_decode::messages::volume_coverage_pattern::Message<'a>::elevations(&self) -> &[nexrad_decode::messages::volume_coverage_pattern::ElevationDataBlock<'a>]
 pub fn nexrad_decode::messages::volume_coverage_pattern::Message<'a>::header(&self) -> &nexrad_decode::messages::volume_coverage_pattern::Header<'a>
 pub fn nexrad_decode::messages::volume_coverage_pattern::Message<'a>::into_owned(self) -> nexrad_decode::messages::volume_coverage_pattern::Message<'static>
-pub fn nexrad_decode::messages::volume_coverage_pattern::Message<'a>::to_model(&self) -> nexrad_model::data::volume_coverage_pattern::VolumeCoveragePattern
+pub fn nexrad_decode::messages::volume_coverage_pattern::Message<'a>::to_model(&self) -> nexrad_decode::result::Result<nexrad_model::data::volume_coverage_pattern::VolumeCoveragePattern>
 impl<'a> core::clone::Clone for nexrad_decode::messages::volume_coverage_pattern::Message<'a>
 pub fn nexrad_decode::messages::volume_coverage_pattern::Message<'a>::clone(&self) -> Self
 impl<'a> core::cmp::PartialEq for nexrad_decode::messages::volume_coverage_pattern::Message<'a>

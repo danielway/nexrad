@@ -3,6 +3,8 @@ pub mod nexrad_render::result
 #[non_exhaustive] pub enum nexrad_render::result::Error
 pub nexrad_render::result::Error::EmptyField
 pub nexrad_render::result::Error::Encode(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
+pub nexrad_render::result::Error::InvalidColorScale
+pub nexrad_render::result::Error::InvalidColorScale::reason: &'static str
 pub nexrad_render::result::Error::InvalidDimensions
 pub nexrad_render::result::Error::InvalidExtent
 pub nexrad_render::result::Error::InvalidRange
@@ -51,6 +53,8 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_render::ColorScale
 #[non_exhaustive] pub enum nexrad_render::Error
 pub nexrad_render::Error::EmptyField
 pub nexrad_render::Error::Encode(alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync + 'static)>)
+pub nexrad_render::Error::InvalidColorScale
+pub nexrad_render::Error::InvalidColorScale::reason: &'static str
 pub nexrad_render::Error::InvalidDimensions
 pub nexrad_render::Error::InvalidExtent
 pub nexrad_render::Error::InvalidRange
@@ -210,7 +214,7 @@ impl core::panic::unwind_safe::UnwindSafe for nexrad_render::ColorStop
 pub struct nexrad_render::ContinuousColorScale
 impl nexrad_render::ContinuousColorScale
 pub fn nexrad_render::ContinuousColorScale::color(&self, f32) -> nexrad_render::Color
-pub fn nexrad_render::ContinuousColorScale::new(alloc::vec::Vec<nexrad_render::ColorStop>) -> Self
+pub fn nexrad_render::ContinuousColorScale::new(alloc::vec::Vec<nexrad_render::ColorStop>) -> nexrad_render::result::Result<Self>
 pub fn nexrad_render::ContinuousColorScale::stops(&self) -> &[nexrad_render::ColorStop]
 impl core::clone::Clone for nexrad_render::ContinuousColorScale
 pub fn nexrad_render::ContinuousColorScale::clone(&self) -> Self
@@ -229,7 +233,7 @@ pub struct nexrad_render::DiscreteColorScale
 impl nexrad_render::DiscreteColorScale
 pub fn nexrad_render::DiscreteColorScale::color(&self, f32) -> nexrad_render::Color
 pub fn nexrad_render::DiscreteColorScale::levels(&self) -> &[nexrad_render::ColorScaleLevel]
-pub fn nexrad_render::DiscreteColorScale::new(alloc::vec::Vec<nexrad_render::ColorScaleLevel>) -> Self
+pub fn nexrad_render::DiscreteColorScale::new(alloc::vec::Vec<nexrad_render::ColorScaleLevel>) -> nexrad_render::result::Result<Self>
 impl core::clone::Clone for nexrad_render::DiscreteColorScale
 pub fn nexrad_render::DiscreteColorScale::clone(&self) -> Self
 impl core::convert::From<nexrad_render::DiscreteColorScale> for nexrad_render::ColorScale
@@ -351,7 +355,7 @@ pub fn nexrad_render::correlation_coefficient_scale() -> nexrad_render::Discrete
 pub fn nexrad_render::default_scale(nexrad_model::data::product::Product) -> nexrad_render::ColorScale
 pub fn nexrad_render::differential_phase_scale() -> nexrad_render::DiscreteColorScale
 pub fn nexrad_render::differential_reflectivity_scale() -> nexrad_render::DiscreteColorScale
-pub fn nexrad_render::nws_reflectivity_scale() -> nexrad_render::DiscreteColorScale
+pub fn nexrad_render::reflectivity_scale() -> nexrad_render::DiscreteColorScale
 pub fn nexrad_render::render_cartesian(&nexrad_model::data::field::CartesianField, &nexrad_render::ColorScale, &nexrad_render::RenderOptions) -> nexrad_render::result::Result<nexrad_render::RenderResult>
 pub fn nexrad_render::render_sweep(&nexrad_model::data::field::SweepField, &nexrad_render::ColorScale, &nexrad_render::RenderOptions) -> nexrad_render::result::Result<nexrad_render::RenderResult>
 pub fn nexrad_render::render_vertical(&nexrad_model::data::field::VerticalField, &nexrad_render::ColorScale, &nexrad_render::RenderOptions) -> nexrad_render::result::Result<nexrad_render::RenderResult>

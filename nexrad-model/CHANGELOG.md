@@ -29,10 +29,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Per-radial `Radial::nyquist_velocity_mps()` and `unambiguous_range_km()` (with `uom`, `nyquist_velocity()` and
   `unambiguous_range()`) and their `RadialBuilder` setters, which reject values that are not finite and positive. (#188)
 - `Scan::elevation_cut(&Sweep)` and `Scan::sweeps_with_waveform(WaveformType)`. (#188)
-- `VcpNumber` constants for VCPs 11, 21, 121, 211 and 221, formerly `Unknown(n)`. (#188, #PRNUM)
+- `VcpNumber` constants for VCPs 11, 21, 121, 211 and 221, formerly `Unknown(n)`. (#188, #205)
 - `WaveformType::abbreviation()`, the ICD's `CS`, `CD/W`, `CD/WO` or `B` (`None` for staggered pulse pair, which the
-  ICD does not abbreviate, and for unknown values). (#PRNUM)
-- `Display` for `RadialStatus`. (#PRNUM)
+  ICD does not abbreviate, and for unknown values). (#205)
+- `Display` for `RadialStatus`. (#205)
 - `RadarCoordinateSystem::beam_height_meters` (above mean sea level) and `ground_range_km`. (#188)
 
 ### Changed
@@ -72,10 +72,10 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `VcpNumber` is a `u16` newtype with `new`, `number(self)`, `From` both ways, `Ord` by number and associated constants
   named by pattern number (`Precipitation12` → `VcpNumber::VCP_12`), matching `nexrad-decode`; constants work as
   `match` patterns, and `VcpNumber::new(n)` replaces `from_number(n)` and `Unknown(n)`. `Display` prints `VCP 212`
-  without a description. The serialized `u16` is unchanged. (#188, #PRNUM)
+  without a description. The serialized `u16` is unchanged. (#188, #205)
 - `WaveformType`, `ChannelConfiguration` and `PulseWidth` carry the code in `Unknown(u8)`, like `RadialStatus`, so the
   model and `nexrad-decode` copies have the same variants; with `serde` an unknown value is `{"Unknown": n}`. `Display`
-  of an unknown value includes the code (`Unknown (7)`). (#PRNUM)
+  of an unknown value includes the code (`Unknown (7)`). (#205)
 - The `geo` module uses one documented earth model (spherical, 4/3 effective-radius refraction, antenna height above
   mean sea level) where the docs claimed WGS-84; `polar_to_geo` moves by under a metre at 300 km. (#188)
 - With `serde`, the representation is stable within 1.x, and serialized field names equal accessor names. (#189)
@@ -98,7 +98,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Site::identifier_string()`. (#185)
 - `VcpNumber::description()`, whose per-pattern summaries were operational characterisations rather than ICD
   definitions; it also disagreed with `nexrad-decode` on VCP 112, which the ICD lists with the MPDA scan strategy.
-  (#PRNUM)
+  (#205)
 
 ### Fixed
 

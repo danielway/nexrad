@@ -41,6 +41,7 @@ fn rejection(name: &str) -> &'static str {
         Err(Error::Aws(AwsError::InvalidIdentifier {
             name: rejected,
             reason,
+            ..
         })) => {
             assert_eq!(rejected, name);
             reason

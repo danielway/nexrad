@@ -41,7 +41,9 @@ fn test_volume_index_rejects_out_of_range() {
 
     for index in [0, 1000, usize::MAX] {
         match VolumeIndex::new(index) {
-            Err(Error::Aws(AwsError::InvalidVolumeIndex { index: rejected })) => {
+            Err(Error::Aws(AwsError::InvalidVolumeIndex {
+                index: rejected, ..
+            })) => {
                 assert_eq!(rejected, index)
             }
             other => panic!("{index} should be rejected, got {other:?}"),

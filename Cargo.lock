@@ -1688,6 +1688,7 @@ dependencies = [
  "env_logger",
  "flate2",
  "futures-util",
+ "http",
  "log",
  "nexrad-decode",
  "nexrad-model",

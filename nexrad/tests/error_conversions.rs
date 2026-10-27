@@ -120,7 +120,7 @@ fn test_decode_error_with_string_conversion() {
 #[test]
 fn test_data_error_conversion() {
     // Create a data error
-    let data_err = nexrad_data::result::Error::CompressedData;
+    let data_err = nexrad_data::result::Error::CompressedRecord;
 
     // Convert to unified error
     let unified_err: nexrad::Error = data_err.into();
@@ -221,13 +221,13 @@ fn test_decode_error_through_data_keeps_source() {
 #[cfg(feature = "data")]
 #[test]
 fn test_data_specific_error_keeps_source() {
-    let unified_err: nexrad::Error = nexrad_data::result::Error::CompressedData.into();
+    let unified_err: nexrad::Error = nexrad_data::result::Error::CompressedRecord.into();
 
     let source = unified_err
         .source()
         .expect("Expected error source to be available");
     assert!(
-        source.to_string().contains("compressed data"),
+        source.to_string().contains("compressed record"),
         "Expected the data error as the source, got: {}",
         source
     );
@@ -308,7 +308,7 @@ fn test_all_features_enabled() {
     let decode_err = nexrad_decode::result::Error::UnexpectedEof { offset: 0 };
     let _: nexrad::Error = decode_err.into();
 
-    let data_err = nexrad_data::result::Error::CompressedData;
+    let data_err = nexrad_data::result::Error::CompressedRecord;
     let _: nexrad::Error = data_err.into();
 }
 
@@ -331,7 +331,7 @@ fn test_all_features_including_render_and_process() {
     let decode_err = nexrad_decode::result::Error::UnexpectedEof { offset: 0 };
     let _: nexrad::Error = decode_err.into();
 
-    let data_err = nexrad_data::result::Error::CompressedData;
+    let data_err = nexrad_data::result::Error::CompressedRecord;
     let _: nexrad::Error = data_err.into();
 
     let render_err = nexrad_render::result::Error::InvalidDimensions;

@@ -32,7 +32,9 @@ fn test_file_shorter_than_header() {
         let file = File::new(vec![b'A'; length]);
         assert!(file.header().is_none());
         match file.records().unwrap_err() {
-            Error::TruncatedRecord { expected, actual } => {
+            Error::TruncatedRecord {
+                expected, actual, ..
+            } => {
                 assert_eq!(expected, HEADER_SIZE);
                 assert_eq!(actual, length);
             }
@@ -66,7 +68,9 @@ fn test_split_records_truncated_size_field() {
     let result = file.records();
     assert!(result.is_err());
     match result.unwrap_err() {
-        Error::TruncatedRecord { expected, actual } => {
+        Error::TruncatedRecord {
+                expected, actual, ..
+            } => {
             assert_eq!(expected, 4);
             assert_eq!(actual, 2);
         }
@@ -96,7 +100,9 @@ fn test_split_records_size_exceeds_data() {
     let result = file.records();
     assert!(result.is_err());
     match result.unwrap_err() {
-        Error::TruncatedRecord { expected, actual } => {
+        Error::TruncatedRecord {
+                expected, actual, ..
+            } => {
             assert!(expected > actual);
         }
         other => panic!("Expected TruncatedRecord error, got: {:?}", other),
@@ -128,7 +134,7 @@ fn test_split_records_ldm_zero_size() {
     let result = file.records();
     assert!(result.is_err());
     match result.unwrap_err() {
-        Error::InvalidRecordSize { size, offset } => {
+        Error::InvalidRecordSize { size, offset, .. } => {
             assert_eq!(size, 0);
             assert_eq!(offset, 8);
         }
@@ -152,12 +158,8 @@ fn test_decompress_uncompressed_data() {
     let record = Record::new(data);
     assert!(!record.compressed());
 
-    let result = record.decompress();
-    assert!(result.is_err());
-    match result.unwrap_err() {
-        Error::UncompressedData => {}
-        other => panic!("Expected UncompressedData, got: {:?}", other),
-    }
+    let decompressed = record.decompress().expect("uncompressed record is returned unchanged");
+    assert_eq!(decompressed, record);
 }
 
 #[test]
@@ -209,8 +211,8 @@ fn test_record_messages_compressed_data() {
     let result = record.messages();
     assert!(result.is_err());
     match result.unwrap_err() {
-        Error::CompressedData => {}
-        other => panic!("Expected CompressedData, got: {:?}", other),
+        Error::CompressedRecord => {}
+        other => panic!("Expected CompressedRecord, got: {:?}", other),
     }
 }
 

@@ -327,7 +327,8 @@ inside the defining crate keeps exhaustive matches so the compiler flags every p
 
 Non-exhaustive: every crate's `Error` enum and `nexrad_data::result::AwsError`, and enums over sets that grow with the
 ICD or the library, such as message types and products (`MessageContents`, `Product`) and render projections
-(`Projection`).
+(`Projection`). `nexrad_model::data::GateStatus` is non-exhaustive because some of its variants (`Filtered`, `NoData`)
+are set by processing steps rather than by the data encoding, and a later processing step may add a status.
 
 `VcpNumber` is not an enum: it is a `u16` newtype with associated constants (`VcpNumber::VCP_212`) that work as `match`
 patterns. Naming a further pattern adds a constant, which cannot change how an existing value matches, compares or
@@ -344,8 +345,8 @@ An `Unknown(n)` or `Reserved(n)` value may be promoted to a named variant in a m
 code; code that needs a stable result across releases should compare the raw code (`number()` or the `*_raw()`
 accessor) rather than match on `Unknown(n)`.
 
-Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue`,
-`GateStatus` and `ChunkType`. Adding a variant to an exhaustive enum is a breaking change and is reserved for a major
+Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue` (a
+value, below threshold, range folded or a clutter filter power status code, as the ICD encodes a gate) and `ChunkType`. Adding a variant to an exhaustive enum is a breaking change and is reserved for a major
 release.
 
 ## Versioning and Releases

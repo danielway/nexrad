@@ -29,7 +29,6 @@ process = ["dep:nexrad-process", "model"]
 
 # Pass-through features from sub-crates
 serde = ["nexrad-model?/serde", "nexrad-decode?/serde"]
-uom = ["nexrad-model?/uom", "nexrad-decode?/uom"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
 parallel = ["data", "nexrad-data/parallel"]
 # `RenderResult::into_rgba_image`; tracks the `image` crate's 0.x releases and is excluded
@@ -39,7 +38,7 @@ image = ["render", "nexrad-render/image"]
 aws = ["data", "chrono", "nexrad-data/aws", "dep:futures-util"]
 
 # All WASM-compatible features
-wasm = ["model", "decode", "data", "render", "process", "aws", "serde", "uom", "chrono"]
+wasm = ["model", "decode", "data", "render", "process", "aws", "serde", "chrono"]
 # Convenience feature for everything (includes native-only `parallel`, not WASM-compatible)
 full = ["wasm", "parallel"]
 

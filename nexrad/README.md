@@ -100,12 +100,14 @@ depends on, so `data` alone is enough for local file loading.
 | `process` | Processing algorithms | `model` | Yes |
 | `aws` | AWS S3 archive downloads and real-time streaming | `data`, `chrono` | Yes |
 | `serde` | Serialization support | | Yes |
-| `uom` | Type-safe units of measure | | Yes |
 | `chrono` | DateTime type support | | Yes |
 | `parallel` | Parallel decompression (requires rayon) | `data` | No |
 | `image` | `RenderResult::into_rgba_image` interop (opt-in, outside the semver promise) | `render` | Yes |
 | `wasm` | All WASM-compatible features | all features marked Yes | Yes |
 | `full` | All features (default) | `wasm`, `parallel` | No |
+
+Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example with the `uom` crate) may
+be offered later as a separate crate or extension trait.
 
 The `image` feature is not part of `wasm` or `full`. It tracks the `image` crate's own 0.x releases and is
 excluded from the semver promise: a minor or patch release may move it to a newer, incompatible `image` version.

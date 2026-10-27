@@ -68,7 +68,7 @@ A WASM application can therefore use `nexrad-model` and `nexrad-render` without 
 - **nexrad-decode** implements NOAA ICD 2620002AA. Its types mirror the binary wire format for developers working at the
   protocol level, and its `model` feature converts them to model types.
 
-The split keeps the model's dependencies minimal (`thiserror`, and optionally `serde`, `chrono`, `uom`) and untouched by
+The split keeps the model's dependencies minimal (`thiserror`, and optionally `serde`, `chrono`) and untouched by
 new protocol parsing, and keeps wire-format details out of the model's public API: the model evolves with user-facing
 requirements, the decoder with the ICD.
 
@@ -120,7 +120,6 @@ appear in public signatures:
 | `std` | Everywhere | |
 | `chrono` | Timestamps and dates in model, decode, data and the facade | Re-exported from the facade as `nexrad::chrono` (feature `chrono`) |
 | `serde` | `Serialize`/`Deserialize` impls | Opt-in `serde` feature |
-| `uom` | Unit-typed accessors | Opt-in `uom` feature |
 | `image` | `nexrad_render::RenderResult::into_rgba_image` only | Opt-in `image` feature of `nexrad-render` (and the facade), off by default and not in `full`. It tracks `image`'s own 0.x releases and is excluded from the semver promise. Without it, `RenderResult` exposes owned RGBA8 pixels (`pixels()`, `into_pixels()`) |
 | `futures_core` | The `Stream` returned by `nexrad_data::aws::realtime::chunk_stream` and `nexrad::stream` | Return type only |
 | `futures_util` | The facade, internally | Not re-exported and not in any signature; consumers depend on `futures-util` or `futures` themselves for `StreamExt` |
@@ -153,14 +152,16 @@ are named for what they enable, not for the crate they pull in.
 
 | Crate | Features (defaults in bold) |
 |-------|-----------------------------|
-| `nexrad-model` | `serde`, `chrono`, `uom` |
-| `nexrad-decode` | **`model`** (conversion to `nexrad-model` types), `uom` |
+| `nexrad-model` | `serde`, `chrono` |
+| `nexrad-decode` | **`model`** (conversion to `nexrad-model` types) |
 | `nexrad-data` | **`aws`** (S3 archive and real-time access), **`model`** (`File::scan`, `Record::radials`, `assemble_volume`; enables `nexrad-decode/model`), `parallel` (rayon) |
 | `nexrad-process` | none |
 | `nexrad-render` | `image` (`RenderResult::into_rgba_image`; outside the semver promise) |
 | `nexrad` | **`full`**; see the feature table in the crate docs |
 
-`uom` is off by default in every sub-crate; the facade turns it on only through `wasm`/`full`.
+No crate exposes unit-typed quantities: accessors return plain numbers with the unit in the name. `uom` was removed
+before 1.0 because it is pre-1.0 itself and would tie our major version to its own; unit-typed accessors may come later
+as a separate crate or extension trait.
 
 ### Facade Feature Gating
 
@@ -200,8 +201,8 @@ same validation as the constructors and builders. The representation is stable w
 - **Acronyms are UpperCamelCase words**: `VcpNumber`, `AwsError`.
 - **Decoded-message accessors** in `nexrad-decode` follow "Accessor Naming" in its crate docs: the stem is the ICD
   field name; `<stem>_raw()` exists only when the wire encoding differs from the decoded value; a decoded plain number
-  is `<stem>_<unit>()` (`azimuth_angle_degrees()`); a decoded enum or struct is the bare stem (`radial_status()`); and
-  feature-gated `uom` accessors take the bare stem (`azimuth_angle()`).
+  is `<stem>_<unit>()` (`azimuth_angle_degrees()`); and a decoded enum or struct is the bare stem
+  (`radial_status()`).
 - **Model types** keep unit suffixes on plain numbers. Angles use the stems `azimuth_angle_degrees` and
   `elevation_angle_degrees` (a slice of azimuths is `azimuth_angles_degrees`); lengths end in `_meters` or `_km`,
   velocities in `_mps`, and timestamps in `_millis`. `site_elevation_meters` is the ground elevation above mean sea

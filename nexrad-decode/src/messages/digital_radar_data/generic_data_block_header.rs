@@ -2,13 +2,6 @@ use super::raw;
 use super::{ControlFlags, DataWordSize};
 use std::borrow::Cow;
 
-#[cfg(feature = "uom")]
-use uom::si::f64::{Information, Length};
-#[cfg(feature = "uom")]
-use uom::si::information::byte;
-#[cfg(feature = "uom")]
-use uom::si::length::kilometer;
-
 /// A generic data moment block's decoded header.
 #[derive(Clone, PartialEq, Debug)]
 pub struct GenericDataBlockHeader<'a> {
@@ -108,18 +101,6 @@ impl<'a> GenericDataBlockHeader<'a> {
         }
     }
 
-    /// Range to center of first range gate.
-    #[cfg(feature = "uom")]
-    pub fn data_moment_range(&self) -> Length {
-        Length::new::<kilometer>(self.inner.data_moment_range.get() as f64 * 0.001)
-    }
-
-    /// Size of data moment sample interval.
-    #[cfg(feature = "uom")]
-    pub fn data_moment_range_sample_interval(&self) -> Length {
-        Length::new::<kilometer>(self.inner.data_moment_range_sample_interval.get() as f64 * 0.001)
-    }
-
     /// Flags indicating special control features.
     pub fn control_flags(&self) -> ControlFlags {
         match self.inner.control_flags {
@@ -135,11 +116,5 @@ impl<'a> GenericDataBlockHeader<'a> {
     /// 8).
     pub fn moment_size_bytes(&self) -> u32 {
         self.inner.data_moment_gate_count.get() as u32 * self.inner.data_word_size as u32 / 8
-    }
-
-    /// Size of the data moment block.
-    #[cfg(feature = "uom")]
-    pub fn moment_size(&self) -> Information {
-        Information::new::<byte>(self.moment_size_bytes() as f64)
     }
 }

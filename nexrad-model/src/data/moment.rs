@@ -5,9 +5,6 @@ use crate::result::{Error, Result};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "uom")]
-use uom::si::{f64::Length, length::kilometer};
-
 /// CFP status codes for clutter filter power moments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -118,21 +115,9 @@ impl MomentData {
         self.first_gate_range_meters as f64 * 0.001
     }
 
-    /// The range to the center of the first gate.
-    #[cfg(feature = "uom")]
-    pub fn first_gate_range(&self) -> Length {
-        Length::new::<kilometer>(self.first_gate_range_meters as f64 * 0.001)
-    }
-
     /// The range between the centers of consecutive gates in kilometers.
     pub fn gate_interval_km(&self) -> f64 {
         self.gate_interval_meters as f64 * 0.001
-    }
-
-    /// The range between the centers of consecutive gates.
-    #[cfg(feature = "uom")]
-    pub fn gate_interval(&self) -> Length {
-        Length::new::<kilometer>(self.gate_interval_meters as f64 * 0.001)
     }
 
     /// Number of bits per gate (8 or 16).

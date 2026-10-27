@@ -1,9 +1,6 @@
 use super::raw;
 use std::borrow::Cow;
 
-#[cfg(feature = "uom")]
-use uom::si::f64::{Information, Length, Velocity};
-
 /// Internal representation of the radial data block, supporting both legacy and modern formats.
 ///
 /// The format expanded from 20 to 28 bytes at Build 12.0 (ICD 2620002K, July 2011),
@@ -142,25 +139,5 @@ impl<'a> RadialDataBlock<'a> {
     /// Nyquist velocity, in m/s.
     pub fn nyquist_velocity_mps(&self) -> f32 {
         self.nyquist_velocity_raw() as f32 * 0.01
-    }
-
-    /// Size of data block.
-    #[cfg(feature = "uom")]
-    pub fn lrtup(&self) -> Information {
-        Information::new::<uom::si::information::byte>(self.lrtup_bytes() as f64)
-    }
-
-    /// Unambiguous range, interval size.
-    #[cfg(feature = "uom")]
-    pub fn unambiguous_range(&self) -> Length {
-        Length::new::<uom::si::length::kilometer>(self.unambiguous_range_raw() as f64 * 0.1)
-    }
-
-    /// Nyquist velocity.
-    #[cfg(feature = "uom")]
-    pub fn nyquist_velocity(&self) -> Velocity {
-        Velocity::new::<uom::si::velocity::meter_per_second>(
-            self.nyquist_velocity_raw() as f64 * 0.01,
-        )
     }
 }

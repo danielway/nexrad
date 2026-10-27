@@ -3,9 +3,6 @@ use super::ProcessingStatus;
 use crate::messages::VcpNumber;
 use std::borrow::Cow;
 
-#[cfg(feature = "uom")]
-use uom::si::f64::{Angle, Information, Length, Power};
-
 /// Internal representation of the volume data block, supporting both legacy and modern formats.
 ///
 /// The format expanded at Build 20.0 (ICD 2620002U, July 2021).
@@ -196,54 +193,6 @@ impl<'a> VolumeDataBlock<'a> {
             0 => None,
             raw => Some((raw as f32 - 418.0) / 32.0),
         }
-    }
-
-    /// Size of data block.
-    #[cfg(feature = "uom")]
-    pub fn lrtup(&self) -> Information {
-        Information::new::<uom::si::information::byte>(self.lrtup_bytes() as f64)
-    }
-
-    /// Latitude of radar.
-    #[cfg(feature = "uom")]
-    pub fn latitude(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.latitude_degrees() as f64)
-    }
-
-    /// Longitude of radar.
-    #[cfg(feature = "uom")]
-    pub fn longitude(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.longitude_degrees() as f64)
-    }
-
-    /// Height of site base above sea level.
-    #[cfg(feature = "uom")]
-    pub fn site_height(&self) -> Length {
-        Length::new::<uom::si::length::meter>(self.site_height_meters() as f64)
-    }
-
-    /// Height of radar tower above ground.
-    #[cfg(feature = "uom")]
-    pub fn tower_height(&self) -> Length {
-        Length::new::<uom::si::length::meter>(self.tower_height_meters() as f64)
-    }
-
-    /// Transmitter power for horizontal channel.
-    #[cfg(feature = "uom")]
-    pub fn horizontal_shv_tx_power(&self) -> Power {
-        Power::new::<uom::si::power::kilowatt>(self.horizontal_shv_tx_power_kw() as f64)
-    }
-
-    /// Transmitter power for vertical channel.
-    #[cfg(feature = "uom")]
-    pub fn vertical_shv_tx_power(&self) -> Power {
-        Power::new::<uom::si::power::kilowatt>(self.vertical_shv_tx_power_kw() as f64)
-    }
-
-    /// Initial DP for the system.
-    #[cfg(feature = "uom")]
-    pub fn initial_system_differential_phase(&self) -> Angle {
-        Angle::new::<uom::si::angle::degree>(self.initial_system_differential_phase_degrees() as f64)
     }
 
     /// Identifies the volume coverage pattern in use.

@@ -11,6 +11,8 @@ repository.workspace = true
 [dependencies]
 chrono = { workspace = true }
 clap = { workspace = true }
+nexrad = { path = "../nexrad", default-features = false, features = ["data", "process", "render"] }
 nexrad-model = { path = "../nexrad-model" }
+png = "0.18"
 reqwest = { workspace = true, features = ["rustls"] }
 tokio = { workspace = true }

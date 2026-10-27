@@ -7,10 +7,6 @@ use std::borrow::Cow;
 use std::fmt::{self, Debug};
 use zerocopy::FromBytes;
 
-#[cfg(feature = "uom")]
-use uom::si::f64::Information;
-#[cfg(feature = "uom")]
-use uom::si::information::byte;
 
 /// Message and system configuration information appended to the beginning of all messages.
 ///
@@ -98,15 +94,6 @@ impl<'a> MessageHeader<'a> {
         } else {
             None
         }
-    }
-
-    /// If this message is [fixed-frame](Self::is_fixed_frame), this indicates this message segment's
-    /// size. Otherwise, this returns [None] and [`message_size()`](Self::message_size) should be
-    /// used to determine the message's full size.
-    #[cfg(feature = "uom")]
-    pub fn segment_size(&self) -> Option<Information> {
-        self.segment_size_bytes()
-            .map(|bytes| Information::new::<byte>(bytes as f64))
     }
 
     /// Whether the RDA is operating on a redundant channel.
@@ -197,15 +184,6 @@ impl<'a> MessageHeader<'a> {
         }
     }
 
-    /// The full size of the message. If the message is [fixed-frame](Self::is_fixed_frame) then this is
-    /// the segment size, otherwise this is the full variable-length message size.
-    ///
-    /// For variable-length messages (segment size = 0xFFFF), the segment count and segment number
-    /// fields are repurposed as a 32-bit message size in bytes per ICD Table II.
-    #[cfg(feature = "uom")]
-    pub fn message_size(&self) -> Information {
-        Information::new::<byte>(self.message_size_bytes() as f64)
-    }
 }
 
 #[cfg(test)]

@@ -111,9 +111,11 @@ let nearest = registry::nearest_site(35.4676, -97.5164).unwrap();
 
 ## Features
 
-- `uom`: Use the `uom` crate for type-safe units of measure. Enables methods returning `Length`, `Velocity`, etc. instead of raw `f64` values.
 - `serde`: Implement `serde::Serialize` and `serde::Deserialize` for the data, geometry and site types (not for the builders, `SiteEntry` or `Error`).
 - `chrono`: Use the `chrono` crate for date and time types. Enables `collection_time()` returning `DateTime<Utc>` instead of raw timestamps.
+
+Accessors return plain numbers with the unit in the name (`elevation_angle_degrees()`, `gate_interval_km()`).
+Unit-typed accessors (for example with the `uom` crate) may be offered later as a separate crate or extension trait.
 
 ## Minimum Supported Rust Version
 

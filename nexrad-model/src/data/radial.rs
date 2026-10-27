@@ -4,13 +4,6 @@ use crate::result::{Error, Result};
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
 
-#[cfg(feature = "uom")]
-use uom::si::{
-    angle::degree,
-    f64::{Angle, Length, Velocity},
-    length::kilometer,
-    velocity::meter_per_second,
-};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -99,21 +92,9 @@ impl Radial {
         self.azimuth_angle_degrees
     }
 
-    /// Azimuth angle this radial's data was collected at.
-    #[cfg(feature = "uom")]
-    pub fn azimuth(&self) -> Angle {
-        Angle::new::<degree>(self.azimuth_angle_degrees as f64)
-    }
-
     /// Azimuthal distance between radials in the sweep in degrees.
     pub fn azimuth_spacing_degrees(&self) -> f32 {
         self.azimuth_spacing_degrees
-    }
-
-    /// Azimuthal distance between radials in the sweep.
-    #[cfg(feature = "uom")]
-    pub fn azimuth_spacing(&self) -> Angle {
-        Angle::new::<degree>(self.azimuth_spacing_degrees as f64)
     }
 
     /// The radial's position in the sequence of radials making up a scan.
@@ -131,12 +112,6 @@ impl Radial {
         self.elevation_angle_degrees
     }
 
-    /// Elevation angle this radial's data was collected at.
-    #[cfg(feature = "uom")]
-    pub fn elevation_angle(&self) -> Angle {
-        Angle::new::<degree>(self.elevation_angle_degrees as f64)
-    }
-
     /// The Nyquist velocity in meters per second, if the source carried it.
     ///
     /// This is the largest radial velocity that can be measured unambiguously with the pulse
@@ -147,28 +122,12 @@ impl Radial {
         self.nyquist_velocity_mps
     }
 
-    /// The Nyquist velocity, if the source carried it. See
-    /// [`nyquist_velocity_mps`](Self::nyquist_velocity_mps).
-    #[cfg(feature = "uom")]
-    pub fn nyquist_velocity(&self) -> Option<Velocity> {
-        self.nyquist_velocity_mps
-            .map(|mps| Velocity::new::<meter_per_second>(mps as f64))
-    }
-
     /// The unambiguous range in kilometers, if the source carried it.
     ///
     /// This is the maximum range for the pulse repetition frequency used on this radial before
     /// echoes from beyond it (second-trip echoes) fold back to a shorter apparent range.
     pub fn unambiguous_range_km(&self) -> Option<f32> {
         self.unambiguous_range_km
-    }
-
-    /// The unambiguous range, if the source carried it. See
-    /// [`unambiguous_range_km`](Self::unambiguous_range_km).
-    #[cfg(feature = "uom")]
-    pub fn unambiguous_range(&self) -> Option<Length> {
-        self.unambiguous_range_km
-            .map(|km| Length::new::<kilometer>(km as f64))
     }
 
     /// Reflectivity data for this radial if available.

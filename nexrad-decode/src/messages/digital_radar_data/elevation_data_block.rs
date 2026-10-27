@@ -1,10 +1,6 @@
 use super::raw;
 use std::borrow::Cow;
 
-#[cfg(feature = "uom")]
-use uom::si::f64::Information;
-#[cfg(feature = "uom")]
-use uom::si::information::byte;
 
 /// An elevation data block.
 #[derive(Clone, PartialEq, Debug)]
@@ -43,12 +39,6 @@ impl<'a> ElevationDataBlock<'a> {
     /// in dB.
     pub fn calibration_constant_db(&self) -> f32 {
         self.inner.calibration_constant.get()
-    }
-
-    /// Size of data block.
-    #[cfg(feature = "uom")]
-    pub fn lrtup(&self) -> Information {
-        Information::new::<byte>(self.inner.lrtup.get() as f64)
     }
 
     /// Atmospheric attenuation factor, in dB/km.

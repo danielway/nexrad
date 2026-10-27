@@ -100,11 +100,13 @@ depends on, so `data` alone is enough for local file loading.
 | `process` | Processing algorithms | `model` | Yes |
 | `aws` | AWS S3 archive downloads and real-time streaming | `data`, `chrono` | Yes |
 | `serde` | Serialization support | | Yes |
-| `uom` | Type-safe units of measure | | Yes |
 | `chrono` | DateTime type support | | Yes |
 | `parallel` | Parallel decompression (requires rayon) | `data` | No |
 | `wasm` | All WASM-compatible features | all features marked Yes | Yes |
 | `full` | All features (default) | `wasm`, `parallel` | No |
+
+Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example with the `uom` crate) may
+be offered later as a separate crate or extension trait.
 
 For local file processing without rendering or networking:
 

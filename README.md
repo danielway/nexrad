@@ -181,7 +181,6 @@ Each feature also enables the features listed under "Implies".
 | `aws` | AWS S3 downloads and real-time streaming | `data`, `chrono` | reqwest, futures-util |
 | `parallel` | Parallel decompression | `data` | rayon |
 | `serde` | Serialization support | | serde |
-| `uom` | Type-safe units of measure | | uom |
 | `chrono` | DateTime type support | | chrono |
 | `wasm` | All WASM-compatible features | (see below) | (see below) |
 | `full` | All features (native only, default) | `wasm`, `parallel` | All above |
@@ -194,7 +193,7 @@ The `wasm` feature enables all WASM-compatible functionality:
 nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
 ```
 
-This includes: `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, and `chrono`.
+This includes: `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, and `chrono`.
 
 **Not WASM-compatible:**
 - `parallel` - requires threads (rayon)

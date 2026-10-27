@@ -4,8 +4,6 @@ use std::fmt::Display;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "uom")]
-use uom::si::{f64::Length, length::meter};
 
 /// A radar site's metadata including a variety of infrequently-changing properties.
 #[derive(Debug, Clone, PartialEq)]
@@ -56,22 +54,11 @@ impl Site {
         self.site_elevation_meters
     }
 
-    /// The elevation of the radar site above mean sea level.
-    #[cfg(feature = "uom")]
-    pub fn site_elevation(&self) -> Length {
-        Length::new::<meter>(self.site_elevation_meters as f64)
-    }
-
     /// The height of the radar feedhorn above ground level in meters.
     pub fn feedhorn_height_meters(&self) -> u16 {
         self.feedhorn_height_meters
     }
 
-    /// The height of the radar feedhorn above ground level.
-    #[cfg(feature = "uom")]
-    pub fn feedhorn_height(&self) -> Length {
-        Length::new::<meter>(self.feedhorn_height_meters as f64)
-    }
 }
 
 /// Builder for [`Site`], created with [`Site::builder`].

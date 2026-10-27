@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
 
-#[cfg(feature = "uom")]
-use uom::si::f64::Angle;
 
 /// A single radar sweep composed of a series of radials. This represents a full rotation of the
 /// radar at some elevation angle and contains the Level II data (reflectivity, velocity, and
@@ -125,19 +123,6 @@ impl Sweep {
             .map(|r| r.elevation_angle_degrees())
             .collect();
         median(&mut angles)
-    }
-
-    /// The elevation angle for this sweep.
-    ///
-    /// Uses the median of all radial elevation angles for robustness against transitional
-    /// radials at sweep boundaries. See [`elevation_angle_degrees`](Self::elevation_angle_degrees)
-    /// for details.
-    ///
-    /// Returns `None` if the sweep has no radials.
-    #[cfg(feature = "uom")]
-    pub fn elevation_angle(&self) -> Option<Angle> {
-        self.elevation_angle_degrees()
-            .map(|degrees| Angle::new::<uom::si::angle::degree>(degrees as f64))
     }
 
     /// The radials comprising this sweep.

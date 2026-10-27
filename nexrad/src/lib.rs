@@ -74,10 +74,12 @@
 //! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) and the `futures_util` re-export | `data`, `chrono` | reqwest, futures-util | Yes |
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
 //! | `serde` | Serialization support for model types | | serde | Yes |
-//! | `uom` | Type-safe units of measure | | uom | Yes |
 //! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono | Yes |
-//! | `wasm` | All WASM-compatible features | `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `uom`, `chrono` | | Yes |
+//! | `wasm` | All WASM-compatible features | `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `chrono` | | Yes |
 //! | `full` | Enable all features (default) | `wasm`, `parallel` | | No |
+//!
+//! Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example
+//! with the `uom` crate) may be offered later as a separate crate or extension trait.
 //!
 //! The `aws` feature's TLS stack (rustls with the `aws-lc-rs` crypto provider) compiles C code,
 //! which needs a C compiler and, on Windows x86 targets, NASM.
@@ -126,7 +128,7 @@
 //!
 //! | Crate | Purpose |
 //! |-------|---------|
-//! | `nexrad-model` | Domain types with optional serde/chrono/uom support |
+//! | `nexrad-model` | Domain types with optional serde/chrono support |
 //! | `nexrad-decode` | Low-level binary parsing per NOAA ICD 2620002AA |
 //! | `nexrad-data` | Archive II file handling and AWS S3 access |
 //! | `nexrad-process` | Radar data processing and derived products |

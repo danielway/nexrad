@@ -90,7 +90,7 @@ impl Scan {
     /// )?;
     /// let with_velocity = Radial::builder(0, 0.0, 2, 0.9).moment(velocity).build()?;
     /// let without_velocity = Radial::builder(0, 0.0, 1, 0.5).build()?;
-    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212)).build();
     /// let scan = Scan::new(
     ///     vcp,
     ///     vec![Sweep::new(1, vec![without_velocity])?, Sweep::new(2, vec![with_velocity])?],
@@ -128,7 +128,7 @@ impl Scan {
     /// )?;
     /// let with_velocity = Radial::builder(0, 0.0, 2, 0.9).moment(velocity).build()?;
     /// let without_velocity = Radial::builder(0, 0.0, 1, 0.5).build()?;
-    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212)).build();
     /// let scan = Scan::new(
     ///     vcp,
     ///     vec![Sweep::new(1, vec![without_velocity])?, Sweep::new(2, vec![with_velocity])?],
@@ -156,7 +156,7 @@ impl Scan {
     /// use nexrad_model::data::{Scan, VcpNumber, VolumeCoveragePattern};
     /// use nexrad_model::meta::Site;
     ///
-    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::from_number(212)).build();
+    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::new(212)).build();
     /// let site = Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
     ///
     /// let scan = Scan::with_site(site, vcp.clone(), vec![]);
@@ -203,7 +203,7 @@ impl Scan {
     /// let surveillance = ElevationCut::builder(
     ///     0.5, WaveformType::ContiguousSurveillance, ChannelConfiguration::ConstantPhase,
     /// ).build();
-    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::Vcp212)
+    /// let vcp = VolumeCoveragePattern::builder(VcpNumber::VCP_212)
     ///     .elevation_cut(surveillance)
     ///     .build();
     /// let sweep = Sweep::new(1, vec![Radial::builder(0, 0.0, 1, 0.5).build()?])?;

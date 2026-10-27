@@ -44,7 +44,7 @@ Each library crate owns exactly one concern:
 | `nexrad-model` | Domain types and the methods on them, site registry | I/O, parsing, rendering |
 | `nexrad-decode` | Binary protocol parsing per NOAA ICD, all protocol-to-model conversion (`model` feature) | File I/O, network access, decompression |
 | `nexrad-data` | Archive II file handling, decompression, AWS S3, real-time chunk polling | Protocol-to-model mapping, rendering, processing |
-| `nexrad-process` | Filtering, smoothing, derived products, storm cell detection | I/O, rendering |
+| `nexrad-process` | Filtering, smoothing, derived products, threshold region detection | I/O, rendering |
 | `nexrad-render` | Color mapping, image generation, pixel ↔ data coordinate mapping | Data access, parsing |
 | `nexrad` | Re-exports, I/O entry points, unified error type | New functionality |
 
@@ -73,6 +73,11 @@ which encode a rendered image as PNG to a caller-supplied writer or file path.
 The split keeps the model's dependencies minimal (`thiserror`, and optionally `serde`, `chrono`, `uom`) and untouched by
 new protocol parsing, and keeps wire-format details out of the model's public API: the model evolves with user-facing
 requirements, the decoder with the ICD.
+
+Five types exist in both crates: `WaveformType`, `ChannelConfiguration`, `PulseWidth`, `RadialStatus` and `VcpNumber`.
+The two copies of each have the same variants, names, payloads, `Display` and `serde` form, and the `From` impls between
+them (decode's `model` feature) convert every value in both directions. Only the decode copy knows the ICD codes
+(`from_number`/`number`); the model's `Unknown(u8)` carries the code the decoder read without interpreting it.
 
 ### Facade Pattern
 
@@ -189,7 +194,8 @@ is excluded from the `wasm` feature set.
 ## Serialization
 
 With the `serde` feature, `nexrad-model` types serialize with field names equal to their accessor names, enum variants
-as their PascalCase names, `VcpNumber` as its number and raw gate bytes as a byte string. Deserialization applies the
+as their PascalCase names, `VcpNumber` as its number and raw gate bytes as a byte string. `nexrad-decode`'s `serde`
+feature covers only the five types it shares with the model, in the same form. Deserialization applies the
 same validation as the constructors and builders. The representation is stable within a major version.
 
 ## Naming Conventions
@@ -257,15 +263,11 @@ Processing and rendering operate on three field types, all defined in `nexrad-mo
 
 ## Processing Architecture
 
-Processing algorithms are modeled as traits with two scopes:
-
-| Trait | Scope | Input → Output |
-|-------|-------|---------------|
-| `SweepProcessor` | Single sweep | `SweepField → SweepField` |
-| `ScanDerivedProduct` | Full scan → geographic surface | `[SweepField]` on a `CartesianGrid` → `CartesianField` |
-
-Filters such as `ThresholdFilter` are `SweepProcessor`s, and `CompositeReflectivity` is a `ScanDerivedProduct`;
-`VerticalCrossSection` and `StormCellDetector` stand alone. Processors with parameters are built with a validating
+Single-sweep algorithms implement the `SweepProcessor` trait (`SweepField → SweepField`); filters such as
+`ThresholdFilter` are `SweepProcessor`s. Products computed from the sweeps of a full scan have inherent `compute` methods
+rather than a shared trait: `CompositeReflectivity` returns a `CartesianField` on a `CartesianGrid` and
+`VerticalCrossSection` a `VerticalField`. A trait for scan products can be added in a minor release once more than one
+product shows its shape. `ThresholdRegionDetector` also stands alone. Processors with parameters are built with a validating
 `new` or builder that returns `Err(Error::InvalidParameter)`, so invalid configuration is reported at construction
 rather than by `process`.
 
@@ -324,16 +326,27 @@ is not a breaking change. Code outside the defining crate must include a wildcar
 inside the defining crate keeps exhaustive matches so the compiler flags every place a new variant must be handled.
 
 Non-exhaustive: every crate's `Error` enum and `nexrad_data::result::AwsError`, and enums over sets that grow with the
-ICD or the library, such as message types, products and volume coverage patterns (`MessageContents`, `Product`,
-`VcpNumber`) and render projections (`Projection`).
+ICD or the library, such as message types and products (`MessageContents`, `Product`) and render projections
+(`Projection`).
+
+`VcpNumber` is not an enum: it is a `u16` newtype with associated constants (`VcpNumber::VCP_212`) that work as `match`
+patterns. Naming a further pattern adds a constant, which cannot change how an existing value matches, compares or
+serializes.
 
 Non-exhaustive structs and enum variants (fields may be added in minor releases, so code outside the defining crate
 cannot construct them with a literal and must use `..` in struct patterns): `nexrad_model::meta::registry::SiteEntry`,
 `nexrad_render::PointQuery`, and the `Projection::Polar`, `Geographic` and `Vertical` variants.
 
+The ICD code enums in the `nexrad-decode` message modules that carry an `Unknown(n)` or `Reserved(n)` variant (the
+status, mode and code enums of the RDA status, clutter, radar data and VCP messages) are also non-exhaustive, as are
+`ColorScale` and `Interpolation` in `nexrad-render` and the unit struct `nexrad_process::derived::CompositeReflectivity`.
+An `Unknown(n)` or `Reserved(n)` value may be promoted to a named variant in a minor release when a later ICD names that
+code; code that needs a stable result across releases should compare the raw code (`number()` or the `*_raw()`
+accessor) rather than match on `Unknown(n)`.
+
 Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue`,
-`GateStatus`, the status and code enums in the `nexrad-decode` message modules, `ChunkType` and `ColorScale`. Adding a
-variant to an exhaustive enum is a breaking change and is reserved for a major release.
+`GateStatus` and `ChunkType`. Adding a variant to an exhaustive enum is a breaking change and is reserved for a major
+release.
 
 ## Versioning and Releases
 

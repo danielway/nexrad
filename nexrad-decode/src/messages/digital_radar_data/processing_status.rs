@@ -1,5 +1,6 @@
 /// Processing status flags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum ProcessingStatus {
     /// Receiver noise (RxR Noise) processing.
     RxrNoise,

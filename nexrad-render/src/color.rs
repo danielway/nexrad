@@ -272,8 +272,11 @@ impl ContinuousColorScale {
 
 /// A color scale that can be either discrete or continuous.
 ///
-/// This enum allows rendering functions to accept either type of color scale.
+/// This enum allows rendering functions to accept either type of color scale. It is
+/// non-exhaustive so that another kind of scale can be added in a minor release; a `match`
+/// outside this crate needs a wildcard arm, and [`color`](Self::color) works for every kind.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum ColorScale {
     /// A discrete step-function color scale.
     Discrete(DiscreteColorScale),

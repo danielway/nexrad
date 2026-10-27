@@ -1,5 +1,6 @@
 /// The RDA system's RMS control status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum RmsControlStatus {
     /// Not an RMS-controlled site.
     NonRms,

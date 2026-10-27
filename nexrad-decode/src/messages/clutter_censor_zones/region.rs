@@ -77,6 +77,7 @@ impl<'a> Region<'a> {
 /// Operator select code for a clutter censor zone override region, controlling how clutter
 /// filtering is applied within the region.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum OperatorSelectCode {
     /// Code 0: the bypass filter is forced.
     BypassFilterForced,

@@ -46,6 +46,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   wrapped error as their `source()`. (#195)
 - docs.rs shows the feature each feature-gated item requires. (#196)
 - The package description covers loading, downloading, decoding, processing and rendering. (#196)
+- The `serde` feature also enables `nexrad-decode/serde`. (#205)
 - The `aws` feature's build requirements (a C compiler, and NASM on Windows x86 targets) are documented. (#196)
 - Documentation only: the README and crate docs state the supported data scope (NEXRAD Level II in the Archive II
   format, including TDWR volumes; not `_MDM` model data objects, archive tarballs or Level III products), and the

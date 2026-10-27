@@ -5,30 +5,31 @@ use crate::result::{check_finite, check_product, Error, Result};
 use nexrad_model::data::{GateStatus, Product, SweepField};
 use nexrad_model::geo::{GeoExtent, GeoPoint, PolarPoint, RadarCoordinateSystem};
 
-/// A detected storm cell identified by connected-component analysis on a
-/// reflectivity sweep field.
+/// A connected region of gates at or above one reflectivity threshold, found by
+/// [`ThresholdRegionDetector`].
 ///
-/// Each cell represents a contiguous region of radar gates above a configured
-/// reflectivity threshold. Geographic properties are computed using the radar
-/// coordinate system.
+/// The region is the set of `Valid` gates that are 4-connected in azimuth and range and whose
+/// values are at or above the detector's threshold. Its geographic properties are computed with
+/// the radar coordinate system. The name describes how the region is found; it is not a
+/// meteorological classification.
 #[derive(Debug, Clone, PartialEq)]
-pub struct StormCell {
-    /// Unique identifier for this cell within the detection run (0-based).
+pub struct ThresholdRegion {
+    /// Unique identifier for this region within the detection run (0-based).
     id: u32,
-    /// Geographic centroid of the cell, computed as the mean of all gate positions
+    /// Geographic centroid of the region, computed as the mean of all gate positions
     /// weighted by linear reflectivity factor.
     centroid: GeoPoint,
-    /// Maximum reflectivity value (dBZ) observed in this cell.
+    /// Maximum reflectivity value (dBZ) observed in this region.
     max_reflectivity_dbz: f32,
-    /// Mean reflectivity value (dBZ) across all gates in this cell.
+    /// Mean reflectivity value (dBZ) across all gates in this region.
     mean_reflectivity_dbz: f32,
-    /// Number of polar gates comprising this cell.
+    /// Number of polar gates comprising this region.
     gate_count: usize,
-    /// Approximate area of the cell in square kilometers.
+    /// Approximate area of the region in square kilometers.
     area_km2: f64,
-    /// Geographic bounding box of the cell.
+    /// Geographic bounding box of the region.
     bounds: GeoExtent,
-    /// Elevation angle of the sweep this cell was detected on (degrees).
+    /// Elevation angle of the sweep this region was detected on (degrees).
     elevation_angle_degrees: f32,
     /// Azimuth of the gate with maximum reflectivity (degrees).
     max_reflectivity_azimuth_angle_degrees: f32,
@@ -36,16 +37,16 @@ pub struct StormCell {
     max_reflectivity_range_km: f64,
 }
 
-impl StormCell {
-    /// Unique identifier for this cell within the detection run.
+impl ThresholdRegion {
+    /// Unique identifier for this region within the detection run.
     ///
-    /// Cells are sorted by descending maximum reflectivity, so ID 0 is the
-    /// strongest cell.
+    /// Regions are sorted by descending maximum reflectivity, so ID 0 is the
+    /// strongest region.
     pub fn id(&self) -> u32 {
         self.id
     }
 
-    /// Geographic centroid of the cell.
+    /// Geographic centroid of the region.
     ///
     /// Gate positions are weighted by linear reflectivity factor, `10^(dBZ / 10)`, so the
     /// centroid leans toward the most intense echoes and every gate has a positive weight
@@ -64,7 +65,7 @@ impl StormCell {
         self.mean_reflectivity_dbz
     }
 
-    /// Number of polar gates in this cell.
+    /// Number of polar gates in this region.
     pub fn gate_count(&self) -> usize {
         self.gate_count
     }
@@ -74,7 +75,7 @@ impl StormCell {
         self.area_km2
     }
 
-    /// Geographic bounding box of the cell's gate centers.
+    /// Geographic bounding box of the region's gate centers.
     pub fn bounds(&self) -> GeoExtent {
         self.bounds
     }
@@ -95,12 +96,13 @@ impl StormCell {
     }
 }
 
-/// Detects storm cells in a reflectivity sweep field using connected-component
-/// labeling.
+/// Finds connected regions at or above one threshold in a reflectivity sweep field.
 ///
-/// The algorithm identifies contiguous regions of gates with reflectivity at or
-/// above a configurable threshold, then computes geographic properties for each
-/// region using the radar coordinate system.
+/// The detector labels the 4-connected components of the gates whose reflectivity is at or
+/// above a single threshold, drops components smaller than a minimum gate count, and reports
+/// each remaining component as a [`ThresholdRegion`] with its geographic properties. It applies
+/// one threshold only; the name says what it computes and is not a meteorological
+/// classification.
 ///
 /// # Algorithm
 ///
@@ -112,12 +114,12 @@ impl StormCell {
 ///    north is at most twice the azimuth spacing), the last azimuth index is
 ///    adjacent to the first; a sector's edges are not adjacent.
 /// 3. Filter out components with fewer than `min_gate_count` gates.
-/// 4. For each remaining component, compute cell properties.
+/// 4. For each remaining component, compute region properties.
 ///
 /// # Example
 ///
 /// ```
-/// use nexrad_process::detection::StormCellDetector;
+/// use nexrad_process::detection::ThresholdRegionDetector;
 /// # let site = nexrad_model::meta::Site::builder(*b"KTLX", 35.3331, -97.2778).build()?;
 /// # let coord_system = nexrad_model::geo::RadarCoordinateSystem::new(&site);
 /// # let mut reflectivity_field = nexrad_model::data::SweepField::builder("Reflectivity", "dBZ")
@@ -134,39 +136,38 @@ impl StormCell {
 /// #     }
 /// # }
 ///
-/// let detector = StormCellDetector::new(35.0, 10)?;
-/// let cells = detector.detect(&reflectivity_field, &coord_system)?;
+/// let detector = ThresholdRegionDetector::new(35.0, 10)?;
+/// let regions = detector.detect(&reflectivity_field, &coord_system)?;
 ///
-/// for cell in &cells {
-///     println!("Cell {} at ({:.2}, {:.2}): max {:.1} dBZ, area {:.1} km²",
-///         cell.id(),
-///         cell.centroid().latitude,
-///         cell.centroid().longitude,
-///         cell.max_reflectivity_dbz(),
-///         cell.area_km2(),
+/// for region in &regions {
+///     println!("Region {} at ({:.2}, {:.2}): max {:.1} dBZ, area {:.1} km²",
+///         region.id(),
+///         region.centroid().latitude,
+///         region.centroid().longitude,
+///         region.max_reflectivity_dbz(),
+///         region.area_km2(),
 ///     );
 /// }
-/// # assert_eq!(cells.len(), 1);
+/// # assert_eq!(regions.len(), 1);
 /// # Ok::<(), nexrad_process::Error>(())
 /// ```
 #[derive(Debug, Clone, PartialEq)]
-pub struct StormCellDetector {
-    /// Minimum reflectivity (dBZ) for a gate to be included in a cell.
+pub struct ThresholdRegionDetector {
+    /// Minimum reflectivity (dBZ) for a gate to be included in a region.
     reflectivity_threshold_dbz: f32,
-    /// Minimum number of gates for a component to be retained as a cell.
+    /// Minimum number of gates for a component to be retained as a region.
     min_gate_count: usize,
 }
 
-impl StormCellDetector {
-    /// Create a new storm cell detector.
+impl ThresholdRegionDetector {
+    /// Create a new threshold region detector.
     ///
     /// # Parameters
     ///
     /// - `reflectivity_threshold_dbz` — Minimum reflectivity in dBZ. Gates
-    ///   at or above this value are candidates for cell membership.
-    /// - `min_gate_count` — Minimum number of contiguous gates for a region
-    ///   to be considered a storm cell. Regions smaller than this are
-    ///   discarded as noise.
+    ///   at or above this value are candidates for region membership.
+    /// - `min_gate_count` — Minimum number of connected gates for a region
+    ///   to be reported. Smaller regions are discarded.
     ///
     /// # Errors
     ///
@@ -186,17 +187,17 @@ impl StormCellDetector {
         })
     }
 
-    /// Minimum reflectivity in dBZ for a gate to be part of a cell.
+    /// Minimum reflectivity in dBZ for a gate to be part of a region.
     pub fn reflectivity_threshold_dbz(&self) -> f32 {
         self.reflectivity_threshold_dbz
     }
 
-    /// Minimum number of contiguous gates for a region to be reported as a cell.
+    /// Minimum number of connected gates for a region to be reported.
     pub fn min_gate_count(&self) -> usize {
         self.min_gate_count
     }
 
-    /// Detect storm cells in the given reflectivity sweep field.
+    /// Detect regions in the given reflectivity sweep field.
     ///
     /// # Parameters
     ///
@@ -206,8 +207,8 @@ impl StormCellDetector {
     ///
     /// # Returns
     ///
-    /// A vector of detected storm cells, sorted by descending maximum
-    /// reflectivity. Returns an empty vector if no cells are found.
+    /// A vector of detected regions, sorted by descending maximum
+    /// reflectivity. Returns an empty vector if no regions are found.
     ///
     /// # Errors
     ///
@@ -218,7 +219,7 @@ impl StormCellDetector {
         &self,
         field: &SweepField,
         coord_system: &RadarCoordinateSystem,
-    ) -> Result<Vec<StormCell>> {
+    ) -> Result<Vec<ThresholdRegion>> {
         check_product(field, Product::Reflectivity)?;
 
         let az_count = field.azimuth_count();
@@ -306,7 +307,7 @@ impl StormCellDetector {
         }
 
         // Phase 3 & 4: Filter by size and compute properties
-        let mut cells: Vec<StormCell> = Vec::new();
+        let mut regions: Vec<ThresholdRegion> = Vec::new();
 
         let az_spacing_rad = (field.azimuth_spacing_degrees() as f64).to_radians();
 
@@ -315,33 +316,34 @@ impl StormCellDetector {
                 continue;
             }
 
-            let cell = self.compute_cell_properties(field, coord_system, component, az_spacing_rad);
-            cells.push(cell);
+            let region =
+                self.compute_region_properties(field, coord_system, component, az_spacing_rad);
+            regions.push(region);
         }
 
         // Sort by descending max reflectivity
-        cells.sort_by(|a, b| {
+        regions.sort_by(|a, b| {
             b.max_reflectivity_dbz
                 .partial_cmp(&a.max_reflectivity_dbz)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
-        // Re-assign IDs after sorting so ID 0 = strongest cell
-        for (i, cell) in cells.iter_mut().enumerate() {
-            cell.id = i as u32;
+        // Re-assign IDs after sorting so ID 0 = strongest region
+        for (i, region) in regions.iter_mut().enumerate() {
+            region.id = i as u32;
         }
 
-        Ok(cells)
+        Ok(regions)
     }
 
-    /// Compute properties for a single storm cell from its component gates.
-    fn compute_cell_properties(
+    /// Compute properties for a single region from its component gates.
+    fn compute_region_properties(
         &self,
         field: &SweepField,
         coord_system: &RadarCoordinateSystem,
         component: &[(usize, usize)],
         az_spacing_rad: f64,
-    ) -> StormCell {
+    ) -> ThresholdRegion {
         let mut max_dbz = f32::MIN;
         let mut sum_dbz: f64 = 0.0;
         let mut weighted_lat_sum: f64 = 0.0;
@@ -409,7 +411,7 @@ impl StormCellDetector {
             longitude: weighted_lon_sum / weight_sum,
         };
 
-        StormCell {
+        ThresholdRegion {
             id: 0, // re-assigned after sorting
             centroid,
             max_reflectivity_dbz: max_dbz,
@@ -476,18 +478,18 @@ mod tests {
     }
 
     #[test]
-    fn test_no_cells_below_threshold() {
+    fn test_no_regions_below_threshold() {
         let cs = test_coord_system();
         let field = make_uniform_field(100, 20.0);
 
-        let detector = StormCellDetector::new(35.0, 5).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 5).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
-        assert!(cells.is_empty());
+        assert!(regions.is_empty());
     }
 
     #[test]
-    fn test_single_cell_detected() {
+    fn test_single_region_detected() {
         let cs = test_coord_system();
         let mut field = make_empty_field(100);
 
@@ -498,17 +500,17 @@ mod tests {
             }
         }
 
-        let detector = StormCellDetector::new(35.0, 5).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 5).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
-        assert_eq!(cells.len(), 1);
-        assert_eq!(cells[0].gate_count(), 25);
-        assert_eq!(cells[0].max_reflectivity_dbz(), 40.0);
-        assert_eq!(cells[0].id(), 0);
+        assert_eq!(regions.len(), 1);
+        assert_eq!(regions[0].gate_count(), 25);
+        assert_eq!(regions[0].max_reflectivity_dbz(), 40.0);
+        assert_eq!(regions[0].id(), 0);
     }
 
     #[test]
-    fn test_two_separated_cells() {
+    fn test_two_separated_regions() {
         let cs = test_coord_system();
         let mut field = make_empty_field(100);
 
@@ -526,28 +528,28 @@ mod tests {
             }
         }
 
-        let detector = StormCellDetector::new(35.0, 5).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 5).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
-        assert_eq!(cells.len(), 2);
+        assert_eq!(regions.len(), 2);
         // Sorted by descending max reflectivity
-        assert!(cells[0].max_reflectivity_dbz() >= cells[1].max_reflectivity_dbz());
-        assert_eq!(cells[0].max_reflectivity_dbz(), 50.0);
-        assert_eq!(cells[1].max_reflectivity_dbz(), 40.0);
+        assert!(regions[0].max_reflectivity_dbz() >= regions[1].max_reflectivity_dbz());
+        assert_eq!(regions[0].max_reflectivity_dbz(), 50.0);
+        assert_eq!(regions[1].max_reflectivity_dbz(), 40.0);
     }
 
     #[test]
-    fn test_min_gate_count_filters_noise() {
+    fn test_min_gate_count_filters_small_regions() {
         let cs = test_coord_system();
         let mut field = make_empty_field(100);
 
         // Single gate at 60 dBZ — below the min_gate_count threshold
         field.set(50, 30, 60.0, GateStatus::Valid).unwrap();
 
-        let detector = StormCellDetector::new(35.0, 5).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 5).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
-        assert!(cells.is_empty());
+        assert!(regions.is_empty());
     }
 
     #[test]
@@ -560,12 +562,12 @@ mod tests {
             field.set(az, 30, 40.0, GateStatus::Valid).unwrap();
         }
 
-        let detector = StormCellDetector::new(35.0, 3).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 3).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
-        // Should be a single cell, not two
-        assert_eq!(cells.len(), 1);
-        assert_eq!(cells[0].gate_count(), 5);
+        // Should be a single region, not two
+        assert_eq!(regions.len(), 1);
+        assert_eq!(regions[0].gate_count(), 5);
     }
 
     #[test]
@@ -585,10 +587,10 @@ mod tests {
             field.set(az, 30, 40.0, GateStatus::Valid)?;
         }
 
-        let cells = StormCellDetector::new(35.0, 1)?.detect(&field, &cs)?;
-        assert_eq!(cells.len(), 2);
-        for cell in &cells {
-            assert_eq!(cell.gate_count(), 2);
+        let regions = ThresholdRegionDetector::new(35.0, 1)?.detect(&field, &cs)?;
+        assert_eq!(regions.len(), 2);
+        for region in &regions {
+            assert_eq!(region.gate_count(), 2);
         }
         Ok(())
     }
@@ -603,7 +605,7 @@ mod tests {
             .gate_count(4)
             .build()
             .unwrap();
-        let detector = StormCellDetector::new(35.0, 1).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 1).unwrap();
         assert_eq!(
             detector.detect(&velocity, &cs),
             Err(Error::UnexpectedProduct {
@@ -615,7 +617,7 @@ mod tests {
 
     #[test]
     fn test_invalid_min_gate_count_zero() {
-        let result = StormCellDetector::new(35.0, 0);
+        let result = ThresholdRegionDetector::new(35.0, 0);
         assert!(matches!(
             result,
             Err(Error::InvalidParameter {
@@ -629,7 +631,7 @@ mod tests {
     fn test_invalid_threshold_not_finite() {
         for threshold in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
             assert!(matches!(
-                StormCellDetector::new(threshold, 5),
+                ThresholdRegionDetector::new(threshold, 5),
                 Err(Error::InvalidParameter {
                     parameter: "reflectivity_threshold_dbz",
                     ..
@@ -640,7 +642,7 @@ mod tests {
 
     #[test]
     fn test_detector_getters() -> Result<()> {
-        let detector = StormCellDetector::new(-5.0, 7)?;
+        let detector = ThresholdRegionDetector::new(-5.0, 7)?;
         assert_eq!(detector.reflectivity_threshold_dbz(), -5.0);
         assert_eq!(detector.min_gate_count(), 7);
         Ok(())
@@ -656,9 +658,9 @@ mod tests {
             }
         }
 
-        let cells = StormCellDetector::new(35.0, 5)?.detect(&field, &cs)?;
-        let bounds = cells[0].bounds();
-        let centroid = cells[0].centroid();
+        let regions = ThresholdRegionDetector::new(35.0, 5)?.detect(&field, &cs)?;
+        let bounds = regions[0].bounds();
+        let centroid = regions[0].centroid();
         assert!(bounds.min.latitude < bounds.max.latitude);
         assert!(bounds.min.longitude < bounds.max.longitude);
         assert!((bounds.min.latitude..=bounds.max.latitude).contains(&centroid.latitude));
@@ -676,13 +678,13 @@ mod tests {
             field.set(90, gate, 0.0, GateStatus::Valid)?;
         }
 
-        let cells = StormCellDetector::new(0.0, 3)?.detect(&field, &cs)?;
-        assert_eq!(cells.len(), 1);
-        let centroid = cells[0].centroid();
+        let regions = ThresholdRegionDetector::new(0.0, 3)?.detect(&field, &cs)?;
+        assert_eq!(regions.len(), 1);
+        let centroid = regions[0].centroid();
         assert!(centroid.latitude.is_finite() && centroid.longitude.is_finite());
 
         // Equal weights put the centroid at the geometric middle of the run.
-        let polar = cs.geo_to_polar(centroid, cells[0].elevation_angle_degrees() as f64);
+        let polar = cs.geo_to_polar(centroid, regions[0].elevation_angle_degrees() as f64);
         let mid_range = field.first_gate_range_km() + 42.5 * field.gate_interval_km();
         assert!(
             (polar.range_km - mid_range).abs() < 0.01,
@@ -707,11 +709,11 @@ mod tests {
             field.set(90, gate, 0.0, GateStatus::Valid)?;
         }
 
-        let cells = StormCellDetector::new(-15.0, 3)?.detect(&field, &cs)?;
-        assert_eq!(cells.len(), 1);
+        let regions = ThresholdRegionDetector::new(-15.0, 3)?.detect(&field, &cs)?;
+        assert_eq!(regions.len(), 1);
         let polar = cs.geo_to_polar(
-            cells[0].centroid(),
-            cells[0].elevation_angle_degrees() as f64,
+            regions[0].centroid(),
+            regions[0].elevation_angle_degrees() as f64,
         );
         let first = field.first_gate_range_km();
         let interval = field.gate_interval_km();
@@ -729,29 +731,29 @@ mod tests {
         let cs = test_coord_system();
         let field = make_empty_field(100);
 
-        let detector = StormCellDetector::new(35.0, 5).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 5).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
-        assert!(cells.is_empty());
+        assert!(regions.is_empty());
     }
 
     #[test]
-    fn test_cell_centroid_is_geographic() {
+    fn test_region_centroid_is_geographic() {
         let cs = test_coord_system();
         let mut field = make_empty_field(100);
 
-        // Cell near the radar
+        // Region near the radar
         for az in 10..15 {
             for gate in 5..10 {
                 field.set(az, gate, 45.0, GateStatus::Valid).unwrap();
             }
         }
 
-        let detector = StormCellDetector::new(35.0, 5).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 5).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
-        assert_eq!(cells.len(), 1);
-        let centroid = cells[0].centroid();
+        assert_eq!(regions.len(), 1);
+        let centroid = regions[0].centroid();
 
         // Centroid should be near the radar site (within a few degrees)
         assert!(
@@ -769,7 +771,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cell_area_reasonable() {
+    fn test_region_area_reasonable() {
         let cs = test_coord_system();
         let mut field = make_empty_field(100);
 
@@ -785,11 +787,11 @@ mod tests {
             }
         }
 
-        let detector = StormCellDetector::new(35.0, 5).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 5).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
-        assert_eq!(cells.len(), 1);
-        assert_eq!(cells[0].gate_count(), n_gates);
+        assert_eq!(regions.len(), 1);
+        assert_eq!(regions[0].gate_count(), n_gates);
 
         // Expected area: sum of annular sector areas
         let az_spacing_rad = (1.0f64).to_radians();
@@ -801,7 +803,7 @@ mod tests {
             expected_area += az_spacing_rad * range_km * gate_interval * (az_end - az_start) as f64;
         }
 
-        let actual = cells[0].area_km2();
+        let actual = regions[0].area_km2();
         let ratio = actual / expected_area;
         assert!(
             (0.9..=1.1).contains(&ratio),
@@ -822,14 +824,14 @@ mod tests {
                 field.set(az, gate, 40.0, GateStatus::Valid).unwrap();
             }
         }
-        // Punch a hole — this gate stays NoData so it's not part of any cell
+        // Punch a hole — this gate stays NoData so it's not part of any region
         field.set(11, 21, 0.0, GateStatus::NoData).unwrap();
 
-        let detector = StormCellDetector::new(35.0, 1).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 1).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
         // The NoData gate should not be counted
-        let total_gates: usize = cells.iter().map(|c| c.gate_count()).sum();
+        let total_gates: usize = regions.iter().map(|c| c.gate_count()).sum();
         assert_eq!(total_gates, 8); // 9 - 1 NoData
     }
 
@@ -844,14 +846,14 @@ mod tests {
         }
         field.set(10, 22, 60.0, GateStatus::Filtered).unwrap();
 
-        let detector = StormCellDetector::new(35.0, 1).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 1).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
         // The filtered gate splits the run and contributes neither area nor intensity
-        assert_eq!(cells.len(), 2);
-        for cell in &cells {
-            assert_eq!(cell.gate_count(), 2);
-            assert_eq!(cell.max_reflectivity_dbz(), 40.0);
+        assert_eq!(regions.len(), 2);
+        for region in &regions {
+            assert_eq!(region.gate_count(), 2);
+            assert_eq!(region.max_reflectivity_dbz(), 40.0);
         }
     }
 
@@ -860,7 +862,7 @@ mod tests {
         let cs = test_coord_system();
         let mut field = make_empty_field(100);
 
-        // Create a cell where one end is much stronger
+        // Create a region where one end is much stronger
         // Low end: gates 40-42 at 36 dBZ
         for gate in 40..43 {
             field.set(90, gate, 36.0, GateStatus::Valid).unwrap();
@@ -870,10 +872,10 @@ mod tests {
             field.set(90, gate, 60.0, GateStatus::Valid).unwrap();
         }
 
-        let detector = StormCellDetector::new(35.0, 3).unwrap();
-        let cells = detector.detect(&field, &cs).unwrap();
+        let detector = ThresholdRegionDetector::new(35.0, 3).unwrap();
+        let regions = detector.detect(&field, &cs).unwrap();
 
-        assert_eq!(cells.len(), 1);
+        assert_eq!(regions.len(), 1);
 
         // Compute the unweighted geometric midpoint range
         let first_gate = field.first_gate_range_km();
@@ -884,8 +886,8 @@ mod tests {
         // meaning further from the radar than the geometric midpoint
         let centroid_range_km = {
             let polar = cs.geo_to_polar(
-                cells[0].centroid(),
-                cells[0].elevation_angle_degrees() as f64,
+                regions[0].centroid(),
+                regions[0].elevation_angle_degrees() as f64,
             );
             polar.range_km
         };

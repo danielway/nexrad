@@ -23,6 +23,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `SweepPipeline::len()`, `is_empty()` and `steps()`. (#193)
 - Getters for the parameters of `VerticalCrossSection`, `StormRelativeVelocity`, `StormCellDetector` and
   `CorrelationCoefficientFilter`. (#193)
+- `derived::CompositeReflectivity::new()`. (#207)
 
 ### Changed
 
@@ -50,12 +51,18 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - Documentation only: the README states the supported data scope and its code blocks compile as doc tests;
   `StormRelativeVelocity` documents that the storm direction is the direction the storm moves from, and the sign of
   the correction that follows. (#209)
+- `detection::StormCellDetector` and `StormCell` are renamed `ThresholdRegionDetector` and `ThresholdRegion`, and
+  documented as connected regions at or above one reflectivity threshold; behaviour is unchanged. (#207)
+- `derived::CompositeReflectivity` is `#[non_exhaustive]`, so it is built with `new()` or `Default` rather than a
+  literal, and `compute` is an inherent method. (#207)
 
 ### Removed
 
 - The `ScanProcessor` trait, which had no implementations. (#175)
 - `detection::StormCellBounds`; use `nexrad_model::geo::GeoExtent`. (#193)
 - The `pipeline` module path; `SweepPipeline` is at the crate root. (#193)
+- The `ScanDerivedProduct` trait, which had one implementation; call `CompositeReflectivity::compute` directly.
+  (#207)
 
 ### Fixed
 

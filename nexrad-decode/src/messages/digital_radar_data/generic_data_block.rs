@@ -76,16 +76,17 @@ impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
     /// encoding parameters are inconsistent with its data.
     pub fn moment_data(&self) -> Result<nexrad_model::data::MomentData> {
         let header = self.inner().header();
-        Ok(nexrad_model::data::MomentData::from_fixed_point(
+        Ok(nexrad_model::data::MomentData::builder(
             self.product()?,
-            usize::from(header.data_moment_gate_count()),
-            header.data_moment_range_raw(),
-            header.data_moment_range_sample_interval_raw(),
-            header.data_word_size_raw(),
-            header.scale(),
-            header.offset(),
             self.inner().encoded_values().to_vec(),
-        )?)
+        )
+        .gate_count(usize::from(header.data_moment_gate_count()))
+        .first_gate_range_meters(header.data_moment_range_raw())
+        .gate_interval_meters(header.data_moment_range_sample_interval_raw())
+        .data_word_size(header.data_word_size_raw())
+        .scale(header.scale())
+        .offset(header.offset())
+        .build()?)
     }
 
     /// Convert this generic data block into a [`MomentData`](nexrad_model::data::MomentData),
@@ -101,15 +102,16 @@ impl<'a> super::DataBlock<'a, GenericDataBlock<'a>> {
     pub fn into_moment_data(self) -> Result<nexrad_model::data::MomentData> {
         let product = self.product()?;
         let block = self.into_inner();
-        Ok(nexrad_model::data::MomentData::from_fixed_point(
+        Ok(nexrad_model::data::MomentData::builder(
             product,
-            usize::from(block.header.data_moment_gate_count()),
-            block.header.data_moment_range_raw(),
-            block.header.data_moment_range_sample_interval_raw(),
-            block.header.data_word_size_raw(),
-            block.header.scale(),
-            block.header.offset(),
             block.encoded_data.into_inner().into_owned(),
-        )?)
+        )
+        .gate_count(usize::from(block.header.data_moment_gate_count()))
+        .first_gate_range_meters(block.header.data_moment_range_raw())
+        .gate_interval_meters(block.header.data_moment_range_sample_interval_raw())
+        .data_word_size(block.header.data_word_size_raw())
+        .scale(block.header.scale())
+        .offset(block.header.offset())
+        .build()?)
     }
 }

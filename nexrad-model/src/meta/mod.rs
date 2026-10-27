@@ -6,7 +6,7 @@
 //!
 //! # Static Site Registry
 //!
-//! The [`registry`] module provides a compile-time database of all NEXRAD radar sites.
+//! The [`registry`] module provides a compile-time list of NEXRAD radar sites.
 //! Use it to look up sites by identifier or find the nearest site to a location:
 //!
 //! ```

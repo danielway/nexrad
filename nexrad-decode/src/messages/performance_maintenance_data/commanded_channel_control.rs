@@ -1,6 +1,5 @@
 /// Commanded channel control setting.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum CommandedChannelControl {
     /// Not applicable.
     NotApplicable,

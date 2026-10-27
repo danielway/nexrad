@@ -1,6 +1,5 @@
 /// Status of a network port.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum PortStatus {
     /// Port is up and operational.
     Up,

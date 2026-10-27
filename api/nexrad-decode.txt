@@ -1,7 +1,7 @@
 pub mod nexrad_decode
 pub mod nexrad_decode::messages
 pub mod nexrad_decode::messages::clutter_censor_zones
-pub enum nexrad_decode::messages::clutter_censor_zones::OperatorSelectCode
+#[non_exhaustive] pub enum nexrad_decode::messages::clutter_censor_zones::OperatorSelectCode
 pub nexrad_decode::messages::clutter_censor_zones::OperatorSelectCode::BypassFilterForced
 pub nexrad_decode::messages::clutter_censor_zones::OperatorSelectCode::BypassMapInControl
 pub nexrad_decode::messages::clutter_censor_zones::OperatorSelectCode::ClutterFilteringForced
@@ -123,7 +123,7 @@ impl<'a> core::marker::UnsafeUnpin for nexrad_decode::messages::clutter_filter_b
 impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::clutter_filter_bypass_map::Message<'a>
 pub mod nexrad_decode::messages::clutter_filter_map
-pub enum nexrad_decode::messages::clutter_filter_map::OpCode
+#[non_exhaustive] pub enum nexrad_decode::messages::clutter_filter_map::OpCode
 pub nexrad_decode::messages::clutter_filter_map::OpCode::BypassFilter
 pub nexrad_decode::messages::clutter_filter_map::OpCode::BypassMapInControl
 pub nexrad_decode::messages::clutter_filter_map::OpCode::ForceFilter
@@ -265,7 +265,7 @@ impl<'a> core::marker::UnsafeUnpin for nexrad_decode::messages::console_message:
 impl<'a> core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::console_message::Message<'a>
 impl<'a> core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::console_message::Message<'a>
 pub mod nexrad_decode::messages::digital_radar_data
-pub enum nexrad_decode::messages::digital_radar_data::AzimuthResolutionSpacing
+#[non_exhaustive] pub enum nexrad_decode::messages::digital_radar_data::AzimuthResolutionSpacing
 pub nexrad_decode::messages::digital_radar_data::AzimuthResolutionSpacing::HalfDegree
 pub nexrad_decode::messages::digital_radar_data::AzimuthResolutionSpacing::OneDegree
 pub nexrad_decode::messages::digital_radar_data::AzimuthResolutionSpacing::Unknown(u8)
@@ -287,7 +287,7 @@ impl core::marker::Unpin for nexrad_decode::messages::digital_radar_data::Azimut
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::digital_radar_data::AzimuthResolutionSpacing
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::digital_radar_data::AzimuthResolutionSpacing
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::AzimuthResolutionSpacing
-pub enum nexrad_decode::messages::digital_radar_data::CompressionIndicator
+#[non_exhaustive] pub enum nexrad_decode::messages::digital_radar_data::CompressionIndicator
 pub nexrad_decode::messages::digital_radar_data::CompressionIndicator::CompressedBzip2
 pub nexrad_decode::messages::digital_radar_data::CompressionIndicator::CompressedZlib
 pub nexrad_decode::messages::digital_radar_data::CompressionIndicator::Uncompressed
@@ -310,7 +310,7 @@ impl core::marker::Unpin for nexrad_decode::messages::digital_radar_data::Compre
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::digital_radar_data::CompressionIndicator
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::digital_radar_data::CompressionIndicator
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::CompressionIndicator
-pub enum nexrad_decode::messages::digital_radar_data::ControlFlags
+#[non_exhaustive] pub enum nexrad_decode::messages::digital_radar_data::ControlFlags
 pub nexrad_decode::messages::digital_radar_data::ControlFlags::None
 pub nexrad_decode::messages::digital_radar_data::ControlFlags::RecombinedAzimuthalRadials
 pub nexrad_decode::messages::digital_radar_data::ControlFlags::RecombinedRadialsAndRangeGatesToLegacyResolution
@@ -366,7 +366,7 @@ impl core::marker::Unpin for nexrad_decode::messages::digital_radar_data::DataBl
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::digital_radar_data::DataBlockName
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::digital_radar_data::DataBlockName
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::DataBlockName
-pub enum nexrad_decode::messages::digital_radar_data::DataBlockType
+#[non_exhaustive] pub enum nexrad_decode::messages::digital_radar_data::DataBlockType
 pub nexrad_decode::messages::digital_radar_data::DataBlockType::DataMoment
 pub nexrad_decode::messages::digital_radar_data::DataBlockType::Radial
 pub nexrad_decode::messages::digital_radar_data::DataBlockType::Unknown(u8)
@@ -388,7 +388,7 @@ impl core::marker::Unpin for nexrad_decode::messages::digital_radar_data::DataBl
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::digital_radar_data::DataBlockType
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::digital_radar_data::DataBlockType
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::DataBlockType
-pub enum nexrad_decode::messages::digital_radar_data::DataWordSize
+#[non_exhaustive] pub enum nexrad_decode::messages::digital_radar_data::DataWordSize
 pub nexrad_decode::messages::digital_radar_data::DataWordSize::EightBit
 pub nexrad_decode::messages::digital_radar_data::DataWordSize::SixteenBit
 pub nexrad_decode::messages::digital_radar_data::DataWordSize::Unknown(u8)
@@ -410,7 +410,7 @@ impl core::marker::Unpin for nexrad_decode::messages::digital_radar_data::DataWo
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::digital_radar_data::DataWordSize
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::digital_radar_data::DataWordSize
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::digital_radar_data::DataWordSize
-pub enum nexrad_decode::messages::digital_radar_data::ProcessingStatus
+#[non_exhaustive] pub enum nexrad_decode::messages::digital_radar_data::ProcessingStatus
 pub nexrad_decode::messages::digital_radar_data::ProcessingStatus::Cbt
 pub nexrad_decode::messages::digital_radar_data::ProcessingStatus::RxrNoise
 pub nexrad_decode::messages::digital_radar_data::ProcessingStatus::Unknown(u16)
@@ -640,6 +640,7 @@ pub fn nexrad_decode::messages::digital_radar_data::Message<'a>::elevation_data_
 pub fn nexrad_decode::messages::digital_radar_data::Message<'a>::header(&self) -> &nexrad_decode::messages::digital_radar_data::Header<'a>
 pub fn nexrad_decode::messages::digital_radar_data::Message<'a>::into_owned(self) -> nexrad_decode::messages::digital_radar_data::Message<'static>
 pub fn nexrad_decode::messages::digital_radar_data::Message<'a>::into_radial(self) -> nexrad_decode::result::Result<nexrad_model::data::radial::Radial>
+pub fn nexrad_decode::messages::digital_radar_data::Message<'a>::other_data_blocks(&self) -> &[nexrad_decode::messages::digital_radar_data::DataBlock<'a, nexrad_decode::messages::digital_radar_data::GenericDataBlock<'a>>]
 pub fn nexrad_decode::messages::digital_radar_data::Message<'a>::radial(&self) -> nexrad_decode::result::Result<nexrad_model::data::radial::Radial>
 pub fn nexrad_decode::messages::digital_radar_data::Message<'a>::radial_data_block(&self) -> core::option::Option<&nexrad_decode::messages::digital_radar_data::DataBlock<'a, nexrad_decode::messages::digital_radar_data::RadialDataBlock<'a>>>
 pub fn nexrad_decode::messages::digital_radar_data::Message<'a>::reflectivity_data_block(&self) -> core::option::Option<&nexrad_decode::messages::digital_radar_data::DataBlock<'a, nexrad_decode::messages::digital_radar_data::GenericDataBlock<'a>>>
@@ -1510,7 +1511,7 @@ impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::ala
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::alarm::Summary
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::alarm::Summary
 pub fn nexrad_decode::messages::rda_status_data::alarm::definition(u16) -> core::option::Option<nexrad_decode::messages::rda_status_data::alarm::Definition>
-pub enum nexrad_decode::messages::rda_status_data::AuxiliaryPowerGeneratorState
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::AuxiliaryPowerGeneratorState
 pub nexrad_decode::messages::rda_status_data::AuxiliaryPowerGeneratorState::CommandedSwitchover
 pub nexrad_decode::messages::rda_status_data::AuxiliaryPowerGeneratorState::GeneratorOn
 pub nexrad_decode::messages::rda_status_data::AuxiliaryPowerGeneratorState::SwitchedToAuxiliaryPower
@@ -1579,7 +1580,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::CommandAc
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::CommandAcknowledgement
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::CommandAcknowledgement
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::CommandAcknowledgement
-pub enum nexrad_decode::messages::rda_status_data::ControlAuthorization
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::ControlAuthorization
 pub nexrad_decode::messages::rda_status_data::ControlAuthorization::LocalControlRequested
 pub nexrad_decode::messages::rda_status_data::ControlAuthorization::NoAction
 pub nexrad_decode::messages::rda_status_data::ControlAuthorization::RemoteControlRequested
@@ -1602,7 +1603,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::ControlAu
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::ControlAuthorization
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::ControlAuthorization
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::ControlAuthorization
-pub enum nexrad_decode::messages::rda_status_data::ControlStatus
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::ControlStatus
 pub nexrad_decode::messages::rda_status_data::ControlStatus::EitherLocalOrRemoteControl
 pub nexrad_decode::messages::rda_status_data::ControlStatus::LocalControlOnly
 pub nexrad_decode::messages::rda_status_data::ControlStatus::RemoteControlOnly
@@ -1625,7 +1626,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::ControlSt
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::ControlStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::ControlStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::ControlStatus
-pub enum nexrad_decode::messages::rda_status_data::OperabilityStatus
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::OperabilityStatus
 pub nexrad_decode::messages::rda_status_data::OperabilityStatus::CommandedShutDown
 pub nexrad_decode::messages::rda_status_data::OperabilityStatus::Inoperable
 pub nexrad_decode::messages::rda_status_data::OperabilityStatus::MaintenanceActionMandatory
@@ -1650,7 +1651,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::Operabili
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::OperabilityStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::OperabilityStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::OperabilityStatus
-pub enum nexrad_decode::messages::rda_status_data::OperationalMode
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::OperationalMode
 pub nexrad_decode::messages::rda_status_data::OperationalMode::Maintenance
 pub nexrad_decode::messages::rda_status_data::OperationalMode::Operational
 pub nexrad_decode::messages::rda_status_data::OperationalMode::Unknown(u16)
@@ -1672,7 +1673,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::Operation
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::OperationalMode
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::OperationalMode
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::OperationalMode
-pub enum nexrad_decode::messages::rda_status_data::PerformanceCheckStatus
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::PerformanceCheckStatus
 pub nexrad_decode::messages::rda_status_data::PerformanceCheckStatus::ForcePerformanceCheckPending
 pub nexrad_decode::messages::rda_status_data::PerformanceCheckStatus::InProgress
 pub nexrad_decode::messages::rda_status_data::PerformanceCheckStatus::NoCommandPending
@@ -1695,7 +1696,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::Performan
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::PerformanceCheckStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::PerformanceCheckStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::PerformanceCheckStatus
-pub enum nexrad_decode::messages::rda_status_data::RdaStatus
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::RdaStatus
 pub nexrad_decode::messages::rda_status_data::RdaStatus::Operate
 pub nexrad_decode::messages::rda_status_data::RdaStatus::Restart
 pub nexrad_decode::messages::rda_status_data::RdaStatus::Spare
@@ -1720,7 +1721,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::RdaStatus
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::RdaStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::RdaStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::RdaStatus
-pub enum nexrad_decode::messages::rda_status_data::RmsControlStatus
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::RmsControlStatus
 pub nexrad_decode::messages::rda_status_data::RmsControlStatus::NonRms
 pub nexrad_decode::messages::rda_status_data::RmsControlStatus::RdaInControl
 pub nexrad_decode::messages::rda_status_data::RmsControlStatus::RmsInControl
@@ -1743,7 +1744,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::RmsContro
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::RmsControlStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::RmsControlStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::RmsControlStatus
-pub enum nexrad_decode::messages::rda_status_data::SpotBlankingStatus
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::SpotBlankingStatus
 pub nexrad_decode::messages::rda_status_data::SpotBlankingStatus::Disabled
 pub nexrad_decode::messages::rda_status_data::SpotBlankingStatus::Enabled
 pub nexrad_decode::messages::rda_status_data::SpotBlankingStatus::NotInstalled
@@ -1766,7 +1767,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::SpotBlank
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::SpotBlankingStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::SpotBlankingStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::SpotBlankingStatus
-pub enum nexrad_decode::messages::rda_status_data::SuperResolutionStatus
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::SuperResolutionStatus
 pub nexrad_decode::messages::rda_status_data::SuperResolutionStatus::Disabled
 pub nexrad_decode::messages::rda_status_data::SuperResolutionStatus::Enabled
 pub nexrad_decode::messages::rda_status_data::SuperResolutionStatus::Unknown(u16)
@@ -1788,7 +1789,7 @@ impl core::marker::Unpin for nexrad_decode::messages::rda_status_data::SuperReso
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::rda_status_data::SuperResolutionStatus
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::rda_status_data::SuperResolutionStatus
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::rda_status_data::SuperResolutionStatus
-pub enum nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus
+#[non_exhaustive] pub enum nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus
 pub nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus::NotInstalled
 pub nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus::Off
 pub nexrad_decode::messages::rda_status_data::TransitionPowerSourceStatus::Ok
@@ -2059,7 +2060,7 @@ impl core::marker::Unpin for nexrad_decode::messages::volume_coverage_pattern::C
 impl core::marker::UnsafeUnpin for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 impl core::panic::unwind_safe::RefUnwindSafe for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
 impl core::panic::unwind_safe::UnwindSafe for nexrad_decode::messages::volume_coverage_pattern::ChannelConfiguration
-pub enum nexrad_decode::messages::volume_coverage_pattern::PatternType
+#[non_exhaustive] pub enum nexrad_decode::messages::volume_coverage_pattern::PatternType
 pub nexrad_decode::messages::volume_coverage_pattern::PatternType::Constant
 pub nexrad_decode::messages::volume_coverage_pattern::PatternType::Unknown(u16)
 impl core::clone::Clone for nexrad_decode::messages::volume_coverage_pattern::PatternType

@@ -1,6 +1,5 @@
 /// Radome hatch position.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum RadomeHatch {
     /// Hatch is open.
     Open,

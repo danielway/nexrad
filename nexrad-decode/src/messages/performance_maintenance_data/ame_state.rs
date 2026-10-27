@@ -1,6 +1,5 @@
 /// AME operational state.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum AmeState {
     /// AME is starting up.
     Start,

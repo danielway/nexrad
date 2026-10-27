@@ -1,6 +1,5 @@
 /// AME Peltier cooler status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum AmePeltierStatus {
     /// Peltier cooler is off.
     Off,

@@ -323,10 +323,11 @@ cannot construct them with a literal and must use `..` in struct patterns): `nex
 `nexrad_render::PointQuery`, and the `Projection::Polar`, `Geographic` and `Vertical` variants.
 
 The ICD code enums in the `nexrad-decode` message modules that carry an `Unknown(n)` or `Reserved(n)` variant (the
-status, mode and code enums of the RDA status, performance and maintenance, clutter and radar data messages) are also
-non-exhaustive, as are `ColorScale` and `Interpolation` in `nexrad-render`. An `Unknown(n)` or `Reserved(n)` value may be
-promoted to a named variant in a minor release when a later ICD names that code; code that needs a stable result
-across releases should compare the raw code (`number()` or the `*_raw()` accessor) rather than match on `Unknown(n)`.
+status, mode and code enums of the RDA status, clutter, radar data and VCP messages) are also non-exhaustive, as are
+`ColorScale` and `Interpolation` in `nexrad-render` and the unit struct `nexrad_process::derived::CompositeReflectivity`.
+An `Unknown(n)` or `Reserved(n)` value may be promoted to a named variant in a minor release when a later ICD names that
+code; code that needs a stable result across releases should compare the raw code (`number()` or the `*_raw()`
+accessor) rather than match on `Unknown(n)`.
 
 Exhaustive: enums whose variants are fixed by the NOAA ICD or by the crate's own format, such as `MomentValue`,
 `GateStatus` and `ChunkType`. Adding a variant to an exhaustive enum is a breaking change and is reserved for a major

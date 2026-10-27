@@ -31,6 +31,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `Scan::elevation_cut(&Sweep)` and `Scan::sweeps_with_waveform(WaveformType)`. (#188)
 - `VcpNumber::{Vcp11, Vcp21, Vcp121, Vcp211, Vcp221}`, formerly `Unknown(n)`. (#188)
 - `RadarCoordinateSystem::beam_height_meters` (above mean sea level) and `ground_range_km`. (#188)
+- `Product::ALL`, `Product::as_str()` (a stable snake_case name), `Product::data_block_name()` (the ICD block name),
+  `Display` (the stable name) and `FromStr`, which accepts the stable name or the block name. (#PRNUM)
+- `Error::UnknownProduct`, from parsing an unrecognised product name. (#PRNUM)
 
 ### Changed
 

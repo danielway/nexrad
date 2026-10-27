@@ -1,6 +1,5 @@
 /// Antenna polarization mode.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum Polarization {
     /// Horizontal polarization only.
     HorizontalOnly,

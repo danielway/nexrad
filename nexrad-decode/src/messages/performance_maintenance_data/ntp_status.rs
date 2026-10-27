@@ -1,6 +1,5 @@
 /// NTP synchronization status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum NtpStatus {
     /// NTP is operating normally.
     Ok,

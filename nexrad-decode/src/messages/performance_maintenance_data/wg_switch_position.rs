@@ -1,6 +1,5 @@
 /// Waveguide switch position.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum WgSwitchPosition {
     /// Switch is in antenna position.
     Antenna,

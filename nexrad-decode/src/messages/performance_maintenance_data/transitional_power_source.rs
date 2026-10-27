@@ -1,6 +1,5 @@
 /// Transitional power source status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum TransitionalPowerSource {
     /// Transitional power source is OK.
     Ok,

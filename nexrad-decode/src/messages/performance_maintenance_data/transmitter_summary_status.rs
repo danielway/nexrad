@@ -1,6 +1,5 @@
 /// Transmitter overall summary status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum TransmitterSummaryStatus {
     /// Transmitter is ready.
     Ready,

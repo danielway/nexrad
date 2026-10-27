@@ -1,6 +1,5 @@
 /// Transmitter filament power supply status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum FilamentPsStatus {
     /// Filament power supply is on.
     On,

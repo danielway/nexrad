@@ -1,6 +1,5 @@
 /// AME Peltier cooler operating mode.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum AmePeltierMode {
     /// Peltier cooler is in cooling mode.
     Cool,

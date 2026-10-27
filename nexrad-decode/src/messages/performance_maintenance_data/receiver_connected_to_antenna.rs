@@ -1,6 +1,5 @@
 /// Receiver-to-antenna connection status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum ReceiverConnectedToAntenna {
     /// Receiver is connected to the antenna.
     Connected,

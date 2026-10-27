@@ -1,6 +1,5 @@
 /// IPC (Inter-Process Communication) status.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-#[non_exhaustive]
 pub enum IpcStatus {
     /// IPC is operating normally.
     Ok,

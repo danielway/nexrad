@@ -2323,6 +2323,7 @@ pub nexrad_decode::messages::MessageType::ClutterFilterBypassMap
 pub nexrad_decode::messages::MessageType::ClutterFilterMap
 pub nexrad_decode::messages::MessageType::DigitalRadarData
 pub nexrad_decode::messages::MessageType::DigitalRadarDataLegacy
+pub nexrad_decode::messages::MessageType::ModelData
 pub nexrad_decode::messages::MessageType::PerformanceMaintenanceData
 pub nexrad_decode::messages::MessageType::RdaAdaptationData
 pub nexrad_decode::messages::MessageType::RdaConsoleMessage
@@ -2649,6 +2650,7 @@ pub nexrad_decode::MessageType::ClutterFilterBypassMap
 pub nexrad_decode::MessageType::ClutterFilterMap
 pub nexrad_decode::MessageType::DigitalRadarData
 pub nexrad_decode::MessageType::DigitalRadarDataLegacy
+pub nexrad_decode::MessageType::ModelData
 pub nexrad_decode::MessageType::PerformanceMaintenanceData
 pub nexrad_decode::MessageType::RdaAdaptationData
 pub nexrad_decode::MessageType::RdaConsoleMessage

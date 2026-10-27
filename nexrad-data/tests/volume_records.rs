@@ -117,11 +117,13 @@ fn test_record_decompression() {
     let uncompressed_record = volume::Record::new(uncompressed_data);
     assert!(!uncompressed_record.compressed());
 
-    let decompress_result = uncompressed_record.decompress();
-    assert!(
-        decompress_result.is_err(),
-        "Should fail to decompress uncompressed data"
-    );
+    // Decompression is idempotent: an uncompressed record comes back unchanged
+    let again = decompressed.decompress().expect("decompressing again");
+    assert_eq!(again, decompressed);
+    let unchanged = uncompressed_record
+        .decompress()
+        .expect("uncompressed record is returned unchanged");
+    assert_eq!(unchanged, uncompressed_record);
 }
 
 #[test]

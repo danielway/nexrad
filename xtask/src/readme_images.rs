@@ -220,7 +220,7 @@ fn write_png(name: &str, image: &Image) -> Result<()> {
 
     let mut palette: HashMap<[u8; 3], u8> = HashMap::new();
     let mut indices = Vec::with_capacity((image.width * image.height) as usize);
-    for pixel in image.pixels.chunks_exact(4) {
+    for pixel in image.pixels.as_chunks::<4>().0 {
         let rgb = [pixel[0], pixel[1], pixel[2]];
         let next = palette.len();
         let index = *palette.entry(rgb).or_insert(next.min(255) as u8);
@@ -239,7 +239,9 @@ fn write_png(name: &str, image: &Image) -> Result<()> {
     } else {
         let rgb: Vec<u8> = image
             .pixels
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .flat_map(|pixel| [pixel[0], pixel[1], pixel[2]])
             .collect();
         encoder.set_color(png::ColorType::Rgb);

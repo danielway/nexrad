@@ -49,7 +49,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `detection::StormCell::bounds()` returns a `nexrad_model::geo::GeoExtent` by value. (#193)
 - Documentation only: the README states the supported data scope and its code blocks compile as doc tests;
   `StormRelativeVelocity` documents that the storm direction is the direction the storm moves from, and the sign of
-  the correction that follows. (#PR)
+  the correction that follows. (#209)
 
 ### Removed
 

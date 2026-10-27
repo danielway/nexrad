@@ -103,7 +103,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - docs.rs shows the feature each feature-gated item requires. (#196)
 - The published crate leaves out the tests and benchmarks that need files from outside it, and the fuzz targets. (#196)
 - Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the type 3
-  and type 18 accessor names are the ICD table mnemonics and are fixed for 1.x. (#PR)
+  and type 18 accessor names are the ICD table mnemonics and are fixed for 1.x. (#209)
 
 ### Removed
 

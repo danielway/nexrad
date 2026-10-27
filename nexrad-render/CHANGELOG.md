@@ -58,7 +58,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - The `image` dependency enables only its `png` feature. (#194)
 - The published crate leaves out the benchmark, which needs files from outside it. (#196)
 - Documentation only: the README states the supported data scope and its code blocks compile as doc tests; the color
-  scale docs list value ranges and colors without interpreting them. (#PR)
+  scale docs list value ranges and colors without interpreting them. (#209)
 
 ### Removed
 

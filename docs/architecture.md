@@ -156,7 +156,7 @@ are named for what they enable, not for the crate they pull in.
 | Crate | Features (defaults in bold) |
 |-------|-----------------------------|
 | `nexrad-model` | `serde`, `chrono`, `uom` |
-| `nexrad-decode` | **`model`** (conversion to `nexrad-model` types), `uom` |
+| `nexrad-decode` | **`model`** (conversion to `nexrad-model` types), `serde` (the code enums and `VcpNumber`), `uom` |
 | `nexrad-data` | **`aws`** (S3 archive and real-time access, without a TLS backend), **`aws-rustls`** (`aws` with rustls and the aws-lc-rs provider), **`model`** (`File::scan`, `Record::radials`, `assemble_volume`; enables `nexrad-decode/model`), `parallel` (rayon) |
 | `nexrad-process` | none |
 | `nexrad-render` | `image` (`RenderResult::into_rgba_image`; outside the semver promise) |

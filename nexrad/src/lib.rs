@@ -75,7 +75,7 @@
 //! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) and the `futures_util` re-export, without a TLS backend | `data` | reqwest, futures-util |
 //! | `aws-rustls` | `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS backend | `aws` | rustls, aws-lc-rs |
 //! | `parallel` | Parallel record decompression and decoding | `data` | rayon |
-//! | `serde` | Serialization support for model types | | serde |
+//! | `serde` | Serialization support for model types and the decode code enums | | serde |
 //! | `uom` | Type-safe units of measure | | uom |
 //! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono |
 //! | `image` | `RenderResult::into_rgba_image` interop (opt-in, not in `full`; see below) | `render` | image |

@@ -19,13 +19,13 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `ColorLookupTable::new(&ColorScale, min, max, size) -> Result<ColorLookupTable>`, replacing `from_scale` and
   `from_color_scale`. (#174, #194)
 - `RenderResult::width()`, `height()`, `pixels() -> &[u8]`, `pixel(x, y)`, `into_pixels() -> Vec<u8>` and
-  `into_parts()`: the result owns its pixels as 8-bit RGBA, row-major with no row padding. (#XXX)
+  `into_parts()`: the result owns its pixels as 8-bit RGBA, row-major with no row padding. (#203)
 - `RenderResult::write_png(impl Write)` and `save_png(path)`, which encode an 8-bit RGBA PNG with a private encoder.
-  (#XXX)
+  (#203)
 - `Error::Io(std::io::Error)` and `Error::Encode(Box<dyn Error + Send + Sync>)`, from `write_png` and `save_png`;
-  `Encode` displays only its layer, with the encoder's error as its `source()`. (#XXX)
+  `Encode` displays only its layer, with the encoder's error as its `source()`. (#203)
 - An opt-in `image` feature adding `RenderResult::into_rgba_image() -> image::RgbaImage`. It tracks the `image`
-  crate's own 0.x releases and is excluded from the semver promise. (#XXX)
+  crate's own 0.x releases and is excluded from the semver promise. (#203)
 - `RenderOptions::with_value_range(min, max)` and `value_range()`. (#194)
 - `RenderOptions::with_status_color(GateStatus, Color)` and `status_color(GateStatus)`, for gates with a non-`Valid`
   status. (#194)
@@ -45,7 +45,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `default_scale(Product)` returns a `ColorScale` instead of a `DiscreteColorScale`. (#174)
 - Image dimensions are `u32`. (#174)
 - `Error` no longer implements `UnwindSafe`/`RefUnwindSafe`, because the boxed encoder error in `Error::Encode` does
-  not. (#174, #XXX)
+  not. (#174, #203)
 - `Error::NoRadials` → `Error::EmptyField`, also for Cartesian and vertical fields with no rows or columns;
   `Error::InvalidDimensions` also covers a zero or overflowing size. (#174)
 - Polar-only `RenderMetadata` accessors and the point queries return `Option`, `Some` only for `Projection::Polar`.
@@ -61,7 +61,7 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `RenderOptions::with_extent` makes `render_sweep` draw onto a latitude/longitude grid covering that extent. (#194)
 - `Color::to_rgba8` clamps and rounds to the nearest byte instead of truncating. (#194)
 - PNG encoding uses the `png` crate as a private dependency; `image` is a dependency only with the `image` feature.
-  (#194, #XXX)
+  (#194, #203)
 - The published crate leaves out the benchmark, which needs files from outside it. (#196)
 
 ### Removed
@@ -70,9 +70,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 - `default_color_scale(Product)`; use `default_scale(Product)`. (#174)
 - `ColorLookupTable::from_scale` and `from_color_scale`; use `ColorLookupTable::new`. (#174)
 - `Error::ProductNotFound` and `Error::ImageSave(String)`; saving fails with `Error::Io` or `Error::Encode`. (#174,
-  #XXX)
+  #203)
 - `image` types from the public API: the `RgbaImage` re-export, `RenderResult::image()`, `into_image()` and `save()`.
-  Use `pixels()`, `into_pixels()` and `save_png()`, or `into_rgba_image()` with the `image` feature. (#XXX)
+  Use `pixels()`, `into_pixels()` and `save_png()`, or `into_rgba_image()` with the `image` feature. (#203)
 - `RenderOptions::transparent()` and `bilinear()`. (#194)
 - The `nexrad_render::Product` re-export; use `nexrad_model::data::Product`. (#194)
 

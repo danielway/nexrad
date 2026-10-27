@@ -1,5 +1,6 @@
 /// The possible RDA system operability statuses.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[non_exhaustive]
 pub enum OperabilityStatus {
     /// System is online and operational.
     OnLine,

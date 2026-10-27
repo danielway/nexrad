@@ -1,7 +1,8 @@
 use crate::result::{Error, Result};
 use nexrad_model::geo::GeoExtent;
 
-/// The geographic output grid of a [`ScanDerivedProduct`](crate::ScanDerivedProduct).
+/// The geographic output grid of a derived product such as
+/// [`CompositeReflectivity`](crate::derived::CompositeReflectivity).
 ///
 /// The grid covers `extent` with `width` columns and `height` rows, matching the layout of the
 /// [`CartesianField`](nexrad_model::data::CartesianField) the product returns: row 0 is the

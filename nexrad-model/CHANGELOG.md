@@ -34,6 +34,9 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
   ICD does not abbreviate, and for unknown values). (#205)
 - `Display` for `RadialStatus`. (#205)
 - `RadarCoordinateSystem::beam_height_meters` (above mean sea level) and `ground_range_km`. (#188)
+- `Product::ALL`, `Product::as_str()` (a stable snake_case name), `Product::data_block_name()` (the ICD block name),
+  `Display` (the stable name) and `FromStr`, which accepts the stable name or the block name. (#207)
+- `Error::UnknownProduct`, from parsing an unrecognised product name. (#207)
 
 ### Changed
 

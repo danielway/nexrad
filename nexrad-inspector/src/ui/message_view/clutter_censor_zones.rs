@@ -57,7 +57,7 @@ pub fn parse_clutter_censor_zones(data: &[u8]) -> String {
                     OperatorSelectCode::BypassFilterForced => "Bypass filter forced",
                     OperatorSelectCode::BypassMapInControl => "Bypass map in control",
                     OperatorSelectCode::ClutterFilteringForced => "Clutter filtering forced",
-                    OperatorSelectCode::Unknown(_) => "Unknown",
+                    OperatorSelectCode::Unknown(_) | _ => "Unknown",
                 }
             ));
         }

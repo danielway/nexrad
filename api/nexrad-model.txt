@@ -121,6 +121,9 @@ pub nexrad_model::data::Product::Reflectivity
 pub nexrad_model::data::Product::SpectrumWidth
 pub nexrad_model::data::Product::Velocity
 impl nexrad_model::data::Product
+pub const nexrad_model::data::Product::ALL: &'static [nexrad_model::data::Product]
+pub fn nexrad_model::data::Product::as_str(&self) -> &'static str
+pub fn nexrad_model::data::Product::data_block_name(&self) -> &'static str
 pub fn nexrad_model::data::Product::label(&self) -> &'static str
 pub fn nexrad_model::data::Product::unit(&self) -> &'static str
 pub fn nexrad_model::data::Product::value_range(&self) -> (f32, f32)
@@ -131,10 +134,15 @@ impl core::cmp::PartialEq for nexrad_model::data::Product
 pub fn nexrad_model::data::Product::eq(&self, &Self) -> bool
 impl core::fmt::Debug for nexrad_model::data::Product
 pub fn nexrad_model::data::Product::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for nexrad_model::data::Product
+pub fn nexrad_model::data::Product::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for nexrad_model::data::Product
 pub fn nexrad_model::data::Product::hash<__H: core::hash::Hasher>(&self, &mut __H)
 impl core::marker::Copy for nexrad_model::data::Product
 impl core::marker::StructuralPartialEq for nexrad_model::data::Product
+impl core::str::traits::FromStr for nexrad_model::data::Product
+pub type nexrad_model::data::Product::Err = nexrad_model::result::Error
+pub fn nexrad_model::data::Product::from_str(&str) -> core::result::Result<Self, Self::Err>
 impl serde_core::ser::Serialize for nexrad_model::data::Product
 pub fn nexrad_model::data::Product::serialize<__S>(&self, __S) -> core::result::Result<<__S as serde_core::ser::Serializer>::Ok, <__S as serde_core::ser::Serializer>::Error> where __S: serde_core::ser::Serializer
 impl<'de> serde_core::de::Deserialize<'de> for nexrad_model::data::Product
@@ -945,6 +953,8 @@ pub nexrad_model::result::Error::InvalidSite::reason: &'static str
 pub nexrad_model::result::Error::MomentDataLength
 pub nexrad_model::result::Error::MomentDataLength::actual: usize
 pub nexrad_model::result::Error::MomentDataLength::expected: usize
+pub nexrad_model::result::Error::UnknownProduct
+pub nexrad_model::result::Error::UnknownProduct::name: alloc::string::String
 impl core::clone::Clone for nexrad_model::result::Error
 pub fn nexrad_model::result::Error::clone(&self) -> Self
 impl core::cmp::PartialEq for nexrad_model::result::Error
@@ -984,6 +994,8 @@ pub nexrad_model::Error::InvalidSite::reason: &'static str
 pub nexrad_model::Error::MomentDataLength
 pub nexrad_model::Error::MomentDataLength::actual: usize
 pub nexrad_model::Error::MomentDataLength::expected: usize
+pub nexrad_model::Error::UnknownProduct
+pub nexrad_model::Error::UnknownProduct::name: alloc::string::String
 impl core::clone::Clone for nexrad_model::result::Error
 pub fn nexrad_model::result::Error::clone(&self) -> Self
 impl core::cmp::PartialEq for nexrad_model::result::Error

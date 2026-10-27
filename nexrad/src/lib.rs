@@ -168,7 +168,7 @@
 //!
 //! - **`nexrad-process`**: Processing algorithms
 //!   - ✓ Filters, smoothing and derived products over `nexrad-model` fields
-//!   - ✓ Storm cell detection
+//!   - ✓ Threshold region detection
 //!   - ✗ No I/O operations
 //!   - ✗ No rendering or visualization
 //!

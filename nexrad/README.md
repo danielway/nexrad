@@ -10,20 +10,31 @@ This is the main entry point for the NEXRAD library suite. It re-exports the und
 (`nexrad-model`, `nexrad-decode`, `nexrad-data`, `nexrad-process`, `nexrad-render`) and provides
 top-level convenience functions for common tasks.
 
+## Scope
+
+The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
+(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
+volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
+back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
+III products are out of scope.
+
 ## Quick Start
 
-```rust,ignore
-// Load a local Archive II file
-let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
-println!("{}, {} sweeps", scan.coverage_pattern_number(), scan.sweeps().len());
+```rust,no_run
+fn main() -> nexrad::Result<()> {
+    // Load a local Archive II file
+    let scan = nexrad::load_file("KTLX20230520_201643_V06.ar2v")?;
+    println!("{}, {} sweeps", scan.coverage_pattern_number(), scan.sweeps().len());
 
-// Iterate through sweeps and radials
-for sweep in scan.sweeps() {
-    for radial in sweep.radials() {
-        if let Some(reflectivity) = radial.reflectivity() {
-            println!("{} gates", reflectivity.gate_count());
+    // Iterate through sweeps and radials
+    for sweep in scan.sweeps() {
+        for radial in sweep.radials() {
+            if let Some(reflectivity) = radial.reflectivity() {
+                println!("{} gates", reflectivity.gate_count());
+            }
         }
     }
+    Ok(())
 }
 ```
 

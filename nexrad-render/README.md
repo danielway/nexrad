@@ -7,6 +7,14 @@
 Functions for rendering NEXRAD weather radar data into visual images. Supports multiple radar
 products including reflectivity, velocity, and spectrum width with configurable color scales.
 
+## Scope
+
+The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
+(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
+volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
+back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
+III products are out of scope.
+
 ## Rendering Functions
 
 Three entry points match the three field types from `nexrad-model`:
@@ -20,14 +28,17 @@ Three entry points match the three field types from `nexrad-model`:
 To render a sweep of radials, build a `SweepField` first with `sweep.field(product)` or
 `SweepField::from_radials(radials, product)`:
 
-```rust,ignore
-use nexrad_model::data::Product;
+```rust
+use nexrad_model::data::{Product, Sweep};
 use nexrad_render::{default_scale, render_sweep, RenderOptions};
 
-let field = sweep.field(Product::Reflectivity).unwrap();
-let scale = default_scale(Product::Reflectivity);
-let result = render_sweep(&field, &scale, &RenderOptions::new(800, 800))?;
-result.save("reflectivity.png")?;
+fn render(sweep: &Sweep) -> nexrad_render::Result<()> {
+    let field = sweep.field(Product::Reflectivity).unwrap();
+    let scale = default_scale(Product::Reflectivity);
+    let result = render_sweep(&field, &scale, &RenderOptions::new(800, 800))?;
+    result.save("reflectivity.png")?;
+    Ok(())
+}
 ```
 
 ## RenderOptions
@@ -35,31 +46,34 @@ result.save("reflectivity.png")?;
 Configure rendering via the builder API. Dimensions are `u32`; rendering with a zero
 width or height returns `Error::InvalidDimensions`.
 
-```rust,ignore
-use nexrad_model::data::GateStatus;
+```rust
+use nexrad_model::data::{GateStatus, SweepField};
+use nexrad_model::geo::{GeoExtent, RadarCoordinateSystem};
 use nexrad_render::{Color, Interpolation, RenderOptions};
 
-// Basic: fixed size with black background
-let options = RenderOptions::new(800, 800);
+fn options(field: &SweepField, extent: GeoExtent, coord_system: RadarCoordinateSystem) {
+    // Basic: fixed size with black background
+    let options = RenderOptions::new(800, 800);
 
-// Transparent background (for compositing)
-let options = RenderOptions::new(800, 800).with_background(Color::TRANSPARENT);
+    // Transparent background (for compositing)
+    let options = RenderOptions::new(800, 800).with_background(Color::TRANSPARENT);
 
-// Native resolution (one pixel per gate at the outer edge)
-let options = RenderOptions::native_for(&field);
+    // Native resolution (one pixel per gate at the outer edge)
+    let options = RenderOptions::native_for(field);
 
-// Bilinear interpolation (smoother output)
-let options = RenderOptions::new(800, 800).with_interpolation(Interpolation::Bilinear);
+    // Bilinear interpolation (smoother output)
+    let options = RenderOptions::new(800, 800).with_interpolation(Interpolation::Bilinear);
 
-// Fixed color range and purple range-folded gates
-let options = RenderOptions::new(800, 800)
-    .with_value_range(-32.0, 95.0)
-    .with_status_color(GateStatus::RangeFolded, Color::rgb(0.5, 0.0, 0.5));
+    // Fixed color range and purple range-folded gates
+    let options = RenderOptions::new(800, 800)
+        .with_value_range(-32.0, 95.0)
+        .with_status_color(GateStatus::RangeFolded, Color::rgb(0.5, 0.0, 0.5));
 
-// Render a sweep onto a lat/lon grid covering a fixed geographic extent
-let options = RenderOptions::new(800, 800)
-    .with_extent(extent)
-    .with_coord_system(coord_system);
+    // Render a sweep onto a lat/lon grid covering a fixed geographic extent
+    let options = RenderOptions::new(800, 800)
+        .with_extent(extent)
+        .with_coord_system(coord_system);
+}
 ```
 
 Without `with_value_range`, the color lookup range is the field's product range, else the
@@ -69,7 +83,7 @@ ignore the extent: their fields carry their own.
 
 ## Color Scales
 
-Built-in color scales follow standard meteorological conventions:
+Built-in color scales (each function's documentation lists its colors):
 
 | Function | Product | Range |
 |----------|---------|-------|
@@ -94,22 +108,34 @@ entries. `entries()` exposes the RGBA table (for example as a 1-D GPU texture), 
 
 `render_sweep`, `render_cartesian`, and `render_vertical` return a `RenderResult` that bundles the image with spatial metadata:
 
-```rust,ignore
-let result = render_sweep(&field, &color_scale, &options)?;
+```rust
+use nexrad_model::data::SweepField;
+use nexrad_model::geo::GeoPoint;
+use nexrad_render::{render_sweep, ColorScale, RenderOptions};
 
-// Save the image, or encode it into memory
-result.save("radar.png")?;
-let mut png = Vec::new();
-result.write_to(&mut png, nexrad_render::image::ImageFormat::Png)?;
+fn render(
+    field: &SweepField,
+    color_scale: &ColorScale,
+    options: &RenderOptions,
+    geo_point: GeoPoint,
+) -> nexrad_render::Result<()> {
+    let result = render_sweep(field, color_scale, options)?;
 
-// Query data values at specific coordinates (pass the field that was rendered)
-let meta = result.metadata();
-let query = meta.query_pixel(&field, 400.0, 300.0);
-let query = meta.query_geo(&field, &geo_point);
+    // Save the image, or encode it into memory
+    result.save("radar.png")?;
+    let mut png = Vec::new();
+    result.write_to(&mut png, nexrad_render::image::ImageFormat::Png)?;
 
-// Use metadata for map overlays
-let ring_px = meta.km_to_pixel_distance(100.0);  // Some(..): 100km range ring
-let pixel = meta.polar_to_pixel(180.0, 50.0);    // Some((x, y)): azimuth 180°, range 50km
+    // Query data values at specific coordinates (pass the field that was rendered)
+    let meta = result.metadata();
+    let query = meta.query_pixel(field, 400.0, 300.0);
+    let query = meta.query_geo(field, &geo_point);
+
+    // Use metadata for map overlays
+    let ring_px = meta.km_to_pixel_distance(100.0);  // Some(..): 100km range ring
+    let pixel = meta.polar_to_pixel(180.0, 50.0);    // Some((x, y)): azimuth 180°, range 50km
+    Ok(())
+}
 ```
 
 `RenderMetadata::projection()` reports how pixels map to data coordinates:

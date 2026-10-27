@@ -7,11 +7,19 @@
 A common model for representing NEXRAD weather radar data. Provides an ergonomic API which is documented for an audience
 who is not necessarily familiar with the NOAA Archive II format.
 
+## Scope
+
+The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
+(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
+volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
+back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
+III products are out of scope.
+
 ## Data Model
 
 Radar data is organized into a hierarchical structure:
 
-```
+```text
 Scan                           A complete radar volume
 ├── VolumeCoveragePattern      Scanning strategy (elevation cuts, waveforms)
 ├── Site                       Radar site metadata (ICAO ID, location, elevation)
@@ -35,7 +43,7 @@ yield `MomentValue` variants:
 
 - `MomentValue::Value(f32)` — a valid measurement
 - `MomentValue::BelowThreshold` — signal below the signal-to-noise threshold
-- `MomentValue::RangeFolded` — ambiguous range due to Doppler aliasing
+- `MomentValue::RangeFolded` — the gate is flagged range folded (its echo came from beyond the maximum unambiguous range)
 - `MomentValue::CfpStatus(CfpStatus)` — a clutter filter power status code (raw values 0–7;
   only produced for `Product::ClutterFilterPower`)
 
@@ -64,16 +72,21 @@ and has a setter per optional field:
 use nexrad_model::data::{Product, SweepField};
 use nexrad_model::meta::Site;
 
-let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
-    .site_elevation_meters(370)
-    .build()?;
+fn main() -> nexrad_model::Result<()> {
+    let site = Site::builder(*b"KTLX", 35.3331, -97.2778)
+        .site_elevation_meters(370)
+        .build()?;
 
-let field = SweepField::builder("Reflectivity", "dBZ")
-    .product(Product::Reflectivity)
-    .azimuth_angles_degrees(vec![0.0, 1.0, 2.0])
-    .gate_interval_km(0.25)
-    .gate_count(1832)
-    .build()?;
+    let field = SweepField::builder("Reflectivity", "dBZ")
+        .product(Product::Reflectivity)
+        .azimuth_angles_degrees(vec![0.0, 1.0, 2.0])
+        .gate_interval_km(0.25)
+        .gate_count(1832)
+        .build()?;
+
+    println!("{} at {}: {} gates", field.label(), site.identifier(), field.gate_count());
+    Ok(())
+}
 ```
 
 Constructors and builders with invariants (such as `SiteBuilder::build`, `SweepFieldBuilder::build`,

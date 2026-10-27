@@ -7,28 +7,39 @@
 Decoding functions and models for NEXRAD weather radar data. Decoder and struct definitions are in accordance with
 NOAA's WSR-88D Interface Control Document for the RDA/RPG "ICD 2620002AA".
 
+## Scope
+
+The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
+(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
+volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
+back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
+III products are out of scope.
+
 ## Usage
 
 The main entry point is `decode_messages`, which parses decompressed binary data into structured messages. Decoding is
 strict: it returns the error for the first message that cannot be decoded. `iter_messages` yields one `Result` per
 message instead, for callers that want the messages before a failure.
 
-```rust,ignore
+```rust
 use nexrad_decode::{decode_messages, MessageContents};
 
-let messages = decode_messages(&decompressed_data)?;
+fn print_messages(decompressed_data: &[u8]) -> nexrad_decode::Result<()> {
+    let messages = decode_messages(decompressed_data)?;
 
-for message in &messages {
-    match message.contents() {
-        MessageContents::DigitalRadarData(data) => {
-            println!("Azimuth: {:.1}°, Elevation: {:.1}°",
-                data.header().azimuth_angle_degrees(), data.header().elevation_angle_degrees());
+    for message in &messages {
+        match message.contents() {
+            MessageContents::DigitalRadarData(data) => {
+                println!("Azimuth: {:.1}°, Elevation: {:.1}°",
+                    data.header().azimuth_angle_degrees(), data.header().elevation_angle_degrees());
+            }
+            MessageContents::RdaVolumeCoveragePattern(vcp) => {
+                println!("VCP: {}", vcp.header().vcp_number());
+            }
+            _ => {}
         }
-        MessageContents::RdaVolumeCoveragePattern(vcp) => {
-            println!("VCP: {}", vcp.header().vcp_number());
-        }
-        _ => {}
     }
+    Ok(())
 }
 ```
 
@@ -38,13 +49,16 @@ With the `model` feature, `model::ScanBuilder` assembles decoded messages into a
 Radar data messages (types 1 and 31) become radials, the first volume coverage pattern message (type 5) becomes the
 scan's coverage pattern, and the first volume data block identifies the site:
 
-```rust,ignore
+```rust
 use nexrad_decode::messages::decode_messages;
 use nexrad_decode::model::ScanBuilder;
+use nexrad_model::data::Scan;
 
-let mut builder = ScanBuilder::new();
-builder.add_messages(decode_messages(&decompressed_data)?)?;
-let scan = builder.build()?;
+fn build_scan(decompressed_data: &[u8]) -> nexrad_decode::Result<Scan> {
+    let mut builder = ScanBuilder::new();
+    builder.add_messages(decode_messages(decompressed_data)?)?;
+    builder.build()
+}
 ```
 
 Builders filled independently (for example, one per record decoded in parallel) can be combined in order with

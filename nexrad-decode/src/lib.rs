@@ -121,6 +121,11 @@
 #![warn(missing_debug_implementations)]
 #![warn(unnameable_types)]
 
+// Compiles the README's code blocks as doc tests.
+#[cfg(all(doctest, feature = "model"))]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
+
 /// Wrapper type for binary data with debug formatting support.
 pub(crate) mod binary_data;
 /// Message parsing and type definitions for NEXRAD Level II data.

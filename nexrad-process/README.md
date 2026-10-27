@@ -6,6 +6,14 @@
 
 Processing algorithms for NEXRAD weather radar data.
 
+## Scope
+
+The nexrad crates read NEXRAD Level II data in the Archive II format (ICD 2620010) and the RDA/RPG messages it carries
+(ICD 2620002). WSR-88D volumes decode, and so do TDWR Level II volumes. The intended scope for 1.0 is the whole archive:
+volumes with legacy message 1 radials, volumes from before 2008 that carry no VCP message, and gzip-compressed volumes
+back to 1991 are all inputs. `_MDM` objects (Model Data, message type 29) and archive tarballs are not read, and Level
+III products are out of scope.
+
 ## Processing Traits
 
 Two traits cover different processing scopes:
@@ -49,14 +57,17 @@ construction rather than by `process`. Parameters are read back with getters suc
 
 Processors can be composed into a `SweepPipeline`:
 
-```rust,ignore
+```rust
+use nexrad_model::data::SweepField;
 use nexrad_process::filter::{GaussianSmooth, ThresholdFilter};
 use nexrad_process::SweepPipeline;
 
-let filtered = SweepPipeline::new()
-    .then(ThresholdFilter::new(Some(5.0), None)?)
-    .then(GaussianSmooth::new(1.0, 1.0)?)
-    .execute(&field)?;
+fn smooth(field: &SweepField) -> nexrad_process::Result<SweepField> {
+    SweepPipeline::new()
+        .then(ThresholdFilter::new(Some(5.0), None)?)
+        .then(GaussianSmooth::new(1.0, 1.0)?)
+        .execute(field)
+}
 ```
 
 The pipeline itself implements `SweepProcessor`, so pipelines can be nested.

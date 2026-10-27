@@ -18,12 +18,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 
 [features]
-default = ["full"]
+# Load, download and render
+default = ["data", "aws", "aws-rustls", "render"]
 
 # Core crate features
 model = ["dep:nexrad-model"]
 decode = ["dep:nexrad-decode", "model", "nexrad-decode/model"]
-data = ["dep:nexrad-data", "decode", "nexrad-data/model"]
+data = ["dep:nexrad-data", "decode", "chrono", "nexrad-data/model"]
 render = ["dep:nexrad-render", "model"]
 process = ["dep:nexrad-process", "model"]
 
@@ -31,16 +32,27 @@ process = ["dep:nexrad-process", "model"]
 serde = ["nexrad-model?/serde", "nexrad-decode?/serde"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
 parallel = ["data", "nexrad-data/parallel"]
+# AWS S3 access, including real-time streaming, without a TLS backend (see `aws-rustls`)
+aws = ["data", "nexrad-data/aws", "dep:futures-util"]
+# `aws` with rustls and the aws-lc-rs crypto provider as the TLS backend
+aws-rustls = ["aws", "nexrad-data/aws-rustls"]
 # `RenderResult::into_rgba_image`; tracks the `image` crate's 0.x releases and is excluded
-# from the semver promise, so it is not part of `wasm` or `full`
+# from the semver promise, so it is not part of `full`
 image = ["render", "nexrad-render/image"]
-# AWS S3 access, including real-time streaming (WASM-compatible)
-aws = ["data", "chrono", "nexrad-data/aws", "dep:futures-util"]
 
-# All WASM-compatible features
-wasm = ["model", "decode", "data", "render", "process", "aws", "serde", "chrono"]
-# Convenience feature for everything (includes native-only `parallel`, not WASM-compatible)
-full = ["wasm", "parallel"]
+# Every feature except `image`. `parallel` does not build for wasm32-unknown-unknown.
+full = [
+    "model",
+    "decode",
+    "data",
+    "render",
+    "process",
+    "aws",
+    "aws-rustls",
+    "serde",
+    "chrono",
+    "parallel",
+]
 
 [dependencies]
 thiserror = { workspace = true }
@@ -64,7 +76,7 @@ required-features = ["model", "data"]
 
 [[example]]
 name = "download_latest"
-required-features = ["aws", "model"]
+required-features = ["aws-rustls"]
 
 [[example]]
 name = "render_reflectivity"
@@ -80,5 +92,5 @@ required-features = ["render", "data", "process", "chrono"]
 
 [[example]]
 name = "timing_analysis"
-required-features = ["aws", "model", "chrono"]
+required-features = ["aws-rustls"]
 

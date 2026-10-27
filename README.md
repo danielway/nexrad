@@ -70,8 +70,9 @@ Add `nexrad` to your `Cargo.toml`:
 nexrad = "1.0"
 ```
 
-This enables the default `full` feature, which includes every feature: local file processing, AWS downloads, real-time
-streaming, processing, and rendering.
+The default features cover local file loading, AWS downloads and real-time streaming, and rendering. Processing
+(`process`), serialization (`serde`), parallel decoding (`parallel`) and `image` crate interop (`image`) are
+opt-in, and `full` enables every feature except `image`.
 
 **Common configurations:**
 
@@ -79,11 +80,11 @@ streaming, processing, and rendering.
 # Minimal - local file processing only (no rendering, no networking)
 nexrad = { version = "1.0", default-features = false, features = ["data"] }
 
-# With AWS S3 downloads
-nexrad = { version = "1.0", default-features = false, features = ["aws"] }
+# AWS S3 downloads without rendering
+nexrad = { version = "1.0", default-features = false, features = ["aws-rustls"] }
 tokio = { version = "1", features = ["full"] }
 
-# Full feature set
+# Every feature except `image` (native only)
 nexrad = { version = "1.0", features = ["full"] }
 ```
 
@@ -169,36 +170,37 @@ fn main() -> nexrad::Result<()> {
 
 ### Feature Reference
 
-Each feature also enables the features listed under "Implies".
+The default features of the `nexrad` crate are `data`, `aws`, `aws-rustls` and `render`. Each feature also enables
+the features listed under "Implies".
 
 | Feature | Description | Implies | Dependencies |
 |---------|-------------|---------|--------------|
 | `model` | Core data types (Scan, Sweep, Radial) | | Pure Rust |
 | `decode` | Binary protocol decoding | `model` | chrono, zerocopy |
-| `data` | Local file I/O | `decode`, `model` | bzip2 |
+| `data` | Local file I/O | `decode`, `model`, `chrono` | bzip2 |
 | `render` | Image rendering | `model` | png |
 | `process` | Processing algorithms | `model` | nexrad-model |
-| `aws` | AWS S3 downloads and real-time streaming | `data`, `chrono` | reqwest, futures-util |
+| `aws` | AWS S3 downloads and real-time streaming, without a TLS backend | `data` | reqwest, futures-util |
+| `aws-rustls` | `aws` with rustls (aws-lc-rs provider) as the TLS backend | `aws` | rustls, aws-lc-rs |
 | `parallel` | Parallel decompression | `data` | rayon |
 | `serde` | Serialization support | | serde |
 | `chrono` | DateTime type support | | chrono |
-| `wasm` | All WASM-compatible features | (see below) | (see below) |
-| `full` | All features (native only, default) | `wasm`, `parallel` | All above |
 | `image` | `RenderResult::into_rgba_image` (opt-in, not in `full`, outside the semver promise) | `render` | image |
+| `full` | Every feature above except `image` | All above except `image` | All above |
+
+On native targets `aws` needs a TLS backend to reach the HTTPS endpoints; `aws-rustls` provides one and needs a C
+compiler and, on Windows x86 targets, NASM.
 
 ### WASM Support
 
-The `wasm` feature enables all WASM-compatible functionality:
+Every feature except `parallel` (which needs threads) builds for `wasm32-unknown-unknown`. On `wasm32`, `aws` uses the
+JavaScript `fetch` API and needs no TLS feature:
 
 ```toml
-nexrad = { version = "1.0", default-features = false, features = ["wasm"] }
+nexrad = { version = "1.0", default-features = false, features = [
+    "data", "render", "process", "aws", "serde", "chrono",
+] }
 ```
-
-This includes: `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, and `chrono`.
-
-**Not WASM-compatible:**
-- `parallel` - requires threads (rayon)
-- `full` - includes `parallel`
 
 Real-time streaming (`nexrad::stream`, `nexrad::stream_scans`) is part of `aws` and works on WASM: it takes a caller-supplied sleep
 function instead of depending on a specific async runtime.
@@ -212,16 +214,16 @@ Run the included examples:
 cargo run -p nexrad --example decode_summary -- path/to/volume.ar2v
 
 # Download latest data from AWS
-cargo run -p nexrad --example download_latest --features aws -- KTLX
+cargo run -p nexrad --example download_latest -- KTLX
 
 # Render reflectivity image
-cargo run -p nexrad --example render_reflectivity --features render -- path/to/volume.ar2v output.png
+cargo run -p nexrad --example render_reflectivity -- path/to/volume.ar2v output.png
 
 # Filter a sweep, compute composite reflectivity, and render both
-cargo run -p nexrad --example processing_pipeline -- path/to/volume.ar2v
+cargo run -p nexrad --example processing_pipeline --features process -- path/to/volume.ar2v
 
 # Render every product and processing step for a full scan into renders/
-cargo run -p nexrad --example showcase --release
+cargo run -p nexrad --example showcase --features process --release
 ```
 
 ### Lower-Level APIs

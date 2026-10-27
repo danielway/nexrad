@@ -15,21 +15,26 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 
 ### Added
 
-- `nexrad::chrono` re-exports `chrono` (feature `chrono`, implied by `aws`). (#176)
+- `nexrad::chrono` re-exports `chrono` (feature `chrono`, implied by `data`). (#176, #204)
 - `stream_with(config, sleep)`, which streams with a `PollConfig`. (#195)
 - `stream_scans(site, sleep)` and `stream_scans_with(config, sleep)`, which yield one `Scan` per complete real-time
   volume; chunks before the first Start chunk are skipped, and a stream error discards the partial volume. (#195)
 - `Error::NoScanAt { site, datetime }` (feature `aws`), from `download_at`; `datetime` is a `DateTime<Utc>`. (#195,
   #206)
-- An opt-in `image` feature enabling `nexrad-render/image` (`RenderResult::into_rgba_image`). It is not part of `wasm`
-  or `full`, tracks the `image` crate's own 0.x releases and is excluded from the semver promise. (#203)
+- An opt-in `image` feature enabling `nexrad-render/image` (`RenderResult::into_rgba_image`). It is not part of `full`,
+  tracks the `image` crate's own 0.x releases and is excluded from the semver promise. (#203)
 
 ### Changed
 
 - The minimum supported Rust version is 1.88 (it was declared as 1.75, which was already incorrect). (#157)
 - `Error` is `#[non_exhaustive]`; matches on it outside this crate need a wildcard arm. (#155)
 - The `tokio` and `aws-polling` features are removed, sub-crates are depended on without their default features, and
-  each facade feature enables the features it builds on; `full` is `wasm` + `parallel`. (#156, #161)
+  each facade feature enables the features it builds on. (#156, #161)
+- The default features are `data`, `aws`, `aws-rustls` and `render` instead of `full`, and `full` enables every
+  feature except `image`. (#204)
+- `aws` no longer includes a TLS backend; the new `aws-rustls` feature (default) adds rustls with the aws-lc-rs
+  provider, which `aws` enabled before. On `wasm32`, `aws` alone is enough. (#204)
+- `data` implies `chrono`, and `aws` no longer names it directly. (#204)
 - `stream(site, sleep)` takes a caller-supplied sleep function and no longer depends on tokio. (#161)
 - `download` takes the identifier by reference. (#176)
 - `load` takes the bytes as a `Vec<u8>` instead of copying them, and `load_file` no longer copies the file twice.
@@ -54,6 +59,8 @@ See [Migrating to 1.0](https://github.com/danielway/nexrad/blob/main/docs/migrat
 
 ### Removed
 
+- The `wasm` feature. Every feature except `parallel` builds for `wasm32-unknown-unknown`; the crate docs list the
+  features. (#204)
 - The model helpers `extract_field`, `extract_fields`, `extract_first_field`, `coordinate_system` and
   `coordinate_system_required`; use the methods on `Sweep` and `Scan`. (#172)
 - The site registry wrappers `sites`, `site` and `nearest_site`; use `nexrad::model::meta::registry`. (#164, #172)

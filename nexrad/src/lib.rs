@@ -62,45 +62,61 @@
 //!
 //! ## Features
 //!
-//! All features are enabled by default through the `full` feature. Each feature enables the
-//! features it depends on, listed under "Implies":
+//! The default features, `data`, `aws`, `aws-rustls` and `render`, load local files, download
+//! from AWS and render images. `full` enables every feature except `image`. Each feature enables
+//! the features it depends on, listed under "Implies":
 //!
-//! | Feature | Description | Implies | Notable dependencies | WASM-compatible |
-//! |---------|-------------|---------|----------------------|-----------------|
-//! | `model` | Core data model types | | | Yes |
-//! | `decode` | Protocol decoding | `model` | zerocopy | Yes |
-//! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model` | bzip2 | Yes |
-//! | `render` | Visualization and rendering | `model` | png | Yes |
-//! | `process` | Radar data processing algorithms | `model` | | Yes |
-//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`) | `data`, `chrono` | reqwest, futures-util | Yes |
-//! | `parallel` | Parallel record decompression and decoding | `data` | rayon | No |
-//! | `serde` | Serialization support for model types | | serde | Yes |
-//! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono | Yes |
-//! | `wasm` | All WASM-compatible features | `model`, `decode`, `data`, `render`, `process`, `aws`, `serde`, `chrono` | | Yes |
-//! | `full` | Enable all features (default) | `wasm`, `parallel` | | No |
-//! | `image` | `RenderResult::into_rgba_image` interop (opt-in, not in `full`; see below) | `render` | image | Yes |
+//! | Feature | Description | Implies | Notable dependencies |
+//! |---------|-------------|---------|----------------------|
+//! | `model` | Core data model types | | |
+//! | `decode` | Protocol decoding | `model` | zerocopy |
+//! | `data` | Data access for local Archive II files (`load`, `load_file`) | `decode`, `model`, `chrono` | bzip2 |
+//! | `render` | Visualization and rendering | `model` | png |
+//! | `process` | Radar data processing algorithms | `model` | |
+//! | `aws` | AWS S3 downloads (`download`, `download_latest`, `download_at`, `list_scans`), real-time streaming (`stream`, `stream_with`, `stream_scans`, `stream_scans_with`), without a TLS backend | `data` | reqwest, futures-util |
+//! | `aws-rustls` | `aws` with rustls and the `aws-lc-rs` crypto provider as the TLS backend | `aws` | rustls, aws-lc-rs |
+//! | `parallel` | Parallel record decompression and decoding | `data` | rayon |
+//! | `serde` | Serialization support for model types and the decode code enums | | serde |
+//! | `chrono` | Date/time types on model types, and the `chrono` re-export | | chrono |
+//! | `image` | `RenderResult::into_rgba_image` interop (opt-in, not in `full`; see below) | `render` | image |
+//! | `full` | Every feature above except `image` | all of them except `image` | |
 //!
 //! The `image` feature tracks the `image` crate's own 0.x releases and is excluded from the
 //! semver promise: a minor or patch release may move it to a newer, incompatible `image`
 //! version. Without it, rendered images are plain RGBA8 pixel buffers.
 //!
+//! Every feature except `parallel` builds for `wasm32-unknown-unknown`.
+//!
 //! Accessors return plain numbers with the unit in the name. Unit-typed accessors (for example
 //! with the `uom` crate) may be offered later as a separate crate or extension trait.
 //!
-//! The `aws` feature's TLS stack (rustls with the `aws-lc-rs` crypto provider) compiles C code,
-//! which needs a C compiler and, on Windows x86 targets, NASM.
+//! `aws-rustls` (on by default) gives `aws` its TLS backend: rustls with the `aws-lc-rs` crypto
+//! provider, which compiles C code and needs a C compiler and, on Windows x86 targets, NASM. On
+//! `wasm32`, `aws` sends requests through the JavaScript `fetch` API and needs no TLS feature,
+//! because the browser performs TLS. On native targets, `aws` alone compiles but every HTTPS
+//! request fails at run time with reqwest's `invalid URL, scheme is not http` connect error,
+//! unless a TLS feature of `reqwest` 0.13 (for example `native-tls`) is enabled in your own
+//! manifest or by any other crate in the build, since Cargo unifies features.
 //!
 //! ### Common Configurations
 //!
 //! ```toml
+//! # Load, download and render (the default)
+//! nexrad = "1.0"
+//!
 //! # Minimal - local file processing only (no rendering, no networking)
 //! nexrad = { version = "1.0", default-features = false, features = ["data"] }
 //!
-//! # With AWS S3 downloads
-//! nexrad = { version = "1.0", default-features = false, features = ["aws"] }
+//! # AWS S3 downloads without rendering
+//! nexrad = { version = "1.0", default-features = false, features = ["aws-rustls"] }
 //! tokio = { version = "1", features = ["full"] }
 //!
-//! # Full feature set
+//! # WebAssembly: every feature except `parallel`
+//! nexrad = { version = "1.0", default-features = false, features = [
+//!     "data", "render", "process", "aws", "serde", "chrono",
+//! ] }
+//!
+//! # Every feature except `image` (native only)
 //! nexrad = { version = "1.0", features = ["full"] }
 //! ```
 //!

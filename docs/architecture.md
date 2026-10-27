@@ -143,7 +143,9 @@ CHANGELOGs.
 | `Public API baselines` | `api/<crate>.txt` matches each library crate's public API. Regenerate with `cargo run -p xtask -- public-api`; compare with `cargo run -p xtask -- public-api --check`. A PR that changes a public API updates the baselines in the same PR |
 | `Semver checks` | `cargo semver-checks` against the latest release on crates.io. Advisory (`continue-on-error: true`) until 1.0.0 is published, then blocking |
 | `Fuzz target build check` | The fuzz targets in `nexrad-decode/fuzz` and `nexrad-data/fuzz` (outside the workspace) still build |
-| `WASM compatibility check` | Each library crate, and the facade's `wasm` feature, builds for `wasm32-unknown-unknown` |
+| `WASM compatibility check` | Each library crate, and the facade with every feature except `parallel` and `image`, builds for `wasm32-unknown-unknown` |
+| `Feature set tests` | `cargo test -p nexrad` with no default features and with every feature except `parallel` and `image` |
+| `Windows build` | `cargo check --workspace --all-features --all-targets` on Windows, which builds the `aws-rustls` TLS stack (aws-lc-rs with NASM) |
 
 ## Feature Architecture
 
@@ -153,15 +155,33 @@ are named for what they enable, not for the crate they pull in.
 | Crate | Features (defaults in bold) |
 |-------|-----------------------------|
 | `nexrad-model` | `serde`, `chrono` |
-| `nexrad-decode` | **`model`** (conversion to `nexrad-model` types) |
-| `nexrad-data` | **`aws`** (S3 archive and real-time access), **`model`** (`File::scan`, `Record::radials`, `assemble_volume`; enables `nexrad-decode/model`), `parallel` (rayon) |
+| `nexrad-decode` | **`model`** (conversion to `nexrad-model` types), `serde` (the code enums and `VcpNumber`) |
+| `nexrad-data` | **`aws`** (S3 archive and real-time access, without a TLS backend), **`aws-rustls`** (`aws` with rustls and the aws-lc-rs provider), **`model`** (`File::scan`, `Record::radials`, `assemble_volume`; enables `nexrad-decode/model`), `parallel` (rayon) |
 | `nexrad-process` | none |
 | `nexrad-render` | `image` (`RenderResult::into_rgba_image`; outside the semver promise) |
-| `nexrad` | **`full`**; see the feature table in the crate docs |
+| `nexrad` | **`data`**, **`aws`**, **`aws-rustls`**, **`render`**, `full` for every feature except `image`, and `image`; see the feature table in the crate docs |
 
 No crate exposes unit-typed quantities: accessors return plain numbers with the unit in the name. `uom` was removed
 before 1.0 because it is pre-1.0 itself and would tie our major version to its own; unit-typed accessors may come later
 as a separate crate or extension trait.
+
+### Feature Policy
+
+- **Defaults are a working set, not everything.** The facade's default is "load, download, render" (`data`, `aws`,
+  `aws-rustls`, `render`). `full` enables every feature except `image`. Removing a feature, or removing one from a
+  default set, is a breaking change, while adding one is not, so the defaults stay small.
+- **No target-named feature sets.** Every feature except `parallel` builds for `wasm32-unknown-unknown`, and a WASM
+  build lists the features it uses. CI checks that set for `wasm32` and tests it on native.
+- **Interop outside the semver promise stays opt-in.** `image` (`RenderResult::into_rgba_image`) tracks the `image`
+  crate's own 0.x releases and may move to a newer, incompatible `image` version in a minor or patch release, so it
+  is in neither the default set nor `full`.
+- **TLS backends are separate features.** `aws` is the HTTP client machinery with no TLS backend; on `wasm32` it uses
+  the JavaScript `fetch` API and needs none. `aws-rustls` (default) selects rustls with the aws-lc-rs provider, which
+  needs a C compiler and, on Windows x86 targets, NASM. Other backends can be added later as further `aws-*` features
+  (for example `aws-rustls-ring` or `aws-native-tls`) without breaking anyone. On native targets, `aws` without any
+  TLS backend compiles, but every HTTPS request fails at run time with reqwest's `invalid URL, scheme is not http`
+  connect error; a TLS feature of `reqwest` (for example `native-tls`) enabled by the user's manifest or any other
+  crate in the build satisfies it, since Cargo unifies features.
 
 ### Facade Feature Gating
 
@@ -174,7 +194,7 @@ list them), so network dependencies such as reqwest are compiled only with `aws`
 No library crate depends on an async runtime, and `aws` is the only network feature. Real-time streaming
 (`chunk_stream(config, sleep)`, `nexrad::stream(site, sleep)`) takes a caller-supplied sleep function, such as
 `|d| tokio::time::sleep(d)` or a `gloo-timers` timer on `wasm32`, so it builds for WASM. Only `parallel` (rayon threads)
-is excluded from the `wasm` feature set.
+does not build for WASM.
 
 ## Error Architecture
 

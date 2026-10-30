@@ -162,7 +162,7 @@ are named for what they enable, not for the crate they pull in.
 |-------|-----------------------------|
 | `nexrad-model` | `serde`, `chrono` |
 | `nexrad-decode` | **`model`** (conversion to `nexrad-model` types), `serde` (the code enums and `VcpNumber`) |
-| `nexrad-data` | **`aws`** (S3 archive and real-time access, without a TLS backend), **`aws-rustls`** (`aws` with rustls and the aws-lc-rs provider), **`model`** (`File::scan`, `Record::radials`, `assemble_volume`; enables `nexrad-decode/model`), `parallel` (rayon) |
+| `nexrad-data` | **`aws`** (S3 archive and real-time access, without a TLS backend), **`aws-rustls`** (`aws` with rustls and the aws-lc-rs provider), **`model`** (`File::scan`, `Record::radials`, `assemble_volume`; enables `nexrad-decode/model`), `parallel` (rayon), **`bzip2`** (LDM decompression with the `bzip2` crate), `recast-bzip2` (LDM decompression with the vendored pure-Rust decoder in `src/recast_bzip2/`; wins over `bzip2`) |
 | `nexrad-process` | none |
 | `nexrad-render` | `image` (`RenderResult::into_rgba_image`; outside the semver promise) |
 | `nexrad` | **`data`**, **`aws`**, **`aws-rustls`**, **`render`**, `full` for every feature except `image`, and `image`; see the feature table in the crate docs |

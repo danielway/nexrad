@@ -29,7 +29,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docsrs)'] }
 
 [features]
-default = ["aws", "aws-rustls", "model"]
+default = ["aws", "aws-rustls", "model", "bzip2"]
 # AWS S3 access, including real-time polling, without a TLS backend. On native targets `aws`
 # alone compiles, but every HTTPS request fails at run time with reqwest's "invalid URL, scheme
 # is not http" connect error unless a TLS backend is enabled: `aws-rustls`, or a reqwest TLS
@@ -42,13 +42,20 @@ aws-rustls = ["aws", "reqwest/rustls"]
 parallel = ["dep:rayon"]
 # Conversion of volume files and real-time chunks into `nexrad-model` types
 model = ["dep:nexrad-model", "nexrad-decode/model"]
+# LDM record decompression with the `bzip2` crate (libbz2-rs-sys backend); the default backend
+bzip2 = ["dep:bzip2"]
+# LDM record decompression with the vendored pure-Rust `recast-radar-bzip2` decoder in
+# `src/recast_bzip2/` (dependency-free, no unsafe code, about 2x faster single-threaded, identical
+# output). Takes precedence over `bzip2` when both are enabled, and is also used when neither
+# backend feature is enabled.
+recast-bzip2 = []
 
 [dependencies]
 log = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true }
 zerocopy = { workspace = true }
-bzip2 = { workspace = true }
+bzip2 = { workspace = true, optional = true }
 flate2 = { workspace = true }
 nexrad-decode = { version = "1.0.0", path = "../nexrad-decode", default-features = false }
 reqwest = { workspace = true, optional = true }
@@ -61,6 +68,9 @@ futures-util = { workspace = true, optional = true }
 clap = { workspace = true }
 env_logger = { workspace = true }
 futures-util = { workspace = true }
+# `examples/trim_fixture.rs` compresses fixtures with the `bzip2` crate regardless of which
+# decompression backend the library is built with.
+bzip2 = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true }

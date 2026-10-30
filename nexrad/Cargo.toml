@@ -32,6 +32,9 @@ process = ["dep:nexrad-process", "model"]
 serde = ["nexrad-model?/serde", "nexrad-decode?/serde"]
 chrono = ["nexrad-model?/chrono", "dep:chrono"]
 parallel = ["data", "nexrad-data/parallel"]
+# Decompress LDM records with nexrad-data's vendored pure-Rust bzip2 decoder instead of the
+# `bzip2` crate; a backend choice rather than a capability, so it is not part of `full`
+recast-bzip2 = ["data", "nexrad-data/recast-bzip2"]
 # AWS S3 access, including real-time streaming, without a TLS backend (see `aws-rustls`)
 aws = ["data", "nexrad-data/aws", "dep:futures-util"]
 # `aws` with rustls and the aws-lc-rs crypto provider as the TLS backend
@@ -40,7 +43,8 @@ aws-rustls = ["aws", "nexrad-data/aws-rustls"]
 # from the semver promise, so it is not part of `full`
 image = ["render", "nexrad-render/image"]
 
-# Every feature except `image`. `parallel` does not build for wasm32-unknown-unknown.
+# Every feature except `image` and the `recast-bzip2` backend switch. `parallel` does not build
+# for wasm32-unknown-unknown.
 full = [
     "model",
     "decode",

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `recast-bzip2` feature: LDM records are decompressed with a vendored, dependency-free pure-Rust bzip2 decoder
+  (the decoder half of `recast-radar-bzip2` 0.1.3, `MIT OR Apache-2.0`, see `THIRD_PARTY_NOTICES.md`) instead of the
+  `bzip2` crate. Output is identical and `File::scan` is 2-3x faster single-threaded. It takes precedence over `bzip2`
+  when both are enabled.
+- `bzip2` feature (default): the `bzip2` crate backend, which is now an optional dependency. With neither backend
+  feature enabled the vendored decoder is used, so `Record::decompress` is always available.
+
 ## [1.0.0] - 2026-10-27
 
 Changes since `1.0.0-rc.7`, the last release candidate.

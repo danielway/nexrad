@@ -62,8 +62,9 @@ nexrad = "1.0"
 ```
 
 The default features cover local file loading, AWS downloads and real-time streaming, and rendering. Processing
-(`process`), serialization (`serde`), parallel decoding (`parallel`) and `image` crate interop (`image`) are
-opt-in, and `full` enables every feature except `image`.
+(`process`), serialization (`serde`), parallel decoding (`parallel`), the faster vendored bzip2 decoder
+(`recast-bzip2`) and `image` crate interop (`image`) are opt-in, and `full` enables every feature except `image` and
+`recast-bzip2`.
 
 **Common configurations:**
 

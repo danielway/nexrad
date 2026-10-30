@@ -69,6 +69,10 @@
 //! - `model` (default) - Enable conversion to the high-level `Scan` model (`volume::File::scan`,
 //!   `aws::realtime::assemble_volume`)
 //! - `parallel` - Parallelize LDM record decompression and decoding using Rayon
+//! - `bzip2` (default) - Decompress LDM records with the `bzip2` crate (libbz2-rs-sys)
+//! - `recast-bzip2` - Decompress LDM records with a vendored, dependency-free pure-Rust decoder
+//!   that is about twice as fast single-threaded and produces identical output; it takes
+//!   precedence over `bzip2`, and is also used when neither backend feature is enabled
 //!
 //! # Crate Boundaries
 //!
@@ -101,6 +105,11 @@ pub mod volume;
 
 /// Result and error types for data operations.
 pub mod result;
+
+/// Vendored pure-Rust bzip2 decoder, used when the `recast-bzip2` feature is enabled or the
+/// `bzip2` crate backend is disabled.
+#[cfg(any(feature = "recast-bzip2", not(feature = "bzip2")))]
+mod recast_bzip2;
 pub use result::{Error, Result};
 
 #[cfg(feature = "aws")]

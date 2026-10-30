@@ -201,6 +201,25 @@ fn test_decompress_corrupted_bzip_data() {
     assert!(result.is_err());
 }
 
+/// With the vendored decoder, a corrupt stream is reported as `Error::Io` with the decoder's error
+/// as its source, matching the `bzip2` crate backend's contract.
+#[cfg(any(feature = "recast-bzip2", not(feature = "bzip2")))]
+#[test]
+fn test_decompress_corrupted_bzip_data_is_io_error() {
+    let mut data = vec![0u8, 0u8, 0u8, 50u8];
+    data.extend_from_slice(b"BZh9");
+    data.extend_from_slice(&[0xFFu8; 46]);
+    let record = Record::new(data);
+
+    match record.decompress().unwrap_err() {
+        Error::Io(error) => {
+            assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+            assert!(error.to_string().starts_with("bzip2:"), "{error}");
+        }
+        other => panic!("Expected Io, got: {:?}", other),
+    }
+}
+
 #[test]
 fn test_record_messages_compressed_data() {
     // Try to decode messages from compressed data

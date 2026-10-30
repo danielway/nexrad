@@ -55,13 +55,14 @@ impl<'a> Record<'a> {
     /// [`File::decompress`](crate::volume::File::decompress) does for a file, so calling this on a
     /// record of unknown state is safe.
     ///
+    /// The bzip2 backend is chosen at compile time: the `bzip2` crate by default, or the vendored
+    /// pure-Rust decoder with the `recast-bzip2` feature (see the crate-level feature list). Both
+    /// produce identical output.
+    ///
     /// # Errors
     ///
     /// Returns [`Error::Io`](crate::result::Error::Io) if the bzip2 data cannot be decompressed.
     pub fn decompress(&self) -> crate::result::Result<Record<'static>> {
-        use bzip2::read::BzDecoder;
-        use std::io::Read;
-
         if !self.compressed() {
             return Ok(Record::new(self.data().to_vec()));
         }
@@ -69,10 +70,7 @@ impl<'a> Record<'a> {
         // Skip the four-byte record size prefix
         let data = self.data().split_at(4).1;
 
-        let mut decompressed_data = Vec::new();
-        BzDecoder::new(data).read_to_end(&mut decompressed_data)?;
-
-        Ok(Record::new(decompressed_data))
+        Ok(Record::new(decompress_bzip2(data)?))
     }
 
     /// Decodes the NEXRAD level II messages contained in this LDM record.
@@ -319,4 +317,57 @@ fn split_ctm_frames(data: &[u8]) -> crate::result::Result<Vec<Record<'_>>> {
     }
 
     Ok(vec![Record::from_slice(data)])
+}
+
+/// Decompresses one bzip2 stream with the `bzip2` crate.
+#[cfg(all(feature = "bzip2", not(feature = "recast-bzip2")))]
+fn decompress_bzip2(data: &[u8]) -> crate::result::Result<Vec<u8>> {
+    use bzip2::read::BzDecoder;
+    use std::io::Read;
+
+    let mut decompressed_data = Vec::new();
+    BzDecoder::new(data).read_to_end(&mut decompressed_data)?;
+
+    Ok(decompressed_data)
+}
+
+/// Decompresses one bzip2 stream with the vendored pure-Rust decoder.
+///
+/// A decoder owns about 7 MiB of reusable work buffers, so one is kept per thread and reused
+/// across records rather than allocated per call. Decoder errors are reported as
+/// [`Error::Io`](crate::result::Error::Io), like the `bzip2` crate's.
+#[cfg(any(feature = "recast-bzip2", not(feature = "bzip2")))]
+fn decompress_bzip2(data: &[u8]) -> crate::result::Result<Vec<u8>> {
+    use crate::recast_bzip2::{Decoder, Error as DecodeError};
+    use std::cell::RefCell;
+    use std::io::{Error as IoError, ErrorKind};
+
+    /// Upper bound on the decompressed size of a single LDM record. Real records are a few
+    /// megabytes at most; this stops hostile input from expanding without bound.
+    const MAX_RECORD_OUTPUT: usize = 256 << 20;
+
+    thread_local! {
+        static DECODER: RefCell<Decoder> = RefCell::new({
+            let mut decoder = Decoder::new();
+            decoder.set_max_output(MAX_RECORD_OUTPUT);
+            decoder
+        });
+    }
+
+    let mut decompressed_data = Vec::new();
+    DECODER
+        .with(|decoder| {
+            decoder
+                .borrow_mut()
+                .decode_stream_into(data, &mut decompressed_data)
+        })
+        .map_err(|error| {
+            let kind = match error {
+                DecodeError::UnexpectedEof => ErrorKind::UnexpectedEof,
+                _ => ErrorKind::InvalidData,
+            };
+            IoError::new(kind, error)
+        })?;
+
+    Ok(decompressed_data)
 }

@@ -82,9 +82,9 @@ limits apply instead.
 ## Features
 
 The APIs in this crate should be configured to require only the dependencies they need, leaving the consumer to include
-as much or little as they desire. By default, the `aws`, `aws-rustls` and `model` features are enabled. Decoding of
-volume headers and LDM records' NEXRAD messages via `nexrad-decode` is always available. The following named features
-are helpful groupings of dependencies/behavior:
+as much or little as they desire. By default, the `aws`, `aws-rustls`, `model` and `bzip2` features are enabled.
+Decoding of volume headers and LDM records' NEXRAD messages via `nexrad-decode` is always available. The following
+named features are helpful groupings of dependencies/behavior:
 
 - `aws` (default) - Enables accessing archive and real-time NEXRAD data from AWS Open Data, including
   `realtime::chunk_stream`, an async stream that polls for new real-time chunks. It includes no TLS backend. On
@@ -97,6 +97,22 @@ are helpful groupings of dependencies/behavior:
 - `model` (default) - Provides mappings to a common radar data model, particularly for mapping `volume::File` into a
   `Scan`.
 - `parallel` - Parallelize LDM record decompression and decoding using Rayon.
+- `bzip2` (default) - Decompress LDM records with the `bzip2` crate (libbz2-rs-sys backend).
+- `recast-bzip2` - Decompress LDM records with a vendored, dependency-free pure-Rust decoder (`src/recast_bzip2/`,
+  from [recast-radar-bzip2](https://github.com/recastsystems/recast-radar-tools), `MIT OR Apache-2.0`; see
+  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)). It is about twice as fast single-threaded and produces identical
+  output. It takes precedence over `bzip2` when both are enabled, and is also used when neither backend feature is
+  enabled.
+
+### Choosing a bzip2 Backend
+
+The default `bzip2` backend keeps the dependency footprint of previous releases. To opt in to the faster vendored
+decoder, enable `recast-bzip2`; disabling the `bzip2` feature as well drops the `bzip2` crate from the build entirely:
+
+```toml
+[dependencies]
+nexrad-data = { version = "1", default-features = false, features = ["aws", "aws-rustls", "model", "recast-bzip2"] }
+```
 
 ## Minimum Supported Rust Version
 

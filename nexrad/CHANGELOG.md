@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `recast-bzip2` feature, which enables `nexrad-data/recast-bzip2`: LDM records are decompressed with a vendored
+  pure-Rust bzip2 decoder that is 2-3x faster single-threaded than the `bzip2` crate. Not part of `full`.
+
 ## [1.0.0] - 2026-10-27
 
 Changes since `1.0.0-rc.4`, the last release candidate. The re-exported

@@ -49,11 +49,11 @@ impl<'a, 'seg> SegmentedSliceReader<'a, 'seg> {
         if self.current_segment >= self.segments.len() {
             return 0;
         }
-        let mut remaining = self.remaining_in_current_segment();
-        for i in (self.current_segment + 1)..self.segments.len() {
-            remaining += self.segments[i].len();
-        }
-        remaining
+        let later: usize = self.segments[self.current_segment + 1..]
+            .iter()
+            .map(|segment| segment.len())
+            .sum();
+        self.remaining_in_current_segment() + later
     }
 
     /// Returns the offset of the read position in the decoder's input.

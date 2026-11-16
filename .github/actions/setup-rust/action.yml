@@ -3,9 +3,9 @@ description: Install system dependencies, Rust toolchain, and configure caching
 
 inputs:
   toolchain:
-    description: Rust toolchain to install
+    description: Rust toolchain to install (default is the version pinned in rust-toolchain.toml)
     required: false
-    default: stable
+    default: ""
   components:
     description: Additional Rust components to install (comma-separated)
     required: false
@@ -31,7 +31,19 @@ runs:
       shell: bash
       run: sudo apt-get update && sudo apt-get install -y libglib2.0-dev libpango1.0-dev libcairo2-dev
 
+    - name: Install Rust (version from rust-toolchain.toml)
+      if: inputs.toolchain == ''
+      shell: bash
+      env:
+        COMPONENTS: ${{ inputs.components }}
+        TARGETS: ${{ inputs.targets }}
+      run: |
+        rustup toolchain install
+        if [ -n "$COMPONENTS" ]; then rustup component add ${COMPONENTS//,/ }; fi
+        if [ -n "$TARGETS" ]; then rustup target add ${TARGETS//,/ }; fi
+
     - name: Install Rust
+      if: inputs.toolchain != ''
       uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ inputs.toolchain }}

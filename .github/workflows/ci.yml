@@ -66,8 +66,8 @@ jobs:
     name: MSRV check
     runs-on: ubuntu-latest
     env:
-      # rust-toolchain.toml pins the stable channel, which takes precedence over
-      # the default toolchain set by the setup action. RUSTUP_TOOLCHAIN overrides
+      # rust-toolchain.toml pins the development toolchain, which takes precedence
+      # over the default toolchain set by the setup action. RUSTUP_TOOLCHAIN overrides
       # it so that every cargo invocation in this job uses the MSRV toolchain.
       RUSTUP_TOOLCHAIN: "1.88.0"
     steps:

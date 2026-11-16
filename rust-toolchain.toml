@@ -1,3 +1,6 @@
+# Pinned so a new stable release (and its new clippy lints) can't break CI on
+# its own. Bump by hand: change the version, fix any new lints, commit. This is
+# the development toolchain only; the MSRV is `rust-version` in Cargo.toml.
 [toolchain]
-channel = "stable"
+channel = "1.100.0"
 components = ["clippy", "rustfmt"]
